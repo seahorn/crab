@@ -10,14 +10,14 @@ namespace term {
 // and everything else is a nop.
 template <class Num, class Var, class Dom> class InverseOps {
 public:
-  typedef Num num_t;
-  typedef Var varname_t;
+  using num_t = Num;
+  using varname_t = Var;
 
-  typedef Dom dom_t;
-  typedef typename dom_t::variable_t var_t;
+  using dom_t = Dom;
+  using var_t = typename dom_t::variable_t;
 
-  typedef typename dom_t::linear_constraint_t lincst_t;
-  typedef typename dom_t::linear_expression_t linexp_t;
+  using lincst_t = typename dom_t::linear_constraint_t;
+  using linexp_t = typename dom_t::linear_expression_t;
 
   // x = sum c_i y_i -> -x + sum c_i y_i = 0.
   static void assign(dom_t &dom, varname_t x, linexp_t expr) {
@@ -74,17 +74,17 @@ public:
 template <class Num, class Var>
 class InverseOps<Num, Var, ikos::interval_domain<Num, Var>> {
 public:
-  typedef Num num_t;
-  typedef Var varname_t;
+  using num_t = Num;
+  using varname_t = Var;
 
-  typedef ikos::interval_domain<num_t, varname_t> dom_t;
-  typedef typename dom_t::variable_t var_t;
+  using dom_t = ikos::interval_domain<num_t, varname_t>;
+  using var_t = typename dom_t::variable_t;
 
-  typedef typename dom_t::linear_constraint_t lincst_t;
-  typedef typename dom_t::linear_expression_t linexp_t;
+  using lincst_t = typename dom_t::linear_constraint_t;
+  using linexp_t = typename dom_t::linear_expression_t;
 
-  typedef ikos::bound<num_t> bound_t;
-  typedef ikos::interval<num_t> interval_t;
+  using bound_t = ikos::bound<num_t>;
+  using interval_t = ikos::interval<num_t>;
 
   // x = sum c_i y_i -> -x + sum c_i y_i = 0.
   static void assign(dom_t &dom, varname_t x, linexp_t expr) {

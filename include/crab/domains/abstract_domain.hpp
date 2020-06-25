@@ -35,25 +35,25 @@ template <class Dom> struct abstract_domain_traits;
  *
  * template<typename Number, typename VariableName>
  * struct abstract_domain_traits<my_new_domain<Number,VariableName>> {
- *   typedef Number number_t;
- *   typedef VariableName varname_t;
+ *   using number_t = Number;
+ *   using varname_t = VariableName;
  * };
  **/
 template <class Dom> class abstract_domain {
 public:
-  typedef typename abstract_domain_traits<Dom>::number_t number_t;
-  typedef typename abstract_domain_traits<Dom>::varname_t varname_t;
+  using number_t = typename abstract_domain_traits<Dom>::number_t;
+  using varname_t = typename abstract_domain_traits<Dom>::varname_t;
 
-  typedef ikos::linear_expression<number_t, varname_t> linear_expression_t;
-  typedef ikos::linear_constraint<number_t, varname_t> linear_constraint_t;
-  typedef ikos::linear_constraint_system<number_t, varname_t>
-      linear_constraint_system_t;
-  typedef ikos::disjunctive_linear_constraint_system<number_t, varname_t>
-      disjunctive_linear_constraint_system_t;
-  typedef variable<number_t, varname_t> variable_t;
-  typedef std::vector<variable_t> variable_vector_t;
-  typedef reference_constraint<number_t, varname_t> reference_constraint_t;
-  typedef ikos::interval<number_t> interval_t;
+  using linear_expression_t = ikos::linear_expression<number_t, varname_t>;
+  using linear_constraint_t = ikos::linear_constraint<number_t, varname_t>;
+  using linear_constraint_system_t =
+      ikos::linear_constraint_system<number_t, varname_t>;
+  using disjunctive_linear_constraint_system_t =
+      ikos::disjunctive_linear_constraint_system<number_t, varname_t>;
+  using variable_t = variable<number_t, varname_t>;
+  using variable_vector_t = std::vector<variable_t>;
+  using reference_constraint_t = reference_constraint<number_t, varname_t>;
+  using interval_t = ikos::interval<number_t>;
 
   abstract_domain() = default;
   virtual ~abstract_domain() = default;

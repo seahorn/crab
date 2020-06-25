@@ -76,26 +76,24 @@ class array_graph {
 
 public:
   // XXX: make this a template parameter later
-  // typedef AdaptGraph<Weight> graph_t;
-  typedef SparseWtGraph<Weight> graph_t;
-  typedef typename graph_t::vert_id _vert_id;
-  typedef typename graph_t::edge_ref_t edge_ref_t;
-  typedef typename graph_t::Wt Wt;
-  typedef typename graph_t::mut_val_ref_t mut_val_ref_t;
-  // XXX: needs to have this typedef so we can use GraphRev
-  typedef Vertex vert_id;
+  // using graph_t = AdaptGraph<Weight>;
+  using graph_t = SparseWtGraph<Weight>;
+  using _vert_id = typename graph_t::vert_id;
+  using edge_ref_t = typename graph_t::edge_ref_t;
+  using Wt = typename graph_t::Wt;
+  using mut_val_ref_t = typename graph_t::mut_val_ref_t;
 
 private:
-  typedef GraphPerm<graph_t> GrPerm;
-  typedef ArrayGrOps<graph_t, IsDistWeight> GrOps;
-  typedef typename GrOps::Wt_join Wt_join;
-  typedef typename GrOps::Wt_meet Wt_meet;
+  using GrPerm = GraphPerm<graph_t>;
+  using GrOps = ArrayGrOps<graph_t, IsDistWeight>;
+  using Wt_join = typename GrOps::Wt_join;
+  using Wt_meet = typename GrOps::Wt_meet;
 
-  typedef boost::container::flat_map<Vertex, _vert_id> vert_map_t;
-  typedef typename vert_map_t::value_type vmap_elt_t;
-  typedef std::vector<boost::optional<Vertex>> rev_map_t;
-  typedef std::unordered_set<_vert_id> vert_set_t;
-  typedef array_graph<Vertex, Weight, IsDistWeight> array_graph_t;
+  using vert_map_t = boost::container::flat_map<Vertex, _vert_id>;
+  using vmap_elt_t = typename vert_map_t::value_type;
+  using rev_map_t = std::vector<boost::optional<Vertex>>;
+  using vert_set_t = std::unordered_set<_vert_id>;
+  using array_graph_t = array_graph<Vertex, Weight, IsDistWeight>;
 
   vert_map_t _vert_map;
   rev_map_t _rev_map;
@@ -132,7 +130,7 @@ private:
 public:
   template <class ItS> class iterator {
   public:
-    typedef iterator<ItS> iter_t;
+    using iter_t = iterator<ItS>;
     iterator(const ItS &_it, const rev_map_t &_rev_map)
         : it(_it), rev_map(_rev_map) {}
     bool operator!=(const iter_t &o) { return it != o.it; }
@@ -159,7 +157,7 @@ public:
 
   template <class ItS> class edge_iterator {
   public:
-    typedef edge_iterator<ItS> iter_t;
+    using iter_t = edge_iterator<ItS>;
     edge_iterator(const ItS &_it, const rev_map_t &_rev_map)
         : it(_it), rev_map(_rev_map) {}
     bool operator!=(const iter_t &o) { return it != o.it; }
@@ -182,7 +180,7 @@ public:
 
   template <class Range, class ItS> class iterator_range {
   public:
-    typedef ItS iterator;
+    using iterator = ItS;
     iterator_range(const Range &r, const rev_map_t &rev_map)
         : _r(r), _rev_map(rev_map) {}
     iterator begin(void) const { return iterator(_r.begin(), _rev_map); }
@@ -193,26 +191,24 @@ public:
     const rev_map_t &_rev_map;
   };
 
-  typedef iterator<typename graph_t::succ_iterator> succ_transform_iterator;
-  typedef iterator<typename graph_t::pred_iterator> pred_transform_iterator;
-  typedef iterator<typename graph_t::vert_iterator> vert_transform_iterator;
-  typedef edge_iterator<typename graph_t::fwd_edge_iterator>
-      fwd_edge_transform_iterator;
-  typedef edge_iterator<typename graph_t::rev_edge_iterator>
-      rev_edge_transform_iterator;
+  using succ_transform_iterator = iterator<typename graph_t::succ_iterator>;
+  using pred_transform_iterator = iterator<typename graph_t::pred_iterator>;
+  using vert_transform_iterator = iterator<typename graph_t::vert_iterator>;
+  using fwd_edge_transform_iterator =
+      edge_iterator<typename graph_t::fwd_edge_iterator>;
+  using rev_edge_transform_iterator =
+      edge_iterator<typename graph_t::rev_edge_iterator>;
 
-  typedef iterator_range<typename graph_t::succ_range, succ_transform_iterator>
-      succ_range;
-  typedef iterator_range<typename graph_t::pred_range, pred_transform_iterator>
-      pred_range;
-  typedef iterator_range<typename graph_t::vert_range, vert_transform_iterator>
-      vert_range;
-  typedef iterator_range<typename graph_t::e_succ_range,
-                         fwd_edge_transform_iterator>
-      e_succ_range;
-  typedef iterator_range<typename graph_t::e_pred_range,
-                         rev_edge_transform_iterator>
-      e_pred_range;
+  using succ_range =
+      iterator_range<typename graph_t::succ_range, succ_transform_iterator>;
+  using pred_range =
+      iterator_range<typename graph_t::pred_range, pred_transform_iterator>;
+  using vert_range =
+      iterator_range<typename graph_t::vert_range, vert_transform_iterator>;
+  using e_succ_range = iterator_range<typename graph_t::e_succ_range,
+                                      fwd_edge_transform_iterator>;
+  using e_pred_range = iterator_range<typename graph_t::e_pred_range,
+                                      rev_edge_transform_iterator>;
 
   vert_range verts() {
     typename graph_t::vert_range p = _g.verts();
@@ -903,8 +899,8 @@ template <class Variable, class Number>
 class landmark_cst : public landmark<Variable, Number> {
 
   Number _n;
-  typedef landmark<Variable, Number> landmark_t;
-  typedef landmark_cst<Variable, Number> landmark_cst_t;
+  using landmark_t = landmark<Variable, Number>;
+  using landmark_cst_t = landmark_cst<Variable, Number>;
 
 public:
   landmark_cst(Number n) : landmark_t(landmark_kind_t::LMC), _n(n) {}
@@ -937,8 +933,8 @@ template <class Variable, class Number>
 class landmark_var : public landmark<Variable, Number> {
 
   Variable _v;
-  typedef landmark<Variable, Number> landmark_t;
-  typedef landmark_var<Variable, Number> landmark_var_t;
+  using landmark_t = landmark<Variable, Number>;
+  using landmark_var_t = landmark_var<Variable, Number>;
 
 public:
   landmark_var(Variable v) : landmark_t(landmark_kind_t::LMV), _v(v) {}
@@ -977,8 +973,8 @@ class landmark_varprime : public landmark<Variable, Number> {
   std::string _lm;
   Variable _v;
 
-  typedef landmark<Variable, Number> landmark_t;
-  typedef landmark_varprime<Variable, Number> landmark_var_prime_t;
+  using landmark_t = landmark<Variable, Number>;
+  using landmark_var_prime_t = landmark_varprime<Variable, Number>;
 
 public:
   landmark_varprime(std::string lm, Variable v)
@@ -1011,8 +1007,8 @@ public:
 
 // Wrapper for landmark
 template <class Variable, class Number> class landmark_ref {
-  typedef landmark<Variable, Number> landmark_t;
-  typedef landmark_ref<Variable, Number> landmark_ref_t;
+  using landmark_t = landmark<Variable, Number>;
+  using landmark_ref_t = landmark_ref<Variable, Number>;
 
 public:
   // yeah I know this is bad ...
@@ -1121,8 +1117,8 @@ class array_graph_domain final
     : public abstract_domain<
           array_graph_domain<NumDom, Content, IsDistContent>> {
 public:
-  typedef typename NumDom::number_t number_t;
-  typedef typename NumDom::varname_t varname_t;
+  using number_t = typename NumDom::number_t;
+  using varname_t = typename NumDom::varname_t;
 
 private:
   static_assert(std::is_same<number_t, typename Content::number_t>::value,
@@ -1130,9 +1126,9 @@ private:
   static_assert(std::is_same<varname_t, typename Content::varname_t>::value,
                 "Scalar and Content domains must have the same varname type");
 
-  typedef array_graph_domain<NumDom, Content, IsDistContent>
-      array_graph_domain_t;
-  typedef abstract_domain<array_graph_domain_t> abstract_domain_t;
+  using array_graph_domain_t =
+      array_graph_domain<NumDom, Content, IsDistContent>;
+  using abstract_domain_t = abstract_domain<array_graph_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -1141,26 +1137,26 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  typedef typename NumDom::variable_t variable_t;
-  typedef typename NumDom::variable_vector_t variable_vector_t;
+  using variable_t = typename NumDom::variable_t;
+  using variable_vector_t = typename NumDom::variable_vector_t;
 
-  typedef landmark_cst<variable_t, number_t> landmark_cst_t;
-  typedef landmark_var<variable_t, number_t> landmark_var_t;
-  typedef landmark_varprime<variable_t, number_t> landmark_var_prime_t;
-  typedef landmark_ref<variable_t, number_t> landmark_ref_t;
-  typedef array_graph<landmark_ref_t, Content, IsDistContent> array_graph_t;
+  using landmark_cst_t = landmark_cst<variable_t, number_t>;
+  using landmark_var_t = landmark_var<variable_t, number_t>;
+  using landmark_var_prime_t = landmark_varprime<variable_t, number_t>;
+  using landmark_ref_t = landmark_ref<variable_t, number_t>;
+  using array_graph_t = array_graph<landmark_ref_t, Content, IsDistContent>;
 
   //// XXX: make this a template parameter later
-  typedef crab::cfg::var_factory_impl::str_var_alloc_col::varname_t
-      str_varname_t;
-  typedef ikos::interval_domain<ikos::z_number, str_varname_t>
-      str_interval_dom_t;
-  typedef term::TDomInfo<ikos::z_number, varname_t, str_interval_dom_t>
-      idom_info;
-  typedef term_domain<idom_info> expression_domain_t;
+  using str_varname_t =
+      crab::cfg::var_factory_impl::str_var_alloc_col::varname_t;
+  using str_interval_dom_t =
+      ikos::interval_domain<ikos::z_number, str_varname_t>;
+  using idom_info =
+      term::TDomInfo<ikos::z_number, varname_t, str_interval_dom_t>;
+  using expression_domain_t = term_domain<idom_info>;
 
 private:
-  typedef typename array_graph_t::mut_val_ref_t mut_val_ref_t;
+  using mut_val_ref_t = typename array_graph_t::mut_val_ref_t;
 
   // Quick wrapper to perform efficient unsat queries on the
   // scalar domain.
@@ -1205,22 +1201,20 @@ private:
       return p.second;
     }
   };
-  typedef boost::transform_iterator<get_first, typename lm_map_t::iterator>
-      lm_iterator;
-  typedef boost::transform_iterator<get_first,
-                                    typename lm_map_t::const_iterator>
-      lm_const_iterator;
+  using lm_iterator =
+      boost::transform_iterator<get_first, typename lm_map_t::iterator>;
+  using lm_const_iterator =
+      boost::transform_iterator<get_first, typename lm_map_t::const_iterator>;
 
-  typedef boost::transform_iterator<get_second, typename lm_map_t::iterator>
-      lm_prime_iterator;
-  typedef boost::transform_iterator<get_second,
-                                    typename lm_map_t::const_iterator>
-      lm_prime_const_iterator;
+  using lm_prime_iterator =
+      boost::transform_iterator<get_second, typename lm_map_t::iterator>;
+  using lm_prime_const_iterator =
+      boost::transform_iterator<get_second, typename lm_map_t::const_iterator>;
 
-  typedef boost::iterator_range<lm_iterator> lm_range;
-  typedef boost::iterator_range<lm_const_iterator> lm_const_range;
-  typedef boost::iterator_range<lm_prime_iterator> lm_prime_range;
-  typedef boost::iterator_range<lm_prime_const_iterator> lm_prime_const_range;
+  using lm_range = boost::iterator_range<lm_iterator>;
+  using lm_const_range = boost::iterator_range<lm_const_iterator>;
+  using lm_prime_range = boost::iterator_range<lm_prime_iterator>;
+  using lm_prime_const_range = boost::iterator_range<lm_prime_const_iterator>;
 
   lm_prime_iterator var_lm_prime_begin() {
     return boost::make_transform_iterator(s_var_landmarks.begin(),
@@ -1283,12 +1277,12 @@ private:
 public:
   template <class CFG> static void do_initialization(CFG cfg) {
 
-    typedef crab::analyzer::array_segmentation<CFG> array_segment_analysis_t;
-    typedef typename array_segment_analysis_t::array_segment_domain_t
-        array_segment_domain_t;
-    typedef crab::analyzer::array_constant_segment_visitor<
-        CFG, array_segment_domain_t>
-        array_cst_segment_visitor_t;
+    using array_segment_analysis_t = crab::analyzer::array_segmentation<CFG>;
+    using array_segment_domain_t =
+        typename array_segment_analysis_t::array_segment_domain_t;
+    using array_cst_segment_visitor_t =
+        crab::analyzer::array_constant_segment_visitor<CFG,
+                                                       array_segment_domain_t>;
 
     std::set<landmark_ref_t> lms;
 
@@ -2569,8 +2563,8 @@ public:
 template <typename Dom, typename Content, bool IsDistContent>
 struct abstract_domain_traits<array_graph_domain<Dom, Content, IsDistContent>> {
   // assume Dom::variable_t = Content::variable_t
-  typedef typename Dom::number_t number_t;
-  typedef typename Dom::varname_t varname_t;
+  using number_t = typename Dom::number_t;
+  using varname_t = typename Dom::varname_t;
 };
 
 template <typename Dom, typename Content, bool IsDistContent>

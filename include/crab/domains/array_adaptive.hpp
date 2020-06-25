@@ -76,7 +76,7 @@ public:
 
 // Trivial constant propagation lattice
 class cp_domain_t {
-  typedef ikos::bound<ikos::z_number> bound_t;
+  using bound_t = ikos::bound<ikos::z_number>;
 
   bool m_is_bottom;
   bound_t m_val;
@@ -270,7 +270,7 @@ public:
 class cell_t {
 private:
   friend class offset_map_t;
-  typedef ikos::interval<ikos::z_number> interval_t;
+  using interval_t = ikos::interval<ikos::z_number>;
   offset_t m_offset;
   uint64_t m_size;
   //// Boolean flag to indicate if the cell has been removed.  When
@@ -366,7 +366,7 @@ public:
     if (m_removed)
       return false;
 
-    typedef typename Dom::linear_expression_t linear_expression_t;
+    using linear_expression_t = typename Dom::linear_expression_t;
 
     interval_t x = to_interval();
     assert(x.lb().is_finite());
@@ -467,8 +467,8 @@ private:
   template <typename Dom, class Params>
   friend class crab::domains::array_adaptive_domain;
 
-  typedef std::set<cell_t> cell_set_t;
-  typedef crab::variable_type type_t;
+  using cell_set_t = std::set<cell_t>;
+  using type_t = crab::variable_type;
 
   /*
     The keys in the patricia tree are processing in big-endian
@@ -478,9 +478,9 @@ private:
     patterns, negative offsets can be used but they are treated
     as large unsigned numbers.
   */
-  typedef ikos::patricia_tree<offset_t, cell_set_t> patricia_tree_t;
-  typedef typename patricia_tree_t::binary_op_t binary_op_t;
-  typedef typename patricia_tree_t::partial_order_t partial_order_t;
+  using patricia_tree_t = ikos::patricia_tree<offset_t, cell_set_t>;
+  using binary_op_t = typename patricia_tree_t::binary_op_t;
+  using partial_order_t = typename patricia_tree_t::partial_order_t;
 
   patricia_tree_t m_map;
 
@@ -904,12 +904,12 @@ class array_adaptive_domain final
     : public abstract_domain<array_adaptive_domain<NumDomain, Params>> {
 
 public:
-  typedef typename NumDomain::number_t number_t;
-  typedef typename NumDomain::varname_t varname_t;
+  using number_t = typename NumDomain::number_t;
+  using varname_t = typename NumDomain::varname_t;
 
 private:
-  typedef array_adaptive_domain<NumDomain, Params> array_adaptive_domain_t;
-  typedef abstract_domain<array_adaptive_domain_t> abstract_domain_t;
+  using array_adaptive_domain_t = array_adaptive_domain<NumDomain, Params>;
+  using abstract_domain_t = abstract_domain<array_adaptive_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -918,16 +918,16 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  typedef typename NumDomain::variable_t variable_t;
-  typedef typename NumDomain::variable_vector_t variable_vector_t;
-  typedef array_smashing<NumDomain> base_domain_t;
+  using variable_t = typename NumDomain::variable_t;
+  using variable_vector_t = typename NumDomain::variable_vector_t;
+  using base_domain_t = array_smashing<NumDomain>;
 
 private:
-  typedef crab::variable_type type_t;
-  typedef array_adaptive_impl::offset_t offset_t;
-  typedef array_adaptive_impl::offset_map_t offset_map_t;
-  typedef array_adaptive_impl::cell_t cell_t;
-  typedef array_adaptive_impl::cp_domain_t cp_domain_t;
+  using type_t = crab::variable_type;
+  using offset_t = array_adaptive_impl::offset_t;
+  using offset_map_t = array_adaptive_impl::offset_map_t;
+  using cell_t = array_adaptive_impl::cell_t;
+  using cp_domain_t = array_adaptive_impl::cp_domain_t;
   struct cell_varmap_hasher {
     std::size_t operator()(const std::pair<variable_t, cell_t> &p) const {
       size_t h1 = p.first.hash();
@@ -941,10 +941,10 @@ private:
       return ((p1.first == p2.first) ? p1.second == p2.second : false);
     }
   };
-  typedef std::unordered_map<std::pair<variable_t, cell_t>, variable_t,
-                             cell_varmap_hasher, cell_varmap_equal>
-      cell_varmap_t;
-  typedef std::unordered_map<variable_t, variable_t> smashed_varmap_t;
+  using cell_varmap_t =
+      std::unordered_map<std::pair<variable_t, cell_t>, variable_t,
+                         cell_varmap_hasher, cell_varmap_equal>;
+  using smashed_varmap_t = std::unordered_map<variable_t, variable_t>;
 
   class array_state {
     // whether the array has been smashed
@@ -1241,11 +1241,11 @@ private:
 
   class array_state_map_t {
   private:
-    typedef ikos::patricia_tree<variable_t, array_state> patricia_tree_t;
-    typedef typename patricia_tree_t::key_binary_op_t key_binary_op_t;
+    using patricia_tree_t = ikos::patricia_tree<variable_t, array_state>;
+    using key_binary_op_t = typename patricia_tree_t::key_binary_op_t;
 
   public:
-    typedef typename patricia_tree_t::iterator iterator;
+    using iterator = typename patricia_tree_t::iterator;
 
   private:
     patricia_tree_t m_tree;
@@ -1468,7 +1468,7 @@ private:
     return c;
   }
 
-  typedef boost::optional<variable_t> variable_opt_t;
+  using variable_opt_t = boost::optional<variable_t>;
   variable_opt_t
   get_scalar(const std::pair<const variable_t &, const cell_t &> &p) {
     if (!p.first.is_array_type()) {
@@ -3269,18 +3269,18 @@ public:
 
 template <typename Dom, class Params>
 struct abstract_domain_traits<array_adaptive_domain<Dom, Params>> {
-  typedef typename Dom::number_t number_t;
-  typedef typename Dom::varname_t varname_t;
+  using number_t = typename Dom::number_t;
+  using varname_t = typename Dom::varname_t;
 };
 
 template <typename Dom, class Params>
 class checker_domain_traits<array_adaptive_domain<Dom, Params>> {
 public:
-  typedef array_adaptive_domain<Dom, Params> this_type;
-  typedef typename this_type::base_domain_t base_domain_t;
-  typedef typename this_type::linear_constraint_t linear_constraint_t;
-  typedef typename this_type::disjunctive_linear_constraint_system_t
-      disjunctive_linear_constraint_system_t;
+  using this_type = array_adaptive_domain<Dom, Params>;
+  using base_domain_t = typename this_type::base_domain_t;
+  using linear_constraint_t = typename this_type::linear_constraint_t;
+  using disjunctive_linear_constraint_system_t =
+      typename this_type::disjunctive_linear_constraint_system_t;
 
   static bool entail(this_type &lhs,
                      const disjunctive_linear_constraint_system_t &rhs) {

@@ -16,8 +16,8 @@ template <typename G>
 struct mk_in_edge : public std::unary_function<
                         typename boost::graph_traits<G>::vertex_descriptor,
                         typename boost::graph_traits<G>::edge_descriptor> {
-  typedef typename boost::graph_traits<G>::vertex_descriptor Node;
-  typedef typename boost::graph_traits<G>::edge_descriptor Edge;
+  using Node = typename boost::graph_traits<G>::vertex_descriptor;
+  using Edge = typename boost::graph_traits<G>::edge_descriptor;
 
   Node _dst;
   mk_in_edge() {}
@@ -29,8 +29,8 @@ template <typename G>
 struct mk_out_edge : public std::unary_function<
                          typename boost::graph_traits<G>::vertex_descriptor,
                          typename boost::graph_traits<G>::edge_descriptor> {
-  typedef typename boost::graph_traits<G>::vertex_descriptor Node;
-  typedef typename boost::graph_traits<G>::edge_descriptor Edge;
+  using Node = typename boost::graph_traits<G>::vertex_descriptor;
+  using Edge = typename boost::graph_traits<G>::edge_descriptor;
 
   Node _src;
   mk_out_edge() {}
@@ -46,21 +46,21 @@ namespace boost {
 // cfg
 template <typename BasicBlockLabel, typename VariableName, typename Number>
 struct graph_traits<crab::cfg::cfg<BasicBlockLabel, VariableName, Number>> {
-  typedef crab::cfg::cfg<BasicBlockLabel, VariableName, Number> graph_t;
-  typedef BasicBlockLabel vertex_descriptor;
-  typedef std::pair<vertex_descriptor, vertex_descriptor> edge_descriptor;
-  typedef std::pair<const vertex_descriptor, const vertex_descriptor>
-      const_edge_descriptor;
+  using graph_t = crab::cfg::cfg<BasicBlockLabel, VariableName, Number>;
+  using vertex_descriptor = BasicBlockLabel;
+  using edge_descriptor = std::pair<vertex_descriptor, vertex_descriptor>;
+  using const_edge_descriptor =
+      std::pair<const vertex_descriptor, const vertex_descriptor>;
 
-  typedef disallow_parallel_edge_tag edge_parallel_category;
-  typedef bidirectional_tag directed_category;
+  using edge_parallel_category = disallow_parallel_edge_tag;
+  using directed_category = bidirectional_tag;
   struct this_graph_tag : virtual bidirectional_graph_tag,
                           virtual vertex_list_graph_tag {};
-  typedef this_graph_tag traversal_category;
+  using traversal_category = this_graph_tag;
 
-  typedef size_t vertices_size_type;
-  typedef size_t edges_size_type;
-  typedef size_t degree_size_type;
+  using vertices_size_type = size_t;
+  using edges_size_type = size_t;
+  using degree_size_type = size_t;
 
   static vertex_descriptor null_vertex() {
     if (std::is_pointer<vertex_descriptor>::value)
@@ -76,34 +76,34 @@ struct graph_traits<crab::cfg::cfg<BasicBlockLabel, VariableName, Number>> {
   }
 
   // iterator of basic_block_label_t's
-  typedef typename graph_t::label_iterator vertex_iterator;
+  using vertex_iterator = typename graph_t::label_iterator;
   // iterator of pairs of basic_block_label_t's
-  typedef transform_iterator<crab::cfg::graph::mk_in_edge<graph_t>,
-                             typename graph_t::pred_iterator>
-      in_edge_iterator;
+  using in_edge_iterator =
+      transform_iterator<crab::cfg::graph::mk_in_edge<graph_t>,
+                         typename graph_t::pred_iterator>;
   // iterator of pairs of basic_block_label_t's
-  typedef transform_iterator<crab::cfg::graph::mk_out_edge<graph_t>,
-                             typename graph_t::succ_iterator>
-      out_edge_iterator;
+  using out_edge_iterator =
+      transform_iterator<crab::cfg::graph::mk_out_edge<graph_t>,
+                         typename graph_t::succ_iterator>;
 }; // end class graph_traits
 
 // cfg_ref
 template <class CFG> struct graph_traits<crab::cfg::cfg_ref<CFG>> {
-  typedef crab::cfg::cfg_ref<CFG> graph_t;
-  typedef typename graph_t::basic_block_label_t vertex_descriptor;
-  typedef std::pair<vertex_descriptor, vertex_descriptor> edge_descriptor;
-  typedef std::pair<const vertex_descriptor, const vertex_descriptor>
-      const_edge_descriptor;
+  using graph_t = crab::cfg::cfg_ref<CFG>;
+  using vertex_descriptor = typename graph_t::basic_block_label_t;
+  using edge_descriptor = std::pair<vertex_descriptor, vertex_descriptor>;
+  using const_edge_descriptor =
+      std::pair<const vertex_descriptor, const vertex_descriptor>;
 
-  typedef disallow_parallel_edge_tag edge_parallel_category;
-  typedef bidirectional_tag directed_category;
+  using edge_parallel_category = disallow_parallel_edge_tag;
+  using directed_category = bidirectional_tag;
   struct this_graph_tag : virtual bidirectional_graph_tag,
                           virtual vertex_list_graph_tag {};
-  typedef this_graph_tag traversal_category;
+  using traversal_category = this_graph_tag;
 
-  typedef size_t vertices_size_type;
-  typedef size_t edges_size_type;
-  typedef size_t degree_size_type;
+  using vertices_size_type = size_t;
+  using edges_size_type = size_t;
+  using degree_size_type = size_t;
 
   static vertex_descriptor null_vertex() {
     if (std::is_pointer<vertex_descriptor>::value)
@@ -118,32 +118,32 @@ template <class CFG> struct graph_traits<crab::cfg::cfg_ref<CFG>> {
     }
   }
 
-  typedef typename graph_t::label_iterator vertex_iterator;
-  typedef boost::transform_iterator<crab::cfg::graph::mk_in_edge<graph_t>,
-                                    typename graph_t::pred_iterator>
-      in_edge_iterator;
-  typedef boost::transform_iterator<crab::cfg::graph::mk_out_edge<graph_t>,
-                                    typename graph_t::succ_iterator>
-      out_edge_iterator;
-}; // end class graph_traits
+  using vertex_iterator = typename graph_t::label_iterator;
+  using in_edge_iterator =
+      boost::transform_iterator<crab::cfg::graph::mk_in_edge<graph_t>,
+                                typename graph_t::pred_iterator>;
+  using out_edge_iterator =
+      boost::transform_iterator<crab::cfg::graph::mk_out_edge<graph_t>,
+                                typename graph_t::succ_iterator>;
+}; // end class graph_traits;
 
 // cfg_rev
 template <class CFG> struct graph_traits<crab::cfg::cfg_rev<CFG>> {
-  typedef crab::cfg::cfg_rev<CFG> graph_t;
-  typedef typename graph_t::basic_block_label_t vertex_descriptor;
-  typedef std::pair<vertex_descriptor, vertex_descriptor> edge_descriptor;
-  typedef std::pair<const vertex_descriptor, const vertex_descriptor>
-      const_edge_descriptor;
+  using graph_t = crab::cfg::cfg_rev<CFG>;
+  using vertex_descriptor = typename graph_t::basic_block_label_t;
+  using edge_descriptor = std::pair<vertex_descriptor, vertex_descriptor>;
+  using const_edge_descriptor =
+      std::pair<const vertex_descriptor, const vertex_descriptor>;
 
-  typedef disallow_parallel_edge_tag edge_parallel_category;
-  typedef bidirectional_tag directed_category;
+  using edge_parallel_category = disallow_parallel_edge_tag;
+  using directed_category = bidirectional_tag;
   struct this_graph_tag : virtual bidirectional_graph_tag,
                           virtual vertex_list_graph_tag {};
-  typedef this_graph_tag traversal_category;
+  using traversal_category = this_graph_tag;
 
-  typedef size_t vertices_size_type;
-  typedef size_t edges_size_type;
-  typedef size_t degree_size_type;
+  using vertices_size_type = size_t;
+  using edges_size_type = size_t;
+  using degree_size_type = size_t;
 
   static vertex_descriptor null_vertex() {
     if (std::is_pointer<vertex_descriptor>::value)
@@ -158,13 +158,13 @@ template <class CFG> struct graph_traits<crab::cfg::cfg_rev<CFG>> {
     }
   }
 
-  typedef typename graph_t::label_iterator vertex_iterator;
-  typedef boost::transform_iterator<crab::cfg::graph::mk_in_edge<graph_t>,
-                                    typename graph_t::pred_iterator>
-      in_edge_iterator;
-  typedef boost::transform_iterator<crab::cfg::graph::mk_out_edge<graph_t>,
-                                    typename graph_t::succ_iterator>
-      out_edge_iterator;
+  using vertex_iterator = typename graph_t::label_iterator;
+  using in_edge_iterator =
+      boost::transform_iterator<crab::cfg::graph::mk_in_edge<graph_t>,
+                                typename graph_t::pred_iterator>;
+  using out_edge_iterator =
+      boost::transform_iterator<crab::cfg::graph::mk_out_edge<graph_t>,
+                                typename graph_t::succ_iterator>;
 }; // end class graph_traits
 } // namespace boost
 
@@ -202,7 +202,7 @@ inline std::pair<typename boost::graph_traits<cfg<BasicBlockLabel, VariableName,
 out_edges(typename boost::graph_traits<
               cfg<BasicBlockLabel, VariableName, Number>>::vertex_descriptor v,
           cfg<BasicBlockLabel, VariableName, Number> g) {
-  typedef cfg<BasicBlockLabel, VariableName, Number> G;
+  using G = cfg<BasicBlockLabel, VariableName, Number>;
 
   auto &node = g.get_node(v);
   auto p = node.next_blocks();
@@ -219,7 +219,7 @@ inline std::pair<typename boost::graph_traits<cfg<BasicBlockLabel, VariableName,
 in_edges(typename boost::graph_traits<
              cfg<BasicBlockLabel, VariableName, Number>>::vertex_descriptor v,
          cfg<BasicBlockLabel, VariableName, Number> g) {
-  typedef cfg<BasicBlockLabel, VariableName, Number> G;
+  using G = cfg<BasicBlockLabel, VariableName, Number>;
 
   auto &node = g.get_node(v);
   auto p = node.prev_blocks();
@@ -288,7 +288,7 @@ inline std::pair<typename boost::graph_traits<cfg_ref<CFG>>::out_edge_iterator,
                  typename boost::graph_traits<cfg_ref<CFG>>::out_edge_iterator>
 out_edges(typename boost::graph_traits<cfg_ref<CFG>>::vertex_descriptor v,
           cfg_ref<CFG> g) {
-  typedef cfg_ref<CFG> G;
+  using G = cfg_ref<CFG>;
   auto &node = g.get_node(v);
   auto p = node.next_blocks();
   return std::make_pair(
@@ -301,7 +301,7 @@ inline std::pair<typename boost::graph_traits<cfg_ref<CFG>>::in_edge_iterator,
                  typename boost::graph_traits<cfg_ref<CFG>>::in_edge_iterator>
 in_edges(typename boost::graph_traits<cfg_ref<CFG>>::vertex_descriptor v,
          cfg_ref<CFG> g) {
-  typedef cfg_ref<CFG> G;
+  using G = cfg_ref<CFG>;
   auto &node = g.get_node(v);
   auto p = node.prev_blocks();
   return std::make_pair(
@@ -362,7 +362,7 @@ inline std::pair<typename boost::graph_traits<cfg_rev<CFG>>::out_edge_iterator,
                  typename boost::graph_traits<cfg_rev<CFG>>::out_edge_iterator>
 out_edges(typename boost::graph_traits<cfg_rev<CFG>>::vertex_descriptor v,
           cfg_rev<CFG> g) {
-  typedef cfg_rev<CFG> G;
+  using G = cfg_rev<CFG>;
   auto &node = g.get_node(v);
   auto p = node.next_blocks();
   return std::make_pair(
@@ -375,7 +375,7 @@ inline std::pair<typename boost::graph_traits<cfg_rev<CFG>>::in_edge_iterator,
                  typename boost::graph_traits<cfg_rev<CFG>>::in_edge_iterator>
 in_edges(typename boost::graph_traits<cfg_rev<CFG>>::vertex_descriptor v,
          cfg_rev<CFG> g) {
-  typedef cfg_rev<CFG> G;
+  using G = cfg_rev<CFG>;
   auto &node = g.get_node(v);
   auto p = node.prev_blocks();
   return std::make_pair(

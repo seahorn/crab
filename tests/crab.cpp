@@ -14,7 +14,7 @@ void intra_run_impl(CFG *cfg, crab::cfg_impl::basic_block_label_t entry,
                     Dom init, bool run_liveness, unsigned widening,
                     unsigned narrowing, unsigned jump_set_size,
                     bool enable_stats, bool enable_checker) {
-  typedef crab::cfg::cfg_ref<CFG> cfg_ref_t;
+  using cfg_ref_t = crab::cfg::cfg_ref<CFG>;
   crab::analyzer::live_and_dead_analysis<cfg_ref_t> live(*cfg);
   if (run_liveness) {
     live.exec();
@@ -60,9 +60,9 @@ void intra_run_impl(CFG *cfg, crab::cfg_impl::basic_block_label_t entry,
   crab::outs() << "Abstract trace: " << wto << "\n";
 
   if (enable_checker) {
-    typedef crab::checker::intra_checker<IntraFwdAnalyzer> checker_t;
-    typedef crab::checker::assert_property_checker<IntraFwdAnalyzer>
-        assert_checker_t;
+    using checker_t = crab::checker::intra_checker<IntraFwdAnalyzer>;
+    using assert_checker_t =
+        crab::checker::assert_property_checker<IntraFwdAnalyzer>;
     const int verbose = 3;
     typename checker_t::prop_checker_ptr prop(new assert_checker_t(verbose));
     checker_t checker(a, {prop});
@@ -84,8 +84,8 @@ void z_intra_run(crab::cfg_impl::z_cfg_t *cfg,
                  unsigned jump_set_size, bool enable_stats,
                  bool enable_checker) {
   using namespace crab::analyzer;
-  typedef intra_fwd_analyzer<crab::cfg_impl::z_cfg_ref_t, Dom>
-      intra_fwd_analyzer_t;
+  using intra_fwd_analyzer_t =
+      intra_fwd_analyzer<crab::cfg_impl::z_cfg_ref_t, Dom>;
   intra_run_impl<crab::cfg_impl::z_cfg_t, Dom, intra_fwd_analyzer_t>(
       cfg, entry, init, run_liveness, widening, narrowing, jump_set_size,
       enable_stats, enable_checker);
@@ -98,8 +98,8 @@ void q_intra_run(crab::cfg_impl::q_cfg_t *cfg,
                  unsigned jump_set_size, bool enable_stats,
                  bool enable_checker) {
   using namespace crab::analyzer;
-  typedef intra_fwd_analyzer<crab::cfg_impl::q_cfg_ref_t, Dom>
-      intra_fwd_analyzer_t;
+  using intra_fwd_analyzer_t =
+      intra_fwd_analyzer<crab::cfg_impl::q_cfg_ref_t, Dom>;
   intra_run_impl<crab::cfg_impl::q_cfg_t, Dom, intra_fwd_analyzer_t>(
       cfg, entry, init, run_liveness, widening, narrowing, jump_set_size,
       enable_stats, enable_checker);

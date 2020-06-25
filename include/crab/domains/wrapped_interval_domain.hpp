@@ -30,7 +30,7 @@ template <typename Number> class wrapped_interval {
   wrapint _stop;
   bool _is_bottom;
 
-  typedef wrapped_interval<Number> wrapped_interval_t;
+  using wrapped_interval_t = wrapped_interval<Number>;
 
   wrapped_interval_t default_implementation(wrapped_interval_t x) const {
     if (is_bottom() || x.is_bottom()) {
@@ -359,7 +359,7 @@ template <typename Number> class wrapped_interval {
   //   : _start(wrapint(n,w)), _stop(wrapint(n, w)), _is_bottom(false) {}
 
 public:
-  typedef wrapint::bitwidth_t bitwidth_t;
+  using bitwidth_t = wrapint::bitwidth_t;
 
   wrapped_interval(wrapint n) : _start(n), _stop(n), _is_bottom(false) {}
 
@@ -469,7 +469,7 @@ public:
   // Important: we make the choice here that we interpret wrapint as
   // signed mathematical integers.
   ikos::interval<Number> to_interval() const {
-    typedef ikos::interval<Number> interval_t;
+    using interval_t = ikos::interval<Number>;
     if (is_bottom()) {
       return interval_t::bottom();
     } else if (is_top() || (cross_signed_limit())) {
@@ -808,7 +808,7 @@ public:
         new_stop = (_stop * wrapint(2, w)) - _start + wrapint(1, w);
       }
       // Apply thresholds
-      typedef typename ikos::interval<Number>::bound_t bound_t;
+      using bound_t = typename ikos::interval<Number>::bound_t;
       bound_t next_stop_bound_guess =
           ts.get_next(bound_t(x._stop.get_unsigned_bignum()));
       if (boost::optional<Number> n = next_stop_bound_guess.number()) {
@@ -1204,8 +1204,8 @@ inline crab::crab_os &operator<<(crab::crab_os &o,
 
 namespace ikos {
 namespace linear_interval_solver_impl {
-typedef crab::domains::wrapped_interval<z_number> z_wrapped_interval_t;
-typedef crab::domains::wrapped_interval<q_number> q_wrapped_interval_t;
+using z_wrapped_interval_t = crab::domains::wrapped_interval<z_number>;
+using q_wrapped_interval_t = crab::domains::wrapped_interval<q_number>;
 
 template <>
 inline z_wrapped_interval_t mk_interval(z_number c,
@@ -1295,9 +1295,9 @@ template <typename Number, typename VariableName,
 class wrapped_interval_domain final
     : public abstract_domain<
           wrapped_interval_domain<Number, VariableName, max_reduction_cycles>> {
-  typedef wrapped_interval_domain<Number, VariableName, max_reduction_cycles>
-      wrapped_interval_domain_t;
-  typedef abstract_domain<wrapped_interval_domain_t> abstract_domain_t;
+  using wrapped_interval_domain_t =
+      wrapped_interval_domain<Number, VariableName, max_reduction_cycles>;
+  using abstract_domain_t = abstract_domain<wrapped_interval_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -1308,19 +1308,19 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef Number number_t;
-  typedef VariableName varname_t;
-  typedef wrapped_interval<number_t> wrapped_interval_t;
-  typedef typename wrapped_interval_t::bitwidth_t bitwidth_t;
+  using number_t = Number;
+  using varname_t = VariableName;
+  using wrapped_interval_t = wrapped_interval<number_t>;
+  using bitwidth_t = typename wrapped_interval_t::bitwidth_t;
 
 private:
-  typedef ikos::separate_domain<variable_t, wrapped_interval_t>
-      separate_domain_t;
-  typedef ikos::linear_interval_solver<number_t, varname_t, separate_domain_t>
-      solver_t;
+  using separate_domain_t =
+      ikos::separate_domain<variable_t, wrapped_interval_t>;
+  using solver_t =
+      ikos::linear_interval_solver<number_t, varname_t, separate_domain_t>;
 
 public:
-  typedef typename separate_domain_t::iterator iterator;
+  using iterator = typename separate_domain_t::iterator;
 
 private:
   separate_domain_t _env;
@@ -1954,17 +1954,17 @@ public:
 
 template <typename Number, typename VariableName>
 struct abstract_domain_traits<wrapped_interval_domain<Number, VariableName>> {
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using number_t = Number;
+  using varname_t = VariableName;
 };
 
 template <typename Number, typename VariableName>
 class constraint_simp_domain_traits<
     wrapped_interval_domain<Number, VariableName>> {
 public:
-  typedef ikos::linear_constraint<Number, VariableName> linear_constraint_t;
-  typedef ikos::linear_constraint_system<Number, VariableName>
-      linear_constraint_system_t;
+  using linear_constraint_t = ikos::linear_constraint<Number, VariableName>;
+  using linear_constraint_system_t =
+      ikos::linear_constraint_system<Number, VariableName>;
 
   static void lower_equality(linear_constraint_t cst,
                              linear_constraint_system_t &csts) {
@@ -2009,12 +2009,12 @@ class wrapped_interval_limit_value {
 
   // bottom is left outside intentionally so the join (meet) is simply
   // bitwise-or (and).
-  typedef enum {
+  using kind_t = enum {
     NC = 0x0,
     CS = 0x1,
     CU = 0x2,
     CSU = 0x3 /*top*/
-  } kind_t;
+  };
 
   kind_t _value;
   bool _is_bottom;
@@ -2191,10 +2191,9 @@ template <typename Number, typename VariableName,
 class wrapped_interval_with_history_domain final
     : public abstract_domain<wrapped_interval_with_history_domain<
           Number, VariableName, max_reduction_cycles>> {
-  typedef wrapped_interval_with_history_domain<Number, VariableName,
-                                               max_reduction_cycles>
-      this_type;
-  typedef abstract_domain<this_type> abstract_domain_t;
+  using this_type = wrapped_interval_with_history_domain<Number, VariableName,
+                                                         max_reduction_cycles>;
+  using abstract_domain_t = abstract_domain<this_type>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -2205,16 +2204,16 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef Number number_t;
-  typedef VariableName varname_t;
-  typedef wrapped_interval<number_t> wrapped_interval_t;
-  typedef wrapped_interval_domain<number_t, varname_t, max_reduction_cycles>
-      wrapped_interval_domain_t;
+  using number_t = Number;
+  using varname_t = VariableName;
+  using wrapped_interval_t = wrapped_interval<number_t>;
+  using wrapped_interval_domain_t =
+      wrapped_interval_domain<number_t, varname_t, max_reduction_cycles>;
 
 private:
-  typedef ikos::separate_domain<variable_t, wrapped_interval_limit_value>
-      separate_domain_t;
-  typedef ikos::discrete_domain<variable_t> discrete_domain_t;
+  using separate_domain_t =
+      ikos::separate_domain<variable_t, wrapped_interval_limit_value>;
+  using discrete_domain_t = ikos::discrete_domain<variable_t>;
 
   wrapped_interval_domain_t _w_int_dom;
   // Map each variable to which limit was crossed.
@@ -2830,17 +2829,17 @@ public:
 
 template <typename N, typename V, std::size_t M>
 struct abstract_domain_traits<wrapped_interval_with_history_domain<N, V, M>> {
-  typedef N number_t;
-  typedef V varname_t;
+  using number_t = N;
+  using varname_t = V;
 };
 
 template <typename N, typename V, std::size_t M>
 class checker_domain_traits<wrapped_interval_with_history_domain<N, V, M>> {
 public:
-  typedef wrapped_interval_with_history_domain<N, V, M> this_type;
-  typedef typename this_type::linear_constraint_t linear_constraint_t;
-  typedef typename this_type::disjunctive_linear_constraint_system_t
-      disjunctive_linear_constraint_system_t;
+  using this_type = wrapped_interval_with_history_domain<N, V, M>;
+  using linear_constraint_t = typename this_type::linear_constraint_t;
+  using disjunctive_linear_constraint_system_t =
+      typename this_type::disjunctive_linear_constraint_system_t;
 
   static bool entail(this_type &lhs,
                      const disjunctive_linear_constraint_system_t &rhs) {
@@ -2881,8 +2880,8 @@ public:
 template <typename NumDom, std::size_t max_reduction_cycles = 10>
 class wrapped_numerical_domain final
     : public abstract_domain<wrapped_numerical_domain<NumDom>> {
-  typedef wrapped_numerical_domain<NumDom> wrapped_numerical_domain_t;
-  typedef abstract_domain<wrapped_numerical_domain_t> abstract_domain_t;
+  using wrapped_numerical_domain_t = wrapped_numerical_domain<NumDom>;
+  using abstract_domain_t = abstract_domain<wrapped_numerical_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -2893,19 +2892,18 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef typename NumDom::number_t number_t;
-  typedef typename NumDom::varname_t varname_t;
-  typedef typename variable_t::bitwidth_t bitwidth_t;
+  using number_t = typename NumDom::number_t;
+  using varname_t = typename NumDom::varname_t;
+  using bitwidth_t = typename variable_t::bitwidth_t;
 
 private:
-  typedef wrapped_interval_with_history_domain<number_t, varname_t,
-                                               max_reduction_cycles>
-      wrapped_interval_domain_t;
-  typedef wrapped_interval<number_t> wrapped_interval_t;
-  typedef enum { UNKNOWN_SIGNEDNESS, SIGNED, UNSIGNED } signedness_t;
-  typedef domain_product2<number_t, varname_t, wrapped_interval_domain_t,
-                          NumDom>
-      domain_product2_t;
+  using wrapped_interval_domain_t =
+      wrapped_interval_with_history_domain<number_t, varname_t,
+                                           max_reduction_cycles>;
+  using wrapped_interval_t = wrapped_interval<number_t>;
+  using signedness_t = enum { UNKNOWN_SIGNEDNESS, SIGNED, UNSIGNED };
+  using domain_product2_t =
+      domain_product2<number_t, varname_t, wrapped_interval_domain_t, NumDom>;
 
   domain_product2_t _product;
 
@@ -3612,17 +3610,17 @@ public:
 
 template <typename AbsDom>
 struct abstract_domain_traits<wrapped_numerical_domain<AbsDom>> {
-  typedef typename AbsDom::number_t number_t;
-  typedef typename AbsDom::varname_t varname_t;
+  using number_t = typename AbsDom::number_t;
+  using varname_t = typename AbsDom::varname_t;
 };
 
 template <typename AbsDom>
 class checker_domain_traits<wrapped_numerical_domain<AbsDom>> {
 public:
-  typedef wrapped_numerical_domain<AbsDom> this_type;
-  typedef typename this_type::linear_constraint_t linear_constraint_t;
-  typedef typename this_type::disjunctive_linear_constraint_system_t
-      disjunctive_linear_constraint_system_t;
+  using this_type = wrapped_numerical_domain<AbsDom>;
+  using linear_constraint_t = typename this_type::linear_constraint_t;
+  using disjunctive_linear_constraint_system_t =
+      typename this_type::disjunctive_linear_constraint_system_t;
 
   static bool entail(this_type &lhs,
                      const disjunctive_linear_constraint_system_t &rhs) {

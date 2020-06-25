@@ -35,9 +35,9 @@ namespace domains {
 template <typename Domain1, typename Domain2> class basic_domain_product2 {
 
 public:
-  typedef basic_domain_product2<Domain1, Domain2> basic_domain_product2_t;
-  typedef Domain1 first_type;
-  typedef Domain2 second_type;
+  using basic_domain_product2_t = basic_domain_product2<Domain1, Domain2>;
+  using first_type = Domain1;
+  using second_type = Domain2;
 
 private:
   bool _is_bottom;
@@ -230,11 +230,11 @@ class domain_product2 final
     : public abstract_domain<
           domain_product2<Number, VariableName, Domain1, Domain2>> {
 public:
-  typedef domain_product2<Number, VariableName, Domain1, Domain2>
-      domain_product2_t;
-  typedef abstract_domain<domain_product2_t> abstract_domain_t;
-  typedef Domain1 first_type;
-  typedef Domain2 second_type;
+  using domain_product2_t =
+      domain_product2<Number, VariableName, Domain1, Domain2>;
+  using abstract_domain_t = abstract_domain<domain_product2_t>;
+  using first_type = Domain1;
+  using second_type = Domain2;
 
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_t::interval_t;
@@ -244,11 +244,11 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using number_t = Number;
+  using varname_t = VariableName;
 
 private:
-  typedef basic_domain_product2<Domain1, Domain2> basic_domain_product2_t;
+  using basic_domain_product2_t = basic_domain_product2<Domain1, Domain2>;
 
   basic_domain_product2_t _product;
 
@@ -777,10 +777,10 @@ class reduced_numerical_domain_product2 final
           reduced_numerical_domain_product2<Domain1, Domain2, Params>> {
 
 public:
-  typedef reduced_numerical_domain_product2<Domain1, Domain2, Params>
-      reduced_numerical_domain_product2_t;
-  typedef abstract_domain<reduced_numerical_domain_product2_t>
-      abstract_domain_t;
+  using reduced_numerical_domain_product2_t =
+      reduced_numerical_domain_product2<Domain1, Domain2, Params>;
+  using abstract_domain_t =
+      abstract_domain<reduced_numerical_domain_product2_t>;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_t::interval_t;
   using typename abstract_domain_t::linear_constraint_system_t;
@@ -789,8 +789,8 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef typename Domain1::number_t number_t;
-  typedef typename Domain1::varname_t varname_t;
+  using number_t = typename Domain1::number_t;
+  using varname_t = typename Domain1::varname_t;
 
   static_assert(std::is_same<number_t, typename Domain2::number_t>::value,
                 "Domain1 and Domain2 must have same type for number_t");
@@ -798,8 +798,8 @@ public:
                 "Domain1 and Domain2 must have same type for varname_t");
 
 private:
-  typedef domain_product2<number_t, varname_t, Domain1, Domain2>
-      domain_product2_t;
+  using domain_product2_t =
+      domain_product2<number_t, varname_t, Domain1, Domain2>;
 
   domain_product2_t _product;
 
@@ -1306,12 +1306,12 @@ public:
  */
 template <typename Number> class interval_congruence {
 public:
-  typedef interval_congruence<Number> interval_congruence_t;
+  using interval_congruence_t = interval_congruence<Number>;
 
 private:
-  typedef ikos::interval<Number> interval_t;
-  typedef ikos::congruence<Number> congruence_t;
-  typedef ikos::bound<Number> bound_t;
+  using interval_t = ikos::interval<Number>;
+  using congruence_t = ikos::congruence<Number>;
+  using bound_t = ikos::bound<Number>;
 
 private:
   interval_t _first;
@@ -1581,8 +1581,8 @@ template <typename NumAbsDom>
 class numerical_congruence_domain final
     : public abstract_domain<numerical_congruence_domain<NumAbsDom>> {
 
-  typedef numerical_congruence_domain<NumAbsDom> rnc_domain_t;
-  typedef abstract_domain<rnc_domain_t> abstract_domain_t;
+  using rnc_domain_t = numerical_congruence_domain<NumAbsDom>;
+  using abstract_domain_t = abstract_domain<rnc_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -1593,15 +1593,15 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef typename NumAbsDom::number_t number_t;
-  typedef typename NumAbsDom::varname_t varname_t;
+  using number_t = typename NumAbsDom::number_t;
+  using varname_t = typename NumAbsDom::varname_t;
 
-  typedef ikos::congruence_domain<number_t, varname_t> congruence_domain_t;
-  typedef interval_congruence<number_t> interval_congruence_t;
+  using congruence_domain_t = ikos::congruence_domain<number_t, varname_t>;
+  using interval_congruence_t = interval_congruence<number_t>;
 
 private:
-  typedef domain_product2<number_t, varname_t, NumAbsDom, congruence_domain_t>
-      domain_product2_t;
+  using domain_product2_t =
+      domain_product2<number_t, varname_t, NumAbsDom, congruence_domain_t>;
 
   domain_product2_t _product;
 
@@ -1943,21 +1943,21 @@ template <typename Number, typename VariableName, typename Domain1,
           typename Domain2>
 struct abstract_domain_traits<
     domain_product2<Number, VariableName, Domain1, Domain2>> {
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using number_t = Number;
+  using varname_t = VariableName;
 };
 
 template <typename Domain1, typename Domain2, class Params>
 struct abstract_domain_traits<
     reduced_numerical_domain_product2<Domain1, Domain2, Params>> {
-  typedef typename Domain1::number_t number_t;
-  typedef typename Domain1::varname_t varname_t;
+  using number_t = typename Domain1::number_t;
+  using varname_t = typename Domain1::varname_t;
 };
 
 template <typename NumAbsDom>
 struct abstract_domain_traits<numerical_congruence_domain<NumAbsDom>> {
-  typedef typename NumAbsDom::number_t number_t;
-  typedef typename NumAbsDom::varname_t varname_t;
+  using number_t = typename NumAbsDom::number_t;
+  using varname_t = typename NumAbsDom::varname_t;
 };
 
 } // end namespace domains

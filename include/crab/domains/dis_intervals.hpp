@@ -25,17 +25,17 @@ namespace domains {
 template <typename Number> class dis_interval {
 
 public:
-  typedef ikos::bound<Number> bound_t;
-  typedef ikos::interval<Number> interval_t;
-  typedef dis_interval<Number> dis_interval_t;
+  using bound_t = ikos::bound<Number>;
+  using interval_t = ikos::interval<Number>;
+  using dis_interval_t = dis_interval<Number>;
 
 private:
-  typedef enum { BOT, FINITE, TOP } state_t;
-  typedef std::vector<interval_t> list_intervals_t;
+  using state_t = enum { BOT, FINITE, TOP };
+  using list_intervals_t = std::vector<interval_t>;
 
 public:
-  typedef typename list_intervals_t::iterator iterator;
-  typedef typename list_intervals_t::const_iterator const_iterator;
+  using iterator = typename list_intervals_t::iterator;
+  using const_iterator = typename list_intervals_t::const_iterator;
 
 private:
   state_t _state;
@@ -984,8 +984,8 @@ namespace ikos {
 namespace linear_interval_solver_impl {
 /// --- for interval solver of disequalities
 
-typedef crab::domains::dis_interval<z_number> dis_z_interval_t;
-typedef crab::domains::dis_interval<q_number> dis_q_interval_t;
+using dis_z_interval_t = crab::domains::dis_interval<z_number>;
+using dis_q_interval_t = crab::domains::dis_interval<q_number>;
 
 template <>
 inline dis_z_interval_t trim_interval(dis_z_interval_t x, dis_z_interval_t y) {
@@ -1062,8 +1062,8 @@ namespace domains {
 template <typename Number, typename VariableName>
 class dis_interval_domain final
     : public abstract_domain<dis_interval_domain<Number, VariableName>> {
-  typedef dis_interval_domain<Number, VariableName> dis_interval_domain_t;
-  typedef abstract_domain<dis_interval_domain_t> abstract_domain_t;
+  using dis_interval_domain_t = dis_interval_domain<Number, VariableName>;
+  using abstract_domain_t = abstract_domain<dis_interval_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -1074,18 +1074,18 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef Number number_t;
-  typedef VariableName varname_t;
-  typedef ikos::interval_domain<number_t, varname_t> interval_domain_t;
-  typedef dis_interval<number_t> dis_interval_t;
+  using number_t = Number;
+  using varname_t = VariableName;
+  using interval_domain_t = ikos::interval_domain<number_t, varname_t>;
+  using dis_interval_t = dis_interval<number_t>;
 
 private:
-  typedef ikos::separate_domain<variable_t, dis_interval_t> separate_domain_t;
-  typedef ikos::linear_interval_solver<number_t, varname_t, separate_domain_t>
-      solver_t;
+  using separate_domain_t = ikos::separate_domain<variable_t, dis_interval_t>;
+  using solver_t =
+      ikos::linear_interval_solver<number_t, varname_t, separate_domain_t>;
 
 public:
-  typedef typename separate_domain_t::iterator iterator;
+  using iterator = typename separate_domain_t::iterator;
 
 private:
   separate_domain_t _env;
@@ -1633,8 +1633,8 @@ public:
 
 template <typename Number, typename VariableName>
 struct abstract_domain_traits<dis_interval_domain<Number, VariableName>> {
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using number_t = Number;
+  using varname_t = VariableName;
 };
 
 } // namespace domains

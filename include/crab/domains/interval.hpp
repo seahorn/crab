@@ -16,7 +16,7 @@ namespace ikos {
 
 template <typename Number> class bound {
 public:
-  typedef bound<Number> bound_t;
+  using bound_t = bound<Number>;
 
 private:
   bool _is_infinite;
@@ -221,8 +221,8 @@ inline crab::crab_os &operator<<(crab::crab_os &o, const bound<Number> &b) {
   return o;
 }
 
-typedef bound<z_number> z_bound;
-typedef bound<q_number> q_bound;
+using z_bound = bound<z_number>;
+using q_bound = bound<q_number>;
 
 namespace bounds_impl {
 // Conversion between z_bound and q_bound
@@ -252,8 +252,8 @@ inline void convert_bounds(q_bound b1, z_bound &b2) {
 template <typename Number> class interval {
 
 public:
-  typedef bound<Number> bound_t;
-  typedef interval<Number> interval_t;
+  using bound_t = bound<Number>;
+  using interval_t = interval<Number>;
 
 private:
   bound_t _lb;
@@ -587,7 +587,7 @@ interval<z_number>::operator/(interval<z_number> x) const {
       }
     }
     // Divisor is not a singleton
-    typedef interval<z_number> z_interval;
+    using z_interval = interval<z_number>;
     if (x[0]) {
       z_interval l(x._lb, z_bound(-1));
       z_interval u(z_bound(1), x._ub);
@@ -862,8 +862,8 @@ inline crab::crab_os &operator<<(crab::crab_os &o, const interval<Number> &i) {
 
 namespace linear_interval_solver_impl {
 
-typedef interval<z_number> z_interval;
-typedef interval<q_number> q_interval;
+using z_interval = interval<z_number>;
+using q_interval = interval<q_number>;
 
 template <> inline z_interval trim_interval(z_interval i, z_interval j) {
   if (boost::optional<z_number> c = j.singleton()) {

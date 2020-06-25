@@ -18,8 +18,8 @@ using namespace crab::cfg_impl;
 using namespace crab::cg;
 using namespace crab::domain_impl;
 
-typedef call_graph<z_cfg_ref_t> call_graph_t;
-typedef call_graph_ref<call_graph_t> call_graph_ref_t;
+using call_graph_t = call_graph<z_cfg_ref_t>;
+using call_graph_ref_t = call_graph_ref<call_graph_t>;
 
 z_cfg_t *foo(variable_factory_t &vfac) {
   // Defining program variables
@@ -161,10 +161,9 @@ int main(int argc, char **argv) {
   }
 
   /// --- DFS
-  typedef std::unordered_map<
-      boost::graph_traits<call_graph_t>::vertex_descriptor,
-      boost::default_color_type>
-      color_map_t;
+  using color_map_t =
+      std::unordered_map<boost::graph_traits<call_graph_t>::vertex_descriptor,
+                         boost::default_color_type>;
   color_map_t color;
   for (auto v : boost::make_iterator_range(vertices(cg_1))) {
     color[v] = boost::default_color_type();
@@ -208,7 +207,7 @@ int main(int argc, char **argv) {
 
   std::vector<z_cfg_ref_t> cfgs_2({*t1, *t2, *t3, *t4});
   call_graph_t cg_2(cfgs_2);
-  typedef wto<call_graph_ref_t> wto_t;
+  using wto_t = wto<call_graph_ref_t>;
   wto_t wto(cg_2);
   crab::outs() << "Callgraph=\n" << cg_2 << "\n";
   crab::outs() << "Weak topological ordering=" << wto << "\n";

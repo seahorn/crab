@@ -56,10 +56,10 @@
 namespace ikos {
 
 template <typename Number> class congruence {
-  typedef interval<Number> interval_t;
+  using interval_t = interval<Number>;
 
 public:
-  typedef congruence<Number> congruence_t;
+  using congruence_t = congruence<Number>;
 
 private:
   bool _is_bottom;
@@ -600,14 +600,14 @@ class equality_congruence_solver {
   // and more precise solver for equality linear congruences (see
   // Theorem 4.4).
 private:
-  typedef congruence<Number> congruence_t;
-  typedef crab::variable<Number, VariableName> variable_t;
-  typedef linear_expression<Number, VariableName> linear_expression_t;
-  typedef linear_constraint<Number, VariableName> linear_constraint_t;
-  typedef linear_constraint_system<Number, VariableName>
-      linear_constraint_system_t;
+  using congruence_t = congruence<Number>;
+  using variable_t = crab::variable<Number, VariableName>;
+  using linear_expression_t = linear_expression<Number, VariableName>;
+  using linear_constraint_t = linear_constraint<Number, VariableName>;
+  using linear_constraint_system_t =
+      linear_constraint_system<Number, VariableName>;
 
-  typedef std::vector<linear_constraint_t> cst_table_t;
+  using cst_table_t = std::vector<linear_constraint_t>;
   using variable_set_t = std::set<variable_t>;
 
   std::size_t m_max_cycles;
@@ -717,13 +717,13 @@ template <typename Number, typename VariableName>
 class congruence_domain final : public crab::domains::abstract_domain<
                                     congruence_domain<Number, VariableName>> {
 public:
-  typedef congruence<Number> congruence_t;
+  using congruence_t = congruence<Number>;
 
 private:
   // note that this is assuming that all variables have the same bit
   // width which is unrealistic.
-  typedef congruence_domain<Number, VariableName> congruence_domain_t;
-  typedef crab::domains::abstract_domain<congruence_domain_t> abstract_domain_t;
+  using congruence_domain_t = congruence_domain<Number, VariableName>;
+  using abstract_domain_t = crab::domains::abstract_domain<congruence_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -733,17 +733,17 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using number_t = Number;
+  using varname_t = VariableName;
   using typename abstract_domain_t::reference_constraint_t;
 
 private:
-  typedef separate_domain<variable_t, congruence_t> separate_domain_t;
-  typedef equality_congruence_solver<number_t, varname_t, separate_domain_t>
-      solver_t;
+  using separate_domain_t = separate_domain<variable_t, congruence_t>;
+  using solver_t =
+      equality_congruence_solver<number_t, varname_t, separate_domain_t>;
 
 public:
-  typedef typename separate_domain_t::iterator iterator;
+  using iterator = typename separate_domain_t::iterator;
 
 private:
   separate_domain_t _env;
@@ -1294,8 +1294,8 @@ namespace domains {
 
 template <typename Number, typename VariableName>
 struct abstract_domain_traits<ikos::congruence_domain<Number, VariableName>> {
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using number_t = Number;
+  using varname_t = VariableName;
 };
 
 } // namespace domains

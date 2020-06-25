@@ -38,16 +38,16 @@ void convert_domains(Domain1 from, Domain2 &to);
 /* Store the calling contexts of each function */
 template <typename CFG, typename AbsDomain> class call_ctx_table {
 public:
-  typedef typename CFG::basic_block_t::callsite_t callsite_t;
-  typedef typename CFG::fdecl_t fdecl_t;
-  typedef typename CFG::varname_t varname_t;
-  typedef typename CFG::variable_t variable_t;
-  typedef AbsDomain abs_domain_t;
+  using callsite_t = typename CFG::basic_block_t::callsite_t;
+  using fdecl_t = typename CFG::fdecl_t;
+  using varname_t = typename CFG::varname_t;
+  using variable_t = typename CFG::variable_t;
+  using abs_domain_t = AbsDomain;
 
 private:
   // a function declaration and callsite are considered equal if
   // they correspond to the same function.
-  typedef std::unordered_map<std::size_t, abs_domain_t> call_table_t;
+  using call_table_t = std::unordered_map<std::size_t, abs_domain_t>;
 
   call_table_t m_call_table;
   AbsDomain m_top;
@@ -94,10 +94,10 @@ public:
 // AbsDomain.
 template <typename CFG, typename AbsDomain> class summary {
 
-  typedef typename CFG::fdecl_t fdecl_t;
-  typedef AbsDomain abs_domain_t;
-  typedef typename CFG::variable_t variable_t;
-  typedef typename variable_t::varname_t varname_t;
+  using fdecl_t = typename CFG::fdecl_t;
+  using abs_domain_t = AbsDomain;
+  using variable_t = typename CFG::variable_t;
+  using varname_t = typename variable_t::varname_t;
 
   // --- function info
   const fdecl_t &m_fdecl;
@@ -235,11 +235,11 @@ public:
 template <typename CFG, typename AbsDomain> class summary_table {
 
 public:
-  typedef summary<CFG, AbsDomain> summary_t;
-  typedef typename CFG::basic_block_t::callsite_t callsite_t;
-  typedef typename CFG::fdecl_t fdecl_t;
-  typedef AbsDomain abs_domain_t;
-  typedef typename CFG::variable_t variable_t;
+  using summary_t = summary<CFG, AbsDomain>;
+  using callsite_t = typename CFG::basic_block_t::callsite_t;
+  using fdecl_t = typename CFG::fdecl_t;
+  using abs_domain_t = AbsDomain;
+  using variable_t = typename CFG::variable_t;
 
 private:
   using summary_table_t = std::unordered_map<std::size_t, summary_t>;
@@ -313,18 +313,18 @@ class bu_summ_abs_transformer final
     : public intra_abs_transformer<typename SumTable::abs_domain_t> {
 
 public:
-  typedef typename SumTable::abs_domain_t summ_abs_domain_t;
-  typedef typename SumTable::summary_t summary_t;
-  typedef summ_abs_domain_t abs_dom_t;
-  typedef typename abs_dom_t::number_t number_t;
+  using summ_abs_domain_t = typename SumTable::abs_domain_t;
+  using summary_t = typename SumTable::summary_t;
+  using abs_dom_t = summ_abs_domain_t;
+  using number_t = typename abs_dom_t::number_t;
 
 private:
-  typedef intra_abs_transformer<abs_dom_t> intra_abs_transform_t;
+  using intra_abs_transform_t = intra_abs_transformer<abs_dom_t>;
   typedef
       typename intra_abs_transform_t::abs_transform_api_t abs_transform_api_t;
-  typedef typename abs_dom_t::varname_t varname_t;
-  typedef typename abs_dom_t::variable_t variable_t;
-  typedef typename abs_dom_t::linear_expression_t linear_expression_t;
+  using varname_t = typename abs_dom_t::varname_t;
+  using variable_t = typename abs_dom_t::variable_t;
+  using linear_expression_t = typename abs_dom_t::linear_expression_t;
 
   SumTable *m_sum_tbl;
 
@@ -491,13 +491,13 @@ class td_summ_abs_transformer final
     : public intra_abs_transformer<typename CallCtxTable::abs_domain_t> {
 
 public:
-  typedef typename SumTable::abs_domain_t summ_abs_domain_t;
-  typedef typename CallCtxTable::abs_domain_t call_abs_domain_t;
-  typedef call_abs_domain_t abs_dom_t;
-  typedef typename abs_dom_t::number_t number_t;
+  using summ_abs_domain_t = typename SumTable::abs_domain_t;
+  using call_abs_domain_t = typename CallCtxTable::abs_domain_t;
+  using abs_dom_t = call_abs_domain_t;
+  using number_t = typename abs_dom_t::number_t;
 
 private:
-  typedef intra_abs_transformer<abs_dom_t> intra_abs_transform_t;
+  using intra_abs_transform_t = intra_abs_transformer<abs_dom_t>;
 
 public:
   typedef
@@ -528,7 +528,7 @@ public:
       ///////
       /// Generate the callee context and store it.
       ///////
-      typedef typename abs_dom_t::variable_t variable_t;
+      using variable_t = typename abs_dom_t::variable_t;
 
       abs_dom_t callee_ctx_inv(this->m_inv);
       // --- matching formal and actual parameters
@@ -602,34 +602,34 @@ template <typename CallGraph,
           typename TD_Dom>
 class bottom_up_inter_analyzer {
 
-  typedef typename CallGraph::node_t cg_node_t;
-  typedef typename CallGraph::edge_t cg_edge_t;
+  using cg_node_t = typename CallGraph::node_t;
+  using cg_edge_t = typename CallGraph::edge_t;
 
-  typedef bottom_up_inter_analyzer<CallGraph, BU_Dom, TD_Dom> this_type;
+  using this_type = bottom_up_inter_analyzer<CallGraph, BU_Dom, TD_Dom>;
 
 public:
-  typedef CallGraph cg_t;
-  typedef typename cg_node_t::cfg_t cfg_t;
-  typedef typename cfg_t::varname_t varname_t;
-  typedef typename cfg_t::number_t number_t;
-  typedef typename cfg_t::variable_t variable_t;
-  typedef live_and_dead_analysis<cfg_t> liveness_t;
-  typedef std::unordered_map<cfg_t, const liveness_t *> liveness_map_t;
+  using cg_t = CallGraph;
+  using cfg_t = typename cg_node_t::cfg_t;
+  using varname_t = typename cfg_t::varname_t;
+  using number_t = typename cfg_t::number_t;
+  using variable_t = typename cfg_t::variable_t;
+  using liveness_t = live_and_dead_analysis<cfg_t>;
+  using liveness_map_t = std::unordered_map<cfg_t, const liveness_t *>;
 
 private:
-  typedef inter_analyzer_impl::summary_table<cfg_t, BU_Dom> summ_tbl_t;
-  typedef inter_analyzer_impl::call_ctx_table<cfg_t, TD_Dom> call_tbl_t;
+  using summ_tbl_t = inter_analyzer_impl::summary_table<cfg_t, BU_Dom>;
+  using call_tbl_t = inter_analyzer_impl::call_ctx_table<cfg_t, TD_Dom>;
 
 public:
-  typedef inter_analyzer_impl::bu_summ_abs_transformer<summ_tbl_t> bu_abs_tr;
-  typedef inter_analyzer_impl::td_summ_abs_transformer<summ_tbl_t, call_tbl_t>
-      td_abs_tr;
-  typedef analyzer_internal_impl::fwd_analyzer<cfg_t, bu_abs_tr> bu_analyzer;
-  typedef analyzer_internal_impl::fwd_analyzer<cfg_t, td_abs_tr> td_analyzer;
-  typedef typename summ_tbl_t::summary_t summary_t;
+  using bu_abs_tr = inter_analyzer_impl::bu_summ_abs_transformer<summ_tbl_t>;
+  using td_abs_tr =
+      inter_analyzer_impl::td_summ_abs_transformer<summ_tbl_t, call_tbl_t>;
+  using bu_analyzer = analyzer_internal_impl::fwd_analyzer<cfg_t, bu_abs_tr>;
+  using td_analyzer = analyzer_internal_impl::fwd_analyzer<cfg_t, td_abs_tr>;
+  using summary_t = typename summ_tbl_t::summary_t;
   // for checkers
-  typedef TD_Dom abs_dom_t;
-  typedef td_abs_tr abs_tr_t;
+  using abs_dom_t = TD_Dom;
+  using abs_tr_t = td_abs_tr;
 
 private:
   using td_analyzer_ptr = std::unique_ptr<td_analyzer>;

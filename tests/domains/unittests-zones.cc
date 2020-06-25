@@ -76,8 +76,8 @@ int main(int argc, char **argv) {
   }
 
   { // linear constraints normalization (should not be here)
-    typedef ikos::linear_constraint_system<ikos::z_number, varname_t>
-        linear_constraint_system_t;
+    using linear_constraint_system_t =
+        ikos::linear_constraint_system<ikos::z_number, varname_t>;
 
     z_var x(vfac["x"], crab::INT_TYPE, 32);
     z_var y(vfac["y"], crab::INT_TYPE, 32);
@@ -99,10 +99,9 @@ int main(int argc, char **argv) {
   }
 
   { // overflow cases with zones domain
-    typedef split_dbm_domain<
+    using split_dbm_domain_t = split_dbm_domain<
         ikos::z_number, varname_t,
-        DBM_impl::DefaultParams<ikos::z_number, DBM_impl::GraphRep::ss>>
-        split_dbm_domain_t;
+        DBM_impl::DefaultParams<ikos::z_number, DBM_impl::GraphRep::ss>>;
 
     z_var x(vfac["x"], crab::INT_TYPE, 32);
 

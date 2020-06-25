@@ -20,8 +20,8 @@ namespace crab {
 namespace domains {
 namespace elina {
 
-typedef elina_abstract0_t *elina_state;
-typedef boost::shared_ptr<elina_abstract0_t> elina_state_ptr;
+using elina_state = elina_abstract0_t *;
+using elina_state_ptr = boost::shared_ptr<elina_abstract0_t>;
 
 /** Custom deleter for elina_state_ptr */
 class elina_state_deleter {

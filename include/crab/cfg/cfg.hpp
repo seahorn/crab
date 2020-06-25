@@ -154,14 +154,14 @@ enum stmt_code {
 
 template <typename Number, typename VariableName> class live {
 public:
-  typedef variable<Number, VariableName> variable_t;
+  using variable_t = variable<Number, VariableName>;
 
 private:
-  typedef std::vector<variable_t> live_set_t;
+  using live_set_t = std::vector<variable_t>;
 
 public:
-  typedef typename live_set_t::const_iterator const_use_iterator;
-  typedef typename live_set_t::const_iterator const_def_iterator;
+  using const_use_iterator = typename live_set_t::const_iterator;
+  using const_def_iterator = typename live_set_t::const_iterator;
 
 private:
   live_set_t m_uses;
@@ -244,7 +244,7 @@ template <typename Number, typename VariableName> struct statement_visitor;
 template <class Number, class VariableName> class statement {
 
 public:
-  typedef live<Number, VariableName> live_t;
+  using live_t = live<Number, VariableName>;
 
 protected:
   live_t m_live;
@@ -313,12 +313,12 @@ public:
 
 template <class Number, class VariableName>
 class binary_op : public statement<Number, VariableName> {
-  typedef binary_op<Number, VariableName> this_type;
+  using this_type = binary_op<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using linear_expression_t = ikos::linear_expression<Number, VariableName>;
 
   binary_op(variable_t lhs, binary_operation_t op, linear_expression_t op1,
             linear_expression_t op2, debug_info dbg_info = debug_info())
@@ -362,12 +362,12 @@ private:
 
 template <class Number, class VariableName>
 class assignment : public statement<Number, VariableName> {
-  typedef assignment<Number, VariableName> this_type;
+  using this_type = assignment<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using linear_expression_t = ikos::linear_expression<Number, VariableName>;
 
   assignment(variable_t lhs, linear_expression_t rhs)
       : statement_t(ASSIGN), m_lhs(lhs), m_rhs(rhs) {
@@ -398,12 +398,12 @@ private:
 template <class Number, class VariableName>
 class assume_stmt : public statement<Number, VariableName> {
 
-  typedef assume_stmt<Number, VariableName> this_type;
+  using this_type = assume_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef ikos::linear_constraint<Number, VariableName> linear_constraint_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using linear_constraint_t = ikos::linear_constraint<Number, VariableName>;
 
   assume_stmt(linear_constraint_t cst) : statement_t(ASSUME), m_cst(cst) {
     for (auto const &v : cst.variables())
@@ -428,10 +428,10 @@ private:
 
 template <class Number, class VariableName>
 class unreachable_stmt : public statement<Number, VariableName> {
-  typedef unreachable_stmt<Number, VariableName> this_type;
+  using this_type = unreachable_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
+  using statement_t = statement<Number, VariableName>;
 
   unreachable_stmt() : statement_t(UNREACH) {}
 
@@ -446,11 +446,11 @@ public:
 
 template <class Number, class VariableName>
 class havoc_stmt : public statement<Number, VariableName> {
-  typedef havoc_stmt<Number, VariableName> this_type;
+  using this_type = havoc_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
 
   havoc_stmt(variable_t lhs) : statement_t(HAVOC), m_lhs(lhs) {
     this->m_live.add_def(m_lhs);
@@ -480,13 +480,13 @@ private:
 template <class Number, class VariableName>
 class select_stmt : public statement<Number, VariableName> {
 
-  typedef select_stmt<Number, VariableName> this_type;
+  using this_type = select_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
-  typedef ikos::linear_constraint<Number, VariableName> linear_constraint_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using linear_expression_t = ikos::linear_expression<Number, VariableName>;
+  using linear_constraint_t = ikos::linear_constraint<Number, VariableName>;
 
   select_stmt(variable_t lhs, linear_constraint_t cond, linear_expression_t e1,
               linear_expression_t e2)
@@ -530,12 +530,12 @@ private:
 
 template <class Number, class VariableName>
 class assert_stmt : public statement<Number, VariableName> {
-  typedef assert_stmt<Number, VariableName> this_type;
+  using this_type = assert_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef ikos::linear_constraint<Number, VariableName> linear_constraint_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using linear_constraint_t = ikos::linear_constraint<Number, VariableName>;
 
   assert_stmt(linear_constraint_t cst, debug_info dbg_info = debug_info())
       : statement_t(ASSERT, dbg_info), m_cst(cst) {
@@ -567,12 +567,12 @@ private:
 
 template <class Number, class VariableName>
 class int_cast_stmt : public statement<Number, VariableName> {
-  typedef int_cast_stmt<Number, VariableName> this_type;
+  using this_type = int_cast_stmt<Number, VariableName>;
 
 public:
-  typedef variable<Number, VariableName> variable_t;
-  typedef statement<Number, VariableName> statement_t;
-  typedef typename variable_t::bitwidth_t bitwidth_t;
+  using variable_t = variable<Number, VariableName>;
+  using statement_t = statement<Number, VariableName>;
+  using bitwidth_t = typename variable_t::bitwidth_t;
 
   int_cast_stmt(cast_operation_t op, variable_t src, variable_t dst,
                 debug_info dbg_info = debug_info())
@@ -633,13 +633,13 @@ private:
 //  The semantics is similar to constant arrays in SMT.
 template <class Number, class VariableName>
 class array_init_stmt : public statement<Number, VariableName> {
-  typedef array_init_stmt<Number, VariableName> this_type;
+  using this_type = array_init_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef typename variable_t::type_t type_t;
+  using statement_t = statement<Number, VariableName>;
+  using linear_expression_t = ikos::linear_expression<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using type_t = typename variable_t::type_t;
 
   array_init_stmt(variable_t arr, linear_expression_t elem_size,
                   linear_expression_t lb, linear_expression_t ub,
@@ -698,15 +698,15 @@ private:
 
 template <class Number, class VariableName>
 class array_store_stmt : public statement<Number, VariableName> {
-  typedef array_store_stmt<Number, VariableName> this_type;
+  using this_type = array_store_stmt<Number, VariableName>;
 
 public:
   // forall i \in [lb,ub] % elem_size :: arr[i] := val
 
-  typedef statement<Number, VariableName> statement_t;
-  typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef typename variable_t::type_t type_t;
+  using statement_t = statement<Number, VariableName>;
+  using linear_expression_t = ikos::linear_expression<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using type_t = typename variable_t::type_t;
 
   // Constructor for in-place array stores
   array_store_stmt(variable_t arr, linear_expression_t elem_size,
@@ -785,13 +785,13 @@ private:
 
 template <class Number, class VariableName>
 class array_load_stmt : public statement<Number, VariableName> {
-  typedef array_load_stmt<Number, VariableName> this_type;
+  using this_type = array_load_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef typename variable_t::type_t type_t;
+  using statement_t = statement<Number, VariableName>;
+  using linear_expression_t = ikos::linear_expression<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using type_t = typename variable_t::type_t;
 
   array_load_stmt(variable_t lhs, variable_t arr, linear_expression_t elem_size,
                   linear_expression_t index)
@@ -842,12 +842,12 @@ private:
 template <class Number, class VariableName>
 class array_assign_stmt : public statement<Number, VariableName> {
   //! a = b
-  typedef array_assign_stmt<Number, VariableName> this_type;
+  using this_type = array_assign_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef typename variable_t::type_t type_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using type_t = typename variable_t::type_t;
 
   array_assign_stmt(variable_t lhs, variable_t rhs)
       : statement_t(ARR_ASSIGN), m_lhs(lhs), m_rhs(rhs) {
@@ -883,11 +883,11 @@ private:
 template <class Number, class VariableName>
 class region_init_stmt : public statement<Number, VariableName> {
   // region_init(region);
-  typedef region_init_stmt<Number, VariableName> this_type;
+  using this_type = region_init_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
 
   region_init_stmt(memory_region region, debug_info dbg_info = debug_info())
       : statement_t(REGION_INIT, dbg_info), m_region(region) {}
@@ -913,11 +913,11 @@ private:
 template <class Number, class VariableName>
 class make_ref_stmt : public statement<Number, VariableName> {
   // lhs := make_ref(region)
-  typedef make_ref_stmt<Number, VariableName> this_type;
+  using this_type = make_ref_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
 
   make_ref_stmt(variable_t lhs, memory_region region,
                 debug_info dbg_info = debug_info())
@@ -950,11 +950,11 @@ private:
 template <class Number, class VariableName>
 class load_from_ref_stmt : public statement<Number, VariableName> {
   // lhs := load_from_ref(ref, region);
-  typedef load_from_ref_stmt<Number, VariableName> this_type;
+  using this_type = load_from_ref_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
 
   load_from_ref_stmt(variable_t lhs, variable_t ref, memory_region region,
                      debug_info dbg_info = debug_info())
@@ -992,12 +992,12 @@ private:
 template <class Number, class VariableName>
 class store_to_ref_stmt : public statement<Number, VariableName> {
   // store_to_ref(ref, region, val);
-  typedef store_to_ref_stmt<Number, VariableName> this_type;
+  using this_type = store_to_ref_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using linear_expression_t = ikos::linear_expression<Number, VariableName>;
 
   store_to_ref_stmt(variable_t ref, memory_region region,
                     linear_expression_t val, debug_info dbg_info = debug_info())
@@ -1036,12 +1036,12 @@ private:
 template <class Number, class VariableName>
 class gep_ref_stmt : public statement<Number, VariableName> {
   // (lhs, lhs_region) := gep_ref(rhs, rhs_region, offset)
-  typedef gep_ref_stmt<Number, VariableName> this_type;
+  using this_type = gep_ref_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using linear_expression_t = ikos::linear_expression<Number, VariableName>;
 
   gep_ref_stmt(variable_t lhs, memory_region lhs_region, variable_t rhs,
                memory_region rhs_region, linear_expression_t offset,
@@ -1092,13 +1092,13 @@ private:
 template <class Number, class VariableName>
 class load_from_arr_ref_stmt : public statement<Number, VariableName> {
   // lhs := load_from_arr_ref(ref, region, index, elem_size)
-  typedef load_from_arr_ref_stmt<Number, VariableName> this_type;
+  using this_type = load_from_arr_ref_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef typename variable_t::type_t type_t;
+  using statement_t = statement<Number, VariableName>;
+  using linear_expression_t = ikos::linear_expression<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using type_t = typename variable_t::type_t;
 
   load_from_arr_ref_stmt(variable_t lhs, variable_t ref, memory_region region,
                          linear_expression_t index,
@@ -1153,13 +1153,13 @@ private:
 template <class Number, class VariableName>
 class store_to_arr_ref_stmt : public statement<Number, VariableName> {
   // store_to_arr_ref(ref, region, lb, ub, value, elem_size)
-  typedef store_to_arr_ref_stmt<Number, VariableName> this_type;
+  using this_type = store_to_arr_ref_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef typename variable_t::type_t type_t;
+  using statement_t = statement<Number, VariableName>;
+  using linear_expression_t = ikos::linear_expression<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using type_t = typename variable_t::type_t;
 
   store_to_arr_ref_stmt(variable_t ref, memory_region region,
                         linear_expression_t lb, linear_expression_t ub,
@@ -1242,12 +1242,12 @@ private:
 
 template <class Number, class VariableName>
 class assume_ref_stmt : public statement<Number, VariableName> {
-  typedef assume_ref_stmt<Number, VariableName> this_type;
+  using this_type = assume_ref_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef reference_constraint<Number, VariableName> reference_constraint_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using reference_constraint_t = reference_constraint<Number, VariableName>;
 
   assume_ref_stmt(reference_constraint_t cst)
       : statement_t(REF_ASSUME), m_cst(cst) {
@@ -1277,12 +1277,12 @@ private:
 
 template <class Number, class VariableName>
 class assert_ref_stmt : public statement<Number, VariableName> {
-  typedef assert_ref_stmt<Number, VariableName> this_type;
+  using this_type = assert_ref_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef reference_constraint<Number, VariableName> reference_constraint_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using reference_constraint_t = reference_constraint<Number, VariableName>;
 
   assert_ref_stmt(reference_constraint_t cst,
                   debug_info dbg_info = debug_info())
@@ -1319,12 +1319,12 @@ private:
 
 template <class Number, class VariableName>
 class callsite_stmt : public statement<Number, VariableName> {
-  typedef callsite_stmt<Number, VariableName> this_type;
+  using this_type = callsite_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef typename variable_t::type_t type_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using type_t = typename variable_t::type_t;
 
   callsite_stmt(std::string func_name, const std::vector<variable_t> &args)
       : statement_t(CALLSITE), m_func_name(func_name) {
@@ -1410,18 +1410,18 @@ private:
   std::vector<variable_t> m_lhs;
   std::vector<variable_t> m_args;
 
-  typedef typename std::vector<variable_t>::iterator iterator;
-  typedef typename std::vector<variable_t>::const_iterator const_iterator;
+  using iterator = typename std::vector<variable_t>::iterator;
+  using const_iterator = typename std::vector<variable_t>::const_iterator;
 };
 
 template <class Number, class VariableName>
 class return_stmt : public statement<Number, VariableName> {
-  typedef return_stmt<Number, VariableName> this_type;
+  using this_type = return_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef typename variable_t::type_t type_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using type_t = typename variable_t::type_t;
 
   return_stmt(variable_t var) : statement_t(RETURN) {
     m_ret.push_back(var);
@@ -1468,12 +1468,12 @@ private:
    defined by the Crab domains */
 template <class Number, class VariableName>
 class intrinsic_stmt : public statement<Number, VariableName> {
-  typedef intrinsic_stmt<Number, VariableName> this_type;
+  using this_type = intrinsic_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef typename variable_t::type_t type_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using type_t = typename variable_t::type_t;
 
   intrinsic_stmt(std::string intrinsic_name,
                  const std::vector<variable_t> &args)
@@ -1563,8 +1563,8 @@ private:
   std::vector<variable_t> m_lhs;
   std::vector<variable_t> m_args;
 
-  typedef typename std::vector<variable_t>::iterator iterator;
-  typedef typename std::vector<variable_t>::const_iterator const_iterator;
+  using iterator = typename std::vector<variable_t>::iterator;
+  using const_iterator = typename std::vector<variable_t>::const_iterator;
 };
 
 /*
@@ -1573,12 +1573,12 @@ private:
 
 template <class Number, class VariableName>
 class bool_assign_cst : public statement<Number, VariableName> {
-  typedef bool_assign_cst<Number, VariableName> this_type;
+  using this_type = bool_assign_cst<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
-  typedef ikos::linear_constraint<Number, VariableName> linear_constraint_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
+  using linear_constraint_t = ikos::linear_constraint<Number, VariableName>;
 
   bool_assign_cst(variable_t lhs, linear_constraint_t rhs)
       : statement_t(BOOL_ASSIGN_CST), m_lhs(lhs), m_rhs(rhs) {
@@ -1619,11 +1619,11 @@ class bool_assign_var : public statement<Number, VariableName> {
   // special statement to assign a variable to another because it
   // is a very common operation.
 
-  typedef bool_assign_var<Number, VariableName> this_type;
+  using this_type = bool_assign_var<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
 
   bool_assign_var(variable_t lhs, variable_t rhs, bool is_not_rhs)
       : statement_t(BOOL_ASSIGN_VAR), m_lhs(lhs), m_rhs(rhs),
@@ -1668,11 +1668,11 @@ class bool_binary_op : public statement<Number, VariableName> {
   // b1:= b2 and b3
   // b1:= b2 or b3
   // b1:= b2 xor b3
-  typedef bool_binary_op<Number, VariableName> this_type;
+  using this_type = bool_binary_op<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
 
   bool_binary_op(variable_t lhs, bool_binary_operation_t op, variable_t op1,
                  variable_t op2, debug_info dbg_info = debug_info())
@@ -1712,11 +1712,11 @@ private:
 
 template <class Number, class VariableName>
 class bool_assume_stmt : public statement<Number, VariableName> {
-  typedef bool_assume_stmt<Number, VariableName> this_type;
+  using this_type = bool_assume_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
 
   bool_assume_stmt(variable_t v, bool is_negated)
       : statement_t(BOOL_ASSUME), m_var(v), m_is_negated(is_negated) {
@@ -1752,11 +1752,11 @@ private:
 //    if b2 then b1=b3 else b1=b4
 template <class Number, class VariableName>
 class bool_select_stmt : public statement<Number, VariableName> {
-  typedef bool_select_stmt<Number, VariableName> this_type;
+  using this_type = bool_select_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
 
   bool_select_stmt(variable_t lhs, variable_t cond, variable_t b1,
                    variable_t b2)
@@ -1797,11 +1797,11 @@ private:
 
 template <class Number, class VariableName>
 class bool_assert_stmt : public statement<Number, VariableName> {
-  typedef bool_assert_stmt<Number, VariableName> this_type;
+  using this_type = bool_assert_stmt<Number, VariableName>;
 
 public:
-  typedef statement<Number, VariableName> statement_t;
-  typedef variable<Number, VariableName> variable_t;
+  using statement_t = statement<Number, VariableName>;
+  using variable_t = variable<Number, VariableName>;
 
   bool_assert_stmt(variable_t v, debug_info dbg_info = debug_info())
       : statement_t(BOOL_ASSERT, dbg_info), m_var(v) {
@@ -1831,77 +1831,77 @@ class basic_block {
   friend class cfg<BasicBlockLabel, VariableName, Number>;
 
 public:
-  typedef Number number_t;
-  typedef VariableName varname_t;
-  typedef BasicBlockLabel basic_block_label_t;
+  using number_t = Number;
+  using varname_t = VariableName;
+  using basic_block_label_t = BasicBlockLabel;
 
   // helper types to build statements
-  typedef variable<Number, VariableName> variable_t;
-  typedef ikos::linear_expression<Number, VariableName> lin_exp_t;
-  typedef ikos::linear_constraint<Number, VariableName> lin_cst_t;
-  typedef reference_constraint<Number, VariableName> ref_cst_t;
-  typedef statement<Number, VariableName> statement_t;
-  typedef basic_block<BasicBlockLabel, VariableName, Number> basic_block_t;
-  typedef ikos::interval<Number> interval_t;
+  using variable_t = variable<Number, VariableName>;
+  using lin_exp_t = ikos::linear_expression<Number, VariableName>;
+  using lin_cst_t = ikos::linear_constraint<Number, VariableName>;
+  using ref_cst_t = reference_constraint<Number, VariableName>;
+  using statement_t = statement<Number, VariableName>;
+  using basic_block_t = basic_block<BasicBlockLabel, VariableName, Number>;
+  using interval_t = ikos::interval<Number>;
 
 private:
-  typedef std::vector<BasicBlockLabel> bb_id_set_t;
-  typedef std::vector<statement_t *> stmt_list_t;
+  using bb_id_set_t = std::vector<BasicBlockLabel>;
+  using stmt_list_t = std::vector<statement_t *>;
 
 public:
   // -- iterators
 
-  typedef typename bb_id_set_t::iterator succ_iterator;
-  typedef typename bb_id_set_t::const_iterator const_succ_iterator;
-  typedef succ_iterator pred_iterator;
-  typedef const_succ_iterator const_pred_iterator;
-  typedef boost::indirect_iterator<typename stmt_list_t::iterator> iterator;
-  typedef boost::indirect_iterator<typename stmt_list_t::const_iterator>
-      const_iterator;
-  typedef boost::indirect_iterator<typename stmt_list_t::reverse_iterator>
-      reverse_iterator;
-  typedef boost::indirect_iterator<typename stmt_list_t::const_reverse_iterator>
-      const_reverse_iterator;
-  typedef ikos::discrete_domain<variable_t> live_domain_t;
+  using succ_iterator = typename bb_id_set_t::iterator;
+  using const_succ_iterator = typename bb_id_set_t::const_iterator;
+  using pred_iterator = succ_iterator;
+  using const_pred_iterator = const_succ_iterator;
+  using iterator = boost::indirect_iterator<typename stmt_list_t::iterator>;
+  using const_iterator =
+      boost::indirect_iterator<typename stmt_list_t::const_iterator>;
+  using reverse_iterator =
+      boost::indirect_iterator<typename stmt_list_t::reverse_iterator>;
+  using const_reverse_iterator =
+      boost::indirect_iterator<typename stmt_list_t::const_reverse_iterator>;
+  using live_domain_t = ikos::discrete_domain<variable_t>;
 
   // -- statements
 
-  typedef havoc_stmt<Number, VariableName> havoc_t;
-  typedef unreachable_stmt<Number, VariableName> unreach_t;
+  using havoc_t = havoc_stmt<Number, VariableName>;
+  using unreach_t = unreachable_stmt<Number, VariableName>;
   // Numerical
-  typedef binary_op<Number, VariableName> bin_op_t;
-  typedef assignment<Number, VariableName> assign_t;
-  typedef assume_stmt<Number, VariableName> assume_t;
-  typedef select_stmt<Number, VariableName> select_t;
-  typedef assert_stmt<Number, VariableName> assert_t;
-  typedef int_cast_stmt<Number, VariableName> int_cast_t;
+  using bin_op_t = binary_op<Number, VariableName>;
+  using assign_t = assignment<Number, VariableName>;
+  using assume_t = assume_stmt<Number, VariableName>;
+  using select_t = select_stmt<Number, VariableName>;
+  using assert_t = assert_stmt<Number, VariableName>;
+  using int_cast_t = int_cast_stmt<Number, VariableName>;
   // Functions
-  typedef callsite_stmt<Number, VariableName> callsite_t;
-  typedef return_stmt<Number, VariableName> return_t;
+  using callsite_t = callsite_stmt<Number, VariableName>;
+  using return_t = return_stmt<Number, VariableName>;
   // Intrinsics
-  typedef intrinsic_stmt<Number, VariableName> intrinsic_t;
+  using intrinsic_t = intrinsic_stmt<Number, VariableName>;
   // Arrays
-  typedef array_init_stmt<Number, VariableName> arr_init_t;
-  typedef array_store_stmt<Number, VariableName> arr_store_t;
-  typedef array_load_stmt<Number, VariableName> arr_load_t;
-  typedef array_assign_stmt<Number, VariableName> arr_assign_t;
+  using arr_init_t = array_init_stmt<Number, VariableName>;
+  using arr_store_t = array_store_stmt<Number, VariableName>;
+  using arr_load_t = array_load_stmt<Number, VariableName>;
+  using arr_assign_t = array_assign_stmt<Number, VariableName>;
   // References
-  typedef region_init_stmt<Number, VariableName> region_init_t;
-  typedef make_ref_stmt<Number, VariableName> make_ref_t;
-  typedef load_from_ref_stmt<Number, VariableName> load_from_ref_t;
-  typedef store_to_ref_stmt<Number, VariableName> store_to_ref_t;
-  typedef gep_ref_stmt<Number, VariableName> gep_ref_t;
-  typedef load_from_arr_ref_stmt<Number, VariableName> load_from_arr_ref_t;
-  typedef store_to_arr_ref_stmt<Number, VariableName> store_to_arr_ref_t;
-  typedef assume_ref_stmt<Number, VariableName> assume_ref_t;
-  typedef assert_ref_stmt<Number, VariableName> assert_ref_t;
+  using region_init_t = region_init_stmt<Number, VariableName>;
+  using make_ref_t = make_ref_stmt<Number, VariableName>;
+  using load_from_ref_t = load_from_ref_stmt<Number, VariableName>;
+  using store_to_ref_t = store_to_ref_stmt<Number, VariableName>;
+  using gep_ref_t = gep_ref_stmt<Number, VariableName>;
+  using load_from_arr_ref_t = load_from_arr_ref_stmt<Number, VariableName>;
+  using store_to_arr_ref_t = store_to_arr_ref_stmt<Number, VariableName>;
+  using assume_ref_t = assume_ref_stmt<Number, VariableName>;
+  using assert_ref_t = assert_ref_stmt<Number, VariableName>;
   // Boolean
-  typedef bool_binary_op<Number, VariableName> bool_bin_op_t;
-  typedef bool_assign_cst<Number, VariableName> bool_assign_cst_t;
-  typedef bool_assign_var<Number, VariableName> bool_assign_var_t;
-  typedef bool_assume_stmt<Number, VariableName> bool_assume_t;
-  typedef bool_select_stmt<Number, VariableName> bool_select_t;
-  typedef bool_assert_stmt<Number, VariableName> bool_assert_t;
+  using bool_bin_op_t = bool_binary_op<Number, VariableName>;
+  using bool_assign_cst_t = bool_assign_cst<Number, VariableName>;
+  using bool_assign_var_t = bool_assign_var<Number, VariableName>;
+  using bool_assume_t = bool_assume_stmt<Number, VariableName>;
+  using bool_select_t = bool_select_stmt<Number, VariableName>;
+  using bool_assert_t = bool_assert_stmt<Number, VariableName>;
 
 private:
   BasicBlockLabel m_bb_id;
@@ -2436,21 +2436,21 @@ public:
 // backward analysis.
 template <class BasicBlock> class basic_block_rev {
 public:
-  typedef typename BasicBlock::number_t number_t;
-  typedef typename BasicBlock::varname_t varname_t;
-  typedef typename BasicBlock::variable_t variable_t;
-  typedef typename BasicBlock::basic_block_label_t basic_block_label_t;
+  using number_t = typename BasicBlock::number_t;
+  using varname_t = typename BasicBlock::varname_t;
+  using variable_t = typename BasicBlock::variable_t;
+  using basic_block_label_t = typename BasicBlock::basic_block_label_t;
 
-  typedef basic_block_rev<BasicBlock> basic_block_rev_t;
+  using basic_block_rev_t = basic_block_rev<BasicBlock>;
 
-  typedef typename BasicBlock::succ_iterator succ_iterator;
-  typedef typename BasicBlock::const_succ_iterator const_succ_iterator;
-  typedef succ_iterator pred_iterator;
-  typedef const_succ_iterator const_pred_iterator;
+  using succ_iterator = typename BasicBlock::succ_iterator;
+  using const_succ_iterator = typename BasicBlock::const_succ_iterator;
+  using pred_iterator = succ_iterator;
+  using const_pred_iterator = const_succ_iterator;
 
-  typedef typename BasicBlock::reverse_iterator iterator;
-  typedef typename BasicBlock::const_reverse_iterator const_iterator;
-  typedef ikos::discrete_domain<variable_t> live_domain_t;
+  using iterator = typename BasicBlock::reverse_iterator;
+  using const_iterator = typename BasicBlock::const_reverse_iterator;
+  using live_domain_t = ikos::discrete_domain<variable_t>;
 
 private:
   BasicBlock &_bb;
@@ -2517,36 +2517,36 @@ public:
 
 /** Visitor class for statements **/
 template <class Number, class VariableName> struct statement_visitor {
-  typedef binary_op<Number, VariableName> bin_op_t;
-  typedef assignment<Number, VariableName> assign_t;
-  typedef assume_stmt<Number, VariableName> assume_t;
-  typedef select_stmt<Number, VariableName> select_t;
-  typedef assert_stmt<Number, VariableName> assert_t;
-  typedef int_cast_stmt<Number, VariableName> int_cast_t;
-  typedef havoc_stmt<Number, VariableName> havoc_t;
-  typedef unreachable_stmt<Number, VariableName> unreach_t;
-  typedef callsite_stmt<Number, VariableName> callsite_t;
-  typedef return_stmt<Number, VariableName> return_t;
-  typedef intrinsic_stmt<Number, VariableName> intrinsic_t;
-  typedef array_init_stmt<Number, VariableName> arr_init_t;
-  typedef array_store_stmt<Number, VariableName> arr_store_t;
-  typedef array_load_stmt<Number, VariableName> arr_load_t;
-  typedef array_assign_stmt<Number, VariableName> arr_assign_t;
-  typedef make_ref_stmt<Number, VariableName> make_ref_t;
-  typedef region_init_stmt<Number, VariableName> region_init_t;
-  typedef load_from_ref_stmt<Number, VariableName> load_from_ref_t;
-  typedef store_to_ref_stmt<Number, VariableName> store_to_ref_t;
-  typedef gep_ref_stmt<Number, VariableName> gep_ref_t;
-  typedef load_from_arr_ref_stmt<Number, VariableName> load_from_arr_ref_t;
-  typedef store_to_arr_ref_stmt<Number, VariableName> store_to_arr_ref_t;
-  typedef assume_ref_stmt<Number, VariableName> assume_ref_t;
-  typedef assert_ref_stmt<Number, VariableName> assert_ref_t;
-  typedef bool_binary_op<Number, VariableName> bool_bin_op_t;
-  typedef bool_assign_cst<Number, VariableName> bool_assign_cst_t;
-  typedef bool_assign_var<Number, VariableName> bool_assign_var_t;
-  typedef bool_assume_stmt<Number, VariableName> bool_assume_t;
-  typedef bool_select_stmt<Number, VariableName> bool_select_t;
-  typedef bool_assert_stmt<Number, VariableName> bool_assert_t;
+  using bin_op_t = binary_op<Number, VariableName>;
+  using assign_t = assignment<Number, VariableName>;
+  using assume_t = assume_stmt<Number, VariableName>;
+  using select_t = select_stmt<Number, VariableName>;
+  using assert_t = assert_stmt<Number, VariableName>;
+  using int_cast_t = int_cast_stmt<Number, VariableName>;
+  using havoc_t = havoc_stmt<Number, VariableName>;
+  using unreach_t = unreachable_stmt<Number, VariableName>;
+  using callsite_t = callsite_stmt<Number, VariableName>;
+  using return_t = return_stmt<Number, VariableName>;
+  using intrinsic_t = intrinsic_stmt<Number, VariableName>;
+  using arr_init_t = array_init_stmt<Number, VariableName>;
+  using arr_store_t = array_store_stmt<Number, VariableName>;
+  using arr_load_t = array_load_stmt<Number, VariableName>;
+  using arr_assign_t = array_assign_stmt<Number, VariableName>;
+  using make_ref_t = make_ref_stmt<Number, VariableName>;
+  using region_init_t = region_init_stmt<Number, VariableName>;
+  using load_from_ref_t = load_from_ref_stmt<Number, VariableName>;
+  using store_to_ref_t = store_to_ref_stmt<Number, VariableName>;
+  using gep_ref_t = gep_ref_stmt<Number, VariableName>;
+  using load_from_arr_ref_t = load_from_arr_ref_stmt<Number, VariableName>;
+  using store_to_arr_ref_t = store_to_arr_ref_stmt<Number, VariableName>;
+  using assume_ref_t = assume_ref_stmt<Number, VariableName>;
+  using assert_ref_t = assert_ref_stmt<Number, VariableName>;
+  using bool_bin_op_t = bool_binary_op<Number, VariableName>;
+  using bool_assign_cst_t = bool_assign_cst<Number, VariableName>;
+  using bool_assign_var_t = bool_assign_var<Number, VariableName>;
+  using bool_assume_t = bool_assume_stmt<Number, VariableName>;
+  using bool_select_t = bool_select_stmt<Number, VariableName>;
+  using bool_assert_t = bool_assert_stmt<Number, VariableName>;
 
   virtual void visit(bin_op_t &){};
   virtual void visit(assign_t &){};
@@ -2597,17 +2597,17 @@ template <class Number, class VariableName> struct statement_visitor {
 
 template <class Number, class VariableName> class function_decl {
 public:
-  typedef variable<Number, VariableName> variable_t;
-  typedef typename variable_t::type_t type_t;
+  using variable_t = variable<Number, VariableName>;
+  using type_t = typename variable_t::type_t;
 
 private:
   std::string m_func_name;
   std::vector<variable_t> m_inputs;
   std::vector<variable_t> m_outputs;
 
-  typedef typename std::vector<variable_t>::iterator param_iterator;
-  typedef typename std::vector<variable_t>::const_iterator const_param_iterator;
-  typedef function_decl<Number, VariableName> this_type;
+  using param_iterator = typename std::vector<variable_t>::iterator;
+  using const_param_iterator = typename std::vector<variable_t>::const_iterator;
+  using this_type = function_decl<Number, VariableName>;
 
 public:
   function_decl() : m_func_name("") {}
@@ -2764,31 +2764,31 @@ template <class Any> class cfg_ref;
 
 template <class BasicBlockLabel, class VariableName, class Number> class cfg {
 public:
-  typedef Number number_t;
-  typedef BasicBlockLabel basic_block_label_t;
-  typedef basic_block_label_t node_t; // for Bgl graphs
-  typedef VariableName varname_t;
-  typedef variable<number_t, varname_t> variable_t;
-  typedef function_decl<number_t, varname_t> fdecl_t;
-  typedef basic_block<BasicBlockLabel, VariableName, number_t> basic_block_t;
-  typedef statement<number_t, VariableName> statement_t;
+  using number_t = Number;
+  using basic_block_label_t = BasicBlockLabel;
+  using node_t = basic_block_label_t; // for Bgl graphs
+  using varname_t = VariableName;
+  using variable_t = variable<number_t, varname_t>;
+  using fdecl_t = function_decl<number_t, varname_t>;
+  using basic_block_t = basic_block<BasicBlockLabel, VariableName, number_t>;
+  using statement_t = statement<number_t, VariableName>;
 
-  typedef typename basic_block_t::succ_iterator succ_iterator;
-  typedef typename basic_block_t::pred_iterator pred_iterator;
-  typedef typename basic_block_t::const_succ_iterator const_succ_iterator;
-  typedef typename basic_block_t::const_pred_iterator const_pred_iterator;
+  using succ_iterator = typename basic_block_t::succ_iterator;
+  using pred_iterator = typename basic_block_t::pred_iterator;
+  using const_succ_iterator = typename basic_block_t::const_succ_iterator;
+  using const_pred_iterator = typename basic_block_t::const_pred_iterator;
 
-  typedef boost::iterator_range<succ_iterator> succ_range;
-  typedef boost::iterator_range<pred_iterator> pred_range;
-  typedef boost::iterator_range<const_succ_iterator> const_succ_range;
-  typedef boost::iterator_range<const_pred_iterator> const_pred_range;
+  using succ_range = boost::iterator_range<succ_iterator>;
+  using pred_range = boost::iterator_range<pred_iterator>;
+  using const_succ_range = boost::iterator_range<const_succ_iterator>;
+  using const_pred_range = boost::iterator_range<const_pred_iterator>;
 
 private:
-  typedef cfg<BasicBlockLabel, VariableName, Number> cfg_t;
-  typedef std::unordered_map<BasicBlockLabel, basic_block_t *>
-      basic_block_map_t;
-  typedef typename basic_block_map_t::value_type binding_t;
-  typedef typename basic_block_t::live_domain_t live_domain_t;
+  using cfg_t = cfg<BasicBlockLabel, VariableName, Number>;
+  using basic_block_map_t =
+      std::unordered_map<BasicBlockLabel, basic_block_t *>;
+  using binding_t = typename basic_block_map_t::value_type;
+  using live_domain_t = typename basic_block_t::live_domain_t;
 
   struct get_ref : public std::unary_function<binding_t, basic_block_t> {
     get_ref() {}
@@ -2803,21 +2803,20 @@ private:
   };
 
 public:
-  typedef boost::transform_iterator<get_ref,
-                                    typename basic_block_map_t::iterator>
-      iterator;
-  typedef boost::transform_iterator<get_ref,
-                                    typename basic_block_map_t::const_iterator>
-      const_iterator;
-  typedef boost::transform_iterator<get_label,
-                                    typename basic_block_map_t::iterator>
-      label_iterator;
-  typedef boost::transform_iterator<get_label,
-                                    typename basic_block_map_t::const_iterator>
-      const_label_iterator;
+  using iterator =
+      boost::transform_iterator<get_ref, typename basic_block_map_t::iterator>;
+  using const_iterator =
+      boost::transform_iterator<get_ref,
+                                typename basic_block_map_t::const_iterator>;
+  using label_iterator =
+      boost::transform_iterator<get_label,
+                                typename basic_block_map_t::iterator>;
+  using const_label_iterator =
+      boost::transform_iterator<get_label,
+                                typename basic_block_map_t::const_iterator>;
 
-  typedef typename std::vector<varname_t>::iterator var_iterator;
-  typedef typename std::vector<varname_t>::const_iterator const_var_iterator;
+  using var_iterator = typename std::vector<varname_t>::iterator;
+  using const_var_iterator = typename std::vector<varname_t>::const_iterator;
 
 private:
   BasicBlockLabel m_entry;
@@ -2825,7 +2824,7 @@ private:
   basic_block_map_t m_blocks;
   fdecl_t m_func_decl;
 
-  typedef std::unordered_set<BasicBlockLabel> visited_t;
+  using visited_t = std::unordered_set<BasicBlockLabel>;
   template <typename T>
   void dfs_rec(BasicBlockLabel curId, visited_t &visited, T f) const {
     if (!visited.insert(curId).second)
@@ -3207,29 +3206,29 @@ private:
 template <class CFG> class cfg_ref {
 public:
   // CFG's typedefs
-  typedef typename CFG::basic_block_label_t basic_block_label_t;
-  typedef typename CFG::node_t node_t;
-  typedef typename CFG::varname_t varname_t;
-  typedef typename CFG::number_t number_t;
-  typedef typename CFG::variable_t variable_t;
-  typedef typename CFG::fdecl_t fdecl_t;
-  typedef typename CFG::basic_block_t basic_block_t;
-  typedef typename CFG::statement_t statement_t;
+  using basic_block_label_t = typename CFG::basic_block_label_t;
+  using node_t = typename CFG::node_t;
+  using varname_t = typename CFG::varname_t;
+  using number_t = typename CFG::number_t;
+  using variable_t = typename CFG::variable_t;
+  using fdecl_t = typename CFG::fdecl_t;
+  using basic_block_t = typename CFG::basic_block_t;
+  using statement_t = typename CFG::statement_t;
 
-  typedef typename CFG::succ_iterator succ_iterator;
-  typedef typename CFG::pred_iterator pred_iterator;
-  typedef typename CFG::const_succ_iterator const_succ_iterator;
-  typedef typename CFG::const_pred_iterator const_pred_iterator;
-  typedef typename CFG::succ_range succ_range;
-  typedef typename CFG::pred_range pred_range;
-  typedef typename CFG::const_succ_range const_succ_range;
-  typedef typename CFG::const_pred_range const_pred_range;
-  typedef typename CFG::iterator iterator;
-  typedef typename CFG::const_iterator const_iterator;
-  typedef typename CFG::label_iterator label_iterator;
-  typedef typename CFG::const_label_iterator const_label_iterator;
-  typedef typename CFG::var_iterator var_iterator;
-  typedef typename CFG::const_var_iterator const_var_iterator;
+  using succ_iterator = typename CFG::succ_iterator;
+  using pred_iterator = typename CFG::pred_iterator;
+  using const_succ_iterator = typename CFG::const_succ_iterator;
+  using const_pred_iterator = typename CFG::const_pred_iterator;
+  using succ_range = typename CFG::succ_range;
+  using pred_range = typename CFG::pred_range;
+  using const_succ_range = typename CFG::const_succ_range;
+  using const_pred_range = typename CFG::const_pred_range;
+  using iterator = typename CFG::iterator;
+  using const_iterator = typename CFG::const_iterator;
+  using label_iterator = typename CFG::label_iterator;
+  using const_label_iterator = typename CFG::const_label_iterator;
+  using var_iterator = typename CFG::var_iterator;
+  using const_var_iterator = typename CFG::const_var_iterator;
 
 private:
   boost::optional<std::reference_wrapper<CFG>> _ref;
@@ -3379,27 +3378,27 @@ public:
 template <class CFGRef> // CFGRef must be copyable!
 class cfg_rev {
 public:
-  typedef typename CFGRef::basic_block_label_t basic_block_label_t;
-  typedef basic_block_rev<typename CFGRef::basic_block_t> basic_block_t;
-  typedef basic_block_label_t node_t; // for Bgl graphs
-  typedef typename CFGRef::varname_t varname_t;
-  typedef typename CFGRef::number_t number_t;
-  typedef typename CFGRef::variable_t variable_t;
-  typedef typename CFGRef::fdecl_t fdecl_t;
-  typedef typename CFGRef::statement_t statement_t;
+  using basic_block_label_t = typename CFGRef::basic_block_label_t;
+  using basic_block_t = basic_block_rev<typename CFGRef::basic_block_t>;
+  using node_t = basic_block_label_t; // for Bgl graphs
+  using varname_t = typename CFGRef::varname_t;
+  using number_t = typename CFGRef::number_t;
+  using variable_t = typename CFGRef::variable_t;
+  using fdecl_t = typename CFGRef::fdecl_t;
+  using statement_t = typename CFGRef::statement_t;
 
-  typedef typename CFGRef::succ_range pred_range;
-  typedef typename CFGRef::pred_range succ_range;
-  typedef typename CFGRef::const_succ_range const_pred_range;
-  typedef typename CFGRef::const_pred_range const_succ_range;
+  using pred_range = typename CFGRef::succ_range;
+  using succ_range = typename CFGRef::pred_range;
+  using const_pred_range = typename CFGRef::const_succ_range;
+  using const_succ_range = typename CFGRef::const_pred_range;
 
   // For BGL
-  typedef typename basic_block_t::succ_iterator succ_iterator;
-  typedef typename basic_block_t::pred_iterator pred_iterator;
-  typedef typename basic_block_t::const_succ_iterator const_succ_iterator;
-  typedef typename basic_block_t::const_pred_iterator const_pred_iterator;
+  using succ_iterator = typename basic_block_t::succ_iterator;
+  using pred_iterator = typename basic_block_t::pred_iterator;
+  using const_succ_iterator = typename basic_block_t::const_succ_iterator;
+  using const_pred_iterator = typename basic_block_t::const_pred_iterator;
 
-  typedef cfg_rev<CFGRef> cfg_rev_t;
+  using cfg_rev_t = cfg_rev<CFGRef>;
 
 private:
   struct getRev : public std::unary_function<typename CFGRef::basic_block_t,
@@ -3419,7 +3418,7 @@ private:
     }
   };
 
-  typedef std::unordered_set<basic_block_label_t> visited_t;
+  using visited_t = std::unordered_set<basic_block_label_t>;
 
   template <typename T>
   void dfs_rec(basic_block_label_t curId, visited_t &visited, T f) const {
@@ -3444,13 +3443,13 @@ private:
   };
 
 public:
-  typedef boost::transform_iterator<getRev, typename CFGRef::iterator> iterator;
-  typedef boost::transform_iterator<getRev, typename CFGRef::const_iterator>
-      const_iterator;
-  typedef typename CFGRef::label_iterator label_iterator;
-  typedef typename CFGRef::const_label_iterator const_label_iterator;
-  typedef typename CFGRef::var_iterator var_iterator;
-  typedef typename CFGRef::const_var_iterator const_var_iterator;
+  using iterator = boost::transform_iterator<getRev, typename CFGRef::iterator>;
+  using const_iterator =
+      boost::transform_iterator<getRev, typename CFGRef::const_iterator>;
+  using label_iterator = typename CFGRef::label_iterator;
+  using const_label_iterator = typename CFGRef::const_label_iterator;
+  using var_iterator = typename CFGRef::var_iterator;
+  using const_var_iterator = typename CFGRef::const_var_iterator;
 
 private:
   CFGRef _cfg;
@@ -3571,8 +3570,8 @@ public:
 
 // Helper class
 template <typename CFG> struct cfg_hasher {
-  typedef typename CFG::basic_block_t::callsite_t callsite_t;
-  typedef typename CFG::fdecl_t fdecl_t;
+  using callsite_t = typename CFG::basic_block_t::callsite_t;
+  using fdecl_t = typename CFG::fdecl_t;
 
   static size_t hash(callsite_t cs) {
     size_t res = boost::hash_value(cs.get_func_name());
@@ -3628,50 +3627,50 @@ public:
 private:
   CFG m_cfg;
 
-  typedef typename CFG::varname_t V;
-  typedef typename CFG::number_t N;
+  using V = typename CFG::varname_t;
+  using N = typename CFG::number_t;
 
   struct type_checker_visitor : public statement_visitor<N, V> {
-    typedef typename statement_visitor<N, V>::bin_op_t bin_op_t;
-    typedef typename statement_visitor<N, V>::assign_t assign_t;
-    typedef typename statement_visitor<N, V>::assume_t assume_t;
-    typedef typename statement_visitor<N, V>::assert_t assert_t;
-    typedef typename statement_visitor<N, V>::int_cast_t int_cast_t;
-    typedef typename statement_visitor<N, V>::select_t select_t;
-    typedef typename statement_visitor<N, V>::havoc_t havoc_t;
-    typedef typename statement_visitor<N, V>::unreach_t unreach_t;
-    typedef typename statement_visitor<N, V>::callsite_t callsite_t;
-    typedef typename statement_visitor<N, V>::return_t return_t;
-    typedef typename statement_visitor<N, V>::intrinsic_t intrinsic_t;
-    typedef typename statement_visitor<N, V>::arr_init_t arr_init_t;
-    typedef typename statement_visitor<N, V>::arr_store_t arr_store_t;
-    typedef typename statement_visitor<N, V>::arr_load_t arr_load_t;
-    typedef typename statement_visitor<N, V>::arr_assign_t arr_assign_t;
-    typedef typename statement_visitor<N, V>::make_ref_t make_ref_t;
-    typedef typename statement_visitor<N, V>::region_init_t region_init_t;
-    typedef typename statement_visitor<N, V>::load_from_ref_t load_from_ref_t;
-    typedef typename statement_visitor<N, V>::store_to_ref_t store_to_ref_t;
-    typedef typename statement_visitor<N, V>::gep_ref_t gep_ref_t;
-    typedef typename statement_visitor<N, V>::load_from_arr_ref_t
-        load_from_arr_ref_t;
+    using bin_op_t = typename statement_visitor<N, V>::bin_op_t;
+    using assign_t = typename statement_visitor<N, V>::assign_t;
+    using assume_t = typename statement_visitor<N, V>::assume_t;
+    using assert_t = typename statement_visitor<N, V>::assert_t;
+    using int_cast_t = typename statement_visitor<N, V>::int_cast_t;
+    using select_t = typename statement_visitor<N, V>::select_t;
+    using havoc_t = typename statement_visitor<N, V>::havoc_t;
+    using unreach_t = typename statement_visitor<N, V>::unreach_t;
+    using callsite_t = typename statement_visitor<N, V>::callsite_t;
+    using return_t = typename statement_visitor<N, V>::return_t;
+    using intrinsic_t = typename statement_visitor<N, V>::intrinsic_t;
+    using arr_init_t = typename statement_visitor<N, V>::arr_init_t;
+    using arr_store_t = typename statement_visitor<N, V>::arr_store_t;
+    using arr_load_t = typename statement_visitor<N, V>::arr_load_t;
+    using arr_assign_t = typename statement_visitor<N, V>::arr_assign_t;
+    using make_ref_t = typename statement_visitor<N, V>::make_ref_t;
+    using region_init_t = typename statement_visitor<N, V>::region_init_t;
+    using load_from_ref_t = typename statement_visitor<N, V>::load_from_ref_t;
+    using store_to_ref_t = typename statement_visitor<N, V>::store_to_ref_t;
+    using gep_ref_t = typename statement_visitor<N, V>::gep_ref_t;
+    using load_from_arr_ref_t =
+        typename statement_visitor<N, V>::load_from_arr_ref_t;
     typedef
         typename statement_visitor<N, V>::store_to_arr_ref_t store_to_arr_ref_t;
-    typedef typename statement_visitor<N, V>::assume_ref_t assume_ref_t;
-    typedef typename statement_visitor<N, V>::assert_ref_t assert_ref_t;
-    typedef typename statement_visitor<N, V>::bool_bin_op_t bool_bin_op_t;
+    using assume_ref_t = typename statement_visitor<N, V>::assume_ref_t;
+    using assert_ref_t = typename statement_visitor<N, V>::assert_ref_t;
+    using bool_bin_op_t = typename statement_visitor<N, V>::bool_bin_op_t;
     typedef
         typename statement_visitor<N, V>::bool_assign_cst_t bool_assign_cst_t;
     typedef
         typename statement_visitor<N, V>::bool_assign_var_t bool_assign_var_t;
-    typedef typename statement_visitor<N, V>::bool_assume_t bool_assume_t;
-    typedef typename statement_visitor<N, V>::bool_assert_t bool_assert_t;
-    typedef typename statement_visitor<N, V>::bool_select_t bool_select_t;
-    typedef typename CFG::statement_t statement_t;
-    typedef ikos::linear_expression<N, V> lin_exp_t;
-    typedef ikos::linear_constraint<N, V> lin_cst_t;
-    typedef variable<N, V> variable_t;
-    typedef typename variable_t::type_t variable_type_t;
-    typedef typename variable_t::bitwidth_t variable_bitwidth_t;
+    using bool_assume_t = typename statement_visitor<N, V>::bool_assume_t;
+    using bool_assert_t = typename statement_visitor<N, V>::bool_assert_t;
+    using bool_select_t = typename statement_visitor<N, V>::bool_select_t;
+    using statement_t = typename CFG::statement_t;
+    using lin_exp_t = ikos::linear_expression<N, V>;
+    using lin_cst_t = ikos::linear_constraint<N, V>;
+    using variable_t = variable<N, V>;
+    using variable_type_t = typename variable_t::type_t;
+    using variable_bitwidth_t = typename variable_t::bitwidth_t;
 
     std::unordered_map<std::string, variable_t> m_varname_map;
 

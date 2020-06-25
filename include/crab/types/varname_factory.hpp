@@ -171,7 +171,7 @@ public:
 
 //! Specialized factory for strings
 class str_variable_factory : public variable_factory<std::string> {
-  typedef variable_factory<std::string> variable_factory_t;
+  using variable_factory_t = variable_factory<std::string>;
 
 public:
   using varname_t = variable_factory_t::varname_t;
@@ -234,7 +234,7 @@ protected:
 // //! Specialized factory for integers
 // class int_variable_factory {
 // public:
-//   typedef ikos::index_t varname_t;
+//   using varname_t = ikos::index_t;
 //   int_variable_factory() {}
 //   int_variable_factory(const int_variable_factory &o) = delete;
 //   int_variable_factory &operator=(const int_variable_factory &o) = delete;
@@ -242,7 +242,7 @@ protected:
 // };
 // class int_var_alloc_col {
 // public:
-//   typedef ikos::index_t varname_t;
+//   using varname_t = ikos::index_t;
 //   static int_variable_factory vfac;
 //   int_var_alloc_col() : colour(0), next_id(0) {}
 //   int_var_alloc_col(const int_var_alloc_col &o)

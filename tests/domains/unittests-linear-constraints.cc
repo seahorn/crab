@@ -14,8 +14,8 @@ int main(int argc, char **argv) {
   variable_factory_t vfac;
 
   { // linear constraints normalization
-    typedef ikos::linear_constraint_system<ikos::z_number, varname_t>
-        linear_constraint_system_t;
+    using linear_constraint_system_t =
+        ikos::linear_constraint_system<ikos::z_number, varname_t>;
 
     z_var x(vfac["x"], crab::INT_TYPE, 32);
     z_var y(vfac["y"], crab::INT_TYPE, 32);

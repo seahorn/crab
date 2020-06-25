@@ -30,19 +30,17 @@ class necessary_preconditions_fixpoint_iterator
     : private ikos::interleaved_fwd_fixpoint_iterator<crab::cfg::cfg_rev<CFG>,
                                                       AbsDom> {
 
-  typedef ikos::interleaved_fwd_fixpoint_iterator<crab::cfg::cfg_rev<CFG>,
-                                                  AbsDom>
-      fixpoint_iterator_t;
-  typedef typename CFG::basic_block_label_t bb_label_t;
-  typedef typename CFG::statement_t stmt_t;
-  typedef std::unordered_map<bb_label_t, AbsDom> bb_abstract_map_t;
-  typedef std::unordered_map<const stmt_t *, AbsDom> pp_abstract_map_t;
+  using fixpoint_iterator_t =
+      ikos::interleaved_fwd_fixpoint_iterator<crab::cfg::cfg_rev<CFG>, AbsDom>;
+  using bb_label_t = typename CFG::basic_block_label_t;
+  using stmt_t = typename CFG::statement_t;
+  using bb_abstract_map_t = std::unordered_map<bb_label_t, AbsDom>;
+  using pp_abstract_map_t = std::unordered_map<const stmt_t *, AbsDom>;
 
   /// forward and backward transformers
-  typedef intra_abs_transformer<AbsDom> abs_fwd_tr_t;
-  typedef intra_necessary_preconditions_abs_transformer<AbsDom,
-                                                        pp_abstract_map_t>
-      abs_bwd_tr_t;
+  using abs_fwd_tr_t = intra_abs_transformer<AbsDom>;
+  using abs_bwd_tr_t =
+      intra_necessary_preconditions_abs_transformer<AbsDom, pp_abstract_map_t>;
 
   CFG m_cfg;
   // postcondition (i.e, final states) that we want to propagate backwards
@@ -111,10 +109,10 @@ class necessary_preconditions_fixpoint_iterator
   }
 
 public:
-  typedef typename fixpoint_iterator_t::wto_t wto_t;
-  typedef bb_abstract_map_t precond_map_t;
-  typedef typename precond_map_t::iterator iterator;
-  typedef typename precond_map_t::const_iterator const_iterator;
+  using wto_t = typename fixpoint_iterator_t::wto_t;
+  using precond_map_t = bb_abstract_map_t;
+  using iterator = typename precond_map_t::iterator;
+  using const_iterator = typename precond_map_t::const_iterator;
 
   // This constructor computes necessary preconditions from error
   // states.
@@ -196,34 +194,34 @@ public:
  **/
 template <typename CFG, typename AbsDom> class intra_forward_backward_analyzer {
 public:
-  typedef CFG cfg_t;
-  typedef typename CFG::basic_block_t bb_t;
-  typedef typename CFG::basic_block_label_t bb_label_t;
-  typedef typename CFG::statement_t stmt_t;
-  typedef typename CFG::varname_t varname_t;
-  typedef typename CFG::number_t number_t;
+  using cfg_t = CFG;
+  using bb_t = typename CFG::basic_block_t;
+  using bb_label_t = typename CFG::basic_block_label_t;
+  using stmt_t = typename CFG::statement_t;
+  using varname_t = typename CFG::varname_t;
+  using number_t = typename CFG::number_t;
   // used for checkers
-  typedef AbsDom abs_dom_t;
-  typedef intra_abs_transformer<AbsDom> abs_tr_t;
+  using abs_dom_t = AbsDom;
+  using abs_tr_t = intra_abs_transformer<AbsDom>;
 
 private:
-  typedef intra_fwd_analyzer<CFG, AbsDom> fwd_analyzer_t;
-  typedef necessary_preconditions_fixpoint_iterator<CFG, AbsDom>
-      bwd_fixpoint_iterator_t;
-  typedef typename bwd_fixpoint_iterator_t::precond_map_t precond_map_t;
-  typedef typename bwd_fixpoint_iterator_t::wto_t bwd_wto_t;
-  typedef live_and_dead_analysis<CFG> liveness_t;
-  typedef std::unordered_map<bb_label_t, std::set<bb_label_t>> idom_tree_t;
-  typedef typename bb_t::assert_t assert_t;
-  typedef typename bb_t::bool_assert_t bool_assert_t;
-  typedef typename bb_t::assert_ref_t assert_ref_t;
+  using fwd_analyzer_t = intra_fwd_analyzer<CFG, AbsDom>;
+  using bwd_fixpoint_iterator_t =
+      necessary_preconditions_fixpoint_iterator<CFG, AbsDom>;
+  using precond_map_t = typename bwd_fixpoint_iterator_t::precond_map_t;
+  using bwd_wto_t = typename bwd_fixpoint_iterator_t::wto_t;
+  using liveness_t = live_and_dead_analysis<CFG>;
+  using idom_tree_t = std::unordered_map<bb_label_t, std::set<bb_label_t>>;
+  using assert_t = typename bb_t::assert_t;
+  using bool_assert_t = typename bb_t::bool_assert_t;
+  using assert_ref_t = typename bb_t::assert_ref_t;
 
 public:
-  typedef typename fwd_analyzer_t::assumption_map_t assumption_map_t;
-  typedef typename fwd_analyzer_t::invariant_map_t invariant_map_t;
+  using assumption_map_t = typename fwd_analyzer_t::assumption_map_t;
+  using invariant_map_t = typename fwd_analyzer_t::invariant_map_t;
   // bwd_wto_t and wto_t are different types because bwd_wto_t is
   // over the reversed CFG.
-  typedef typename fwd_analyzer_t::wto_t wto_t;
+  using wto_t = typename fwd_analyzer_t::wto_t;
 
 private:
   // -- the cfg
@@ -367,8 +365,8 @@ private:
   }
 
 public:
-  typedef typename bwd_fixpoint_iterator_t::iterator iterator;
-  typedef typename bwd_fixpoint_iterator_t::const_iterator const_iterator;
+  using iterator = typename bwd_fixpoint_iterator_t::iterator;
+  using const_iterator = typename bwd_fixpoint_iterator_t::const_iterator;
 
   // We don't remember init but we need it to call make_top()
   intra_forward_backward_analyzer(CFG cfg, AbsDom init)

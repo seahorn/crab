@@ -50,14 +50,14 @@ public:
   enum { special_assign = 1 };
   enum { close_bounds_inline = 0 };
 
-  typedef int64_t Wt;
+  using Wt = int64_t;
 
-  typedef typename std::conditional<
+  using graph_t = typename std::conditional<
       (Graph == ss), SparseWtGraph<Wt>,
       typename std::conditional<
           (Graph == adapt_ss), AdaptGraph<Wt>,
           typename std::conditional<(Graph == pt), PtGraph<Wt>,
-                                    HtGraph<Wt>>::type>::type>::type graph_t;
+                                    HtGraph<Wt>>::type>::type>::type;
 };
 
 // We don't use GraphRep::adapt_ss because having problems
@@ -71,14 +71,14 @@ public:
   enum { close_bounds_inline = 0 };
 
   // Use Number as graph weights
-  typedef Number Wt;
+  using Wt = Number;
 
-  typedef typename std::conditional<
+  using graph_t = typename std::conditional<
       (Graph == ss), SparseWtGraph<Wt>,
       typename std::conditional<
           (Graph == adapt_ss), AdaptGraph<Wt>,
           typename std::conditional<(Graph == pt), PtGraph<Wt>,
-                                    HtGraph<Wt>>::type>::type>::type graph_t;
+                                    HtGraph<Wt>>::type>::type>::type;
 };
 
 template <typename Number, GraphRep Graph = GraphRep::adapt_ss>
@@ -89,14 +89,14 @@ public:
   enum { special_assign = 1 };
   enum { close_bounds_inline = 0 };
 
-  typedef safe_i64 Wt;
+  using Wt = safe_i64;
 
-  typedef typename std::conditional<
+  using graph_t = typename std::conditional<
       (Graph == ss), SparseWtGraph<Wt>,
       typename std::conditional<
           (Graph == adapt_ss), AdaptGraph<Wt>,
           typename std::conditional<(Graph == pt), PtGraph<Wt>,
-                                    HtGraph<Wt>>::type>::type>::type graph_t;
+                                    HtGraph<Wt>>::type>::type>::type;
 };
 
 template <typename Number, GraphRep Graph = GraphRep::adapt_ss>
@@ -107,14 +107,14 @@ public:
   enum { special_assign = 0 };
   enum { close_bounds_inline = 1 };
 
-  typedef int64_t Wt;
+  using Wt = int64_t;
 
-  typedef typename std::conditional<
+  using graph_t = typename std::conditional<
       (Graph == ss), SparseWtGraph<Wt>,
       typename std::conditional<
           (Graph == adapt_ss), AdaptGraph<Wt>,
           typename std::conditional<(Graph == pt), PtGraph<Wt>,
-                                    HtGraph<Wt>>::type>::type>::type graph_t;
+                                    HtGraph<Wt>>::type>::type>::type;
 };
 
 /**

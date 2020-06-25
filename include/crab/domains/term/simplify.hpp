@@ -15,8 +15,8 @@ namespace term {
 // Common API to simplifiers
 template <class Num, class Ftor> class Simplifier {
 protected:
-  typedef term_table<Num, Ftor> term_table_t;
-  typedef typename term_table_t::term_id_t term_id_t;
+  using term_table_t = term_table<Num, Ftor>;
+  using term_id_t = typename term_table_t::term_id_t;
 
   term_table_t &_ttbl;
 
@@ -37,11 +37,11 @@ public:
 // to arithmetic operators assuming that conmutativity,
 // associativity etc properties hold as expected.
 template <class Num> class NumSimplifier : Simplifier<Num, term_operator_t> {
-  typedef Simplifier<Num, term_operator_t> simplifier_t;
+  using simplifier_t = Simplifier<Num, term_operator_t>;
 
-  typedef term_table<Num, term_operator_t> term_table_t;
-  typedef typename term_table_t::term_id_t term_id_t;
-  typedef typename term_table_t::term_t term_t;
+  using term_table_t = term_table<Num, term_operator_t>;
+  using term_id_t = typename term_table_t::term_id_t;
+  using term_t = typename term_table_t::term_t;
 
   // Simplify term f(left,right)
   boost::optional<term_id_t> simplify_term(term_operator_t f, term_id_t left,

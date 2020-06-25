@@ -25,9 +25,9 @@ namespace domains {
 namespace ldd {
 
 /** An LDD node */
-typedef std::shared_ptr<LddNode> LddNodePtr;
-typedef std::pair<LddNodePtr, LddNodePtr> LddNodePtrPair;
-typedef std::vector<LddNodePtr> LddNodePtrVector;
+using LddNodePtr = std::shared_ptr<LddNode>;
+using LddNodePtrPair = std::pair<LddNodePtr, LddNodePtr>;
+using LddNodePtrVector = std::vector<LddNodePtr>;
 
 /** Custom deleter for LddNodePtr*/
 class ldd_node_deleter {

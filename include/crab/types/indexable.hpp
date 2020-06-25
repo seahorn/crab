@@ -4,7 +4,7 @@
 
 namespace ikos {
 // Numerical type for indexed objects used by patricia trees
-typedef uint64_t index_t;
+using index_t = uint64_t;
 } // end namespace ikos
 
 namespace crab {

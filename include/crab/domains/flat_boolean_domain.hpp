@@ -28,7 +28,7 @@ class boolean_value {
             \ /
            Bottom
   */
-  typedef enum { False = 0x0, True = 0x1, Bottom = 0x2, Top = 0x3 } kind_t;
+  using kind_t = enum { False = 0x0, True = 0x1, Bottom = 0x2, Top = 0x3 };
 
   kind_t _value;
 
@@ -213,12 +213,12 @@ inline crab_os &operator<<(crab_os &o, const boolean_value &v) {
 template <typename Number, typename VariableName>
 class flat_boolean_domain final
     : public abstract_domain<flat_boolean_domain<Number, VariableName>> {
-  typedef flat_boolean_domain<Number, VariableName> flat_boolean_domain_t;
+  using flat_boolean_domain_t = flat_boolean_domain<Number, VariableName>;
 
 public:
-  typedef abstract_domain<flat_boolean_domain_t> abstract_domain_t;
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using abstract_domain_t = abstract_domain<flat_boolean_domain_t>;
+  using number_t = Number;
+  using varname_t = VariableName;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_t::interval_t;
   using typename abstract_domain_t::linear_constraint_system_t;
@@ -227,9 +227,9 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef boolean_value bool_t;
-  typedef ikos::separate_domain<variable_t, boolean_value> separate_domain_t;
-  typedef typename separate_domain_t::iterator iterator;
+  using bool_t = boolean_value;
+  using separate_domain_t = ikos::separate_domain<variable_t, boolean_value>;
+  using iterator = typename separate_domain_t::iterator;
 
 private:
   separate_domain_t _env;
@@ -690,8 +690,8 @@ public:
 
 template <typename Number, typename VariableName>
 struct abstract_domain_traits<flat_boolean_domain<Number, VariableName>> {
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using number_t = Number;
+  using varname_t = VariableName;
 };
 
 // Simple reduced product of the flat boolean domain with an
@@ -717,13 +717,13 @@ struct abstract_domain_traits<flat_boolean_domain<Number, VariableName>> {
 template <typename NumDom>
 class flat_boolean_numerical_domain final
     : public abstract_domain<flat_boolean_numerical_domain<NumDom>> {
-  typedef flat_boolean_numerical_domain<NumDom> bool_num_domain_t;
-  typedef abstract_domain<bool_num_domain_t> abstract_domain_t;
+  using bool_num_domain_t = flat_boolean_numerical_domain<NumDom>;
+  using abstract_domain_t = abstract_domain<bool_num_domain_t>;
 
 public:
-  typedef typename NumDom::number_t number_t;
-  typedef typename NumDom::varname_t varname_t;
-  typedef flat_boolean_domain<number_t, varname_t> bool_domain_t;
+  using number_t = typename NumDom::number_t;
+  using varname_t = typename NumDom::varname_t;
+  using bool_domain_t = flat_boolean_domain<number_t, varname_t>;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_t::interval_t;
   using typename abstract_domain_t::linear_constraint_system_t;
@@ -732,18 +732,18 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef ikos::bound<number_t> bound_t;
+  using bound_t = ikos::bound<number_t>;
 
 private:
   // This lattice is the dual of a discrete lattice where
   // elements are linear constraints.
   class lin_cst_set_domain {
 
-    typedef ikos::discrete_domain<linear_constraint_t> lincons_domain_t;
+    using lincons_domain_t = ikos::discrete_domain<linear_constraint_t>;
     lincons_domain_t m_lincons_set;
 
   public:
-    typedef typename lincons_domain_t::iterator iterator;
+    using iterator = typename lincons_domain_t::iterator;
 
     lin_cst_set_domain(lincons_domain_t s) : m_lincons_set(s) {}
     lin_cst_set_domain()
@@ -816,16 +816,16 @@ private:
     }
   };
 
-  typedef domain_product2<number_t, varname_t, bool_domain_t, NumDom>
-      domain_product2_t;
+  using domain_product2_t =
+      domain_product2<number_t, varname_t, bool_domain_t, NumDom>;
 
   // For performing reduction from the boolean domain to the
   // numerical one.
   // Map bool variables to sets of constraints such that if the
   // bool variable is true then the conjunction of the constraints
   // must be satisfiable.
-  typedef ikos::separate_domain<variable_t, lin_cst_set_domain>
-      var_lincons_map_t;
+  using var_lincons_map_t =
+      ikos::separate_domain<variable_t, lin_cst_set_domain>;
   /** we need to keep track which constraints still hold at the
       time the reduction from boolean variables to numerical ones
       is done. For instance,
@@ -1718,17 +1718,17 @@ public:
 
 template <typename Num>
 struct abstract_domain_traits<flat_boolean_numerical_domain<Num>> {
-  typedef typename Num::number_t number_t;
-  typedef typename Num::varname_t varname_t;
+  using number_t = typename Num::number_t;
+  using varname_t = typename Num::varname_t;
 };
 
 template <typename NumDom>
 class checker_domain_traits<flat_boolean_numerical_domain<NumDom>> {
 public:
-  typedef flat_boolean_numerical_domain<NumDom> this_type;
-  typedef typename this_type::linear_constraint_t linear_constraint_t;
-  typedef typename this_type::disjunctive_linear_constraint_system_t
-      disjunctive_linear_constraint_system_t;
+  using this_type = flat_boolean_numerical_domain<NumDom>;
+  using linear_constraint_t = typename this_type::linear_constraint_t;
+  using disjunctive_linear_constraint_system_t =
+      typename this_type::disjunctive_linear_constraint_system_t;
 
   static bool entail(this_type &lhs,
                      const disjunctive_linear_constraint_system_t &rhs) {

@@ -58,9 +58,9 @@ class interval_domain final
     : public crab::domains::abstract_domain<
           interval_domain<Number, VariableName, max_reduction_cycles>> {
 public:
-  typedef interval_domain<Number, VariableName, max_reduction_cycles>
-      interval_domain_t;
-  typedef crab::domains::abstract_domain<interval_domain_t> abstract_domain_t;
+  using interval_domain_t =
+      interval_domain<Number, VariableName, max_reduction_cycles>;
+  using abstract_domain_t = crab::domains::abstract_domain<interval_domain_t>;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_t::interval_t;
   using typename abstract_domain_t::linear_constraint_system_t;
@@ -69,16 +69,16 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using number_t = Number;
+  using varname_t = VariableName;
 
 private:
-  typedef separate_domain<variable_t, interval_t> separate_domain_t;
-  typedef linear_interval_solver<number_t, varname_t, separate_domain_t>
-      solver_t;
+  using separate_domain_t = separate_domain<variable_t, interval_t>;
+  using solver_t =
+      linear_interval_solver<number_t, varname_t, separate_domain_t>;
 
 public:
-  typedef typename separate_domain_t::iterator iterator;
+  using iterator = typename separate_domain_t::iterator;
 
 private:
   separate_domain_t _env;
@@ -644,8 +644,8 @@ namespace domains {
 
 template <typename Number, typename VariableName>
 struct abstract_domain_traits<ikos::interval_domain<Number, VariableName>> {
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using number_t = Number;
+  using varname_t = VariableName;
 };
 
 } // namespace domains

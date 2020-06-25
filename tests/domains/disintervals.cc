@@ -44,8 +44,8 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  // typedef dis_interval <z_number> z_dis_interval_t;
-  // typedef interval <z_number> interval_t;
+  // using z_dis_interval_t = dis_interval <z_number>;
+  // using interval_t = interval <z_number>;
 
   // {
   //   z_dis_interval_t x (interval_t (0,5));

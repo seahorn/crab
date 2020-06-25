@@ -15,8 +15,8 @@ namespace domains {
 
 namespace apron {
 
-typedef ap_abstract0_t *ap_state;
-typedef std::shared_ptr<ap_abstract0_t> ap_state_ptr;
+using ap_state = ap_abstract0_t *;
+using ap_state_ptr = std::shared_ptr<ap_abstract0_t>;
 
 /** Custom deleter for ap_state_ptr */
 class ap_state_deleter {

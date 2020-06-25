@@ -63,8 +63,8 @@ template <class T> class vec {
 
 public:
   // Types:
-  typedef int Key;
-  typedef T Datum;
+  using Key = int;
+  using Datum = T;
 
   // Constructors:
   vec(void) : data(NULL), sz(0), cap(0) {}

@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  typedef wrapped_interval<ikos::z_number> wrapped_interval_t;
+  using wrapped_interval_t = wrapped_interval<ikos::z_number>;
 
   {
     wrapped_interval_t i1(crab::wrapint(-10, 8), crab::wrapint(10, 8));

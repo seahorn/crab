@@ -18,14 +18,14 @@ using namespace crab::domains::ldd;
 #define RATIONALS
 
 #ifdef RATIONALS
-typedef q_number number_t;
+using number_t = q_number;
 #else
-typedef z_number number_t;
+using number_t = z_number;
 #endif
 
-typedef linear_constraint<number_t, varname_t> linear_constraint_t;
-typedef linear_expression<number_t, varname_t> linear_expression_t;
-typedef interval<number_t> interval_t;
+using linear_constraint_t = linear_constraint<number_t, varname_t>;
+using linear_expression_t = linear_expression<number_t, varname_t>;
+using interval_t = interval<number_t>;
 
 #ifdef HAVE_LDD
 
@@ -235,8 +235,8 @@ int main(int argc, char **argv) {
     // /Users/E30338/Repos/crab/build_crab2/ldd/src/ldd/cudd-2.4.2/cudd/cuddTable.c,
     // line 1143.
 
-    typedef boxes_domain<number_t, varname_t> boxes_domain_t;
-    typedef typename boxes_domain_t::variable_t var_t;
+    using boxes_domain_t = boxes_domain<number_t, varname_t>;
+    using var_t = typename boxes_domain_t::variable_t;
 
     boxes_domain_t s1;
     s1 += linear_constraint_t(var_t(x) >= number_t(0));

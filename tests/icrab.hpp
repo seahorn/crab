@@ -12,9 +12,8 @@ extern void z_bu_inter_run_and_check(crab::cg_impl::z_cg_t *cg, BUDom bu_top,
                                      unsigned jump_set_size, bool enable_stats);
 
 // To run abstract domains defined over integers
-typedef crab::analyzer::top_down_inter_analyzer_parameters<
-    crab::cg_impl::z_cg_ref_t>
-    td_inter_params_t;
+using td_inter_params_t = crab::analyzer::top_down_inter_analyzer_parameters<
+    crab::cg_impl::z_cg_ref_t>;
 
 template <typename Dom>
 extern void z_td_inter_run_and_check(crab::cg_impl::z_cg_t *cg, Dom init,
@@ -41,9 +40,8 @@ void bu_inter_run(crab::cg_impl::z_cg_t *cg, BUDom bu_top, TDDom td_top,
 }
 
 // To run abstract domains defined over integers
-typedef crab::analyzer::top_down_inter_analyzer_parameters<
-    crab::cg_impl::z_cg_ref_t>
-    td_inter_params_t;
+using td_inter_params_t = crab::analyzer::top_down_inter_analyzer_parameters<
+    crab::cg_impl::z_cg_ref_t>;
 
 template <typename Dom>
 void td_inter_run(crab::cg_impl::z_cg_t *cg, Dom init, td_inter_params_t params,

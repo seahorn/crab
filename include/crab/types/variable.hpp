@@ -64,11 +64,11 @@ class variable : public indexable {
   // deduce the kind of Number from constraints like x < y.
 
 public:
-  typedef variable<Number, VariableName> variable_t;
-  typedef unsigned bitwidth_t;
-  typedef variable_type type_t;
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using variable_t = variable<Number, VariableName>;
+  using bitwidth_t = unsigned;
+  using type_t = variable_type;
+  using number_t = Number;
+  using varname_t = VariableName;
 
 private:
   VariableName _n;

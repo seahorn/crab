@@ -129,9 +129,9 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  typedef intra_fwd_analyzer<z_cfg_ref_t, z_sdbm_domain_t> num_analyzer_t;
-  typedef intra_checker<num_analyzer_t> num_checker_t;
-  typedef assert_property_checker<num_analyzer_t> assert_prop_num_checker_t;
+  using num_analyzer_t = intra_fwd_analyzer<z_cfg_ref_t, z_sdbm_domain_t>;
+  using num_checker_t = intra_checker<num_analyzer_t>;
+  using assert_prop_num_checker_t = assert_property_checker<num_analyzer_t>;
 
   variable_factory_t vfac;
   z_cfg_ref_t cfg_ref(*(prog(vfac)));

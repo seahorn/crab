@@ -46,51 +46,51 @@ template <typename Number, typename VariableName>
 class abs_transformer_api
     : public crab::cfg::statement_visitor<Number, VariableName> {
 public:
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using number_t = Number;
+  using varname_t = VariableName;
 
-  typedef variable<number_t, VariableName> var_t;
-  typedef ikos::linear_expression<number_t, VariableName> lin_exp_t;
-  typedef ikos::linear_constraint<number_t, VariableName> lin_cst_t;
-  typedef ikos::linear_constraint_system<number_t, VariableName> lin_cst_sys_t;
+  using var_t = variable<number_t, VariableName>;
+  using lin_exp_t = ikos::linear_expression<number_t, VariableName>;
+  using lin_cst_t = ikos::linear_constraint<number_t, VariableName>;
+  using lin_cst_sys_t = ikos::linear_constraint_system<number_t, VariableName>;
 
-  typedef crab::cfg::havoc_stmt<number_t, VariableName> havoc_t;
-  typedef crab::cfg::unreachable_stmt<number_t, VariableName> unreach_t;
+  using havoc_t = crab::cfg::havoc_stmt<number_t, VariableName>;
+  using unreach_t = crab::cfg::unreachable_stmt<number_t, VariableName>;
 
-  typedef crab::cfg::binary_op<number_t, VariableName> bin_op_t;
-  typedef crab::cfg::assignment<number_t, VariableName> assign_t;
-  typedef crab::cfg::assume_stmt<number_t, VariableName> assume_t;
-  typedef crab::cfg::select_stmt<number_t, VariableName> select_t;
-  typedef crab::cfg::assert_stmt<number_t, VariableName> assert_t;
-  typedef crab::cfg::int_cast_stmt<number_t, VariableName> int_cast_t;
+  using bin_op_t = crab::cfg::binary_op<number_t, VariableName>;
+  using assign_t = crab::cfg::assignment<number_t, VariableName>;
+  using assume_t = crab::cfg::assume_stmt<number_t, VariableName>;
+  using select_t = crab::cfg::select_stmt<number_t, VariableName>;
+  using assert_t = crab::cfg::assert_stmt<number_t, VariableName>;
+  using int_cast_t = crab::cfg::int_cast_stmt<number_t, VariableName>;
 
-  typedef crab::cfg::callsite_stmt<number_t, VariableName> callsite_t;
-  typedef crab::cfg::return_stmt<number_t, VariableName> return_t;
-  typedef crab::cfg::intrinsic_stmt<number_t, VariableName> intrinsic_t;
+  using callsite_t = crab::cfg::callsite_stmt<number_t, VariableName>;
+  using return_t = crab::cfg::return_stmt<number_t, VariableName>;
+  using intrinsic_t = crab::cfg::intrinsic_stmt<number_t, VariableName>;
 
-  typedef crab::cfg::array_init_stmt<number_t, VariableName> arr_init_t;
-  typedef crab::cfg::array_store_stmt<number_t, VariableName> arr_store_t;
-  typedef crab::cfg::array_load_stmt<number_t, VariableName> arr_load_t;
-  typedef crab::cfg::array_assign_stmt<number_t, VariableName> arr_assign_t;
+  using arr_init_t = crab::cfg::array_init_stmt<number_t, VariableName>;
+  using arr_store_t = crab::cfg::array_store_stmt<number_t, VariableName>;
+  using arr_load_t = crab::cfg::array_load_stmt<number_t, VariableName>;
+  using arr_assign_t = crab::cfg::array_assign_stmt<number_t, VariableName>;
 
-  typedef crab::cfg::region_init_stmt<number_t, varname_t> region_init_t;
-  typedef crab::cfg::make_ref_stmt<number_t, varname_t> make_ref_t;
-  typedef crab::cfg::load_from_ref_stmt<number_t, varname_t> load_from_ref_t;
-  typedef crab::cfg::store_to_ref_stmt<number_t, varname_t> store_to_ref_t;
-  typedef crab::cfg::gep_ref_stmt<number_t, varname_t> gep_ref_t;
-  typedef crab::cfg::load_from_arr_ref_stmt<number_t, varname_t>
-      load_from_arr_ref_t;
-  typedef crab::cfg::store_to_arr_ref_stmt<number_t, varname_t>
-      store_to_arr_ref_t;
-  typedef crab::cfg::assume_ref_stmt<number_t, VariableName> assume_ref_t;
-  typedef crab::cfg::assert_ref_stmt<number_t, VariableName> assert_ref_t;
+  using region_init_t = crab::cfg::region_init_stmt<number_t, varname_t>;
+  using make_ref_t = crab::cfg::make_ref_stmt<number_t, varname_t>;
+  using load_from_ref_t = crab::cfg::load_from_ref_stmt<number_t, varname_t>;
+  using store_to_ref_t = crab::cfg::store_to_ref_stmt<number_t, varname_t>;
+  using gep_ref_t = crab::cfg::gep_ref_stmt<number_t, varname_t>;
+  using load_from_arr_ref_t =
+      crab::cfg::load_from_arr_ref_stmt<number_t, varname_t>;
+  using store_to_arr_ref_t =
+      crab::cfg::store_to_arr_ref_stmt<number_t, varname_t>;
+  using assume_ref_t = crab::cfg::assume_ref_stmt<number_t, VariableName>;
+  using assert_ref_t = crab::cfg::assert_ref_stmt<number_t, VariableName>;
 
-  typedef crab::cfg::bool_binary_op<number_t, VariableName> bool_bin_op_t;
-  typedef crab::cfg::bool_assign_cst<number_t, VariableName> bool_assign_cst_t;
-  typedef crab::cfg::bool_assign_var<number_t, VariableName> bool_assign_var_t;
-  typedef crab::cfg::bool_assume_stmt<number_t, VariableName> bool_assume_t;
-  typedef crab::cfg::bool_select_stmt<number_t, VariableName> bool_select_t;
-  typedef crab::cfg::bool_assert_stmt<number_t, VariableName> bool_assert_t;
+  using bool_bin_op_t = crab::cfg::bool_binary_op<number_t, VariableName>;
+  using bool_assign_cst_t = crab::cfg::bool_assign_cst<number_t, VariableName>;
+  using bool_assign_var_t = crab::cfg::bool_assign_var<number_t, VariableName>;
+  using bool_assume_t = crab::cfg::bool_assume_stmt<number_t, VariableName>;
+  using bool_select_t = crab::cfg::bool_select_stmt<number_t, VariableName>;
+  using bool_assert_t = crab::cfg::bool_assert_stmt<number_t, VariableName>;
 
 protected:
   virtual void exec(havoc_t &) {}
@@ -252,13 +252,13 @@ class intra_abs_transformer
     : public abs_transformer_api<typename AbsD::number_t,
                                  typename AbsD::varname_t> {
 public:
-  typedef AbsD abs_dom_t;
-  typedef typename abs_dom_t::number_t number_t;
-  typedef typename abs_dom_t::varname_t varname_t;
-  typedef typename abs_dom_t::variable_t variable_t;
+  using abs_dom_t = AbsD;
+  using number_t = typename abs_dom_t::number_t;
+  using varname_t = typename abs_dom_t::varname_t;
+  using variable_t = typename abs_dom_t::variable_t;
 
 public:
-  typedef abs_transformer_api<number_t, varname_t> abs_transform_api_t;
+  using abs_transform_api_t = abs_transformer_api<number_t, varname_t>;
   using typename abs_transform_api_t::arr_assign_t;
   using typename abs_transform_api_t::arr_init_t;
   using typename abs_transform_api_t::arr_load_t;
@@ -776,10 +776,10 @@ public:
 
 template <typename AbsDom> class inter_transformer_helpers {
 public:
-  typedef typename AbsDom::linear_expression_t linear_expression_t;
-  typedef typename AbsDom::reference_constraint_t reference_constraint_t;
-  typedef typename AbsDom::variable_t variable_t;
-  typedef typename AbsDom::number_t number_t;
+  using linear_expression_t = typename AbsDom::linear_expression_t;
+  using reference_constraint_t = typename AbsDom::reference_constraint_t;
+  using variable_t = typename AbsDom::variable_t;
+  using number_t = typename AbsDom::number_t;
 
   static void unify(AbsDom &inv, const variable_t &lhs, const variable_t &rhs) {
     assert(lhs.get_type() == rhs.get_type());
@@ -818,12 +818,12 @@ class intra_necessary_preconditions_abs_transformer final
     : public abs_transformer_api<typename AbsD::number_t,
                                  typename AbsD::varname_t> {
 public:
-  typedef AbsD abs_dom_t;
-  typedef typename abs_dom_t::number_t number_t;
-  typedef typename abs_dom_t::varname_t varname_t;
-  typedef typename abs_dom_t::variable_t variable_t;
-  typedef crab::cfg::statement<number_t, varname_t> statement_t;
-  typedef abs_transformer_api<number_t, varname_t> abs_transform_api_t;
+  using abs_dom_t = AbsD;
+  using number_t = typename abs_dom_t::number_t;
+  using varname_t = typename abs_dom_t::varname_t;
+  using variable_t = typename abs_dom_t::variable_t;
+  using statement_t = crab::cfg::statement<number_t, varname_t>;
+  using abs_transform_api_t = abs_transformer_api<number_t, varname_t>;
   using typename abs_transform_api_t::arr_assign_t;
   using typename abs_transform_api_t::arr_init_t;
   using typename abs_transform_api_t::arr_load_t;

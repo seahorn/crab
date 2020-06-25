@@ -17,7 +17,7 @@ public:
 
 private:
   using opt_var_t = boost::optional<variable_t>;
-  typedef enum { REF_EQ, REF_LESS, REF_LESS_OR_EQ, REF_DISEQ } cst_kind_t;
+  using cst_kind_t = enum { REF_EQ, REF_LESS, REF_LESS_OR_EQ, REF_DISEQ };
 
   opt_var_t m_lhs; // if !m_lhs then NULL
   opt_var_t m_rhs; // if !m_rhs then NULL

@@ -65,14 +65,14 @@ class boxes_domain final
     : public abstract_domain<
           boxes_domain<Number, VariableName, ConvexReduce, LddSize>> {
 
-  typedef ikos::interval_domain<Number, VariableName> interval_domain_t;
-  typedef boxes_domain<Number, VariableName, ConvexReduce, LddSize>
-      boxes_domain_t;
-  typedef abstract_domain<boxes_domain_t> abstract_domain_t;
+  using interval_domain_t = ikos::interval_domain<Number, VariableName>;
+  using boxes_domain_t =
+      boxes_domain<Number, VariableName, ConvexReduce, LddSize>;
+  using abstract_domain_t = abstract_domain<boxes_domain_t>;
 
 public:
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using number_t = Number;
+  using varname_t = VariableName;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_t::interval_t;
   using typename abstract_domain_t::linear_constraint_system_t;
@@ -83,11 +83,11 @@ public:
   using typename abstract_domain_t::variable_vector_t;
 
 private:
-  typedef typename linear_constraint_t::kind_t kind_t;
+  using kind_t = typename linear_constraint_t::kind_t;
 
   // --- map from crab variable index to ldd term index
-  typedef boost::bimap<variable_t, int> var_map_t;
-  typedef typename var_map_t::value_type binding_t;
+  using var_map_t = boost::bimap<variable_t, int>;
+  using binding_t = typename var_map_t::value_type;
 
   LddNodePtr m_ldd;
   static LddManager *s_ldd_man;
@@ -1812,10 +1812,10 @@ template <typename Number, typename VariableName, int ConvexReduce,
 class checker_domain_traits<
     boxes_domain<Number, VariableName, ConvexReduce, LddSize>> {
 public:
-  typedef boxes_domain<Number, VariableName, ConvexReduce, LddSize> this_type;
-  typedef typename this_type::linear_constraint_t linear_constraint_t;
-  typedef typename this_type::disjunctive_linear_constraint_system_t
-      disjunctive_linear_constraint_system_t;
+  using this_type = boxes_domain<Number, VariableName, ConvexReduce, LddSize>;
+  using linear_constraint_t = typename this_type::linear_constraint_t;
+  using disjunctive_linear_constraint_system_t =
+      typename this_type::disjunctive_linear_constraint_system_t;
 
   static bool entail(this_type &lhs,
                      const disjunctive_linear_constraint_system_t &rhs) {
@@ -1911,8 +1911,8 @@ template <typename Number, typename VariableName, int ConvexReduce,
           size_t LddSize>
 struct abstract_domain_traits<
     boxes_domain<Number, VariableName, ConvexReduce, LddSize>> {
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using number_t = Number;
+  using varname_t = VariableName;
 };
 } // namespace domains
 } // namespace crab

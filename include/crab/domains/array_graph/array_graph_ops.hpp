@@ -20,13 +20,13 @@ template <class Gr, bool IsDistWt> class ArrayGrOps {
   //   Wt_meet.apply(x, Wt_join.apply(y,z)) =
   //   Wt_join.apply(Wt_meet.apply(x,y),Wt_meet.apply(x,z))
   //
-  typedef Gr graph_t;
-  typedef typename graph_t::Wt Wt;
-  typedef GraphRev<graph_t> GrRev;
+  using graph_t = Gr;
+  using Wt = typename graph_t::Wt;
+  using GrRev = GraphRev<graph_t>;
 
-  typedef typename graph_t::vert_id vert_id;
-  typedef typename graph_t::mut_val_ref_t mut_val_ref_t;
-  typedef std::vector<std::pair<std::pair<vert_id, vert_id>, Wt>> edge_vector;
+  using vert_id = typename graph_t::vert_id;
+  using mut_val_ref_t = typename graph_t::mut_val_ref_t;
+  using edge_vector = std::vector<std::pair<std::pair<vert_id, vert_id>, Wt>>;
 
   static Wt make_wt_top() {
     Wt w;
@@ -272,8 +272,8 @@ public:
     bool operator()(int x, int y) const { return !(A[y] <= A[x]); }
     V &A;
   };
-  typedef DistComp<std::vector<Wt>> WtComp;
-  typedef Heap<WtComp> WtHeap;
+  using WtComp = DistComp<std::vector<Wt>>;
+  using WtHeap = Heap<WtComp>;
 
   /// FIXME: Avoid expanding stable vertices
   template <typename G>

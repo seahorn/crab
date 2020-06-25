@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
   cfgs.push_back(*t4);
   cfgs.push_back(*t5);
 
-  typedef call_graph<z_cfg_ref_t> callgraph_t;
+  using callgraph_t = call_graph<z_cfg_ref_t>;
 
   std::unique_ptr<callgraph_t> cg(new callgraph_t(cfgs));
 

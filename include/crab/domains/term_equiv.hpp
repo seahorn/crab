@@ -50,11 +50,11 @@ namespace domains {
 namespace term {
 template <class Num, class VName, class Abs> class TDomInfo {
 public:
-  typedef Num Number;
-  typedef VName VariableName;
-  typedef variable<Num, VName> variable_t;
-  typedef crab::cfg::var_factory_impl::str_var_alloc_col Alloc;
-  typedef Abs domain_t;
+  using Number = Num;
+  using VariableName = VName;
+  using variable_t = variable<Num, VName>;
+  using Alloc = crab::cfg::var_factory_impl::str_var_alloc_col;
+  using domain_t = Abs;
 };
 } // namespace term
 
@@ -67,17 +67,17 @@ class term_domain final : public abstract_domain<term_domain<Info>> {
   // Number and VariableName can be different from
   // dom_t::number_t and dom_t::varname_t although currently
   // Number and dom_t::number_t must be the same type.
-  typedef typename Info::Number Number;
-  typedef typename Info::VariableName VariableName;
-  typedef typename Info::domain_t dom_t;
-  typedef typename dom_t::variable_t dom_var_t;
-  typedef typename Info::Alloc dom_var_alloc_t;
-  typedef typename dom_var_alloc_t::varname_t dom_varname_t;
-  typedef ikos::patricia_tree_set<dom_var_t> domvar_set_t;
-  typedef ikos::bound<Number> bound_t;
+  using Number = typename Info::Number;
+  using VariableName = typename Info::VariableName;
+  using dom_t = typename Info::domain_t;
+  using dom_var_t = typename dom_t::variable_t;
+  using dom_var_alloc_t = typename Info::Alloc;
+  using dom_varname_t = typename dom_var_alloc_t::varname_t;
+  using domvar_set_t = ikos::patricia_tree_set<dom_var_t>;
+  using bound_t = ikos::bound<Number>;
 
-  typedef term_domain<Info> term_domain_t;
-  typedef abstract_domain<term_domain_t> abstract_domain_t;
+  using term_domain_t = term_domain<Info>;
+  using abstract_domain_t = abstract_domain<term_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -88,27 +88,27 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using number_t = Number;
+  using varname_t = VariableName;
 
 private:
-  typedef term::term_table<number_t, term::term_operator_t> ttbl_t;
-  typedef typename ttbl_t::term_id_t term_id_t;
+  using ttbl_t = term::term_table<number_t, term::term_operator_t>;
+  using term_id_t = typename ttbl_t::term_id_t;
 
   // WARNING: assumes the underlying domain uses the same number type.
-  typedef typename Info::Number dom_number;
-  typedef typename dom_t::linear_constraint_t dom_lincst_t;
-  typedef typename dom_t::linear_constraint_system_t dom_linsys_t;
-  typedef typename dom_t::linear_expression_t dom_linexp_t;
-  typedef typename linear_expression_t::component_t linterm_t;
-  typedef boost::container::flat_map<term_id_t, dom_var_t> term_map_t;
-  typedef boost::container::flat_map<dom_var_t, variable_t> rev_map_t;
-  typedef boost::container::flat_set<term_id_t> term_set_t;
-  typedef boost::container::flat_map<variable_t, term_id_t> var_map_t;
+  using dom_number = typename Info::Number;
+  using dom_lincst_t = typename dom_t::linear_constraint_t;
+  using dom_linsys_t = typename dom_t::linear_constraint_system_t;
+  using dom_linexp_t = typename dom_t::linear_expression_t;
+  using linterm_t = typename linear_expression_t::component_t;
+  using term_map_t = boost::container::flat_map<term_id_t, dom_var_t>;
+  using rev_map_t = boost::container::flat_map<dom_var_t, variable_t>;
+  using term_set_t = boost::container::flat_set<term_id_t>;
+  using var_map_t = boost::container::flat_map<variable_t, term_id_t>;
   // the reverse of var_map: from term_id_t to a set of variable_t
-  typedef std::set<variable_t> var_set_t;
-  typedef boost::container::flat_map<term_id_t, var_set_t> rev_var_map_t;
-  typedef term::NumSimplifier<number_t> simplifier_t;
+  using var_set_t = std::set<variable_t>;
+  using rev_var_map_t = boost::container::flat_map<term_id_t, var_set_t>;
+  using simplifier_t = term::NumSimplifier<number_t>;
 
   bool _is_bottom;
   // Uses a single state of the underlying domain.
@@ -1270,7 +1270,7 @@ public:
     CRAB_LOG("term", crab::outs() << "*** Before assume " << cst << ":" << *this
                                   << "\n");
 
-    typedef std::pair<variable_t, variable_t> pair_var_t;
+    using pair_var_t = std::pair<variable_t, variable_t>;
 
     if (boost::optional<pair_var_t> eq = get_eq_or_diseq(cst)) {
       term_id_t tx(term_of_var((*eq).first));
@@ -1882,11 +1882,11 @@ public:
 // parents/children.
 template <class Info, class Abs> class TermNormalizer {
 public:
-  typedef typename term_domain<Info>::term_domain_t term_domain_t;
-  typedef typename term_domain_t::term_id_t term_id_t;
-  typedef Abs dom_t;
-  typedef typename term_domain_t::ttbl_t ttbl_t;
-  typedef boost::container::flat_set<term_id_t> term_set_t;
+  using term_domain_t = typename term_domain<Info>::term_domain_t;
+  using term_id_t = typename term_domain_t::term_id_t;
+  using dom_t = Abs;
+  using ttbl_t = typename term_domain_t::ttbl_t;
+  using term_set_t = boost::container::flat_set<term_id_t>;
 
   static void queue_push(ttbl_t &tbl,
                          std::vector<std::vector<term_id_t>> &queue,
@@ -2027,15 +2027,15 @@ public:
 template <class Info, class Num, class Var>
 class TermNormalizer<Info, ikos::interval_domain<Num, Var>> {
 public:
-  typedef typename term_domain<Info>::term_domain_t term_domain_t;
-  typedef typename term_domain_t::term_id_t term_id_t;
-  typedef ikos::interval_domain<Num, Var> dom_t;
-  typedef typename term_domain_t::dom_var_t var_t;
+  using term_domain_t = typename term_domain<Info>::term_domain_t;
+  using term_id_t = typename term_domain_t::term_id_t;
+  using dom_t = ikos::interval_domain<Num, Var>;
+  using var_t = typename term_domain_t::dom_var_t;
 
-  typedef typename term_domain_t::ttbl_t ttbl_t;
-  typedef boost::container::flat_set<term_id_t> term_set_t;
+  using ttbl_t = typename term_domain_t::ttbl_t;
+  using term_set_t = boost::container::flat_set<term_id_t>;
 
-  typedef typename dom_t::interval_t interval_t;
+  using interval_t = typename dom_t::interval_t;
 
   static void queue_push(ttbl_t &tbl,
                          std::vector<std::vector<term_id_t>> &queue,
@@ -2141,16 +2141,16 @@ public:
 #endif
 
 template <typename Info> struct abstract_domain_traits<term_domain<Info>> {
-  typedef typename Info::Number number_t;
-  typedef typename Info::VariableName varname_t;
+  using number_t = typename Info::Number;
+  using varname_t = typename Info::VariableName;
 };
 
 template <typename Info> class reduced_domain_traits<term_domain<Info>> {
 public:
-  typedef term_domain<Info> term_domain_t;
-  typedef typename term_domain_t::variable_t variable_t;
-  typedef typename term_domain_t::linear_constraint_system_t
-      linear_constraint_system_t;
+  using term_domain_t = term_domain<Info>;
+  using variable_t = typename term_domain_t::variable_t;
+  using linear_constraint_system_t =
+      typename term_domain_t::linear_constraint_system_t;
 
   static void extract(term_domain_t &dom, const variable_t &x,
                       linear_constraint_system_t &csts, bool only_equalities) {

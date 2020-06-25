@@ -21,15 +21,15 @@ namespace crab {
 namespace cg {
 // Wrapper for call graph nodes
 template <typename CFG> class cg_node {
-  typedef typename CFG::basic_block_t::callsite_t callsite_t;
-  typedef typename CFG::fdecl_t fdecl_t;
+  using callsite_t = typename CFG::basic_block_t::callsite_t;
+  using fdecl_t = typename CFG::fdecl_t;
 
   CFG m_cfg;
   int m_id;
 
 public:
-  typedef CFG cfg_t;
-  typedef typename CFG::varname_t varname_t;
+  using cfg_t = CFG;
+  using varname_t = typename CFG::varname_t;
 
   cg_node() {} // needed for BGL
 
@@ -98,41 +98,40 @@ template <typename CFG> class call_graph {
   struct vertex_t {
     cg_node<CFG> func;
   };
-  typedef boost::adjacency_list<
+  using cg_t = boost::adjacency_list<
       boost::setS, // disallow parallel edges
       boost::vecS, boost::bidirectionalS,
       boost::property<boost::vertex_color_t, boost::default_color_type,
-                      vertex_t>>
-      cg_t;
+                      vertex_t>>;
   typedef
       typename boost::graph_traits<cg_t>::vertex_descriptor vertex_descriptor_t;
-  typedef typename boost::graph_traits<cg_t>::edge_descriptor edge_descriptor_t;
-  typedef typename boost::graph_traits<cg_t>::vertex_iterator vertex_iterator;
+  using edge_descriptor_t = typename boost::graph_traits<cg_t>::edge_descriptor;
+  using vertex_iterator = typename boost::graph_traits<cg_t>::vertex_iterator;
   typedef
       typename boost::graph_traits<cg_t>::out_edge_iterator out_edge_iterator;
-  typedef typename boost::graph_traits<cg_t>::in_edge_iterator in_edge_iterator;
+  using in_edge_iterator = typename boost::graph_traits<cg_t>::in_edge_iterator;
   /// --- end internal representation of the call graph
 
-  typedef typename CFG::varname_t varname_t;
-  typedef typename CFG::number_t number_t;
-  typedef crab::cfg::statement_visitor<number_t, varname_t> stmt_visitor_t;
+  using varname_t = typename CFG::varname_t;
+  using number_t = typename CFG::number_t;
+  using stmt_visitor_t = crab::cfg::statement_visitor<number_t, varname_t>;
 
-  typedef std::unordered_map<std::size_t, vertex_descriptor_t> vertex_map_t;
-  typedef std::unordered_map<const typename stmt_visitor_t::callsite_t *,
-                             cg_node<CFG>>
-      callee_map_t;
-  typedef std::unordered_map<cg_node<CFG>, vertex_descriptor_t>
-      node_vertex_id_map_t;
+  using vertex_map_t = std::unordered_map<std::size_t, vertex_descriptor_t>;
+  using callee_map_t =
+      std::unordered_map<const typename stmt_visitor_t::callsite_t *,
+                         cg_node<CFG>>;
+  using node_vertex_id_map_t =
+      std::unordered_map<cg_node<CFG>, vertex_descriptor_t>;
 
   struct mk_edge_vis : public stmt_visitor_t {
-    typedef typename stmt_visitor_t::bin_op_t bin_op_t;
-    typedef typename stmt_visitor_t::assign_t assign_t;
-    typedef typename stmt_visitor_t::assume_t assume_t;
-    typedef typename stmt_visitor_t::havoc_t havoc_t;
-    typedef typename stmt_visitor_t::unreach_t unreach_t;
-    typedef typename stmt_visitor_t::select_t select_t;
-    typedef typename stmt_visitor_t::callsite_t callsite_t;
-    typedef typename CFG::fdecl_t fdecl_t;
+    using bin_op_t = typename stmt_visitor_t::bin_op_t;
+    using assign_t = typename stmt_visitor_t::assign_t;
+    using assume_t = typename stmt_visitor_t::assume_t;
+    using havoc_t = typename stmt_visitor_t::havoc_t;
+    using unreach_t = typename stmt_visitor_t::unreach_t;
+    using select_t = typename stmt_visitor_t::select_t;
+    using callsite_t = typename stmt_visitor_t::callsite_t;
+    using fdecl_t = typename CFG::fdecl_t;
 
     cg_t &m_cg;
     vertex_map_t &m_vertex_map;
@@ -198,15 +197,15 @@ template <typename CFG> class call_graph {
   };
 
 public:
-  typedef cg_node<CFG> node_t;
-  typedef cg_edge<node_t> edge_t;
-  typedef boost::transform_iterator<mk_node, vertex_iterator> node_iterator;
-  typedef boost::transform_iterator<mk_edge, in_edge_iterator> pred_iterator;
-  typedef boost::transform_iterator<mk_edge, out_edge_iterator> succ_iterator;
+  using node_t = cg_node<CFG>;
+  using edge_t = cg_edge<node_t>;
+  using node_iterator = boost::transform_iterator<mk_node, vertex_iterator>;
+  using pred_iterator = boost::transform_iterator<mk_edge, in_edge_iterator>;
+  using succ_iterator = boost::transform_iterator<mk_edge, out_edge_iterator>;
 
-  typedef typename node_t::cfg_t cfg_t;
-  typedef typename stmt_visitor_t::callsite_t callsite_t;
-  typedef typename cfg_t::fdecl_t fdecl_t;
+  using cfg_t = typename node_t::cfg_t;
+  using callsite_t = typename stmt_visitor_t::callsite_t;
+  using fdecl_t = typename cfg_t::fdecl_t;
 
 private:
   // call graph
@@ -462,13 +461,13 @@ inline crab_os &operator<<(crab_os &o, const call_graph<CFG> &cg) {
 // copyable, assignable object.
 template <class CG> class call_graph_ref {
 public:
-  typedef typename CG::node_t node_t;
-  typedef typename node_t::cfg_t cfg_t;
-  typedef typename CG::edge_t edge_t;
-  typedef typename CG::node_iterator node_iterator;
-  typedef typename CG::pred_iterator pred_iterator;
-  typedef typename CG::succ_iterator succ_iterator;
-  typedef typename CG::callsite_t callsite_t;
+  using node_t = typename CG::node_t;
+  using cfg_t = typename node_t::cfg_t;
+  using edge_t = typename CG::edge_t;
+  using node_iterator = typename CG::node_iterator;
+  using pred_iterator = typename CG::pred_iterator;
+  using succ_iterator = typename CG::succ_iterator;
+  using callsite_t = typename CG::callsite_t;
 
 private:
   boost::optional<std::reference_wrapper<CG>> _ref;

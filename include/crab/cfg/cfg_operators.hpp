@@ -7,7 +7,7 @@ namespace crab {
 namespace cfg {
 
 // To group together statements over integers or real
-typedef enum {
+typedef enum  {
   BINOP_ADD,
   BINOP_SUB,
   BINOP_MUL,
@@ -23,9 +23,17 @@ typedef enum {
   BINOP_ASHR,
 } binary_operation_t;
 
-typedef enum { BINOP_BAND, BINOP_BOR, BINOP_BXOR } bool_binary_operation_t;
+typedef enum {
+  BINOP_BAND,
+  BINOP_BOR,
+  BINOP_BXOR
+} bool_binary_operation_t;
 
-typedef enum { CAST_TRUNC, CAST_SEXT, CAST_ZEXT } cast_operation_t;
+typedef enum {
+  CAST_TRUNC,
+  CAST_SEXT,
+  CAST_ZEXT
+} cast_operation_t;
 
 inline crab::crab_os &operator<<(crab::crab_os &o, binary_operation_t op) {
   switch (op) {

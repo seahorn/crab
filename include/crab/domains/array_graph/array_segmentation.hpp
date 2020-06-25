@@ -23,38 +23,37 @@ class array_segment_ops
     : public crab::iterators::killgen_operations_api<
           CFG, domains::flat_killgen_domain<typename CFG::variable_t>> {
 
-  typedef crab::iterators::killgen_operations_api<
-      CFG, domains::flat_killgen_domain<typename CFG::variable_t>>
-      killgen_operations_api_t;
+  using killgen_operations_api_t = crab::iterators::killgen_operations_api<
+      CFG, domains::flat_killgen_domain<typename CFG::variable_t>>;
 
 public:
-  typedef typename CFG::basic_block_label_t basic_block_label_t;
-  typedef typename CFG::number_t N;
-  typedef typename CFG::varname_t V;
-  typedef typename CFG::variable_t variable_t;
-  typedef typename killgen_operations_api_t::killgen_domain_t
-      array_segment_domain_t;
+  using basic_block_label_t = typename CFG::basic_block_label_t;
+  using N = typename CFG::number_t;
+  using V = typename CFG::varname_t;
+  using variable_t = typename CFG::variable_t;
+  using array_segment_domain_t =
+      typename killgen_operations_api_t::killgen_domain_t;
 
 private:
   class array_segment_visitor : public crab::cfg::statement_visitor<N, V> {
-    typedef typename crab::cfg::statement_visitor<N, V>::bin_op_t bin_op_t;
-    typedef typename crab::cfg::statement_visitor<N, V>::assign_t assign_t;
-    typedef typename crab::cfg::statement_visitor<N, V>::assume_t assume_t;
-    typedef typename crab::cfg::statement_visitor<N, V>::select_t select_t;
-    typedef typename crab::cfg::statement_visitor<N, V>::assert_t assert_t;
+    using bin_op_t = typename crab::cfg::statement_visitor<N, V>::bin_op_t;
+    using assign_t = typename crab::cfg::statement_visitor<N, V>::assign_t;
+    using assume_t = typename crab::cfg::statement_visitor<N, V>::assume_t;
+    using select_t = typename crab::cfg::statement_visitor<N, V>::select_t;
+    using assert_t = typename crab::cfg::statement_visitor<N, V>::assert_t;
 
-    typedef typename crab::cfg::statement_visitor<N, V>::havoc_t havoc_t;
-    typedef typename crab::cfg::statement_visitor<N, V>::unreach_t unreach_t;
-    typedef typename crab::cfg::statement_visitor<N, V>::callsite_t callsite_t;
+    using havoc_t = typename crab::cfg::statement_visitor<N, V>::havoc_t;
+    using unreach_t = typename crab::cfg::statement_visitor<N, V>::unreach_t;
+    using callsite_t = typename crab::cfg::statement_visitor<N, V>::callsite_t;
 
-    typedef typename crab::cfg::statement_visitor<N, V>::arr_init_t arr_init_t;
-    typedef typename crab::cfg::statement_visitor<N, V>::arr_load_t arr_load_t;
+    using arr_init_t = typename crab::cfg::statement_visitor<N, V>::arr_init_t;
+    using arr_load_t = typename crab::cfg::statement_visitor<N, V>::arr_load_t;
     typedef
         typename crab::cfg::statement_visitor<N, V>::arr_store_t arr_store_t;
 
     // assume all statements have the same type expression_t;
-    typedef typename bin_op_t::linear_expression_t linear_expression_t;
-    typedef typename assume_t::linear_constraint_t linear_constraint_t;
+    using linear_expression_t = typename bin_op_t::linear_expression_t;
+    using linear_constraint_t = typename assume_t::linear_constraint_t;
 
     array_segment_domain_t get_variables(const linear_expression_t &e) const {
       array_segment_domain_t res;
@@ -148,18 +147,18 @@ template <class CFG>
 class array_segmentation : public crab::iterators::killgen_fixpoint_iterator<
                                CFG, array_segment_ops<CFG>> {
 public:
-  typedef array_segment_ops<CFG> array_segment_ops_t;
-  typedef typename CFG::basic_block_label_t basic_block_label_t;
-  typedef typename CFG::statement_t statement_t;
-  typedef typename CFG::varname_t varname_t;
-  typedef typename array_segment_ops_t::array_segment_domain_t
-      array_segment_domain_t;
+  using array_segment_ops_t = array_segment_ops<CFG>;
+  using basic_block_label_t = typename CFG::basic_block_label_t;
+  using statement_t = typename CFG::statement_t;
+  using varname_t = typename CFG::varname_t;
+  using array_segment_domain_t =
+      typename array_segment_ops_t::array_segment_domain_t;
 
 private:
-  typedef crab::iterators::killgen_fixpoint_iterator<CFG, array_segment_ops_t>
-      killgen_fixpoint_iterator_t;
-  typedef boost::unordered_map<basic_block_label_t, array_segment_domain_t>
-      segment_map_t;
+  using killgen_fixpoint_iterator_t =
+      crab::iterators::killgen_fixpoint_iterator<CFG, array_segment_ops_t>;
+  using segment_map_t =
+      boost::unordered_map<basic_block_label_t, array_segment_domain_t>;
 
   segment_map_t _segment_map;
 
@@ -204,26 +203,26 @@ class array_constant_segment_visitor
     : public crab::cfg::statement_visitor<typename CFG::number_t,
                                           typename CFG::varname_t> {
 
-  typedef typename CFG::number_t N;
-  typedef typename CFG::varname_t V;
-  typedef typename crab::cfg::statement_visitor<N, V>::bin_op_t bin_op_t;
-  typedef typename crab::cfg::statement_visitor<N, V>::assign_t assign_t;
-  typedef typename crab::cfg::statement_visitor<N, V>::assume_t assume_t;
-  typedef typename crab::cfg::statement_visitor<N, V>::havoc_t havoc_t;
-  typedef typename crab::cfg::statement_visitor<N, V>::unreach_t unreach_t;
-  typedef typename crab::cfg::statement_visitor<N, V>::select_t select_t;
-  typedef typename crab::cfg::statement_visitor<N, V>::callsite_t callsite_t;
-  typedef typename crab::cfg::statement_visitor<N, V>::assert_t assert_t;
+  using N = typename CFG::number_t;
+  using V = typename CFG::varname_t;
+  using bin_op_t = typename crab::cfg::statement_visitor<N, V>::bin_op_t;
+  using assign_t = typename crab::cfg::statement_visitor<N, V>::assign_t;
+  using assume_t = typename crab::cfg::statement_visitor<N, V>::assume_t;
+  using havoc_t = typename crab::cfg::statement_visitor<N, V>::havoc_t;
+  using unreach_t = typename crab::cfg::statement_visitor<N, V>::unreach_t;
+  using select_t = typename crab::cfg::statement_visitor<N, V>::select_t;
+  using callsite_t = typename crab::cfg::statement_visitor<N, V>::callsite_t;
+  using assert_t = typename crab::cfg::statement_visitor<N, V>::assert_t;
 
-  typedef typename crab::cfg::statement_visitor<N, V>::arr_init_t arr_init_t;
-  typedef typename crab::cfg::statement_visitor<N, V>::arr_load_t arr_load_t;
-  typedef typename crab::cfg::statement_visitor<N, V>::arr_store_t arr_store_t;
+  using arr_init_t = typename crab::cfg::statement_visitor<N, V>::arr_init_t;
+  using arr_load_t = typename crab::cfg::statement_visitor<N, V>::arr_load_t;
+  using arr_store_t = typename crab::cfg::statement_visitor<N, V>::arr_store_t;
 
-  typedef typename bin_op_t::linear_expression_t linear_expression_t;
-  typedef typename linear_expression_t::number_t number_t;
+  using linear_expression_t = typename bin_op_t::linear_expression_t;
+  using number_t = typename linear_expression_t::number_t;
 
 public:
-  typedef std::vector<number_t> constant_set_t;
+  using constant_set_t = std::vector<number_t>;
 
 private:
   ArraySegmentDom _dom;

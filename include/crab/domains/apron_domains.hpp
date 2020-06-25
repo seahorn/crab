@@ -11,7 +11,7 @@
 
 namespace crab {
 namespace domains {
-typedef enum { APRON_INT, APRON_OCT, APRON_PK } apron_domain_id_t;
+using apron_domain_id_t = enum { APRON_INT, APRON_OCT, APRON_PK };
 }
 } // namespace crab
 
@@ -56,8 +56,8 @@ using namespace apron;
 template <typename Number, typename VariableName, apron_domain_id_t ApronDom>
 class apron_domain final
     : public abstract_domain<apron_domain<Number, VariableName, ApronDom>> {
-  typedef apron_domain<Number, VariableName, ApronDom> apron_domain_t;
-  typedef abstract_domain<apron_domain_t> abstract_domain_t;
+  using apron_domain_t = apron_domain<Number, VariableName, ApronDom>;
+  using abstract_domain_t = abstract_domain<apron_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -68,14 +68,14 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using number_t = Number;
+  using varname_t = VariableName;
 
 private:
-  typedef ikos::interval_domain<number_t, varname_t> interval_domain_t;
-  typedef ikos::bound<number_t> bound_t;
-  typedef boost::bimap<variable_t, ap_dim_t> var_map_t;
-  typedef typename var_map_t::value_type binding_t;
+  using interval_domain_t = ikos::interval_domain<number_t, varname_t>;
+  using bound_t = ikos::bound<number_t>;
+  using var_map_t = boost::bimap<variable_t, ap_dim_t>;
+  using binding_t = typename var_map_t::value_type;
 
   static ap_manager_t *s_apman;
 
@@ -1788,8 +1788,8 @@ namespace crab {
 namespace domains {
 template <typename Number, typename VariableName, apron_domain_id_t ApronDom>
 struct abstract_domain_traits<apron_domain<Number, VariableName, ApronDom>> {
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using number_t = Number;
+  using varname_t = VariableName;
 };
 } // namespace domains
 } // namespace crab

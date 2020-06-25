@@ -98,12 +98,12 @@ static void print_invariants(z_cfg_ref_t cfg, Analyzer &analyser) {
 void check(z_cfg_ref_t cfg, variable_factory_t &vfac) {
 
   // Each checker is associated to one analyzer
-  typedef intra_fwd_analyzer<z_cfg_ref_t, z_sdbm_domain_t> num_analyzer_t;
-  typedef intra_checker<num_analyzer_t> num_checker_t;
+  using num_analyzer_t = intra_fwd_analyzer<z_cfg_ref_t, z_sdbm_domain_t>;
+  using num_checker_t = intra_checker<num_analyzer_t>;
 
   // We can have multiple properties per analyzer
-  typedef div_zero_property_checker<num_analyzer_t> div_zero_prop_num_checker_t;
-  typedef assert_property_checker<num_analyzer_t> assert_prop_num_checker_t;
+  using div_zero_prop_num_checker_t = div_zero_property_checker<num_analyzer_t>;
+  using assert_prop_num_checker_t = assert_property_checker<num_analyzer_t>;
 
   crab::outs() << cfg << "\n";
 

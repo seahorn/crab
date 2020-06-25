@@ -22,14 +22,14 @@ namespace domains {
  */
 class small_range {
 
-  typedef enum {
+  using kind_t = enum {
     Bottom, /*unused*/
     ExactlyZero,
     ExactlyOne,
     ZeroOrOne,
     ZeroOrMore,
     OneOrMore
-  } kind_t;
+  };
 
   kind_t m_value;
 

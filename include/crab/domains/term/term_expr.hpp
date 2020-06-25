@@ -16,15 +16,15 @@ namespace crab {
 namespace domains {
 
 namespace term {
-typedef int term_id;
-typedef int var_id;
+using term_id = int;
+using var_id = int;
 
 enum term_kind { TERM_CONST, TERM_VAR, TERM_APP };
 
 template <class Num, class Ftor> class term {
 public:
-  typedef term<Num, Ftor> term_t;
-  typedef std::shared_ptr<term_t> term_ptr;
+  using term_t = term<Num, Ftor>;
+  using term_ptr = std::shared_ptr<term_t>;
 
   virtual ~term() {}
 
@@ -45,8 +45,8 @@ inline crab::crab_os &operator<<(crab::crab_os &o, const term<Num, Ftor> &t) {
 
 template <class Num, class Ftor> class term_ref {
 public:
-  typedef term<Num, Ftor> term_t;
-  typedef std::shared_ptr<term_t> term_ptr;
+  using term_t = term<Num, Ftor>;
+  using term_ptr = std::shared_ptr<term_t>;
 
   term_ref(term_ptr _p) : p(_p) {}
 
@@ -152,19 +152,19 @@ template <typename TermTable> class congruence_closure_solver;
 
 template <class Num, class Ftor> class term_table {
 public:
-  typedef term_table<Num, Ftor> term_table_t;
-  typedef term<Num, Ftor> term_t;
-  typedef std::shared_ptr<term_t> term_ptr;
-  typedef term_ref<Num, Ftor> term_ref_t;
-  typedef term_id term_id_t;
+  using term_table_t = term_table<Num, Ftor>;
+  using term_t = term<Num, Ftor>;
+  using term_ptr = std::shared_ptr<term_t>;
+  using term_ref_t = term_ref<Num, Ftor>;
+  using term_id_t = term_id;
 
-  typedef const_term<Num, Ftor> const_term_t;
-  typedef var_term<Num, Ftor> var_term_t;
-  typedef ftor_term<Num, Ftor> ftor_term_t;
+  using const_term_t = const_term<Num, Ftor>;
+  using var_term_t = var_term<Num, Ftor>;
+  using ftor_term_t = ftor_term<Num, Ftor>;
 
   // For establishing a mapping between tables
-  typedef std::map<term_id, term_id> term_map_t;
-  typedef std::map<std::pair<term_id, term_id>, term_id> gener_map_t;
+  using term_map_t = std::map<term_id, term_id>;
+  using gener_map_t = std::map<std::pair<term_id, term_id>, term_id>;
 
   term_table(void) : free_var(0) {}
 
@@ -467,16 +467,16 @@ inline crab::crab_os &operator<<(crab::crab_os &o,
 
 template <typename TermTable> class congruence_closure_solver {
 
-  typedef congruence_closure_solver<TermTable> this_type;
+  using this_type = congruence_closure_solver<TermTable>;
 
 public:
-  typedef typename TermTable::term_id_t term_id_t;
-  typedef typename TermTable::term_t term_t;
-  typedef boost::container::flat_set<term_id_t> term_set_t;
-  typedef std::map<term_id_t, term_set_t> ccpar_map_t;
-  typedef std::map<term_id_t, term_id_t> find_map_t;
-  typedef std::pair<term_id_t, term_id_t> equation_t;
-  typedef std::map<term_id_t, std::vector<term_id_t>> member_map_t;
+  using term_id_t = typename TermTable::term_id_t;
+  using term_t = typename TermTable::term_t;
+  using term_set_t = boost::container::flat_set<term_id_t>;
+  using ccpar_map_t = std::map<term_id_t, term_set_t>;
+  using find_map_t = std::map<term_id_t, term_id_t>;
+  using equation_t = std::pair<term_id_t, term_id_t>;
+  using member_map_t = std::map<term_id_t, std::vector<term_id_t>>;
 
 private:
   TermTable *_ttbl;

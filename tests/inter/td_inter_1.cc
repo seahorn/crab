@@ -162,9 +162,9 @@ z_cfg_t *m(variable_factory_t &vfac) {
   return cfg;
 }
 
-typedef call_graph<z_cfg_ref_t> callgraph_t;
-typedef call_graph_ref<callgraph_t> callgraph_ref_t;
-typedef top_down_inter_analyzer_parameters<callgraph_ref_t> inter_params_t;
+using callgraph_t = call_graph<z_cfg_ref_t>;
+using callgraph_ref_t = call_graph_ref<callgraph_t>;
+using inter_params_t = top_down_inter_analyzer_parameters<callgraph_ref_t>;
 
 int main(int argc, char **argv) {
   bool stats_enabled = false;

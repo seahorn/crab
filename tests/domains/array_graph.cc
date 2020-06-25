@@ -419,8 +419,8 @@ z_cfg_t *prog9(variable_factory_t &vfac) {
   return cfg;
 }
 
-typedef array_graph_domain<z_sdbm_domain_t, z_interval_domain_t>
-    array_graph_domain_t;
+using array_graph_domain_t =
+    array_graph_domain<z_sdbm_domain_t, z_interval_domain_t>;
 
 void test1(bool stats_enabled) {
   variable_factory_t vfac;

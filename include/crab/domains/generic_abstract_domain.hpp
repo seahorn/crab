@@ -826,8 +826,8 @@ public:
 
 template <typename Variable>
 struct abstract_domain_traits<generic_abstract_domain<Variable>> {
-  typedef typename Variable::number_t number_t;
-  typedef typename Variable::varname_t varname_t;
+  using number_t = typename Variable::number_t;
+  using varname_t = typename Variable::varname_t;
 };
 
 } // end namespace domains

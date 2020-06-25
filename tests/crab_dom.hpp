@@ -29,44 +29,43 @@ using namespace crab::cfg_impl;
 using namespace crab::domains;
 using namespace ikos;
 
-typedef reference_constraint<z_number, varname_t> z_ref_cst_t;
-typedef linear_constraint_system<z_number, varname_t> z_lin_cst_sys_t;
-typedef linear_constraint_system<q_number, varname_t> q_lin_cst_sys_t;
-typedef interval<z_number> z_interval_t;
-typedef interval<q_number> q_interval_t;
+using z_ref_cst_t = reference_constraint<z_number, varname_t>;
+using z_lin_cst_sys_t = linear_constraint_system<z_number, varname_t>;
+using q_lin_cst_sys_t = linear_constraint_system<q_number, varname_t>;
+using z_interval_t = interval<z_number>;
+using q_interval_t = interval<q_number>;
 
 /*===================================================================*/
 // Numerical domains over integers
 /*===================================================================*/
-typedef interval_domain<z_number, varname_t> z_interval_domain_t;
-typedef numerical_congruence_domain<z_interval_domain_t> z_ric_domain_t;
-typedef DBM_impl::DefaultParams<z_number, DBM_impl::GraphRep::adapt_ss>
-    z_SparseGraph;
-typedef sparse_dbm_domain<z_number, varname_t, z_SparseGraph> z_dbm_domain_t;
-typedef DBM_impl::DefaultParams<z_number, DBM_impl::GraphRep::adapt_ss>
-    z_SplitGraph;
-typedef split_dbm_domain<z_number, varname_t, z_SplitGraph> z_sdbm_domain_t;
-typedef boxes_domain<z_number, varname_t> z_boxes_domain_t;
-typedef dis_interval_domain<z_number, varname_t> z_dis_interval_domain_t;
-typedef apron_domain<z_number, varname_t, APRON_INT> z_box_apron_domain_t;
-typedef apron_domain<z_number, varname_t, APRON_OCT> z_oct_apron_domain_t;
-typedef apron_domain<z_number, varname_t, APRON_PK> z_pk_apron_domain_t;
-typedef elina_domain<z_number, varname_t, ELINA_ZONES> z_zones_elina_domain_t;
-typedef elina_domain<z_number, varname_t, ELINA_OCT> z_oct_elina_domain_t;
-typedef elina_domain<z_number, varname_t, ELINA_PK> z_pk_elina_domain_t;
-typedef term_domain<term::TDomInfo<z_number, varname_t, z_interval_domain_t>>
-    z_term_domain_t;
-typedef term_domain<term::TDomInfo<z_number, varname_t, z_sdbm_domain_t>>
-    z_term_dbm_t;
-typedef term_domain<
-    term::TDomInfo<z_number, varname_t, z_dis_interval_domain_t>>
-    z_term_dis_int_t;
-typedef reduced_numerical_domain_product2<z_term_dis_int_t, z_sdbm_domain_t>
-    z_num_domain_t;
+using z_interval_domain_t = interval_domain<z_number, varname_t>;
+using z_ric_domain_t = numerical_congruence_domain<z_interval_domain_t>;
+using z_SparseGraph =
+    DBM_impl::DefaultParams<z_number, DBM_impl::GraphRep::adapt_ss>;
+using z_dbm_domain_t = sparse_dbm_domain<z_number, varname_t, z_SparseGraph>;
+using z_SplitGraph =
+    DBM_impl::DefaultParams<z_number, DBM_impl::GraphRep::adapt_ss>;
+using z_sdbm_domain_t = split_dbm_domain<z_number, varname_t, z_SplitGraph>;
+using z_boxes_domain_t = boxes_domain<z_number, varname_t>;
+using z_dis_interval_domain_t = dis_interval_domain<z_number, varname_t>;
+using z_box_apron_domain_t = apron_domain<z_number, varname_t, APRON_INT>;
+using z_oct_apron_domain_t = apron_domain<z_number, varname_t, APRON_OCT>;
+using z_pk_apron_domain_t = apron_domain<z_number, varname_t, APRON_PK>;
+using z_zones_elina_domain_t = elina_domain<z_number, varname_t, ELINA_ZONES>;
+using z_oct_elina_domain_t = elina_domain<z_number, varname_t, ELINA_OCT>;
+using z_pk_elina_domain_t = elina_domain<z_number, varname_t, ELINA_PK>;
+using z_term_domain_t =
+    term_domain<term::TDomInfo<z_number, varname_t, z_interval_domain_t>>;
+using z_term_dbm_t =
+    term_domain<term::TDomInfo<z_number, varname_t, z_sdbm_domain_t>>;
+using z_term_dis_int_t =
+    term_domain<term::TDomInfo<z_number, varname_t, z_dis_interval_domain_t>>;
+using z_num_domain_t =
+    reduced_numerical_domain_product2<z_term_dis_int_t, z_sdbm_domain_t>;
 // Boolean-numerical domain over integers
-typedef flat_boolean_numerical_domain<z_dbm_domain_t> z_bool_num_domain_t;
-typedef flat_boolean_numerical_domain<z_interval_domain_t>
-    z_bool_interval_domain_t;
+using z_bool_num_domain_t = flat_boolean_numerical_domain<z_dbm_domain_t>;
+using z_bool_interval_domain_t =
+    flat_boolean_numerical_domain<z_interval_domain_t>;
 /*===================================================================*/
 // Arrays domains
 /*===================================================================*/
@@ -77,26 +76,26 @@ public:
   enum { max_smashable_cells = 64 };
   enum { max_array_size = 512 };
 };
-typedef array_adaptive_domain<z_interval_domain_t, ArrayAdaptParams> z_aa_int_t;
-typedef array_adaptive_domain<z_term_domain_t, ArrayAdaptParams>
-    z_aa_term_int_t;
-typedef array_adaptive_domain<z_bool_interval_domain_t, ArrayAdaptParams>
-    z_aa_bool_int_t;
-typedef array_expansion_domain<z_interval_domain_t> z_ae_int_t;
-typedef array_expansion_domain<z_term_domain_t> z_ae_term_int_t;
-typedef array_expansion_domain<z_sdbm_domain_t> z_ae_sdbm_t;
-typedef array_expansion_domain<z_box_apron_domain_t> z_ae_box_apron_t;
-typedef array_expansion_domain<z_zones_elina_domain_t> z_ae_zones_elina_t;
-typedef array_graph_domain<z_sdbm_domain_t, z_interval_domain_t>
-    z_ag_sdbm_intv_t;
-typedef array_smashing<z_dis_interval_domain_t> z_as_dis_int_t;
-typedef array_smashing<z_sdbm_domain_t> z_as_sdbm_t;
-typedef array_smashing<z_bool_num_domain_t> z_as_bool_num_t;
+using z_aa_int_t = array_adaptive_domain<z_interval_domain_t, ArrayAdaptParams>;
+using z_aa_term_int_t =
+    array_adaptive_domain<z_term_domain_t, ArrayAdaptParams>;
+using z_aa_bool_int_t =
+    array_adaptive_domain<z_bool_interval_domain_t, ArrayAdaptParams>;
+using z_ae_int_t = array_expansion_domain<z_interval_domain_t>;
+using z_ae_term_int_t = array_expansion_domain<z_term_domain_t>;
+using z_ae_sdbm_t = array_expansion_domain<z_sdbm_domain_t>;
+using z_ae_box_apron_t = array_expansion_domain<z_box_apron_domain_t>;
+using z_ae_zones_elina_t = array_expansion_domain<z_zones_elina_domain_t>;
+using z_ag_sdbm_intv_t =
+    array_graph_domain<z_sdbm_domain_t, z_interval_domain_t>;
+using z_as_dis_int_t = array_smashing<z_dis_interval_domain_t>;
+using z_as_sdbm_t = array_smashing<z_sdbm_domain_t>;
+using z_as_bool_num_t = array_smashing<z_bool_num_domain_t>;
 // completion disjunctive domains
-typedef powerset_domain<z_aa_int_t> z_pow_aa_int_t;
+using z_pow_aa_int_t = powerset_domain<z_aa_int_t>;
 // Machine integer arithmetic domains
-typedef wrapped_interval_domain<z_number, varname_t>
-    z_wrapped_interval_domain_t;
+using z_wrapped_interval_domain_t =
+    wrapped_interval_domain<z_number, varname_t>;
 /*===================================================================*/
 // Reference domain
 /*===================================================================*/
@@ -113,18 +112,18 @@ using z_ref_sdbm_params_t = reference_domain_impl::Params<
     z_number, varname_t,
     split_dbm_domain<z_number, typename var_allocator::varname_t,
                      z_SplitGraph>>;
-typedef reference_domain<z_ref_int_params_t> z_ref_int_t;
-typedef reference_domain<z_ref_sdbm_params_t> z_ref_sdbm_t;
-typedef reference_domain<z_ref_aa_int_params_t> z_ref_aa_int_t;
+using z_ref_int_t = reference_domain<z_ref_int_params_t>;
+using z_ref_sdbm_t = reference_domain<z_ref_sdbm_params_t>;
+using z_ref_aa_int_t = reference_domain<z_ref_aa_int_params_t>;
 /*===================================================================*/
 /// Numerical domains over real
 /*===================================================================*/
-typedef interval_domain<q_number, varname_t> q_interval_domain_t;
-typedef boxes_domain<q_number, varname_t> q_boxes_domain_t;
-typedef apron_domain<q_number, varname_t, APRON_PK> q_pk_apron_domain_t;
-typedef apron_domain<q_number, varname_t, APRON_OCT> q_oct_apron_domain_t;
-typedef elina_domain<q_number, varname_t, ELINA_PK> q_pk_elina_domain_t;
-typedef elina_domain<q_number, varname_t, ELINA_OCT> q_oct_elina_domain_t;
+using q_interval_domain_t = interval_domain<q_number, varname_t>;
+using q_boxes_domain_t = boxes_domain<q_number, varname_t>;
+using q_pk_apron_domain_t = apron_domain<q_number, varname_t, APRON_PK>;
+using q_oct_apron_domain_t = apron_domain<q_number, varname_t, APRON_OCT>;
+using q_pk_elina_domain_t = elina_domain<q_number, varname_t, ELINA_PK>;
+using q_oct_elina_domain_t = elina_domain<q_number, varname_t, ELINA_OCT>;
 
 /*===================================================================*/
 // Wrapper for an arbitrary abstract domain

@@ -12,7 +12,7 @@ void inter_run_impl(CG *cg, BUDom bu_top, TDDom td_top, bool /*run_liveness*/,
                     unsigned widening, unsigned narrowing,
                     unsigned jump_set_size, bool enable_stats) {
 
-  typedef crab::cg::call_graph_ref<CG> cg_ref_t;
+  using cg_ref_t = crab::cg::call_graph_ref<CG>;
   cg_ref_t cg_ref(*cg);
 
   crab::outs() << "Running "
@@ -103,8 +103,8 @@ void z_bu_inter_run_and_check(crab::cg_impl::z_cg_t *cg, BUDom bu_top,
                               unsigned widening, unsigned narrowing,
                               unsigned jump_set_size, bool enable_stats) {
   using namespace crab::analyzer;
-  typedef bottom_up_inter_analyzer<crab::cg_impl::z_cg_ref_t, BUDom, TDDom>
-      inter_analyzer_t;
+  using inter_analyzer_t =
+      bottom_up_inter_analyzer<crab::cg_impl::z_cg_ref_t, BUDom, TDDom>;
   inter_run_impl<crab::cg_impl::z_cg_t, BUDom, TDDom, inter_analyzer_t>(
       cg, bu_top, td_top, run_liveness, widening, narrowing, jump_set_size,
       enable_stats);

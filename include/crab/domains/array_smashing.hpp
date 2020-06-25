@@ -24,12 +24,12 @@ template <typename NumDomain>
 class array_smashing final : public abstract_domain<array_smashing<NumDomain>> {
 
 public:
-  typedef typename NumDomain::number_t number_t;
-  typedef typename NumDomain::varname_t varname_t;
+  using number_t = typename NumDomain::number_t;
+  using varname_t = typename NumDomain::varname_t;
 
 private:
-  typedef array_smashing<NumDomain> array_smashing_t;
-  typedef abstract_domain<array_smashing_t> abstract_domain_t;
+  using array_smashing_t = array_smashing<NumDomain>;
+  using abstract_domain_t = abstract_domain<array_smashing_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -39,11 +39,11 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef NumDomain content_domain_t;
-  typedef ikos::interval<number_t> interval_t;
+  using content_domain_t = NumDomain;
+  using interval_t = ikos::interval<number_t>;
 
 private:
-  typedef ikos::bound<number_t> bound_t;
+  using bound_t = ikos::bound<number_t>;
 
   // Contain scalar and summarized array variables.
   //
@@ -534,17 +534,17 @@ public:
 
 template <typename BaseDomain>
 struct abstract_domain_traits<array_smashing<BaseDomain>> {
-  typedef typename BaseDomain::number_t number_t;
-  typedef typename BaseDomain::varname_t varname_t;
+  using number_t = typename BaseDomain::number_t;
+  using varname_t = typename BaseDomain::varname_t;
 };
 
 template <typename BaseDom>
 class checker_domain_traits<array_smashing<BaseDom>> {
 public:
-  typedef array_smashing<BaseDom> this_type;
-  typedef typename this_type::linear_constraint_t linear_constraint_t;
-  typedef typename this_type::disjunctive_linear_constraint_system_t
-      disjunctive_linear_constraint_system_t;
+  using this_type = array_smashing<BaseDom>;
+  using linear_constraint_t = typename this_type::linear_constraint_t;
+  using disjunctive_linear_constraint_system_t =
+      typename this_type::disjunctive_linear_constraint_system_t;
 
   static bool entail(this_type &lhs,
                      const disjunctive_linear_constraint_system_t &rhs) {

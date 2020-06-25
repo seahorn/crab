@@ -154,8 +154,8 @@ int main(int argc, char **argv) {
   }
 
   variable_factory_t vfac;
-  typedef crab::cfg::cfg_ref<z_cfg_t> z_cfg_ref_t;
-  typedef crab::transforms::dead_code_elimination<z_cfg_ref_t> dce_t;
+  using z_cfg_ref_t = crab::cfg::cfg_ref<z_cfg_t>;
+  using dce_t = crab::transforms::dead_code_elimination<z_cfg_ref_t>;
 
   {
     z_cfg_t *cfg = prog1(vfac);

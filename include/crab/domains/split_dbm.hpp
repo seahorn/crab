@@ -45,8 +45,8 @@ template <class Number, class VariableName,
           class Params = DBM_impl::DefaultParams<Number>>
 class split_dbm_domain final
     : public abstract_domain<split_dbm_domain<Number, VariableName, Params>> {
-  typedef split_dbm_domain<Number, VariableName, Params> DBM_t;
-  typedef abstract_domain<DBM_t> abstract_domain_t;
+  using DBM_t = split_dbm_domain<Number, VariableName, Params>;
+  using abstract_domain_t = abstract_domain<DBM_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -57,25 +57,25 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef Number number_t;
-  typedef VariableName varname_t;
-  typedef typename linear_constraint_t::kind_t constraint_kind_t;
+  using number_t = Number;
+  using varname_t = VariableName;
+  using constraint_kind_t = typename linear_constraint_t::kind_t;
 
 private:
-  typedef ikos::bound<number_t> bound_t;
-  typedef typename Params::Wt Wt;
-  typedef typename Params::graph_t graph_t;
-  typedef DBM_impl::NtoW<number_t, Wt> ntow;
-  typedef typename graph_t::vert_id vert_id;
-  typedef boost::container::flat_map<variable_t, vert_id> vert_map_t;
-  typedef typename vert_map_t::value_type vmap_elt_t;
-  typedef std::vector<boost::optional<variable_t>> rev_map_t;
-  typedef GraphOps<graph_t> GrOps;
-  typedef GraphPerm<graph_t> GrPerm;
-  typedef typename GrOps::edge_vector edge_vector;
+  using bound_t = ikos::bound<number_t>;
+  using Wt = typename Params::Wt;
+  using graph_t = typename Params::graph_t;
+  using ntow = DBM_impl::NtoW<number_t, Wt>;
+  using vert_id = typename graph_t::vert_id;
+  using vert_map_t = boost::container::flat_map<variable_t, vert_id>;
+  using vmap_elt_t = typename vert_map_t::value_type;
+  using rev_map_t = std::vector<boost::optional<variable_t>>;
+  using GrOps = GraphOps<graph_t>;
+  using GrPerm = GraphPerm<graph_t>;
+  using edge_vector = typename GrOps::edge_vector;
   // < <x, y>, k> == x - y <= k.
-  typedef std::pair<std::pair<variable_t, variable_t>, Wt> diffcst_t;
-  typedef std::unordered_set<vert_id> vert_set_t;
+  using diffcst_t = std::pair<std::pair<variable_t, variable_t>, Wt>;
+  using vert_set_t = std::unordered_set<vert_id>;
 
 protected:
   //================
@@ -2717,17 +2717,17 @@ public:
 
 template <typename Number, typename VariableName, typename Params>
 struct abstract_domain_traits<split_dbm_domain<Number, VariableName, Params>> {
-  typedef Number number_t;
-  typedef VariableName varname_t;
+  using number_t = Number;
+  using varname_t = VariableName;
 };
 
 template <typename Number, typename VariableName, typename Params>
 class reduced_domain_traits<split_dbm_domain<Number, VariableName, Params>> {
 public:
-  typedef split_dbm_domain<Number, VariableName, Params> sdbm_domain_t;
-  typedef typename sdbm_domain_t::variable_t variable_t;
-  typedef typename sdbm_domain_t::linear_constraint_system_t
-      linear_constraint_system_t;
+  using sdbm_domain_t = split_dbm_domain<Number, VariableName, Params>;
+  using variable_t = typename sdbm_domain_t::variable_t;
+  using linear_constraint_system_t =
+      typename sdbm_domain_t::linear_constraint_system_t;
 
   static void extract(sdbm_domain_t &dom, const variable_t &x,
                       linear_constraint_system_t &csts, bool only_equalities) {
@@ -2738,9 +2738,9 @@ public:
 template <typename Number, typename VariableName, typename Params>
 struct array_graph_domain_helper_traits<
     split_dbm_domain<Number, VariableName, Params>> {
-  typedef split_dbm_domain<Number, VariableName, Params> sdbm_domain_t;
-  typedef typename sdbm_domain_t::linear_constraint_t linear_constraint_t;
-  typedef typename sdbm_domain_t::variable_t variable_t;
+  using sdbm_domain_t = split_dbm_domain<Number, VariableName, Params>;
+  using linear_constraint_t = typename sdbm_domain_t::linear_constraint_t;
+  using variable_t = typename sdbm_domain_t::variable_t;
 
   static bool is_unsat(sdbm_domain_t &inv, linear_constraint_t cst) {
     return inv.is_unsat(cst);

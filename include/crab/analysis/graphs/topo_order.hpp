@@ -21,9 +21,9 @@ namespace graph_algo {
 template <typename G>
 void rev_topo_sort(const G &g, std::vector<typename G::node_t> &res) {
 
-  typedef std::unordered_map<typename G::node_t, boost::default_color_type>
-      color_map_t;
-  typedef boost::associative_property_map<color_map_t> property_color_map_t;
+  using color_map_t =
+      std::unordered_map<typename G::node_t, boost::default_color_type>;
+  using property_color_map_t = boost::associative_property_map<color_map_t>;
 
   color_map_t colormap;
 

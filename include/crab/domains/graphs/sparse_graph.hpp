@@ -10,10 +10,10 @@ namespace crab {
 
 template <class Weight> class SparseWtGraph {
 public:
-  typedef Weight Wt;
-  typedef SparseWtGraph<Wt> graph_t;
+  using Wt = Weight;
+  using graph_t = SparseWtGraph<Wt>;
 
-  typedef unsigned int vert_id;
+  using vert_id = unsigned int;
 
   SparseWtGraph(unsigned int _maxsz = 10, float _growth_rate = 1.4)
       : max_sz(_maxsz), sz(0), growth_rate(_growth_rate), edge_count(0),
@@ -273,7 +273,7 @@ public:
     Wt *w;
   };
 
-  typedef mut_val_ref_t mut_val_ref_t;
+  using mut_val_ref_t = mut_val_ref_t;
 
   bool lookup(vert_id x, vert_id y, mut_val_ref_t *w) {
     if (!succs(x).mem(y))
@@ -421,7 +421,7 @@ public:
 
   class fwd_edge_iterator {
   public:
-    typedef edge_ref_t edge_ref;
+    using edge_ref = edge_ref_t;
     fwd_edge_iterator(void) : g(nullptr) {}
     fwd_edge_iterator(graph_t &_g, vert_id _s, adj_iterator _it)
         : g(&_g), s(_s), it(_it) {}
@@ -450,7 +450,7 @@ public:
 
   class rev_edge_iterator {
   public:
-    typedef edge_ref_t edge_ref;
+    using edge_ref = edge_ref_t;
     rev_edge_iterator(void) : g(nullptr) {}
     rev_edge_iterator(graph_t &_g, vert_id _d, adj_iterator _it)
         : g(&_g), d(_d), it(_it) {}
@@ -479,11 +479,11 @@ public:
     adj_iterator it;
   };
 
-  typedef adj_iterator succ_iterator;
-  typedef adj_iterator pred_iterator;
+  using succ_iterator = adj_iterator;
+  using pred_iterator = adj_iterator;
   class adj_list {
   public:
-    typedef adj_iterator iterator;
+    using iterator = adj_iterator;
 
     adj_list(uint16_t *_ptr, unsigned int max_sz)
         : ptr(_ptr), sparseptr(_ptr + 1 + max_sz) {}
@@ -521,12 +521,12 @@ public:
     uint16_t *sparseptr;
   };
 
-  typedef adj_list succ_range;
-  typedef adj_list pred_range;
+  using succ_range = adj_list;
+  using pred_range = adj_list;
 
   class fwd_edge_range {
   public:
-    typedef fwd_edge_iterator iterator;
+    using iterator = fwd_edge_iterator;
     fwd_edge_range(graph_t &_g, vert_id _s) : g(_g), s(_s) {}
 
     fwd_edge_iterator begin(void) const {
@@ -541,7 +541,7 @@ public:
 
   class rev_edge_range {
   public:
-    typedef rev_edge_iterator iterator;
+    using iterator = rev_edge_iterator;
     rev_edge_range(graph_t &_g, vert_id _d) : g(_g), d(_d) {}
 
     rev_edge_iterator begin(void) const {
@@ -554,8 +554,8 @@ public:
     vert_id d;
   };
 
-  typedef fwd_edge_range e_succ_range;
-  typedef rev_edge_range e_pred_range;
+  using e_succ_range = fwd_edge_range;
+  using e_pred_range = rev_edge_range;
 
   adj_list succs(vert_id v) const {
     return adj_list(fwd_adjs + v * (2 * max_sz + 1), max_sz);
