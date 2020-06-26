@@ -13,7 +13,7 @@ namespace cfg_impl {
 
 /// BEGIN MUST BE DEFINED BY CRAB CLIENT
 // A variable factory based on strings
-using variable_factory_t = cfg::var_factory_impl::str_variable_factory;
+using variable_factory_t = var_factory_impl::str_variable_factory;
 using varname_t = typename variable_factory_t::varname_t;
 
 // CFG basic block labels

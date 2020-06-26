@@ -18,7 +18,6 @@
 #include <vector>
 
 namespace crab {
-namespace cfg {
 namespace var_factory_impl {
 
 namespace indexed_varname_impl {
@@ -267,5 +266,4 @@ protected:
 // };
 
 } // end namespace var_factory_impl
-} // end namespace cfg
 } // end namespace crab

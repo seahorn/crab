@@ -53,7 +53,7 @@ public:
   using Number = Num;
   using VariableName = VName;
   using variable_t = variable<Num, VName>;
-  using Alloc = crab::cfg::var_factory_impl::str_var_alloc_col;
+  using Alloc = crab::var_factory_impl::str_var_alloc_col;
   using domain_t = Abs;
 };
 } // namespace term

@@ -1148,7 +1148,7 @@ public:
 
   //// XXX: make this a template parameter later
   using str_varname_t =
-      crab::cfg::var_factory_impl::str_var_alloc_col::varname_t;
+      crab::var_factory_impl::str_var_alloc_col::varname_t;
   using str_interval_dom_t =
       ikos::interval_domain<ikos::z_number, str_varname_t>;
   using idom_info =

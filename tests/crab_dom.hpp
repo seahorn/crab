@@ -99,7 +99,7 @@ using z_wrapped_interval_domain_t =
 /*===================================================================*/
 // Reference domain
 /*===================================================================*/
-using var_allocator = crab::cfg::var_factory_impl::str_var_alloc_col;
+using var_allocator = crab::var_factory_impl::str_var_alloc_col;
 using z_ref_aa_int_params_t = reference_domain_impl::Params<
     z_number, varname_t,
     array_adaptive_domain<

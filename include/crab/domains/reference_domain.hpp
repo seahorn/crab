@@ -230,7 +230,7 @@ template <class Number, class VariableName, class BaseAbsDom> class Params {
 public:
   using number_t = Number;
   using varname_t = VariableName;
-  using varname_allocator_t = crab::cfg::var_factory_impl::str_var_alloc_col;
+  using varname_allocator_t = crab::var_factory_impl::str_var_alloc_col;
   using base_abstract_domain_t = BaseAbsDom;
   using base_varname_t = typename BaseAbsDom::varname_t;
 
