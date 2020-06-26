@@ -17,15 +17,6 @@ else
 endif
 CRAB_LIBS = $(CRAB_INSTALL)/crab/lib/libCrab.${DYLIB}
 
-LDD_LIBS := \
-    $(CRAB_INSTALL)/ldd/lib/libldd.a \
-    $(CRAB_INSTALL)/ldd/lib/libtvpi.a \
-    $(CRAB_INSTALL)/ldd/lib/libcudd.a \
-    $(CRAB_INSTALL)/ldd/lib/libst.a \
-    $(CRAB_INSTALL)/ldd/lib/libutil.a \
-    $(CRAB_INSTALL)/ldd/lib/libmtr.a \
-    $(CRAB_INSTALL)/ldd/lib/libepd.a 
-
 # Elina shared libraries have extension .so even on mac
 ELINA_LIBS := \
     $(CRAB_INSTALL)/elina/lib/libelinalinearize.so \
@@ -43,7 +34,7 @@ ifeq ($(UNAME),Linux)
 endif
 
 LDLIBS := \
-    $(CRAB_LIBS) $(LDD_LIBS) $(ELINA_LIBS) \
+    $(CRAB_LIBS) $(ELINA_LIBS) \
     -lmpfr -lgmp -lm -lstdc++ 
 
 CXXFLAGS := \
@@ -56,6 +47,15 @@ CXXFLAGS := \
     -I $(CRAB_INSTALL)/ldd/include/ldd \
     -I $(CRAB_INSTALL)/elina/include \
     -O2 -g -std=c++11
+
+ifeq ($(UNAME),Darwin)
+## For Mojave
+CXXFLAGS += -Wno-nullability-completeness
+CXXFLAGS += -isystem /usr/local/include 
+CXXFLAGS += -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk
+endif
+# For gmp library (you might need to adapt this)
+LDFLAGS := -L/usr/local/lib
 
 all: domain analysis
 # Ugly hack: add elina lib directory to rpath is not enough
@@ -77,7 +77,7 @@ crab_install:
 	mkdir -p crab/build
 	cd crab/build \
 	    && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL) -DCRAB_BUILD_LIBS_SHARED=ON \
-	             -DCRAB_USE_LDD=ON -DCRAB_USE_ELINA=ON ../ \
+	             -DCRAB_USE_ELINA=ON ../ \
 	    && cmake --build . --target ldd && cmake ../ \
 	    && cmake --build . --target elina && cmake ../ \
 	    && cmake --build . --target install

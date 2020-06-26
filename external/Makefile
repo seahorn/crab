@@ -8,6 +8,7 @@
 
 PWD=$(shell pwd)
 CRAB_INSTALL=${PWD}/crab-install
+CRAB_INSTALL=/Users/E30338/Repos/crab-ref/install-debug
 
 UNAME := $(shell uname)
 ifeq ($(UNAME),Darwin)
@@ -22,14 +23,23 @@ LDLIBS := \
 
 CXXFLAGS := \
      -Wall -Werror -Wfatal-errors \
-     -Wno-unused-local-typedefs -Wno-inconsistent-missing-override -Wno-unused-const-variable \
-     -Wno-uninitialized -Wno-deprecated \
+     -Wno-unused-local-typedefs \
+     -Wno-uninitialized \
      -DBSD -DHAVE_IEEE_754 -DSIZEOF_VOID_P=8 -DSIZEOF_LONG=8 \
      -I $(CRAB_INSTALL)/crab/include \
      -O2 -g -std=c++11
 
+ifeq ($(UNAME),Darwin)
+## For Mojave
+CXXFLAGS += -Wno-nullability-completeness
+CXXFLAGS += -isystem /usr/local/include 
+CXXFLAGS += -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk
+endif
+
 # Lookup paths for crab shared libraries
 LDFLAGS := -Wl,-rpath,$(CRAB_INSTALL)/crab/lib/
+# For gmp library (you might need to adapt this)
+LDFLAGS := -L/usr/local/lib
 
 all: domain analysis
 

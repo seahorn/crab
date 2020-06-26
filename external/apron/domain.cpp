@@ -1,39 +1,31 @@
-// Crab CFG stuff
 #include <crab/config.h>
-#include <crab/common/types.hpp>
-#include <crab/common/debug.hpp>
-#include <crab/cfg/cfg.hpp>
-#include <crab/cfg/var_factory.hpp>
-#include <crab/domains/linear_constraints.hpp>
+#include <crab/types/linear_constraints.hpp>
+#include <crab/types/varname_factory.hpp>
+#include <crab/types/variable.hpp>
+#include <crab/numbers/bignums.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/os.hpp>
 
 // Abstract domains
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/apron_domains.hpp>
 
 using namespace crab;
-using namespace crab::domains;
-using namespace crab::cfg;
 using namespace ikos;
 
-///////// Begin Crab CFG /////////////
 // A variable factory based on strings
-typedef var_factory_impl::str_variable_factory variable_factory_t;
-typedef typename variable_factory_t::varname_t varname_t;
-// CFG basic block labels
-typedef std::string basic_block_label_t;
-/// To define CFG over integers
-typedef crab::cfg::cfg<basic_block_label_t, varname_t, z_number> cfg_t;
-typedef cfg_ref<cfg_t> cfg_ref_t;
-typedef cfg_t::basic_block_t basic_block_t;
-typedef variable<z_number, varname_t> var_t;
-typedef linear_expression<z_number, varname_t> lin_exp_t;
-typedef linear_constraint<z_number, varname_t> lin_cst_t;
-typedef linear_constraint_system<z_number, varname_t> lin_cst_sys_t;
-///////// End Crab CFG /////////////
+using variable_factory_t = var_factory_impl::str_variable_factory;
+// Expressions
+using varname_t = typename variable_factory_t::varname_t;
+using var_t = variable<z_number, varname_t>;
+using lin_exp_t = linear_expression<z_number, varname_t>;
+using lin_cst_t = linear_constraint<z_number, varname_t> ;
+using lin_cst_sys_t = linear_constraint_system<z_number, varname_t> ;
 
 ///////// Begin Crab Abstract Domains /////////////
-typedef interval_domain<z_number,varname_t> interval_domain_t;
-typedef apron_domain<z_number,varname_t, apron_domain_id_t::APRON_PK> pk_domain_t;
+using interval_domain_t = interval_domain<z_number,varname_t>;
+using pk_domain_t = domains::apron_domain<z_number,varname_t,
+					  domains::apron_domain_id_t::APRON_PK>;
 ///////// End Crab Abstract Domains /////////////
 
 int main(int argc, char**argv) {
@@ -53,7 +45,7 @@ int main(int argc, char**argv) {
     inv2.assign(y, 20);
     outs() << "inv2=" << inv1 << "\n";    
     interval_domain_t inv3 = inv1 | inv2;
-    inv3.apply(OP_ADDITION, z, x, y);
+    inv3.apply(domains::OP_ADDITION, z, x, y);
     outs() << "inv1 | inv2 = " << inv3 << "\n";
   }
 
@@ -67,7 +59,7 @@ int main(int argc, char**argv) {
     inv2.assign(y, 20);
     outs() << "inv2=" << inv1 << "\n";    
     pk_domain_t inv3 = inv1 | inv2;
-    inv3.apply(OP_ADDITION, z, x, y);
+    inv3.apply(domains::OP_ADDITION, z, x, y);
     outs() << "inv1 | inv2 = " << inv3 << "\n";
   }
   

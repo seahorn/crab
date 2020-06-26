@@ -1,57 +1,55 @@
-// Crab CFG stuff
 #include <crab/config.h>
-#include <crab/common/types.hpp>
-#include <crab/common/debug.hpp>
-#include <crab/cfg/cfg.hpp>
-#include <crab/cfg/var_factory.hpp>
-#include <crab/domains/linear_constraints.hpp>
+#include <crab/types/linear_constraints.hpp>
+#include <crab/types/varname_factory.hpp>
+#include <crab/types/variable.hpp>
+#include <crab/numbers/bignums.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/os.hpp>
 
 // Abstract domains
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/apron_domains.hpp>
+#include <crab/domains/generic_abstract_domain.hpp>
 
 // Analysis
 #include <crab/analysis/fwd_analyzer.hpp>
 
 using namespace crab;
-using namespace crab::domains;
-using namespace crab::cfg;
-using namespace crab::analyzer;
 using namespace ikos;
 
-///////// Begin Crab CFG /////////////
 // A variable factory based on strings
-typedef var_factory_impl::str_variable_factory variable_factory_t;
-typedef typename variable_factory_t::varname_t varname_t;
+using variable_factory_t = crab::var_factory_impl::str_variable_factory;
+using varname_t = typename variable_factory_t::varname_t;
 // CFG basic block labels
-typedef std::string basic_block_label_t;
-
+using basic_block_label_t = std::string;
+/// To define CFG over integers
+using cfg_t = crab::cfg::cfg<basic_block_label_t, varname_t, z_number>;
+using cfg_ref_t = crab::cfg::cfg_ref<cfg_t>;
+using basic_block_t = cfg_t::basic_block_t;
+using var_t = crab::variable<z_number, varname_t>;
+using lin_exp_t = linear_expression<z_number, varname_t>;
+using lin_cst_t = linear_constraint<z_number, varname_t> ;
+using lin_cst_sys_t = linear_constraint_system<z_number, varname_t> ;
 namespace crab{
 namespace cfg_impl{  
-template<> inline std::string get_label_str(std::string e) 
-{ return e; }
-}
-}
-
-/// To define CFG over integers
-typedef crab::cfg::cfg<basic_block_label_t, varname_t, z_number> cfg_t;
-typedef cfg_ref<cfg_t> cfg_ref_t;
-typedef cfg_t::basic_block_t basic_block_t;
-typedef variable<z_number, varname_t> var_t;
-typedef linear_expression<z_number, varname_t> lin_exp_t;
-typedef linear_constraint<z_number, varname_t> lin_cst_t;
-typedef linear_constraint_system<z_number, varname_t> lin_cst_sys_t;
-///////// End Crab CFG /////////////
+template<> inline const std::string &get_label_str(const std::string &e) { return e; }
+}}
+//// To define CFG over integers
+using cfg_t = cfg::cfg<basic_block_label_t, varname_t, z_number>;
+using cfg_ref_t = cfg::cfg_ref<cfg_t>;
+using basic_block_t = cfg_t::basic_block_t ;
 
 ///////// Begin Crab Abstract Domains /////////////
-typedef interval_domain<z_number,varname_t> interval_domain_t;
-typedef apron_domain<z_number,varname_t, apron_domain_id_t::APRON_PK> pk_domain_t;
+using interval_domain_t = interval_domain<z_number,varname_t>;
+using pk_domain_t = domains::apron_domain<z_number,varname_t,
+					  domains::apron_domain_id_t::APRON_PK>;
+using abs_domain_t = domains::generic_abstract_domain<var_t>;
 ///////// End Crab Abstract Domains /////////////
 
 ///////// Begin Analyses /////////////
-typedef intra_fwd_analyzer<cfg_ref_t, interval_domain_t> interval_analysis_t;
-typedef intra_fwd_analyzer<cfg_ref_t, pk_domain_t> pk_analysis_t;
+using fwd_analyzer_t = analyzer::intra_fwd_analyzer<cfg_ref_t, abs_domain_t>;
 ///////// End Analyses /////////////
+
 int main(int argc, char**argv) {
 
   variable_factory_t vfac;
@@ -69,14 +67,14 @@ int main(int argc, char**argv) {
   basic_block_t& body_if_ff = prog.insert("body_if_ff");
   basic_block_t& body_tail = prog.insert("body_tail");
 
-  entry >> header;
-  header >> body;
-  header >> exit;  
-  body >> body_if_tt;
-  body >> body_if_ff;
-  body_if_tt >> body_tail;
-  body_if_ff >> body_tail;
-  body_tail >> header;
+  entry.add_succ(header);
+  header.add_succ(body);
+  header.add_succ(exit);  
+  body.add_succ(body_if_tt);
+  body.add_succ(body_if_ff);
+  body_if_tt.add_succ(body_tail);
+  body_if_ff.add_succ(body_tail);
+  body_tail.add_succ(header);
 
   entry.assign(x, 0);
   entry.assign(i, 0);
@@ -88,33 +86,27 @@ int main(int argc, char**argv) {
 
   outs() << prog << "\n";
 
-  {
-    // Analysis of the CFG
-    interval_analysis_t ianalyzer(prog);
-    ianalyzer.run();
-    
-    // Print invariants
-    outs () << "Invariants using intervals\n";
-    for (auto &bb : prog) {
-      std::string bb_name = bb.label();
-      auto inv = ianalyzer.get_pre(bb_name);
-      outs () << bb_name << ":" << inv << "\n";
-    }
-  }
+  auto print_invariants = [&prog](const fwd_analyzer_t &analyzer) {
+			   for (auto &bb : prog) {
+			     std::string bb_name = bb.label();
+			     auto inv = analyzer.get_pre(bb_name);
+			     outs () << bb_name << ":" << inv << "\n";
+			   }
+			 };
+  interval_domain_t top_intv;
+  abs_domain_t init(top_intv);
+  fwd_analyzer_t analyzer(prog, init);
+  analyzer.run();
+  outs () << "Invariants using intervals\n";
+  print_invariants(analyzer);
 
-  {
-    // Analysis of the CFG
-    pk_analysis_t ianalyzer(prog);
-    ianalyzer.run();
-
-    // Print invariants
-    outs () << "Invariants using polyhedra\n";        
-    for (auto &bb : prog) {
-      std::string bb_name = bb.label();
-      auto inv = ianalyzer.get_pre(bb_name);
-      outs () << bb_name << ":" << inv << "\n";
-    }
-  }
+  analyzer.clear(); 
+  pk_domain_t top_pk;
+  analyzer.get_abs_transformer().set_abs_value(top_pk);
+  analyzer.run();
+  outs () << "Invariants using Apron Polyhedra\n";
+  print_invariants(analyzer);
   
   return 0;
 }
+

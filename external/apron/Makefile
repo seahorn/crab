@@ -49,8 +49,17 @@ CXXFLAGS := \
      -I $(CRAB_INSTALL)/apron/include \
      -O2 -g -std=c++11
 
+ifeq ($(UNAME),Darwin)
+## For Mojave
+CXXFLAGS += -Wno-nullability-completeness
+CXXFLAGS += -isystem /usr/local/include 
+CXXFLAGS += -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk
+endif
+
 # Lookup paths for crab shared libraries
 LDFLAGS := -Wl,-rpath,$(CRAB_INSTALL)/crab/lib/
+# For gmp library (you might need to adapt this)
+LDFLAGS := -L/usr/local/lib
 
 all: domain analysis
 
