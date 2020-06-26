@@ -167,6 +167,7 @@ public:
   void clear() {
     m_preconditions.clear();
     m_invariants.clear();
+    m_postcond.set_to_top();
   }
 
   const wto_t &get_WTO() const { return this->get_wto(); }
@@ -658,6 +659,9 @@ public:
   void clear() {
     m_pre_invariants.clear();
     m_post_invariants.clear();
+    m_proved_assertions().clear();
+    m_unproven_assertions().clear();
+    m_abs_tr.get_abs_value().set_to_top();
   }
 
   /** Extra API for checkers **/

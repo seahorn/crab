@@ -903,8 +903,15 @@ public:
     }
   }
 
-  // clear all invariants
-  void clear() { m_inv_map.clear(); }
+  // clear all the analysis' state
+  void clear() {
+    m_inv_map.clear();
+    m_summ_tbl.clear();
+    m_call_tbl.clear();
+    m_abs_tr->get_abs_value().set_to_top();    
+    m_td_top.set_to_top();
+    m_bu_top.set_to_top();
+  }
 
   //! Propagate inv through statements
   abs_tr_t &get_abs_transformer() {

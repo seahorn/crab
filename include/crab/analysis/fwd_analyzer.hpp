@@ -51,6 +51,10 @@ private:
   abs_tr_t *m_abs_tr; // the abstract transformer owned by the caller
   const liveness_t *m_live;
   live_set_t m_formals;
+
+  // These two flags are used to return always true once "clear"
+  // method has been called.
+  // XXX: don't remember who is using this.
   bool m_pre_clear_done;
   bool m_post_clear_done;
 
@@ -75,7 +79,7 @@ private:
 
   //! Given a basic block and the invariant at the entry it produces
   //! the invariant at the exit of the block.
-  abs_dom_t analyze(const basic_block_label_t &node, abs_dom_t &&inv) {
+  abs_dom_t analyze(const basic_block_label_t &node, abs_dom_t &&inv) override {
     auto &b = get_cfg().get_node(node);
     m_abs_tr->set_abs_value(std::move(inv));
     for (auto &s : b) {
@@ -86,9 +90,33 @@ private:
     return res;
   }
 
-  void process_pre(const basic_block_label_t &node, abs_dom_t inv) {}
-  void process_post(const basic_block_label_t &node, abs_dom_t inv) {}
+  void process_pre(const basic_block_label_t &node, abs_dom_t inv) override {}
 
+  void process_post(const basic_block_label_t &node, abs_dom_t inv) override {}
+
+
+  /*
+   * Keep these methods private for now and remove them if nobody
+   * really needs them.
+   */
+  void clear_pre_and_always_top_after() {
+    m_pre_clear_done = true;
+    fixpo_iterator_t::clear_pre();
+  }
+
+  void clear_post_and_always_top_after() {
+    m_post_clear_done = true;
+    fixpo_iterator_t::clear_post();
+  }
+  
+  // clear all invariants and return always top if get_pre or get_post
+  // is called.
+  void clear_and_always_top_after() {
+    clear_pre_and_always_top_after();
+    clear_post_and_always_top_after();
+  }
+
+  
 public:
   fwd_analyzer(CFG cfg, const wto_t *wto, abs_tr_t *abs_tr,
                // live can be nullptr if no live info is available
@@ -174,37 +202,18 @@ public:
   //! times each head was visited by the fixpoint iterator.
   const wto_t &get_wto() const { return fixpo_iterator_t::get_wto(); }
 
-  void clear_pre() {
-    m_pre_clear_done = true;
-    fixpo_iterator_t::clear_pre();
-  }
-
-  void clear_post() {
-    m_post_clear_done = true;
-    fixpo_iterator_t::clear_post();
-  }
-
-  // clear all invariants (pre and post)
   void clear() {
-    clear_pre();
-    clear_post();
-  }
-
-  void reset() {
-    clear();
+    clear_and_always_top_after();
+    // disable "always top after"
     m_pre_clear_done = false;
     m_post_clear_done = false;
   }
-
-  /** Begin extra API for checkers **/
-
+  
   CFG get_cfg() const { return this->_cfg; }
 
   abs_tr_t &get_abs_transformer() { return *m_abs_tr; }
 
   void get_safe_assertions(std::set<const stmt_t *> &out) const {}
-
-  /** End extra API for checkers **/
 
   void write(crab::crab_os &o) {
     for (auto &kv : this->get_pre_invariants()) {
@@ -315,7 +324,7 @@ public:
   }
 
   abs_dom_t operator[](const basic_block_label_t &b) const {
-    return m_analyzer[b];
+    return m_analyzer.get_pre(b);
   }
 
   abs_dom_t get_pre(const basic_block_label_t &b) const {
@@ -329,8 +338,6 @@ public:
   const wto_t &get_wto() const { return m_analyzer.get_wto(); }
 
   void clear() { m_analyzer.clear(); }
-
-  /** Extra API for checkers **/
 
   CFG get_cfg() { return m_analyzer.get_cfg(); }
 

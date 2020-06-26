@@ -505,7 +505,7 @@ get_inter_analysis(CallGraphNode cg_node,
     // don't create another analyzer if we already created one
     analyzer = &(abs_tr.get_analyzer(cg_node));
     // make sure no results from previous run
-    analyzer->reset();
+    analyzer->clear();
   } else {
     // get liveness symbols for cfg if available
     const live_and_dead_analysis<cfg_t> *live = nullptr;
@@ -904,7 +904,7 @@ private:
           fdecl, callee_entry, callee_exit, m_ctx->minimize_invariants(),
           std::move(pre_invariants), std::move(post_invariants)));
       add_calling_context(callee_cfg, std::move(cc));
-      callee_analysis.reset();
+      callee_analysis.clear();
     }
 
     pre_bot = false;
@@ -1204,7 +1204,7 @@ public:
             top_down_inter_impl::get_inter_analysis<
                 cg_node_t, intra_analyzer_with_call_semantics_t>(cg_node,
                                                                  *m_abs_tr);
-        entry_analysis.reset();
+        entry_analysis.clear();
       }
       CRAB_VERBOSE_IF(1, get_msg_stream()
                              << "Finished inter-procedural analysis\n";);
