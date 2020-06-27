@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
   variable_factory_t vfac;
   z_cfg_t *cfg = prog(vfac);
   crab::outs() << *cfg << "\n";
-
+  
   {
 #ifdef HAVE_APRON
     using analysis_t =
@@ -79,8 +79,8 @@ int main(int argc, char **argv) {
       auto cur_label = worklist.back();
       worklist.pop_back();
       auto inv = analyzer[cur_label];
-      crab::outs() << crab::cfg_impl::get_label_str(cur_label) << "=" << inv
-                   << "\n";
+      crab::outs() << crab::basic_block_traits<z_basic_block_t>::to_string(cur_label)
+		   << "=" << inv << "\n";
       auto const &cur_node = cfg->get_node(cur_label);
       for (auto const kid_label :
            boost::make_iterator_range(cur_node.next_blocks())) {
@@ -116,8 +116,8 @@ int main(int argc, char **argv) {
       auto cur_label = worklist.back();
       worklist.pop_back();
       auto inv = analyzer[cur_label];
-      crab::outs() << crab::cfg_impl::get_label_str(cur_label) << "=" << inv
-                   << "\n";
+      crab::outs() << crab::basic_block_traits<z_basic_block_t>::to_string(cur_label)
+		   << "=" << inv << "\n";
       auto const &cur_node = cfg->get_node(cur_label);
       for (auto const kid_label :
            boost::make_iterator_range(cur_node.next_blocks())) {

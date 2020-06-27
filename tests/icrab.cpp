@@ -13,6 +13,8 @@ void inter_run_impl(CG *cg, BUDom bu_top, TDDom td_top, bool /*run_liveness*/,
                     unsigned jump_set_size, bool enable_stats) {
 
   using cg_ref_t = crab::cg::call_graph_ref<CG>;
+  using basic_block_t = typename CG::cfg_t::basic_block_t;
+  
   cg_ref_t cg_ref(*cg);
 
   crab::outs() << "Running "
@@ -30,7 +32,8 @@ void inter_run_impl(CG *cg, BUDom bu_top, TDDom td_top, bool /*run_liveness*/,
     crab::outs() << fdecl << "\n";
     for (auto &b : cfg) {
       auto inv = a.get_post(cfg, b.label());
-      crab::outs() << crab::cfg_impl::get_label_str(b.label()) << "=" << inv
+      crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(b.label())
+		   << "=" << inv
                    << "\n";
     }
     crab::outs() << "=================================\n";
@@ -77,8 +80,9 @@ void td_inter_run_impl(crab::cg_impl::z_cg_t *cg, Dom init,
         auto cur_label = worklist.back();
         worklist.pop_back();
         auto inv = analyzer.get_pre(cfg, cur_label);
-        crab::outs() << crab::cfg_impl::get_label_str(cur_label) << "=" << inv
-                     << "\n";
+        crab::outs() << crab::basic_block_traits<crab::cfg_impl::z_basic_block_t>
+	  ::to_string(cur_label)
+		     << "=" << inv << "\n";
         auto const &cur_node = cfg.get_node(cur_label);
         for (auto const kid_label :
              boost::make_iterator_range(cur_node.next_blocks())) {

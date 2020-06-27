@@ -43,6 +43,7 @@
 
 #pragma once
 
+//#include <crab/cfg/basic_block_traits.hpp>
 #include <crab/cfg/cfg_bgl.hpp> // needed by wto
 #include <crab/iterators/fixpoint_iterators_api.hpp>
 #include <crab/iterators/thresholds.hpp>
@@ -70,6 +71,7 @@ class interleaved_fwd_fixpoint_iterator
       CFG, AbstractValue>;
 
 public:
+  using basic_block_t = typename CFG::basic_block_t;  
   using basic_block_label_t = typename CFG::basic_block_label_t;
   using wto_t = wto<CFG>;
   using assumption_map_t =
@@ -160,8 +162,8 @@ private:
     crab::ScopedCrabStats __st__("Fixpo.extrapolate");
 
     CRAB_VERBOSE_IF(1, crab::get_msg_stream()
-                           << "Widening " << iteration << " at "
-                           << crab::cfg_impl::get_label_str(node) << "\n";);
+		    << "Widening " << iteration << " at "
+		    << crab::basic_block_traits<basic_block_t>::to_string(node) << "\n";);
 
     if (iteration <= _widening_delay) {
       auto widen_res = before | after;
@@ -180,7 +182,7 @@ private:
         auto it = _jump_set.find(node);
         if (it == _jump_set.end()) {
           CRAB_ERROR("no thresholds found for ",
-                     crab::cfg_impl::get_label_str(node));
+                     crab::basic_block_traits<basic_block_t>::to_string(node));
         }
         thresholds_t thresholds = it->second;
         auto widen_res = before.widening_thresholds(after, thresholds);
@@ -206,9 +208,9 @@ private:
     crab::ScopedCrabStats __st__("Fixpo.refine");
 
     CRAB_VERBOSE_IF(1, crab::get_msg_stream()
-                           << "Decreasing iteration=" << iteration << "\n"
-                           << "Narrowing at "
-                           << crab::cfg_impl::get_label_str(node) << "\n";);
+		    << "Decreasing iteration=" << iteration << "\n"
+		    << "Narrowing at "
+		    << crab::basic_block_traits<basic_block_t>::to_string(node) << "\n";);
 
     if (iteration == 1) {
       auto narrow_res = before & after;
@@ -310,9 +312,9 @@ public:
 
     _init_inv = std::move(init);
     CRAB_VERBOSE_IF(1, crab::get_msg_stream()
-                           << "== Started fixpoint at block "
-                           << crab::cfg_impl::get_label_str(entry)
-                           << " with initial value=" << _init_inv << "\n";);
+		    << "== Started fixpoint at block "
+		    << crab::basic_block_traits<basic_block_t>::to_string(entry)
+		    << " with initial value=" << _init_inv << "\n";);
     this->set_pre(entry, _init_inv);
     wto_iterator_t iterator(this, entry, _init_inv, &assumptions);
     this->_wto.accept(&iterator);
@@ -348,6 +350,7 @@ public:
   using wto_vertex_t = wto_vertex<CFG>;
   using wto_cycle_t = wto_cycle<CFG>;
   using wto_t = wto<CFG>;
+  using basic_block_t = typename CFG::basic_block_t;
   using basic_block_label_t = typename CFG::basic_block_label_t;
   using wto_nesting_t = typename wto_t::wto_nesting_t;
   using assumption_map_t = typename interleaved_iterator_t::assumption_map_t;
@@ -388,8 +391,8 @@ private:
   inline void compute_post(basic_block_label_t node, AbstractValue inv) {
     crab::CrabStats::resume("Fixpo.analyze_block");
     CRAB_VERBOSE_IF(1, crab::get_msg_stream()
-                           << "Analyzing node "
-                           << crab::cfg_impl::get_label_str(node);
+		    << "Analyzing node "
+		    << crab::basic_block_traits<basic_block_t>::to_string(node);
                     auto &n = this->_iterator->_cfg.get_node(node);
                     crab::outs() << " size=" << n.size() << "\n";);
 
@@ -452,8 +455,8 @@ public:
     }
     if (_skip) {
       CRAB_VERBOSE_IF(2, crab::outs()
-                             << "** Skipped analysis of  "
-                             << crab::cfg_impl::get_label_str(node) << "\n");
+		      << "** Skipped analysis of  "
+		      << crab::basic_block_traits<basic_block_t>::to_string(node) << "\n");
       return;
     }
 
@@ -497,15 +500,15 @@ public:
       _skip = !entry_in_this_cycle;
       if (_skip) {
         CRAB_VERBOSE_IF(2, crab::outs()
-                               << "** Skipped analysis of WTO cycle rooted at  "
-                               << crab::cfg_impl::get_label_str(head) << "\n");
+			<< "** Skipped analysis of WTO cycle rooted at  "
+			<< crab::basic_block_traits<basic_block_t>::to_string(head) << "\n");
         return;
       }
     }
 
     CRAB_VERBOSE_IF(1, crab::get_msg_stream()
-                           << "** Analyzing loop with head "
-                           << crab::cfg_impl::get_label_str(head);
+		    << "** Analyzing loop with head "
+		    << crab::basic_block_traits<basic_block_t>::to_string(head);
                     auto &n = this->_iterator->_cfg.get_node(head);
                     crab::outs() << " size=" << n.size() << "\n";);
 
@@ -515,8 +518,8 @@ public:
 
     if (entry_in_this_cycle) {
       CRAB_VERBOSE_IF(2, crab::outs()
-                             << "Skipped predecessors of "
-                             << crab::cfg_impl::get_label_str(head) << "\n");
+		      << "Skipped predecessors of "
+		      << crab::basic_block_traits<basic_block_t>::to_string(head) << "\n");
       pre = _iterator->get_pre(_entry);
     } else {
       crab::CrabStats::count("Fixpo.join_predecessors");
@@ -599,8 +602,8 @@ public:
       }
     }
     CRAB_VERBOSE_IF(1, crab::get_msg_stream()
-                           << "** Finished loop with head "
-                           << crab::cfg_impl::get_label_str(head) << "\n");
+		    << "** Finished loop with head "
+		    << crab::basic_block_traits<basic_block_t>::to_string(head) << "\n");
   }
 
 }; // class wto_iterator

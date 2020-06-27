@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crab/support/stats.hpp>
+//#include <crab/cfg/basic_block_traits.hpp>
 
 #include <algorithm>
 #include <boost/graph/dominator_tree.hpp>
@@ -54,6 +55,7 @@ void dominator_tree(G g, typename G::node_t entry, Map &idom) {
   return;
 #else
   using node_t = typename G::node_t;
+  using basic_block_t = typename G::basic_block_t;
   typedef
       typename boost::graph_traits<G>::vertices_size_type vertices_size_type_t;
   using index_map_t = boost::associative_property_map<std::map<node_t, int>>;
@@ -92,15 +94,17 @@ void dominator_tree(G g, typename G::node_t entry, Map &idom) {
       idom.insert(typename Map::value_type(v, get(dom_tree_pred_map, v)));
       CRAB_LOG("dominator",
                crab::outs()
-                   << crab::cfg_impl::get_label_str(get(dom_tree_pred_map, v))
-                   << " is the immediate dominator of "
-                   << crab::cfg_impl::get_label_str(v) << "\n";);
+	       << crab::basic_block_traits<basic_block_t>::
+	       to_string(get(dom_tree_pred_map, v))
+	       << " is the immediate dominator of "
+	       << crab::basic_block_traits<basic_block_t>::to_string(v) << "\n";);
 
     } else {
       idom.insert(
           typename Map::value_type(v, boost::graph_traits<G>::null_vertex()));
-      CRAB_LOG("dominator", crab::outs() << crab::cfg_impl::get_label_str(v)
-                                         << " is not dominated by anyone!\n");
+      CRAB_LOG("dominator", crab::outs()
+	       << crab::basic_block_traits<basic_block_t>::to_string(v)
+	       << " is not dominated by anyone!\n");
     }
   }
 #endif
@@ -117,6 +121,7 @@ void dominance(G g, typename G::node_t entry, VectorMap &df) {
   }
 
   using node_t = typename G::node_t;
+  using basic_block_t = typename G::basic_block_t;
   // map node to its idom node
   std::unordered_map<node_t, node_t> idom;
   crab::CrabStats::resume("Dominator Tree");
@@ -154,9 +159,9 @@ void dominance(G g, typename G::node_t entry, VectorMap &df) {
   CRAB_LOG(
       "dominance", for (auto &kv
                         : df) {
-        crab::outs() << crab::cfg_impl::get_label_str(kv.first) << "={";
+        crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(kv.first) << "={";
         for (auto v : kv.second) {
-          crab::outs() << crab::cfg_impl::get_label_str(v) << ";";
+          crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(v) << ";";
         }
         crab::outs() << "}\n";
       });

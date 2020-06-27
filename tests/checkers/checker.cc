@@ -82,7 +82,9 @@ static void print_invariants(z_cfg_ref_t cfg, Analyzer &analyser) {
 
     auto pre = analyser.get_pre(cur_label);
     auto post = analyser.get_post(cur_label);
-    crab::outs() << get_label_str(cur_label) << "=" << pre << " ==> " << post
+    
+    crab::outs() << crab::basic_block_traits<z_basic_block_t>::to_string(cur_label)
+		 << "=" << pre << " ==> " << post
                  << "\n";
 
     auto const &cur_node = cfg.get_node(cur_label);
@@ -117,7 +119,7 @@ void check(z_cfg_ref_t cfg, variable_factory_t &vfac) {
   // for(auto &b : cfg)  {
   //   auto pre = num_a.get_pre(b.label());
   //   auto post = num_a.get_post(b.label());
-  //   crab::outs() << get_label_str(b.label()) << "="
+  //   crab::outs() << basic_block_traits<z_basic_block_t>::to_string(b.label()) << "="
   //             << pre
   //             << " ==> "
   //             << post << "\n";

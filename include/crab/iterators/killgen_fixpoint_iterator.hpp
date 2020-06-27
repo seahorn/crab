@@ -4,9 +4,9 @@
  * Specialized fixpoint iterators for kill-gen problems.
  **/
 
+//#include <crab/cfg/basic_block_traits.hpp>
 #include <crab/analysis/graphs/sccg.hpp>
 #include <crab/analysis/graphs/topo_order.hpp>
-#include <crab/cfg/cfg.hpp> // for cfg_impl::get_label_str
 #include <crab/cfg/cfg_bgl.hpp>
 #include <crab/domains/killgen_domain.hpp>
 #include <crab/support/debug.hpp>
@@ -53,6 +53,7 @@ public:
 template <class CFG, class AnalysisOps> class killgen_fixpoint_iterator {
 
 public:
+  using basic_block_t = typename CFG::basic_block_t;
   using basic_block_label_t = typename CFG::basic_block_label_t;
   using killgen_domain_t = typename AnalysisOps::killgen_domain_t;
   using inv_map_t = std::unordered_map<basic_block_label_t, killgen_domain_t>;
@@ -162,7 +163,7 @@ public:
           if (!first)
             crab::outs() << ",";
           first = false;
-          crab::outs() << cfg_impl::get_label_str(v);
+          crab::outs() << basic_block_traits<basic_block_t>::to_string(v);
         } crab::outs() << "}\n";);
 
     CRAB_LOG(m_analysis.name(), crab::outs() << m_analysis.name() << ": "
@@ -173,7 +174,7 @@ public:
         m_analysis.name(), crab::outs() << m_analysis.name() << " sets:\n";
         for (auto it = m_cfg.label_begin(), et = m_cfg.label_end(); it != et;
              ++it) {
-          crab::outs() << cfg_impl::get_label_str(*it) << " "
+          crab::outs() << basic_block_traits<basic_block_t>::to_string(*it) << " "
                        << "IN=" << m_in_map[*it] << " "
                        << "OUT=" << m_out_map[*it] << "\n";
         } crab::outs()

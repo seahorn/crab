@@ -11,7 +11,8 @@ void backward_run_internal(CFG *cfg, crab::cfg_impl::basic_block_label_t entry,
                            Dom initial_states, unsigned widening,
                            unsigned narrowing, unsigned jump_set_size,
                            bool enable_stats) {
-
+  using basic_block_t = typename CFG::basic_block_t;
+  
   // Run backward analysis
   crab::outs() << "Invariants using " << initial_states.domain_name() << "\n";
   IntraBwdAnalyzer a(*cfg, initial_states);
@@ -29,8 +30,8 @@ void backward_run_internal(CFG *cfg, crab::cfg_impl::basic_block_label_t entry,
     auto cur_label = worklist.back();
     worklist.pop_back();
     auto inv = a[cur_label];
-    crab::outs() << crab::cfg_impl::get_label_str(cur_label) << "=" << inv
-                 << "\n";
+    crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(cur_label)
+		 << "=" << inv << "\n";
     auto const &cur_node = cfg->get_node(cur_label);
     for (auto const kid_label :
          boost::make_iterator_range(cur_node.next_blocks())) {

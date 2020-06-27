@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crab/analysis/graphs/cdg.hpp>
+//#include <crab/cfg/basic_block_traits.hpp>
 #include <crab/cfg/cfg.hpp>
 #include <crab/domains/killgen_domain.hpp>
 #include <crab/iterators/killgen_fixpoint_iterator.hpp>
@@ -519,7 +520,8 @@ public:
 private:
   using fixpo_t = crab::iterators::killgen_fixpoint_iterator<
       CFG, assertion_crawler_operations<CFG>>;
-
+  using basic_block_t = typename CFG::basic_block_t;
+  
 public:
   // map assertions to a set of variables
   using separate_domain_t =
@@ -592,8 +594,8 @@ public:
       auto it = m_map.find(cur_label);
       assert(it != m_map.end());
       auto inv = it->second;
-      crab::outs() << crab::cfg_impl::get_label_str(cur_label) << "=" << inv
-                   << "\n";
+      crab::outs() << basic_block_traits<basic_block_t>::to_string(cur_label)
+		   << "=" << inv << "\n";
 
       auto const &cur_node = this->m_cfg.get_node(cur_label);
       for (auto const kid_label :

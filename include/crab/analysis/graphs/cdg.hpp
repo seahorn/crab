@@ -1,7 +1,7 @@
 #pragma once
 
 #include <crab/analysis/graphs/dominance.hpp>
-
+//#include <crab/cfg/basic_block_traits.hpp>
 /*
 
   Node y is control-dependent on x if y does NOT post-dominate x but
@@ -18,6 +18,7 @@ namespace graph_algo {
 template <typename G, typename VectorMap>
 void control_dep_graph(G g, VectorMap &cdg) {
   VectorMap pdf;
+  using basic_block_t = typename G::basic_block_t;
   crab::analyzer::graph_algo::post_dominance(g, pdf);
 
   for (auto &kv : pdf) {
@@ -34,11 +35,13 @@ void control_dep_graph(G g, VectorMap &cdg) {
                                                                  : cdg) {
         crab::outs() << "{";
         for (auto v : kv.second) {
-          crab::outs() << crab::cfg_impl::get_label_str(v) << ";";
+          crab::outs() << crab::basic_block_traits<basic_block_t>::
+	    to_string(v) << ";";
         }
         crab::outs() << "} "
                      << " control-dependent on ";
-        crab::outs() << crab::cfg_impl::get_label_str(kv.first) << "\n";
+        crab::outs() << crab::basic_block_traits<basic_block_t>::
+	  to_string(kv.first) << "\n";
       });
 }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <crab/cfg/cfg.hpp>
+//#include <crab/cfg/basic_block_traits.hpp>
 #include <crab/cfg/cfg_bgl.hpp> // needed by wto.hpp
 #include <crab/domains/interval.hpp>
 #include <crab/iterators/wto.hpp>
@@ -273,7 +273,8 @@ public:
 
   void write(crab::crab_os &o) const {
     for (auto &kv : m_head_to_thresholds) {
-      o << crab::cfg_impl::get_label_str(kv.first) << "=" << kv.second << "\n";
+      o << crab::basic_block_traits<basic_block_t>::to_string(kv.first)
+	<< "=" << kv.second << "\n";
     }
   }
 

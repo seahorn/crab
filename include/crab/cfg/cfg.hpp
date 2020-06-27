@@ -85,6 +85,7 @@
  * - Integer and reals cannot be mixed.
  */
 
+#include <crab/cfg/basic_block_traits.hpp>
 #include <crab/cfg/cfg_operators.hpp>
 #include <crab/domains/discrete_domains.hpp>
 #include <crab/domains/interval.hpp>
@@ -103,12 +104,6 @@
 #include <unordered_set>
 
 namespace crab {
-
-namespace cfg_impl {
-// To convert a basic block label to a string
-template <typename T> inline const std::string &get_label_str(const T &bb);
-} // namespace cfg_impl
-
 namespace cfg {
 
 enum stmt_code {
@@ -1993,7 +1988,9 @@ public:
 
   const BasicBlockLabel &label() const { return m_bb_id; }
 
-  const std::string &name() const { return cfg_impl::get_label_str(m_bb_id); }
+  std::string name() const {
+    return basic_block_traits<basic_block_t>::to_string(m_bb_id);
+  }
 
   iterator begin() { return boost::make_indirect_iterator(m_stmts.begin()); }
   iterator end() { return boost::make_indirect_iterator(m_stmts.end()); }
@@ -2112,7 +2109,7 @@ public:
   }
 
   void write(crab_os &o) const {
-    o << cfg_impl::get_label_str(m_bb_id) << ":\n";
+    o << basic_block_traits<basic_block_t>::to_string(m_bb_id) << ":\n";
     for (auto const &s : *this) {
       o << "  " << s << ";\n";
     }
@@ -2123,7 +2120,7 @@ public:
       o << "  "
         << "goto ";
       for (; it != et;) {
-        o << cfg_impl::get_label_str(*it);
+        o << basic_block_traits<basic_block_t>::to_string(*it);
         ++it;
         if (it == et) {
           o << ";";
@@ -2460,7 +2457,7 @@ public:
 
   const basic_block_label_t &label() const { return _bb.label(); }
 
-  const std::string &name() const { return _bb.name(); }
+  std::string name() const { return _bb.name(); }
 
   iterator begin() { return _bb.rbegin(); }
 
@@ -4252,6 +4249,16 @@ bool operator==(cfg_rev<CFGRef> const &a, cfg_rev<CFGRef> const &b) {
   return (a.get_func_decl() == b.get_func_decl());
 }
 } // namespace cfg
+
+template <typename BasicBlock>
+class basic_block_traits<cfg::basic_block_rev<BasicBlock>> {
+public:
+  using basic_block_label_t = typename BasicBlock::basic_block_label_t;
+  static std::string to_string(const basic_block_label_t &bb) {
+    return basic_block_traits<BasicBlock>::to_string(bb);
+  }
+};
+  
 } // namespace crab
 
 namespace std {

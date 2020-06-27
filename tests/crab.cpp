@@ -15,6 +15,9 @@ void intra_run_impl(CFG *cfg, crab::cfg_impl::basic_block_label_t entry,
                     unsigned narrowing, unsigned jump_set_size,
                     bool enable_stats, bool enable_checker) {
   using cfg_ref_t = crab::cfg::cfg_ref<CFG>;
+  using basic_block_t = typename CFG::basic_block_t;
+  using assumption_map_t = typename IntraFwdAnalyzer::assumption_map_t;
+  
   crab::analyzer::live_and_dead_analysis<cfg_ref_t> live(*cfg);
   if (run_liveness) {
     live.exec();
@@ -24,7 +27,7 @@ void intra_run_impl(CFG *cfg, crab::cfg_impl::basic_block_label_t entry,
   IntraFwdAnalyzer a(*cfg, init, (run_liveness) ? &live : nullptr, nullptr,
                      widening, narrowing, jump_set_size);
 
-  typename IntraFwdAnalyzer::assumption_map_t assumptions;
+  assumption_map_t assumptions;
   a.run(entry, assumptions);
 
   // Print invariants in DFS to enforce a fixed order
@@ -36,8 +39,8 @@ void intra_run_impl(CFG *cfg, crab::cfg_impl::basic_block_label_t entry,
     auto cur_label = worklist.back();
     worklist.pop_back();
     auto inv = a[cur_label];
-    crab::outs() << crab::cfg_impl::get_label_str(cur_label) << "=" << inv
-                 << "\n";
+    crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(cur_label)
+		 << "=" << inv << "\n";
     auto const &cur_node = cfg->get_node(cur_label);
     for (auto const kid_label :
          boost::make_iterator_range(cur_node.next_blocks())) {
@@ -49,7 +52,7 @@ void intra_run_impl(CFG *cfg, crab::cfg_impl::basic_block_label_t entry,
 
   // for (auto &b : *cfg) {
   //   auto inv = a[b.label ()];
-  //   crab::outs() << crab::cfg_impl::get_label_str (b.label ()) << "="
+  //   crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(b.label()) << "="
   // 		 << inv << "\n";
   // }
 

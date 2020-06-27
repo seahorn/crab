@@ -6,6 +6,7 @@
  **/
 
 #include <crab/analysis/dataflow/assertion_crawler.hpp>
+//#include <crab/cfg/basic_block_traits.hpp>
 #include <crab/cfg/cfg.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -356,7 +357,8 @@ class assumption_dataflow_analysis : public assumption_analysis<CFG> {
   using separate_domain_t = typename assertion_crawler_t::separate_domain_t;
   using typename assumption_analysis_t::vector_assumption_ptr;
   using pp_inv_map_t = std::map<statement_t *, separate_domain_t>;
-
+  using basic_block_t = typename CFG::basic_block_t;
+  
 public:
   assumption_dataflow_analysis(CFG cfg) : assumption_analysis_t(cfg) {}
 
@@ -387,8 +389,8 @@ public:
         continue;
 
       CRAB_LOG("aa", crab::outs()
-                         << "Basic block    : "
-                         << cfg_impl::get_label_str(bb.label()) << "\n";
+	       << "Basic block    : "
+	       << basic_block_traits<basic_block_t>::to_string(bb.label()) << "\n";
                crab::outs() << "OUT invariants : " << bb_out << "\n";);
 
       // get dataflow information at the pre-state at each program point

@@ -2,7 +2,7 @@
 
 #include <crab/analysis/abs_transformer.hpp>
 #include <crab/analysis/dataflow/liveness.hpp>
-#include <crab/cfg/cfg.hpp>
+//#include <crab/cfg/basic_block_traits.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/iterators/interleaved_fixpoint_iterator.hpp>
 
@@ -25,6 +25,7 @@ class fwd_analyzer : public ikos::interleaved_fwd_fixpoint_iterator<
                          CFG, typename AbsTr::abs_dom_t> {
 public:
   using cfg_t = CFG;
+  using basic_block_t = typename CFG::basic_block_t;  
   using basic_block_label_t = typename CFG::basic_block_label_t;
   using varname_t = typename CFG::varname_t;
   using variable_t = typename CFG::variable_t;
@@ -219,7 +220,7 @@ public:
     for (auto &kv : this->get_pre_invariants()) {
       auto &pre = kv.second;
       auto &b = get_cfg().get_node(kv.first);
-      o << cfg_impl::get_label_str(kv.first) << ":\n";
+      o << basic_block_traits<basic_block_t>::to_string(kv.first) << ":\n";
       if (b.size() == 0) {
         o << "/**\n"
           << "* " << pre << "\n"

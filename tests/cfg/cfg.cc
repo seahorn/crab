@@ -145,11 +145,13 @@ int main(int argc, char **argv) {
     for (auto &kv : cdg) {
       crab::outs() << "{";
       for (auto v : kv.second) {
-        crab::outs() << crab::cfg_impl::get_label_str(v) << ";";
+        crab::outs() << crab::basic_block_traits<z_basic_block_t>::to_string(v)
+		     << ";";
       }
       crab::outs() << "} "
                    << " control-dependent on ";
-      crab::outs() << crab::cfg_impl::get_label_str(kv.first) << "\n";
+      crab::outs() << crab::basic_block_traits<z_basic_block_t>::to_string(kv.first)
+		   << "\n";
     }
 
     delete cfg;

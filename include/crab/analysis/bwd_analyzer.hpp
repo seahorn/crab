@@ -4,7 +4,7 @@
 #include <crab/analysis/dataflow/liveness.hpp>
 #include <crab/analysis/fwd_analyzer.hpp>
 #include <crab/analysis/graphs/dominance.hpp>
-#include <crab/cfg/cfg.hpp>
+//#include <crab/cfg/basic_block_traits.hpp>
 #include <crab/iterators/interleaved_fixpoint_iterator.hpp>
 
 #include <boost/range/iterator_range.hpp>
@@ -32,6 +32,7 @@ class necessary_preconditions_fixpoint_iterator
 
   using fixpoint_iterator_t =
       ikos::interleaved_fwd_fixpoint_iterator<crab::cfg::cfg_rev<CFG>, AbsDom>;
+  using basic_block_t = typename CFG::basic_block_t;
   using bb_label_t = typename CFG::basic_block_label_t;
   using stmt_t = typename CFG::statement_t;
   using bb_abstract_map_t = std::unordered_map<bb_label_t, AbsDom>;
@@ -61,8 +62,8 @@ class necessary_preconditions_fixpoint_iterator
     auto &bb = m_cfg.get_node(node);
 
     CRAB_LOG("backward-fixpoint", crab::outs() << "Post at "
-                                               << cfg_impl::get_label_str(node)
-                                               << ": " << precond << "\n");
+	     << basic_block_traits<basic_block_t>::to_string(node)
+	     << ": " << precond << "\n");
 
     // invariants that hold at the entry of the block
     AbsDom invariant = make_top();
@@ -93,8 +94,8 @@ class necessary_preconditions_fixpoint_iterator
     }
     precond = std::move(B.preconditions());
     CRAB_LOG("backward-fixpoint", crab::outs() << "Pre at "
-                                               << cfg_impl::get_label_str(node)
-                                               << ": " << precond << "\n");
+	     << basic_block_traits<basic_block_t>::to_string(node)
+	     << ": " << precond << "\n");
     return std::move(precond);
   }
 
@@ -481,7 +482,7 @@ public:
           "backward", crab::outs() << "Computed dominance tree:\n";
           for (auto &kv
                : idom_tree) {
-            crab::outs() << "\t" << cfg_impl::get_label_str(kv.first)
+            crab::outs() << "\t" << basic_block_traits<bb_t>::to_string(kv.first)
                          << " dominates={";
             for (auto d : kv.second) {
               crab::outs() << d << ";";
@@ -516,7 +517,7 @@ public:
           "backward", crab::outs() << "Forward analysis: \n";
           for (auto &kv
                : boost::make_iterator_range(F.pre_begin(), F.pre_end())) {
-            crab::outs() << cfg_impl::get_label_str(kv.first) << ":\n"
+            crab::outs() << basic_block_traits<bb_t>::to_string(kv.first) << ":\n"
                          << kv.second << "\n";
           } crab::outs()
           << "\n";);
@@ -571,8 +572,8 @@ public:
           "backward", crab::outs() << "Backward analysis:\n";
           for (auto &kv
                : boost::make_iterator_range(B.begin(), B.end())) {
-            crab::outs() << cfg_impl::get_label_str(kv.first) << ":\n"
-                         << kv.second << "\n";
+            crab::outs() << basic_block_traits<bb_t>::to_string(kv.first)
+			 << ":\n" << kv.second << "\n";
           } crab::outs()
           << "\n");
 
