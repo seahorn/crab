@@ -1,8 +1,7 @@
 #pragma once
 #include "./crab_lang.hpp"
 
-// For top-down inter-procedural analysis parameters
-#include <crab/analysis/inter/top_down_inter_analyzer.hpp>
+#include <crab/analysis/inter/top_down_inter_params.hpp>
 
 // To run abstract domains defined over integers
 template <typename BUDom, typename TDDom>

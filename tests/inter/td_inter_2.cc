@@ -2,10 +2,8 @@
 #include "../program_options.hpp"
 
 #include <crab/analysis/graphs/sccg_bgl.hpp>
+#include <crab/analysis/inter/top_down_inter_params.hpp>
 #include <crab/cg/cg_bgl.hpp>
-
-// For top-down inter-procedural analysis parameters
-#include <crab/analysis/inter/top_down_inter_analyzer.hpp>
 
 using namespace std;
 using namespace crab::analyzer;
