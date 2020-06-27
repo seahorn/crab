@@ -162,29 +162,29 @@ public: /* visitor api */
  **/
 
 template <typename T>
-inline boost::optional<T> conv_op(cfg::binary_operation_t op);
+inline boost::optional<T> conv_op(crab::cfg::binary_operation_t op);
 template <typename T>
-inline boost::optional<T> conv_op(cfg::bool_binary_operation_t op);
+inline boost::optional<T> conv_op(crab::cfg::bool_binary_operation_t op);
 template <typename T>
-inline boost::optional<T> conv_op(cfg::cast_operation_t op);
+inline boost::optional<T> conv_op(crab::cfg::cast_operation_t op);
 
 template <>
 inline boost::optional<domains::arith_operation_t>
-conv_op(cfg::binary_operation_t op) {
+conv_op(crab::cfg::binary_operation_t op) {
   switch (op) {
-  case cfg::BINOP_ADD:
+  case crab::cfg::BINOP_ADD:
     return domains::OP_ADDITION;
-  case cfg::BINOP_SUB:
+  case crab::cfg::BINOP_SUB:
     return domains::OP_SUBTRACTION;
-  case cfg::BINOP_MUL:
+  case crab::cfg::BINOP_MUL:
     return domains::OP_MULTIPLICATION;
-  case cfg::BINOP_SDIV:
+  case crab::cfg::BINOP_SDIV:
     return domains::OP_SDIV;
-  case cfg::BINOP_UDIV:
+  case crab::cfg::BINOP_UDIV:
     return domains::OP_UDIV;
-  case cfg::BINOP_SREM:
+  case crab::cfg::BINOP_SREM:
     return domains::OP_SREM;
-  case cfg::BINOP_UREM:
+  case crab::cfg::BINOP_UREM:
     return domains::OP_UREM;
   default:
     return boost::optional<domains::arith_operation_t>();
@@ -193,19 +193,19 @@ conv_op(cfg::binary_operation_t op) {
 
 template <>
 inline boost::optional<domains::bitwise_operation_t>
-conv_op(cfg::binary_operation_t op) {
+conv_op(crab::cfg::binary_operation_t op) {
   switch (op) {
-  case cfg::BINOP_AND:
+  case crab::cfg::BINOP_AND:
     return domains::OP_AND;
-  case cfg::BINOP_OR:
+  case crab::cfg::BINOP_OR:
     return domains::OP_OR;
-  case cfg::BINOP_XOR:
+  case crab::cfg::BINOP_XOR:
     return domains::OP_XOR;
-  case cfg::BINOP_SHL:
+  case crab::cfg::BINOP_SHL:
     return domains::OP_SHL;
-  case cfg::BINOP_LSHR:
+  case crab::cfg::BINOP_LSHR:
     return domains::OP_LSHR;
-  case cfg::BINOP_ASHR:
+  case crab::cfg::BINOP_ASHR:
     return domains::OP_ASHR;
   default:
     return boost::optional<domains::bitwise_operation_t>();
@@ -214,13 +214,13 @@ conv_op(cfg::binary_operation_t op) {
 
 template <>
 inline boost::optional<domains::int_conv_operation_t>
-conv_op(cfg::cast_operation_t op) {
+conv_op(crab::cfg::cast_operation_t op) {
   switch (op) {
-  case cfg::CAST_TRUNC:
+  case crab::cfg::CAST_TRUNC:
     return domains::OP_TRUNC;
-  case cfg::CAST_SEXT:
+  case crab::cfg::CAST_SEXT:
     return domains::OP_SEXT;
-  case cfg::CAST_ZEXT:
+  case crab::cfg::CAST_ZEXT:
     return domains::OP_ZEXT;
   default:
     return boost::optional<domains::int_conv_operation_t>();
@@ -229,13 +229,13 @@ conv_op(cfg::cast_operation_t op) {
 
 template <>
 inline boost::optional<domains::bool_operation_t>
-conv_op(cfg::bool_binary_operation_t op) {
+conv_op(crab::cfg::bool_binary_operation_t op) {
   switch (op) {
-  case cfg::BINOP_BAND:
+  case crab::cfg::BINOP_BAND:
     return domains::OP_BAND;
-  case cfg::BINOP_BOR:
+  case crab::cfg::BINOP_BOR:
     return domains::OP_BOR;
-  case cfg::BINOP_BXOR:
+  case crab::cfg::BINOP_BXOR:
     return domains::OP_BXOR;
   default:
     return boost::optional<domains::bool_operation_t>();
@@ -300,7 +300,7 @@ protected:
 
 private:
   template <typename NumOrVar>
-  void apply(abs_dom_t &inv, cfg::binary_operation_t op, const variable_t &x,
+  void apply(abs_dom_t &inv, crab::cfg::binary_operation_t op, const variable_t &x,
              const variable_t &y, NumOrVar z) {
     if (auto top = conv_op<domains::arith_operation_t>(op)) {
       inv.apply(*top, x, y, z);
@@ -325,7 +325,7 @@ public:
   void exec(bin_op_t &stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag &&
-        (!(stmt.op() >= cfg::BINOP_SDIV && stmt.op() <= cfg::BINOP_UREM))) {
+        (!(stmt.op() >= crab::cfg::BINOP_SDIV && stmt.op() <= crab::cfg::BINOP_UREM))) {
       pre_bot = m_inv.is_bottom();
     }
 
@@ -341,7 +341,7 @@ public:
     }
 
     if (::crab::CrabSanityCheckFlag &&
-        (!(stmt.op() >= cfg::BINOP_SDIV && stmt.op() <= cfg::BINOP_UREM))) {
+        (!(stmt.op() >= crab::cfg::BINOP_SDIV && stmt.op() <= crab::cfg::BINOP_UREM))) {
       bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
         CRAB_ERROR("Invariant became bottom after ", stmt);
