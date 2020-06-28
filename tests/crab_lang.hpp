@@ -64,6 +64,15 @@ using z_cg_ref_t = cg::call_graph_ref<z_cg_t>;
 
 
 /* ===== BEGIN TO BE DEFINED BY CRAB CLIENT ===== */
+
+template<>
+class variable_name_traits<std::string> {
+public:
+  static std::string to_string(const std::string &varname) {
+    return varname;
+  }
+};
+  
 template<>
 class basic_block_traits<cfg_impl::z_basic_block_t> {
 public:

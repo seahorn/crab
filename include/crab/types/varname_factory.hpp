@@ -18,12 +18,13 @@
 #include <vector>
 
 namespace crab {
-namespace var_factory_impl {
 
-namespace indexed_varname_impl {
-template <typename T> inline std::string get_str(T e);
-template <> inline std::string get_str(std::string e) { return e; }
-} // end namespace indexed_varname_impl
+template<typename VariableName> class variable_name_traits {
+public:
+  static std::string to_string(const VariableName &varname);
+};
+
+namespace var_factory_impl {
 
 // This variable factory creates a new variable associated to an
 // element of type T. It can also create variables that are not
@@ -59,7 +60,7 @@ template <class T> class variable_factory {
 
     std::string str() const {
       if (m_s) {
-        return indexed_varname_impl::get_str<T>(*m_s);
+        return crab::variable_name_traits<T>::to_string(*m_s);
       } else {
         if (m_name && (*m_name != "")) {
           return *m_name;
