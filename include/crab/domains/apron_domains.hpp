@@ -23,7 +23,7 @@ using apron_domain_id_t = enum { APRON_INT, APRON_OCT, APRON_PK };
 namespace crab {
 namespace domains {
 template <typename N, typename V, apron_domain_id_t Dom>
-class apron_domain final : public abstract_domain<apron_domain<N, V, Dom>> {
+class apron_domain final : public abstract_domain_api<apron_domain<N, V, Dom>> {
 public:
   using this_type = apron_domain<N, V, Dom>;
   apron_domain() {}
@@ -55,9 +55,9 @@ using namespace apron;
 
 template <typename Number, typename VariableName, apron_domain_id_t ApronDom>
 class apron_domain final
-    : public abstract_domain<apron_domain<Number, VariableName, ApronDom>> {
+    : public abstract_domain_api<apron_domain<Number, VariableName, ApronDom>> {
   using apron_domain_t = apron_domain<Number, VariableName, ApronDom>;
-  using abstract_domain_t = abstract_domain<apron_domain_t>;
+  using abstract_domain_t = abstract_domain_api<apron_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;

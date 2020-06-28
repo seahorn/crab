@@ -29,13 +29,13 @@ public:
 
 template <typename Domain, class Params = powerset_impl::DefaultParams>
 class powerset_domain final
-    : public abstract_domain<powerset_domain<Domain, Params>> {
+    : public abstract_domain_api<powerset_domain<Domain, Params>> {
 
 public:
   using number_t = typename Domain::number_t;
   using varname_t = typename Domain::varname_t;
   using powerset_domain_t = powerset_domain<Domain, Params>;
-  using abstract_domain_t = abstract_domain<powerset_domain_t>;
+  using abstract_domain_t = abstract_domain_api<powerset_domain_t>;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_t::interval_t;
   using typename abstract_domain_t::linear_constraint_system_t;

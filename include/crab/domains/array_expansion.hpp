@@ -659,7 +659,7 @@ std::map<std::pair<ikos::index_t, std::pair<offset_t, uint64_t>>, ikos::index_t>
 
 template <typename NumDomain>
 class array_expansion_domain final
-    : public abstract_domain<array_expansion_domain<NumDomain>> {
+    : public abstract_domain_api<array_expansion_domain<NumDomain>> {
 
 public:
   using number_t = typename NumDomain::number_t;
@@ -667,7 +667,7 @@ public:
 
 private:
   using array_expansion_domain_t = array_expansion_domain<NumDomain>;
-  using abstract_domain_t = abstract_domain<array_expansion_domain_t>;
+  using abstract_domain_t = abstract_domain_api<array_expansion_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;

@@ -61,7 +61,7 @@ public:
 template <class Info, class Abs> class TermNormalizer;
 
 template <typename Info>
-class term_domain final : public abstract_domain<term_domain<Info>> {
+class term_domain final : public abstract_domain_api<term_domain<Info>> {
   friend class TermNormalizer<Info, typename Info::domain_t>;
 
   // Number and VariableName can be different from
@@ -77,7 +77,7 @@ class term_domain final : public abstract_domain<term_domain<Info>> {
   using bound_t = ikos::bound<Number>;
 
   using term_domain_t = term_domain<Info>;
-  using abstract_domain_t = abstract_domain<term_domain_t>;
+  using abstract_domain_t = abstract_domain_api<term_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;

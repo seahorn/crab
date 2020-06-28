@@ -20,7 +20,7 @@ namespace crab {
 namespace domains {
 template <typename N, typename V, int ConvexReduce = -1, size_t LddSize = 100>
 class boxes_domain final
-    : public abstract_domain<boxes_domain<N, V, ConvexReduce, LddSize>> {
+    : public abstract_domain_api<boxes_domain<N, V, ConvexReduce, LddSize>> {
 public:
   using this_type = boxes_domain<N, V, ConvexReduce, LddSize>;
   boxes_domain() {}
@@ -62,13 +62,13 @@ using namespace crab::domains::ldd;
 template <typename Number, typename VariableName, int ConvexReduce = -1,
           size_t LddSize = 3000>
 class boxes_domain final
-    : public abstract_domain<
+    : public abstract_domain_api<
           boxes_domain<Number, VariableName, ConvexReduce, LddSize>> {
 
   using interval_domain_t = ikos::interval_domain<Number, VariableName>;
   using boxes_domain_t =
       boxes_domain<Number, VariableName, ConvexReduce, LddSize>;
-  using abstract_domain_t = abstract_domain<boxes_domain_t>;
+  using abstract_domain_t = abstract_domain_api<boxes_domain_t>;
 
 public:
   using number_t = Number;

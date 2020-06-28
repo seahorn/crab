@@ -901,7 +901,7 @@ public:
 
 template <typename NumDomain, class Params = array_adaptive_impl::DefaultParams>
 class array_adaptive_domain final
-    : public abstract_domain<array_adaptive_domain<NumDomain, Params>> {
+    : public abstract_domain_api<array_adaptive_domain<NumDomain, Params>> {
 
 public:
   using number_t = typename NumDomain::number_t;
@@ -909,7 +909,7 @@ public:
 
 private:
   using array_adaptive_domain_t = array_adaptive_domain<NumDomain, Params>;
-  using abstract_domain_t = abstract_domain<array_adaptive_domain_t>;
+  using abstract_domain_t = abstract_domain_api<array_adaptive_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;

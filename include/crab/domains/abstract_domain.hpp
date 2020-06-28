@@ -16,7 +16,7 @@ namespace domains {
 template <class Dom> struct abstract_domain_traits;
 
 /**
- * All abstract domains must derive from the abstract_domain class
+ * All abstract domains must derive from the abstract_domain_api class
  * and expose publicly all its public typedef's.
  *
  * Use of Curiously Recurring Template Pattern (CRTP).
@@ -25,7 +25,7 @@ template <class Dom> struct abstract_domain_traits;
  *
  * template<typename Number, typename VariableName>
  * class my_new_domain final: public
- *     abstract_domain<my_new_domain<Number,VariableName>> {
+ *     abstract_domain_api<my_new_domain<Number,VariableName>> {
  *     ...
  *     bool is_bottom() const override {...}
  *     bool is_top() const override {...}
@@ -39,7 +39,7 @@ template <class Dom> struct abstract_domain_traits;
  *   using varname_t = VariableName;
  * };
  **/
-template <class Dom> class abstract_domain {
+template <class Dom> class abstract_domain_api {
 public:
   using number_t = typename abstract_domain_traits<Dom>::number_t;
   using varname_t = typename abstract_domain_traits<Dom>::varname_t;
@@ -55,8 +55,8 @@ public:
   using reference_constraint_t = reference_constraint<number_t, varname_t>;
   using interval_t = ikos::interval<number_t>;
 
-  abstract_domain() = default;
-  virtual ~abstract_domain() = default;
+  abstract_domain_api() = default;
+  virtual ~abstract_domain_api() = default;
 
   /**************************** Lattice operations ****************************/
 
@@ -309,7 +309,7 @@ public:
   virtual std::string domain_name(void) const = 0;
 
   friend crab::crab_os &operator<<(crab::crab_os &o,
-                                   const abstract_domain<Dom> &dom) {
+                                   const abstract_domain_api<Dom> &dom) {
     dom.write(o);
     return o;
   }

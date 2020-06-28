@@ -714,7 +714,7 @@ public:
 }; // class equality_congruence_solver
 
 template <typename Number, typename VariableName>
-class congruence_domain final : public crab::domains::abstract_domain<
+class congruence_domain final : public crab::domains::abstract_domain_api<
                                     congruence_domain<Number, VariableName>> {
 public:
   using congruence_t = congruence<Number>;
@@ -723,7 +723,7 @@ private:
   // note that this is assuming that all variables have the same bit
   // width which is unrealistic.
   using congruence_domain_t = congruence_domain<Number, VariableName>;
-  using abstract_domain_t = crab::domains::abstract_domain<congruence_domain_t>;
+  using abstract_domain_t = crab::domains::abstract_domain_api<congruence_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;

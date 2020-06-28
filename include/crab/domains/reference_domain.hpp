@@ -247,9 +247,9 @@ public:
 // Abstract domain for references
 template <typename Params>
 class reference_domain final
-    : public abstract_domain<reference_domain<Params>> {
+    : public abstract_domain_api<reference_domain<Params>> {
   using reference_domain_t = reference_domain<Params>;
-  using abstract_domain_t = abstract_domain<reference_domain_t>;
+  using abstract_domain_t = abstract_domain_api<reference_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;

@@ -1114,7 +1114,7 @@ using landmark_ref_unordered_map =
 */
 template <typename NumDom, typename Content, bool IsDistContent = false>
 class array_graph_domain final
-    : public abstract_domain<
+    : public abstract_domain_api<
           array_graph_domain<NumDom, Content, IsDistContent>> {
 public:
   using number_t = typename NumDom::number_t;
@@ -1128,7 +1128,7 @@ private:
 
   using array_graph_domain_t =
       array_graph_domain<NumDom, Content, IsDistContent>;
-  using abstract_domain_t = abstract_domain<array_graph_domain_t>;
+  using abstract_domain_t = abstract_domain_api<array_graph_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;

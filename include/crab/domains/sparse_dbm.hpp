@@ -35,9 +35,9 @@ namespace domains {
 template <class Number, class VariableName,
           class Params = DBM_impl::DefaultParams<Number>>
 class sparse_dbm_domain final
-    : public abstract_domain<sparse_dbm_domain<Number, VariableName, Params>> {
+    : public abstract_domain_api<sparse_dbm_domain<Number, VariableName, Params>> {
   using DBM_t = sparse_dbm_domain<Number, VariableName, Params>;
-  using abstract_domain_t = abstract_domain<DBM_t>;
+  using abstract_domain_t = abstract_domain_api<DBM_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;

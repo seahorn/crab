@@ -21,7 +21,7 @@ using elina_domain_id_t = enum { ELINA_ZONES, ELINA_OCT, ELINA_PK };
 namespace crab {
 namespace domains {
 template <typename N, typename V, elina_domain_id_t Dom>
-class elina_domain final : public abstract_domain<elina_domain<N, V, Dom>> {
+class elina_domain final : public abstract_domain_api<elina_domain<N, V, Dom>> {
 public:
   using this_type = elina_domain<N, V, Dom>;
   elina_domain() {}
@@ -61,9 +61,9 @@ using namespace elina;
 
 template <typename Number, typename VariableName, elina_domain_id_t ElinaDom>
 class elina_domain final
-    : public abstract_domain<elina_domain<Number, VariableName, ElinaDom>> {
+    : public abstract_domain_api<elina_domain<Number, VariableName, ElinaDom>> {
   using elina_domain_t = elina_domain<Number, VariableName, ElinaDom>;
-  using abstract_domain_t = abstract_domain<elina_domain_t>;
+  using abstract_domain_t = abstract_domain_api<elina_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;

@@ -1293,11 +1293,11 @@ namespace domains {
 template <typename Number, typename VariableName,
           std::size_t max_reduction_cycles = 10>
 class wrapped_interval_domain final
-    : public abstract_domain<
+    : public abstract_domain_api<
           wrapped_interval_domain<Number, VariableName, max_reduction_cycles>> {
   using wrapped_interval_domain_t =
       wrapped_interval_domain<Number, VariableName, max_reduction_cycles>;
-  using abstract_domain_t = abstract_domain<wrapped_interval_domain_t>;
+  using abstract_domain_t = abstract_domain_api<wrapped_interval_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -2189,11 +2189,11 @@ inline crab_os &operator<<(crab_os &o, const wrapped_interval_limit_value &v) {
 template <typename Number, typename VariableName,
           std::size_t max_reduction_cycles = 10>
 class wrapped_interval_with_history_domain final
-    : public abstract_domain<wrapped_interval_with_history_domain<
+    : public abstract_domain_api<wrapped_interval_with_history_domain<
           Number, VariableName, max_reduction_cycles>> {
   using this_type = wrapped_interval_with_history_domain<Number, VariableName,
                                                          max_reduction_cycles>;
-  using abstract_domain_t = abstract_domain<this_type>;
+  using abstract_domain_t = abstract_domain_api<this_type>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -2879,9 +2879,9 @@ public:
 */
 template <typename NumDom, std::size_t max_reduction_cycles = 10>
 class wrapped_numerical_domain final
-    : public abstract_domain<wrapped_numerical_domain<NumDom>> {
+    : public abstract_domain_api<wrapped_numerical_domain<NumDom>> {
   using wrapped_numerical_domain_t = wrapped_numerical_domain<NumDom>;
-  using abstract_domain_t = abstract_domain<wrapped_numerical_domain_t>;
+  using abstract_domain_t = abstract_domain_api<wrapped_numerical_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;

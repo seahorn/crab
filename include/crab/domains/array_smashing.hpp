@@ -21,7 +21,7 @@ namespace domains {
 // Abstract domain to reason about summarized variables. All
 // array elements are `smashed` into a single variable.
 template <typename NumDomain>
-class array_smashing final : public abstract_domain<array_smashing<NumDomain>> {
+class array_smashing final : public abstract_domain_api<array_smashing<NumDomain>> {
 
 public:
   using number_t = typename NumDomain::number_t;
@@ -29,7 +29,7 @@ public:
 
 private:
   using array_smashing_t = array_smashing<NumDomain>;
-  using abstract_domain_t = abstract_domain<array_smashing_t>;
+  using abstract_domain_t = abstract_domain_api<array_smashing_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;

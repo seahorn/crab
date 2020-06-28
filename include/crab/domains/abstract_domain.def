@@ -1,5 +1,5 @@
 #define UNAVAILABLE_DOMAIN(Msg)                                                \
-  typedef abstract_domain<this_type> abstract_domain_t;                        \
+  using abstract_domain_t = abstract_domain_api<this_type>;                    \
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;    \
   using typename abstract_domain_t::linear_constraint_system_t;                \
   using typename abstract_domain_t::linear_constraint_t;                       \
@@ -8,8 +8,8 @@
   using typename abstract_domain_t::variable_t;                                \
   using typename abstract_domain_t::variable_vector_t;                         \
   using typename abstract_domain_t::interval_t;                                \
-  typedef N number_t;                                                          \
-  typedef V varname_t;                                                         \
+  using number_t = N;                                                          \
+  using varname_t = V;                                                         \
   void set_to_top() override { CRAB_ERROR(Msg); }                              \
   void set_to_bottom() override { CRAB_ERROR(Msg); }                           \
   this_type make_bottom() const override { CRAB_ERROR(Msg); }                  \

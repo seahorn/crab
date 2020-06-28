@@ -212,11 +212,11 @@ inline crab_os &operator<<(crab_os &o, const boolean_value &v) {
 // A simple abstract domain for booleans
 template <typename Number, typename VariableName>
 class flat_boolean_domain final
-    : public abstract_domain<flat_boolean_domain<Number, VariableName>> {
+    : public abstract_domain_api<flat_boolean_domain<Number, VariableName>> {
   using flat_boolean_domain_t = flat_boolean_domain<Number, VariableName>;
 
 public:
-  using abstract_domain_t = abstract_domain<flat_boolean_domain_t>;
+  using abstract_domain_t = abstract_domain_api<flat_boolean_domain_t>;
   using number_t = Number;
   using varname_t = VariableName;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -716,9 +716,9 @@ struct abstract_domain_traits<flat_boolean_domain<Number, VariableName>> {
 //
 template <typename NumDom>
 class flat_boolean_numerical_domain final
-    : public abstract_domain<flat_boolean_numerical_domain<NumDom>> {
+    : public abstract_domain_api<flat_boolean_numerical_domain<NumDom>> {
   using bool_num_domain_t = flat_boolean_numerical_domain<NumDom>;
-  using abstract_domain_t = abstract_domain<bool_num_domain_t>;
+  using abstract_domain_t = abstract_domain_api<bool_num_domain_t>;
 
 public:
   using number_t = typename NumDom::number_t;

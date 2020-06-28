@@ -55,12 +55,12 @@ namespace ikos {
 template <typename Number, typename VariableName,
           std::size_t max_reduction_cycles = 10>
 class interval_domain final
-    : public crab::domains::abstract_domain<
+    : public crab::domains::abstract_domain_api<
           interval_domain<Number, VariableName, max_reduction_cycles>> {
 public:
   using interval_domain_t =
       interval_domain<Number, VariableName, max_reduction_cycles>;
-  using abstract_domain_t = crab::domains::abstract_domain<interval_domain_t>;
+  using abstract_domain_t = crab::domains::abstract_domain_api<interval_domain_t>;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_t::interval_t;
   using typename abstract_domain_t::linear_constraint_system_t;

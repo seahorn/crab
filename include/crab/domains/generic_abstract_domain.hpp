@@ -27,7 +27,7 @@ namespace domains {
 
 template <typename Variable>
 class generic_abstract_domain final
-    : abstract_domain<generic_abstract_domain<Variable>> {
+    : abstract_domain_api<generic_abstract_domain<Variable>> {
 public:
   using number_t = typename Variable::number_t;
   using varname_t = typename Variable::varname_t;

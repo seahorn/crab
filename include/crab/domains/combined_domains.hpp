@@ -227,12 +227,12 @@ public:
 template <typename Number, typename VariableName, typename Domain1,
           typename Domain2>
 class domain_product2 final
-    : public abstract_domain<
+    : public abstract_domain_api<
           domain_product2<Number, VariableName, Domain1, Domain2>> {
 public:
   using domain_product2_t =
       domain_product2<Number, VariableName, Domain1, Domain2>;
-  using abstract_domain_t = abstract_domain<domain_product2_t>;
+  using abstract_domain_t = abstract_domain_api<domain_product2_t>;
   using first_type = Domain1;
   using second_type = Domain2;
 
@@ -773,14 +773,14 @@ public:
 template <typename Domain1, typename Domain2,
           class Params = reduced_product_impl::default_params>
 class reduced_numerical_domain_product2 final
-    : public abstract_domain<
+    : public abstract_domain_api<
           reduced_numerical_domain_product2<Domain1, Domain2, Params>> {
 
 public:
   using reduced_numerical_domain_product2_t =
       reduced_numerical_domain_product2<Domain1, Domain2, Params>;
   using abstract_domain_t =
-      abstract_domain<reduced_numerical_domain_product2_t>;
+      abstract_domain_api<reduced_numerical_domain_product2_t>;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_t::interval_t;
   using typename abstract_domain_t::linear_constraint_system_t;
@@ -1579,10 +1579,10 @@ inline crab::crab_os &operator<<(crab::crab_os &o,
 // Reduced product of a numerical domain with congruences.
 template <typename NumAbsDom>
 class numerical_congruence_domain final
-    : public abstract_domain<numerical_congruence_domain<NumAbsDom>> {
+    : public abstract_domain_api<numerical_congruence_domain<NumAbsDom>> {
 
   using rnc_domain_t = numerical_congruence_domain<NumAbsDom>;
-  using abstract_domain_t = abstract_domain<rnc_domain_t>;
+  using abstract_domain_t = abstract_domain_api<rnc_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;

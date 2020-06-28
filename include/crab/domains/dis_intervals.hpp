@@ -1061,9 +1061,9 @@ namespace domains {
 
 template <typename Number, typename VariableName>
 class dis_interval_domain final
-    : public abstract_domain<dis_interval_domain<Number, VariableName>> {
+    : public abstract_domain_api<dis_interval_domain<Number, VariableName>> {
   using dis_interval_domain_t = dis_interval_domain<Number, VariableName>;
-  using abstract_domain_t = abstract_domain<dis_interval_domain_t>;
+  using abstract_domain_t = abstract_domain_api<dis_interval_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
