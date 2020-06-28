@@ -11,6 +11,19 @@
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
+namespace crab {
+namespace domains {
+namespace boxes_impl {
+
+class DefaultParams {
+public:
+  enum { ldd_size = 3000 };
+  enum { convexify_threshold = -1 };
+};
+} // end namespace boxes_impl
+} // end namespace domains
+} // end namespace crab
+
 #ifndef HAVE_LDD
 /*
  * Dummy implementation if ldd not found
@@ -18,11 +31,11 @@
 #include "crab/domains/abstract_domain.def"
 namespace crab {
 namespace domains {
-template <typename N, typename V, int ConvexReduce = -1, size_t LddSize = 100>
+  template <typename N, typename V, typename Params = boxes_impl::DefaultParams>
 class boxes_domain final
-    : public abstract_domain_api<boxes_domain<N, V, ConvexReduce, LddSize>> {
+    : public abstract_domain_api<boxes_domain<N, V, Params>> {
 public:
-  using this_type = boxes_domain<N, V, ConvexReduce, LddSize>;
+  using this_type = boxes_domain<N, V, Params>;
   boxes_domain() {}
   UNAVAILABLE_DOMAIN("No LDD. Run cmake with -DCRAB_USE_LDD=ON")
 };
@@ -59,15 +72,15 @@ using namespace crab::domains::ldd;
  *
  * FIXME: Ldd_TermReplace seems to leak memory sometimes.
  */
-template <typename Number, typename VariableName, int ConvexReduce = -1,
-          size_t LddSize = 3000>
+template <typename Number, typename VariableName,
+	  typename Params = boxes_impl::DefaultParams>
 class boxes_domain final
     : public abstract_domain_api<
-          boxes_domain<Number, VariableName, ConvexReduce, LddSize>> {
+          boxes_domain<Number, VariableName, Params>> {
 
   using interval_domain_t = ikos::interval_domain<Number, VariableName>;
   using boxes_domain_t =
-      boxes_domain<Number, VariableName, ConvexReduce, LddSize>;
+      boxes_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<boxes_domain_t>;
 
 public:
@@ -101,9 +114,9 @@ private:
   static LddManager *get_ldd_man() {
     if (!s_ldd_man) {
       DdManager *cudd = Cudd_Init(0, 0, CUDD_UNIQUE_SLOTS, 127, 0);
-      theory_t *theory = ldd::create_box_theory<number_t>(LddSize);
+      theory_t *theory = ldd::create_box_theory<number_t>(Params::ldd_size);
       CRAB_LOG("boxes", crab::outs()
-                            << "Created a ldd of size " << LddSize << "\n";);
+                            << "Created a ldd of size " << Params::ldd_size << "\n";);
       s_ldd_man = Ldd_Init(cudd, theory);
       // Cudd_AutodynEnable(cudd, CUDD_REORDER_GROUP_SIFT);
       Ldd_SanityCheck(get_ldd_man());
@@ -124,8 +137,8 @@ private:
     } else {
       // XXX: reserved dim 0 for SPECIAL variable
       unsigned int id = s_var_map.size() + 1;
-      if (id >= LddSize) {
-        CRAB_ERROR("The Ldd size of ", LddSize, " needs to be larger");
+      if (id >= Params::ldd_size) {
+        CRAB_ERROR("The Ldd size of ", Params::ldd_size, " needs to be larger");
       }
       s_var_map.insert(binding_t(v, id));
       return id;
@@ -621,10 +634,10 @@ private:
 #endif
 
   boxes_domain(LddNodePtr ldd) : m_ldd(ldd) {
-    if (ConvexReduce > 0) {
-      // XXX: the value of ConvexReduce is quite arbitrary. A
+    if (Params::convexify_threshold > 0) {
+      // XXX: the value of Params::convexify_threshold is quite arbitrary. A
       // good value seems around 1000000
-      unsigned threshold = num_of_vars() * ConvexReduce;
+      unsigned threshold = num_of_vars() * Params::convexify_threshold;
       // unsigned num_paths = Ldd_PathSize(NULL, &*m_ldd);
       unsigned num_paths = (unsigned)Cudd_CountPath(&*m_ldd);
       if (threshold > 0 && num_paths > threshold) {
@@ -1800,19 +1813,18 @@ public:
   std::string domain_name() const override { return "Boxes"; }
 };
 
-template <typename N, typename V, int R, size_t S>
-LddManager *boxes_domain<N, V, R, S>::s_ldd_man = nullptr;
+template <typename N, typename V, typename P>
+LddManager *boxes_domain<N, V, P>::s_ldd_man = nullptr;
 
-template <typename N, typename V, int R, size_t S>
-typename boxes_domain<N, V, R, S>::var_map_t
-    boxes_domain<N, V, R, S>::s_var_map;
+template <typename N, typename V, typename P>
+typename boxes_domain<N, V, P>::var_map_t
+    boxes_domain<N, V, P>::s_var_map;
 
-template <typename Number, typename VariableName, int ConvexReduce,
-          size_t LddSize>
+template <typename Number, typename VariableName, typename Params>
 class checker_domain_traits<
-    boxes_domain<Number, VariableName, ConvexReduce, LddSize>> {
+    boxes_domain<Number, VariableName, Params>> {
 public:
-  using this_type = boxes_domain<Number, VariableName, ConvexReduce, LddSize>;
+  using this_type = boxes_domain<Number, VariableName, Params>;
   using linear_constraint_t = typename this_type::linear_constraint_t;
   using disjunctive_linear_constraint_system_t =
       typename this_type::disjunctive_linear_constraint_system_t;
@@ -1890,14 +1902,12 @@ public:
   }
 };
 
-template <typename Number, typename VariableName, int ConvexReduce,
-          size_t LddSize>
+template <typename Number, typename VariableName, typename Params>
 class special_domain_traits<
-    boxes_domain<Number, VariableName, ConvexReduce, LddSize>> {
+    boxes_domain<Number, VariableName, Params>> {
 public:
   static void clear_global_state(void) {
-    boxes_domain<Number, VariableName, ConvexReduce,
-                 LddSize>::clear_global_state();
+    boxes_domain<Number, VariableName, Params>::clear_global_state();
   }
 };
 
@@ -1907,10 +1917,9 @@ public:
 
 namespace crab {
 namespace domains {
-template <typename Number, typename VariableName, int ConvexReduce,
-          size_t LddSize>
+template <typename Number, typename VariableName, typename Params>
 struct abstract_domain_traits<
-    boxes_domain<Number, VariableName, ConvexReduce, LddSize>> {
+    boxes_domain<Number, VariableName, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 };
