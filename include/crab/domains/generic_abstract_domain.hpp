@@ -13,10 +13,10 @@ namespace domains {
  *
  * Important notes:
  *
- * 1. generic_abstract_domain can only be the __root__ of the
+ * 1. abstract_domain can only be the __root__ of the
  * hierarchy of abstract domains. That is, __don't__ create a reduced
- * product of generic_abstract_domain with something else, or
- * __don't__ pass generic_abstract_domain as parameter to an array
+ * product of abstract_domain with something else, or
+ * __don't__ pass abstract_domain as parameter to an array
  * domain.
  *
  * 2. when calling binary operations make sure that the two operands
@@ -26,8 +26,8 @@ namespace domains {
  */
 
 template <typename Variable>
-class generic_abstract_domain final
-    : abstract_domain_api<generic_abstract_domain<Variable>> {
+class abstract_domain final
+    : abstract_domain_api<abstract_domain<Variable>> {
 public:
   using number_t = typename Variable::number_t;
   using varname_t = typename Variable::varname_t;
@@ -538,7 +538,7 @@ private:
 
   std::unique_ptr<abstract_domain_concept> m_concept;
 
-  explicit generic_abstract_domain(
+  explicit abstract_domain(
       std::unique_ptr<abstract_domain_concept> concept)
       : m_concept(std::move(concept)) {}
 
@@ -548,67 +548,67 @@ public:
   /**===================================================**/
 
   template <typename Domain>
-  generic_abstract_domain(Domain inv)
+  abstract_domain(Domain inv)
       : m_concept(new abstract_domain_model<Domain>(std::move(inv))) {}
 
-  ~generic_abstract_domain() = default;
+  ~abstract_domain() = default;
 
-  generic_abstract_domain(const generic_abstract_domain &o)
+  abstract_domain(const abstract_domain &o)
       : m_concept(o.m_concept->clone()) {}
 
-  generic_abstract_domain &operator=(const generic_abstract_domain &o) {
+  abstract_domain &operator=(const abstract_domain &o) {
     if (this != &o) {
       m_concept = o.m_concept->clone();
     }
     return *this;
   }
 
-  generic_abstract_domain(generic_abstract_domain &&o) = default;
+  abstract_domain(abstract_domain &&o) = default;
 
-  generic_abstract_domain &operator=(generic_abstract_domain &&o) = default;
+  abstract_domain &operator=(abstract_domain &&o) = default;
 
-  generic_abstract_domain make_top() const override {
-    return generic_abstract_domain(std::move(m_concept->make_top()));
+  abstract_domain make_top() const override {
+    return abstract_domain(std::move(m_concept->make_top()));
   }
 
-  generic_abstract_domain make_bottom() const override {
-    return generic_abstract_domain(std::move(m_concept->make_bottom()));
+  abstract_domain make_bottom() const override {
+    return abstract_domain(std::move(m_concept->make_bottom()));
   }
 
   void set_to_top() override { m_concept->set_to_top(); }
   void set_to_bottom() override { m_concept->set_to_bottom(); }
   bool is_bottom() const override { return m_concept->is_bottom(); }
   bool is_top() const override { return m_concept->is_top(); }
-  bool operator<=(const generic_abstract_domain &abs) const override {
+  bool operator<=(const abstract_domain &abs) const override {
     return m_concept->operator<=(*(abs.m_concept));
   }
-  void operator|=(const generic_abstract_domain &abs) override {
+  void operator|=(const abstract_domain &abs) override {
     m_concept->operator|=(*(abs.m_concept));
   }
-  generic_abstract_domain
-  operator|(const generic_abstract_domain &abs) const override {
-    return generic_abstract_domain(
+  abstract_domain
+  operator|(const abstract_domain &abs) const override {
+    return abstract_domain(
         std::move(m_concept->operator|(*(abs.m_concept))));
   }
-  generic_abstract_domain
-  operator&(const generic_abstract_domain &abs) const override {
-    return generic_abstract_domain(
+  abstract_domain
+  operator&(const abstract_domain &abs) const override {
+    return abstract_domain(
         std::move(m_concept->operator&(*(abs.m_concept))));
   }
-  generic_abstract_domain
-  operator||(const generic_abstract_domain &abs) const override {
-    return generic_abstract_domain(
+  abstract_domain
+  operator||(const abstract_domain &abs) const override {
+    return abstract_domain(
         std::move(m_concept->operator||(*(abs.m_concept))));
   }
-  generic_abstract_domain
-  operator&&(const generic_abstract_domain &abs) const override {
-    return generic_abstract_domain(
+  abstract_domain
+  operator&&(const abstract_domain &abs) const override {
+    return abstract_domain(
         std::move(m_concept->operator&&(*(abs.m_concept))));
   }
-  generic_abstract_domain widening_thresholds(
-      const generic_abstract_domain &abs,
+  abstract_domain widening_thresholds(
+      const abstract_domain &abs,
       const crab::iterators::thresholds<number_t> &ts) const override {
-    return generic_abstract_domain(
+    return abstract_domain(
         std::move(m_concept->widening_thresholds(*(abs.m_concept), ts)));
   }
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
@@ -714,34 +714,34 @@ public:
   }
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
-                      const generic_abstract_domain &invariant) override {
+                      const abstract_domain &invariant) override {
     m_concept->backward_apply(op, x, y, z, *invariant.m_concept);
   }
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, number_t k,
-                      const generic_abstract_domain &invariant) override {
+                      const abstract_domain &invariant) override {
     m_concept->backward_apply(op, x, y, k, *invariant.m_concept);
   }
   void backward_assign(const variable_t &x, const linear_expression_t &e,
-                       const generic_abstract_domain &invariant) override {
+                       const abstract_domain &invariant) override {
     m_concept->backward_assign(x, e, *invariant.m_concept);
   }
   void
   backward_assign_bool_cst(const variable_t &lhs,
                            const linear_constraint_t &rhs,
-                           const generic_abstract_domain &invariant) override {
+                           const abstract_domain &invariant) override {
     m_concept->backward_assign_bool_cst(lhs, rhs, *invariant.m_concept);
   }
   void
   backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                            bool is_not_rhs,
-                           const generic_abstract_domain &invariant) override {
+                           const abstract_domain &invariant) override {
     m_concept->backward_assign_bool_var(lhs, rhs, is_not_rhs,
                                         *invariant.m_concept);
   }
   void backward_apply_binary_bool(
       bool_operation_t op, const variable_t &x, const variable_t &y,
-      const variable_t &z, const generic_abstract_domain &invariant) override {
+      const variable_t &z, const abstract_domain &invariant) override {
     m_concept->backward_apply_binary_bool(op, x, y, z, *invariant.m_concept);
   }
   void backward_array_init(const variable_t &a,
@@ -749,21 +749,21 @@ public:
                            const linear_expression_t &lb_idx,
                            const linear_expression_t &ub_idx,
                            const linear_expression_t &val,
-                           const generic_abstract_domain &invariant) override {
+                           const abstract_domain &invariant) override {
     m_concept->backward_array_init(a, elem_size, lb_idx, ub_idx, val,
                                    *invariant.m_concept);
   }
   void backward_array_load(const variable_t &lhs, const variable_t &a,
                            const linear_expression_t &elem_size,
                            const linear_expression_t &i,
-                           const generic_abstract_domain &invariant) override {
+                           const abstract_domain &invariant) override {
     m_concept->backward_array_load(lhs, a, elem_size, i, *invariant.m_concept);
   }
   void backward_array_store(const variable_t &a,
                             const linear_expression_t &elem_size,
                             const linear_expression_t &i,
                             const linear_expression_t &v, bool is_strong_update,
-                            const generic_abstract_domain &invariant) override {
+                            const abstract_domain &invariant) override {
     m_concept->backward_array_store(a, elem_size, i, v, is_strong_update,
                                     *invariant.m_concept);
   }
@@ -771,13 +771,13 @@ public:
       const variable_t &a, const linear_expression_t &elem_size,
       const linear_expression_t &i, const linear_expression_t &j,
       const linear_expression_t &v,
-      const generic_abstract_domain &invariant) override {
+      const abstract_domain &invariant) override {
     m_concept->backward_array_store_range(a, elem_size, i, j, v,
                                           *invariant.m_concept);
   }
   void
   backward_array_assign(const variable_t &a, const variable_t &b,
-                        const generic_abstract_domain &invariant) override {
+                        const abstract_domain &invariant) override {
     m_concept->backward_array_assign(a, b, *invariant.m_concept);
   }
   void operator-=(const variable_t &v) override { m_concept->operator-=(v); }
@@ -812,20 +812,22 @@ public:
   }
   void backward_intrinsic(std::string name, const variable_vector_t &inputs,
                           const variable_vector_t &outputs,
-                          const generic_abstract_domain &invariant) override {
+                          const abstract_domain &invariant) override {
     m_concept->backward_intrinsic(name, inputs, outputs, *invariant.m_concept);
   }
   std::string domain_name() const override { return m_concept->domain_name(); }
   void write(crab::crab_os &o) const override { m_concept->write(o); }
   friend crab::crab_os &
-  operator<<(crab::crab_os &o, const generic_abstract_domain<Variable> &dom) {
+  operator<<(crab::crab_os &o, const abstract_domain<Variable> &dom) {
     dom.write(o);
     return o;
   }
 };
 
+
+  
 template <typename Variable>
-struct abstract_domain_traits<generic_abstract_domain<Variable>> {
+struct abstract_domain_traits<abstract_domain<Variable>> {
   using number_t = typename Variable::number_t;
   using varname_t = typename Variable::varname_t;
 };

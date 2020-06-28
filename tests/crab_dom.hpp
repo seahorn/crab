@@ -128,7 +128,7 @@ using q_oct_elina_domain_t = elina_domain<q_number, varname_t, ELINA_OCT>;
 /*===================================================================*/
 // Wrapper for an arbitrary abstract domain
 /*===================================================================*/
-using z_abs_domain_t = generic_abstract_domain<z_var>;
-using q_abs_domain_t = generic_abstract_domain<q_var>;
+using z_abs_domain_t = abstract_domain<z_var>;
+using q_abs_domain_t = abstract_domain<q_var>;
 } // namespace domain_impl
 } // namespace crab

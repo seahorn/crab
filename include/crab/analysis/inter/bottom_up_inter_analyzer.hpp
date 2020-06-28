@@ -462,8 +462,8 @@ inline void convert_domains_impl(Domain1 from, Domain2 &to) {
 
 template <typename Variable>
 inline void
-convert_domains(crab::domains::generic_abstract_domain<Variable> from,
-                crab::domains::generic_abstract_domain<Variable> &to) {
+convert_domains(crab::domains::abstract_domain<Variable> from,
+                crab::domains::abstract_domain<Variable> &to) {
   // we don't know what is inside "from" or "to" so we do
   // conservatively the conversion.
   convert_domains_impl(from, to);
@@ -472,7 +472,7 @@ convert_domains(crab::domains::generic_abstract_domain<Variable> from,
 template <typename Domain>
 inline void convert_domains(Domain from, Domain &to) {
   // do nothing if they are the same domain but not
-  // generic_abstract_domain.
+  // abstract_domain.
   to = from;
 }
 
