@@ -568,17 +568,21 @@ get_inter_analysis(CallGraphNode cg_node,
    fully as a black box.
 */
 template <typename CallGraph, typename AbsDom>
-class top_down_inter_transformer final : public intra_abs_transformer<AbsDom> {
+class top_down_inter_transformer final :
+    public intra_abs_transformer<typename CallGraph::node_t::cfg_t::basic_block_t,
+				 AbsDom> {
 
-  using this_type = top_down_inter_transformer<CallGraph, AbsDom>;
 
   using cg_node_t = typename CallGraph::node_t;
   using cfg_t = typename cg_node_t::cfg_t;
+  using basic_block_t = typename cfg_t::basic_block_t;
   using fdecl_t = typename cfg_t::fdecl_t;
   using variable_t = typename cfg_t::variable_t;
-  using intra_abs_transformer_t = intra_abs_transformer<AbsDom>;
+  using intra_abs_transformer_t = intra_abs_transformer<basic_block_t, AbsDom>;
   using abs_transform_api_t =
       typename intra_abs_transformer_t::abs_transform_api_t;
+
+  using this_type = top_down_inter_transformer<CallGraph, AbsDom>;  
   // -- intra-procedural analysis with inter-procedural semantics for
   //    call/return statements
   using intra_analyzer_with_call_semantics_t =

@@ -356,7 +356,7 @@ public:
  **/
 template <typename CFG, typename AbsDomain>
 using intra_fwd_analyzer = analyzer_internal_impl::intra_fwd_analyzer_wrapper<
-    CFG, AbsDomain, intra_abs_transformer<AbsDomain>>;
+  CFG, AbsDomain, intra_abs_transformer<typename CFG::basic_block_t, AbsDomain>>;
 
 } // namespace analyzer
 } // namespace crab

@@ -129,10 +129,11 @@ public:
     }
   };
 
-public:
+public:  
   using statement_t = typename CFG::statement_t;
   using assert_t =
-      crab::cfg::assert_stmt<typename CFG::number_t, typename CFG::varname_t>;
+	      crab::cfg::assert_stmt<typename CFG::basic_block_label_t,
+				     typename CFG::number_t, typename CFG::varname_t>;
   using assumption_t = assumption<CFG>;
   using assumption_ptr = std::shared_ptr<assumption_t>;
   using vector_assumption_ptr = std::vector<assumption_ptr>;

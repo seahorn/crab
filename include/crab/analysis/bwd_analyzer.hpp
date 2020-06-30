@@ -39,9 +39,9 @@ class necessary_preconditions_fixpoint_iterator
   using pp_abstract_map_t = std::unordered_map<const stmt_t *, AbsDom>;
 
   /// forward and backward transformers
-  using abs_fwd_tr_t = intra_abs_transformer<AbsDom>;
+  using abs_fwd_tr_t = intra_abs_transformer<basic_block_t, AbsDom>;
   using abs_bwd_tr_t =
-      intra_necessary_preconditions_abs_transformer<AbsDom, pp_abstract_map_t>;
+    intra_necessary_preconditions_abs_transformer<basic_block_t, AbsDom, pp_abstract_map_t>;
 
   CFG m_cfg;
   // postcondition (i.e, final states) that we want to propagate backwards
@@ -197,14 +197,14 @@ public:
 template <typename CFG, typename AbsDom> class intra_forward_backward_analyzer {
 public:
   using cfg_t = CFG;
-  using bb_t = typename CFG::basic_block_t;
-  using bb_label_t = typename CFG::basic_block_label_t;
-  using stmt_t = typename CFG::statement_t;
+  using basic_block_t = typename CFG::basic_block_t;
+  using basic_block_label_t = typename CFG::basic_block_label_t;
+  using statement_t = typename CFG::statement_t;
   using varname_t = typename CFG::varname_t;
   using number_t = typename CFG::number_t;
   // used for checkers
   using abs_dom_t = AbsDom;
-  using abs_tr_t = intra_abs_transformer<AbsDom>;
+  using abs_tr_t = intra_abs_transformer<basic_block_t, AbsDom>;
 
 private:
   using fwd_analyzer_t = intra_fwd_analyzer<CFG, AbsDom>;
@@ -213,10 +213,10 @@ private:
   using precond_map_t = typename bwd_fixpoint_iterator_t::precond_map_t;
   using bwd_wto_t = typename bwd_fixpoint_iterator_t::wto_t;
   using liveness_t = live_and_dead_analysis<CFG>;
-  using idom_tree_t = std::unordered_map<bb_label_t, std::set<bb_label_t>>;
-  using assert_t = typename bb_t::assert_t;
-  using bool_assert_t = typename bb_t::bool_assert_t;
-  using assert_ref_t = typename bb_t::assert_ref_t;
+  using idom_tree_t = std::unordered_map<basic_block_label_t, std::set<basic_block_label_t>>;
+  using assert_t = typename basic_block_t::assert_t;
+  using bool_assert_t = typename basic_block_t::bool_assert_t;
+  using assert_ref_t = typename basic_block_t::assert_ref_t;
 
 public:
   using assumption_map_t = typename fwd_analyzer_t::assumption_map_t;
@@ -234,9 +234,9 @@ private:
   const wto_t *m_wto;
   const bwd_wto_t *m_b_wto;
   // keep track of which assertions cannot be proven.
-  std::vector<std::pair<bb_label_t, stmt_t *>> m_unproven_assertions;
+  std::vector<std::pair<basic_block_label_t, statement_t *>> m_unproven_assertions;
   // keep track of which assertions have been proven
-  std::set<stmt_t *> m_proved_assertions;
+  std::set<statement_t *> m_proved_assertions;
   // keep the results of the first forward iteration.
   invariant_map_t m_pre_invariants;
   invariant_map_t m_post_invariants;
@@ -276,7 +276,7 @@ private:
   // idom induces a tree each key-value pair means that key
   // (block) is an immediate dominator of each element in value
   // (set of basic blocks). TODO: caching
-  bool dominates(const bb_label_t &u, const bb_label_t &v,
+  bool dominates(const basic_block_label_t &u, const basic_block_label_t &v,
                  const idom_tree_t &idom) {
     auto it = idom.find(u);
     if (it == idom.end()) {
@@ -285,13 +285,13 @@ private:
     }
 
     // immediate dominated by u
-    const std::set<bb_label_t> &idom_u = it->second;
+    const std::set<basic_block_label_t> &idom_u = it->second;
     if (idom_u.count(v) > 0) {
       // u dominates v
       return true;
     }
 
-    for (const bb_label_t &w : idom_u) {
+    for (const basic_block_label_t &w : idom_u) {
       // a successor of u dominates v
       if (dominates(w, v, idom)) {
         return true;
@@ -331,7 +331,7 @@ private:
       // assertions were proved by calling safe_assertions method.
 
       for (auto it = m_cfg.begin(), et = m_cfg.end(); it != et; ++it) {
-        const bb_label_t &n = it->label();
+        const basic_block_label_t &n = it->label();
         auto jt = refined_assumptions.find(n);
         if (jt == refined_assumptions.end()) {
           continue;
@@ -340,9 +340,9 @@ private:
           m_unproven_assertions.erase(
               std::remove_if(
                   m_unproven_assertions.begin(), m_unproven_assertions.end(),
-                  [&n, &idom, this](std::pair<bb_label_t, stmt_t *> &kv) {
-                    const bb_label_t &m = kv.first;
-                    stmt_t *s = kv.second;
+                  [&n, &idom, this](std::pair<basic_block_label_t, statement_t *> &kv) {
+                    const basic_block_label_t &m = kv.first;
+                    statement_t *s = kv.second;
                     bool res = this->dominates(n, m, idom);
                     if (res) {
                       this->m_proved_assertions.insert(s);
@@ -404,7 +404,7 @@ public:
         widening_delay, descending_iters, jump_set_size);
   }
 
-  void run(const bb_label_t &entry, // only used for the forward pass.
+  void run(const basic_block_label_t &entry, // only used for the forward pass.
            AbsDom init_states,
            // behaves as a standard forward analysis
            bool only_forward,
@@ -420,7 +420,7 @@ public:
                              << "Initial states=" << init_states << "\n");
 
     // return true if fixpo[node] is strictly more precise than old fixpo[node]
-    auto refine = [](const bb_label_t &node, const assumption_map_t &old_table,
+    auto refine = [](const basic_block_label_t &node, const assumption_map_t &old_table,
                      const bwd_fixpoint_iterator_t &fixpo,
                      assumption_map_t &new_table) {
       AbsDom y = fixpo[node];
@@ -448,7 +448,7 @@ public:
     // number of refinement iterations
     unsigned iters = 0;
     // CFG assertions
-    std::vector<std::pair<bb_label_t, stmt_t *>> assertions;
+    std::vector<std::pair<basic_block_label_t, statement_t *>> assertions;
     // immediate dominance tree
     idom_tree_t idom_tree;
 
@@ -461,7 +461,7 @@ public:
 
     if (!m_unproven_assertions.empty() && !only_forward) {
       crab::CrabStats::resume("CombinedForwardBackward.DominatorTree");
-      std::unordered_map<bb_label_t, bb_label_t> idom_map;
+      std::unordered_map<basic_block_label_t, basic_block_label_t> idom_map;
       crab::analyzer::graph_algo::dominator_tree(m_cfg, m_cfg.entry(),
                                                  idom_map);
       // build idom_tree
@@ -471,7 +471,7 @@ public:
         }
         auto it = idom_tree.find(kv.second);
         if (it == idom_tree.end()) {
-          std::set<bb_label_t> reachable({kv.first});
+          std::set<basic_block_label_t> reachable({kv.first});
           idom_tree.insert({kv.second, reachable});
         } else {
           it->second.insert(kv.first);
@@ -482,7 +482,7 @@ public:
           "backward", crab::outs() << "Computed dominance tree:\n";
           for (auto &kv
                : idom_tree) {
-            crab::outs() << "\t" << basic_block_traits<bb_t>::to_string(kv.first)
+            crab::outs() << "\t" << basic_block_traits<basic_block_t>::to_string(kv.first)
                          << " dominates={";
             for (auto d : kv.second) {
               crab::outs() << d << ";";
@@ -517,7 +517,7 @@ public:
           "backward", crab::outs() << "Forward analysis: \n";
           for (auto &kv
                : boost::make_iterator_range(F.pre_begin(), F.pre_end())) {
-            crab::outs() << basic_block_traits<bb_t>::to_string(kv.first) << ":\n"
+            crab::outs() << basic_block_traits<basic_block_t>::to_string(kv.first) << ":\n"
                          << kv.second << "\n";
           } crab::outs()
           << "\n";);
@@ -572,7 +572,7 @@ public:
           "backward", crab::outs() << "Backward analysis:\n";
           for (auto &kv
                : boost::make_iterator_range(B.begin(), B.end())) {
-            crab::outs() << basic_block_traits<bb_t>::to_string(kv.first)
+            crab::outs() << basic_block_traits<basic_block_t>::to_string(kv.first)
 			 << ":\n" << kv.second << "\n";
           } crab::outs()
           << "\n");
@@ -630,10 +630,10 @@ public:
   }
 
   // Return the invariants that hold at the entry of b
-  AbsDom operator[](const bb_label_t &b) const { return get_pre(b); }
+  AbsDom operator[](const basic_block_label_t &b) const { return get_pre(b); }
 
   // Return the invariants that hold at the entry of b
-  AbsDom get_pre(const bb_label_t &b) const {
+  AbsDom get_pre(const basic_block_label_t &b) const {
     auto it = m_pre_invariants.find(b);
     if (it == m_pre_invariants.end())
       return make_top();
@@ -642,7 +642,7 @@ public:
   }
 
   // Return the invariants that hold at the exit of b
-  AbsDom get_post(const bb_label_t &b) const {
+  AbsDom get_post(const basic_block_label_t &b) const {
     auto it = m_post_invariants.find(b);
     if (it == m_post_invariants.end())
       return make_top();
@@ -674,7 +674,7 @@ public:
     return *m_abs_tr;
   }
 
-  void get_safe_assertions(std::set<const stmt_t *> &out) const {
+  void get_safe_assertions(std::set<const statement_t*> &out) const {
     out.insert(m_proved_assertions.begin(), m_proved_assertions.end());
   }
 };

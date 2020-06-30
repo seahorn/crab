@@ -43,8 +43,9 @@ using namespace crab::cfg;
 template <typename CFG> struct assert_wrapper : public indexable {
 
   typedef
-      typename statement_visitor<typename CFG::number_t,
-                                 typename CFG::varname_t>::assert_t assert_t;
+  typename statement_visitor<typename CFG::basic_block_label_t,
+			     typename CFG::number_t,
+			     typename CFG::varname_t>::assert_t assert_t;
   using basic_block_label_t = typename CFG::basic_block_label_t;
   using this_type = assert_wrapper<CFG>;
 
@@ -123,21 +124,21 @@ private:
   // set of uses and definitions of an instruction
   using live_t = crab::cfg::live<N, V>;
 
-  class transfer_function : public statement_visitor<N, V> {
+  class transfer_function : public statement_visitor<basic_block_label_t, N, V> {
 
-    using bin_op_t = typename statement_visitor<N, V>::bin_op_t;
-    using assign_t = typename statement_visitor<N, V>::assign_t;
-    using assume_t = typename statement_visitor<N, V>::assume_t;
-    using select_t = typename statement_visitor<N, V>::select_t;
-    using assert_t = typename statement_visitor<N, V>::assert_t;
-    using int_cast_t = typename statement_visitor<N, V>::int_cast_t;
-    using havoc_t = typename statement_visitor<N, V>::havoc_t;
-    using unreach_t = typename statement_visitor<N, V>::unreach_t;
-    using bool_bin_op_t = typename statement_visitor<N, V>::bool_bin_op_t;
+    using bin_op_t = typename statement_visitor<basic_block_label_t, N, V>::bin_op_t;
+    using assign_t = typename statement_visitor<basic_block_label_t, N, V>::assign_t;
+    using assume_t = typename statement_visitor<basic_block_label_t, N, V>::assume_t;
+    using select_t = typename statement_visitor<basic_block_label_t, N, V>::select_t;
+    using assert_t = typename statement_visitor<basic_block_label_t, N, V>::assert_t;
+    using int_cast_t = typename statement_visitor<basic_block_label_t, N, V>::int_cast_t;
+    using havoc_t = typename statement_visitor<basic_block_label_t, N, V>::havoc_t;
+    using unreach_t = typename statement_visitor<basic_block_label_t, N, V>::unreach_t;
+    using bool_bin_op_t = typename statement_visitor<basic_block_label_t, N, V>::bool_bin_op_t;
     typedef
-        typename statement_visitor<N, V>::bool_assign_cst_t bool_assign_cst_t;
+        typename statement_visitor<basic_block_label_t, N, V>::bool_assign_cst_t bool_assign_cst_t;
     typedef
-        typename statement_visitor<N, V>::bool_assign_var_t bool_assign_var_t;
+        typename statement_visitor<basic_block_label_t, N, V>::bool_assign_var_t bool_assign_var_t;
     using variable_t = typename CFG::variable_t;
 
     // Helper that applies function F to each pair's value of the

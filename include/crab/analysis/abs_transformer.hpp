@@ -42,55 +42,56 @@ namespace analyzer {
 /**
  * API abstract transformer
  **/
-template <typename Number, typename VariableName>
+template<typename BasicBlockLabel, typename Number, typename VariableName>
 class abs_transformer_api
-    : public crab::cfg::statement_visitor<Number, VariableName> {
+  : public crab::cfg::statement_visitor<BasicBlockLabel, Number, VariableName> {
 public:
   using number_t = Number;
   using varname_t = VariableName;
+  using bb_label_t = BasicBlockLabel;
+  
+  using var_t = variable<number_t, varname_t>;
+  using lin_exp_t = ikos::linear_expression<number_t, varname_t>;
+  using lin_cst_t = ikos::linear_constraint<number_t, varname_t>;
+  using lin_cst_sys_t = ikos::linear_constraint_system<number_t, varname_t>;
 
-  using var_t = variable<number_t, VariableName>;
-  using lin_exp_t = ikos::linear_expression<number_t, VariableName>;
-  using lin_cst_t = ikos::linear_constraint<number_t, VariableName>;
-  using lin_cst_sys_t = ikos::linear_constraint_system<number_t, VariableName>;
+  using havoc_t = crab::cfg::havoc_stmt<bb_label_t, number_t, varname_t>;
+  using unreach_t = crab::cfg::unreachable_stmt<bb_label_t, number_t, varname_t>;
 
-  using havoc_t = crab::cfg::havoc_stmt<number_t, VariableName>;
-  using unreach_t = crab::cfg::unreachable_stmt<number_t, VariableName>;
+  using bin_op_t = crab::cfg::binary_op<bb_label_t, number_t, varname_t>;
+  using assign_t = crab::cfg::assignment<bb_label_t, number_t, varname_t>;
+  using assume_t = crab::cfg::assume_stmt<bb_label_t, number_t, varname_t>;
+  using select_t = crab::cfg::select_stmt<bb_label_t, number_t, varname_t>;
+  using assert_t = crab::cfg::assert_stmt<bb_label_t, number_t, varname_t>;
+  using int_cast_t = crab::cfg::int_cast_stmt<bb_label_t, number_t, varname_t>;
 
-  using bin_op_t = crab::cfg::binary_op<number_t, VariableName>;
-  using assign_t = crab::cfg::assignment<number_t, VariableName>;
-  using assume_t = crab::cfg::assume_stmt<number_t, VariableName>;
-  using select_t = crab::cfg::select_stmt<number_t, VariableName>;
-  using assert_t = crab::cfg::assert_stmt<number_t, VariableName>;
-  using int_cast_t = crab::cfg::int_cast_stmt<number_t, VariableName>;
+  using callsite_t = crab::cfg::callsite_stmt<bb_label_t, number_t, varname_t>;
+  using return_t = crab::cfg::return_stmt<bb_label_t, number_t, varname_t>;
+  using intrinsic_t = crab::cfg::intrinsic_stmt<bb_label_t, number_t, varname_t>;
 
-  using callsite_t = crab::cfg::callsite_stmt<number_t, VariableName>;
-  using return_t = crab::cfg::return_stmt<number_t, VariableName>;
-  using intrinsic_t = crab::cfg::intrinsic_stmt<number_t, VariableName>;
+  using arr_init_t = crab::cfg::array_init_stmt<bb_label_t, number_t, varname_t>;
+  using arr_store_t = crab::cfg::array_store_stmt<bb_label_t, number_t, varname_t>;
+  using arr_load_t = crab::cfg::array_load_stmt<bb_label_t, number_t, varname_t>;
+  using arr_assign_t = crab::cfg::array_assign_stmt<bb_label_t, number_t, varname_t>;
 
-  using arr_init_t = crab::cfg::array_init_stmt<number_t, VariableName>;
-  using arr_store_t = crab::cfg::array_store_stmt<number_t, VariableName>;
-  using arr_load_t = crab::cfg::array_load_stmt<number_t, VariableName>;
-  using arr_assign_t = crab::cfg::array_assign_stmt<number_t, VariableName>;
-
-  using region_init_t = crab::cfg::region_init_stmt<number_t, varname_t>;
-  using make_ref_t = crab::cfg::make_ref_stmt<number_t, varname_t>;
-  using load_from_ref_t = crab::cfg::load_from_ref_stmt<number_t, varname_t>;
-  using store_to_ref_t = crab::cfg::store_to_ref_stmt<number_t, varname_t>;
-  using gep_ref_t = crab::cfg::gep_ref_stmt<number_t, varname_t>;
+  using region_init_t = crab::cfg::region_init_stmt<bb_label_t, number_t, varname_t>;
+  using make_ref_t = crab::cfg::make_ref_stmt<bb_label_t, number_t, varname_t>;
+  using load_from_ref_t = crab::cfg::load_from_ref_stmt<bb_label_t, number_t, varname_t>;
+  using store_to_ref_t = crab::cfg::store_to_ref_stmt<bb_label_t, number_t, varname_t>;
+  using gep_ref_t = crab::cfg::gep_ref_stmt<bb_label_t, number_t, varname_t>;
   using load_from_arr_ref_t =
-      crab::cfg::load_from_arr_ref_stmt<number_t, varname_t>;
+      crab::cfg::load_from_arr_ref_stmt<bb_label_t, number_t, varname_t>;
   using store_to_arr_ref_t =
-      crab::cfg::store_to_arr_ref_stmt<number_t, varname_t>;
-  using assume_ref_t = crab::cfg::assume_ref_stmt<number_t, VariableName>;
-  using assert_ref_t = crab::cfg::assert_ref_stmt<number_t, VariableName>;
+      crab::cfg::store_to_arr_ref_stmt<bb_label_t, number_t, varname_t>;
+  using assume_ref_t = crab::cfg::assume_ref_stmt<bb_label_t, number_t, varname_t>;
+  using assert_ref_t = crab::cfg::assert_ref_stmt<bb_label_t, number_t, varname_t>;
 
-  using bool_bin_op_t = crab::cfg::bool_binary_op<number_t, VariableName>;
-  using bool_assign_cst_t = crab::cfg::bool_assign_cst<number_t, VariableName>;
-  using bool_assign_var_t = crab::cfg::bool_assign_var<number_t, VariableName>;
-  using bool_assume_t = crab::cfg::bool_assume_stmt<number_t, VariableName>;
-  using bool_select_t = crab::cfg::bool_select_stmt<number_t, VariableName>;
-  using bool_assert_t = crab::cfg::bool_assert_stmt<number_t, VariableName>;
+  using bool_bin_op_t = crab::cfg::bool_binary_op<bb_label_t, number_t, varname_t>;
+  using bool_assign_cst_t = crab::cfg::bool_assign_cst<bb_label_t, number_t, varname_t>;
+  using bool_assign_var_t = crab::cfg::bool_assign_var<bb_label_t, number_t, varname_t>;
+  using bool_assume_t = crab::cfg::bool_assume_stmt<bb_label_t, number_t, varname_t>;
+  using bool_select_t = crab::cfg::bool_select_stmt<bb_label_t, number_t, varname_t>;
+  using bool_assert_t = crab::cfg::bool_assert_stmt<bb_label_t, number_t, varname_t>;
 
 protected:
   virtual void exec(havoc_t &) {}
@@ -247,18 +248,26 @@ conv_op(crab::cfg::bool_binary_operation_t op) {
  * can be redefined by derived classes. By default, all function
  * calls are ignored in a sound manner (by havoc'ing all outputs).
  **/
-template <class AbsD>
+template <class BasicBlock,class AbsD>
 class intra_abs_transformer
-    : public abs_transformer_api<typename AbsD::number_t,
-                                 typename AbsD::varname_t> {
+  : public abs_transformer_api<typename BasicBlock::basic_block_label_t,
+			       typename AbsD::number_t,
+			       typename AbsD::varname_t> {
+
 public:
   using abs_dom_t = AbsD;
   using number_t = typename abs_dom_t::number_t;
   using varname_t = typename abs_dom_t::varname_t;
   using variable_t = typename abs_dom_t::variable_t;
-
+  using basic_block_label_t = typename BasicBlock::basic_block_label_t;
+  
+  static_assert(std::is_same<typename AbsD::number_t, typename BasicBlock::number_t>::value,
+		"Basic block and abstract domain must have same number type");
+  static_assert(std::is_same<typename AbsD::varname_t, typename BasicBlock::varname_t>::value,
+		"Basic block and abstract domain must have same variable name type");
+  
 public:
-  using abs_transform_api_t = abs_transformer_api<number_t, varname_t>;
+  using abs_transform_api_t = abs_transformer_api<basic_block_label_t, number_t, varname_t>;
   using typename abs_transform_api_t::arr_assign_t;
   using typename abs_transform_api_t::arr_init_t;
   using typename abs_transform_api_t::arr_load_t;
@@ -813,17 +822,19 @@ public:
 /**
  * Abstract transformer to compute necessary preconditions.
  **/
-template <class AbsD, class InvT>
+template<class BasicBlock, class AbsD, class InvT>
 class intra_necessary_preconditions_abs_transformer final
-    : public abs_transformer_api<typename AbsD::number_t,
-                                 typename AbsD::varname_t> {
+  : public abs_transformer_api<typename BasicBlock::basic_block_label_t,
+			       typename AbsD::number_t,
+			       typename AbsD::varname_t> {
 public:
   using abs_dom_t = AbsD;
   using number_t = typename abs_dom_t::number_t;
   using varname_t = typename abs_dom_t::varname_t;
   using variable_t = typename abs_dom_t::variable_t;
-  using statement_t = crab::cfg::statement<number_t, varname_t>;
-  using abs_transform_api_t = abs_transformer_api<number_t, varname_t>;
+  using basic_block_label_t = typename BasicBlock::basic_block_label_t;
+  using statement_t = crab::cfg::statement<basic_block_label_t, number_t, varname_t>;
+  using abs_transform_api_t = abs_transformer_api<basic_block_label_t, number_t, varname_t>;
   using typename abs_transform_api_t::arr_assign_t;
   using typename abs_transform_api_t::arr_init_t;
   using typename abs_transform_api_t::arr_load_t;
@@ -860,6 +871,12 @@ public:
   using typename abs_transform_api_t::var_t;
 
 private:
+
+  static_assert(std::is_same<number_t, typename BasicBlock::number_t>::value,
+		"Basic block and abstract domain must have same number type");
+  static_assert(std::is_same<varname_t, typename BasicBlock::varname_t>::value,
+		"Basic block and abstract domain must have same variable name type");
+  
   // used to compute the (necessary) preconditions
   abs_dom_t m_pre;
   // used to refine the preconditions: map from statement_t to abs_dom_t.
