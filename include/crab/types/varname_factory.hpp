@@ -19,9 +19,10 @@
 
 namespace crab {
 
-template<typename VariableName> class variable_name_traits {
+/* T is the template parameter of var_factory_impl::variable_factory */
+template<typename T> class variable_name_traits {
 public:
-  static std::string to_string(const VariableName &varname);
+  static std::string to_string(T varname);
 };
 
 namespace var_factory_impl {
@@ -33,7 +34,7 @@ namespace var_factory_impl {
 // The factory uses a counter of type index_t to generate variable
 // id's that always increases.
 template <class T> class variable_factory {
-
+public:
   class indexed_varname : public indexable {
     template <typename Any> friend class variable_factory;
     boost::optional<T> m_s;
@@ -91,7 +92,7 @@ template <class T> class variable_factory {
       return hasher(s.index());
     }
   };
-
+private:
   using variable_factory_t = variable_factory<T>;
   using t_map_t = std::unordered_map<T, indexed_varname>;
   using shadow_map_t = std::unordered_map<ikos::index_t, indexed_varname>;

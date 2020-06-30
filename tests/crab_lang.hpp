@@ -68,7 +68,7 @@ using z_cg_ref_t = cg::call_graph_ref<z_cg_t>;
 template<>
 class variable_name_traits<std::string> {
 public:
-  static std::string to_string(const std::string &varname) {
+  static std::string to_string(std::string varname) {
     return varname;
   }
 };
