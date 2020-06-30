@@ -165,9 +165,11 @@ private:
   using linear_constraint_t = ikos::linear_constraint<number_t, varname_t>;
   using bound_t = ikos::bound<number_t>;
 
-  using assume_t = crab::cfg::assume_stmt<basic_block_label_t, number_t, varname_t>;
-  // using select_t = crab::cfg::select_stmt<basic_block_label_t, number_t,varname_t>;
-  // using assign_t = crab::cfg::assignment<basic_block_label_t, number_t,varname_t> ;
+  using assume_t =
+      crab::cfg::assume_stmt<basic_block_label_t, number_t, varname_t>;
+  // using select_t = crab::cfg::select_stmt<basic_block_label_t,
+  // number_t,varname_t>; using assign_t =
+  // crab::cfg::assignment<basic_block_label_t, number_t,varname_t> ;
 
   void extract_bounds(const linear_expression_t &e, bool is_strict,
                       std::vector<number_t> &lb_bounds,
@@ -273,8 +275,8 @@ public:
 
   void write(crab::crab_os &o) const {
     for (auto &kv : m_head_to_thresholds) {
-      o << crab::basic_block_traits<basic_block_t>::to_string(kv.first)
-	<< "=" << kv.second << "\n";
+      o << crab::basic_block_traits<basic_block_t>::to_string(kv.first) << "="
+        << kv.second << "\n";
     }
   }
 

@@ -115,7 +115,8 @@ template <typename CFG> class call_graph {
   using varname_t = typename CFG::varname_t;
   using number_t = typename CFG::number_t;
   using basic_block_label_t = typename CFG::basic_block_label_t;
-  using stmt_visitor_t = crab::cfg::statement_visitor<basic_block_label_t, number_t, varname_t>;
+  using stmt_visitor_t =
+      crab::cfg::statement_visitor<basic_block_label_t, number_t, varname_t>;
 
   using vertex_map_t = std::unordered_map<std::size_t, vertex_descriptor_t>;
   using callee_map_t =

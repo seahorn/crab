@@ -234,29 +234,27 @@ inline crab_os &operator<<(crab_os &o, const debug_info &l) {
   return o;
 }
 
-template<class BasicBlockLabel, class VariableName, class Number>
+template <class BasicBlockLabel, class VariableName, class Number>
 class basic_block;
-  
-template<class BasicBlockLabel, class  Number, class VariableName>
+
+template <class BasicBlockLabel, class Number, class VariableName>
 struct statement_visitor;
 
-template<class BasicBlockLabel, class Number, class VariableName>
+template <class BasicBlockLabel, class Number, class VariableName>
 class statement {
 public:
   using live_t = live<Number, VariableName>;
   using basic_block_t = basic_block<BasicBlockLabel, VariableName, Number>;
-  
+
 protected:
   live_t m_live;
   stmt_code m_stmt_code;
-  basic_block_t *m_parent;  
+  basic_block_t *m_parent;
   debug_info m_dbg_info;
-  
+
   statement(stmt_code code, basic_block_t *parent,
-	    debug_info dbg_info = debug_info())
-    : m_stmt_code(code),
-      m_parent(parent),
-      m_dbg_info(dbg_info) {}
+            debug_info dbg_info = debug_info())
+      : m_stmt_code(code), m_parent(parent), m_dbg_info(dbg_info) {}
 
 public:
   virtual ~statement() = default;
@@ -295,21 +293,24 @@ public:
 
   const debug_info &get_debug_info() const { return m_dbg_info; }
 
-  basic_block_t *get_parent() { return m_parent; }  
-  
+  basic_block_t *get_parent() { return m_parent; }
+
   const basic_block_t *get_parent() const { return m_parent; }
-  
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *) = 0;
+
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *) = 0;
 
   virtual void write(crab_os &o) const = 0;
 
-  virtual statement<BasicBlockLabel, Number, VariableName> *clone(basic_block_t *parent) const = 0;
+  virtual statement<BasicBlockLabel, Number, VariableName> *
+  clone(basic_block_t *parent) const = 0;
 
   // for gdb
   void dump() const { write(crab::errs()); }
 
-  friend crab_os &operator<<(crab_os &o,
-                             const statement<BasicBlockLabel, Number, VariableName> &s) {
+  friend crab_os &
+  operator<<(crab_os &o,
+             const statement<BasicBlockLabel, Number, VariableName> &s) {
     s.write(o);
     return o;
   }
@@ -319,7 +320,7 @@ public:
  *  Numerical statements
  */
 
-template<class BasicBlockLabel, class Number, class VariableName>
+template <class BasicBlockLabel, class Number, class VariableName>
 class binary_op : public statement<BasicBlockLabel, Number, VariableName> {
   using this_type = binary_op<BasicBlockLabel, Number, VariableName>;
 
@@ -331,9 +332,9 @@ public:
 
   binary_op(variable_t lhs, binary_operation_t op, linear_expression_t op1,
             linear_expression_t op2, basic_block_t *parent,
-	    debug_info dbg_info = debug_info())
-    : statement_t(BIN_OP, parent, dbg_info),
-      m_lhs(lhs), m_op(op), m_op1(op1), m_op2(op2) {
+            debug_info dbg_info = debug_info())
+      : statement_t(BIN_OP, parent, dbg_info), m_lhs(lhs), m_op(op), m_op1(op1),
+        m_op2(op2) {
     this->m_live.add_def(m_lhs);
     for (auto const &v : m_op1.variables()) {
       this->m_live.add_use(v);
@@ -351,7 +352,8 @@ public:
 
   const linear_expression_t &right() const { return m_op2; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -370,19 +372,18 @@ private:
   linear_expression_t m_op2;
 };
 
-template<class BasicBlockLabel, class Number, class VariableName>
+template <class BasicBlockLabel, class Number, class VariableName>
 class assignment : public statement<BasicBlockLabel, Number, VariableName> {
   using this_type = assignment<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;  
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
   using linear_expression_t = ikos::linear_expression<Number, VariableName>;
 
   assignment(variable_t lhs, linear_expression_t rhs, basic_block_t *parent)
-    : statement_t(ASSIGN, parent),
-      m_lhs(lhs), m_rhs(rhs) {
+      : statement_t(ASSIGN, parent), m_lhs(lhs), m_rhs(rhs) {
     this->m_live.add_def(m_lhs);
     for (auto const &v : m_rhs.variables())
       this->m_live.add_use(v);
@@ -392,7 +393,8 @@ public:
 
   const linear_expression_t &rhs() const { return m_rhs; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -409,26 +411,27 @@ private:
   linear_expression_t m_rhs;
 };
 
-template<class BasicBlockLabel, class Number, class VariableName>
+template <class BasicBlockLabel, class Number, class VariableName>
 class assume_stmt : public statement<BasicBlockLabel, Number, VariableName> {
 
   using this_type = assume_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
   using linear_constraint_t = ikos::linear_constraint<Number, VariableName>;
 
   assume_stmt(linear_constraint_t cst, basic_block_t *parent)
-    : statement_t(ASSUME, parent), m_cst(cst) {
+      : statement_t(ASSUME, parent), m_cst(cst) {
     for (auto const &v : cst.variables())
       this->m_live.add_use(v);
   }
 
   const linear_constraint_t &constraint() const { return m_cst; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -444,44 +447,47 @@ private:
   linear_constraint_t m_cst;
 };
 
-template<class BasicBlockLabel, class Number, class VariableName>
-class unreachable_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+template <class BasicBlockLabel, class Number, class VariableName>
+class unreachable_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
   using this_type = unreachable_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
   using basic_block_t = typename statement_t::basic_block_t;
-  
-  unreachable_stmt(basic_block_t *parent): statement_t(UNREACH, parent) {}
 
-  virtual void accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  unreachable_stmt(basic_block_t *parent) : statement_t(UNREACH, parent) {}
+
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
   virtual statement_t *clone(basic_block_t *parent) const {
     return new this_type(parent);
   }
-  
+
   virtual void write(crab_os &o) const { o << "unreachable"; }
 };
 
-template<class BasicBlockLabel, class Number, class VariableName>
+template <class BasicBlockLabel, class Number, class VariableName>
 class havoc_stmt : public statement<BasicBlockLabel, Number, VariableName> {
   using this_type = havoc_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;  
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
 
   havoc_stmt(variable_t lhs, basic_block_t *parent)
-    : statement_t(HAVOC, parent), m_lhs(lhs) {
+      : statement_t(HAVOC, parent), m_lhs(lhs) {
     this->m_live.add_def(m_lhs);
   }
 
   const variable_t &get_variable() const { return m_lhs; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -508,14 +514,15 @@ class select_stmt : public statement<BasicBlockLabel, Number, VariableName> {
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;  
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
   using linear_expression_t = ikos::linear_expression<Number, VariableName>;
   using linear_constraint_t = ikos::linear_constraint<Number, VariableName>;
 
   select_stmt(variable_t lhs, linear_constraint_t cond, linear_expression_t e1,
               linear_expression_t e2, basic_block_t *parent)
-    : statement_t(SELECT, parent), m_lhs(lhs), m_cond(cond), m_e1(e1), m_e2(e2) {
+      : statement_t(SELECT, parent), m_lhs(lhs), m_cond(cond), m_e1(e1),
+        m_e2(e2) {
     this->m_live.add_def(m_lhs);
     for (auto const &v : m_cond.variables())
       this->m_live.add_use(v);
@@ -533,7 +540,8 @@ public:
 
   const linear_expression_t &right() const { return m_e2; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -553,26 +561,27 @@ private:
   linear_expression_t m_e2;
 };
 
-template<class BasicBlockLabel, class Number, class VariableName>
+template <class BasicBlockLabel, class Number, class VariableName>
 class assert_stmt : public statement<BasicBlockLabel, Number, VariableName> {
   using this_type = assert_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;  
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
   using linear_constraint_t = ikos::linear_constraint<Number, VariableName>;
 
   assert_stmt(linear_constraint_t cst, basic_block_t *parent,
-	      debug_info dbg_info = debug_info())
-    : statement_t(ASSERT, parent, dbg_info), m_cst(cst) {
+              debug_info dbg_info = debug_info())
+      : statement_t(ASSERT, parent, dbg_info), m_cst(cst) {
     for (auto const &v : cst.variables())
       this->m_live.add_use(v);
   }
 
   const linear_constraint_t &constraint() const { return m_cst; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -592,19 +601,20 @@ private:
   linear_constraint_t m_cst;
 };
 
-template<class BasicBlockLabel, class Number, class VariableName>
+template <class BasicBlockLabel, class Number, class VariableName>
 class int_cast_stmt : public statement<BasicBlockLabel, Number, VariableName> {
   using this_type = int_cast_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;      
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
   using bitwidth_t = typename variable_t::bitwidth_t;
 
   int_cast_stmt(cast_operation_t op, variable_t src, variable_t dst,
-		basic_block_t *parent, debug_info dbg_info = debug_info())  
-    : statement_t(INT_CAST, parent, dbg_info), m_op(op), m_src(src), m_dst(dst) {
+                basic_block_t *parent, debug_info dbg_info = debug_info())
+      : statement_t(INT_CAST, parent, dbg_info), m_op(op), m_src(src),
+        m_dst(dst) {
     this->m_live.add_use(m_src);
     this->m_live.add_def(m_dst);
   }
@@ -615,7 +625,8 @@ public:
   const variable_t &dst() const { return m_dst; }
   bitwidth_t dst_width() const { return m_dst.get_bitwidth(); }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -659,13 +670,14 @@ private:
 
 //! Initialize all array elements to some variable or number.
 //  The semantics is similar to constant arrays in SMT.
-template<class BasicBlockLabel, class Number, class VariableName>
-class array_init_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+template <class BasicBlockLabel, class Number, class VariableName>
+class array_init_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
   using this_type = array_init_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using linear_expression_t = ikos::linear_expression<Number, VariableName>;
   using variable_t = variable<Number, VariableName>;
   using type_t = typename variable_t::type_t;
@@ -673,8 +685,8 @@ public:
   array_init_stmt(variable_t arr, linear_expression_t elem_size,
                   linear_expression_t lb, linear_expression_t ub,
                   linear_expression_t val, basic_block_t *parent)
-    : statement_t(ARR_INIT, parent), m_arr(arr), m_elem_size(elem_size), m_lb(lb),
-      m_ub(ub), m_val(val) {
+      : statement_t(ARR_INIT, parent), m_arr(arr), m_elem_size(elem_size),
+        m_lb(lb), m_ub(ub), m_val(val) {
 
     this->m_live.add_def(m_arr);
     for (auto const &v : m_elem_size.variables()) {
@@ -703,7 +715,8 @@ public:
 
   const linear_expression_t &val() const { return m_val; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -725,15 +738,16 @@ private:
   linear_expression_t m_val;
 };
 
-template<class BasicBlockLabel, class Number, class VariableName>
-class array_store_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+template <class BasicBlockLabel, class Number, class VariableName>
+class array_store_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
   using this_type = array_store_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   // forall i \in [lb,ub] % elem_size :: arr[i] := val
 
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using linear_expression_t = ikos::linear_expression<Number, VariableName>;
   using variable_t = variable<Number, VariableName>;
   using type_t = typename variable_t::type_t;
@@ -742,9 +756,10 @@ public:
   array_store_stmt(variable_t arr, linear_expression_t elem_size,
                    linear_expression_t lb, linear_expression_t ub,
                    linear_expression_t value, bool is_strong_update,
-		   basic_block_t *parent)
-    : statement_t(ARR_STORE, parent), m_arr(arr), m_elem_size(elem_size), m_lb(lb),
-      m_ub(ub), m_value(value), m_is_strong_update(is_strong_update) {
+                   basic_block_t *parent)
+      : statement_t(ARR_STORE, parent), m_arr(arr), m_elem_size(elem_size),
+        m_lb(lb), m_ub(ub), m_value(value),
+        m_is_strong_update(is_strong_update) {
 
     this->m_live.add_def(m_arr);
     // XXX: should we also mark m_arr as use?
@@ -777,7 +792,8 @@ public:
 
   bool is_strong_update() const { return m_is_strong_update; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -814,21 +830,22 @@ private:
   bool m_is_strong_update;
 };
 
-template<class BasicBlockLabel, class Number, class VariableName>
-class array_load_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+template <class BasicBlockLabel, class Number, class VariableName>
+class array_load_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
   using this_type = array_load_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using linear_expression_t = ikos::linear_expression<Number, VariableName>;
   using variable_t = variable<Number, VariableName>;
   using type_t = typename variable_t::type_t;
 
   array_load_stmt(variable_t lhs, variable_t arr, linear_expression_t elem_size,
                   linear_expression_t index, basic_block_t *parent)
-    : statement_t(ARR_LOAD, parent), m_lhs(lhs), m_array(arr), m_elem_size(elem_size),
-      m_index(index) {
+      : statement_t(ARR_LOAD, parent), m_lhs(lhs), m_array(arr),
+        m_elem_size(elem_size), m_index(index) {
 
     this->m_live.add_def(lhs);
     this->m_live.add_use(m_array);
@@ -850,7 +867,8 @@ public:
 
   const linear_expression_t &elem_size() const { return m_elem_size; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -872,18 +890,19 @@ private:
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class array_assign_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+class array_assign_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
   //! a = b
   using this_type = array_assign_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
   using type_t = typename variable_t::type_t;
 
   array_assign_stmt(variable_t lhs, variable_t rhs, basic_block_t *parent)
-    : statement_t(ARR_ASSIGN, parent), m_lhs(lhs), m_rhs(rhs) {
+      : statement_t(ARR_ASSIGN, parent), m_lhs(lhs), m_rhs(rhs) {
     this->m_live.add_def(lhs);
     this->m_live.add_use(rhs);
   }
@@ -894,7 +913,8 @@ public:
 
   type_t array_type() const { return m_lhs.get_type(); }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -915,23 +935,25 @@ private:
  * References and Regions
  */
 
-template<class BasicBlockLabel, class Number, class VariableName>
-class region_init_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+template <class BasicBlockLabel, class Number, class VariableName>
+class region_init_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
   // region_init(region);
   using this_type = region_init_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
 
   region_init_stmt(memory_region region, basic_block_t *parent,
-		   debug_info dbg_info = debug_info())
-    : statement_t(REGION_INIT, parent, dbg_info), m_region(region) {}
+                   debug_info dbg_info = debug_info())
+      : statement_t(REGION_INIT, parent, dbg_info), m_region(region) {}
 
   const memory_region &region() const { return m_region; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -947,19 +969,19 @@ private:
   memory_region m_region;
 };
 
-template<class BasicBlockLabel, class Number, class VariableName>
+template <class BasicBlockLabel, class Number, class VariableName>
 class make_ref_stmt : public statement<BasicBlockLabel, Number, VariableName> {
   // lhs := make_ref(region)
   using this_type = make_ref_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
 
-  make_ref_stmt(variable_t lhs, memory_region region,
-		basic_block_t *parent, debug_info dbg_info = debug_info()) 
-    : statement_t(REF_MAKE, parent, dbg_info), m_lhs(lhs), m_region(region) {
+  make_ref_stmt(variable_t lhs, memory_region region, basic_block_t *parent,
+                debug_info dbg_info = debug_info())
+      : statement_t(REF_MAKE, parent, dbg_info), m_lhs(lhs), m_region(region) {
     this->m_live.add_def(lhs);
   }
 
@@ -967,7 +989,8 @@ public:
 
   const memory_region &region() const { return m_region; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -985,20 +1008,21 @@ private:
   memory_region m_region;
 };
 
-template<class BasicBlockLabel, class Number, class VariableName>
-class load_from_ref_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+template <class BasicBlockLabel, class Number, class VariableName>
+class load_from_ref_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
   // lhs := load_from_ref(ref, region);
   using this_type = load_from_ref_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
 
   load_from_ref_stmt(variable_t lhs, variable_t ref, memory_region region,
-		     basic_block_t *parent, debug_info dbg_info = debug_info()) 
-    : statement_t(REF_LOAD, parent, dbg_info), m_lhs(lhs), m_ref(ref),
-      m_region(region) {
+                     basic_block_t *parent, debug_info dbg_info = debug_info())
+      : statement_t(REF_LOAD, parent, dbg_info), m_lhs(lhs), m_ref(ref),
+        m_region(region) {
     this->m_live.add_def(m_lhs);
     this->m_live.add_use(m_ref);
   }
@@ -1009,7 +1033,8 @@ public:
 
   const memory_region &region() const { return m_region; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -1028,22 +1053,23 @@ private:
   memory_region m_region;
 };
 
-template<class BasicBlockLabel, class Number, class VariableName>
-class store_to_ref_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+template <class BasicBlockLabel, class Number, class VariableName>
+class store_to_ref_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
   // store_to_ref(ref, region, val);
   using this_type = store_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
   using linear_expression_t = ikos::linear_expression<Number, VariableName>;
 
   store_to_ref_stmt(variable_t ref, memory_region region,
                     linear_expression_t val, basic_block_t *parent,
-		    debug_info dbg_info = debug_info())
-    : statement_t(REF_STORE, parent, dbg_info), m_ref(ref), m_region(region),
-      m_val(val) {
+                    debug_info dbg_info = debug_info())
+      : statement_t(REF_STORE, parent, dbg_info), m_ref(ref), m_region(region),
+        m_val(val) {
     this->m_live.add_def(m_ref);
     for (auto const &v : val.variables()) {
       this->m_live.add_use(v);
@@ -1056,7 +1082,8 @@ public:
 
   const memory_region &region() const { return m_region; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -1074,22 +1101,23 @@ private:
   linear_expression_t m_val;
 };
 
-template<class BasicBlockLabel, class Number, class VariableName>
+template <class BasicBlockLabel, class Number, class VariableName>
 class gep_ref_stmt : public statement<BasicBlockLabel, Number, VariableName> {
   // (lhs, lhs_region) := gep_ref(rhs, rhs_region, offset)
   using this_type = gep_ref_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
   using linear_expression_t = ikos::linear_expression<Number, VariableName>;
 
   gep_ref_stmt(variable_t lhs, memory_region lhs_region, variable_t rhs,
                memory_region rhs_region, linear_expression_t offset,
-	       basic_block_t *parent, debug_info dbg_info = debug_info())
-    : statement_t(REF_GEP, parent, dbg_info), m_lhs(lhs), m_lhs_region(lhs_region),
-      m_rhs(rhs), m_rhs_region(rhs_region), m_offset(offset) {
+               basic_block_t *parent, debug_info dbg_info = debug_info())
+      : statement_t(REF_GEP, parent, dbg_info), m_lhs(lhs),
+        m_lhs_region(lhs_region), m_rhs(rhs), m_rhs_region(rhs_region),
+        m_offset(offset) {
     this->m_live.add_def(lhs);
     this->m_live.add_use(rhs);
     for (auto const &v : offset.variables()) {
@@ -1107,13 +1135,14 @@ public:
 
   const memory_region &rhs_region() const { return m_rhs_region; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
   virtual statement_t *clone(basic_block_t *parent) const {
     return new this_type(m_lhs, m_lhs_region, m_rhs, m_rhs_region, m_offset,
-			 parent, this->m_dbg_info);  
+                         parent, this->m_dbg_info);
   }
 
   virtual void write(crab_os &o) const {
@@ -1131,26 +1160,27 @@ private:
   linear_expression_t m_offset;
 };
 
-template<class BasicBlockLabel, class Number, class VariableName>
-class load_from_arr_ref_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+template <class BasicBlockLabel, class Number, class VariableName>
+class load_from_arr_ref_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
   // lhs := load_from_arr_ref(ref, region, index, elem_size)
-  using this_type = load_from_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using this_type =
+      load_from_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using linear_expression_t = ikos::linear_expression<Number, VariableName>;
   using variable_t = variable<Number, VariableName>;
   using type_t = typename variable_t::type_t;
 
   load_from_arr_ref_stmt(variable_t lhs, variable_t ref, memory_region region,
                          linear_expression_t index,
-                         linear_expression_t elem_size,
-			 basic_block_t *parent,
+                         linear_expression_t elem_size, basic_block_t *parent,
                          debug_info dbg_info = debug_info())
-    : statement_t(REF_ARR_LOAD, parent, dbg_info), m_lhs(lhs), m_ref(ref),
-      m_region(region), m_index(index), m_elem_size(elem_size) {
-    
+      : statement_t(REF_ARR_LOAD, parent, dbg_info), m_lhs(lhs), m_ref(ref),
+        m_region(region), m_index(index), m_elem_size(elem_size) {
+
     this->m_live.add_def(m_lhs);
     this->m_live.add_use(m_ref);
     for (auto const &v : m_elem_size.variables()) {
@@ -1171,13 +1201,14 @@ public:
 
   const memory_region &region() const { return m_region; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
   virtual statement_t *clone(basic_block_t *parent) const {
-    return new this_type(m_lhs, m_ref, m_region, m_index, m_elem_size,
-			 parent, this->m_dbg_info);  
+    return new this_type(m_lhs, m_ref, m_region, m_index, m_elem_size, parent,
+                         this->m_dbg_info);
   }
 
   virtual void write(crab_os &o) const {
@@ -1195,13 +1226,15 @@ private:
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class store_to_arr_ref_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+class store_to_arr_ref_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
   // store_to_arr_ref(ref, region, lb, ub, value, elem_size)
-  using this_type = store_to_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using this_type =
+      store_to_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using linear_expression_t = ikos::linear_expression<Number, VariableName>;
   using variable_t = variable<Number, VariableName>;
   using type_t = typename variable_t::type_t;
@@ -1210,12 +1243,12 @@ public:
                         linear_expression_t lb, linear_expression_t ub,
                         linear_expression_t value,
                         linear_expression_t elem_size, bool is_strong_update,
-			basic_block_t *parent, 
+                        basic_block_t *parent,
                         debug_info dbg_info = debug_info())
-    : statement_t(REF_ARR_STORE, parent, dbg_info), m_ref(ref), m_region(region),
-      m_lb(lb), m_ub(ub), m_value(value), m_elem_size(elem_size),
-      m_is_strong_update(is_strong_update) {
-    
+      : statement_t(REF_ARR_STORE, parent, dbg_info), m_ref(ref),
+        m_region(region), m_lb(lb), m_ub(ub), m_value(value),
+        m_elem_size(elem_size), m_is_strong_update(is_strong_update) {
+
     this->m_live.add_def(m_ref);
     // XXX: should we also mark m_ref as use?
     for (auto const &v : m_elem_size.variables()) {
@@ -1246,7 +1279,8 @@ public:
 
   bool is_strong_update() const { return m_is_strong_update; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -1287,17 +1321,18 @@ private:
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class assume_ref_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+class assume_ref_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
   using this_type = assume_ref_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
   using reference_constraint_t = reference_constraint<Number, VariableName>;
 
   assume_ref_stmt(reference_constraint_t cst, basic_block_t *parent)
-    : statement_t(REF_ASSUME, parent), m_cst(cst) {
+      : statement_t(REF_ASSUME, parent), m_cst(cst) {
     if (!cst.is_tautology() && !cst.is_contradiction()) {
       if (cst.is_unary()) {
         this->m_live.add_use(cst.lhs());
@@ -1310,7 +1345,8 @@ public:
 
   const reference_constraint_t &constraint() const { return m_cst; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -1325,18 +1361,19 @@ private:
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class assert_ref_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+class assert_ref_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
   using this_type = assert_ref_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
   using reference_constraint_t = reference_constraint<Number, VariableName>;
 
   assert_ref_stmt(reference_constraint_t cst, basic_block_t *parent,
                   debug_info dbg_info = debug_info())
-    : statement_t(REF_ASSERT, parent, dbg_info), m_cst(cst) {
+      : statement_t(REF_ASSERT, parent, dbg_info), m_cst(cst) {
     if (!cst.is_tautology() && !cst.is_contradiction()) {
       if (cst.is_unary()) {
         this->m_live.add_use(cst.lhs());
@@ -1349,7 +1386,8 @@ public:
 
   const reference_constraint_t &constraint() const { return m_cst; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -1373,14 +1411,14 @@ class callsite_stmt : public statement<BasicBlockLabel, Number, VariableName> {
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
   using type_t = typename variable_t::type_t;
 
   callsite_stmt(std::string func_name, const std::vector<variable_t> &args,
-		basic_block_t *parent)
-    : statement_t(CALLSITE, parent), m_func_name(func_name) {
-    
+                basic_block_t *parent)
+      : statement_t(CALLSITE, parent), m_func_name(func_name) {
+
     std::copy(args.begin(), args.end(), std::back_inserter(m_args));
     for (auto arg : m_args) {
       this->m_live.add_use(arg);
@@ -1388,9 +1426,8 @@ public:
   }
 
   callsite_stmt(std::string func_name, const std::vector<variable_t> &lhs,
-                const std::vector<variable_t> &args,
-		basic_block_t *parent)
-    : statement_t(CALLSITE, parent), m_func_name(func_name) {
+                const std::vector<variable_t> &args, basic_block_t *parent)
+      : statement_t(CALLSITE, parent), m_func_name(func_name) {
 
     std::copy(args.begin(), args.end(), std::back_inserter(m_args));
     for (auto arg : m_args) {
@@ -1425,7 +1462,8 @@ public:
     return m_args[idx].get_type();
   }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -1473,18 +1511,18 @@ class return_stmt : public statement<BasicBlockLabel, Number, VariableName> {
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
   using type_t = typename variable_t::type_t;
 
   return_stmt(variable_t var, basic_block_t *parent)
-    : statement_t(RETURN, parent) {
+      : statement_t(RETURN, parent) {
     m_ret.push_back(var);
     this->m_live.add_use(var);
   }
 
   return_stmt(const std::vector<variable_t> &ret_vals, basic_block_t *parent)
-    : statement_t(RETURN, parent) {
+      : statement_t(RETURN, parent) {
     std::copy(ret_vals.begin(), ret_vals.end(), std::back_inserter(m_ret));
     for (auto r : m_ret) {
       this->m_live.add_use(r);
@@ -1493,7 +1531,8 @@ public:
 
   const std::vector<variable_t> &get_ret_vals() const { return m_ret; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -1530,13 +1569,13 @@ class intrinsic_stmt : public statement<BasicBlockLabel, Number, VariableName> {
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
   using type_t = typename variable_t::type_t;
 
   intrinsic_stmt(std::string intrinsic_name,
                  const std::vector<variable_t> &args, basic_block_t *parent)
-    : statement_t(CRAB_INTRINSIC, parent), m_intrinsic_name(intrinsic_name) {
+      : statement_t(CRAB_INTRINSIC, parent), m_intrinsic_name(intrinsic_name) {
 
     std::copy(args.begin(), args.end(), std::back_inserter(m_args));
     for (auto arg : m_args) {
@@ -1546,7 +1585,7 @@ public:
 
   intrinsic_stmt(std::string intrinsic_name, const std::vector<variable_t> &lhs,
                  const std::vector<variable_t> &args, basic_block_t *parent)
-    : statement_t(CRAB_INTRINSIC, parent), m_intrinsic_name(intrinsic_name) {
+      : statement_t(CRAB_INTRINSIC, parent), m_intrinsic_name(intrinsic_name) {
 
     std::copy(args.begin(), args.end(), std::back_inserter(m_args));
     for (auto arg : m_args) {
@@ -1581,7 +1620,8 @@ public:
     return m_args[idx].get_type();
   }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -1631,17 +1671,19 @@ private:
 */
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class bool_assign_cst : public statement<BasicBlockLabel, Number, VariableName> {
+class bool_assign_cst
+    : public statement<BasicBlockLabel, Number, VariableName> {
   using this_type = bool_assign_cst<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
   using linear_constraint_t = ikos::linear_constraint<Number, VariableName>;
 
-  bool_assign_cst(variable_t lhs, linear_constraint_t rhs, basic_block_t *parent)
-    : statement_t(BOOL_ASSIGN_CST, parent), m_lhs(lhs), m_rhs(rhs) {
+  bool_assign_cst(variable_t lhs, linear_constraint_t rhs,
+                  basic_block_t *parent)
+      : statement_t(BOOL_ASSIGN_CST, parent), m_lhs(lhs), m_rhs(rhs) {
     this->m_live.add_def(m_lhs);
     for (auto const &v : m_rhs.variables())
       this->m_live.add_use(v);
@@ -1651,7 +1693,8 @@ public:
 
   const linear_constraint_t &rhs() const { return m_rhs; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -1675,7 +1718,8 @@ private:
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class bool_assign_var : public statement<BasicBlockLabel, Number, VariableName> {
+class bool_assign_var
+    : public statement<BasicBlockLabel, Number, VariableName> {
   // Note that this can be simulated with bool_binary_op (e.g.,
   // b1 := b2 ----> b1 := b2 or false). However, we create a
   // special statement to assign a variable to another because it
@@ -1685,13 +1729,13 @@ class bool_assign_var : public statement<BasicBlockLabel, Number, VariableName> 
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
 
   bool_assign_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
-		  basic_block_t *parent)
-    : statement_t(BOOL_ASSIGN_VAR, parent), m_lhs(lhs), m_rhs(rhs),
-      m_is_rhs_negated(is_not_rhs) {
+                  basic_block_t *parent)
+      : statement_t(BOOL_ASSIGN_VAR, parent), m_lhs(lhs), m_rhs(rhs),
+        m_is_rhs_negated(is_not_rhs) {
     this->m_live.add_def(m_lhs);
     this->m_live.add_use(m_rhs);
   }
@@ -1702,7 +1746,8 @@ public:
 
   bool is_rhs_negated() const { return m_is_rhs_negated; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -1736,14 +1781,14 @@ class bool_binary_op : public statement<BasicBlockLabel, Number, VariableName> {
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;    
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
 
   bool_binary_op(variable_t lhs, bool_binary_operation_t op, variable_t op1,
                  variable_t op2, basic_block_t *parent,
-		 debug_info dbg_info = debug_info())
-    : statement_t(BOOL_BIN_OP, parent, dbg_info), m_lhs(lhs), m_op(op), m_op1(op1),
-      m_op2(op2) {
+                 debug_info dbg_info = debug_info())
+      : statement_t(BOOL_BIN_OP, parent, dbg_info), m_lhs(lhs), m_op(op),
+        m_op1(op1), m_op2(op2) {
     this->m_live.add_def(m_lhs);
     this->m_live.add_use(m_op1);
     this->m_live.add_use(m_op2);
@@ -1757,7 +1802,8 @@ public:
 
   const variable_t &right() const { return m_op2; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -1777,16 +1823,17 @@ private:
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class bool_assume_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+class bool_assume_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
   using this_type = bool_assume_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;      
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
 
   bool_assume_stmt(variable_t v, bool is_negated, basic_block_t *parent)
-    : statement_t(BOOL_ASSUME, parent), m_var(v), m_is_negated(is_negated) {
+      : statement_t(BOOL_ASSUME, parent), m_var(v), m_is_negated(is_negated) {
     this->m_live.add_use(v);
   }
 
@@ -1794,7 +1841,8 @@ public:
 
   bool is_negated() const { return m_is_negated; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -1818,17 +1866,19 @@ private:
 // select b1, b2, b3, b4:
 //    if b2 then b1=b3 else b1=b4
 template <class BasicBlockLabel, class Number, class VariableName>
-class bool_select_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+class bool_select_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
   using this_type = bool_select_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;      
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
 
   bool_select_stmt(variable_t lhs, variable_t cond, variable_t b1,
                    variable_t b2, basic_block_t *parent)
-    : statement_t(BOOL_SELECT, parent), m_lhs(lhs), m_cond(cond), m_b1(b1), m_b2(b2) {
+      : statement_t(BOOL_SELECT, parent), m_lhs(lhs), m_cond(cond), m_b1(b1),
+        m_b2(b2) {
     this->m_live.add_def(m_lhs);
     this->m_live.add_use(m_cond);
     this->m_live.add_use(m_b1);
@@ -1843,7 +1893,8 @@ public:
 
   const variable_t &right() const { return m_b2; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -1864,23 +1915,25 @@ private:
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class bool_assert_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+class bool_assert_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
   using this_type = bool_assert_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;      
+  using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
 
   bool_assert_stmt(variable_t v, basic_block_t *parent,
-		   debug_info dbg_info = debug_info())
-    : statement_t(BOOL_ASSERT, parent, dbg_info), m_var(v) {
+                   debug_info dbg_info = debug_info())
+      : statement_t(BOOL_ASSERT, parent, dbg_info), m_var(v) {
     this->m_live.add_use(v);
   }
 
   const variable_t &cond() const { return m_var; }
 
-  virtual void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) {
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
@@ -1894,10 +1947,9 @@ private:
   variable_t m_var; // pre: BOOL_TYPE
 };
 
-template<class BasicBlockLabel, class VariableName, class Number>
-class cfg;
+template <class BasicBlockLabel, class VariableName, class Number> class cfg;
 
-template<class BasicBlockLabel, class VariableName, class Number>
+template <class BasicBlockLabel, class VariableName, class Number>
 class basic_block {
   friend class cfg<BasicBlockLabel, VariableName, Number>;
 
@@ -1959,17 +2011,23 @@ public:
   // References
   using region_init_t = region_init_stmt<BasicBlockLabel, Number, VariableName>;
   using make_ref_t = make_ref_stmt<BasicBlockLabel, Number, VariableName>;
-  using load_from_ref_t = load_from_ref_stmt<BasicBlockLabel, Number, VariableName>;
-  using store_to_ref_t = store_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using load_from_ref_t =
+      load_from_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using store_to_ref_t =
+      store_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using gep_ref_t = gep_ref_stmt<BasicBlockLabel, Number, VariableName>;
-  using load_from_arr_ref_t = load_from_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
-  using store_to_arr_ref_t = store_to_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using load_from_arr_ref_t =
+      load_from_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using store_to_arr_ref_t =
+      store_to_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assume_ref_t = assume_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assert_ref_t = assert_ref_stmt<BasicBlockLabel, Number, VariableName>;
   // Boolean
   using bool_bin_op_t = bool_binary_op<BasicBlockLabel, Number, VariableName>;
-  using bool_assign_cst_t = bool_assign_cst<BasicBlockLabel, Number, VariableName>;
-  using bool_assign_var_t = bool_assign_var<BasicBlockLabel, Number, VariableName>;
+  using bool_assign_cst_t =
+      bool_assign_cst<BasicBlockLabel, Number, VariableName>;
+  using bool_assign_var_t =
+      bool_assign_var<BasicBlockLabel, Number, VariableName>;
   using bool_assume_t = bool_assume_stmt<BasicBlockLabel, Number, VariableName>;
   using bool_select_t = bool_select_stmt<BasicBlockLabel, Number, VariableName>;
   using bool_assert_t = bool_assert_stmt<BasicBlockLabel, Number, VariableName>;
@@ -2103,7 +2161,9 @@ public:
     }
   }
 
-  void accept(statement_visitor<BasicBlockLabel,Number, VariableName> *v) { v->visit(*this); }
+  void accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+    v->visit(*this);
+  }
 
   std::pair<succ_iterator, succ_iterator> next_blocks() {
     return std::make_pair(m_next.begin(), m_next.end());
@@ -2336,9 +2396,7 @@ public:
     return insert(new havoc_t(lhs, this));
   }
 
-  const statement_t *unreachable() {
-    return insert(new unreach_t(this));
-  }
+  const statement_t *unreachable() { return insert(new unreach_t(this)); }
 
   const statement_t *select(variable_t lhs, variable_t v, lin_exp_t e1,
                             lin_exp_t e2) {
@@ -2408,7 +2466,8 @@ public:
   const statement_t *array_store_range(variable_t arr, lin_exp_t lb_idx,
                                        lin_exp_t ub_idx, lin_exp_t v,
                                        lin_exp_t elem_size) {
-    return insert(new arr_store_t(arr, elem_size, lb_idx, ub_idx, v, false, this));
+    return insert(
+        new arr_store_t(arr, elem_size, lb_idx, ub_idx, v, false, this));
   }
 
   const statement_t *array_load(variable_t lhs, variable_t arr, lin_exp_t idx,
@@ -2448,7 +2507,8 @@ public:
   const statement_t *load_from_arr_ref(variable_t lhs, variable_t ref,
                                        memory_region region, lin_exp_t index,
                                        lin_exp_t elem_size) {
-    return insert(new load_from_arr_ref_t(lhs, ref, region, index, elem_size, this));
+    return insert(
+        new load_from_arr_ref_t(lhs, ref, region, index, elem_size, this));
   }
 
   const statement_t *store_to_arr_ref(variable_t ref, memory_region region,
@@ -2551,7 +2611,9 @@ public:
 
   std::size_t size() const { return std::distance(begin(), end()); }
 
-  void accept(statement_visitor<basic_block_label_t, number_t, varname_t> *v) { v->visit(*this); }
+  void accept(statement_visitor<basic_block_label_t, number_t, varname_t> *v) {
+    v->visit(*this);
+  }
 
   live_domain_t &live() { return _bb.live(); }
 
@@ -2595,7 +2657,8 @@ public:
 };
 
 /** Visitor class for statements **/
-template <class BasicBlockLabel, class Number, class VariableName> struct statement_visitor {
+template <class BasicBlockLabel, class Number, class VariableName>
+struct statement_visitor {
   using bin_op_t = binary_op<BasicBlockLabel, Number, VariableName>;
   using assign_t = assignment<BasicBlockLabel, Number, VariableName>;
   using assume_t = assume_stmt<BasicBlockLabel, Number, VariableName>;
@@ -2613,16 +2676,22 @@ template <class BasicBlockLabel, class Number, class VariableName> struct statem
   using arr_assign_t = array_assign_stmt<BasicBlockLabel, Number, VariableName>;
   using make_ref_t = make_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using region_init_t = region_init_stmt<BasicBlockLabel, Number, VariableName>;
-  using load_from_ref_t = load_from_ref_stmt<BasicBlockLabel, Number, VariableName>;
-  using store_to_ref_t = store_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using load_from_ref_t =
+      load_from_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using store_to_ref_t =
+      store_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using gep_ref_t = gep_ref_stmt<BasicBlockLabel, Number, VariableName>;
-  using load_from_arr_ref_t = load_from_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
-  using store_to_arr_ref_t = store_to_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using load_from_arr_ref_t =
+      load_from_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using store_to_arr_ref_t =
+      store_to_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assume_ref_t = assume_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assert_ref_t = assert_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using bool_bin_op_t = bool_binary_op<BasicBlockLabel, Number, VariableName>;
-  using bool_assign_cst_t = bool_assign_cst<BasicBlockLabel, Number, VariableName>;
-  using bool_assign_var_t = bool_assign_var<BasicBlockLabel, Number, VariableName>;
+  using bool_assign_cst_t =
+      bool_assign_cst<BasicBlockLabel, Number, VariableName>;
+  using bool_assign_var_t =
+      bool_assign_var<BasicBlockLabel, Number, VariableName>;
   using bool_assume_t = bool_assume_stmt<BasicBlockLabel, Number, VariableName>;
   using bool_select_t = bool_select_stmt<BasicBlockLabel, Number, VariableName>;
   using bool_assert_t = bool_assert_stmt<BasicBlockLabel, Number, VariableName>;
@@ -2664,8 +2733,7 @@ template <class BasicBlockLabel, class Number, class VariableName> struct statem
     }
   }
 
-  template <typename BasicBlock>
-  void visit(basic_block_rev<BasicBlock> &b) {
+  template <typename BasicBlock> void visit(basic_block_rev<BasicBlock> &b) {
     for (auto &s : b) {
       s.accept(this);
     }
@@ -2674,7 +2742,7 @@ template <class BasicBlockLabel, class Number, class VariableName> struct statem
   virtual ~statement_visitor() {}
 };
 
-template<class Number, class VariableName> class function_decl {
+template <class Number, class VariableName> class function_decl {
 public:
   using variable_t = variable<Number, VariableName>;
   using type_t = typename variable_t::type_t;
@@ -3728,20 +3796,21 @@ private:
     using arr_assign_t = typename statement_visitor<B, N, V>::arr_assign_t;
     using make_ref_t = typename statement_visitor<B, N, V>::make_ref_t;
     using region_init_t = typename statement_visitor<B, N, V>::region_init_t;
-    using load_from_ref_t = typename statement_visitor<B, N, V>::load_from_ref_t;
+    using load_from_ref_t =
+        typename statement_visitor<B, N, V>::load_from_ref_t;
     using store_to_ref_t = typename statement_visitor<B, N, V>::store_to_ref_t;
     using gep_ref_t = typename statement_visitor<B, N, V>::gep_ref_t;
     using load_from_arr_ref_t =
         typename statement_visitor<B, N, V>::load_from_arr_ref_t;
-    typedef
-        typename statement_visitor<B, N, V>::store_to_arr_ref_t store_to_arr_ref_t;
+    typedef typename statement_visitor<B, N, V>::store_to_arr_ref_t
+        store_to_arr_ref_t;
     using assume_ref_t = typename statement_visitor<B, N, V>::assume_ref_t;
     using assert_ref_t = typename statement_visitor<B, N, V>::assert_ref_t;
     using bool_bin_op_t = typename statement_visitor<B, N, V>::bool_bin_op_t;
-    typedef
-        typename statement_visitor<B, N, V>::bool_assign_cst_t bool_assign_cst_t;
-    typedef
-        typename statement_visitor<B, N, V>::bool_assign_var_t bool_assign_var_t;
+    typedef typename statement_visitor<B, N, V>::bool_assign_cst_t
+        bool_assign_cst_t;
+    typedef typename statement_visitor<B, N, V>::bool_assign_var_t
+        bool_assign_var_t;
     using bool_assume_t = typename statement_visitor<B, N, V>::bool_assume_t;
     using bool_assert_t = typename statement_visitor<B, N, V>::bool_assert_t;
     using bool_select_t = typename statement_visitor<B, N, V>::bool_select_t;
@@ -4341,7 +4410,7 @@ public:
     return basic_block_traits<BasicBlock>::to_string(bb);
   }
 };
-  
+
 } // namespace crab
 
 namespace std {

@@ -38,7 +38,7 @@ void convert_domains(Domain1 from, Domain2 &to);
 /* Store the calling contexts of each function */
 template <typename CFG, typename AbsDomain> class call_ctx_table {
 public:
-  using basic_block_t = typename CFG::basic_block_t;    
+  using basic_block_t = typename CFG::basic_block_t;
   using callsite_t = typename basic_block_t::callsite_t;
   using fdecl_t = typename CFG::fdecl_t;
   using varname_t = typename CFG::varname_t;
@@ -237,12 +237,12 @@ template <typename CFG, typename AbsDomain> class summary_table {
 
 public:
   using summary_t = summary<CFG, AbsDomain>;
-  using basic_block_t = typename CFG::basic_block_t;  
+  using basic_block_t = typename CFG::basic_block_t;
   using callsite_t = typename basic_block_t::callsite_t;
   using fdecl_t = typename CFG::fdecl_t;
   using abs_domain_t = AbsDomain;
   using variable_t = typename CFG::variable_t;
-  
+
 private:
   using summary_table_t = std::unordered_map<std::size_t, summary_t>;
   summary_table_t m_sum_table;
@@ -312,8 +312,8 @@ public:
  **/
 template <class SumTable>
 class bu_summ_abs_transformer final
-  : public intra_abs_transformer<typename SumTable::basic_block_t,
-				 typename SumTable::abs_domain_t> {
+    : public intra_abs_transformer<typename SumTable::basic_block_t,
+                                   typename SumTable::abs_domain_t> {
 
 public:
   using summ_abs_domain_t = typename SumTable::abs_domain_t;
@@ -465,9 +465,8 @@ inline void convert_domains_impl(Domain1 from, Domain2 &to) {
 }
 
 template <typename Variable>
-inline void
-convert_domains(crab::domains::abstract_domain<Variable> from,
-                crab::domains::abstract_domain<Variable> &to) {
+inline void convert_domains(crab::domains::abstract_domain<Variable> from,
+                            crab::domains::abstract_domain<Variable> &to) {
   // we don't know what is inside "from" or "to" so we do
   // conservatively the conversion.
   convert_domains_impl(from, to);
@@ -492,9 +491,8 @@ inline void convert_domains(Domain1 from, Domain2 &to) {
  **/
 template <class SumTable, class CallCtxTable>
 class td_summ_abs_transformer final
-    : public intra_abs_transformer<
-  typename CallCtxTable::basic_block_t,
-  typename CallCtxTable::abs_domain_t> {
+    : public intra_abs_transformer<typename CallCtxTable::basic_block_t,
+                                   typename CallCtxTable::abs_domain_t> {
 
 public:
   using summ_abs_domain_t = typename SumTable::abs_domain_t;
@@ -504,18 +502,21 @@ public:
   using number_t = typename abs_dom_t::number_t;
 
 private:
-  static_assert(std::is_same<typename CallCtxTable::basic_block_t, 
-		             typename SumTable::basic_block_t>::value,
-		"Summary table and calling context table must have same basic block type");
+  static_assert(std::is_same<typename CallCtxTable::basic_block_t,
+                             typename SumTable::basic_block_t>::value,
+                "Summary table and calling context table must have same basic "
+                "block type");
 
-  static_assert(std::is_same<typename summ_abs_domain_t::number_t, 
-		             typename call_abs_domain_t::number_t>::value,
-		"Bottom-up and top-down abstract domains must have same number type");
+  static_assert(
+      std::is_same<typename summ_abs_domain_t::number_t,
+                   typename call_abs_domain_t::number_t>::value,
+      "Bottom-up and top-down abstract domains must have same number type");
 
-  static_assert(std::is_same<typename summ_abs_domain_t::varname_t, 
-		             typename call_abs_domain_t::varname_t>::value,
-		"Bottom-up and top-down abstract domains must have same variable name type");
-  
+  static_assert(std::is_same<typename summ_abs_domain_t::varname_t,
+                             typename call_abs_domain_t::varname_t>::value,
+                "Bottom-up and top-down abstract domains must have same "
+                "variable name type");
+
   using intra_abs_transform_t = intra_abs_transformer<basic_block_t, abs_dom_t>;
 
 public:
@@ -927,7 +928,7 @@ public:
     m_inv_map.clear();
     m_summ_tbl.clear();
     m_call_tbl.clear();
-    m_abs_tr->get_abs_value().set_to_top();    
+    m_abs_tr->get_abs_value().set_to_top();
     m_td_top.set_to_top();
     m_bu_top.set_to_top();
   }

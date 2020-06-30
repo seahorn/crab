@@ -129,11 +129,11 @@ public:
     }
   };
 
-public:  
+public:
   using statement_t = typename CFG::statement_t;
   using assert_t =
-	      crab::cfg::assert_stmt<typename CFG::basic_block_label_t,
-				     typename CFG::number_t, typename CFG::varname_t>;
+      crab::cfg::assert_stmt<typename CFG::basic_block_label_t,
+                             typename CFG::number_t, typename CFG::varname_t>;
   using assumption_t = assumption<CFG>;
   using assumption_ptr = std::shared_ptr<assumption_t>;
   using vector_assumption_ptr = std::vector<assumption_ptr>;
@@ -359,7 +359,7 @@ class assumption_dataflow_analysis : public assumption_analysis<CFG> {
   using typename assumption_analysis_t::vector_assumption_ptr;
   using pp_inv_map_t = std::map<statement_t *, separate_domain_t>;
   using basic_block_t = typename CFG::basic_block_t;
-  
+
 public:
   assumption_dataflow_analysis(CFG cfg) : assumption_analysis_t(cfg) {}
 
@@ -389,9 +389,11 @@ public:
       if (bb_out.is_bottom())
         continue;
 
-      CRAB_LOG("aa", crab::outs()
-	       << "Basic block    : "
-	       << basic_block_traits<basic_block_t>::to_string(bb.label()) << "\n";
+      CRAB_LOG("aa",
+               crab::outs()
+                   << "Basic block    : "
+                   << basic_block_traits<basic_block_t>::to_string(bb.label())
+                   << "\n";
                crab::outs() << "OUT invariants : " << bb_out << "\n";);
 
       // get dataflow information at the pre-state at each program point

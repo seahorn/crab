@@ -35,22 +35,35 @@ public:
       typename killgen_operations_api_t::killgen_domain_t;
 
 private:
-  class array_segment_visitor :
-    public crab::cfg::statement_visitor<basic_block_label_t, N, V> {
-    using bin_op_t = typename crab::cfg::statement_visitor<basic_block_label_t,N, V>::bin_op_t;
-    using assign_t = typename crab::cfg::statement_visitor<basic_block_label_t,N, V>::assign_t;
-    using assume_t = typename crab::cfg::statement_visitor<basic_block_label_t,N, V>::assume_t;
-    using select_t = typename crab::cfg::statement_visitor<basic_block_label_t,N, V>::select_t;
-    using assert_t = typename crab::cfg::statement_visitor<basic_block_label_t,N, V>::assert_t;
+  class array_segment_visitor
+      : public crab::cfg::statement_visitor<basic_block_label_t, N, V> {
+    using bin_op_t = typename crab::cfg::statement_visitor<basic_block_label_t,
+                                                           N, V>::bin_op_t;
+    using assign_t = typename crab::cfg::statement_visitor<basic_block_label_t,
+                                                           N, V>::assign_t;
+    using assume_t = typename crab::cfg::statement_visitor<basic_block_label_t,
+                                                           N, V>::assume_t;
+    using select_t = typename crab::cfg::statement_visitor<basic_block_label_t,
+                                                           N, V>::select_t;
+    using assert_t = typename crab::cfg::statement_visitor<basic_block_label_t,
+                                                           N, V>::assert_t;
 
-    using havoc_t = typename crab::cfg::statement_visitor<basic_block_label_t,N, V>::havoc_t;
-    using unreach_t = typename crab::cfg::statement_visitor<basic_block_label_t,N, V>::unreach_t;
-    using callsite_t = typename crab::cfg::statement_visitor<basic_block_label_t,N, V>::callsite_t;
+    using havoc_t = typename crab::cfg::statement_visitor<basic_block_label_t,
+                                                          N, V>::havoc_t;
+    using unreach_t = typename crab::cfg::statement_visitor<basic_block_label_t,
+                                                            N, V>::unreach_t;
+    using callsite_t =
+        typename crab::cfg::statement_visitor<basic_block_label_t, N,
+                                              V>::callsite_t;
 
-    using arr_init_t = typename crab::cfg::statement_visitor<basic_block_label_t,N, V>::arr_init_t;
-    using arr_load_t = typename crab::cfg::statement_visitor<basic_block_label_t,N, V>::arr_load_t;
-    typedef
-        typename crab::cfg::statement_visitor<basic_block_label_t,N, V>::arr_store_t arr_store_t;
+    using arr_init_t =
+        typename crab::cfg::statement_visitor<basic_block_label_t, N,
+                                              V>::arr_init_t;
+    using arr_load_t =
+        typename crab::cfg::statement_visitor<basic_block_label_t, N,
+                                              V>::arr_load_t;
+    typedef typename crab::cfg::statement_visitor<basic_block_label_t, N,
+                                                  V>::arr_store_t arr_store_t;
 
     // assume all statements have the same type expression_t;
     using linear_expression_t = typename bin_op_t::linear_expression_t;
@@ -201,9 +214,9 @@ public:
 // segment boundaries.
 template <class CFG, class ArraySegmentDom>
 class array_constant_segment_visitor
-  : public crab::cfg::statement_visitor<typename CFG::basic_block_label_t,
-					typename CFG::number_t,
-					typename CFG::varname_t> {
+    : public crab::cfg::statement_visitor<typename CFG::basic_block_label_t,
+                                          typename CFG::number_t,
+                                          typename CFG::varname_t> {
 
   using BBL = typename CFG::basic_block_label_t;
   using N = typename CFG::number_t;
@@ -214,12 +227,16 @@ class array_constant_segment_visitor
   using havoc_t = typename crab::cfg::statement_visitor<BBL, N, V>::havoc_t;
   using unreach_t = typename crab::cfg::statement_visitor<BBL, N, V>::unreach_t;
   using select_t = typename crab::cfg::statement_visitor<BBL, N, V>::select_t;
-  using callsite_t = typename crab::cfg::statement_visitor<BBL, N, V>::callsite_t;
+  using callsite_t =
+      typename crab::cfg::statement_visitor<BBL, N, V>::callsite_t;
   using assert_t = typename crab::cfg::statement_visitor<BBL, N, V>::assert_t;
 
-  using arr_init_t = typename crab::cfg::statement_visitor<BBL, N, V>::arr_init_t;
-  using arr_load_t = typename crab::cfg::statement_visitor<BBL, N, V>::arr_load_t;
-  using arr_store_t = typename crab::cfg::statement_visitor<BBL, N, V>::arr_store_t;
+  using arr_init_t =
+      typename crab::cfg::statement_visitor<BBL, N, V>::arr_init_t;
+  using arr_load_t =
+      typename crab::cfg::statement_visitor<BBL, N, V>::arr_load_t;
+  using arr_store_t =
+      typename crab::cfg::statement_visitor<BBL, N, V>::arr_store_t;
 
   using linear_expression_t = typename bin_op_t::linear_expression_t;
   using number_t = typename linear_expression_t::number_t;

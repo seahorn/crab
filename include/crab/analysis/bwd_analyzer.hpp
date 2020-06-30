@@ -41,7 +41,8 @@ class necessary_preconditions_fixpoint_iterator
   /// forward and backward transformers
   using abs_fwd_tr_t = intra_abs_transformer<basic_block_t, AbsDom>;
   using abs_bwd_tr_t =
-    intra_necessary_preconditions_abs_transformer<basic_block_t, AbsDom, pp_abstract_map_t>;
+      intra_necessary_preconditions_abs_transformer<basic_block_t, AbsDom,
+                                                    pp_abstract_map_t>;
 
   CFG m_cfg;
   // postcondition (i.e, final states) that we want to propagate backwards
@@ -61,9 +62,10 @@ class necessary_preconditions_fixpoint_iterator
   virtual AbsDom analyze(const bb_label_t &node, AbsDom &&precond) override {
     auto &bb = m_cfg.get_node(node);
 
-    CRAB_LOG("backward-fixpoint", crab::outs() << "Post at "
-	     << basic_block_traits<basic_block_t>::to_string(node)
-	     << ": " << precond << "\n");
+    CRAB_LOG("backward-fixpoint",
+             crab::outs() << "Post at "
+                          << basic_block_traits<basic_block_t>::to_string(node)
+                          << ": " << precond << "\n");
 
     // invariants that hold at the entry of the block
     AbsDom invariant = make_top();
@@ -93,9 +95,10 @@ class necessary_preconditions_fixpoint_iterator
       s.accept(&B);
     }
     precond = std::move(B.preconditions());
-    CRAB_LOG("backward-fixpoint", crab::outs() << "Pre at "
-	     << basic_block_traits<basic_block_t>::to_string(node)
-	     << ": " << precond << "\n");
+    CRAB_LOG("backward-fixpoint",
+             crab::outs() << "Pre at "
+                          << basic_block_traits<basic_block_t>::to_string(node)
+                          << ": " << precond << "\n");
     return std::move(precond);
   }
 
@@ -213,7 +216,8 @@ private:
   using precond_map_t = typename bwd_fixpoint_iterator_t::precond_map_t;
   using bwd_wto_t = typename bwd_fixpoint_iterator_t::wto_t;
   using liveness_t = live_and_dead_analysis<CFG>;
-  using idom_tree_t = std::unordered_map<basic_block_label_t, std::set<basic_block_label_t>>;
+  using idom_tree_t =
+      std::unordered_map<basic_block_label_t, std::set<basic_block_label_t>>;
   using assert_t = typename basic_block_t::assert_t;
   using bool_assert_t = typename basic_block_t::bool_assert_t;
   using assert_ref_t = typename basic_block_t::assert_ref_t;
@@ -234,7 +238,8 @@ private:
   const wto_t *m_wto;
   const bwd_wto_t *m_b_wto;
   // keep track of which assertions cannot be proven.
-  std::vector<std::pair<basic_block_label_t, statement_t *>> m_unproven_assertions;
+  std::vector<std::pair<basic_block_label_t, statement_t *>>
+      m_unproven_assertions;
   // keep track of which assertions have been proven
   std::set<statement_t *> m_proved_assertions;
   // keep the results of the first forward iteration.
@@ -340,7 +345,8 @@ private:
           m_unproven_assertions.erase(
               std::remove_if(
                   m_unproven_assertions.begin(), m_unproven_assertions.end(),
-                  [&n, &idom, this](std::pair<basic_block_label_t, statement_t *> &kv) {
+                  [&n, &idom,
+                   this](std::pair<basic_block_label_t, statement_t *> &kv) {
                     const basic_block_label_t &m = kv.first;
                     statement_t *s = kv.second;
                     bool res = this->dominates(n, m, idom);
@@ -420,21 +426,21 @@ public:
                              << "Initial states=" << init_states << "\n");
 
     // return true if fixpo[node] is strictly more precise than old fixpo[node]
-    auto refine = [](const basic_block_label_t &node, const assumption_map_t &old_table,
-                     const bwd_fixpoint_iterator_t &fixpo,
-                     assumption_map_t &new_table) {
-      AbsDom y = fixpo[node];
-      auto it = old_table.find(node);
-      if (it == old_table.end()) {
-        new_table.insert({node, y});
-        return true;
-      } else {
-        AbsDom x = it->second;
-        AbsDom x_narrowing_y = x && y;
-        new_table.insert({node, x_narrowing_y});
-        return (!(x <= x_narrowing_y));
-      }
-    };
+    auto refine =
+        [](const basic_block_label_t &node, const assumption_map_t &old_table,
+           const bwd_fixpoint_iterator_t &fixpo, assumption_map_t &new_table) {
+          AbsDom y = fixpo[node];
+          auto it = old_table.find(node);
+          if (it == old_table.end()) {
+            new_table.insert({node, y});
+            return true;
+          } else {
+            AbsDom x = it->second;
+            AbsDom x_narrowing_y = x && y;
+            new_table.insert({node, x_narrowing_y});
+            return (!(x <= x_narrowing_y));
+          }
+        };
 
     if (!only_forward && !m_cfg.has_exit()) {
       CRAB_WARN("cannot run backward analysis because CFG has no exit block");
@@ -482,7 +488,9 @@ public:
           "backward", crab::outs() << "Computed dominance tree:\n";
           for (auto &kv
                : idom_tree) {
-            crab::outs() << "\t" << basic_block_traits<basic_block_t>::to_string(kv.first)
+            crab::outs() << "\t"
+                         << basic_block_traits<basic_block_t>::to_string(
+                                kv.first)
                          << " dominates={";
             for (auto d : kv.second) {
               crab::outs() << d << ";";
@@ -517,7 +525,9 @@ public:
           "backward", crab::outs() << "Forward analysis: \n";
           for (auto &kv
                : boost::make_iterator_range(F.pre_begin(), F.pre_end())) {
-            crab::outs() << basic_block_traits<basic_block_t>::to_string(kv.first) << ":\n"
+            crab::outs() << basic_block_traits<basic_block_t>::to_string(
+                                kv.first)
+                         << ":\n"
                          << kv.second << "\n";
           } crab::outs()
           << "\n";);
@@ -572,8 +582,10 @@ public:
           "backward", crab::outs() << "Backward analysis:\n";
           for (auto &kv
                : boost::make_iterator_range(B.begin(), B.end())) {
-            crab::outs() << basic_block_traits<basic_block_t>::to_string(kv.first)
-			 << ":\n" << kv.second << "\n";
+            crab::outs() << basic_block_traits<basic_block_t>::to_string(
+                                kv.first)
+                         << ":\n"
+                         << kv.second << "\n";
           } crab::outs()
           << "\n");
 
@@ -674,7 +686,7 @@ public:
     return *m_abs_tr;
   }
 
-  void get_safe_assertions(std::set<const statement_t*> &out) const {
+  void get_safe_assertions(std::set<const statement_t *> &out) const {
     out.insert(m_proved_assertions.begin(), m_proved_assertions.end());
   }
 };

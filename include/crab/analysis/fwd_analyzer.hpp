@@ -25,7 +25,7 @@ class fwd_analyzer : public ikos::interleaved_fwd_fixpoint_iterator<
                          CFG, typename AbsTr::abs_dom_t> {
 public:
   using cfg_t = CFG;
-  using basic_block_t = typename CFG::basic_block_t;  
+  using basic_block_t = typename CFG::basic_block_t;
   using basic_block_label_t = typename CFG::basic_block_label_t;
   using varname_t = typename CFG::varname_t;
   using variable_t = typename CFG::variable_t;
@@ -95,7 +95,6 @@ private:
 
   void process_post(const basic_block_label_t &node, abs_dom_t inv) override {}
 
-
   /*
    * Keep these methods private for now and remove them if nobody
    * really needs them.
@@ -109,7 +108,7 @@ private:
     m_post_clear_done = true;
     fixpo_iterator_t::clear_post();
   }
-  
+
   // clear all invariants and return always top if get_pre or get_post
   // is called.
   void clear_and_always_top_after() {
@@ -117,7 +116,6 @@ private:
     clear_post_and_always_top_after();
   }
 
-  
 public:
   fwd_analyzer(CFG cfg, const wto_t *wto, abs_tr_t *abs_tr,
                // live can be nullptr if no live info is available
@@ -209,7 +207,7 @@ public:
     m_pre_clear_done = false;
     m_post_clear_done = false;
   }
-  
+
   CFG get_cfg() const { return this->_cfg; }
 
   abs_tr_t &get_abs_transformer() { return *m_abs_tr; }
@@ -356,7 +354,8 @@ public:
  **/
 template <typename CFG, typename AbsDomain>
 using intra_fwd_analyzer = analyzer_internal_impl::intra_fwd_analyzer_wrapper<
-  CFG, AbsDomain, intra_abs_transformer<typename CFG::basic_block_t, AbsDomain>>;
+    CFG, AbsDomain,
+    intra_abs_transformer<typename CFG::basic_block_t, AbsDomain>>;
 
 } // namespace analyzer
 } // namespace crab

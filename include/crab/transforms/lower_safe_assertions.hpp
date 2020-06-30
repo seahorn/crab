@@ -18,17 +18,23 @@ template <typename CFG> class lower_safe_assertions : public transform<CFG> {
   // some typedefs here
   using varname_t = typename CFG::varname_t;
   using number_t = typename CFG::number_t;
-  using basic_block_t = typename CFG::basic_block_t;  
+  using basic_block_t = typename CFG::basic_block_t;
   using basic_block_label_t = typename CFG::basic_block_label_t;
   using statement_t = typename CFG::statement_t;
 
-  using assert_t = crab::cfg::assert_stmt<basic_block_label_t, number_t, varname_t>;
-  using ref_assert_t = crab::cfg::assert_ref_stmt<basic_block_label_t, number_t, varname_t>;
-  using bool_assert_t = crab::cfg::bool_assert_stmt<basic_block_label_t, number_t, varname_t>;
+  using assert_t =
+      crab::cfg::assert_stmt<basic_block_label_t, number_t, varname_t>;
+  using ref_assert_t =
+      crab::cfg::assert_ref_stmt<basic_block_label_t, number_t, varname_t>;
+  using bool_assert_t =
+      crab::cfg::bool_assert_stmt<basic_block_label_t, number_t, varname_t>;
 
-  using assume_t = crab::cfg::assume_stmt<basic_block_label_t, number_t, varname_t>;
-  using ref_assume_t = crab::cfg::assume_ref_stmt<basic_block_label_t, number_t, varname_t>;
-  using bool_assume_t = crab::cfg::bool_assume_stmt<basic_block_label_t, number_t, varname_t>;
+  using assume_t =
+      crab::cfg::assume_stmt<basic_block_label_t, number_t, varname_t>;
+  using ref_assume_t =
+      crab::cfg::assume_ref_stmt<basic_block_label_t, number_t, varname_t>;
+  using bool_assume_t =
+      crab::cfg::bool_assume_stmt<basic_block_label_t, number_t, varname_t>;
 
   bool is_assert(const statement_t *s) const {
     return s->is_assert() || s->is_ref_assert() || s->is_bool_assert();
@@ -60,23 +66,24 @@ public:
 
     while (!to_replace.empty()) {
       statement_t *s = to_replace.back();
-      basic_block_t *parent = s->get_parent(); 
+      basic_block_t *parent = s->get_parent();
       to_replace.pop_back();
       if (s->is_assert()) {
         statement_t *new_s =
-	  new assume_t((static_cast<assert_t *>(s))->constraint(), parent);
+            new assume_t((static_cast<assert_t *>(s))->constraint(), parent);
         CRAB_LOG("lsa", crab::outs() << "Replacing " << *s << " with " << *new_s
                                      << "\n";);
         parent->replace(s, new_s);
       } else if (s->is_ref_assert()) {
-        statement_t *new_s =
-	  new ref_assume_t((static_cast<ref_assert_t *>(s))->constraint(), parent);
+        statement_t *new_s = new ref_assume_t(
+            (static_cast<ref_assert_t *>(s))->constraint(), parent);
         CRAB_LOG("lsa", crab::outs() << "Replacing " << *s << " with " << *new_s
                                      << "\n";);
         parent->replace(s, new_s);
       } else if (s->is_bool_assert()) {
-        statement_t *new_s = new bool_assume_t(
-	 (static_cast<bool_assert_t *>(s))->cond(), false /* not negated*/, parent);
+        statement_t *new_s =
+            new bool_assume_t((static_cast<bool_assert_t *>(s))->cond(),
+                              false /* not negated*/, parent);
         CRAB_LOG("lsa", crab::outs() << "Replacing " << *s << " with " << *new_s
                                      << "\n";);
         parent->replace(s, new_s);
