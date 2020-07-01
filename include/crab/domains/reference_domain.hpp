@@ -265,6 +265,7 @@ public:
 
 private:
   using base_abstract_domain_t = typename Params::base_abstract_domain_t;
+  using base_variable_vector_t = typename base_abstract_domain_t::variable_vector_t;
   using base_variable_t = typename base_abstract_domain_t::variable_t;
   using base_linear_expression_t =
       typename base_abstract_domain_t::linear_expression_t;
@@ -361,7 +362,7 @@ private:
     rev_var_map_t out_rev_var_map;
 
     // -- Compute common renamings
-    variable_vector_t left_vars, right_vars, out_vars;
+    base_variable_vector_t left_vars, right_vars, out_vars;
     // upper bound to avoid reallocations
     size_t num_renamings =
         left.m_region_to_content.size() + left.m_var_map.size();
@@ -427,7 +428,7 @@ private:
     var_map_t out_var_map;
     rev_var_map_t out_rev_var_map;
 
-    variable_vector_t left_vars, right_vars, out_vars;
+    base_variable_vector_t left_vars, right_vars, out_vars;
     // upper bound to avoid reallocations
     size_t num_renamings =
         left.m_region_to_content.size() + left.m_var_map.size();
@@ -780,7 +781,7 @@ public:
     base_varname_allocator_t out_alloc(m_alloc, o.m_alloc);
     base_abstract_domain_t left_dom(m_base_dom);
     base_abstract_domain_t right_dom(o.m_base_dom);
-    variable_vector_t left_vars, right_vars, out_vars;
+    base_variable_vector_t left_vars, right_vars, out_vars;
     // upper bound to avoid reallocations
     size_t num_renamings = m_region_to_content.size() + m_var_map.size();
     left_vars.reserve(num_renamings);
@@ -842,7 +843,7 @@ public:
     rev_region_to_content_map_t out_rev_region_to_content;
     var_map_t out_var_map;
     rev_var_map_t out_rev_var_map;
-    variable_vector_t left_vars, right_vars, out_vars;
+    base_variable_vector_t left_vars, right_vars, out_vars;
     // upper bound to avoid reallocations
     size_t num_renamings = m_region_to_content.size() + m_var_map.size();
     left_vars.reserve(num_renamings);
@@ -1344,14 +1345,14 @@ public:
         assert(cst.lhs().is_ref_type());
         if (auto ref_opt = get_var(cst.lhs())) {
           if (cst.is_equality()) {
-            m_base_dom += linear_constraint_t(*ref_opt == number_t(0));
+            m_base_dom += base_linear_constraint_t(*ref_opt == number_t(0));
           } else if (cst.is_disequality()) {
-            // m_base_dom += linear_constraint_t(*ref_opt != number_t(0));
-            m_base_dom += linear_constraint_t(*ref_opt > number_t(0));
+            // m_base_dom += base_linear_constraint_t(*ref_opt != number_t(0));
+            m_base_dom += base_linear_constraint_t(*ref_opt > number_t(0));
           } else if (cst.is_less_or_equal_than()) {
-            m_base_dom += linear_constraint_t(*ref_opt <= number_t(0));
+            m_base_dom += base_linear_constraint_t(*ref_opt <= number_t(0));
           } else if (cst.is_less_than()) {
-            m_base_dom += linear_constraint_t(*ref_opt < number_t(0));
+            m_base_dom += base_linear_constraint_t(*ref_opt < number_t(0));
           }
         } else {
           CRAB_LOG("reference",
@@ -1366,13 +1367,13 @@ public:
         number_t offset = cst.offset();
         if (ref1_opt && ref2_opt) {
           if (cst.is_equality()) {
-            m_base_dom += linear_constraint_t(*ref1_opt == *ref2_opt + offset);
+            m_base_dom += base_linear_constraint_t(*ref1_opt == *ref2_opt + offset);
           } else if (cst.is_disequality()) {
-            m_base_dom += linear_constraint_t(*ref1_opt != *ref2_opt + offset);
+            m_base_dom += base_linear_constraint_t(*ref1_opt != *ref2_opt + offset);
           } else if (cst.is_less_or_equal_than()) {
-            m_base_dom += linear_constraint_t(*ref1_opt <= *ref2_opt + offset);
+            m_base_dom += base_linear_constraint_t(*ref1_opt <= *ref2_opt + offset);
           } else if (cst.is_less_than()) {
-            m_base_dom += linear_constraint_t(*ref1_opt < *ref2_opt + offset);
+            m_base_dom += base_linear_constraint_t(*ref1_opt < *ref2_opt + offset);
           }
         } else {
           if (!ref1_opt) {
