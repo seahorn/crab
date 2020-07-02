@@ -1027,32 +1027,32 @@ private:
     return;
   }
 
-  inline LddNode *mk_true(boost::optional<variable_t> x) {
+  inline LddNodePtr mk_true(boost::optional<variable_t> x) {
     if (x) {
       // x >=1 <--> -x <= -1
       LddNodePtr r =
           make_unit_constraint(number_t(-1), variable_t(*x),
                                linear_constraint_t::INEQUALITY, number_t(-1));
-      return &*r;
+      return r;
     } else {
       LddNodePtr r = make_unit_constraint(
           number_t(-1), linear_constraint_t::INEQUALITY, number_t(-1));
-      return &*r;
+      return r;
     }
   }
 
-  inline LddNode *mk_false(boost::optional<variable_t> x) {
+  inline LddNodePtr mk_false(boost::optional<variable_t> x) {
 
     if (x) {
       // return x <= 0
       LddNodePtr r =
           make_unit_constraint(number_t(1), variable_t(*x),
                                linear_constraint_t::INEQUALITY, number_t(0));
-      return &*r;
+      return r;
     } else {
       LddNodePtr r = make_unit_constraint(
           number_t(1), linear_constraint_t::INEQUALITY, number_t(0));
-      return &*r;
+      return r;
     }
   }
 
@@ -1062,23 +1062,23 @@ private:
     switch (op) {
     case OP_BAND: {
       LddNodePtr c =
-          lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), mk_true(y), mk_true(z)));
+          lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*mk_true(y), &*mk_true(z)));
       return lddPtr(get_ldd_man(),
-                    Ldd_Ite(get_ldd_man(), &*c, mk_true(x), mk_false(x)));
+                    Ldd_Ite(get_ldd_man(), &*c, &*mk_true(x), &*mk_false(x)));
       break;
     }
     case OP_BOR: {
       LddNodePtr c =
-          lddPtr(get_ldd_man(), Ldd_Or(get_ldd_man(), mk_true(y), mk_true(z)));
+          lddPtr(get_ldd_man(), Ldd_Or(get_ldd_man(), &*mk_true(y), &*mk_true(z)));
       return lddPtr(get_ldd_man(),
-                    Ldd_Ite(get_ldd_man(), &*c, mk_true(x), mk_false(x)));
+                    Ldd_Ite(get_ldd_man(), &*c, &*mk_true(x), &*mk_false(x)));
       break;
     }
     case OP_BXOR: {
       LddNodePtr c =
-          lddPtr(get_ldd_man(), Ldd_Xor(get_ldd_man(), mk_true(y), mk_true(z)));
+          lddPtr(get_ldd_man(), Ldd_Xor(get_ldd_man(), &*mk_true(y), &*mk_true(z)));
       return lddPtr(get_ldd_man(),
-                    Ldd_Ite(get_ldd_man(), &*c, mk_true(x), mk_false(x)));
+                    Ldd_Ite(get_ldd_man(), &*c, &*mk_true(x), &*mk_false(x)));
 
       break;
     }
@@ -1744,13 +1744,13 @@ public:
     if (cst.is_tautology()) {
       // this->operator-=(lhs);
       // m_ldd = lddPtr(get_ldd_man(),
-      // 		    Ldd_And(get_ldd_man(), &*m_ldd, mk_true(lhs)));
+      // 		    Ldd_And(get_ldd_man(), &*m_ldd, &*mk_true(lhs)));
 
       assign(lhs, number_t(1));
     } else if (cst.is_contradiction()) {
       // this->operator-=(lhs);
       // m_ldd = lddPtr(get_ldd_man(),
-      // 		    Ldd_And(get_ldd_man(), &*m_ldd, mk_false(lhs)));
+      // 		    Ldd_And(get_ldd_man(), &*m_ldd, &*mk_false(lhs)));
 
       assign(lhs, number_t(0));
     } else {
@@ -1772,7 +1772,7 @@ public:
           LddNodePtr ldd_cst = make_unit_constraint(cx, vx, cst.kind(), k);
           LddNodePtr ldd_rhs =
               lddPtr(get_ldd_man(), Ldd_Ite(get_ldd_man(), &*(ldd_cst),
-                                            mk_true(lhs), mk_false(lhs)));
+                                            &*mk_true(lhs), &*mk_false(lhs)));
           m_ldd =
               lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*m_ldd, &*ldd_rhs));
         } else {
@@ -1851,7 +1851,7 @@ public:
 
     m_ldd = lddPtr(get_ldd_man(),
                    Ldd_And(get_ldd_man(), &*m_ldd,
-                           ((is_negated) ? mk_false(x) : mk_true(x))));
+                           ((is_negated) ? &*mk_false(x) : &*mk_true(x))));
 
     CRAB_LOG("boxes",
              if (!is_negated) {
