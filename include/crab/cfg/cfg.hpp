@@ -762,7 +762,7 @@ public:
         m_is_strong_update(is_strong_update) {
 
     this->m_live.add_def(m_arr);
-    // XXX: should we also mark m_arr as use?
+    this->m_live.add_use(m_arr);    
     for (auto const &v : m_elem_size.variables()) {
       this->m_live.add_use(v);
     }
@@ -1250,7 +1250,7 @@ public:
         m_elem_size(elem_size), m_is_strong_update(is_strong_update) {
 
     this->m_live.add_def(m_ref);
-    // XXX: should we also mark m_ref as use?
+    this->m_live.add_use(m_ref);    
     for (auto const &v : m_elem_size.variables()) {
       this->m_live.add_use(v);
     }
