@@ -48,9 +48,6 @@ ScopedCrabStats::~ScopedCrabStats() {}
 
 namespace crab {
 
-std::map<std::string, unsigned> CrabStats::counters;
-std::map<std::string, Stopwatch> CrabStats::sw;
-
 long Stopwatch::systemTime() const {
   struct rusage ru;
   getrusage(RUSAGE_SELF, &ru);
@@ -104,41 +101,52 @@ void Stopwatch::Print(crab_os &out) const {
     out << m << "m";
   out << s << "s";
 }
+  
 
-void CrabStats::reset() {
-  counters.clear();
-  sw.clear();
+std::map<std::string, unsigned>& CrabStats::getCounters() {
+  static std::map<std::string, unsigned> counters;
+  return counters;
 }
 
-void CrabStats::count(const std::string &name) { ++counters[name]; }
+std::map<std::string, Stopwatch>& CrabStats::getTimers() {
+  static std::map<std::string, Stopwatch> timers;
+  return timers;
+}
+    
+void CrabStats::reset() {
+  getCounters().clear();
+  getTimers().clear();
+}
+
+void CrabStats::count(const std::string &name) { ++getCounters()[name]; }
 void CrabStats::count_max(const std::string &name, unsigned v) {
-  counters[name] = std::max(counters[name], v);
+  getCounters()[name] = std::max(getCounters()[name], v);
 }
 
 unsigned CrabStats::uset(const std::string &n, unsigned v) {
-  return counters[n] = v;
+  return getCounters()[n] = v;
 }
-unsigned CrabStats::get(const std::string &n) { return counters[n]; }
+unsigned CrabStats::get(const std::string &n) { return getCounters()[n]; }
 
-void CrabStats::start(const std::string &name) { sw[name].start(); }
-void CrabStats::stop(const std::string &name) { sw[name].stop(); }
-void CrabStats::resume(const std::string &name) { sw[name].resume(); }
+void CrabStats::start(const std::string &name) { getTimers()[name].start(); }
+void CrabStats::stop(const std::string &name) { getTimers()[name].stop(); }
+void CrabStats::resume(const std::string &name) { getTimers()[name].resume(); }
 
 /** Outputs all statistics to std output */
 void CrabStats::Print(crab_os &OS) {
   OS << "\n\n************** STATS ***************** \n";
-  for (auto &kv : counters)
+  for (auto &kv : getCounters())
     OS << kv.first << ": " << kv.second << "\n";
-  for (auto &kv : sw)
+  for (auto &kv : getTimers())
     OS << kv.first << ": " << kv.second << "\n";
   OS << "************** STATS END ***************** \n";
 }
 
 void CrabStats::PrintBrunch(crab_os &OS) {
   OS << "\n\n************** BRUNCH STATS ***************** \n";
-  for (auto &kv : counters)
+  for (auto &kv : getCounters())
     OS << "BRUNCH_STAT " << kv.first << " " << kv.second << "\n";
-  for (auto &kv : sw)
+  for (auto &kv : getTimers())
     OS << "BRUNCH_STAT " << kv.first << " " << (kv.second).toSeconds()
        << "sec \n";
   OS << "************** BRUNCH STATS END ***************** \n";
