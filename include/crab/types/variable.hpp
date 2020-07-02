@@ -137,6 +137,11 @@ public:
     return std::hash<size_t>{}(static_cast<size_t>(_n.index()));
   }
 
+  // check that o has the same type and bitwidth than this
+  bool same_type_and_bitwidth(const variable_t &o) const {
+    return (_type == o._type && _width == o._width);
+  }
+  
   bool operator==(const variable_t &o) const { return index() == o.index(); }
 
   bool operator!=(const variable_t &o) const { return (!(operator==(o))); }
