@@ -207,7 +207,10 @@ public:
   }
 
   void expand(const variable_t &var, const variable_t &new_var) override {
-    CRAB_WARN("array smashing expand not implemented");
+    if (!var.same_type_and_bitwidth(new_var)) {
+      CRAB_ERROR(domain_name(), "::expand must preserve the same type");
+    }
+    _inv.expand(var, new_var);
   }
 
   void normalize() override { _inv.normalize(); }
@@ -520,6 +523,14 @@ public:
 
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
+    if (from.size() != to.size()) {
+      CRAB_ERROR(domain_name(), "::rename expects vectors same sizes");
+    }
+    for(unsigned i=0,sz=from.size();i<sz;++i) {
+      if (!from[i].same_type_and_bitwidth(to[i])) {
+	CRAB_ERROR(domain_name(), "::rename must preserve the same type");
+      }
+    }
     _inv.rename(from, to);
   }
 
