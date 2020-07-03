@@ -1374,6 +1374,38 @@ private:
       return m_tree.find(k);
     }
 
+    // Assume that from does not have duplicates.
+    void rename(const std::vector<variable_t> &from, const std::vector<variable_t> &to) {
+      if (from.size() != to.size()) {
+      CRAB_ERROR(
+	"array_adaptive::array_state_t::rename received input vectors of different sizes");
+      }
+
+      if (m_tree.size() == 0) {
+	return;
+      }
+      
+      for (unsigned i = 0, sz = from.size(); i < sz; ++i) {
+	variable_t k = from[i];
+	variable_t new_k = to[i];
+	if (k == new_k) { // nothing to rename
+	  continue;
+	}
+
+	if (m_tree.lookup(new_k)) {
+	  CRAB_ERROR("array_adaptive::array_state_t:rename assumes that  ", new_k,
+		     " does not exist");
+	}
+
+	if (boost::optional<array_state> k_val_opt = m_tree.lookup(k)) {
+	  if (!(*k_val_opt).is_top()) {
+	    m_tree.insert(new_k, *k_val_opt);
+	  }
+	  m_tree.remove(k);
+	}
+      }
+    }
+    
     void write(crab::crab_os &o) const {
       o << "{";
       for (auto it = m_tree.begin(); it != m_tree.end();) {
@@ -1453,6 +1485,7 @@ private:
     }
   }
 
+  // Create a named cell
   cell_t mk_cell(const variable_t &a, const offset_t &o, uint64_t sz,
                  offset_map_t &om) {
     // create first an unnamed cell
@@ -1482,20 +1515,20 @@ private:
     }
   }
 
+  static variable_t mk_smashed_variable(const variable_t &v) {
+    assert(v.is_array_type());
+    auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
+    crab::crab_string_os os;
+    os << "smashed(" << v << ")";
+    return variable_t(vfac.get(os.str()), v.get_type(), v.get_bitwidth());
+  }
+  
   static variable_t get_smashed_variable(const variable_t &a,
                                          smashed_varmap_t &svm) {
     if (!a.is_array_type()) {
       CRAB_ERROR(
           "array_adaptive::get_smashed_variable only takes array variables");
     }
-
-    auto mk_smashed_variable = [](variable_t v) {
-      assert(v.is_array_type());
-      auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
-      crab::crab_string_os os;
-      os << "smashed(" << v << ")";
-      return variable_t(vfac.get(os.str()), v.get_type());
-    };
 
     auto it = svm.find(a);
     if (it != svm.end()) {
@@ -1587,7 +1620,7 @@ private:
   // Helper that assign rhs to lhs by switching to the version with
   // the right type.
   void do_assign(const variable_t &lhs, const variable_t &rhs) {
-    if (lhs.get_type() != rhs.get_type()) {
+    if (!lhs.same_type_and_bitwidth(rhs)) {
       CRAB_ERROR("array_adaptive assignment with different types");
     }
     switch (lhs.get_type()) {
@@ -1660,7 +1693,7 @@ private:
   // version with the right type.
   void do_backward_assign(const variable_t &lhs, const variable_t &rhs,
                           const base_domain_t &dom) {
-    if (lhs.get_type() != rhs.get_type()) {
+    if (!lhs.same_type_and_bitwidth(rhs)) {
       CRAB_ERROR("array_adaptive backward assignment with different types");
     }
     switch (lhs.get_type()) {
@@ -1786,8 +1819,7 @@ private:
         variable_t &v2 = it->second;
         if (v1 != v2) {
           assert(v1.name().str() == v2.name().str());
-          assert(v1.get_type() == v2.get_type());
-          assert(v1.get_bitwidth() == v2.get_bitwidth());
+          assert(v1.same_type_and_bitwidth(v2));
           variable_t outv(vfac.get(v1.name().str()), v1.get_type(),
                           v1.get_bitwidth());
           old_vars_left.push_back(v1);
@@ -1816,8 +1848,7 @@ private:
         variable_t &v2 = it->second;
         if (v1 != v2) {
           assert(v1.name().str() == v2.name().str());
-          assert(v1.get_type() == v2.get_type());
-          assert(v1.get_bitwidth() == v2.get_bitwidth());
+          assert(v1.same_type_and_bitwidth(v2));
           variable_t outv(vfac.get(v1.name().str()), v1.get_type(),
                           v1.get_bitwidth());
           old_vars_left.push_back(v1);
@@ -1856,8 +1887,7 @@ private:
         if (v1 != v2) {
           // same key but different scalar -> create a fresh common scalar
           assert(v1.name().str() == v2.name().str());
-          assert(v1.get_type() == v2.get_type());
-          assert(v1.get_bitwidth() == v2.get_bitwidth());
+          assert(v1.same_type_and_bitwidth(v2));
           variable_t outv(vfac.get(v1.name().str()), v1.get_type(),
                           v1.get_bitwidth());
           old_vars_left.push_back(v1);
@@ -1895,8 +1925,7 @@ private:
         if (v1 != v2) {
           // same key but different scalar -> create a fresh common scalar
           assert(v1.name().str() == v2.name().str());
-          assert(v1.get_type() == v2.get_type());
-          assert(v1.get_bitwidth() == v2.get_bitwidth());
+          assert(v1.same_type_and_bitwidth(v2));
           variable_t outv(vfac.get(v1.name().str()), v1.get_type(),
                           v1.get_bitwidth());
           old_vars_left.push_back(v1);
@@ -2029,8 +2058,7 @@ public:
         if (it != other.m_smashed_varmap.end()) {
           const variable_t &v2 = it->second;
           assert(v1.name().str() == v2.name().str());
-          assert(v1.get_type() == v2.get_type());
-          assert(v1.get_bitwidth() == v2.get_bitwidth());
+          assert(v1.same_type_and_bitwidth(v2));
           // same name and type but different variable id
           if (v1 != v2) {
             variable_t outv(vfac.get(v1.name().str()), v1.get_type(),
@@ -2056,8 +2084,7 @@ public:
         if (it != other.m_cell_varmap.end()) {
           const variable_t &v2 = it->second;
           assert(v1.name().str() == v2.name().str());
-          assert(v1.get_type() == v2.get_type());
-          assert(v1.get_bitwidth() == v2.get_bitwidth());
+          assert(v1.same_type_and_bitwidth(v2));
           // same name and type but different variable id
           if (v1 != v2) {
             variable_t outv(vfac.get(v1.name().str()), v1.get_type(),
@@ -2395,10 +2422,6 @@ public:
 
     // Finally we project
     m_inv.project(keep_vars);
-  }
-
-  void expand(const variable_t &var, const variable_t &new_var) override {
-    CRAB_WARN("array adaptive expand not implemented");
   }
 
   void normalize() override {
@@ -3253,16 +3276,65 @@ public:
     return name;
   }
 
-  void rename(const variable_vector_t &from,
-              const variable_vector_t &to) override {
-    CRAB_WARN("array_adaptive::rename not implemented");
+  void expand(const variable_t &v, const variable_t &new_v) override {
+    if (is_bottom() || is_top()) {
+      return;
+    }
+    
+    if (!v.same_type_and_bitwidth(new_v)) {
+      CRAB_ERROR(domain_name(), "::expand must preserve same type");
+    }
 
-    // m_inv.rename(from, to);
-    // for (auto &v : from) {
-    //   if (v.is_array_type()) {
-    //     CRAB_WARN("TODO: array_adaptive::rename array variable");
-    //   }
-    // }
+    if (v.is_array_type()) {
+      CRAB_WARN(domain_name(), "::expand not implemented for array variable");
+    } else {
+      m_inv.expand(v, new_v);
+    }
+  }
+
+  
+  void rename(const variable_vector_t &from, const variable_vector_t &to) override {
+    if (is_bottom() || is_top()) {
+      return;
+    }
+    
+    if (from.size() != to.size()) {
+      CRAB_ERROR(domain_name(), "::rename expects vectors same sizes");
+    }
+    
+    variable_vector_t array_from, array_to, scalar_from, scalar_to;
+    for (unsigned i=0, sz=from.size(); i <sz; ++i) {
+      variable_t old_v = from[i];
+      variable_t new_v = to[i];
+      if (!old_v.same_type_and_bitwidth(new_v)) {
+    	CRAB_ERROR(domain_name(), "::rename must preserve same type");
+      }
+      if (new_v.is_array_type()) {
+	array_from.push_back(old_v);
+	array_to.push_back(new_v);
+
+	// Rename m_smashed_varmap needs also renaming in the base
+	// domain: not really needed but useful for debugging
+	auto it = m_smashed_varmap.find(old_v);
+	if (it != m_smashed_varmap.end()) {
+	  variable_t new_smashed_v = mk_smashed_variable(new_v);
+	  scalar_from.push_back(it->second);
+	  scalar_to.push_back(new_smashed_v);
+	  m_smashed_varmap.erase(it);	  
+	  m_smashed_varmap.insert({new_v, new_smashed_v});	  
+	}
+
+	// TODO: rename m_cell_varmap of the type (array_var x cell ->
+	// scalar_var) which needs more renaming in the base domain.
+	
+      } else {
+	scalar_from.push_back(old_v);
+	scalar_to.push_back(new_v);
+      }
+    }
+    m_array_map.rename(array_from, array_to);
+    m_inv.rename(scalar_from, scalar_to);
+
   }
 
 }; // end array_adaptive_domain
