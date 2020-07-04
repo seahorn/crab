@@ -1754,6 +1754,15 @@ public:
 
       assign(lhs, number_t(0));
     } else {
+
+      // XXX: we do nothing with unsigned linear inequalities
+      // TODO: we can express these constraints with more disjunctions.
+      if (cst.is_inequality() && cst.is_unsigned()) {
+	CRAB_WARN("unsigned inequality skipped in boxes domain");
+	this->operator-=(lhs);
+	return;
+      }
+      
       linear_expression_t exp = cst.expression();
       unsigned int size = exp.size();
       if (size == 0)
