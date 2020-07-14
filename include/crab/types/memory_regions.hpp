@@ -5,6 +5,7 @@
 #include <crab/types/indexable.hpp>
 
 #include <functional>
+#include <string>
 
 namespace crab {
 
@@ -52,6 +53,10 @@ public:
     return std::hash<size_t>{}(static_cast<size_t>(m_id));
   }
 
+  std::string str() const {
+    return std::string("@reg_") + std::to_string(index());    
+  }
+  
   void write(crab::crab_os &o) const {
     o << "region_" << m_id;
     CRAB_LOG(
