@@ -230,10 +230,19 @@ inline int fresh_colour(int col_x, int col_y) {
 //! Three-coloured variable allocation. So the number of variables
 //  is bounded by 3|Tbl|, rather than always increasing.
 class str_var_alloc_col {
-  static const char **col_prefix;  
+  static const char **col_prefix;
+
+  // Ideally, str_var_alloc_col should inherit from
+  // str_variable_factory.  However, we need public copy constructors
+  // for str_var_alloc_col. The hack here is to have vfac as a global
+  // factory that all str_var_alloc_col's share.
+  static str_variable_factory &get_vfac() {
+    static str_variable_factory vfac;
+    return vfac;
+  }
+  
 public:
   using varname_t = str_variable_factory::varname_t;
-  static str_variable_factory vfac;
   
   str_var_alloc_col() : colour(0), next_id(0) {}
 
@@ -256,15 +265,15 @@ public:
 
   str_variable_factory::varname_t next() {
     std::string v = col_prefix[colour] + std::to_string(next_id++);
-    return vfac[v];
+    return get_vfac()[v];
   }
 
   void add_renaming_map(const std::unordered_map<std::string, std::string> &smap) const {
-    vfac.add_renaming_map(smap);
+    get_vfac().add_renaming_map(smap);
   }
 
   void clear_renaming_map() const {
-    vfac.clear_renaming_map();
+    get_vfac().clear_renaming_map();
   }
   
 protected:
