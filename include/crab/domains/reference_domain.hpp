@@ -1874,24 +1874,19 @@ public:
 	       }
 	       o << "}," << "BaseDom=" << m_base_dom << ")\n";
 	       );
-
-      // XXX: this renaming doesn't go all the way down if the base
-      // domain is a complex domain but we cannot use the rename
-      // operation.
       std::unordered_map<std::string, std::string> renaming_map;
       for (auto &kv: m_rev_var_map) {
-      	renaming_map[kv.first.name().str()] = kv.second.name().str();
+	renaming_map[kv.first.name().str()] = kv.second.name().str();
       }
       for (auto &kv: m_rev_region_to_content) {
-      	renaming_map[kv.first.name().str()] = kv.second.str();
+	renaming_map[kv.first.name().str()] = kv.second.str();
       }
       m_alloc.add_renaming_map(renaming_map);
       o << m_base_dom;
       m_alloc.clear_renaming_map();
-      
+
     }
   }
-
 }; // class reference_domain
 
 template <typename Params>
