@@ -591,7 +591,7 @@ private:
   }
 
   // create a fresh _unamed_ cell
-  cell_t mk_cell(const offset_t &o, uint64_t size) {
+  cell_t mk_cell(const offset_t &o, uint64_t size /*bytes*/) {
     cell_t c = get_cell(o, size);
     if (c.is_null()) {
       cell_t nc(o, size);
@@ -1392,9 +1392,11 @@ private:
 	  continue;
 	}
 
-	if (m_tree.lookup(new_k)) {
-	  CRAB_ERROR("array_adaptive::array_state_t:rename assumes that  ", new_k,
-		     " does not exist");
+	if (::crab::CrabSanityCheckFlag) {	
+	  if (m_tree.lookup(new_k)) {
+	    CRAB_ERROR("array_adaptive::array_state_t:rename assumes that  ", new_k,
+		       " does not exist");
+	  }
 	}
 
 	if (boost::optional<array_state> k_val_opt = m_tree.lookup(k)) {
@@ -1486,7 +1488,7 @@ private:
   }
 
   // Create a named cell
-  cell_t mk_cell(const variable_t &a, const offset_t &o, uint64_t sz,
+  cell_t mk_cell(const variable_t &a, const offset_t &o, uint64_t sz /*bytes*/,
                  offset_map_t &om) {
     // create first an unnamed cell
     cell_t c = om.mk_cell(o, sz);
@@ -1495,7 +1497,7 @@ private:
     auto &vfac = const_cast<varname_t *>(&(a.name()))->get_var_factory();
     std::string vname = mk_scalar_name(a.name(), o, sz);
     type_t vtype = get_array_element_type(a.get_type());
-    variable_t scalar_var(vfac.get(vname), vtype, sz);
+    variable_t scalar_var(vfac.get(vname), vtype, sz*8);
     m_cell_varmap.insert({{a, c}, scalar_var});
     // return the cell
     return c;
@@ -1621,7 +1623,7 @@ private:
   // the right type.
   void do_assign(const variable_t &lhs, const variable_t &rhs) {
     if (!lhs.same_type_and_bitwidth(rhs)) {
-      CRAB_ERROR("array_adaptive assignment with different types");
+      CRAB_ERROR("array_adaptive assignment ", lhs, ":=", rhs, " with different types");
     }
     switch (lhs.get_type()) {
     case BOOL_TYPE:
