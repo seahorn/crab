@@ -8,6 +8,7 @@
 #include <crab/config.h>
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/intervals.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
