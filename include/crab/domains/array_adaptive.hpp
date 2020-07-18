@@ -1417,7 +1417,7 @@ private:
         array_state v = it->second;
         v.write(o);
         ++it;
-        if (it != this->_tree.end()) {
+        if (it != m_tree.end()) {
           o << "; ";
         }
       }
