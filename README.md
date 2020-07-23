@@ -7,9 +7,9 @@
     <th>Windows</th><th>Ubuntu</th><th>OS X</th><th>Coverage</th>
   </tr>
     <td>TBD</td>
-    <td> <a href="https://travis-ci.org/seahorn/crab"><img src="https://travis-ci.org/seahorn/crab.svg?branch=master" title="Ubuntu 16.04 and 18.04 LTS 64bit, g++-5.0"/></a> </td>
+    <td> <a href="https://travis-ci.org/seahorn/crab"><img src="https://travis-ci.org/seahorn/crab.svg?branch=dev" title="Ubuntu 16.04 and 18.04 LTS 64bit, g++-5.0"/></a> </td>
     <td>TBD</td>
-    <td><a href="https://codecov.io/gh/seahorn/crab"><img src="https://codecov.io/gh/seahorn/crab/branch/master/graph/badge.svg" /></a></td>
+    <td><a href="https://codecov.io/gh/seahorn/crab"><img src="https://codecov.io/gh/seahorn/crab/branch/dev/graph/badge.svg" /></a></td>
   </tr>
 </table>
 
@@ -46,7 +46,7 @@ Open Static Analyzers) developed by NASA Ames Research Center.
 
 # Crab architecture #
 
-![Crab Architecture](https://github.com/seahorn/crab/blob/master/Crab_arch.jpg?raw=true "Crab Architecture")
+![Crab Architecture](https://github.com/seahorn/crab/blob/dev/Crab_arch.jpg?raw=true "Crab Architecture")
 
 # Docker # 
 
@@ -141,42 +141,39 @@ Next, we show a simplified version of the C++ code to build the
 corresponding Crab CFG and run the analysis using the Zones domain.
 
 **Note**: this code has been simplified for presentation purposes and
-it might not compile like it is. Read [this](https://github.com/seahorn/crab/blob/master/external/analysis.cpp) for real example.
+it might not compile like it is. Read [this](https://github.com/seahorn/crab/blob/dev/external/analysis.cpp) for real example.
 
 ```c++
     // CFG-based language
-    #include <crab/cfg/cfg.hpp>
+    #include<crab/cfg/cfg.hpp>
     // Variable factory	
-    #include <crab/cfg/var_factory.hpp>
+    #include<crab/types/varname_factory.hpp>
+	#include<crab/types/variable.hpp> 
     // Intra forward analyzer	
-    #include <crab/analysis/fwd_analyzer.hpp>
+    #include<crab/analysis/fwd_analyzer.hpp>
     // Zones domain
-    #include <crab/domains/split_dbm.hpp
+    #include<crab/domains/split_dbm.hpp>
     /* 
       To define a Control-Flow Graph (CFG) users need to define :
-      (1) Type for a variable 
+      (1) Type for a variable name
       (2) Type for a basic block label
       (3) Choose between integers or rationals (Crab cannot mix them)
     */
     // (1) A variable factory based on strings
-    typedef cfg::var_factory_impl::str_variable_factory variable_factory_t;
-    typedef typename variable_factory_t::varname_t varname_t;
+    using variable_factory_t = crab::var_factory_impl::str_variable_factory;
+    using varname_t = typename variable_factory_t::varname_t;
     // (2) CFG basic block labels
-    typedef std::string basic_block_label_t;
+	using basic_block_label_t = std::string;
     // (3) CFG over integers
-    typedef cfg::cfg<basic_block_label_t, varname_t, z_number> z_cfg_t;
-    // Convenient wrapper for a CFG
-    typedef cfg:cfg_ref<z_cfg_t> z_cfg_ref_t;
+	using z_cfg_t = crab::cfg::cfg<basic_block_label_t, varname_t, z_number>;
+    using z_cfg_ref_t = crab::cfg::cfg_ref<z_cfg_t>;
 
-    // Abstract domain: zones or difference-constraints domain
-    typedef SplitDBM<z_number, varname_t> zones_domain_t;
-
-    /* 
-      Crab provides both intra- and inter-procedural analyses which 
-      are parametric on the abstract domain: we choose an
-      intra-procedural forward analysis with zones domain
-    */
-    typedef intra_fwd_analyzer<z_cfg_ref_t, zones_domain_t> intra_zones_analyzer_t;	
+    // Abstract domain: zones domain
+	using zones_domain_t = domains::split_dbm_domain<z_number, varname_t>;
+	// Generic domain that hides the actual domain: type-erasure pattern in C++
+	using abs_domain_t = domains::abstract_domain<var_t>;
+    // Intra-procedural analysis 
+	using fwd_analyzer_t = analyzer::intra_fwd_analyzer<cfg_ref_t, abs_domain_t>;
 
     int main (int argc, char**argv) {
        // Create variable factory. 
@@ -184,9 +181,9 @@ it might not compile like it is. Read [this](https://github.com/seahorn/crab/blo
        // Moreover, the variable factory should be alive while the CFG is in use.
        variable_factory_t vfac;	
        // Declare variables i,x, and y
-       z_var i(vfac ["i"], INT_TYPE, 32);
-       z_var x(vfac ["x"], INT_TYPE, 32);
-       z_var y(vfac ["y"], INT_TYPE, 32);
+       z_var i(vfac["i"], INT_TYPE, 32);
+       z_var x(vfac["x"], INT_TYPE, 32);
+       z_var y(vfac["y"], INT_TYPE, 32);
        // Create an empty CFG marking "entry" and "exit" are the labels
        // for the entry and exit blocks.
        cfg_t cfg("entry","ret");
@@ -198,8 +195,8 @@ it might not compile like it is. Read [this](https://github.com/seahorn/crab/blo
        basic_block_t& bb2   = cfg.insert("bb2");
        basic_block_t& ret   = cfg.insert("ret");
        // Add control flow 
-       entry >> bb1; bb1 >> bb1_t; bb1 >> bb1_f;
-       bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
+	   entry.add_succ(bb1); bb1.add_succ(bb1_t); bb1.add_succ(bb1_f);
+       bb1_t.add_succ(bb2); bb2.add_succ(bb1); bb1_f.add_succ(ret);
        // Add statements
        entry.assign(i, 0);
        entry.assign(x, 1);
@@ -211,16 +208,18 @@ it might not compile like it is. Read [this](https://github.com/seahorn/crab/blo
        bb2.add(i,i,1);
 
        // Build an analyzer and run the zones domain
-       zones_domain_t inv;  // initially top
-       intra_zones_analyzer_t a(cfg, inv, ...);
+       zones_domain_t top_zones;  // initially top
+	   abs_domain_t init(top_zones);
+       fwd_analyzer_t analyzer(cfg, init);
        a.run();
-       cout << "Invariants using " << zones_domain_t::getDomainName() << "\n";
-	
+	   	
        // Scan all CFG basic blocks and print the invariants that hold
        // at their entries
+       cout << "Invariants using zones:\n";	   
        for (auto &b : cfg) {
-         auto inv = a[b.label()];
-         cout << get_label_str(b.label()) << "=" << inv << "\n";
+           auto bb_name = bb.label();
+		   auto inv = analyzer.get_pre(bb_name);
+	       crab::outs () << bb_name << ":" << inv << "\n";
        }
        return 0;
     }
@@ -229,7 +228,7 @@ it might not compile like it is. Read [this](https://github.com/seahorn/crab/blo
 The Crab output of this program, showing the invariants that hold at
 the entry of each basic block, should be something like this:
 
-    Invariants using SplitDBM
+    Invariants using zones:
 	
 	entry={}
 	bb1={i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
@@ -252,7 +251,7 @@ If you compile with Boxes/Apron/Elina you need also to include
 `_INSTALL_DIR_/EXT/include` and link with `_INSTALL_DIR_/EXT/lib`
 where `EXT=apron|elina|ldd`.
 
-For more details, read this sample [Makefile](https://github.com/seahorn/crab/blob/master/external/Makefile).
+For more details, read this sample [Makefile](https://github.com/seahorn/crab/blob/dev/external/Makefile).
 
 # Examples of Crab in other analysis tools #
 
