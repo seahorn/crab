@@ -1169,7 +1169,7 @@ public:
       return;
     }
 
-    if (op >= OP_ADDITION && op <= OP_MULTIPLICATION) {
+    if (op >= OP_ADDITION && op <= OP_SUBTRACTION /*OP_MULTIPLICATION*/) {
       switch (op) {
       case OP_ADDITION:
         apply_ldd(x, y, 1, k);
@@ -1193,6 +1193,9 @@ public:
       interval_t zi(k);
       interval_t xi(interval_t::bottom());
       switch (op) {
+      case OP_MULTIPLICATION:
+        xi = yi * zi;
+        break;
       case OP_SDIV:
         xi = yi / zi;
         break;
