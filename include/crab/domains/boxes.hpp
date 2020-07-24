@@ -1012,6 +1012,7 @@ public:
       return;
     }
 
+    // Handle precisely unit constraints    
     linear_expression_t exp = cst.expression();
     unsigned int size = exp.size();
     if (size == 0) {
@@ -1024,10 +1025,11 @@ public:
         variable_t x = it->second;
         apply_unit_constraint(cx, x, cst.kind(), k);
       } else {
-        // XXX: this is not possible when program is originated by clang/llvm
         CRAB_WARN("non-unit coefficients not implemented in boxes");
       }
-    } else if (size >= 2) {
+    }
+    // Lose precision with non-unit constraints    
+    else if (size >= 2) {
       if (cst.is_disequation()) {
         if (!add_linear_diseq(cst.expression())) {
           CRAB_LOG("boxes", crab::outs() << "_|_\n";);
@@ -1038,6 +1040,16 @@ public:
           CRAB_LOG("boxes", crab::outs() << "_|_\n";);
           return;
         }
+      } else if (cst.is_strict_inequality()) {
+	// We try to convert a strict to non-strict.
+	auto nc = ikos::linear_constraint_impl::strict_to_non_strict_inequality(cst);
+	if (nc.is_inequality()) {
+	  // here we succeed
+	  if (!add_linear_leq(nc.expression())) {
+	    CRAB_LOG("boxes", crab::outs() << "_|_\n";);	    
+	    return;
+	  }
+	}
       } else if (cst.is_equality()) {
         linear_expression_t exp = cst.expression();
         // split equality into two inequalities
