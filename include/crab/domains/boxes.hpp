@@ -696,14 +696,14 @@ private:
 
   inline LddNodePtr mk_true(boost::optional<variable_t> x) {
     if (x) {
-      // x >=1 <--> -x <= -1
+      // x == 1
       LddNodePtr r =
-          make_unit_constraint(number_t(-1), variable_t(*x),
-                               linear_constraint_t::INEQUALITY, number_t(-1));
+          make_unit_constraint(number_t(1), variable_t(*x),
+                               linear_constraint_t::EQUALITY, number_t(1));
       return r;
     } else {
       LddNodePtr r = make_unit_constraint(
-          number_t(-1), linear_constraint_t::INEQUALITY, number_t(-1));
+          number_t(1), linear_constraint_t::EQUALITY, number_t(1));
       return r;
     }
   }
@@ -711,14 +711,14 @@ private:
   inline LddNodePtr mk_false(boost::optional<variable_t> x) {
 
     if (x) {
-      // return x <= 0
+      // x == 0
       LddNodePtr r =
           make_unit_constraint(number_t(1), variable_t(*x),
-                               linear_constraint_t::INEQUALITY, number_t(0));
+                               linear_constraint_t::EQUALITY, number_t(0));
       return r;
     } else {
       LddNodePtr r = make_unit_constraint(
-          number_t(1), linear_constraint_t::INEQUALITY, number_t(0));
+          number_t(1), linear_constraint_t::EQUALITY, number_t(0));
       return r;
     }
   }
