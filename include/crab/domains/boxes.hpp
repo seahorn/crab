@@ -1138,22 +1138,23 @@ public:
       return;
 
     if (e.is_constant()) {
+      // Handle precisely if e is constant      
       constant_t c = mk_cst(e.constant());
       linterm_t t = term_from_var(x);
       m_ldd = lddPtr(get_ldd_man(), Ldd_TermReplace(get_ldd_man(), &(*m_ldd), t,
                                                     NULL, NULL, c, c));
       get_theory()->destroy_cst(c);
       get_theory()->destroy_term(t);
-    } else if (boost::optional<variable_t> v = e.get_variable()) {
-      variable_t y = (*v);
-      if (!(x == y)) {
-        // copy_term(x,y);
-        apply_ldd(x, y, 1, number_t(0));
-      }
+    } else if (e.size() == 1) {
+      // Handle precise if e is a*x + k
+      auto it = e.begin();
+      apply_ldd(x, it->second, it->first, e.constant());
     } else {
+      // Lose precision in the general case
+      // XXX: we can probably do a bit better here
       m_ldd = apply_interval(x, eval_interval(e));
     }
-
+   
     CRAB_LOG("boxes", crab::outs() << "--- " << x << ":=" << e << "\n"
                                    << *this << "\n";);
   }
