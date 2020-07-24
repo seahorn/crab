@@ -342,24 +342,6 @@ private:
     }
   }
 
-  // // Pre: n is convex and cannot be bottom
-  // void to_lin_cst_sys_recur(LddNode* n,
-  // 			  linear_constraint_system_t& csts) {
-  //   LddNode *N = Ldd_Regular(n);
-  //   if (N == Ldd_GetTrue(get_ldd_man())) return;
-  //   lincons_t lincons = Ldd_GetCons(get_ldd_man(), N);
-  //   if (Ldd_Regular(Ldd_T(N)) == Ldd_GetTrue(get_ldd_man()) &&
-  //       Ldd_Regular(Ldd_E(N)) == Ldd_GetTrue(get_ldd_man())) {
-  //     csts += cst_from_ldd_cons(lincons);
-  //   } else if (Ldd_Regular(Ldd_T(N)) == Ldd_GetTrue(get_ldd_man())) {
-  //     csts += cst_from_ldd_cons(get_theory()->negate_cons(lincons));
-  //   } else {
-  //     csts += cst_from_ldd_cons(lincons);
-  //   }
-  //   to_lin_cst_sys_recur(Ldd_T(N), csts);
-  //   to_lin_cst_sys_recur(Ldd_E(N), csts);
-  // }
-
   // Create a new ldd representing the constraint e
   // where e can be one of
   //    c*x <= k | c*x == k | c*x != k
@@ -568,71 +550,6 @@ private:
     }
     return true;
   }
-
-#ifdef OLD_NON_UNIT_CONSTRAINTS
-  interval_t compute_residual(interval_domain_t intervals,
-                              const linear_constraint_t &cst,
-                              variable_t pivot) {
-    interval_t residual(cst.constant());
-    for (typename linear_constraint_t::const_iterator it = cst.begin();
-         it != cst.end(); ++it) {
-      variable_t v = it->second;
-      if (v.index() != pivot.index()) {
-        residual = residual - (interval_t(it->first) * intervals[v]);
-      }
-    }
-    return residual;
-  }
-
-  void intvcst_from_lin_const(const linear_constraint_t &cst,
-                              linear_constraint_system_t &intvcsts) {
-    interval_domain_t intervals = to_intervals(m_ldd);
-    for (typename linear_constraint_t::const_iterator it = cst.begin();
-         it != cst.end(); ++it) {
-      number_t c = it->first;
-      variable_t pivot = it->second;
-      interval_t rhs = compute_residual(intervals, cst, pivot);
-
-      if (!(rhs.lb().is_finite() && rhs.ub().is_finite()))
-        continue;
-
-      if (auto k = rhs.singleton()) {
-        linear_expression_t term(c * pivot);
-        linear_expression_t e = term - (*k);
-        intvcsts += linear_constraint_t(e, cst.kind());
-      } else {
-        rhs = rhs / interval_t(c);
-        number_t min = *(rhs.lb().number());
-        number_t max = *(rhs.ub().number());
-
-        switch (cst.kind()) {
-        case kind_t::EQUALITY: {
-          intvcsts += linear_constraint_t(pivot >= min);
-          intvcsts += linear_constraint_t(pivot <= max);
-          break;
-        }
-        case kind_t::INEQUALITY: {
-          if (c < 0)
-            intvcsts += linear_constraint_t(pivot >= min);
-          else
-            intvcsts += linear_constraint_t(pivot <= max);
-          break;
-        }
-        case kind_t::STRICT_INEQUALITY: {
-          if (c < 0)
-            intvcsts += linear_constraint_t(pivot > min);
-          else
-            intvcsts += linear_constraint_t(pivot < max);
-          break;
-        }
-        default:
-          assert(cst.kind() == kind_t::DISEQUATION);
-          CRAB_WARN("ignored ", cst);
-        }
-      }
-    }
-  }
-#endif
 
   boxes_domain(LddNodePtr ldd) : m_ldd(ldd) {
     if (Params::convexify_threshold > 0) {
@@ -1111,14 +1028,6 @@ public:
         CRAB_WARN("non-unit coefficients not implemented in boxes");
       }
     } else if (size >= 2) {
-#ifdef OLD_NON_UNIT_CONSTRAINTS
-      linear_constraint_system_t intvcsts;
-      intvcst_from_lin_const(cst, intvcsts);
-      this->operator+=(intvcsts);
-      CRAB_LOG("boxes-lincons-to-int",
-               crab::outs() << cst << " converted to interval constraints : "
-                            << intvcsts << "\n";);
-#else
       if (cst.is_disequation()) {
         if (!add_linear_diseq(cst.expression())) {
           CRAB_LOG("boxes", crab::outs() << "_|_\n";);
@@ -1137,7 +1046,6 @@ public:
           return;
         }
       }
-#endif
     }
 
     CRAB_LOG("boxes", crab::outs() << *this << "\n";);
