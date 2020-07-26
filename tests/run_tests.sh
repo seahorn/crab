@@ -30,7 +30,9 @@ NEWLOG=results_${timestamp}.out
 for test in $DIR/test-bin/*
 do
   echo "Running $test"
+  echo "=== Begin $test ===" >> $NEWLOG
   $test >> $NEWLOG
+  echo "=== End $test ===" >> $NEWLOG  
 done
 
 LOGDIR=$(mktemp -d "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
