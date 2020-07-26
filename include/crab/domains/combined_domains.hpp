@@ -605,6 +605,20 @@ public:
     this->reduce();
   }
 
+  void ref_to_int(const memory_region reg, const variable_t &ref_var,
+		  const variable_t &int_var) override {
+    this->_product.first().ref_to_int(reg, ref_var, int_var);
+    this->_product.second().ref_to_int(reg, ref_var, int_var);
+    this->reduce();
+  }
+  
+  void int_to_ref(const variable_t &int_var,
+		  const memory_region reg, const variable_t &ref_var) override {
+    this->_product.first().int_to_ref(int_var, reg, ref_var);
+    this->_product.second().int_to_ref(int_var, reg, ref_var);
+    this->reduce();
+  }  
+  
   // boolean operators
   virtual void assign_bool_cst(const variable_t &lhs,
                                const linear_constraint_t &rhs) override {
@@ -1239,6 +1253,10 @@ public:
                           const linear_expression_t &elem_size,
                           const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
+  void ref_to_int(const memory_region reg, const variable_t &ref_var,
+		  const variable_t &int_var) override {}
+  void int_to_ref(const variable_t &int_var,
+		  const memory_region reg, const variable_t &ref_var) override {}    
   /* End unimplemented operations */
 
   void rename(const variable_vector_t &from,
@@ -1887,6 +1905,10 @@ public:
                           const linear_expression_t &elem_size,
                           const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
+  void ref_to_int(const memory_region reg, const variable_t &ref_var,
+		  const variable_t &int_var) override {}
+  void int_to_ref(const variable_t &int_var,
+		  const memory_region reg, const variable_t &ref_var) override {}    
   /* End unimplemented operations */
 
   void forget(const variable_vector_t &variables) override {

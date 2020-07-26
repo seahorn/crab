@@ -305,9 +305,9 @@ private:
   //    that the base domain is completely unaware of references.
   var_map_t m_var_map;
   rev_var_map_t m_rev_var_map;
-  // Abstract domain to count unique references per region.  This
+  // Abstract domain to count how many memory objects represent this region.  This
   // allows us to decide when strong update is sound: only if exactly
-  // one reference to the region.
+  // one memory object per region (i.e., singleton).
   ref_counting_domain_t m_ref_counting_dom;
   // Abstract domain to keep track all possible regions for a
   // reference variable.
@@ -1332,10 +1332,11 @@ public:
                const linear_expression_t &offset) override {
     crab::CrabStats::count(domain_name() + ".count.ref_gep");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_gep");
-
+    
     if (!is_bottom()) {
-      ref_make(ref2, reg2);
+      CRAB_WARN("reference_domain::ref_gep not implemented");      
     }
+    
     CRAB_LOG("reference", crab::outs()
                               << "After ref_gep(" << ref1 << "," << reg1 << ","
                               << ref2 << "," << reg2 << "," << offset
@@ -1429,6 +1430,24 @@ public:
                               << "ref_assume(" << cst << ")" << *this << "\n";);
   }
 
+  void ref_to_int(const memory_region reg, const variable_t &ref_var,
+		  const variable_t &int_var) override {
+    crab::CrabStats::count(domain_name() + ".count.ref_to_int");
+    crab::ScopedCrabStats __st__(domain_name() + ".ref_to_int");
+    if (!is_bottom()) {
+      CRAB_WARN(domain_name() + "::ref_to_int not implemented");
+    }
+
+  }
+  void int_to_ref(const variable_t &int_var,
+		  const memory_region reg, const variable_t &ref_var) override {
+    crab::CrabStats::count(domain_name() + ".count.int_to_ref");
+    crab::ScopedCrabStats __st__(domain_name() + ".int_to_ref");
+    if (!is_bottom()) {
+      CRAB_WARN(domain_name() + "::int_to_ref not implemented");
+    }
+  }  
+  
   // arithmetic operations
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {

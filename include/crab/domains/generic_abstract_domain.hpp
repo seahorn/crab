@@ -131,6 +131,11 @@ private:
                                     const linear_expression_t &elem_size,
                                     const linear_expression_t &val) = 0;
     virtual void ref_assume(const reference_constraint_t &cst) = 0;
+    virtual void ref_to_int(const memory_region reg, const variable_t &ref_var,
+			    const variable_t &int_var) = 0;
+    virtual void int_to_ref(const variable_t &int_var,
+			    const memory_region reg, const variable_t &ref_var) = 0;
+    
     virtual void backward_apply(arith_operation_t op, const variable_t &x,
                                 const variable_t &y, const variable_t &z,
                                 const abstract_domain_concept &invariant) = 0;
@@ -386,6 +391,14 @@ private:
     void ref_assume(const reference_constraint_t &cst) override {
       m_inv.ref_assume(cst);
     }
+    void ref_to_int(const memory_region reg, const variable_t &ref_var,
+		    const variable_t &int_var) override {
+      m_inv.ref_to_int(reg, ref_var, int_var);
+    }
+    void int_to_ref(const variable_t &int_var,
+		    const memory_region reg, const variable_t &ref_var) override {
+      m_inv.int_to_ref(int_var, reg, ref_var);
+    }  
 
     // unsafe: if the underlying domain in invariant is not Domain then it will
     // crash
@@ -712,6 +725,14 @@ public:
   void ref_assume(const reference_constraint_t &cst) override {
     m_concept->ref_assume(cst);
   }
+  void ref_to_int(const memory_region reg, const variable_t &ref_var,
+		  const variable_t &int_var) override {
+    m_concept->ref_to_int(reg, ref_var, int_var);
+  }
+  void int_to_ref(const variable_t &int_var,
+		  const memory_region reg, const variable_t &ref_var) override {
+    m_concept->int_to_ref(int_var, reg, ref_var);
+  }  
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const abstract_domain &invariant) override {
@@ -1111,6 +1132,18 @@ public:
   void ref_assume(const reference_constraint_t &cst) override {
     detach();    
     norm().ref_assume(cst);
+  }
+
+  void ref_to_int(const memory_region reg, const variable_t &ref_var,
+		  const variable_t &int_var) override {
+    detach();
+    norm().ref_to_int(reg, ref_var, int_var);
+  }
+  
+  void int_to_ref(const variable_t &int_var,
+		  const memory_region reg, const variable_t &ref_var) override {
+    detach();
+    norm().int_to_ref(int_var, reg, ref_var);
   }
   
   void backward_apply(arith_operation_t op, const variable_t &x,

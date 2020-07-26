@@ -575,6 +575,11 @@ public:
                           const linear_expression_t &elem_size,
                           const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
+  void ref_to_int(const memory_region reg, const variable_t &ref,
+		  const variable_t &int_var) override {}
+  void int_to_ref(const variable_t &int_var,
+		  const memory_region reg, const variable_t &ref) override {}
+  
   /* End unimplemented operations */
 
   std::string domain_name() const override { return "Boolean"; }
@@ -1616,6 +1621,14 @@ public:
   void ref_assume(const reference_constraint_t &cst) override {
     _product.ref_assume(cst);
   }
+  void ref_to_int(const memory_region reg, const variable_t &ref_var,
+		  const variable_t &int_var) override {
+    _product.ref_to_int(reg, ref_var, int_var);
+  }
+  void int_to_ref(const variable_t &int_var,
+		  const memory_region reg, const variable_t &ref_var) override {
+    _product.int_to_ref(int_var, reg, ref_var);
+  }  
 
   void write(crab_os &o) const override { _product.write(o); }
 

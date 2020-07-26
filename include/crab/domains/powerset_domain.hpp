@@ -618,6 +618,25 @@ public:
     }
   }
 
+  void ref_to_int(const memory_region reg, const variable_t &ref_var,
+		  const variable_t &int_var) override {
+    if (!is_bottom()) {
+      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+        m_disjuncts[i].ref_to_int(reg, ref_var, int_var);
+      }
+    }      
+  }
+  
+  void int_to_ref(const variable_t &int_var,
+		  const memory_region reg, const variable_t &ref_var) override {
+    if (!is_bottom()) {
+      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+        m_disjuncts[i].int_to_ref(int_var, reg, ref_var);
+      }
+    }
+  }  
+  
+
   // boolean operators
   virtual void assign_bool_cst(const variable_t &lhs,
                                const linear_constraint_t &rhs) override {

@@ -194,6 +194,12 @@ public:
                                   const linear_expression_t &val) = 0;
   // Add constraints between references
   virtual void ref_assume(const reference_constraint_t &cst) = 0;
+  // Convert a reference to an integer variable
+  virtual void ref_to_int(const memory_region reg, const variable_t &ref,
+			  const variable_t &int_var) = 0;
+  // Convert an integer variable to a reference
+  virtual void int_to_ref(const variable_t &int_var,
+			  const memory_region reg, const variable_t &ref) = 0;
   /**************************** Backward arithmetic operations ***************/
   // x = y op z
   // Substitute x with y op z in the abstract value

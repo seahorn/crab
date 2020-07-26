@@ -1672,6 +1672,11 @@ public:
                           const linear_expression_t &elem_size,
                           const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
+  void ref_to_int(const memory_region reg, const variable_t &ref,
+		  const variable_t &int_var) override {}
+  void int_to_ref(const variable_t &int_var,
+		  const memory_region reg, const variable_t &ref) override {}
+  
   /* End unimplemented operations */
 
   linear_constraint_system_t to_linear_constraint_system() const override {
