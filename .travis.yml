@@ -25,7 +25,7 @@ services:
 install: true
 
 script:
-  - docker build --build-arg UBUNTU=${UBUNTU_DIST} --build-arg BUILD_TYPE=${BUILD_TYPE} -t seahorn/crab_${EXTERNAL_DOMAIN_LIB}:${UBUNTU_DIST} -f docker/crab.${EXTERNAL_DOMAIN_LIB}.Dockerfile .
+  - docker build --build-arg BRANCH=$TRAVIS_BRANCH --build-arg UBUNTU=${UBUNTU_DIST} --build-arg BUILD_TYPE=${BUILD_TYPE} -t seahorn/crab_${EXTERNAL_DOMAIN_LIB}:${UBUNTU_DIST} -f docker/crab.${EXTERNAL_DOMAIN_LIB}.Dockerfile .
      
   - 'if [ "$TRAVIS_EVENT_TYPE" = "cron" ] ; then 
         echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin

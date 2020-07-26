@@ -5,6 +5,7 @@
 # Arguments:
 #  - UBUNTU:     bionic
 #  - BUILD_TYPE: debug, release
+#  - BRANCH
 #
 
 ARG UBUNTU
@@ -45,8 +46,9 @@ RUN export PREFIX=$(cat /tmp/dockerutils/prefix.txt) && \
     curl -sSOL "$DEPS_BASE"_boost_1_68.tar.gz && \
     tar -xf "$PREFIX"_boost_1_68.tar.gz 
 
+ARG BRANCH=master
 RUN cd / && rm -rf /crab && \
-    git clone https://github.com/seahorn/crab crab --depth=10 ; \
+    git clone -b $BRANCH https://github.com/seahorn/crab crab --depth=10 ; \
     mkdir -p /crab/build
 WORKDIR /crab/build
 
