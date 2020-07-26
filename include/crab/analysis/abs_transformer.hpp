@@ -97,7 +97,10 @@ public:
       crab::cfg::assume_ref_stmt<bb_label_t, number_t, varname_t>;
   using assert_ref_t =
       crab::cfg::assert_ref_stmt<bb_label_t, number_t, varname_t>;
-
+  using ref_to_int_t =
+      crab::cfg::ref_to_int_stmt<bb_label_t, number_t, varname_t>;
+  using int_to_ref_t =
+      crab::cfg::int_to_ref_stmt<bb_label_t, number_t, varname_t>;
   using bool_bin_op_t =
       crab::cfg::bool_binary_op<bb_label_t, number_t, varname_t>;
   using bool_assign_cst_t =
@@ -136,6 +139,8 @@ protected:
   virtual void exec(store_to_arr_ref_t &) {}
   virtual void exec(assume_ref_t &) {}
   virtual void exec(assert_ref_t &) {}
+  virtual void exec(int_to_ref_t &) {}
+  virtual void exec(ref_to_int_t &) {}    
   virtual void exec(bool_bin_op_t &) {}
   virtual void exec(bool_assign_cst_t &) {}
   virtual void exec(bool_assign_var_t &) {}
@@ -168,6 +173,8 @@ public: /* visitor api */
   void visit(store_to_arr_ref_t &s) { exec(s); }
   void visit(assume_ref_t &s) { exec(s); }
   void visit(assert_ref_t &s) { exec(s); }
+  void visit(ref_to_int_t &s) { exec(s); }
+  void visit(int_to_ref_t &s) { exec(s); }    
   void visit(bool_bin_op_t &s) { exec(s); }
   void visit(bool_assign_cst_t &s) { exec(s); }
   void visit(bool_assign_var_t &s) { exec(s); }
@@ -318,6 +325,8 @@ public:
   using typename abs_transform_api_t::load_from_ref_t;
   using typename abs_transform_api_t::make_ref_t;
   using typename abs_transform_api_t::region_init_t;
+  using typename abs_transform_api_t::ref_to_int_t;
+  using typename abs_transform_api_t::int_to_ref_t;  
   using typename abs_transform_api_t::return_t;
   using typename abs_transform_api_t::select_t;
   using typename abs_transform_api_t::store_to_arr_ref_t;
@@ -790,6 +799,39 @@ public:
     m_inv.ref_assume(stmt.constraint());
   }
 
+
+  void exec(int_to_ref_t &stmt) {
+    bool pre_bot = false;
+    if (::crab::CrabSanityCheckFlag) {
+      pre_bot = m_inv.is_bottom();
+    }
+
+    m_inv.int_to_ref(stmt.int_var(), stmt.region(), stmt.ref_var());
+
+    if (::crab::CrabSanityCheckFlag) {
+      bool post_bot = m_inv.is_bottom();
+      if (!(pre_bot || !post_bot)) {
+        CRAB_ERROR("Invariant became bottom after ", stmt);
+      }
+    }
+  }
+
+  void exec(ref_to_int_t &stmt) {
+    bool pre_bot = false;
+    if (::crab::CrabSanityCheckFlag) {
+      pre_bot = m_inv.is_bottom();
+    }
+
+    m_inv.ref_to_int(stmt.region(), stmt.ref_var(), stmt.int_var());
+
+    if (::crab::CrabSanityCheckFlag) {
+      bool post_bot = m_inv.is_bottom();
+      if (!(pre_bot || !post_bot)) {
+        CRAB_ERROR("Invariant became bottom after ", stmt);
+      }
+    }
+  }
+  
   void exec(intrinsic_t &cs) {
     m_inv.intrinsic(cs.get_intrinsic_name(), cs.get_args(), cs.get_lhs());
   }
@@ -889,6 +931,8 @@ public:
   using typename abs_transform_api_t::load_from_ref_t;
   using typename abs_transform_api_t::make_ref_t;
   using typename abs_transform_api_t::region_init_t;
+  using typename abs_transform_api_t::ref_to_int_t;
+  using typename abs_transform_api_t::int_to_ref_t;  
   using typename abs_transform_api_t::return_t;
   using typename abs_transform_api_t::select_t;
   using typename abs_transform_api_t::store_to_arr_ref_t;
@@ -1173,6 +1217,8 @@ public:
   void exec(store_to_arr_ref_t &stmt) {}
   void exec(assume_ref_t &stmt) {}
   void exec(assert_ref_t &stmt) {}
+  void exec(int_to_ref_t &stmt) {}
+  void exec(ref_to_int_t &stmt) {}    
 
   /// -- Call and return can be redefined by derived classes
 

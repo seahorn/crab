@@ -130,21 +130,23 @@ enum stmt_code {
   REF_ASSUME = 46,
   REF_ASSERT = 47,
   REGION_INIT = 48,
+  REF_TO_INT = 49,
+  INT_TO_REF = 50,
   // functions calls
-  CALLSITE = 50,
-  RETURN = 51,
-  CRAB_INTRINSIC = 52,
+  CALLSITE = 60,
+  RETURN = 61,
+  CRAB_INTRINSIC = 62,
   // integers/arrays/pointers/boolean
-  HAVOC = 60,
+  HAVOC = 70,
   // boolean
-  BOOL_BIN_OP = 70,
-  BOOL_ASSIGN_CST = 71,
-  BOOL_ASSIGN_VAR = 72,
-  BOOL_ASSUME = 73,
-  BOOL_SELECT = 74,
-  BOOL_ASSERT = 75,
+  BOOL_BIN_OP = 80,
+  BOOL_ASSIGN_CST = 81,
+  BOOL_ASSIGN_VAR = 82,
+  BOOL_ASSUME = 83,
+  BOOL_SELECT = 84,
+  BOOL_ASSERT = 85,
   // casts
-  INT_CAST = 80
+  INT_CAST = 90
 };
 
 template <typename Number, typename VariableName> class live {
@@ -278,6 +280,8 @@ public:
   bool is_ref_arr_store() const { return m_stmt_code == REF_ARR_STORE; }
   bool is_ref_assume() const { return (m_stmt_code == REF_ASSUME); }
   bool is_ref_assert() const { return (m_stmt_code == REF_ASSERT); }
+  bool is_ref_to_int() const { return (m_stmt_code == REF_TO_INT); }
+  bool is_int_to_ref() const { return (m_stmt_code == INT_TO_REF); }  
   bool is_region_init() const { return (m_stmt_code == REGION_INIT); }
   bool is_bool_bin_op() const { return (m_stmt_code == BOOL_BIN_OP); }
   bool is_bool_assign_cst() const { return (m_stmt_code == BOOL_ASSIGN_CST); }
@@ -1401,6 +1405,95 @@ private:
   reference_constraint_t m_cst;
 };
 
+template <class BasicBlockLabel, class Number, class VariableName>
+class ref_to_int_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+  // inv_var := ref_to_int(region, ref_var)
+  using this_type = ref_to_int_stmt<BasicBlockLabel, Number, VariableName>;
+
+public:
+  using statement_t = statement<BasicBlockLabel, Number, VariableName>;
+  using basic_block_t = typename statement_t::basic_block_t;
+  using variable_t = variable<Number, VariableName>;
+
+  ref_to_int_stmt(memory_region region, variable_t ref_var, variable_t int_var,
+		  basic_block_t *parent, debug_info dbg_info = debug_info())
+      : statement_t(REF_TO_INT, parent, dbg_info),
+	m_region(region), m_ref_var(ref_var), m_int_var(int_var) {
+    this->m_live.add_use(ref_var);        
+    this->m_live.add_def(int_var);
+  }
+
+  const memory_region &region() const { return m_region; }
+
+  const variable_t &ref_var() const { return m_ref_var; }
+
+  const variable_t &int_var() const { return m_int_var; }  
+  
+  
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+    v->visit(*this);
+  }
+
+  virtual statement_t *clone(basic_block_t *parent) const {
+    return new this_type(m_region, m_ref_var, m_int_var, parent, this->m_dbg_info);
+  }
+
+  virtual void write(crab_os &o) const {
+    o << m_int_var << " := "
+      << "ref_to_int(" << m_region << "," << m_ref_var << ")";
+  }
+
+private:
+  memory_region m_region;
+  variable_t m_ref_var;
+  variable_t m_int_var;
+};
+
+template <class BasicBlockLabel, class Number, class VariableName>
+class int_to_ref_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+  // ref_var := int_to_ref(int_var, region)
+  using this_type = int_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
+
+public:
+  using statement_t = statement<BasicBlockLabel, Number, VariableName>;
+  using basic_block_t = typename statement_t::basic_block_t;
+  using variable_t = variable<Number, VariableName>;
+
+  int_to_ref_stmt(variable_t int_var, memory_region region, variable_t ref_var, 
+		  basic_block_t *parent, debug_info dbg_info = debug_info())
+      : statement_t(INT_TO_REF, parent, dbg_info),
+	m_int_var(int_var), m_region(region), m_ref_var(ref_var) {
+    this->m_live.add_use(int_var);        
+    this->m_live.add_def(ref_var);
+  }
+
+  const variable_t &int_var() const { return m_int_var; }  
+  
+  const memory_region &region() const { return m_region; }
+
+  const variable_t &ref_var() const { return m_ref_var; }
+
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+    v->visit(*this);
+  }
+
+  virtual statement_t *clone(basic_block_t *parent) const {
+    return new this_type(m_int_var, m_region, m_ref_var, parent, this->m_dbg_info);
+  }
+
+  virtual void write(crab_os &o) const {
+    o << m_ref_var << " := "
+      << "int_to_ref(" << m_region << "," << m_int_var << ")";
+  }
+
+private:
+  variable_t m_int_var;  
+  memory_region m_region;
+  variable_t m_ref_var;
+};
+    
 /*
   Function calls
 */
@@ -2022,6 +2115,8 @@ public:
       store_to_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assume_ref_t = assume_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assert_ref_t = assert_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using int_to_ref_t = int_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using ref_to_int_t = ref_to_int_stmt<BasicBlockLabel, Number, VariableName>;
   // Boolean
   using bool_bin_op_t = bool_binary_op<BasicBlockLabel, Number, VariableName>;
   using bool_assign_cst_t =
@@ -2527,6 +2622,16 @@ public:
     return insert(new assert_ref_t(cst, this));
   }
 
+  const statement_t *int_to_ref(variable_t int_var,
+				memory_region region, variable_t ref_var) {
+    return insert(new int_to_ref_t(int_var, region, ref_var, this));
+  }
+
+  const statement_t *ref_to_int(memory_region region, variable_t ref_var,
+				variable_t int_var) {
+    return insert(new ref_to_int_t(region, ref_var, int_var, this));
+  }
+      
   const statement_t *bool_assign(variable_t lhs, lin_cst_t rhs) {
     return insert(new bool_assign_cst_t(lhs, rhs, this));
   }
@@ -2687,6 +2792,8 @@ struct statement_visitor {
       store_to_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assume_ref_t = assume_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assert_ref_t = assert_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using int_to_ref_t = int_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using ref_to_int_t = ref_to_int_stmt<BasicBlockLabel, Number, VariableName>;  
   using bool_bin_op_t = bool_binary_op<BasicBlockLabel, Number, VariableName>;
   using bool_assign_cst_t =
       bool_assign_cst<BasicBlockLabel, Number, VariableName>;
@@ -2720,6 +2827,8 @@ struct statement_visitor {
   virtual void visit(store_to_arr_ref_t &) {}
   virtual void visit(assume_ref_t &){};
   virtual void visit(assert_ref_t &){};
+  virtual void visit(int_to_ref_t &){};
+  virtual void visit(ref_to_int_t &){};  
   virtual void visit(bool_bin_op_t &){};
   virtual void visit(bool_assign_cst_t &){};
   virtual void visit(bool_assign_var_t &){};
@@ -3806,6 +3915,8 @@ private:
         store_to_arr_ref_t;
     using assume_ref_t = typename statement_visitor<B, N, V>::assume_ref_t;
     using assert_ref_t = typename statement_visitor<B, N, V>::assert_ref_t;
+    using int_to_ref_t = typename statement_visitor<B, N, V>::int_to_ref_t;    
+    using ref_to_int_t = typename statement_visitor<B, N, V>::ref_to_int_t;    
     using bool_bin_op_t = typename statement_visitor<B, N, V>::bool_bin_op_t;
     typedef typename statement_visitor<B, N, V>::bool_assign_cst_t
         bool_assign_cst_t;
@@ -4365,6 +4476,8 @@ private:
     void visit(store_to_arr_ref_t &){};
     void visit(assume_ref_t &){};
     void visit(assert_ref_t &){};
+    void visit(int_to_ref_t &){};
+    void visit(ref_to_int_t &){};    
 
   }; // end class type_checker_visitor
 };   // end class type_checker
