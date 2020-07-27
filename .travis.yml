@@ -1,9 +1,5 @@
 language: cpp
 cache: apt
-branches:
-  except:
-  - crab_language
-  - dev
 env:
   matrix:
      - UBUNTU_DIST=xenial
