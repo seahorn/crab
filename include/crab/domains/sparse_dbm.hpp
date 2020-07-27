@@ -181,7 +181,8 @@ protected:
   }
 
   // Evaluate an expression under the chosen potentials
-  Wt eval_expression(const linear_expression_t &e, bool overflow) {
+  Wt eval_expression(const linear_expression_t &e, bool &overflow) {
+    overflow = false;
     Wt v(ntow::convert(e.constant(), overflow));
     if (overflow) {
       return Wt(0);
