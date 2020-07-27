@@ -39,7 +39,10 @@ LOGDIR=$(mktemp -d "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
 LOG="$LOGDIR/log.txt"
 
 ## Diff the output of the tests with the expected output
-$DIFF --suppress-common-lines --ignore-matching-lines="CRAB WARNING:*" $OLDLOG $NEWLOG >& $LOG
+$DIFF --suppress-common-lines \
+      --ignore-matching-lines="CRAB WARNING:*" \
+      --ignore-matching-lines="=== *" \
+      $OLDLOG $NEWLOG >& $LOG
 STATUS=$?
 
 ###################################################################
