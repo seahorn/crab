@@ -770,7 +770,8 @@ public:
 
         a->run_forward();
         m_inv_map.insert(
-            {crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), std::move(a)});
+	     std::make_pair(crab::cfg::cfg_hasher<cfg_t>::hash(fdecl),
+			    std::move(a)));
       }
       return;
     }
@@ -887,7 +888,8 @@ public:
                                           m_descending_iters, m_jump_set_size));
         a->run_forward();
         m_inv_map.insert(
-            {crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), std::move(a)});
+	    std::make_pair(crab::cfg::cfg_hasher<cfg_t>::hash(fdecl),
+			   std::move(a)));		 
       }
     }
     CRAB_VERBOSE_IF(1, get_msg_stream()
