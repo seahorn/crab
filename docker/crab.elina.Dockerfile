@@ -72,10 +72,10 @@ RUN cmake -GNinja \
 ENV LD_LIBRARY_PATH "/crab/build/run/elina/lib:$LD_LIBRARY_PATH"
 
 # Run only elina test
-RUN /crab/build/test-bin/elina_domains
+# RUN /crab/build/test-bin/elina_domains
 
 # Run tests
-# RUN /crab/tests/run_tests.sh /crab/tests/expected_results.elina.out /crab/build
+RUN /crab/tests/run_tests.sh /crab/tests/expected_results.elina.out /crab/build
 
 WORKDIR /crab
 
