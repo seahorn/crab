@@ -7,12 +7,12 @@
 #define Z_RUNNER(DOM)                                                          \
   template void z_intra_run<DOM>(                                              \
       crab::cfg_impl::z_cfg_t *, crab::cfg_impl::basic_block_label_t, DOM,     \
-      bool, unsigned, unsigned, unsigned, bool, bool);
+      bool, unsigned, unsigned, unsigned, bool, bool, bool);
 
 #define Q_RUNNER(DOM)                                                          \
   template void q_intra_run<DOM>(                                              \
       crab::cfg_impl::q_cfg_t *, crab::cfg_impl::basic_block_label_t, DOM,     \
-      bool, unsigned, unsigned, unsigned, bool, bool);
+      bool, unsigned, unsigned, unsigned, bool, bool, bool);
 
 #ifdef USE_GENERIC_WRAPPER
 Z_RUNNER(crab::domain_impl::z_abs_domain_t)
