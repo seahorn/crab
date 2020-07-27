@@ -180,14 +180,6 @@ protected:
     return ((Wt)0);
   }
 
-  Wt pot_value(const variable_t &v, std::vector<Wt> &potential) {
-    auto it = vert_map.find(v);
-    if (it != vert_map.end())
-      return potential[(*it).second];
-
-    return ((Wt)0);
-  }
-
   // Evaluate an expression under the chosen potentials
   Wt eval_expression(const linear_expression_t &e, bool overflow) {
     Wt v(ntow::convert(e.constant(), overflow));
