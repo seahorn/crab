@@ -56,7 +56,7 @@ public:
 
   bool operator!=(const offset_t &o) const { return !(*this == o); }
 
-  void write(crab::crab_os &o) const { o << _val; }
+  virtual void write(crab::crab_os &o) const override { o << _val; }
 
   friend crab::crab_os &operator<<(crab::crab_os &o, const offset_t &v) {
     v.write(o);

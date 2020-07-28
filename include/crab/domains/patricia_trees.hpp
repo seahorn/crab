@@ -49,6 +49,7 @@
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/optional.hpp>
 #include <memory>
+#include <type_traits>
 #include <vector>
 
 namespace ikos {
@@ -1218,6 +1219,9 @@ private:
   using tree_ptr = typename tree_t::ptr;
 
 public:
+  static_assert(std::is_base_of<crab::indexable, Key>::value,
+		"Key must inherit from indexable to be used as a key in a patricia tree");
+  
   using patricia_tree_t = patricia_tree<Key, Value>;
   using unary_op_t = typename tree_t::unary_op_t;
   using binary_op_t = typename tree_t::binary_op_t;

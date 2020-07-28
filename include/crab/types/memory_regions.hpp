@@ -57,7 +57,7 @@ public:
     return std::string("@reg_") + std::to_string(index());    
   }
   
-  void write(crab::crab_os &o) const {
+  virtual void write(crab::crab_os &o) const override {
     o << "region_" << m_id;
     CRAB_LOG(
         "crab-print-types", o << ":"; switch (m_type) {

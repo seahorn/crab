@@ -88,7 +88,7 @@ public:
 
     bool operator==(const indexed_varname &s) const { return (m_id == s.m_id); }
 
-    void write(crab_os &o) const { o << str(); }
+    virtual void write(crab_os &o) const override { o << str(); }
 
     friend crab_os &operator<<(crab_os &o, const indexed_varname &s) {
       o << s.str();

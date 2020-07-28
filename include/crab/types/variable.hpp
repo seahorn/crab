@@ -148,7 +148,7 @@ public:
 
   bool operator<(const variable_t &o) const { return index() < o.index(); }
 
-  void write(crab::crab_os &o) const {
+  virtual void write(crab::crab_os &o) const override {
     o << _n;
     CRAB_LOG(
         "crab-print-types", o << ":" << get_type(); switch (get_type()) {

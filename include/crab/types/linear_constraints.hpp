@@ -731,7 +731,7 @@ public:
     return linear_constraint_t(e, this->_kind, is_signed());
   }
 
-  void write(crab::crab_os &o) const {
+  virtual void write(crab::crab_os &o) const override {
     if (this->is_contradiction()) {
       o << "false";
     } else if (this->is_tautology()) {

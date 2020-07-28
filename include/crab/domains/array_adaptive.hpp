@@ -252,7 +252,7 @@ public:
 
   bool is_zero() const { return m_val == 0; }
 
-  void write(crab::crab_os &o) const { o << m_val; }
+  virtual void write(crab::crab_os &o) const override { o << m_val; }
 
   friend crab::crab_os &operator<<(crab::crab_os &o, const offset_t &v) {
     v.write(o);

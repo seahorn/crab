@@ -2,6 +2,7 @@
 
 #include <crab/domains/patricia_trees.hpp>
 #include <crab/support/os.hpp>
+#include <crab/types/indexable.hpp>
 
 #include <vector>
 
@@ -17,12 +18,11 @@ public:
 
   using vert_id = unsigned int;
 
-  class vert_idx {
+  class vert_idx: public indexable {
   public:
     vert_idx(vert_id _v) : v(_v) {}
-    ikos::index_t index(void) const { return (ikos::index_t)v; }
-
-    void write(crab_os &o) { o << v; }
+    virtual ikos::index_t index(void) const override { return (ikos::index_t)v; }
+    virtual void write(crab_os &o) const override { o << v; }
 
     vert_id v;
   };
