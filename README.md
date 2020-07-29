@@ -65,7 +65,7 @@ Crab is written in C++ and relies on the Boost library. The main
 requirements are:
 
 - Modern C++ compiler supporting c++11
-- Boost
+- Boost >= 1.65
 - GMP 
 - MPFR (if `-DCRAB_USE_APRON=ON` or `-DCRAB_USE_ELINA=ON`)
 
@@ -126,15 +126,15 @@ Assume we want to perform static analysis on the following C-like
 program:
 
 ```c
-	int i,x,y;
-	i=0;
-	x=1;
-	y=0;
-	while (i < 100) {
-	   x=x+y;
-	   y=y+1;
-	   i=i+1;
-	}	 
+  int i,x,y;
+  i=0;
+  x=1;
+  y=0;
+  while (i < 100) {
+	x=x+y;
+	y=y+1;
+	i=i+1;
+  }	 
 ``` 
 
 Next, we show a simplified version of the C++ code to build the
@@ -148,7 +148,7 @@ it might not compile like it is. Read [this](https://github.com/seahorn/crab/blo
     #include<crab/cfg/cfg.hpp>
     // Variable factory	
     #include<crab/types/varname_factory.hpp>
-	#include<crab/types/variable.hpp> 
+    #include<crab/types/variable.hpp> 
     // Intra forward analyzer	
     #include<crab/analysis/fwd_analyzer.hpp>
     // Zones domain
@@ -163,17 +163,17 @@ it might not compile like it is. Read [this](https://github.com/seahorn/crab/blo
     using variable_factory_t = crab::var_factory_impl::str_variable_factory;
     using varname_t = typename variable_factory_t::varname_t;
     // (2) CFG basic block labels
-	using basic_block_label_t = std::string;
+    using basic_block_label_t = std::string;
     // (3) CFG over integers
 	using z_cfg_t = crab::cfg::cfg<basic_block_label_t, varname_t, z_number>;
     using z_cfg_ref_t = crab::cfg::cfg_ref<z_cfg_t>;
 
     // Abstract domain: zones domain
-	using zones_domain_t = domains::split_dbm_domain<z_number, varname_t>;
-	// Generic domain that hides the actual domain: type-erasure pattern in C++
-	using abs_domain_t = domains::abstract_domain<var_t>;
+    using zones_domain_t = domains::split_dbm_domain<z_number, varname_t>;
+    // Generic domain that hides the actual domain: type-erasure pattern in C++
+    using abs_domain_t = domains::abstract_domain<var_t>;
     // Intra-procedural analysis 
-	using fwd_analyzer_t = analyzer::intra_fwd_analyzer<cfg_ref_t, abs_domain_t>;
+    using fwd_analyzer_t = analyzer::intra_fwd_analyzer<cfg_ref_t, abs_domain_t>;
 
     int main (int argc, char**argv) {
        // Create variable factory. 
@@ -195,7 +195,7 @@ it might not compile like it is. Read [this](https://github.com/seahorn/crab/blo
        basic_block_t& bb2   = cfg.insert("bb2");
        basic_block_t& ret   = cfg.insert("ret");
        // Add control flow 
-	   entry.add_succ(bb1); bb1.add_succ(bb1_t); bb1.add_succ(bb1_f);
+       entry.add_succ(bb1); bb1.add_succ(bb1_t); bb1.add_succ(bb1_f);
        bb1_t.add_succ(bb2); bb2.add_succ(bb1); bb1_f.add_succ(ret);
        // Add statements
        entry.assign(i, 0);
@@ -209,7 +209,7 @@ it might not compile like it is. Read [this](https://github.com/seahorn/crab/blo
 
        // Build an analyzer and run the zones domain
        zones_domain_t top_zones;  // initially top
-	   abs_domain_t init(top_zones);
+       abs_domain_t init(top_zones);
        fwd_analyzer_t analyzer(cfg, init);
        a.run();
 	   	
@@ -218,8 +218,8 @@ it might not compile like it is. Read [this](https://github.com/seahorn/crab/blo
        cout << "Invariants using zones:\n";	   
        for (auto &b : cfg) {
            auto bb_name = bb.label();
-		   auto inv = analyzer.get_pre(bb_name);
-	       crab::outs () << bb_name << ":" << inv << "\n";
+           auto inv = analyzer.get_pre(bb_name);
+           crab::outs () << bb_name << ":" << inv << "\n";
        }
        return 0;
     }
@@ -237,7 +237,7 @@ the entry of each basic block, should be something like this:
     bb2={i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
 	ret={i -> [100, 100], x -> [100, +oo], y -> [100, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
 
-# Using Crab as an External Library via Makefile #
+# Integration in other C++ projects (for users) #
 
 To include Crab in your C++ application you need to:
 
@@ -251,17 +251,27 @@ If you compile with Boxes/Apron/Elina you need also to include
 `_INSTALL_DIR_/EXT/include` and link with `_INSTALL_DIR_/EXT/lib`
 where `EXT=apron|elina|ldd`.
 
-For more details, read this sample [Makefile](https://github.com/seahorn/crab/blob/dev/external/Makefile).
+If your project uses `cmake` then you just need to add in your project's `CMakeLists.txt`:
 
-# Examples of Crab in other analysis tools #
+```
+add_subdirectory(crab)
+include_directories(${CRAB_INCLUDE_DIRS})
+```
+
+And then link your executable with `${CRAB_LIBS}`
+
+If your project uses `make`, read this
+sample [Makefile](https://github.com/seahorn/crab/blob/dev/external/Makefile).
+
+# Other static analysis tools using Crab #
 
 Crab has been integrated at least in these static analysis tools:
 
-- [Crab-Llvm](https://github.com/seahorn/crab-llvm) is a static
+- [Clam](https://github.com/seahorn/crab-llvm) is a static
 analyzer that infers invariants from LLVM-based languages using Crab.
 
 - [SeaHorn](https://github.com/seahorn) is a verification framework
-that uses Crab-Llvm to supply invariants to the back-end solvers.
+that uses Clam to supply invariants to the back-end solvers.
 
 - [Prevail](https://github.com/vbpf/ebpf-verifier) is a [eBPF](https://lwn.net/Articles/740157/) verifier using Crab.
 
