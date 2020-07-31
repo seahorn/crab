@@ -19,6 +19,8 @@ private:
   using opt_var_t = boost::optional<variable_t>;
   using cst_kind_t = enum { REF_EQ, REF_LESS, REF_LESS_OR_EQ, REF_DISEQ };
 
+  // m_lhs should be defined except if the constraints is a
+  // contradiction/tautology.
   opt_var_t m_lhs; // if !m_lhs then NULL
   opt_var_t m_rhs; // if !m_rhs then NULL
   number_t m_offset;
@@ -85,12 +87,20 @@ public:
       return mk_true();
     } else if (is_tautology()) {
       return mk_false();
-    } else if (is_unary() && is_equality()) {
-      // p == NULL --> p != NULL
-      return mk_not_null(lhs());
-    } else if (is_unary() && is_disequality()) {
-      // p != NULL --> q == NULL
-      return mk_null(lhs());
+    } else if (is_unary()) {
+      if (is_equality()) {
+	// p == NULL --> p != NULL
+	return mk_not_null(lhs());
+      } else if (is_disequality()) {
+	// p != NULL --> p == NULL
+	return mk_null(lhs());
+      } else if (is_less_or_equal_than()) {
+	// p <= NULL --> NULL < p
+	return reference_constraint_t(opt_var_t(), m_lhs, REF_LESS);
+      } else if (is_less_than()) {
+	// p < NULL --> NULL <= p
+	return reference_constraint_t(opt_var_t(), m_lhs, REF_LESS_OR_EQ);	
+      }
     } else if (is_binary()) {
       if (is_equality()) {
         // p == q + k --> p != q + k
@@ -154,6 +164,13 @@ public:
                                   REF_DISEQ);
   }
 
+  static reference_constraint_t mk_lt_null(variable_t v) {
+    if (!v.is_ref_type()) {
+      CRAB_ERROR("reference_constraint::mk_lt:", v, " must be a reference");
+    }
+    return reference_constraint_t(opt_var_t(v), opt_var_t(), REF_LESS);
+  }
+  
   static reference_constraint_t mk_lt(variable_t v1, variable_t v2,
                                       number_t offset = number_t(0)) {
     if (!v1.is_ref_type()) {
@@ -166,6 +183,13 @@ public:
                                   REF_LESS);
   }
 
+  static reference_constraint_t mk_le_null(variable_t v) {
+    if (!v.is_ref_type()) {
+      CRAB_ERROR("reference_constraint::mk_lt:", v, " must be a reference");
+    }
+    return reference_constraint_t(opt_var_t(v), opt_var_t(), REF_LESS_OR_EQ);
+  }
+  
   static reference_constraint_t mk_le(variable_t v1, variable_t v2,
                                       number_t offset = number_t(0)) {
     if (!v1.is_ref_type()) {
@@ -199,11 +223,8 @@ public:
       case REF_LESS:
         o << " < ";
         break;
-      default:
+      default:;
           // unreachable
-          ;
-        ;
-        ;
       }
       if (!m_rhs)
         o << "NULL";
