@@ -2594,7 +2594,7 @@ public:
 
   const statement_t *gep_ref(variable_t lhs_ref, memory_region lhs_region,
                              variable_t rhs_ref, memory_region rhs_region,
-                             lin_exp_t offset) {
+                             lin_exp_t offset = number_t(0)) {
     return insert(
         new gep_ref_t(lhs_ref, lhs_region, rhs_ref, rhs_region, offset, this));
   }
