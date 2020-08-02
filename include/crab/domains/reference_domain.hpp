@@ -1141,10 +1141,14 @@ public:
     }
 
     if (!has_region_var(reg)) {
-      CRAB_ERROR("reference_domain::ref_make: ", reg, " must be initialized");
+      CRAB_LOG("reference",
+	       CRAB_WARN("reference_domain::ref_make: ", reg, " must be initialized"););
+      return;
     }
     if (!ref.is_ref_type()) {
-      CRAB_ERROR("reference_domain::ref_make: ", ref, " must be a reference");
+      CRAB_LOG("reference",
+	       CRAB_WARN("reference_domain::ref_make: ", ref, " must be a reference"););
+      return;
     }
 
     // Update reference counting
@@ -1171,12 +1175,19 @@ public:
     if (is_bottom()) {
       return;
     }
-
+    
+    const base_variable_t &base_res = rename_var(res);
     if (!has_region_var(reg)) {
-      CRAB_ERROR("reference_domain::ref_load: ", reg, " must be initialized");
+      CRAB_LOG("reference",
+	       CRAB_WARN("reference_domain::ref_load: ", reg, " must be initialized"););
+      m_base_dom -= base_res;
+      return;
     }
     if (!ref.is_ref_type()) {
-      CRAB_ERROR("reference_domain::ref_load: ", ref, " must be a reference");
+      CRAB_LOG("reference",
+	       CRAB_WARN("reference_domain::ref_load: ", ref, " must be a reference"););
+      m_base_dom -= base_res;
+      return;
     }
 
     if (is_null_ref(ref)) {
@@ -1186,7 +1197,6 @@ public:
       return;
     }
 
-    const base_variable_t &base_res = rename_var(res);
     auto num_refs = m_ref_counting_dom[reg];
     if (num_refs.is_zero()) {
       CRAB_WARN("reference_domain::ref_load: TODO region has no references");
@@ -1194,6 +1204,7 @@ public:
     } else {
       auto ref_load = [&ref, &reg, &base_res,
                        this](const base_variable_t &reg_var) {
+			
         auto regions_set = this->m_regions_dom[ref];
         if (!(regions_powerset_t(reg) == regions_set)) {
           CRAB_WARN("reference_domain::ref_load: reference ", ref,
@@ -1251,10 +1262,14 @@ public:
     }
 
     if (!has_region_var(reg)) {
-      CRAB_ERROR("reference_domain::ref_store: ", reg, " must be initialized");
+      CRAB_LOG("reference",
+	       CRAB_WARN("reference_domain::ref_store: ", reg, " must be initialized"););
+      return;
     }
     if (!ref.is_ref_type()) {
-      CRAB_ERROR("reference_domain::ref_store: ", ref, " must be a reference");
+      CRAB_LOG("reference",
+	       CRAB_WARN("reference_domain::ref_store: ", ref, " must be a reference"););
+      return;
     }
 
     if (is_null_ref(ref)) {
@@ -1272,6 +1287,7 @@ public:
     } else {
       auto ref_store = [&ref, &reg, &val,
                         this](base_abstract_domain_t &base_dom) {
+			 
         auto regions_set = this->m_regions_dom[ref];
         if (!(regions_powerset_t(reg) == regions_set)) {
           CRAB_WARN("reference_domain::ref_store: reference ", ref,
@@ -1334,9 +1350,9 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".ref_gep");
     
     if (!is_bottom()) {
-      CRAB_WARN("reference_domain::ref_gep not implemented");      
+      CRAB_WARN("reference_domain::ref_gep not implemented");
     }
-    
+
     CRAB_LOG("reference", crab::outs()
                               << "After ref_gep(" << ref1 << "," << reg1 << ","
                               << ref2 << "," << reg2 << "," << offset
