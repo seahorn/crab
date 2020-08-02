@@ -1350,7 +1350,14 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".ref_gep");
     
     if (!is_bottom()) {
-      CRAB_WARN("reference_domain::ref_gep not implemented");
+      if (reg1 == reg2) {
+	auto region_set = m_regions_dom[ref2];
+	m_regions_dom.set(ref2, region_set | reg2);
+	m_base_dom.assign(rename_var(ref2),
+			  rename_var(ref1) + rename_linear_expr(offset));
+      } else {
+	CRAB_WARN("reference_domain::ref_gep not implemented");
+      }
     }
 
     CRAB_LOG("reference", crab::outs()
