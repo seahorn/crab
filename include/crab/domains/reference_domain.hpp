@@ -1741,9 +1741,15 @@ public:
     }
     
     std::vector<base_variable_t> base_vars;
-    std::transform(variables.begin(), variables.end(),
-                   std::back_inserter(base_vars),
-                   [this](const variable_t &v) { return this->rename_var(v); });
+    base_vars.reserve(variables.size());
+    for (auto &v: variables) {
+      auto it = m_var_map.find(v);
+      if (it != m_var_map.end()) {
+        base_vars.push_back(it->second);
+        m_rev_var_map.erase(it->second);
+        m_var_map.erase(it);
+      }
+    }
     m_base_dom.forget(base_vars);
   }
 
@@ -1755,12 +1761,26 @@ public:
       return;
     }
 
+    // -- project in the base domain
     std::vector<base_variable_t> base_vars;
     base_vars.reserve(variables.size());
     for (auto const &v : variables) {
       base_vars.push_back(rename_var(v));
     }
     m_base_dom.project(base_vars);
+
+    // -- update m_var_map and m_rev_var_map
+    std::vector<variable_t> var_map_to_remove;
+    var_map_to_remove.reserve(m_var_map.size());
+    for (auto &kv: m_var_map) {
+      if (std::find(variables.begin(), variables.end(), kv.first) == variables.end()) {
+	var_map_to_remove.push_back(kv.first);
+	m_rev_var_map.erase(kv.second);
+      }
+    }
+    for (auto &v: var_map_to_remove) {
+      m_var_map.erase(v);
+    }
   }
 
   void normalize() override {}
