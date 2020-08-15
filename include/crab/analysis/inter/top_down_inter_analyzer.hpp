@@ -1004,7 +1004,8 @@ public:
   intra_analyzer_with_call_semantics_t &
   add_analyzer(cg_node_t cg_node,
                std::unique_ptr<intra_analyzer_with_call_semantics_t> analysis) {
-    auto res = m_intra_analyzer.insert(std::make_pair(cg_node, std::move(analysis)));
+    auto res =
+        m_intra_analyzer.insert(std::make_pair(cg_node, std::move(analysis)));
     return *((res.first)->second);
   }
 

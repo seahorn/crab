@@ -1147,8 +1147,7 @@ public:
   using array_graph_t = array_graph<landmark_ref_t, Content, IsDistContent>;
 
   //// XXX: make this a template parameter later
-  using str_varname_t =
-      crab::var_factory_impl::str_var_alloc_col::varname_t;
+  using str_varname_t = crab::var_factory_impl::str_var_alloc_col::varname_t;
   using str_interval_dom_t =
       ikos::interval_domain<ikos::z_number, str_varname_t>;
   using idom_info =
@@ -2310,7 +2309,8 @@ public:
 
   // region/reference operations
   void region_init(const variable_t &reg) override {}
-  void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {}    
+  void region_copy(const variable_t &lhs_reg,
+                   const variable_t &rhs_reg) override {}
   void ref_make(const variable_t &ref, const variable_t &reg) override {}
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {}
@@ -2329,9 +2329,9 @@ public:
                           const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
   void ref_to_int(const variable_t &reg, const variable_t &ref,
-		  const variable_t &int_var) override {}
-  void int_to_ref(const variable_t &int_var,
-		  const variable_t &reg, const variable_t &ref) override {}
+                  const variable_t &int_var) override {}
+  void int_to_ref(const variable_t &int_var, const variable_t &reg,
+                  const variable_t &ref) override {}
 
   // array_operators_api
 

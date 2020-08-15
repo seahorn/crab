@@ -546,14 +546,14 @@ public:
     this->reduce();
   }
 
-  virtual void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
+  virtual void region_copy(const variable_t &lhs_reg,
+                           const variable_t &rhs_reg) override {
     this->_product.first().region_copy(lhs_reg, rhs_reg);
     this->_product.second().region_copy(lhs_reg, rhs_reg);
     this->reduce();
   }
-  
-  virtual void ref_make(const variable_t &ref,
-                        const variable_t &reg) override {
+
+  virtual void ref_make(const variable_t &ref, const variable_t &reg) override {
     this->_product.first().ref_make(ref, reg);
     this->_product.second().ref_make(ref, reg);
     this->reduce();
@@ -612,19 +612,19 @@ public:
   }
 
   void ref_to_int(const variable_t &reg, const variable_t &ref_var,
-		  const variable_t &int_var) override {
+                  const variable_t &int_var) override {
     this->_product.first().ref_to_int(reg, ref_var, int_var);
     this->_product.second().ref_to_int(reg, ref_var, int_var);
     this->reduce();
   }
-  
-  void int_to_ref(const variable_t &int_var,
-		  const variable_t &reg, const variable_t &ref_var) override {
+
+  void int_to_ref(const variable_t &int_var, const variable_t &reg,
+                  const variable_t &ref_var) override {
     this->_product.first().int_to_ref(int_var, reg, ref_var);
     this->_product.second().int_to_ref(int_var, reg, ref_var);
     this->reduce();
-  }  
-  
+  }
+
   // boolean operators
   virtual void assign_bool_cst(const variable_t &lhs,
                                const linear_constraint_t &rhs) override {
@@ -1242,7 +1242,8 @@ public:
       const reduced_numerical_domain_product2_t &invariant) override {}
   // region/reference operations
   void region_init(const variable_t &reg) override {}
-  void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {}  
+  void region_copy(const variable_t &lhs_reg,
+                   const variable_t &rhs_reg) override {}
   void ref_make(const variable_t &ref, const variable_t &reg) override {}
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {}
@@ -1261,9 +1262,9 @@ public:
                           const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
   void ref_to_int(const variable_t &reg, const variable_t &ref_var,
-		  const variable_t &int_var) override {}
-  void int_to_ref(const variable_t &int_var,
-		  const variable_t &reg, const variable_t &ref_var) override {}    
+                  const variable_t &int_var) override {}
+  void int_to_ref(const variable_t &int_var, const variable_t &reg,
+                  const variable_t &ref_var) override {}
   /* End unimplemented operations */
 
   void rename(const variable_vector_t &from,
@@ -1895,7 +1896,8 @@ public:
                              const rnc_domain_t &invariant) override {}
   // region/reference operations
   void region_init(const variable_t &reg) override {}
-  void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {}    
+  void region_copy(const variable_t &lhs_reg,
+                   const variable_t &rhs_reg) override {}
   void ref_make(const variable_t &ref, const variable_t &reg) override {}
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {}
@@ -1914,9 +1916,9 @@ public:
                           const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
   void ref_to_int(const variable_t &reg, const variable_t &ref_var,
-		  const variable_t &int_var) override {}
-  void int_to_ref(const variable_t &int_var,
-		  const variable_t &reg, const variable_t &ref_var) override {}    
+                  const variable_t &int_var) override {}
+  void int_to_ref(const variable_t &int_var, const variable_t &reg,
+                  const variable_t &ref_var) override {}
   /* End unimplemented operations */
 
   void forget(const variable_vector_t &variables) override {

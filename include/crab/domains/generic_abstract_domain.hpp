@@ -26,8 +26,7 @@ namespace domains {
  */
 
 template <typename Variable>
-class abstract_domain final
-    : abstract_domain_api<abstract_domain<Variable>> {
+class abstract_domain final : abstract_domain_api<abstract_domain<Variable>> {
 public:
   using number_t = typename Variable::number_t;
   using varname_t = typename Variable::varname_t;
@@ -112,7 +111,8 @@ private:
                                    const linear_expression_t &val) = 0;
     virtual void array_assign(const variable_t &a, const variable_t &b) = 0;
     virtual void region_init(const variable_t &reg) = 0;
-    virtual void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) = 0;
+    virtual void region_copy(const variable_t &lhs_reg,
+                             const variable_t &rhs_reg) = 0;
     virtual void ref_make(const variable_t &ref, const variable_t &reg) = 0;
     virtual void ref_load(const variable_t &ref, const variable_t &reg,
                           const variable_t &res) = 0;
@@ -133,10 +133,10 @@ private:
                                     const linear_expression_t &val) = 0;
     virtual void ref_assume(const reference_constraint_t &cst) = 0;
     virtual void ref_to_int(const variable_t &reg, const variable_t &ref_var,
-			    const variable_t &int_var) = 0;
-    virtual void int_to_ref(const variable_t &int_var,
-			    const variable_t &reg, const variable_t &ref_var) = 0;
-    
+                            const variable_t &int_var) = 0;
+    virtual void int_to_ref(const variable_t &int_var, const variable_t &reg,
+                            const variable_t &ref_var) = 0;
+
     virtual void backward_apply(arith_operation_t op, const variable_t &x,
                                 const variable_t &y, const variable_t &z,
                                 const abstract_domain_concept &invariant) = 0;
@@ -358,10 +358,9 @@ private:
     void array_assign(const variable_t &a, const variable_t &b) override {
       m_inv.array_assign(a, b);
     }
-    void region_init(const variable_t &reg) override {
-      m_inv.region_init(reg);
-    }
-    void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
+    void region_init(const variable_t &reg) override { m_inv.region_init(reg); }
+    void region_copy(const variable_t &lhs_reg,
+                     const variable_t &rhs_reg) override {
       m_inv.region_copy(lhs_reg, rhs_reg);
     }
     void ref_make(const variable_t &ref, const variable_t &reg) override {
@@ -396,13 +395,13 @@ private:
       m_inv.ref_assume(cst);
     }
     void ref_to_int(const variable_t &reg, const variable_t &ref_var,
-		    const variable_t &int_var) override {
+                    const variable_t &int_var) override {
       m_inv.ref_to_int(reg, ref_var, int_var);
     }
-    void int_to_ref(const variable_t &int_var,
-		    const variable_t &reg, const variable_t &ref_var) override {
+    void int_to_ref(const variable_t &int_var, const variable_t &reg,
+                    const variable_t &ref_var) override {
       m_inv.int_to_ref(int_var, reg, ref_var);
-    }  
+    }
 
     // unsafe: if the underlying domain in invariant is not Domain then it will
     // crash
@@ -555,8 +554,7 @@ private:
 
   std::unique_ptr<abstract_domain_concept> m_concept;
 
-  explicit abstract_domain(
-      std::unique_ptr<abstract_domain_concept> concept)
+  explicit abstract_domain(std::unique_ptr<abstract_domain_concept> concept)
       : m_concept(std::move(concept)) {}
 
 public:
@@ -570,8 +568,7 @@ public:
 
   ~abstract_domain() = default;
 
-  abstract_domain(const abstract_domain &o)
-      : m_concept(o.m_concept->clone()) {}
+  abstract_domain(const abstract_domain &o) : m_concept(o.m_concept->clone()) {}
 
   abstract_domain &operator=(const abstract_domain &o) {
     if (this != &o) {
@@ -602,25 +599,17 @@ public:
   void operator|=(const abstract_domain &abs) override {
     m_concept->operator|=(*(abs.m_concept));
   }
-  abstract_domain
-  operator|(const abstract_domain &abs) const override {
-    return abstract_domain(
-        std::move(m_concept->operator|(*(abs.m_concept))));
+  abstract_domain operator|(const abstract_domain &abs) const override {
+    return abstract_domain(std::move(m_concept->operator|(*(abs.m_concept))));
   }
-  abstract_domain
-  operator&(const abstract_domain &abs) const override {
-    return abstract_domain(
-        std::move(m_concept->operator&(*(abs.m_concept))));
+  abstract_domain operator&(const abstract_domain &abs) const override {
+    return abstract_domain(std::move(m_concept->operator&(*(abs.m_concept))));
   }
-  abstract_domain
-  operator||(const abstract_domain &abs) const override {
-    return abstract_domain(
-        std::move(m_concept->operator||(*(abs.m_concept))));
+  abstract_domain operator||(const abstract_domain &abs) const override {
+    return abstract_domain(std::move(m_concept->operator||(*(abs.m_concept))));
   }
-  abstract_domain
-  operator&&(const abstract_domain &abs) const override {
-    return abstract_domain(
-        std::move(m_concept->operator&&(*(abs.m_concept))));
+  abstract_domain operator&&(const abstract_domain &abs) const override {
+    return abstract_domain(std::move(m_concept->operator&&(*(abs.m_concept))));
   }
   abstract_domain widening_thresholds(
       const abstract_domain &abs,
@@ -698,9 +687,10 @@ public:
   void region_init(const variable_t &reg) override {
     m_concept->region_init(reg);
   }
-  void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
+  void region_copy(const variable_t &lhs_reg,
+                   const variable_t &rhs_reg) override {
     m_concept->region_copy(lhs_reg, rhs_reg);
-  }      
+  }
   void ref_make(const variable_t &ref, const variable_t &reg) override {
     m_concept->ref_make(ref, reg);
   }
@@ -733,13 +723,13 @@ public:
     m_concept->ref_assume(cst);
   }
   void ref_to_int(const variable_t &reg, const variable_t &ref_var,
-		  const variable_t &int_var) override {
+                  const variable_t &int_var) override {
     m_concept->ref_to_int(reg, ref_var, int_var);
   }
-  void int_to_ref(const variable_t &int_var,
-		  const variable_t &reg, const variable_t &ref_var) override {
+  void int_to_ref(const variable_t &int_var, const variable_t &reg,
+                  const variable_t &ref_var) override {
     m_concept->int_to_ref(int_var, reg, ref_var);
-  }  
+  }
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const abstract_domain &invariant) override {
@@ -754,22 +744,20 @@ public:
                        const abstract_domain &invariant) override {
     m_concept->backward_assign(x, e, *invariant.m_concept);
   }
-  void
-  backward_assign_bool_cst(const variable_t &lhs,
-                           const linear_constraint_t &rhs,
-                           const abstract_domain &invariant) override {
+  void backward_assign_bool_cst(const variable_t &lhs,
+                                const linear_constraint_t &rhs,
+                                const abstract_domain &invariant) override {
     m_concept->backward_assign_bool_cst(lhs, rhs, *invariant.m_concept);
   }
-  void
-  backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
-                           bool is_not_rhs,
-                           const abstract_domain &invariant) override {
+  void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
+                                bool is_not_rhs,
+                                const abstract_domain &invariant) override {
     m_concept->backward_assign_bool_var(lhs, rhs, is_not_rhs,
                                         *invariant.m_concept);
   }
-  void backward_apply_binary_bool(
-      bool_operation_t op, const variable_t &x, const variable_t &y,
-      const variable_t &z, const abstract_domain &invariant) override {
+  void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
+                                  const variable_t &y, const variable_t &z,
+                                  const abstract_domain &invariant) override {
     m_concept->backward_apply_binary_bool(op, x, y, z, *invariant.m_concept);
   }
   void backward_array_init(const variable_t &a,
@@ -795,17 +783,17 @@ public:
     m_concept->backward_array_store(a, elem_size, i, v, is_strong_update,
                                     *invariant.m_concept);
   }
-  void backward_array_store_range(
-      const variable_t &a, const linear_expression_t &elem_size,
-      const linear_expression_t &i, const linear_expression_t &j,
-      const linear_expression_t &v,
-      const abstract_domain &invariant) override {
+  void backward_array_store_range(const variable_t &a,
+                                  const linear_expression_t &elem_size,
+                                  const linear_expression_t &i,
+                                  const linear_expression_t &j,
+                                  const linear_expression_t &v,
+                                  const abstract_domain &invariant) override {
     m_concept->backward_array_store_range(a, elem_size, i, j, v,
                                           *invariant.m_concept);
   }
-  void
-  backward_array_assign(const variable_t &a, const variable_t &b,
-                        const abstract_domain &invariant) override {
+  void backward_array_assign(const variable_t &a, const variable_t &b,
+                             const abstract_domain &invariant) override {
     m_concept->backward_array_assign(a, b, *invariant.m_concept);
   }
   void operator-=(const variable_t &v) override { m_concept->operator-=(v); }
@@ -845,13 +833,12 @@ public:
   }
   std::string domain_name() const override { return m_concept->domain_name(); }
   void write(crab::crab_os &o) const override { m_concept->write(o); }
-  friend crab::crab_os &
-  operator<<(crab::crab_os &o, const abstract_domain<Variable> &dom) {
+  friend crab::crab_os &operator<<(crab::crab_os &o,
+                                   const abstract_domain<Variable> &dom) {
     dom.write(o);
     return o;
   }
 };
-
 
 /* Simple wrapper for abstract_domain that performs copy-on-write
    optimization */
@@ -873,7 +860,6 @@ public:
   using interval_t = ikos::interval<number_t>;
 
 private:
-  
   using this_type = abstract_domain_ref<Variable>;
   using abstract_domain_t = abstract_domain<Variable>;
   using abstract_domain_ptr = std::shared_ptr<abstract_domain_t>;
@@ -882,10 +868,10 @@ private:
   abstract_domain_ptr m_norm_ref;
 
   abstract_domain_ref(abstract_domain_ptr ref)
-    : m_base_ref(nullptr), m_norm_ref(ref) {}
+      : m_base_ref(nullptr), m_norm_ref(ref) {}
 
   abstract_domain_ref(abstract_domain_ptr base, abstract_domain_ptr norm)
-    : m_base_ref(base), m_norm_ref(norm) {}
+      : m_base_ref(base), m_norm_ref(norm) {}
 
   this_type create(abstract_domain_t &&abs) const {
     return std::make_shared<abstract_domain_t>(std::move(abs));
@@ -893,7 +879,8 @@ private:
 
   this_type create_base(abstract_domain_t &&abs) const {
     abstract_domain_ptr base = std::make_shared<abstract_domain_t>(abs);
-    abstract_domain_ptr norm = std::make_shared<abstract_domain_t>(std::move(abs));
+    abstract_domain_ptr norm =
+        std::make_shared<abstract_domain_t>(std::move(abs));
     return this_type(base, norm);
   }
 
@@ -909,27 +896,22 @@ private:
     else
       return *m_norm_ref;
   }
-  
-  abstract_domain_t &norm(void) {
-    return *m_norm_ref;
-  }
 
-  const abstract_domain_t &norm(void) const {
-    return *m_norm_ref;
-  }
-  
+  abstract_domain_t &norm(void) { return *m_norm_ref; }
+
+  const abstract_domain_t &norm(void) const { return *m_norm_ref; }
+
 public:
-  
   template <typename Domain>
   abstract_domain_ref(Domain inv)
-    : m_base_ref(nullptr),
-      m_norm_ref(std::make_shared<abstract_domain_t>(inv)) {}
+      : m_base_ref(nullptr),
+        m_norm_ref(std::make_shared<abstract_domain_t>(inv)) {}
 
   ~abstract_domain_ref() = default;
 
   abstract_domain_ref(const abstract_domain_ref &o) = default;
 
-  abstract_domain_ref &operator=(const abstract_domain_ref &o)  = default;
+  abstract_domain_ref &operator=(const abstract_domain_ref &o) = default;
 
   abstract_domain_ref(abstract_domain_ref &&o) = default;
 
@@ -940,386 +922,379 @@ public:
   }
 
   abstract_domain_ref make_bottom() const override {
-    return create(norm().make_bottom());    
+    return create(norm().make_bottom());
   }
 
   void set_to_top() override {
     detach();
     norm().set_to_top();
   }
-  
+
   void set_to_bottom() override {
     detach();
     norm().set_to_bottom();
   }
-  
+
   bool is_bottom() const override { return norm().is_bottom(); }
 
   bool is_top() const override { return norm().is_top(); }
-  
+
   bool operator<=(const abstract_domain_ref &o) const override {
     return norm() <= o.norm();
   }
-  
+
   void operator|=(const abstract_domain_ref &o) override {
     detach();
     norm() |= o.norm();
   }
-  
-  abstract_domain_ref
-  operator|(const abstract_domain_ref &o) const override {
+
+  abstract_domain_ref operator|(const abstract_domain_ref &o) const override {
     return create(norm() | o.norm());
   }
-  
-  abstract_domain_ref
-  operator&(const abstract_domain_ref &o) const override {
-    return create(norm() & o.norm());    
+
+  abstract_domain_ref operator&(const abstract_domain_ref &o) const override {
+    return create(norm() & o.norm());
   }
-  
-  abstract_domain_ref
-  operator||(const abstract_domain_ref &o) const override {
+
+  abstract_domain_ref operator||(const abstract_domain_ref &o) const override {
     return create_base(base() || o.norm());
   }
-  
-  abstract_domain_ref
-  operator&&(const abstract_domain_ref &o) const override {
-    return create(norm() && o.norm());        
+
+  abstract_domain_ref operator&&(const abstract_domain_ref &o) const override {
+    return create(norm() && o.norm());
   }
-  
+
   abstract_domain_ref widening_thresholds(
       const abstract_domain_ref &o,
       const crab::iterators::thresholds<number_t> &ts) const override {
     return create_base(base().widening_thresholds(o.norm(), ts));
   }
-  
+
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
     detach();
     norm().apply(op, x, y, z);
   }
-  
+
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
     detach();
-    norm().apply(op, x, y, k);    
-  }
-  
-  void assign(const variable_t &x, const linear_expression_t &e) override {
-    detach();    
-    norm().assign(x, e);
-  }
-  
-  void operator+=(const linear_constraint_system_t &csts) override {
-    detach();    
-    norm().operator+=(csts);
-  }
-  
-  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
-             const variable_t &z) override {
-    detach();    
-    norm().apply(op, x, y, z);
-  }
-  
-  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
-             number_t k) override {
-    detach();    
     norm().apply(op, x, y, k);
   }
-  
+
+  void assign(const variable_t &x, const linear_expression_t &e) override {
+    detach();
+    norm().assign(x, e);
+  }
+
+  void operator+=(const linear_constraint_system_t &csts) override {
+    detach();
+    norm().operator+=(csts);
+  }
+
+  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
+             const variable_t &z) override {
+    detach();
+    norm().apply(op, x, y, z);
+  }
+
+  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
+             number_t k) override {
+    detach();
+    norm().apply(op, x, y, k);
+  }
+
   void apply(int_conv_operation_t op, const variable_t &dst,
              const variable_t &src) override {
-    detach();    
+    detach();
     norm().apply(op, dst, src);
   }
-  
+
   void assign_bool_cst(const variable_t &lhs,
                        const linear_constraint_t &rhs) override {
-    detach();    
+    detach();
     norm().assign_bool_cst(lhs, rhs);
   }
-  
+
   void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                        bool is_not_rhs) override {
-    detach();    
+    detach();
     norm().assign_bool_var(lhs, rhs, is_not_rhs);
   }
-  
+
   void apply_binary_bool(bool_operation_t op, const variable_t &x,
                          const variable_t &y, const variable_t &z) override {
-    detach();    
+    detach();
     norm().apply_binary_bool(op, x, y, z);
   }
-  
+
   void assume_bool(const variable_t &v, bool is_negated) override {
-    detach();    
+    detach();
     norm().assume_bool(v, is_negated);
   }
-  
+
   void array_init(const variable_t &a, const linear_expression_t &elem_size,
                   const linear_expression_t &lb_idx,
-                  const linear_expression_t &ub_idx,		  
+                  const linear_expression_t &ub_idx,
                   const linear_expression_t &val) override {
-    detach();    
+    detach();
     norm().array_init(a, elem_size, lb_idx, ub_idx, val);
   }
-  
+
   void array_load(const variable_t &lhs, const variable_t &a,
                   const linear_expression_t &elem_size,
                   const linear_expression_t &i) override {
-    detach();    
+    detach();
     norm().array_load(lhs, a, elem_size, i);
   }
-  
+
   void array_store(const variable_t &a, const linear_expression_t &elem_size,
                    const linear_expression_t &i, const linear_expression_t &val,
                    bool is_strong_update) override {
-    detach();    
+    detach();
     norm().array_store(a, elem_size, i, val, is_strong_update);
   }
-  
+
   void array_store_range(const variable_t &a,
                          const linear_expression_t &elem_size,
                          const linear_expression_t &i,
                          const linear_expression_t &j,
                          const linear_expression_t &val) override {
-    detach();    
+    detach();
     norm().array_store_range(a, elem_size, i, j, val);
   }
-  
+
   void array_assign(const variable_t &a, const variable_t &b) override {
-    detach();    
+    detach();
     norm().array_assign(a, b);
   }
-  
+
   void region_init(const variable_t &reg) override {
-    detach();    
+    detach();
     norm().region_init(reg);
   }
 
-  void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
+  void region_copy(const variable_t &lhs_reg,
+                   const variable_t &rhs_reg) override {
     detach();
     norm().region_copy(lhs_reg, rhs_reg);
   }
-  
+
   void ref_make(const variable_t &ref, const variable_t &reg) override {
-    detach();    
+    detach();
     norm().ref_make(ref, reg);
   }
-  
+
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {
-    detach();    
+    detach();
     norm().ref_load(ref, reg, res);
   }
-  
+
   void ref_store(const variable_t &ref, const variable_t &reg,
                  const linear_expression_t &val) override {
-    detach();    
+    detach();
     norm().ref_store(ref, reg, val);
   }
-  
+
   void ref_gep(const variable_t &ref1, const variable_t &reg1,
                const variable_t &ref2, const variable_t &reg2,
                const linear_expression_t &offset) override {
-    detach();    
+    detach();
     norm().ref_gep(ref1, reg1, ref2, reg2, offset);
   }
-  
+
   void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
                            const variable_t &region,
                            const linear_expression_t &index,
                            const linear_expression_t &elem_size) override {
-    detach();    
+    detach();
     norm().ref_load_from_array(lhs, ref, region, index, elem_size);
   }
-  
+
   void ref_store_to_array(const variable_t &ref, const variable_t &region,
                           const linear_expression_t &index,
                           const linear_expression_t &elem_size,
                           const linear_expression_t &val) override {
-    detach();    
+    detach();
     norm().ref_store_to_array(ref, region, index, elem_size, val);
   }
-  
+
   void ref_assume(const reference_constraint_t &cst) override {
-    detach();    
+    detach();
     norm().ref_assume(cst);
   }
 
   void ref_to_int(const variable_t &reg, const variable_t &ref_var,
-		  const variable_t &int_var) override {
+                  const variable_t &int_var) override {
     detach();
     norm().ref_to_int(reg, ref_var, int_var);
   }
-  
-  void int_to_ref(const variable_t &int_var,
-		  const variable_t &reg, const variable_t &ref_var) override {
+
+  void int_to_ref(const variable_t &int_var, const variable_t &reg,
+                  const variable_t &ref_var) override {
     detach();
     norm().int_to_ref(int_var, reg, ref_var);
   }
-  
+
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const abstract_domain_ref &invariant) override {
-    detach();    
+    detach();
     norm().backward_apply(op, x, y, z, invariant.norm());
   }
-  
+
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, number_t k,
                       const abstract_domain_ref &invariant) override {
-    detach();    
+    detach();
     norm().backward_apply(op, x, y, k, invariant.norm());
   }
-  
+
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const abstract_domain_ref &invariant) override {
-    detach();    
+    detach();
     norm().backward_assign(x, e, invariant.norm());
   }
-  
-  void
-  backward_assign_bool_cst(const variable_t &lhs,
-                           const linear_constraint_t &rhs,
-                           const abstract_domain_ref &invariant) override {
-    detach();    
+
+  void backward_assign_bool_cst(const variable_t &lhs,
+                                const linear_constraint_t &rhs,
+                                const abstract_domain_ref &invariant) override {
+    detach();
     norm().backward_assign_bool_cst(lhs, rhs, invariant.norm());
   }
-  
-  void
-  backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
-                           bool is_not_rhs,
-                           const abstract_domain_ref &invariant) override {
-    detach();    
-    norm().backward_assign_bool_var(lhs, rhs, is_not_rhs,
-                                        invariant.norm());
+
+  void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
+                                bool is_not_rhs,
+                                const abstract_domain_ref &invariant) override {
+    detach();
+    norm().backward_assign_bool_var(lhs, rhs, is_not_rhs, invariant.norm());
   }
-  
-  void backward_apply_binary_bool(
-      bool_operation_t op, const variable_t &x, const variable_t &y,
-      const variable_t &z, const abstract_domain_ref &invariant) override {
-    detach();    
+
+  void
+  backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
+                             const variable_t &y, const variable_t &z,
+                             const abstract_domain_ref &invariant) override {
+    detach();
     norm().backward_apply_binary_bool(op, x, y, z, invariant.norm());
   }
-  
+
   void backward_array_init(const variable_t &a,
                            const linear_expression_t &elem_size,
                            const linear_expression_t &lb_idx,
                            const linear_expression_t &ub_idx,
-                           const linear_expression_t &val,			   
+                           const linear_expression_t &val,
                            const abstract_domain_ref &invariant) override {
-    detach();    
+    detach();
     norm().backward_array_init(a, elem_size, lb_idx, ub_idx, val,
-                                   invariant.norm());
+                               invariant.norm());
   }
-  
+
   void backward_array_load(const variable_t &lhs, const variable_t &a,
                            const linear_expression_t &elem_size,
                            const linear_expression_t &i,
                            const abstract_domain_ref &invariant) override {
-    detach();    
+    detach();
     norm().backward_array_load(lhs, a, elem_size, i, invariant.norm());
   }
-  
+
   void backward_array_store(const variable_t &a,
                             const linear_expression_t &elem_size,
                             const linear_expression_t &i,
                             const linear_expression_t &v, bool is_strong_update,
                             const abstract_domain_ref &invariant) override {
-    detach();    
+    detach();
     norm().backward_array_store(a, elem_size, i, v, is_strong_update,
-                                    invariant.norm());
+                                invariant.norm());
   }
-  
+
   void backward_array_store_range(
       const variable_t &a, const linear_expression_t &elem_size,
       const linear_expression_t &i, const linear_expression_t &j,
       const linear_expression_t &v,
       const abstract_domain_ref &invariant) override {
-    detach();    
-    norm().backward_array_store_range(a, elem_size, i, j, v,
-                                          invariant.norm());
+    detach();
+    norm().backward_array_store_range(a, elem_size, i, j, v, invariant.norm());
   }
-  
-  void
-  backward_array_assign(const variable_t &a, const variable_t &b,
-                        const abstract_domain_ref &invariant) override {
-    detach();    
+
+  void backward_array_assign(const variable_t &a, const variable_t &b,
+                             const abstract_domain_ref &invariant) override {
+    detach();
     norm().backward_array_assign(a, b, invariant.norm());
   }
-  
+
   void operator-=(const variable_t &v) override {
-    detach();    
+    detach();
     norm().operator-=(v);
   }
-  
+
   interval_t operator[](const variable_t &v) override {
-    detach();    
+    detach();
     return norm().operator[](v);
   }
-  
+
   linear_constraint_system_t to_linear_constraint_system() const override {
     return norm().to_linear_constraint_system();
   }
-  
+
   disjunctive_linear_constraint_system_t
   to_disjunctive_linear_constraint_system() const override {
     return norm().to_disjunctive_linear_constraint_system();
   }
-  
+
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
-    detach();    
+    detach();
     norm().rename(from, to);
   }
-  
+
   void normalize() override {
-    detach();    
+    detach();
     norm().normalize();
   }
-  
+
   void minimize() override {
-    detach();    
+    detach();
     norm().minimize();
   }
-  
+
   void forget(const variable_vector_t &variables) override {
-    detach();    
+    detach();
     norm().forget(variables);
   }
-  
+
   void project(const variable_vector_t &variables) override {
-    detach();    
+    detach();
     norm().project(variables);
   }
-  
+
   void expand(const variable_t &var, const variable_t &new_var) override {
-    detach();    
+    detach();
     norm().expand(var, new_var);
   }
-  
+
   void intrinsic(std::string name, const variable_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    detach();    
+    detach();
     norm().intrinsic(name, inputs, outputs);
   }
   void backward_intrinsic(std::string name, const variable_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const abstract_domain_ref &invariant) override {
-    detach();    
+    detach();
     norm().backward_intrinsic(name, inputs, outputs, invariant.norm());
   }
-  
+
   std::string domain_name() const override { return norm().domain_name(); }
   void write(crab::crab_os &o) const override { norm().write(o); }
-  
-  friend crab::crab_os &
-  operator<<(crab::crab_os &o, const abstract_domain_ref<Variable> &dom) {
+
+  friend crab::crab_os &operator<<(crab::crab_os &o,
+                                   const abstract_domain_ref<Variable> &dom) {
     dom.write(o);
     return o;
   }
 };
-  
+
 template <typename Variable>
 struct abstract_domain_traits<abstract_domain<Variable>> {
   using number_t = typename Variable::number_t;
@@ -1331,6 +1306,6 @@ struct abstract_domain_traits<abstract_domain_ref<Variable>> {
   using number_t = typename Variable::number_t;
   using varname_t = typename Variable::varname_t;
 };
-  
+
 } // end namespace domains
 } // end namespace crab

@@ -75,7 +75,9 @@ template <typename CFG> struct assert_wrapper : public indexable {
   virtual ikos::index_t index() const override { return id; }
   bool operator==(this_type o) const { return id == o.id; }
   bool operator<(this_type o) const { return id < o.id; }
-  virtual void write(crab::crab_os &o) const override { o << "\"" << *a << "\""; }
+  virtual void write(crab::crab_os &o) const override {
+    o << "\"" << *a << "\"";
+  }
 };
 
 template <typename CFG>

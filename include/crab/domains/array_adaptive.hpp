@@ -938,25 +938,32 @@ private:
   class cell_varmap_t {
   public:
     using sorted_cell_var_vector = std::vector<std::pair<cell_t, variable_t>>;
+
   private:
     struct less_cell_var {
-      bool operator()(const std::pair<cell_t, variable_t>& p, const cell_t& c) const {
-	return p.first < c;
+      bool operator()(const std::pair<cell_t, variable_t> &p,
+                      const cell_t &c) const {
+        return p.first < c;
       }
     };
-    std::unordered_map<variable_t, sorted_cell_var_vector> m_map;    
+    std::unordered_map<variable_t, sorted_cell_var_vector> m_map;
+
   public:
-    using iterator = typename std::unordered_map<variable_t, sorted_cell_var_vector>::iterator;
-    using const_iterator = typename std::unordered_map<variable_t, sorted_cell_var_vector>::const_iterator;    
+    using iterator =
+        typename std::unordered_map<variable_t,
+                                    sorted_cell_var_vector>::iterator;
+    using const_iterator =
+        typename std::unordered_map<variable_t,
+                                    sorted_cell_var_vector>::const_iterator;
     using cell_var_iterator = typename sorted_cell_var_vector::iterator;
 
-    cell_varmap_t(){}
-    
+    cell_varmap_t() {}
+
     iterator begin() { return m_map.begin(); }
     iterator end() { return m_map.end(); }
     const_iterator begin() const { return m_map.begin(); }
     const_iterator end() const { return m_map.end(); }
-    
+
     cell_var_iterator begin_cells(const variable_t &array) {
       return m_map[array].begin();
     }
@@ -964,71 +971,71 @@ private:
       return m_map[array].end();
     }
 
-    boost::optional<variable_t> find(const variable_t &array, const cell_t& c) const {
+    boost::optional<variable_t> find(const variable_t &array,
+                                     const cell_t &c) const {
       auto it = m_map.find(array);
       if (it == m_map.end()) {
-	return boost::none;
+        return boost::none;
       }
-      
+
       const sorted_cell_var_vector &cell_vars = it->second;
       less_cell_var cmp;
-      auto lb = std::lower_bound(cell_vars.begin(), cell_vars.end(), c, cmp); 
+      auto lb = std::lower_bound(cell_vars.begin(), cell_vars.end(), c, cmp);
       if (lb != cell_vars.end() && !(c < (*lb).first)) {
-	return (*lb).second;
+        return (*lb).second;
       } else {
-	return boost::none;
+        return boost::none;
       }
     }
-    
-    void erase(const variable_t& array, const cell_t& c) {
+
+    void erase(const variable_t &array, const cell_t &c) {
       auto it = m_map.find(array);
       if (it == m_map.end()) {
-	return;
+        return;
       }
-      
+
       sorted_cell_var_vector &cell_vars = it->second;
       less_cell_var cmp;
       auto lb = std::lower_bound(cell_vars.begin(), cell_vars.end(), c, cmp);
       if (lb != cell_vars.end() && !(c < (*lb).first)) {
-	cell_vars.erase(lb);
-      }      
+        cell_vars.erase(lb);
+      }
     }
 
-    void erase(const variable_t& array) {
-      m_map.erase(array);
-    }
-    
-    void insert(const variable_t& array, const cell_t&c, const variable_t& base_v) {
+    void erase(const variable_t &array) { m_map.erase(array); }
+
+    void insert(const variable_t &array, const cell_t &c,
+                const variable_t &base_v) {
       std::vector<std::pair<cell_t, variable_t>> vs;
       auto it = m_map.insert({array, vs}).first;
       sorted_cell_var_vector &cell_vars = it->second;
       less_cell_var cmp;
       auto lb = std::lower_bound(cell_vars.begin(), cell_vars.end(), c, cmp);
       if (lb != cell_vars.end() && !(c < (*lb).first)) {
-	// already exists
-	return; 
+        // already exists
+        return;
       }
       cell_vars.insert(lb, {c, base_v});
     }
 
-    void insert(const variable_t& array) {
+    void insert(const variable_t &array) {
       sorted_cell_var_vector vec;
       auto res = m_map.insert({array, vec});
       if (!res.second) {
-	CRAB_ERROR("cell_varmap_t::insert already exists");
+        CRAB_ERROR("cell_varmap_t::insert already exists");
       }
     }
 
     void write(crab_os &o) const {
-      for (auto &kv: m_map) {
-	o << kv.first << ":\n";
-	for (auto &cv: kv.second) {
-	  o << "\t" << cv.first << " --> " << cv.second << "\n";
-	}
+      for (auto &kv : m_map) {
+        o << kv.first << ":\n";
+        for (auto &cv : kv.second) {
+          o << "\t" << cv.first << " --> " << cv.second << "\n";
+        }
       }
     }
   };
-  
+
   using smashed_varmap_t = std::unordered_map<variable_t, variable_t>;
 
   class array_state {
@@ -1093,35 +1100,37 @@ private:
         for (unsigned k = 0, num_cells = cells.size(); k < num_cells; ++k) {
           const cell_t &c = cells[k];
           if (!consistent_offset(c.get_offset(), *sz_opt)) {
-	    CRAB_LOG("array-adaptive",
-		     CRAB_WARN("cannot smashing because of inconsistent offsets"););
+            CRAB_LOG(
+                "array-adaptive",
+                CRAB_WARN("cannot smashing because of inconsistent offsets"););
             can_be_smashed = false;
             break;
           }
           const bool is_strong_update = (k == 0);
           linear_expression_t idx(number_t(c.get_offset().index()));
-	  if (boost::optional<variable_t> c_scalar_var = cvm.find(a, c)) {
+          if (boost::optional<variable_t> c_scalar_var = cvm.find(a, c)) {
             base_dom.array_store(smashed_a, c.get_size(), idx, *c_scalar_var,
                                  is_strong_update);
-	  } else {
-	    CRAB_LOG("array-adaptive",
-		     CRAB_WARN("cannot smashing because of scalar variable for array ",
-			       a, " and cell ", c, " not found in ");
-		     cvm.write(crab::outs());
-		     crab::outs() << "\n";);
+          } else {
+            CRAB_LOG(
+                "array-adaptive",
+                CRAB_WARN(
+                    "cannot smashing because of scalar variable for array ", a,
+                    " and cell ", c, " not found in ");
+                cvm.write(crab::outs()); crab::outs() << "\n";);
             can_be_smashed = false;
             break;
-	  } 
+          }
         }
 
         if (can_be_smashed) {
           for (unsigned k = 0, num_cells = cells.size(); k < num_cells; ++k) {
             const cell_t &c = cells[k];
-	    if (boost::optional<variable_t> c_scalar_var = cvm.find(a, c)) {
-	      // remove the synthethic cell from the base domain and
+            if (boost::optional<variable_t> c_scalar_var = cvm.find(a, c)) {
+              // remove the synthethic cell from the base domain and
               // from the offset map
               base_dom -= *c_scalar_var;
-	    }
+            }
             get_offset_map().erase(c);
             cvm.erase(a, c);
           }
@@ -1463,39 +1472,40 @@ private:
     }
 
     // Assume that from does not have duplicates.
-    void rename(const std::vector<variable_t> &from, const std::vector<variable_t> &to) {
+    void rename(const std::vector<variable_t> &from,
+                const std::vector<variable_t> &to) {
       if (from.size() != to.size()) {
-      CRAB_ERROR(
-	"array_adaptive::array_state_t::rename received input vectors of different sizes");
+        CRAB_ERROR("array_adaptive::array_state_t::rename received input "
+                   "vectors of different sizes");
       }
 
       if (m_tree.size() == 0) {
-	return;
+        return;
       }
-      
+
       for (unsigned i = 0, sz = from.size(); i < sz; ++i) {
-	variable_t k = from[i];
-	variable_t new_k = to[i];
-	if (k == new_k) { // nothing to rename
-	  continue;
-	}
+        variable_t k = from[i];
+        variable_t new_k = to[i];
+        if (k == new_k) { // nothing to rename
+          continue;
+        }
 
-	if (::crab::CrabSanityCheckFlag) {	
-	  if (m_tree.lookup(new_k)) {
-	    CRAB_ERROR("array_adaptive::array_state_t:rename assumes that  ", new_k,
-		       " does not exist");
-	  }
-	}
+        if (::crab::CrabSanityCheckFlag) {
+          if (m_tree.lookup(new_k)) {
+            CRAB_ERROR("array_adaptive::array_state_t:rename assumes that  ",
+                       new_k, " does not exist");
+          }
+        }
 
-	if (boost::optional<array_state> k_val_opt = m_tree.lookup(k)) {
-	  if (!(*k_val_opt).is_top()) {
-	    m_tree.insert(new_k, *k_val_opt);
-	  }
-	  m_tree.remove(k);
-	}
+        if (boost::optional<array_state> k_val_opt = m_tree.lookup(k)) {
+          if (!(*k_val_opt).is_top()) {
+            m_tree.insert(new_k, *k_val_opt);
+          }
+          m_tree.remove(k);
+        }
       }
     }
-    
+
     void write(crab::crab_os &o) const {
       o << "{";
       for (auto it = m_tree.begin(); it != m_tree.end();) {
@@ -1577,18 +1587,19 @@ private:
 
   // Return a named cell, i.e., a cell with a scalar variable
   // associated to it.
-  // 
+  //
   // Note that well-typing requires that the bitwidth of the scalar
   // variable must be the same that a.  However, the parameter sz is
   // the actual number of bytes that represent the cell that can be
   // less or equal than a.get_bitwidth().
-  std::pair<cell_t, variable_t>
-  mk_named_cell(const variable_t &a, const offset_t &o, uint64_t sz /*bytes*/,
-		offset_map_t &om) {
+  std::pair<cell_t, variable_t> mk_named_cell(const variable_t &a,
+                                              const offset_t &o,
+                                              uint64_t sz /*bytes*/,
+                                              offset_map_t &om) {
     // create first an unnamed cell
     cell_t c = om.mk_cell(o, sz);
 
-    if (boost::optional<variable_t> scalar_v =  m_cell_varmap.find(a, c)) {
+    if (boost::optional<variable_t> scalar_v = m_cell_varmap.find(a, c)) {
       return {c, *scalar_v};
     } else {
       assert(!c.is_null());
@@ -1604,8 +1615,7 @@ private:
   }
 
   using variable_opt_t = boost::optional<variable_t>;
-  variable_opt_t
-  get_scalar(const variable_t &array_v, const cell_t &c) {
+  variable_opt_t get_scalar(const variable_t &array_v, const cell_t &c) {
     if (!array_v.is_array_type()) {
       CRAB_ERROR("array_adaptive::get_scalar only if array variable");
     }
@@ -1619,7 +1629,7 @@ private:
     os << "smashed(" << v << ")";
     return variable_t(vfac.get(os.str()), v.get_type(), v.get_bitwidth());
   }
-  
+
   static variable_t get_smashed_variable(const variable_t &a,
                                          smashed_varmap_t &svm) {
     if (!a.is_array_type()) {
@@ -1661,13 +1671,13 @@ private:
       std::vector<cell_t> cells = om.get_all_cells();
       for (auto &c : cells) {
         if (variable_opt_t v_opt = get_scalar(v, c)) {
-	  scalar_vars.push_back(*v_opt);
+          scalar_vars.push_back(*v_opt);
         }
       }
     } else {
       scalar_vars.push_back(get_smashed_variable(v, m_smashed_varmap));
     }
-    
+
     m_array_map -= v;
     m_cell_varmap.erase(v);
     m_inv.forget(scalar_vars);
@@ -1705,7 +1715,7 @@ private:
         for (unsigned i = 0, e = cells.size(); i < e; ++i) {
           const cell_t &c = cells[i];
           offset_map.erase(c);
-	  m_cell_varmap.erase(a, c);
+          m_cell_varmap.erase(a, c);
         }
       } else {
         // if an array is smashable then we don't delete the cells
@@ -1721,7 +1731,8 @@ private:
   // the right type.
   void do_assign(const variable_t &lhs, const variable_t &rhs) {
     if (!lhs.same_type_and_bitwidth(rhs)) {
-      CRAB_ERROR("array_adaptive assignment ", lhs, ":=", rhs, " with different types");
+      CRAB_ERROR("array_adaptive assignment ", lhs, ":=", rhs,
+                 " with different types");
     }
     switch (lhs.get_type()) {
     case BOOL_TYPE:
@@ -1736,7 +1747,7 @@ private:
           "array_adaptive assignment with unexpected array element type");
     }
   }
-  
+
   // helper to assign an array store's value
   void do_assign(const variable_t &lhs, const linear_expression_t &v) {
     switch (lhs.get_type()) {
@@ -1903,7 +1914,7 @@ private:
         }
       }
     }
-    
+
     /// Rename the base domains
     left_dom.rename(old_vars_left, new_vars);
     right_dom.rename(old_vars_right, new_vars);
@@ -1913,29 +1924,29 @@ private:
     new_vars.clear();
 
     // Common renaming for cell scalars
-    for (auto &kv: left_cvm) {
-      for (auto &cv: kv.second) {
-	const variable_t &array_var = kv.first;
-	const cell_t &c = cv.first;
-	const variable_t &v1 = cv.second;
-	auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
-	if (boost::optional<variable_t> v2 = right_cvm.find(array_var, c)) {
-	  if (v1 != *v2) {
-	    assert(v1.name().str() == (*v2).name().str());
-	    assert(v1.same_type_and_bitwidth(*v2));
-	    variable_t outv(vfac.get(v1.name().str()), v1.get_type(),
-			    v1.get_bitwidth());
-	    old_vars_left.push_back(v1);
-	    old_vars_right.push_back(*v2);
-	    new_vars.push_back(outv);
-	    out_cvm.insert(array_var, c, outv);
-	  } else {
-	    out_cvm.insert(array_var, c, v1);
-	  }
-	}
+    for (auto &kv : left_cvm) {
+      for (auto &cv : kv.second) {
+        const variable_t &array_var = kv.first;
+        const cell_t &c = cv.first;
+        const variable_t &v1 = cv.second;
+        auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
+        if (boost::optional<variable_t> v2 = right_cvm.find(array_var, c)) {
+          if (v1 != *v2) {
+            assert(v1.name().str() == (*v2).name().str());
+            assert(v1.same_type_and_bitwidth(*v2));
+            variable_t outv(vfac.get(v1.name().str()), v1.get_type(),
+                            v1.get_bitwidth());
+            old_vars_left.push_back(v1);
+            old_vars_right.push_back(*v2);
+            new_vars.push_back(outv);
+            out_cvm.insert(array_var, c, outv);
+          } else {
+            out_cvm.insert(array_var, c, v1);
+          }
+        }
       }
     }
-	  
+
     /// Rename the base domains
     left_dom.rename(old_vars_left, new_vars);
     right_dom.rename(old_vars_right, new_vars);
@@ -1974,7 +1985,7 @@ private:
       }
       out_svm.insert(kv);
     }
-    
+
     // Add the rest of mappings from the right operand
     for (auto &kv : right_svm) {
       auto it = left_svm.find(kv.first);
@@ -1982,7 +1993,7 @@ private:
         out_svm.insert(kv);
       }
     }
-    
+
     left_dom.rename(old_vars_left, new_vars);
     right_dom.rename(old_vars_right, new_vars);
 
@@ -1993,39 +2004,39 @@ private:
     /* Figure out common renaming for cell scalars */
 
     // Add all mappings from the left operand
-    for (auto &kv: left_cvm) {
-      for (auto &cv: kv.second) {
-	const variable_t &array_var = kv.first;
-	const cell_t &c = cv.first;
-	const variable_t &v1 = cv.second;
-	auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
-	if (boost::optional<variable_t> v2 = right_cvm.find(array_var, c)) {
-	  if (v1 != *v2) {
-	    // same key but different scalar -> create a fresh common scalar
-	    assert(v1.name().str() == (*v2).name().str());
-	    assert(v1.same_type_and_bitwidth(*v2));
-	    variable_t outv(vfac.get(v1.name().str()), v1.get_type(),
-			    v1.get_bitwidth());
-	    old_vars_left.push_back(v1);
-	    old_vars_right.push_back(*v2);
-	    new_vars.push_back(outv);
-	    out_cvm.insert(array_var, c, outv);
-	    continue;
-	  }
-	}
-	out_cvm.insert(array_var, c, v1);
+    for (auto &kv : left_cvm) {
+      for (auto &cv : kv.second) {
+        const variable_t &array_var = kv.first;
+        const cell_t &c = cv.first;
+        const variable_t &v1 = cv.second;
+        auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
+        if (boost::optional<variable_t> v2 = right_cvm.find(array_var, c)) {
+          if (v1 != *v2) {
+            // same key but different scalar -> create a fresh common scalar
+            assert(v1.name().str() == (*v2).name().str());
+            assert(v1.same_type_and_bitwidth(*v2));
+            variable_t outv(vfac.get(v1.name().str()), v1.get_type(),
+                            v1.get_bitwidth());
+            old_vars_left.push_back(v1);
+            old_vars_right.push_back(*v2);
+            new_vars.push_back(outv);
+            out_cvm.insert(array_var, c, outv);
+            continue;
+          }
+        }
+        out_cvm.insert(array_var, c, v1);
       }
     }
-    
+
     // Add the rest of mappings from the right operand
-    for (auto &kv: right_cvm) {
-      for (auto &cv: kv.second) {
-	const variable_t &array_var = kv.first;
-	const cell_t &c = cv.first;
-	const variable_t &v = cv.second;
-	if (!left_cvm.find(array_var, c)) {
-	  out_cvm.insert(array_var, c, v);
-	}
+    for (auto &kv : right_cvm) {
+      for (auto &cv : kv.second) {
+        const variable_t &array_var = kv.first;
+        const cell_t &c = cv.first;
+        const variable_t &v = cv.second;
+        if (!left_cvm.find(array_var, c)) {
+          out_cvm.insert(array_var, c, v);
+        }
       }
     }
 
@@ -2159,26 +2170,27 @@ public:
       old_vars_right.clear();
       new_vars.clear();
 
-      for (auto &kv: m_cell_varmap) {
-	for (auto &cv: kv.second) {
-	  const variable_t &array_var = kv.first;
-	  const cell_t &c = cv.first;
-	  const variable_t &v1 = cv.second;
-	  auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
-	  // cell exists in both
-	  if (boost::optional<variable_t> v2 = other.m_cell_varmap.find(array_var, c)) {
-	    assert(v1.name().str() == (*v2).name().str());
-	    assert(v1.same_type_and_bitwidth((*v2)));
-	    // same name and type but different variable id
-	    if (v1 != (*v2)) {
-	      variable_t outv(vfac.get(v1.name().str()), v1.get_type(),
-			      v1.get_bitwidth());
-	      old_vars_left.push_back(v1);
-	      old_vars_right.push_back(*v2);
-	      new_vars.push_back(outv);
-	    }
-	  }
-	}
+      for (auto &kv : m_cell_varmap) {
+        for (auto &cv : kv.second) {
+          const variable_t &array_var = kv.first;
+          const cell_t &c = cv.first;
+          const variable_t &v1 = cv.second;
+          auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
+          // cell exists in both
+          if (boost::optional<variable_t> v2 =
+                  other.m_cell_varmap.find(array_var, c)) {
+            assert(v1.name().str() == (*v2).name().str());
+            assert(v1.same_type_and_bitwidth((*v2)));
+            // same name and type but different variable id
+            if (v1 != (*v2)) {
+              variable_t outv(vfac.get(v1.name().str()), v1.get_type(),
+                              v1.get_bitwidth());
+              old_vars_left.push_back(v1);
+              old_vars_right.push_back(*v2);
+              new_vars.push_back(outv);
+            }
+          }
+        }
       }
 
       left_dom.rename(old_vars_left, new_vars);
@@ -2501,7 +2513,7 @@ public:
         }
       } else {
         m_array_map -= v;
-	m_cell_varmap.erase(v);
+        m_cell_varmap.erase(v);
       }
     }
 
@@ -2699,7 +2711,8 @@ public:
 
   // region/reference operations
   void region_init(const variable_t &reg) override {}
-  void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {}    
+  void region_copy(const variable_t &lhs_reg,
+                   const variable_t &rhs_reg) override {}
   void ref_make(const variable_t &ref, const variable_t &reg) override {}
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {}
@@ -2718,10 +2731,10 @@ public:
                           const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
   void ref_to_int(const variable_t &reg, const variable_t &ref,
-		  const variable_t &int_var) override {}
-  void int_to_ref(const variable_t &int_var,
-		  const variable_t &reg, const variable_t &ref) override {}
-  
+                  const variable_t &int_var) override {}
+  void int_to_ref(const variable_t &int_var, const variable_t &reg,
+                  const variable_t &ref) override {}
+
   // array_operators_api
 
   // array_init returns a fresh array where all elements between
@@ -2801,11 +2814,11 @@ public:
             precise if we choose between little- and big-endian.
           */
         } else {
-	  variable_t rhs = mk_named_cell(a, o, e_sz, offset_map).second;
+          variable_t rhs = mk_named_cell(a, o, e_sz, offset_map).second;
           // Here it's ok to do assignment (instead of expand)
           // because c is not a summarized variable. Otherwise, it
           // would be unsound.
-	  do_assign(lhs, rhs);
+          do_assign(lhs, rhs);
           m_array_map.set(a, next_as);
           goto array_load_end;
         }
@@ -2973,7 +2986,7 @@ public:
                 m_inv -= *c_scalar_opt;
               }
               offset_map.erase(c);
-	      m_cell_varmap.erase(a, c);
+              m_cell_varmap.erase(a, c);
             }
             next_as.set_smashed(true);
             next_as.get_element_sz() = cp_domain_t(number_t(e_sz));
@@ -3095,7 +3108,8 @@ public:
           continue;
         }
         // Create a new cell for lhs from rhs's cell.
-	auto named_cell = mk_named_cell(lhs, c.get_offset(), c.get_size(), lhs_om);
+        auto named_cell =
+            mk_named_cell(lhs, c.get_offset(), c.get_size(), lhs_om);
         variable_t new_c_scalar = named_cell.second;
         renmap.insert({new_c_scalar, *c_scalar_opt});
       }
@@ -3355,21 +3369,19 @@ public:
         << "=== MAP FROM CELLS TO SCALARS === \n";
         for (auto const &kv
              : m_cell_varmap) {
-	  for (auto &cv: kv.second) {
-	    crab::outs() << "\t" << kv.first << "#" << cv.first
-			 << " -> " << cv.second << "\n";
-	  }
-        }
-	crab::outs() << "=== SMASHED VARIABLES ===\n";
-	if (m_smashed_varmap.empty()) {
-	  crab::outs() << "No smashed variables\n";
-	} else {
-	  for (auto const &kv: m_smashed_varmap) {
-	    crab::outs() << kv.first << " --> " << kv.second << "\n";
-	  }
-	});
-
-	     
+          for (auto &cv : kv.second) {
+            crab::outs() << "\t" << kv.first << "#" << cv.first << " -> "
+                         << cv.second << "\n";
+          }
+        } crab::outs()
+        << "=== SMASHED VARIABLES ===\n";
+        if (m_smashed_varmap.empty()) {
+          crab::outs() << "No smashed variables\n";
+        } else {
+          for (auto const &kv : m_smashed_varmap) {
+            crab::outs() << kv.first << " --> " << kv.second << "\n";
+          }
+        });
   }
 
   std::string domain_name() const override {
@@ -3381,7 +3393,7 @@ public:
     if (is_bottom() || is_top()) {
       return;
     }
-    
+
     if (!v.same_type_and_bitwidth(new_v)) {
       CRAB_ERROR(domain_name(), "::expand must preserve same type");
     }
@@ -3393,84 +3405,86 @@ public:
     }
   }
 
-  
-  void rename(const variable_vector_t &from, const variable_vector_t &to) override {
+  void rename(const variable_vector_t &from,
+              const variable_vector_t &to) override {
     if (is_bottom() || is_top()) {
       return;
     }
-    
+
     if (from.size() != to.size()) {
       CRAB_ERROR(domain_name(), "::rename expects vectors same sizes");
     }
 
-    CRAB_LOG("array-adaptive",
-	     crab::outs() << "Before renaming " << *this << "\n";);
-    
+    CRAB_LOG("array-adaptive", crab::outs()
+                                   << "Before renaming " << *this << "\n";);
+
     // Split into array and scalar variables
     variable_vector_t array_from, array_to, scalar_from, scalar_to;
-    for (unsigned i=0, sz=from.size(); i <sz; ++i) {
+    for (unsigned i = 0, sz = from.size(); i < sz; ++i) {
       variable_t old_v = from[i];
       variable_t new_v = to[i];
       if (!old_v.same_type_and_bitwidth(new_v)) {
-    	CRAB_ERROR(domain_name(), "::rename must preserve same type");
+        CRAB_ERROR(domain_name(), "::rename must preserve same type");
       }
       if (new_v.is_array_type()) {
-	array_from.push_back(old_v);
-	array_to.push_back(new_v);
+        array_from.push_back(old_v);
+        array_to.push_back(new_v);
       } else {
-	scalar_from.push_back(old_v);
-	scalar_to.push_back(new_v);
+        scalar_from.push_back(old_v);
+        scalar_to.push_back(new_v);
       }
     }
 
     unsigned num_arr_vars = array_from.size();
-    for (unsigned i=0; i < num_arr_vars; ++i) {
+    for (unsigned i = 0; i < num_arr_vars; ++i) {
       variable_t old_v = array_from[i];
       variable_t new_v = array_to[i];
 
       // Rename m_smashed_varmap
       auto it = m_smashed_varmap.find(old_v);
       if (it != m_smashed_varmap.end()) {
-	variable_t new_smashed_v = mk_smashed_variable(new_v);
-	variable_t old_smashed_v = it->second;
-	m_smashed_varmap.erase(it);	  
-	m_smashed_varmap.insert({new_v, new_smashed_v});
-	// renaming in the base domain
-	scalar_from.push_back(old_smashed_v);
-	scalar_to.push_back(new_smashed_v);
+        variable_t new_smashed_v = mk_smashed_variable(new_v);
+        variable_t old_smashed_v = it->second;
+        m_smashed_varmap.erase(it);
+        m_smashed_varmap.insert({new_v, new_smashed_v});
+        // renaming in the base domain
+        scalar_from.push_back(old_smashed_v);
+        scalar_to.push_back(new_smashed_v);
       }
 
       // Rename m_cell_varmap and m_array_map
       if (const array_state *old_as = m_array_map.find(old_v)) {
-	array_state new_as;
-	new_as.set_smashed(old_as->is_smashed());
-	cp_domain_t &new_cp_dom = new_as.get_element_sz();
-	new_cp_dom = old_as->get_element_sz();
-	offset_map_t &offset_map = new_as.get_offset_map();
-	// We insert here an empty vector so that no resizing can happen
-	// while we iterate over m_cell_varmap.      
-	m_cell_varmap.insert(new_v);
-	for(auto it = m_cell_varmap.begin_cells(old_v), et = m_cell_varmap.end_cells(old_v);
-	    it!=et; ++it) {
-	  const cell_t &old_c = (*it).first;
-	  const variable_t &old_scalar = (*it).second;
-	  /// Modify m_cell_varmap but it doesn't invalidate iterators
-	  /// because new_v is already in m_cell_varmap.
-	  auto named_cell = mk_named_cell(new_v, old_c.get_offset(), old_c.get_size(), offset_map);
-	  variable_t new_scalar = named_cell.second;
-	  // renaming in the base domain
-	  scalar_from.push_back(old_scalar);
-	  scalar_to.push_back(new_scalar);
-	}
-	m_array_map -= old_v;      		
-	m_array_map.set(new_v, new_as);
+        array_state new_as;
+        new_as.set_smashed(old_as->is_smashed());
+        cp_domain_t &new_cp_dom = new_as.get_element_sz();
+        new_cp_dom = old_as->get_element_sz();
+        offset_map_t &offset_map = new_as.get_offset_map();
+        // We insert here an empty vector so that no resizing can happen
+        // while we iterate over m_cell_varmap.
+        m_cell_varmap.insert(new_v);
+        for (auto it = m_cell_varmap.begin_cells(old_v),
+                  et = m_cell_varmap.end_cells(old_v);
+             it != et; ++it) {
+          const cell_t &old_c = (*it).first;
+          const variable_t &old_scalar = (*it).second;
+          /// Modify m_cell_varmap but it doesn't invalidate iterators
+          /// because new_v is already in m_cell_varmap.
+          auto named_cell = mk_named_cell(new_v, old_c.get_offset(),
+                                          old_c.get_size(), offset_map);
+          variable_t new_scalar = named_cell.second;
+          // renaming in the base domain
+          scalar_from.push_back(old_scalar);
+          scalar_to.push_back(new_scalar);
+        }
+        m_array_map -= old_v;
+        m_array_map.set(new_v, new_as);
       }
       m_cell_varmap.erase(old_v);
     } // end for
 
     m_inv.rename(scalar_from, scalar_to);
-    CRAB_LOG("array-adaptive",
-	     crab::outs() << "After renaming " << *this << "\n";);
+    CRAB_LOG("array-adaptive", crab::outs()
+                                   << "After renaming " << *this << "\n";);
   }
 
 }; // end array_adaptive_domain

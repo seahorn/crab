@@ -107,7 +107,7 @@ class liveness_analysis : public crab::iterators::killgen_fixpoint_iterator<
   operator=(const liveness_analysis<CFG> &other) = delete;
 
   using basic_block_t = typename CFG::basic_block_t;
-  
+
 public:
   using basic_block_label_t = typename CFG::basic_block_label_t;
   using statement_t = typename CFG::statement_t;
@@ -221,9 +221,10 @@ public:
         varset_domain_t dead_set = m_cfg.get_node(bb.label()).live();
         // dead variables = (USE(bb) U DEF(bb)) \ live_out(bb)
         dead_set -= live_set;
-        CRAB_LOG("liveness", crab::outs()
-		 << basic_block_traits<basic_block_t>::to_string(bb.label())
-		 << " dead variables=" << dead_set << "\n";);
+        CRAB_LOG("liveness",
+                 crab::outs()
+                     << basic_block_traits<basic_block_t>::to_string(bb.label())
+                     << " dead variables=" << dead_set << "\n";);
         m_dead_map.insert(std::make_pair(bb.label(), std::move(dead_set)));
         // update statistics
         m_total_live += live_set.size();

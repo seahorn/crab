@@ -153,11 +153,13 @@ public:
                                  const linear_expression_t &val) = 0;
   // forall i :: a[i] := b[i]
   virtual void array_assign(const variable_t &a, const variable_t &b) = 0;
-  /**************************** Regions and reference operations ***************/
+  /**************************** Regions and reference operations
+   * ***************/
   // Initialize region. If reg already exists then error.
   virtual void region_init(const variable_t &reg) = 0;
   // Assign the content of one region to another
-  virtual void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) = 0;
+  virtual void region_copy(const variable_t &lhs_reg,
+                           const variable_t &rhs_reg) = 0;
   // Create a new reference ref to region reg.
   virtual void ref_make(const variable_t &ref, const variable_t &reg) = 0;
   // Read the content of reference ref within reg. The content is
@@ -188,10 +190,10 @@ public:
   virtual void ref_assume(const reference_constraint_t &cst) = 0;
   // Convert a reference to an integer variable
   virtual void ref_to_int(const variable_t &reg, const variable_t &ref,
-			  const variable_t &int_var) = 0;
+                          const variable_t &int_var) = 0;
   // Convert an integer variable to a reference
-  virtual void int_to_ref(const variable_t &int_var,
-			  const variable_t &reg, const variable_t &ref) = 0;
+  virtual void int_to_ref(const variable_t &int_var, const variable_t &reg,
+                          const variable_t &ref) = 0;
   /**************************** Backward arithmetic operations ***************/
   // x = y op z
   // Substitute x with y op z in the abstract value

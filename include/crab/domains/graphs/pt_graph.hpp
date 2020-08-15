@@ -18,10 +18,12 @@ public:
 
   using vert_id = unsigned int;
 
-  class vert_idx: public indexable {
+  class vert_idx : public indexable {
   public:
     vert_idx(vert_id _v) : v(_v) {}
-    virtual ikos::index_t index(void) const override { return (ikos::index_t)v; }
+    virtual ikos::index_t index(void) const override {
+      return (ikos::index_t)v;
+    }
     virtual void write(crab_os &o) const override { o << v; }
 
     vert_id v;
@@ -363,10 +365,11 @@ public:
     iterator end(void) const { return iterator(p.end()); }
     size_t size(void) const { return p.size(); }
     bool mem(unsigned int v) const { return p[v]; }
+
   protected:
     const pred_t &p;
   };
-  
+
   class succ_range {
   public:
     using iterator = succ_iterator;
@@ -404,11 +407,12 @@ public:
       else
         return false;
     }
-    Wt value(unsigned int v) const { return *(p.lookup(v)); }    
+    Wt value(unsigned int v) const { return *(p.lookup(v)); }
+
   protected:
     const succ_t &p;
   };
-  
+
   class edge_ref_t {
   public:
     edge_ref_t(vert_id _v, Wt _w) : vert(_v), val(_w) {}
@@ -484,7 +488,7 @@ public:
         it = std::unique_ptr<rev_edge_iterator>(new rev_edge_iterator());
       return *it;
     }
-    
+
     edge_ref operator*(void) const {
       return edge_ref((*it), g->edge_val((*it), d));
     }
@@ -517,22 +521,18 @@ public:
   using e_succ_range = fwd_edge_range;
   using e_pred_range = rev_edge_range;
 
-  succ_range succs(vert_id v)   {
-    return succ_range(_succs[v]);
-  }
-  
+  succ_range succs(vert_id v) { return succ_range(_succs[v]); }
+
   const_succ_range succs(vert_id v) const {
     return const_succ_range(_succs[v]);
   }
 
-  pred_range preds(vert_id v) {
-    return pred_range(_preds[v]);
-  }
+  pred_range preds(vert_id v) { return pred_range(_preds[v]); }
 
   const_pred_range preds(vert_id v) const {
     return const_pred_range(_preds[v]);
   }
-  
+
   e_succ_range e_succs(vert_id v) { return fwd_edge_range(*this, v); }
   e_pred_range e_preds(vert_id v) { return rev_edge_range(*this, v); }
 

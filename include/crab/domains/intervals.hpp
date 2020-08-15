@@ -60,7 +60,8 @@ class interval_domain final
 public:
   using interval_domain_t =
       interval_domain<Number, VariableName, max_reduction_cycles>;
-  using abstract_domain_t = crab::domains::abstract_domain_api<interval_domain_t>;
+  using abstract_domain_t =
+      crab::domains::abstract_domain_api<interval_domain_t>;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_t::interval_t;
   using typename abstract_domain_t::linear_constraint_system_t;
@@ -434,9 +435,9 @@ public:
                              const interval_domain_t &invariant) override {}
   // region/reference operations
   void region_init(const variable_t &reg) override {}
-  void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {}      
-  void ref_make(const variable_t &ref,
-                const variable_t &reg) override {}
+  void region_copy(const variable_t &lhs_reg,
+                   const variable_t &rhs_reg) override {}
+  void ref_make(const variable_t &ref, const variable_t &reg) override {}
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {}
   void ref_store(const variable_t &ref, const variable_t &reg,
@@ -448,17 +449,16 @@ public:
                            const variable_t &region,
                            const linear_expression_t &index,
                            const linear_expression_t &elem_size) override {}
-  void ref_store_to_array(const variable_t &ref,
-                          const variable_t &region,
+  void ref_store_to_array(const variable_t &ref, const variable_t &region,
                           const linear_expression_t &index,
                           const linear_expression_t &elem_size,
                           const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
   void ref_to_int(const variable_t &reg, const variable_t &ref,
-		  const variable_t &int_var) override {}
-  void int_to_ref(const variable_t &int_var,
-		  const variable_t &reg, const variable_t &ref) override {}
-  
+                  const variable_t &int_var) override {}
+  void int_to_ref(const variable_t &int_var, const variable_t &reg,
+                  const variable_t &ref) override {}
+
   /* End unimplemented operations */
 
   // cast operations

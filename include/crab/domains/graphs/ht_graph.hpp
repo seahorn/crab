@@ -348,10 +348,11 @@ public:
     iterator end(void) const { return iterator(p.end()); }
     size_t size(void) const { return p.size(); }
     bool mem(unsigned int v) const { return p.find(v) != p.end(); }
+
   protected:
     const pred_t &p;
   };
-  
+
   class succ_range {
   public:
     using iterator = succ_iterator;
@@ -377,15 +378,16 @@ public:
     using iterator = succ_iterator;
     const_succ_range(const succ_t &_p) : p(_p) {}
     iterator begin(void) const { return iterator(p.begin()); }
-    iterator end(void) const  { return iterator(p.end()); }
+    iterator end(void) const { return iterator(p.end()); }
     size_t size(void) const { return p.size(); }
     bool mem(unsigned int v) const { return p.find(v) != p.end(); }
     void add(unsigned int v, const Wt &w) { p.insert(succ_elt_t(v, w)); }
     const Wt &value(unsigned int v) const { return (*(p.find(v))).second; }
+
   protected:
     const succ_t &p;
   };
-  
+
   class edge_ref_t {
   public:
     edge_ref_t(vert_id _v, Wt &_w) : vert(_v), val(_w) {}
@@ -461,7 +463,7 @@ public:
         it = std::unique_ptr<rev_edge_iterator>(new rev_edge_iterator());
       return *it;
     }
-    
+
     edge_ref operator*(void) const {
       return edge_ref((*it), g->edge_val((*it), d));
     }
@@ -495,11 +497,15 @@ public:
   using e_pred_range = rev_edge_range;
 
   succ_range succs(vert_id v) { return succ_range(_succs[v]); }
-  const_succ_range succs(vert_id v) const { return const_succ_range(_succs[v]);}
+  const_succ_range succs(vert_id v) const {
+    return const_succ_range(_succs[v]);
+  }
   e_succ_range e_succs(vert_id v) { return fwd_edge_range(*this, v); }
 
   pred_range preds(vert_id v) { return pred_range(_preds[v]); }
-  const_pred_range preds(vert_id v) const { return const_pred_range(_preds[v]); }  
+  const_pred_range preds(vert_id v) const {
+    return const_pred_range(_preds[v]);
+  }
   e_pred_range e_preds(vert_id v) { return rev_edge_range(*this, v); }
 
   // growTo shouldn't be used after forget

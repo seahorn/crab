@@ -260,13 +260,11 @@ private:
 
   void store_analysis_results(fwd_analyzer_t &f) {
     for (auto &kv : f.get_pre_invariants()) {
-      m_pre_invariants.insert(
-	 std::make_pair(kv.first, std::move(kv.second)));
+      m_pre_invariants.insert(std::make_pair(kv.first, std::move(kv.second)));
     }
 
     for (auto &kv : f.get_post_invariants()) {
-      m_post_invariants.insert(
-	 std::make_pair(kv.first, std::move(kv.second)));
+      m_post_invariants.insert(std::make_pair(kv.first, std::move(kv.second)));
     }
   }
 

@@ -542,16 +542,16 @@ public:
     }
   }
 
-  virtual void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
+  virtual void region_copy(const variable_t &lhs_reg,
+                           const variable_t &rhs_reg) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
         m_disjuncts[i].region_copy(lhs_reg, rhs_reg);
       }
     }
   }
-  
-  virtual void ref_make(const variable_t &ref,
-                        const variable_t &reg) override {
+
+  virtual void ref_make(const variable_t &ref, const variable_t &reg) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
         m_disjuncts[i].ref_make(ref, reg);
@@ -627,23 +627,22 @@ public:
   }
 
   void ref_to_int(const variable_t &reg, const variable_t &ref_var,
-		  const variable_t &int_var) override {
+                  const variable_t &int_var) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
         m_disjuncts[i].ref_to_int(reg, ref_var, int_var);
       }
-    }      
+    }
   }
-  
-  void int_to_ref(const variable_t &int_var,
-		  const variable_t &reg, const variable_t &ref_var) override {
+
+  void int_to_ref(const variable_t &int_var, const variable_t &reg,
+                  const variable_t &ref_var) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
         m_disjuncts[i].int_to_ref(int_var, reg, ref_var);
       }
     }
-  }  
-  
+  }
 
   // boolean operators
   virtual void assign_bool_cst(const variable_t &lhs,

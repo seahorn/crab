@@ -200,9 +200,9 @@ public:
   using assert_ref_t =
       crab::cfg::assert_ref_stmt<basic_block_label_t, number_t, varname_t>;
   using int_to_ref_t =
-    crab::cfg::int_to_ref_stmt<basic_block_label_t, number_t, varname_t>;
+      crab::cfg::int_to_ref_stmt<basic_block_label_t, number_t, varname_t>;
   using ref_to_int_t =
-    crab::cfg::ref_to_int_stmt<basic_block_label_t, number_t, varname_t>;
+      crab::cfg::ref_to_int_stmt<basic_block_label_t, number_t, varname_t>;
   using bool_bin_op_t =
       crab::cfg::bool_binary_op<basic_block_label_t, number_t, varname_t>;
   using bool_assign_cst_t =
@@ -373,7 +373,7 @@ protected:
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
-  
+
   virtual void check(make_ref_t &s) {
     if (!this->m_abs_tr)
       return;
@@ -433,7 +433,7 @@ protected:
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
-  
+
   virtual void check(bool_assert_t &s) {
     if (!this->m_abs_tr)
       return;
@@ -488,7 +488,7 @@ public:
   void visit(arr_store_t &s) { check(s); }
   void visit(arr_load_t &s) { check(s); }
   void visit(region_init_t &s) { check(s); }
-  void visit(region_copy_t &s) { check(s); }  
+  void visit(region_copy_t &s) { check(s); }
   void visit(make_ref_t &s) { check(s); }
   void visit(load_from_ref_t &s) { check(s); }
   void visit(store_to_ref_t &s) { check(s); }
@@ -498,7 +498,7 @@ public:
   void visit(assume_ref_t &s) { check(s); }
   void visit(assert_ref_t &s) { check(s); }
   void visit(int_to_ref_t &s) { check(s); }
-  void visit(ref_to_int_t &s) { check(s); }    
+  void visit(ref_to_int_t &s) { check(s); }
   void visit(bool_bin_op_t &s) { check(s); }
   void visit(bool_assign_cst_t &s) { check(s); }
   void visit(bool_assign_var_t &s) { check(s); }

@@ -35,13 +35,14 @@ void control_dep_graph(G g, VectorMap &cdg) {
                                                                  : cdg) {
         crab::outs() << "{";
         for (auto v : kv.second) {
-          crab::outs() << crab::basic_block_traits<basic_block_t>::
-	    to_string(v) << ";";
+          crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(v)
+                       << ";";
         }
         crab::outs() << "} "
                      << " control-dependent on ";
-        crab::outs() << crab::basic_block_traits<basic_block_t>::
-	  to_string(kv.first) << "\n";
+        crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(
+                            kv.first)
+                     << "\n";
       });
 }
 

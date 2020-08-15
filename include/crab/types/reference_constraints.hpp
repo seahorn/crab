@@ -18,7 +18,13 @@ public:
 private:
   using opt_var_t = boost::optional<variable_t>;
   using cst_kind_t = enum {
-    REF_EQ, REF_LT, REF_LEQ, REF_GT, REF_GEQ, REF_DISEQ };
+    REF_EQ,
+    REF_LT,
+    REF_LEQ,
+    REF_GT,
+    REF_GEQ,
+    REF_DISEQ
+  };
 
   // m_lhs should be defined except if the constraints is a
   // contradiction/tautology.
@@ -28,14 +34,18 @@ private:
   cst_kind_t m_kind;
 
   cst_kind_t swap_operand(cst_kind_t op) const {
-    switch(op) {
-    case REF_LT: return REF_GT;
-    case REF_LEQ: return REF_GEQ; 
-    case REF_GT: return REF_LT;
-    case REF_GEQ: return REF_LEQ; 
+    switch (op) {
+    case REF_LT:
+      return REF_GT;
+    case REF_LEQ:
+      return REF_GEQ;
+    case REF_GT:
+      return REF_LT;
+    case REF_GEQ:
+      return REF_LEQ;
     default:
       // case REF_EQ:
-      //case REF_DISEQ:
+      // case REF_DISEQ:
       return op;
     }
   }
@@ -86,7 +96,7 @@ public:
   bool is_greater_or_equal_than() const { return m_kind == REF_GEQ; }
 
   bool is_greater_than() const { return m_kind == REF_GT; }
-  
+
   // return true iff  p REL_OP null
   bool is_unary() const { return (m_lhs && !m_rhs); }
 
@@ -114,23 +124,23 @@ public:
       return mk_false();
     } else if (is_unary()) {
       if (is_equality()) {
-	// p == NULL --> p != NULL
-	return mk_not_null(lhs());
+        // p == NULL --> p != NULL
+        return mk_not_null(lhs());
       } else if (is_disequality()) {
-	// p != NULL --> p == NULL
-	return mk_null(lhs());
+        // p != NULL --> p == NULL
+        return mk_null(lhs());
       } else if (is_less_or_equal_than()) {
-	// p <= NULL --> p > NULL
-	return reference_constraint_t(m_lhs, opt_var_t(), REF_GT);
+        // p <= NULL --> p > NULL
+        return reference_constraint_t(m_lhs, opt_var_t(), REF_GT);
       } else if (is_less_than()) {
-	// p < NULL --> p >= NULL
-	return reference_constraint_t(m_lhs, opt_var_t(), REF_GEQ);	
+        // p < NULL --> p >= NULL
+        return reference_constraint_t(m_lhs, opt_var_t(), REF_GEQ);
       } else if (is_greater_or_equal_than()) {
-	// p >= NULL --> p < NULL 
-	return reference_constraint_t(m_lhs, opt_var_t(), REF_LT);
+        // p >= NULL --> p < NULL
+        return reference_constraint_t(m_lhs, opt_var_t(), REF_LT);
       } else if (is_greater_than()) {
-	// p > NULL --> p <= NULL
-	return reference_constraint_t(m_lhs, opt_var_t(), REF_LEQ);	
+        // p > NULL --> p <= NULL
+        return reference_constraint_t(m_lhs, opt_var_t(), REF_LEQ);
       }
     } else if (is_binary()) {
       if (is_equality()) {
@@ -147,18 +157,16 @@ public:
         return mk_le(rhs(), lhs(), -(offset()));
       } else if (is_greater_or_equal_than()) {
         // p >= q + k --> p < q + k  --> q > p - k
-	return reference_constraint_t(m_rhs, m_lhs, -(offset()), REF_GT);
+        return reference_constraint_t(m_rhs, m_lhs, -(offset()), REF_GT);
       } else if (is_greater_than()) {
         // p > q + k  --> p <= q + k --> q >= p - k
-	return reference_constraint_t(m_rhs, m_lhs, -(offset()), REF_GEQ);	
-      } 
+        return reference_constraint_t(m_rhs, m_lhs, -(offset()), REF_GEQ);
+      }
     }
     CRAB_ERROR("reference_constraints::negate: unsupported case ", *this);
   }
-  
-  static reference_constraint_t mk_true() {
-    return reference_constraint_t();
-  }
+
+  static reference_constraint_t mk_true() { return reference_constraint_t(); }
 
   static reference_constraint_t mk_false() {
     return reference_constraint_t(opt_var_t(), opt_var_t(), REF_DISEQ);
@@ -210,7 +218,7 @@ public:
     }
     return reference_constraint_t(opt_var_t(v), opt_var_t(), REF_LT);
   }
-  
+
   static reference_constraint_t mk_lt(variable_t v1, variable_t v2,
                                       number_t offset = number_t(0)) {
     if (!v1.is_ref_type()) {
@@ -219,8 +227,7 @@ public:
     if (!v2.is_ref_type()) {
       CRAB_ERROR("reference_constraint::mk_lt:", v2, " must be a reference");
     }
-    return reference_constraint_t(opt_var_t(v1), opt_var_t(v2), offset,
-                                  REF_LT);
+    return reference_constraint_t(opt_var_t(v1), opt_var_t(v2), offset, REF_LT);
   }
 
   static reference_constraint_t mk_le_null(variable_t v) {
@@ -229,7 +236,7 @@ public:
     }
     return reference_constraint_t(opt_var_t(v), opt_var_t(), REF_LEQ);
   }
-  
+
   static reference_constraint_t mk_le(variable_t v1, variable_t v2,
                                       number_t offset = number_t(0)) {
     if (!v1.is_ref_type()) {
@@ -270,7 +277,7 @@ public:
         o << " > ";
         break;
       default:;
-          // unreachable
+        // unreachable
       }
       if (!m_rhs)
         o << "NULL_REF";

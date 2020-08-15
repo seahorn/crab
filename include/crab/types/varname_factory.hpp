@@ -20,7 +20,7 @@
 namespace crab {
 
 /* T is the template parameter of var_factory_impl::variable_factory */
-template<typename T> class variable_name_traits {
+template <typename T> class variable_name_traits {
 public:
   static std::string to_string(T varname);
 };
@@ -43,10 +43,10 @@ public:
     std::shared_ptr<std::string> m_name;
     variable_factory *m_vfac;
 
-    
     indexed_varname() = delete;
     // first constructor
-    indexed_varname(ikos::index_t id, variable_factory *vfac, std::string name = "")
+    indexed_varname(ikos::index_t id, variable_factory *vfac,
+                    std::string name = "")
         : m_s(boost::none), m_id(id),
           m_name(std::make_shared<std::string>(name)), m_vfac(vfac) {}
     // second constructor
@@ -56,27 +56,27 @@ public:
     std::string rename(const std::string &s) const {
       auto it = m_vfac->get_renaming_map().find(s);
       if (it != m_vfac->get_renaming_map().end()) {
-	return it->second;
+        return it->second;
       } else {
-	return s;
+        return s;
       }
     }
-    
+
   public:
     ~indexed_varname() = default;
     indexed_varname(const indexed_varname &is) = default;
     indexed_varname &operator=(const indexed_varname &is) = default;
 
     virtual ikos::index_t index() const override { return m_id; }
-    
+
     std::string str() const {
       if (m_s) {
         return rename(crab::variable_name_traits<T>::to_string(*m_s));
       } else if (m_name && (*m_name != "")) {
-	return rename(*m_name);
+        return rename(*m_name);
       } else {
-	// unlikely prefix
-	return rename("@V_" + std::to_string(m_id));
+        // unlikely prefix
+        return rename("@V_" + std::to_string(m_id));
       }
     }
 
@@ -100,6 +100,7 @@ public:
       return hasher(s.index());
     }
   };
+
 private:
   using variable_factory_t = variable_factory<T>;
   using t_map_t = std::unordered_map<T, indexed_varname>;
@@ -110,7 +111,7 @@ private:
   shadow_map_t m_shadow_map;
   std::vector<indexed_varname> m_shadow_vars;
   mutable std::unordered_map<std::string, std::string> m_renaming_map;
-  
+
   ikos::index_t get_and_increment_id(void) {
     if (m_next_id == std::numeric_limits<ikos::index_t>::max()) {
       CRAB_ERROR("Reached limit of ", std::numeric_limits<ikos::index_t>::max(),
@@ -130,7 +131,7 @@ public:
 
 public:
   /************************* High-level API *************************/
-  
+
   variable_factory() : m_next_id(1) {}
 
   virtual ~variable_factory() = default;
@@ -155,7 +156,7 @@ public:
   /************************* Low-level API *************************/
   // generate indexed_varname's without being associated with a
   // particular T (w/o caching).
-  // 
+  //
   // XXX: do not use it unless strictly necessary because it can
   // produce an unbounded number of indexed_varname objects. This
   // commonly used by abstract domains to generate synthetic
@@ -188,19 +189,17 @@ public:
   }
 
   // When varname_t::str() is called this map is used to do renaming
-  void add_renaming_map(const std::unordered_map<std::string, std::string> &smap) const {
+  void add_renaming_map(
+      const std::unordered_map<std::string, std::string> &smap) const {
     clear_renaming_map();
     m_renaming_map.insert(smap.begin(), smap.end());
   }
-  
-  void clear_renaming_map() const {
-    m_renaming_map.clear();
-  }
-  
-  const std::unordered_map<std::string, std::string>& get_renaming_map() const {
+
+  void clear_renaming_map() const { m_renaming_map.clear(); }
+
+  const std::unordered_map<std::string, std::string> &get_renaming_map() const {
     return m_renaming_map;
   }
-  
 };
 
 //! Specialized factory for strings
@@ -211,7 +210,7 @@ public:
   using varname_t = variable_factory_t::varname_t;
   using const_var_range = variable_factory_t::const_var_range;
 
-  str_variable_factory(): variable_factory_t() {}
+  str_variable_factory() : variable_factory_t() {}
 };
 
 inline int fresh_colour(int col_x, int col_y) {
@@ -240,17 +239,17 @@ class str_var_alloc_col {
     static str_variable_factory vfac;
     return vfac;
   }
-  
+
 public:
   using varname_t = str_variable_factory::varname_t;
-  
+
   str_var_alloc_col() : colour(0), next_id(0) {}
 
   str_var_alloc_col(const str_var_alloc_col &o)
-    : colour(o.colour), next_id(o.next_id) {}
+      : colour(o.colour), next_id(o.next_id) {}
 
   str_var_alloc_col(const str_var_alloc_col &x, const str_var_alloc_col &y)
-    : colour(fresh_colour(x.colour, y.colour)), next_id(0) {
+      : colour(fresh_colour(x.colour, y.colour)), next_id(0) {
     assert(colour != x.colour);
     assert(colour != y.colour);
   }
@@ -268,14 +267,13 @@ public:
     return get_vfac()[v];
   }
 
-  void add_renaming_map(const std::unordered_map<std::string, std::string> &smap) const {
+  void add_renaming_map(
+      const std::unordered_map<std::string, std::string> &smap) const {
     get_vfac().add_renaming_map(smap);
   }
 
-  void clear_renaming_map() const {
-    get_vfac().clear_renaming_map();
-  }
-  
+  void clear_renaming_map() const { get_vfac().clear_renaming_map(); }
+
 protected:
   int colour;
   ikos::index_t next_id;

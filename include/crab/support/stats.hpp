@@ -30,8 +30,8 @@ inline crab_os &operator<<(crab_os &OS, const Stopwatch &sw) {
 }
 
 class CrabStats {
-  static std::map<std::string, unsigned>& getCounters();
-  static std::map<std::string, Stopwatch>& getTimers();
+  static std::map<std::string, unsigned> &getCounters();
+  static std::map<std::string, Stopwatch> &getTimers();
 
 public:
   static void reset();

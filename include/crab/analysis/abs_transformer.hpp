@@ -133,7 +133,7 @@ protected:
   virtual void exec(arr_load_t &) {}
   virtual void exec(arr_assign_t &) {}
   virtual void exec(region_init_t &) {}
-  virtual void exec(region_copy_t &) {}  
+  virtual void exec(region_copy_t &) {}
   virtual void exec(make_ref_t &) {}
   virtual void exec(load_from_ref_t &) {}
   virtual void exec(store_to_ref_t &) {}
@@ -143,7 +143,7 @@ protected:
   virtual void exec(assume_ref_t &) {}
   virtual void exec(assert_ref_t &) {}
   virtual void exec(int_to_ref_t &) {}
-  virtual void exec(ref_to_int_t &) {}    
+  virtual void exec(ref_to_int_t &) {}
   virtual void exec(bool_bin_op_t &) {}
   virtual void exec(bool_assign_cst_t &) {}
   virtual void exec(bool_assign_var_t &) {}
@@ -168,7 +168,7 @@ public: /* visitor api */
   void visit(arr_load_t &s) { exec(s); }
   void visit(arr_assign_t &s) { exec(s); }
   void visit(region_init_t &s) { exec(s); }
-  void visit(region_copy_t &s) { exec(s); }  
+  void visit(region_copy_t &s) { exec(s); }
   void visit(make_ref_t &s) { exec(s); }
   void visit(load_from_ref_t &s) { exec(s); }
   void visit(store_to_ref_t &s) { exec(s); }
@@ -178,7 +178,7 @@ public: /* visitor api */
   void visit(assume_ref_t &s) { exec(s); }
   void visit(assert_ref_t &s) { exec(s); }
   void visit(ref_to_int_t &s) { exec(s); }
-  void visit(int_to_ref_t &s) { exec(s); }    
+  void visit(int_to_ref_t &s) { exec(s); }
   void visit(bool_bin_op_t &s) { exec(s); }
   void visit(bool_assign_cst_t &s) { exec(s); }
   void visit(bool_assign_var_t &s) { exec(s); }
@@ -321,6 +321,7 @@ public:
   using typename abs_transform_api_t::gep_ref_t;
   using typename abs_transform_api_t::havoc_t;
   using typename abs_transform_api_t::int_cast_t;
+  using typename abs_transform_api_t::int_to_ref_t;
   using typename abs_transform_api_t::intrinsic_t;
   using typename abs_transform_api_t::lin_cst_sys_t;
   using typename abs_transform_api_t::lin_cst_t;
@@ -328,10 +329,9 @@ public:
   using typename abs_transform_api_t::load_from_arr_ref_t;
   using typename abs_transform_api_t::load_from_ref_t;
   using typename abs_transform_api_t::make_ref_t;
-  using typename abs_transform_api_t::region_init_t;
-  using typename abs_transform_api_t::region_copy_t;  
   using typename abs_transform_api_t::ref_to_int_t;
-  using typename abs_transform_api_t::int_to_ref_t;  
+  using typename abs_transform_api_t::region_copy_t;
+  using typename abs_transform_api_t::region_init_t;
   using typename abs_transform_api_t::return_t;
   using typename abs_transform_api_t::select_t;
   using typename abs_transform_api_t::store_to_arr_ref_t;
@@ -724,7 +724,7 @@ public:
       }
     }
   }
-  
+
   void exec(load_from_ref_t &stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
@@ -820,7 +820,6 @@ public:
     m_inv.ref_assume(stmt.constraint());
   }
 
-
   void exec(int_to_ref_t &stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
@@ -852,7 +851,7 @@ public:
       }
     }
   }
-  
+
   void exec(intrinsic_t &cs) {
     m_inv.intrinsic(cs.get_intrinsic_name(), cs.get_args(), cs.get_lhs());
   }
@@ -897,7 +896,7 @@ public:
     case REG_REF_TYPE:
     case REG_ARR_BOOL_TYPE:
     case REG_ARR_INT_TYPE:
-    case REG_ARR_REAL_TYPE:            
+    case REG_ARR_REAL_TYPE:
       inv.region_copy(lhs, rhs);
       break;
     case ARR_BOOL_TYPE:
@@ -953,6 +952,7 @@ public:
   using typename abs_transform_api_t::gep_ref_t;
   using typename abs_transform_api_t::havoc_t;
   using typename abs_transform_api_t::int_cast_t;
+  using typename abs_transform_api_t::int_to_ref_t;
   using typename abs_transform_api_t::intrinsic_t;
   using typename abs_transform_api_t::lin_cst_sys_t;
   using typename abs_transform_api_t::lin_cst_t;
@@ -960,10 +960,9 @@ public:
   using typename abs_transform_api_t::load_from_arr_ref_t;
   using typename abs_transform_api_t::load_from_ref_t;
   using typename abs_transform_api_t::make_ref_t;
-  using typename abs_transform_api_t::region_init_t;
-  using typename abs_transform_api_t::region_copy_t;  
   using typename abs_transform_api_t::ref_to_int_t;
-  using typename abs_transform_api_t::int_to_ref_t;  
+  using typename abs_transform_api_t::region_copy_t;
+  using typename abs_transform_api_t::region_init_t;
   using typename abs_transform_api_t::return_t;
   using typename abs_transform_api_t::select_t;
   using typename abs_transform_api_t::store_to_arr_ref_t;
@@ -1240,7 +1239,7 @@ public:
 
   // NOT IMPLEMENTED
   void exec(region_init_t &stmt) {}
-  void exec(region_copy_t &stmt) {}  
+  void exec(region_copy_t &stmt) {}
   void exec(make_ref_t &stmt) {}
   void exec(load_from_ref_t &stmt) {}
   void exec(store_to_ref_t &stmt) {}
@@ -1250,7 +1249,7 @@ public:
   void exec(assume_ref_t &stmt) {}
   void exec(assert_ref_t &stmt) {}
   void exec(int_to_ref_t &stmt) {}
-  void exec(ref_to_int_t &stmt) {}    
+  void exec(ref_to_int_t &stmt) {}
 
   /// -- Call and return can be redefined by derived classes
 

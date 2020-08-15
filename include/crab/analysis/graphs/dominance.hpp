@@ -94,17 +94,19 @@ void dominator_tree(G g, typename G::node_t entry, Map &idom) {
       idom.insert(typename Map::value_type(v, get(dom_tree_pred_map, v)));
       CRAB_LOG("dominator",
                crab::outs()
-	       << crab::basic_block_traits<basic_block_t>::
-	       to_string(get(dom_tree_pred_map, v))
-	       << " is the immediate dominator of "
-	       << crab::basic_block_traits<basic_block_t>::to_string(v) << "\n";);
+                   << crab::basic_block_traits<basic_block_t>::to_string(
+                          get(dom_tree_pred_map, v))
+                   << " is the immediate dominator of "
+                   << crab::basic_block_traits<basic_block_t>::to_string(v)
+                   << "\n";);
 
     } else {
       idom.insert(
           typename Map::value_type(v, boost::graph_traits<G>::null_vertex()));
-      CRAB_LOG("dominator", crab::outs()
-	       << crab::basic_block_traits<basic_block_t>::to_string(v)
-	       << " is not dominated by anyone!\n");
+      CRAB_LOG("dominator",
+               crab::outs()
+                   << crab::basic_block_traits<basic_block_t>::to_string(v)
+                   << " is not dominated by anyone!\n");
     }
   }
 #endif
@@ -159,9 +161,12 @@ void dominance(G g, typename G::node_t entry, VectorMap &df) {
   CRAB_LOG(
       "dominance", for (auto &kv
                         : df) {
-        crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(kv.first) << "={";
+        crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(
+                            kv.first)
+                     << "={";
         for (auto v : kv.second) {
-          crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(v) << ";";
+          crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(v)
+                       << ";";
         }
         crab::outs() << "}\n";
       });

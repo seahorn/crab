@@ -45,8 +45,8 @@
 
 #include <boost/optional.hpp>
 
-#include <vector>
 #include <set>
+#include <vector>
 
 namespace ikos {
 
@@ -380,25 +380,25 @@ public:
       std::set<Key> s1, s2;
       s1.insert(from.begin(), from.end());
       if (s1.size() != from.size()) {
-	CRAB_ERROR("separate_domain::rename expects no duplicates");
+        CRAB_ERROR("separate_domain::rename expects no duplicates");
       }
       s2.insert(to.begin(), to.end());
       if (s2.size() != to.size()) {
-	CRAB_ERROR("separate_domain::rename expects no duplicates");
+        CRAB_ERROR("separate_domain::rename expects no duplicates");
       }
     }
-    
-    for (unsigned i=0, sz=from.size(); i<sz; ++i) {
+
+    for (unsigned i = 0, sz = from.size(); i < sz; ++i) {
       Key k = from[i];
       Key new_k = to[i];
       if (k == new_k) { // nothing to rename
         continue;
       }
       if (::crab::CrabSanityCheckFlag) {
-      	if (_tree.lookup(new_k)) {
-      	  CRAB_ERROR("separate_domain::rename assumes that  ", new_k,
-      		     " does not exist in ", *this);
-      	}
+        if (_tree.lookup(new_k)) {
+          CRAB_ERROR("separate_domain::rename assumes that  ", new_k,
+                     " does not exist in ", *this);
+        }
       }
       if (boost::optional<Value> k_val_opt = _tree.lookup(k)) {
         if (!(*k_val_opt).is_top()) {

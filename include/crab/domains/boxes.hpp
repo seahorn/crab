@@ -32,7 +32,7 @@ public:
 #include "crab/domains/abstract_domain.def"
 namespace crab {
 namespace domains {
-  template <typename N, typename V, typename Params = boxes_impl::DefaultParams>
+template <typename N, typename V, typename Params = boxes_impl::DefaultParams>
 class boxes_domain final
     : public abstract_domain_api<boxes_domain<N, V, Params>> {
 public:
@@ -74,14 +74,12 @@ using namespace crab::domains::ldd;
  * FIXME: Ldd_TermReplace seems to leak memory sometimes.
  */
 template <typename Number, typename VariableName,
-	  typename Params = boxes_impl::DefaultParams>
+          typename Params = boxes_impl::DefaultParams>
 class boxes_domain final
-    : public abstract_domain_api<
-          boxes_domain<Number, VariableName, Params>> {
+    : public abstract_domain_api<boxes_domain<Number, VariableName, Params>> {
 
   using interval_domain_t = ikos::interval_domain<Number, VariableName>;
-  using boxes_domain_t =
-      boxes_domain<Number, VariableName, Params>;
+  using boxes_domain_t = boxes_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<boxes_domain_t>;
 
 public:
@@ -116,8 +114,8 @@ private:
     if (!s_ldd_man) {
       DdManager *cudd = Cudd_Init(0, 0, CUDD_UNIQUE_SLOTS, 127, 0);
       theory_t *theory = ldd::create_box_theory<number_t>(Params::ldd_size);
-      CRAB_LOG("boxes", crab::outs()
-                            << "Created a ldd of size " << Params::ldd_size << "\n";);
+      CRAB_LOG("boxes", crab::outs() << "Created a ldd of size "
+                                     << Params::ldd_size << "\n";);
       s_ldd_man = Ldd_Init(cudd, theory);
       // Cudd_AutodynEnable(cudd, CUDD_REORDER_GROUP_SIFT);
       Ldd_SanityCheck(get_ldd_man());
@@ -728,22 +726,22 @@ private:
                              variable_t y, variable_t z) {
     switch (op) {
     case OP_BAND: {
-      LddNodePtr c =
-          lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*mk_true(y), &*mk_true(z)));
+      LddNodePtr c = lddPtr(get_ldd_man(),
+                            Ldd_And(get_ldd_man(), &*mk_true(y), &*mk_true(z)));
       return lddPtr(get_ldd_man(),
                     Ldd_Ite(get_ldd_man(), &*c, &*mk_true(x), &*mk_false(x)));
       break;
     }
     case OP_BOR: {
-      LddNodePtr c =
-          lddPtr(get_ldd_man(), Ldd_Or(get_ldd_man(), &*mk_true(y), &*mk_true(z)));
+      LddNodePtr c = lddPtr(get_ldd_man(),
+                            Ldd_Or(get_ldd_man(), &*mk_true(y), &*mk_true(z)));
       return lddPtr(get_ldd_man(),
                     Ldd_Ite(get_ldd_man(), &*c, &*mk_true(x), &*mk_false(x)));
       break;
     }
     case OP_BXOR: {
-      LddNodePtr c =
-          lddPtr(get_ldd_man(), Ldd_Xor(get_ldd_man(), &*mk_true(y), &*mk_true(z)));
+      LddNodePtr c = lddPtr(get_ldd_man(),
+                            Ldd_Xor(get_ldd_man(), &*mk_true(y), &*mk_true(z)));
       return lddPtr(get_ldd_man(),
                     Ldd_Ite(get_ldd_man(), &*c, &*mk_true(x), &*mk_false(x)));
 
@@ -1012,7 +1010,7 @@ public:
       return;
     }
 
-    // Handle precisely unit constraints    
+    // Handle precisely unit constraints
     linear_expression_t exp = cst.expression();
     unsigned int size = exp.size();
     if (size == 0) {
@@ -1028,7 +1026,7 @@ public:
         CRAB_WARN("non-unit coefficients not implemented in boxes");
       }
     }
-    // Lose precision with non-unit constraints    
+    // Lose precision with non-unit constraints
     else if (size >= 2) {
       if (cst.is_disequation()) {
         if (!add_linear_diseq(cst.expression())) {
@@ -1041,15 +1039,16 @@ public:
           return;
         }
       } else if (cst.is_strict_inequality()) {
-	// We try to convert a strict to non-strict.
-	auto nc = ikos::linear_constraint_impl::strict_to_non_strict_inequality(cst);
-	if (nc.is_inequality()) {
-	  // here we succeed
-	  if (!add_linear_leq(nc.expression())) {
-	    CRAB_LOG("boxes", crab::outs() << "_|_\n";);	    
-	    return;
-	  }
-	}
+        // We try to convert a strict to non-strict.
+        auto nc =
+            ikos::linear_constraint_impl::strict_to_non_strict_inequality(cst);
+        if (nc.is_inequality()) {
+          // here we succeed
+          if (!add_linear_leq(nc.expression())) {
+            CRAB_LOG("boxes", crab::outs() << "_|_\n";);
+            return;
+          }
+        }
       } else if (cst.is_equality()) {
         linear_expression_t exp = cst.expression();
         // split equality into two inequalities
@@ -1138,7 +1137,7 @@ public:
       return;
 
     if (e.is_constant()) {
-      // Handle precisely if e is constant      
+      // Handle precisely if e is constant
       constant_t c = mk_cst(e.constant());
       linterm_t t = term_from_var(x);
       m_ldd = lddPtr(get_ldd_man(), Ldd_TermReplace(get_ldd_man(), &(*m_ldd), t,
@@ -1154,7 +1153,7 @@ public:
       // XXX: we can probably do a bit better here
       m_ldd = apply_interval(x, eval_interval(e));
     }
-   
+
     CRAB_LOG("boxes", crab::outs() << "--- " << x << ":=" << e << "\n"
                                    << *this << "\n";);
   }
@@ -1454,11 +1453,11 @@ public:
       // XXX: we do nothing with unsigned linear inequalities
       // TODO: we can express these constraints with more disjunctions.
       if (cst.is_inequality() && cst.is_unsigned()) {
-	CRAB_WARN("unsigned inequality skipped in boxes domain");
-	this->operator-=(lhs);
-	return;
+        CRAB_WARN("unsigned inequality skipped in boxes domain");
+        this->operator-=(lhs);
+        return;
       }
-      
+
       linear_expression_t exp = cst.expression();
       unsigned int size = exp.size();
       if (size == 0)
@@ -1655,7 +1654,8 @@ public:
                              const boxes_domain_t &invariant) override {}
   // region/reference operations
   void region_init(const variable_t &reg) override {}
-  void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {}    
+  void region_copy(const variable_t &lhs_reg,
+                   const variable_t &rhs_reg) override {}
   void ref_make(const variable_t &ref, const variable_t &reg) override {}
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {}
@@ -1674,10 +1674,10 @@ public:
                           const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
   void ref_to_int(const variable_t &reg, const variable_t &ref,
-		  const variable_t &int_var) override {}
-  void int_to_ref(const variable_t &int_var,
-		  const variable_t &reg, const variable_t &ref) override {}
-  
+                  const variable_t &int_var) override {}
+  void int_to_ref(const variable_t &int_var, const variable_t &reg,
+                  const variable_t &ref) override {}
+
   /* End unimplemented operations */
 
   linear_constraint_system_t to_linear_constraint_system() const override {
@@ -1757,12 +1757,10 @@ template <typename N, typename V, typename P>
 LddManager *boxes_domain<N, V, P>::s_ldd_man = nullptr;
 
 template <typename N, typename V, typename P>
-typename boxes_domain<N, V, P>::var_map_t
-    boxes_domain<N, V, P>::s_var_map;
+typename boxes_domain<N, V, P>::var_map_t boxes_domain<N, V, P>::s_var_map;
 
 template <typename Number, typename VariableName, typename Params>
-class checker_domain_traits<
-    boxes_domain<Number, VariableName, Params>> {
+class checker_domain_traits<boxes_domain<Number, VariableName, Params>> {
 public:
   using this_type = boxes_domain<Number, VariableName, Params>;
   using linear_constraint_t = typename this_type::linear_constraint_t;
@@ -1843,8 +1841,7 @@ public:
 };
 
 template <typename Number, typename VariableName, typename Params>
-class special_domain_traits<
-    boxes_domain<Number, VariableName, Params>> {
+class special_domain_traits<boxes_domain<Number, VariableName, Params>> {
 public:
   static void clear_global_state(void) {
     boxes_domain<Number, VariableName, Params>::clear_global_state();
@@ -1858,8 +1855,7 @@ public:
 namespace crab {
 namespace domains {
 template <typename Number, typename VariableName, typename Params>
-struct abstract_domain_traits<
-    boxes_domain<Number, VariableName, Params>> {
+struct abstract_domain_traits<boxes_domain<Number, VariableName, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 };

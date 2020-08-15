@@ -21,7 +21,8 @@ namespace domains {
 // Abstract domain to reason about summarized variables. All
 // array elements are `smashed` into a single variable.
 template <typename NumDomain>
-class array_smashing final : public abstract_domain_api<array_smashing<NumDomain>> {
+class array_smashing final
+    : public abstract_domain_api<array_smashing<NumDomain>> {
 
 public:
   using number_t = typename NumDomain::number_t;
@@ -467,7 +468,8 @@ public:
 
   // region/reference operations
   void region_init(const variable_t &reg) override {}
-  void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {}    
+  void region_copy(const variable_t &lhs_reg,
+                   const variable_t &rhs_reg) override {}
   void ref_make(const variable_t &ref, const variable_t &reg) override {}
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {}
@@ -486,9 +488,9 @@ public:
                           const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
   void ref_to_int(const variable_t &reg, const variable_t &ref,
-		  const variable_t &int_var) override {}
-  void int_to_ref(const variable_t &int_var,
-		  const variable_t &reg, const variable_t &ref) override {}
+                  const variable_t &int_var) override {}
+  void int_to_ref(const variable_t &int_var, const variable_t &reg,
+                  const variable_t &ref) override {}
 
   linear_constraint_system_t to_linear_constraint_system() const override {
     return filter_noninteger_vars(
@@ -531,9 +533,9 @@ public:
     if (from.size() != to.size()) {
       CRAB_ERROR(domain_name(), "::rename expects vectors same sizes");
     }
-    for(unsigned i=0,sz=from.size();i<sz;++i) {
+    for (unsigned i = 0, sz = from.size(); i < sz; ++i) {
       if (!from[i].same_type_and_bitwidth(to[i])) {
-	CRAB_ERROR(domain_name(), "::rename must preserve the same type");
+        CRAB_ERROR(domain_name(), "::rename must preserve the same type");
       }
     }
     _inv.rename(from, to);

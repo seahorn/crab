@@ -174,7 +174,8 @@ public:
         m_analysis.name(), crab::outs() << m_analysis.name() << " sets:\n";
         for (auto it = m_cfg.label_begin(), et = m_cfg.label_end(); it != et;
              ++it) {
-          crab::outs() << basic_block_traits<basic_block_t>::to_string(*it) << " "
+          crab::outs() << basic_block_traits<basic_block_t>::to_string(*it)
+                       << " "
                        << "IN=" << m_in_map[*it] << " "
                        << "OUT=" << m_out_map[*it] << "\n";
         } crab::outs()

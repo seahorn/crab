@@ -28,7 +28,7 @@ enum variable_type {
   REG_INT_TYPE,
   REG_REAL_TYPE,
   REG_REF_TYPE,
-  // 
+  //
   REG_ARR_BOOL_TYPE,
   REG_ARR_INT_TYPE,
   REG_ARR_REAL_TYPE,
@@ -49,7 +49,7 @@ inline crab_os &operator<<(crab_os &o, variable_type t) {
     break;
   case REF_TYPE:
     o << "ref";
-    break;    
+    break;
     /////////////
   case ARR_BOOL_TYPE:
     o << "arr(bool)";
@@ -165,8 +165,7 @@ public:
   bool is_array_region_type() const {
     return _type >= crab::REG_ARR_BOOL_TYPE && _type <= crab::REG_ARR_REAL_TYPE;
   }
-  
-  
+
   type_t get_type() const { return _type; }
 
   bool has_bitwidth() const { return _width > 0; }
@@ -187,7 +186,7 @@ public:
   bool same_type_and_bitwidth(const variable_t &o) const {
     return (_type == o._type && _width == o._width);
   }
-  
+
   bool operator==(const variable_t &o) const { return index() == o.index(); }
 
   bool operator!=(const variable_t &o) const { return (!(operator==(o))); }
@@ -201,7 +200,7 @@ public:
           case crab::INT_TYPE:
           case crab::ARR_INT_TYPE:
           case crab::REG_INT_TYPE:
-	  case crab::REG_ARR_INT_TYPE:
+          case crab::REG_ARR_INT_TYPE:
             o << ":" << get_bitwidth();
             break;
           default:;

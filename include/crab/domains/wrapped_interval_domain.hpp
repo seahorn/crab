@@ -1824,7 +1824,8 @@ public:
                         const wrapped_interval_domain_t &invariant) override {}
   // region/reference operations
   void region_init(const variable_t &reg) override {}
-  void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {}      
+  void region_copy(const variable_t &lhs_reg,
+                   const variable_t &rhs_reg) override {}
   void ref_make(const variable_t &ref, const variable_t &reg) override {}
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {}
@@ -1843,9 +1844,9 @@ public:
                           const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
   void ref_to_int(const variable_t &reg, const variable_t &ref_var,
-		  const variable_t &int_var) override {}
-  void int_to_ref(const variable_t &int_var,
-		  const variable_t &reg, const variable_t &ref_var) override {}
+                  const variable_t &int_var) override {}
+  void int_to_ref(const variable_t &int_var, const variable_t &reg,
+                  const variable_t &ref_var) override {}
 
   /* End unimplemented operations */
 
@@ -2695,9 +2696,9 @@ public:
                              const this_type &invariant) override {}
   // region/reference operations
   void region_init(const variable_t &reg) override {}
-  void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {}      
-  void ref_make(const variable_t &ref,
-                const variable_t &reg) override {}
+  void region_copy(const variable_t &lhs_reg,
+                   const variable_t &rhs_reg) override {}
+  void ref_make(const variable_t &ref, const variable_t &reg) override {}
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {}
   void ref_store(const variable_t &ref, const variable_t &reg,
@@ -2709,16 +2710,15 @@ public:
                            const variable_t &region,
                            const linear_expression_t &index,
                            const linear_expression_t &elem_size) override {}
-  void ref_store_to_array(const variable_t &ref,
-                          const variable_t &region,
+  void ref_store_to_array(const variable_t &ref, const variable_t &region,
                           const linear_expression_t &index,
                           const linear_expression_t &elem_size,
                           const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
   void ref_to_int(const variable_t &reg, const variable_t &ref,
-		  const variable_t &int_var) override {}
-  void int_to_ref(const variable_t &int_var,
-		  const variable_t &reg, const variable_t &ref) override {}
+                  const variable_t &int_var) override {}
+  void int_to_ref(const variable_t &int_var, const variable_t &reg,
+                  const variable_t &ref) override {}
 
   /* End unimplemented operations */
 
@@ -3533,9 +3533,10 @@ public:
   void region_init(const variable_t &reg) override {
     _product.region_init(reg);
   }
-  void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
+  void region_copy(const variable_t &lhs_reg,
+                   const variable_t &rhs_reg) override {
     _product.region_copy(lhs_reg, rhs_reg);
-  }      
+  }
   void ref_make(const variable_t &ref, const variable_t &reg) override {
     _product.ref_make(ref, reg);
   }
@@ -3568,11 +3569,11 @@ public:
     _product.ref_assume(cst);
   }
   void ref_to_int(const variable_t &reg, const variable_t &ref_var,
-		  const variable_t &int_var) override {
+                  const variable_t &int_var) override {
     _product.ref_to_int(reg, ref_var, int_var);
   }
-  void int_to_ref(const variable_t &int_var,
-		  const variable_t &reg, const variable_t &ref_var) override {
+  void int_to_ref(const variable_t &int_var, const variable_t &reg,
+                  const variable_t &ref_var) override {
     _product.int_to_ref(int_var, reg, ref_var);
   }
 

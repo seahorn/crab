@@ -111,7 +111,7 @@ public:
   static small_range top() { return small_range(ZeroOrMore); }
   static small_range zero() { return small_range(ExactlyZero); }
   static small_range one() { return small_range(ExactlyOne); }
-  static small_range oneOrMore() { return small_range(OneOrMore); }  
+  static small_range oneOrMore() { return small_range(OneOrMore); }
 
   small_range(const small_range &other) = default;
   small_range(small_range &&other) = default;
@@ -126,12 +126,11 @@ public:
 
   bool is_one() const { return (m_value == ExactlyOne); }
 
-
   /*
      [0,+oo]
-       |  \ 
+       |  \
        |  [1,+oo]
-      [0,1] /   
+      [0,1] /
        / \ /
       0   1
    */
@@ -148,8 +147,8 @@ public:
       return other.m_value == ZeroOrMore;
     } else if (m_value == ZeroOrMore) {
       assert(other.m_value != ZeroOrMore);
-      return false; 
-    } 
+      return false;
+    }
     // should be unreachable
     return false;
   }
@@ -258,8 +257,7 @@ public:
 
 // Abstract domain for regions and references
 template <typename Params>
-class region_domain final
-    : public abstract_domain_api<region_domain<Params>> {
+class region_domain final : public abstract_domain_api<region_domain<Params>> {
   using region_domain_t = region_domain<Params>;
   using abstract_domain_t = abstract_domain_api<region_domain_t>;
 
@@ -277,7 +275,8 @@ public:
 
 private:
   using base_abstract_domain_t = typename Params::base_abstract_domain_t;
-  using base_variable_vector_t = typename base_abstract_domain_t::variable_vector_t;
+  using base_variable_vector_t =
+      typename base_abstract_domain_t::variable_vector_t;
   using base_variable_t = typename base_abstract_domain_t::variable_t;
   using base_linear_expression_t =
       typename base_abstract_domain_t::linear_expression_t;
@@ -288,8 +287,7 @@ private:
   using base_varname_allocator_t = typename Params::varname_allocator_t;
 
   // Abstract domains
-  using rgn_counting_domain_t =
-      ikos::separate_domain<variable_t, small_range>;
+  using rgn_counting_domain_t = ikos::separate_domain<variable_t, small_range>;
   // Variable map: variable to base domain's variable.
   using var_map_t = std::unordered_map<variable_t, base_variable_t>;
   using rev_var_map_t = std::unordered_map<base_variable_t, variable_t>;
@@ -316,15 +314,14 @@ private:
   // m_base_dom does not have any variable of reference type.
   base_abstract_domain_t m_base_dom;
 
-  region_domain(base_varname_allocator_t &&alloc,
-                   var_map_t &&var_map, rev_var_map_t &&rev_var_map,
-                   rgn_counting_domain_t &&rgn_counting_dom,
-                   base_abstract_domain_t &&base_dom)
+  region_domain(base_varname_allocator_t &&alloc, var_map_t &&var_map,
+                rev_var_map_t &&rev_var_map,
+                rgn_counting_domain_t &&rgn_counting_dom,
+                base_abstract_domain_t &&base_dom)
       : m_is_bottom(base_dom.is_bottom()), m_alloc(std::move(alloc)),
         m_var_map(std::move(var_map)), m_rev_var_map(std::move(rev_var_map)),
         m_rgn_counting_dom(std::move(rgn_counting_dom)),
-        m_base_dom(std::move(base_dom)) {
-  }
+        m_base_dom(std::move(base_dom)) {}
 
   using rgn_counting_binop_t = std::function<rgn_counting_domain_t(
       rgn_counting_domain_t, rgn_counting_domain_t)>;
@@ -332,9 +329,9 @@ private:
       base_abstract_domain_t, base_abstract_domain_t)>;
 
   region_domain_t do_join_or_widening(const region_domain_t &left,
-                                         const region_domain_t &right,
-                                         rgn_counting_binop_t rgn_counting_op,
-                                         base_dom_binop_t base_dom_op) const {
+                                      const region_domain_t &right,
+                                      rgn_counting_binop_t rgn_counting_op,
+                                      base_dom_binop_t base_dom_op) const {
     rgn_counting_domain_t out_rgn_counting_dom(
         rgn_counting_op(left.m_rgn_counting_dom, right.m_rgn_counting_dom));
 
@@ -367,28 +364,28 @@ private:
 
     // JN: project might necessary to avoid keep variables that exist
     // in the base domain but they doen't exist on m_var_map.
-    // 
+    //
     // If such a variable exists only on either left_dom or right_dom
     // the join removes it.  However, if we have the same variable in
     // both left_dom and righ_dom then the join will preserve it.
-    // 
+    //
     left_dom.project(left_vars);
     left_dom.rename(left_vars, out_vars);
     right_dom.project(right_vars);
     right_dom.rename(right_vars, out_vars);
     base_abstract_domain_t out_base_dom(base_dom_op(left_dom, right_dom));
 
-    region_domain_t res(
-        std::move(out_alloc), std::move(out_var_map),
-        std::move(out_rev_var_map), std::move(out_rgn_counting_dom),
-	std::move(out_base_dom));
+    region_domain_t res(std::move(out_alloc), std::move(out_var_map),
+                        std::move(out_rev_var_map),
+                        std::move(out_rgn_counting_dom),
+                        std::move(out_base_dom));
     return res;
   }
 
   region_domain_t do_meet_or_narrowing(const region_domain_t &left,
-                                          const region_domain_t &right,
-                                          rgn_counting_binop_t rgn_counting_op,
-                                          base_dom_binop_t base_dom_op) const {
+                                       const region_domain_t &right,
+                                       rgn_counting_binop_t rgn_counting_op,
+                                       base_dom_binop_t base_dom_op) const {
     rgn_counting_domain_t out_rgn_counting_dom(
         rgn_counting_op(left.m_rgn_counting_dom, right.m_rgn_counting_dom));
 
@@ -400,7 +397,7 @@ private:
 
     base_variable_vector_t left_vars, right_vars, out_vars;
     base_variable_vector_t only_left_vars, only_left_out_vars;
-    base_variable_vector_t only_right_vars, only_right_out_vars;    
+    base_variable_vector_t only_right_vars, only_right_out_vars;
     // upper bound to avoid reallocations
     size_t left_renamings = left.m_var_map.size();
     size_t right_renamings = right.m_var_map.size();
@@ -409,10 +406,10 @@ private:
     right_vars.reserve(num_renamings);
     out_vars.reserve(num_renamings);
     only_left_vars.reserve(left_renamings);
-    only_left_out_vars.reserve(left_renamings);    
-    only_right_vars.reserve(right_renamings);    
+    only_left_out_vars.reserve(left_renamings);
+    only_right_vars.reserve(right_renamings);
     only_right_out_vars.reserve(right_renamings);
-    
+
     for (auto &kv : left.m_var_map) {
       const variable_t &v = kv.first;
       auto it = right.m_var_map.find(v);
@@ -429,8 +426,8 @@ private:
         base_variable_t out_v(std::move(make_base_variable(out_alloc, v)));
         only_left_vars.push_back(kv.second);
         only_left_out_vars.push_back(out_v);
-	out_var_map.insert({kv.first, out_v});
-	out_rev_var_map.insert({out_v, kv.first});
+        out_var_map.insert({kv.first, out_v});
+        out_rev_var_map.insert({out_v, kv.first});
       }
     }
 
@@ -443,23 +440,22 @@ private:
         base_variable_t out_v(std::move(make_base_variable(out_alloc, v)));
         only_right_vars.push_back(kv.second);
         only_right_out_vars.push_back(out_v);
-	out_var_map.insert({kv.first, out_v});
-	out_rev_var_map.insert({out_v, kv.first});
+        out_var_map.insert({kv.first, out_v});
+        out_rev_var_map.insert({out_v, kv.first});
       }
     }
 
-
     left_dom.rename(left_vars, out_vars);
-    left_dom.rename(only_left_vars, only_left_out_vars);    
+    left_dom.rename(only_left_vars, only_left_out_vars);
     right_dom.rename(right_vars, out_vars);
     right_dom.rename(only_right_vars, only_right_out_vars);
-    
+
     base_abstract_domain_t out_base_dom(base_dom_op(left_dom, right_dom));
 
-    region_domain_t res(
-        std::move(out_alloc), std::move(out_var_map),
-        std::move(out_rev_var_map), std::move(out_rgn_counting_dom),
-        std::move(out_base_dom));
+    region_domain_t res(std::move(out_alloc), std::move(out_var_map),
+                        std::move(out_rev_var_map),
+                        std::move(out_rgn_counting_dom),
+                        std::move(out_base_dom));
     return res;
   }
 
@@ -474,33 +470,33 @@ private:
       unsigned bitwidth = 0;
       switch (v.get_type()) {
       case REG_BOOL_TYPE:
-	ty = BOOL_TYPE;
-	bitwidth = 1;
-	break;
+        ty = BOOL_TYPE;
+        bitwidth = 1;
+        break;
       case REG_ARR_BOOL_TYPE:
-	ty = ARR_BOOL_TYPE;
-	bitwidth = 1;
-	break;
+        ty = ARR_BOOL_TYPE;
+        bitwidth = 1;
+        break;
       case REG_INT_TYPE:
-	ty = INT_TYPE;
-	bitwidth = v.get_bitwidth();
-	break;
+        ty = INT_TYPE;
+        bitwidth = v.get_bitwidth();
+        break;
       case REG_ARR_INT_TYPE:
-	ty = ARR_INT_TYPE;
-	bitwidth = v.get_bitwidth();
-	break;
+        ty = ARR_INT_TYPE;
+        bitwidth = v.get_bitwidth();
+        break;
       case REG_REF_TYPE:
-	ty = INT_TYPE;
-	bitwidth = 32;
-	break;	
+        ty = INT_TYPE;
+        bitwidth = 32;
+        break;
       case REG_REAL_TYPE:
-	ty = REAL_TYPE;
-	break;
+        ty = REAL_TYPE;
+        break;
       case REG_ARR_REAL_TYPE:
-	ty = ARR_REAL_TYPE;
-	break;
+        ty = ARR_REAL_TYPE;
+        break;
       default:;
-	CRAB_ERROR(domain_name() + "::make_base_variable: unreachable");
+        CRAB_ERROR(domain_name() + "::make_base_variable: unreachable");
       }
       base_variable_t bv(var_allocator.next(), ty, bitwidth);
       return bv;
@@ -637,9 +633,7 @@ private:
   }
 
 public:
-  region_domain_t make_top() const override {
-    return region_domain_t(true);
-  }
+  region_domain_t make_top() const override { return region_domain_t(true); }
 
   region_domain_t make_bottom() const override {
     return region_domain_t(false);
@@ -658,10 +652,9 @@ public:
   region_domain(bool is_top = true) : m_is_bottom(!is_top) {}
 
   region_domain(const region_domain_t &o)
-      : m_is_bottom(o.m_is_bottom), m_alloc(o.m_alloc),
-        m_var_map(o.m_var_map), m_rev_var_map(o.m_rev_var_map),
-        m_rgn_counting_dom(o.m_rgn_counting_dom),
-        m_base_dom(o.m_base_dom) {
+      : m_is_bottom(o.m_is_bottom), m_alloc(o.m_alloc), m_var_map(o.m_var_map),
+        m_rev_var_map(o.m_rev_var_map),
+        m_rgn_counting_dom(o.m_rgn_counting_dom), m_base_dom(o.m_base_dom) {
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
   }
@@ -713,15 +706,15 @@ public:
       return false;
     }
 
-    CRAB_LOG("region",
-	     crab::outs() << "Inclusion test:\n\t" << *this << "\n\t" << o << "\n";);
-    
+    CRAB_LOG("region", crab::outs() << "Inclusion test:\n\t" << *this << "\n\t"
+                                    << o << "\n";);
+
     if (!(m_rgn_counting_dom <= o.m_rgn_counting_dom)) {
       CRAB_LOG("region", crab::outs() << "Result=0\n";);
       return false;
     }
 
-    // perform the common renaming 
+    // perform the common renaming
     base_varname_allocator_t out_alloc(m_alloc, o.m_alloc);
     base_abstract_domain_t left_dom(m_base_dom);
     base_abstract_domain_t right_dom(o.m_base_dom);
@@ -765,8 +758,7 @@ public:
       return;
     }
 
-    CRAB_LOG("region", crab::outs()
-                              << "Join " << *this << " and " << o << "=");
+    CRAB_LOG("region", crab::outs() << "Join " << *this << " and " << o << "=");
 
     rgn_counting_domain_t out_rgn_counting_dom(m_rgn_counting_dom |
                                                o.m_rgn_counting_dom);
@@ -797,12 +789,12 @@ public:
     }
 
     // See comments in do_join_or_widening
-    // 
+    //
     left_dom.project(left_vars);
     left_dom.rename(left_vars, out_vars);
     right_dom.project(right_vars);
     right_dom.rename(right_vars, out_vars);
-    
+
     base_abstract_domain_t out_base_dom(left_dom | right_dom);
 
     m_is_bottom = out_base_dom.is_bottom();
@@ -830,8 +822,7 @@ public:
       return abs;
     }
 
-    CRAB_LOG("region", crab::outs()
-                              << "Join " << *this << " and " << o << "=");
+    CRAB_LOG("region", crab::outs() << "Join " << *this << " and " << o << "=");
 
     auto rgn_counting_op = [](const rgn_counting_domain_t &v1,
                               const rgn_counting_domain_t &v2) {
@@ -839,8 +830,8 @@ public:
     };
     auto base_dom_op = [](const base_abstract_domain_t &v1,
                           const base_abstract_domain_t &v2) { return v1 | v2; };
-    region_domain_t res(std::move(do_join_or_widening(
-        *this, o, rgn_counting_op, base_dom_op)));
+    region_domain_t res(
+        std::move(do_join_or_widening(*this, o, rgn_counting_op, base_dom_op)));
 
     CRAB_LOG("region", crab::outs() << res << "\n");
     return res;
@@ -856,8 +847,7 @@ public:
       return o;
     }
 
-    CRAB_LOG("region", crab::outs()
-                              << "Meet " << *this << " and " << o << "=");
+    CRAB_LOG("region", crab::outs() << "Meet " << *this << " and " << o << "=");
 
     auto rgn_counting_op = [](const rgn_counting_domain_t &v1,
                               const rgn_counting_domain_t &v2) {
@@ -867,8 +857,8 @@ public:
                           const base_abstract_domain_t &v2) {
       return (v1 & v2);
     };
-    region_domain_t res(std::move(do_meet_or_narrowing(
-        *this, o, rgn_counting_op, base_dom_op)));
+    region_domain_t res(std::move(
+        do_meet_or_narrowing(*this, o, rgn_counting_op, base_dom_op)));
 
     CRAB_LOG("region", crab::outs() << res << "\n");
     return res;
@@ -888,7 +878,7 @@ public:
     }
 
     CRAB_LOG("region", crab::outs()
-                              << "Widening " << *this << " and " << o << "=");
+                           << "Widening " << *this << " and " << o << "=");
 
     auto rgn_counting_op = [](const rgn_counting_domain_t &v1,
                               const rgn_counting_domain_t &v2) {
@@ -898,8 +888,8 @@ public:
                           const base_abstract_domain_t &v2) {
       return v1 || v2;
     };
-    region_domain_t res(std::move(do_join_or_widening(
-        *this, o, rgn_counting_op, base_dom_op)));
+    region_domain_t res(
+        std::move(do_join_or_widening(*this, o, rgn_counting_op, base_dom_op)));
 
     CRAB_LOG("region", crab::outs() << res << "\n");
     return res;
@@ -921,7 +911,7 @@ public:
     }
 
     CRAB_LOG("region", crab::outs()
-                              << "Widening " << *this << " and " << o << "=");
+                           << "Widening " << *this << " and " << o << "=");
 
     auto rgn_counting_op = [](const rgn_counting_domain_t &v1,
                               const rgn_counting_domain_t &v2) {
@@ -932,8 +922,8 @@ public:
       return v1.widening_thresholds(v2, thresholds);
     };
 
-    region_domain_t res(std::move(do_join_or_widening(
-        *this, o, rgn_counting_op, base_dom_op)));
+    region_domain_t res(
+        std::move(do_join_or_widening(*this, o, rgn_counting_op, base_dom_op)));
 
     CRAB_LOG("region", crab::outs() << res << "\n");
     return res;
@@ -949,15 +939,14 @@ public:
       return o;
     }
 
-    CRAB_LOG("region", crab::outs()
-                              << "Meet " << *this << " and " << o << "=");
+    CRAB_LOG("region", crab::outs() << "Meet " << *this << " and " << o << "=");
 
     auto rgn_counting_op = [](rgn_counting_domain_t v1,
                               rgn_counting_domain_t v2) { return (v1 && v2); };
     auto base_dom_op = [](base_abstract_domain_t v1,
                           base_abstract_domain_t v2) { return (v1 && v2); };
-    region_domain_t res(std::move(do_meet_or_narrowing(
-        *this, o, rgn_counting_op, base_dom_op)));
+    region_domain_t res(std::move(
+        do_meet_or_narrowing(*this, o, rgn_counting_op, base_dom_op)));
 
     CRAB_LOG("region", crab::outs() << res << "\n");
     return res;
@@ -969,13 +958,13 @@ public:
 
     if (!is_bottom()) {
       if (v.is_region_type()) {
-	m_rgn_counting_dom -= v;
+        m_rgn_counting_dom -= v;
       }
       auto it = m_var_map.find(v);
       if (it != m_var_map.end()) {
-	m_base_dom -= it->second;
-	m_rev_var_map.erase(it->second);
-	m_var_map.erase(it);
+        m_base_dom -= it->second;
+        m_rev_var_map.erase(it->second);
+        m_var_map.erase(it);
       }
     }
   }
@@ -1000,38 +989,42 @@ public:
     // Assign a synthetic variable to rgn for modeling its content.
     base_variable_t v = make_base_variable(m_alloc, rgn);
     CRAB_LOG("region", crab::outs() << "After region_init(" << rgn
-                                       << ")=" << *this << "\n";);
+                                    << ")=" << *this << "\n";);
   }
 
-  void region_copy(const variable_t &lhs_rgn, const variable_t &rhs_rgn) override {
+  void region_copy(const variable_t &lhs_rgn,
+                   const variable_t &rhs_rgn) override {
     crab::CrabStats::count(domain_name() + ".count.region_copy");
     crab::ScopedCrabStats __st__(domain_name() + ".region_copy");
-    
+
     if (is_bottom()) {
       return;
     }
 
     if (!lhs_rgn.is_region_type()) {
-      CRAB_ERROR(domain_name() + "::region_copy ", lhs_rgn, " must have a region type");      
+      CRAB_ERROR(domain_name() + "::region_copy ", lhs_rgn,
+                 " must have a region type");
     }
     if (!rhs_rgn.is_region_type()) {
-      CRAB_ERROR(domain_name() + "::region_copy ", rhs_rgn, " must have a region type");            
-    } 
-    if (!lhs_rgn.same_type_and_bitwidth(rhs_rgn)) {
-      CRAB_ERROR(domain_name() + "::region_copy ", lhs_rgn, ":=", rhs_rgn, " with different types");
+      CRAB_ERROR(domain_name() + "::region_copy ", rhs_rgn,
+                 " must have a region type");
     }
-    
+    if (!lhs_rgn.same_type_and_bitwidth(rhs_rgn)) {
+      CRAB_ERROR(domain_name() + "::region_copy ", lhs_rgn, ":=", rhs_rgn,
+                 " with different types");
+    }
+
     m_rgn_counting_dom.set(lhs_rgn, m_rgn_counting_dom[rhs_rgn]);
-    
+
     const base_variable_t &base_lhs = rename_var(lhs_rgn);
-    const base_variable_t &base_rhs = rename_var(rhs_rgn);    
+    const base_variable_t &base_rhs = rename_var(rhs_rgn);
     switch (lhs_rgn.get_type()) {
     case REG_BOOL_TYPE:
       m_base_dom.assign_bool_var(base_lhs, base_rhs, false);
       break;
     case REG_INT_TYPE:
     case REG_REAL_TYPE:
-    case REG_REF_TYPE:  
+    case REG_REF_TYPE:
       m_base_dom.assign(base_lhs, base_rhs);
       break;
     case REG_ARR_BOOL_TYPE:
@@ -1040,11 +1033,10 @@ public:
       m_base_dom.array_assign(base_lhs, base_rhs);
       break;
     default:;
-      CRAB_ERROR(domain_name() + 
-          "::region_copy with unexpected region  type");
+      CRAB_ERROR(domain_name() + "::region_copy with unexpected region  type");
     }
   }
-  
+
   // Create a new reference ref to region rgn.
   void ref_make(const variable_t &ref, const variable_t &rgn) override {
     crab::CrabStats::count(domain_name() + ".count.ref_make");
@@ -1055,8 +1047,8 @@ public:
     }
 
     if (!ref.is_ref_type()) {
-      CRAB_LOG("region",
-	       CRAB_WARN("region_domain::ref_make: ", ref, " must be a reference"););
+      CRAB_LOG("region", CRAB_WARN("region_domain::ref_make: ", ref,
+                                   " must be a reference"););
       return;
     }
 
@@ -1068,7 +1060,7 @@ public:
     rename_var(ref);
 
     CRAB_LOG("region", crab::outs() << "After ref_make(" << ref << "," << rgn
-                                       << ")=" << *this << "\n";);
+                                    << ")=" << *this << "\n";);
   }
 
   // Read the content of reference ref within rgn. The content is
@@ -1081,19 +1073,19 @@ public:
     if (is_bottom()) {
       return;
     }
-    
+
     const base_variable_t &base_res = rename_var(res);
 
     if (!rgn.is_scalar_region_type()) {
-      CRAB_LOG("region",
-	       CRAB_WARN("region_domain::ref_load: ", rgn, " must be a scalar region"););
+      CRAB_LOG("region", CRAB_WARN("region_domain::ref_load: ", rgn,
+                                   " must be a scalar region"););
       m_base_dom -= base_res;
       return;
     }
-    
+
     if (!ref.is_ref_type()) {
-      CRAB_LOG("region",
-	       CRAB_WARN("region_domain::ref_load: ", ref, " must be a reference"););
+      CRAB_LOG("region", CRAB_WARN("region_domain::ref_load: ", ref,
+                                   " must be a reference"););
       m_base_dom -= base_res;
       return;
     }
@@ -1105,48 +1097,47 @@ public:
       return;
     }
 
-    auto ref_load = [&rgn, &base_res,this](const base_variable_t &rgn_var) {
-        if (rgn_var.get_type() != base_res.get_type()) {
-          CRAB_ERROR("region_domain::ref_load: ", "Type of region ", rgn,
-                     " does not match with ", base_res);
-        }
-        switch (base_res.get_type()) {
-        case BOOL_TYPE:
-          this->m_base_dom.assign_bool_var(base_res, rgn_var, false);
-          break;
-        case INT_TYPE:
-        case REAL_TYPE:
-          this->m_base_dom.assign(base_res, rgn_var);
-          break;
-        default:
-          // variables of type base_variable_t cannot be REF_TYPE or
-          // ARR_TYPE
-          CRAB_ERROR("region_domain::ref_load: unsupported type in ",
-                     base_res);
-        }
-      };
+    auto ref_load = [&rgn, &base_res, this](const base_variable_t &rgn_var) {
+      if (rgn_var.get_type() != base_res.get_type()) {
+        CRAB_ERROR("region_domain::ref_load: ", "Type of region ", rgn,
+                   " does not match with ", base_res);
+      }
+      switch (base_res.get_type()) {
+      case BOOL_TYPE:
+        this->m_base_dom.assign_bool_var(base_res, rgn_var, false);
+        break;
+      case INT_TYPE:
+      case REAL_TYPE:
+        this->m_base_dom.assign(base_res, rgn_var);
+        break;
+      default:
+        // variables of type base_variable_t cannot be REF_TYPE or
+        // ARR_TYPE
+        CRAB_ERROR("region_domain::ref_load: unsupported type in ", base_res);
+      }
+    };
 
     auto num_refs = m_rgn_counting_dom[rgn];
     if (num_refs.is_one()) {
       CRAB_LOG("region", crab::outs() << "Reading from singleton\n";);
       if (auto region_var_opt = get_var(rgn)) {
-	ref_load(*region_var_opt);
+        ref_load(*region_var_opt);
       } else {
-	m_base_dom -= base_res;
+        m_base_dom -= base_res;
       }
     } else {
       CRAB_LOG("region", crab::outs() << "Reading from non-singleton\n";);
       if (auto region_var_opt = get_var(rgn)) {
-	base_variable_t fresh_region_var = make_base_variable(m_alloc, rgn);
-	m_base_dom.expand(*region_var_opt, fresh_region_var);
-	ref_load(fresh_region_var);
+        base_variable_t fresh_region_var = make_base_variable(m_alloc, rgn);
+        m_base_dom.expand(*region_var_opt, fresh_region_var);
+        ref_load(fresh_region_var);
       } else {
-	m_base_dom -= base_res;
+        m_base_dom -= base_res;
       }
     }
     CRAB_LOG("region", crab::outs() << "After " << res << ":="
-                                       << "ref_load(" << ref << "," << rgn
-                                       << ")=" << *this << "\n";);
+                                    << "ref_load(" << ref << "," << rgn
+                                    << ")=" << *this << "\n";);
   }
 
   // Write the content of val to the address pointed by ref in region
@@ -1161,57 +1152,54 @@ public:
     }
 
     if (!rgn.is_scalar_region_type()) {
-      CRAB_LOG("region",
-	       CRAB_WARN("region_domain::ref_store: ", rgn, " must be a scalar region"););
+      CRAB_LOG("region", CRAB_WARN("region_domain::ref_store: ", rgn,
+                                   " must be a scalar region"););
       return;
     }
 
     if (!ref.is_ref_type()) {
-      CRAB_LOG("region",
-	       CRAB_WARN("region_domain::ref_store: ", ref, " must be a reference"););
+      CRAB_LOG("region", CRAB_WARN("region_domain::ref_store: ", ref,
+                                   " must be a reference"););
       return;
     }
 
     if (is_null_ref(ref)) {
-      CRAB_LOG("region",
-               CRAB_WARN("region_domain::ref_store: reference ", ref,
-                         " is null. ", " Set to bottom ..."););
+      CRAB_LOG("region", CRAB_WARN("region_domain::ref_store: reference ", ref,
+                                   " is null. ", " Set to bottom ..."););
       set_to_bottom();
       return;
     }
-    
-    auto ref_store = [&rgn, &val,this](base_abstract_domain_t &base_dom) {
-	base_variable_t rgn_var = rename_var(rgn);
-        switch (rgn_var.get_type()) {
-        case BOOL_TYPE:
-          if (val.is_constant()) {
-            if (val.constant() >= number_t(1)) {
-              base_dom.assign_bool_cst(rgn_var,
-                                       base_linear_constraint_t::get_true());
-            } else {
-              base_dom.assign_bool_cst(rgn_var,
-                                       base_linear_constraint_t::get_false());
-            }
-          } else if (auto var = val.get_variable()) {
-            base_dom.assign_bool_var(rgn_var, rename_var(*var), false);
-          } else {
-            CRAB_ERROR("region_domain::ref_store: unsupported boolean ",
-                       val);
-          }
-          break;
-        case INT_TYPE:
-        case REAL_TYPE:
-          base_dom.assign(rgn_var, rename_linear_expr(val));
-          break;
-        default:
-          // variables of type base_variable_t cannot be REF_TYPE or
-          // ARR_TYPE
-          CRAB_ERROR("region_domain::ref_store: unsupported type in ",
-                     rgn_var);
-        }
-      };
 
-    auto num_refs = m_rgn_counting_dom[rgn];    
+    auto ref_store = [&rgn, &val, this](base_abstract_domain_t &base_dom) {
+      base_variable_t rgn_var = rename_var(rgn);
+      switch (rgn_var.get_type()) {
+      case BOOL_TYPE:
+        if (val.is_constant()) {
+          if (val.constant() >= number_t(1)) {
+            base_dom.assign_bool_cst(rgn_var,
+                                     base_linear_constraint_t::get_true());
+          } else {
+            base_dom.assign_bool_cst(rgn_var,
+                                     base_linear_constraint_t::get_false());
+          }
+        } else if (auto var = val.get_variable()) {
+          base_dom.assign_bool_var(rgn_var, rename_var(*var), false);
+        } else {
+          CRAB_ERROR("region_domain::ref_store: unsupported boolean ", val);
+        }
+        break;
+      case INT_TYPE:
+      case REAL_TYPE:
+        base_dom.assign(rgn_var, rename_linear_expr(val));
+        break;
+      default:
+        // variables of type base_variable_t cannot be REF_TYPE or
+        // ARR_TYPE
+        CRAB_ERROR("region_domain::ref_store: unsupported type in ", rgn_var);
+      }
+    };
+
+    auto num_refs = m_rgn_counting_dom[rgn];
     if (num_refs.is_one()) {
       /* strong update */
       CRAB_LOG("region", crab::outs() << "Performing strong update\n";);
@@ -1223,9 +1211,8 @@ public:
       ref_store(tmp);
       m_base_dom |= tmp;
     }
-    CRAB_LOG("region", crab::outs()
-                              << "After ref_store(" << ref << "," << rgn << ","
-                              << val << ")=" << *this << "\n";);
+    CRAB_LOG("region", crab::outs() << "After ref_store(" << ref << "," << rgn
+                                    << "," << val << ")=" << *this << "\n";);
   }
 
   // Create a new reference ref2 to region rgn2.
@@ -1235,25 +1222,27 @@ public:
                const linear_expression_t &offset) override {
     crab::CrabStats::count(domain_name() + ".count.ref_gep");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_gep");
-    
+
     if (!is_bottom()) {
       m_base_dom.assign(rename_var(ref2),
-			rename_var(ref1) + rename_linear_expr(offset));
+                        rename_var(ref1) + rename_linear_expr(offset));
 
       if (!(rgn1 == rgn2 && offset.equal(number_t(0)))) {
-	// Update region counting
-	auto num_refs = m_rgn_counting_dom[rgn2];
-	m_rgn_counting_dom.set(rgn2, num_refs.increment());
+        // Update region counting
+        auto num_refs = m_rgn_counting_dom[rgn2];
+        m_rgn_counting_dom.set(rgn2, num_refs.increment());
       }
     }
 
     CRAB_LOG("region", crab::outs()
-	     << "After (" << rgn2 << "," << ref2 <<") := ref_gep(" << rgn1 << "," << ref1
-	     << " + " << offset << ")=" << *this << "\n";);
+                           << "After (" << rgn2 << "," << ref2
+                           << ") := ref_gep(" << rgn1 << "," << ref1 << " + "
+                           << offset << ")=" << *this << "\n";);
   }
 
   // Treat memory pointed by ref  as an array and perform an array load.
-  void ref_load_from_array(const variable_t &lhs, const variable_t &ref /*unused*/,
+  void ref_load_from_array(const variable_t &lhs,
+                           const variable_t &ref /*unused*/,
                            const variable_t &rgn,
                            const linear_expression_t &index,
                            const linear_expression_t &elem_size) override {
@@ -1270,18 +1259,15 @@ public:
      * These syntactic checks are only needed if the abstract domain
      * API is called directly.
      **/
-    if (!lhs.is_int_type() &&
-	!lhs.is_bool_type() &&
-	!lhs.is_real_type()) {
-      CRAB_LOG("region",
-	       CRAB_WARN("region_domain::ref_load_from_array: ", lhs, " must be bool/int/real type"););
+    if (!lhs.is_int_type() && !lhs.is_bool_type() && !lhs.is_real_type()) {
+      CRAB_LOG("region", CRAB_WARN("region_domain::ref_load_from_array: ", lhs,
+                                   " must be bool/int/real type"););
       m_base_dom -= base_lhs;
-
     }
-    
+
     if (!rgn.is_array_region_type()) {
-      CRAB_LOG("region",
-	       CRAB_WARN("region_domain::ref_load_from_array: ", rgn, " must be an array region"););
+      CRAB_LOG("region", CRAB_WARN("region_domain::ref_load_from_array: ", rgn,
+                                   " must be an array region"););
       m_base_dom -= base_lhs;
       return;
     }
@@ -1290,13 +1276,15 @@ public:
 
     // if (!ref.is_ref_type()) {
     //   CRAB_LOG("region",
-    // 	       CRAB_WARN("region_domain::ref_load_from_array: ", ref, " must be a reference"););
+    // 	       CRAB_WARN("region_domain::ref_load_from_array: ", ref, " must be
+    // a reference"););
     //   m_base_dom -= base_lhs;
     //   return;
     // }
 
     // if (is_null_ref(ref)) {
-    //   CRAB_WARN("region_domain::ref_load_from_array: reference ", ref, " is null. ",
+    //   CRAB_WARN("region_domain::ref_load_from_array: reference ", ref, " is
+    //   null. ",
     //             " Set to bottom ...");
     //   set_to_bottom();
     //   return;
@@ -1305,13 +1293,15 @@ public:
     if (boost::optional<base_variable_t> arr_var_opt = get_var(rgn)) {
       auto num_refs = m_rgn_counting_dom[rgn];
       if (num_refs.is_one()) {
-	CRAB_LOG("region", crab::outs() << "Reading from singleton\n";);
-	m_base_dom.array_load(base_lhs, *arr_var_opt, rename_linear_expr(elem_size),
-			      rename_linear_expr(index));
+        CRAB_LOG("region", crab::outs() << "Reading from singleton\n";);
+        m_base_dom.array_load(base_lhs, *arr_var_opt,
+                              rename_linear_expr(elem_size),
+                              rename_linear_expr(index));
       } else {
-	// TODO: get the bitwidth from index
-	base_variable_t unknown_index(m_alloc.next(), crab::INT_TYPE, 32);
-	m_base_dom.array_load(base_lhs, *arr_var_opt, rename_linear_expr(elem_size), unknown_index);
+        // TODO: get the bitwidth from index
+        base_variable_t unknown_index(m_alloc.next(), crab::INT_TYPE, 32);
+        m_base_dom.array_load(base_lhs, *arr_var_opt,
+                              rename_linear_expr(elem_size), unknown_index);
       }
     } else {
       m_base_dom -= base_lhs;
@@ -1319,7 +1309,8 @@ public:
   }
 
   // Treat region as an array and perform an array store.
-  void ref_store_to_array(const variable_t &ref /*unused*/, const variable_t &rgn,
+  void ref_store_to_array(const variable_t &ref /*unused*/,
+                          const variable_t &rgn,
                           const linear_expression_t &index,
                           const linear_expression_t &elem_size,
                           const linear_expression_t &val) override {
@@ -1335,8 +1326,8 @@ public:
      * API is called directly.
      **/
     if (!rgn.is_array_region_type()) {
-      CRAB_LOG("region",
-	       CRAB_WARN("region_domain::ref_store_to_array: ", rgn, " must be an array region"););
+      CRAB_LOG("region", CRAB_WARN("region_domain::ref_store_to_array: ", rgn,
+                                   " must be an array region"););
       return;
     }
 
@@ -1344,12 +1335,14 @@ public:
 
     // if (!ref.is_ref_type()) {
     //   CRAB_LOG("region",
-    // 	       CRAB_WARN("region_domain::ref_store_to_array: ", ref, " must be a reference"););
+    // 	       CRAB_WARN("region_domain::ref_store_to_array: ", ref, " must be a
+    // reference"););
     //   return;
     // }
 
     // if (is_null_ref(ref)) {
-    //   CRAB_WARN("region_domain::ref_store_to_array: reference ", ref, " is null. ",
+    //   CRAB_WARN("region_domain::ref_store_to_array: reference ", ref, " is
+    //   null. ",
     //             " Set to bottom ...");
     //   set_to_bottom();
     //   return;
@@ -1360,12 +1353,13 @@ public:
     if (num_refs.is_one()) {
       CRAB_LOG("region", crab::outs() << "Reading from singleton\n";);
       m_base_dom.array_store(arr_var, rename_linear_expr(elem_size),
-			     rename_linear_expr(index), rename_linear_expr(val), false);
+                             rename_linear_expr(index), rename_linear_expr(val),
+                             false);
     } else {
       // TODO: get the bitwidth from index
       base_variable_t unknown_index(m_alloc.next(), crab::INT_TYPE, 32);
       m_base_dom.array_store(arr_var, rename_linear_expr(elem_size),
-			     unknown_index, rename_linear_expr(val), false);
+                             unknown_index, rename_linear_expr(val), false);
     }
   }
 
@@ -1383,69 +1377,69 @@ public:
       }
       if (cst.is_unary()) {
         assert(cst.lhs().is_ref_type());
-	base_variable_t x = rename_var(cst.lhs());
-	if (cst.is_equality()) {
-	  m_base_dom += base_linear_constraint_t(x == number_t(0));
-	} else if (cst.is_disequality()) {
-	  m_base_dom += base_linear_constraint_t(x > number_t(0));
-	} else if (cst.is_less_or_equal_than()) {
-            m_base_dom += base_linear_constraint_t(x <= number_t(0));
-	} else if (cst.is_less_than()) {
-	  m_base_dom += base_linear_constraint_t(x < number_t(0));
-	} else if (cst.is_greater_or_equal_than()) {
-	  m_base_dom += base_linear_constraint_t(x >= number_t(0));
-	} else if (cst.is_greater_than()) {
-	  m_base_dom += base_linear_constraint_t(x > number_t(0));
-	}
+        base_variable_t x = rename_var(cst.lhs());
+        if (cst.is_equality()) {
+          m_base_dom += base_linear_constraint_t(x == number_t(0));
+        } else if (cst.is_disequality()) {
+          m_base_dom += base_linear_constraint_t(x > number_t(0));
+        } else if (cst.is_less_or_equal_than()) {
+          m_base_dom += base_linear_constraint_t(x <= number_t(0));
+        } else if (cst.is_less_than()) {
+          m_base_dom += base_linear_constraint_t(x < number_t(0));
+        } else if (cst.is_greater_or_equal_than()) {
+          m_base_dom += base_linear_constraint_t(x >= number_t(0));
+        } else if (cst.is_greater_than()) {
+          m_base_dom += base_linear_constraint_t(x > number_t(0));
+        }
       } else {
         assert(cst.lhs().is_ref_type());
         assert(cst.rhs().is_ref_type());
-	base_variable_t x = rename_var(cst.lhs());
-	base_variable_t y = rename_var(cst.rhs());
+        base_variable_t x = rename_var(cst.lhs());
+        base_variable_t y = rename_var(cst.rhs());
         number_t offset = cst.offset();
-	if (cst.is_equality()) {
-	  m_base_dom += base_linear_constraint_t(x == y + offset);
-	} else if (cst.is_disequality()) {
-	  m_base_dom += base_linear_constraint_t(x != y + offset);
-	} else if (cst.is_less_or_equal_than()) {
-	  m_base_dom += base_linear_constraint_t(x <= y + offset);
-	} else if (cst.is_less_than()) {
-	  m_base_dom += base_linear_constraint_t(x < y + offset);
-	} else if (cst.is_greater_or_equal_than()) {
-	  m_base_dom += base_linear_constraint_t(x >= y + offset);
-	} else if (cst.is_greater_than()) {
-	  m_base_dom += base_linear_constraint_t(x > y + offset);
-	}
+        if (cst.is_equality()) {
+          m_base_dom += base_linear_constraint_t(x == y + offset);
+        } else if (cst.is_disequality()) {
+          m_base_dom += base_linear_constraint_t(x != y + offset);
+        } else if (cst.is_less_or_equal_than()) {
+          m_base_dom += base_linear_constraint_t(x <= y + offset);
+        } else if (cst.is_less_than()) {
+          m_base_dom += base_linear_constraint_t(x < y + offset);
+        } else if (cst.is_greater_or_equal_than()) {
+          m_base_dom += base_linear_constraint_t(x >= y + offset);
+        } else if (cst.is_greater_than()) {
+          m_base_dom += base_linear_constraint_t(x > y + offset);
+        }
       }
     }
     m_is_bottom = m_base_dom.is_bottom();
     CRAB_LOG("region", crab::outs()
-	     << "ref_assume(" << cst << ")" << *this << "\n";);
+                           << "ref_assume(" << cst << ")" << *this << "\n";);
   }
 
   void ref_to_int(const variable_t &rgn, const variable_t &ref_var,
-		  const variable_t &int_var) override {
+                  const variable_t &int_var) override {
     crab::CrabStats::count(domain_name() + ".count.ref_to_int");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_to_int");
 
     assert(ref_var.is_ref_type());
     assert(int_var.is_int_type());
-    
+
     if (!is_bottom()) {
-      base_variable_t src_var = rename_var(ref_var);      
+      base_variable_t src_var = rename_var(ref_var);
       base_variable_t dst_var = rename_var(int_var);
       m_base_dom.assign(dst_var, src_var);
     }
   }
-  
-  void int_to_ref(const variable_t &int_var,
-		  const variable_t &rgn, const variable_t &ref_var) override {
+
+  void int_to_ref(const variable_t &int_var, const variable_t &rgn,
+                  const variable_t &ref_var) override {
     crab::CrabStats::count(domain_name() + ".count.int_to_ref");
     crab::ScopedCrabStats __st__(domain_name() + ".int_to_ref");
 
     assert(ref_var.is_ref_type());
     assert(int_var.is_int_type());
-    
+
     if (!is_bottom()) {
       base_variable_t src_var = rename_var(int_var);
       base_variable_t dst_var = rename_var(ref_var);
@@ -1455,10 +1449,9 @@ public:
       // Update region counting
       auto num_refs = m_rgn_counting_dom[rgn];
       m_rgn_counting_dom.set(rgn, num_refs.increment());
-      
     }
-  }  
-  
+  }
+
   // arithmetic operations
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
@@ -1642,10 +1635,9 @@ public:
                                           is_not_rhs, invariant.m_base_dom);
     }
   }
-  void
-  backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
-                             const variable_t &y, const variable_t &z,
-                             const region_domain_t &invariant) override {
+  void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
+                                  const variable_t &y, const variable_t &z,
+                                  const region_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_apply_binary_bool");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_apply_binary_bool");
 
@@ -1760,11 +1752,12 @@ public:
           rename_linear_expr(v), is_strong_update, invariant.m_base_dom);
     }
   }
-  void backward_array_store_range(
-      const variable_t &a, const linear_expression_t &elem_size,
-      const linear_expression_t &i, const linear_expression_t &j,
-      const linear_expression_t &v,
-      const region_domain_t &invariant) override {
+  void backward_array_store_range(const variable_t &a,
+                                  const linear_expression_t &elem_size,
+                                  const linear_expression_t &i,
+                                  const linear_expression_t &j,
+                                  const linear_expression_t &v,
+                                  const region_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_array_store_range");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_array_store_range");
 
@@ -1789,18 +1782,18 @@ public:
     if (is_bottom() || is_top()) {
       return;
     }
-    
+
     std::vector<base_variable_t> base_vars;
     base_vars.reserve(variables.size());
-    for (auto &v: variables) {
+    for (auto &v : variables) {
       if (v.is_region_type()) {
-	m_rgn_counting_dom -= v;
-      } 
+        m_rgn_counting_dom -= v;
+      }
       auto it = m_var_map.find(v);
       if (it != m_var_map.end()) {
-	base_vars.push_back(it->second);
-	m_rev_var_map.erase(it->second);
-	m_var_map.erase(it);
+        base_vars.push_back(it->second);
+        m_rev_var_map.erase(it->second);
+        m_var_map.erase(it);
       }
     }
     m_base_dom.forget(base_vars);
@@ -1816,7 +1809,7 @@ public:
 
     variable_vector_t sorted_variables(variables.begin(), variables.end());
     std::sort(sorted_variables.begin(), sorted_variables.end());
-    
+
     // -- project in the base domain
     std::vector<base_variable_t> base_vars;
     base_vars.reserve(variables.size());
@@ -1828,13 +1821,14 @@ public:
     // -- update m_var_map and m_rev_var_map
     std::vector<variable_t> var_map_to_remove;
     var_map_to_remove.reserve(m_var_map.size());
-    for (auto &kv: m_var_map) {
-      if (!std::binary_search(sorted_variables.begin(), sorted_variables.end(), kv.first)) {
-	var_map_to_remove.push_back(kv.first);
-	m_rev_var_map.erase(kv.second);
+    for (auto &kv : m_var_map) {
+      if (!std::binary_search(sorted_variables.begin(), sorted_variables.end(),
+                              kv.first)) {
+        var_map_to_remove.push_back(kv.first);
+        m_rev_var_map.erase(kv.second);
       }
     }
-    for (auto &v: var_map_to_remove) {
+    for (auto &v : var_map_to_remove) {
       m_var_map.erase(v);
     }
 
@@ -1842,16 +1836,16 @@ public:
     if (!m_rgn_counting_dom.is_top() && !m_rgn_counting_dom.is_bottom()) {
       std::vector<variable_t> rgn_counting_vars;
       rgn_counting_vars.reserve(m_rgn_counting_dom.size());
-      for (auto kv: m_rgn_counting_dom) {
-	if (!std::binary_search(sorted_variables.begin(), sorted_variables.end(), kv.first)) {            
-	  rgn_counting_vars.push_back(kv.first);
-	}
+      for (auto kv : m_rgn_counting_dom) {
+        if (!std::binary_search(sorted_variables.begin(),
+                                sorted_variables.end(), kv.first)) {
+          rgn_counting_vars.push_back(kv.first);
+        }
       }
-      for (auto &v: rgn_counting_vars) {
-	m_rgn_counting_dom -= v;
+      for (auto &v : rgn_counting_vars) {
+        m_rgn_counting_dom -= v;
       }
     }
-    
   }
 
   void normalize() override {}
@@ -1927,22 +1921,20 @@ public:
     } else if (is_top()) {
       o << "{}";
     } else {
-      CRAB_LOG("region-print",      
-	       o << "(RgnCounter=" << m_rgn_counting_dom << ","
-	       << "MapVar={";
-	       for (auto &kv : m_var_map) {
-		 o << kv.first << "->" << kv.second << ";";
-	       }
-	       o << "}," << "BaseDom=" << m_base_dom << ")\n";
-	       );
+      CRAB_LOG(
+          "region-print", o << "(RgnCounter=" << m_rgn_counting_dom << ","
+                            << "MapVar={";
+          for (auto &kv
+               : m_var_map) { o << kv.first << "->" << kv.second << ";"; } o
+          << "},"
+          << "BaseDom=" << m_base_dom << ")\n";);
       std::unordered_map<std::string, std::string> renaming_map;
-      for (auto &kv: m_rev_var_map) {
-	renaming_map[kv.first.name().str()] = kv.second.name().str();
+      for (auto &kv : m_rev_var_map) {
+        renaming_map[kv.first.name().str()] = kv.second.name().str();
       }
       m_alloc.add_renaming_map(renaming_map);
       o << m_base_dom;
       m_alloc.clear_renaming_map();
-
     }
   }
 }; // class region_domain
