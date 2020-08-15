@@ -1060,7 +1060,7 @@ public:
       return;
     }
 
-    // Update reference counting
+    // Update region counting
     auto num_refs = m_rgn_counting_dom[rgn];
     m_rgn_counting_dom.set(rgn, num_refs.increment());
 
@@ -1241,7 +1241,7 @@ public:
 			rename_var(ref1) + rename_linear_expr(offset));
 
       if (!(rgn1 == rgn2 && offset.equal(number_t(0)))) {
-	// Update reference counting
+	// Update region counting
 	auto num_refs = m_rgn_counting_dom[rgn2];
 	m_rgn_counting_dom.set(rgn2, num_refs.increment());
       }
@@ -1427,17 +1427,35 @@ public:
 		  const variable_t &int_var) override {
     crab::CrabStats::count(domain_name() + ".count.ref_to_int");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_to_int");
-    if (!is_bottom()) {
-      CRAB_WARN(domain_name() + "::ref_to_int not implemented");
-    }
 
+    assert(ref_var.is_ref_type());
+    assert(int_var.is_int_type());
+    
+    if (!is_bottom()) {
+      base_variable_t src_var = rename_var(ref_var);      
+      base_variable_t dst_var = rename_var(int_var);
+      m_base_dom.assign(dst_var, src_var);
+    }
   }
+  
   void int_to_ref(const variable_t &int_var,
 		  const variable_t &rgn, const variable_t &ref_var) override {
     crab::CrabStats::count(domain_name() + ".count.int_to_ref");
     crab::ScopedCrabStats __st__(domain_name() + ".int_to_ref");
+
+    assert(ref_var.is_ref_type());
+    assert(int_var.is_int_type());
+    
     if (!is_bottom()) {
-      CRAB_WARN(domain_name() + "::int_to_ref not implemented");
+      base_variable_t src_var = rename_var(int_var);
+      base_variable_t dst_var = rename_var(ref_var);
+
+      m_base_dom.assign(dst_var, src_var);
+
+      // Update region counting
+      auto num_refs = m_rgn_counting_dom[rgn];
+      m_rgn_counting_dom.set(rgn, num_refs.increment());
+      
     }
   }  
   
