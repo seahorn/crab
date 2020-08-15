@@ -46,7 +46,7 @@ endfunction ()
 
 AddTestDir(domains)
 AddTestDir(domains/wrapint)
-AddTestDir(domains/reference)
+AddTestDir(domains/region)
 AddTestDir(transforms)
 AddTestDir(inter)
 AddTestDir(cg)

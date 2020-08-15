@@ -2796,7 +2796,7 @@ bb5={-i <= -100}
 bb3={i-n <= -1; -i <= 0}
 bb4={-i <= 0}
 === End ./test-bin/precond-2 ===
-=== Begin ./test-bin/ref-1 ===
+=== Begin ./test-bin/region-1 ===
 entry:
   region_init(region_0);
   region_init(region_1);
@@ -2838,7 +2838,7 @@ ret:
   assert(-*x+*y <= 0);
 
 
-Invariants using ReferenceDomain(SplitDBM)
+Invariants using RegionDomain(SplitDBM)
 Abstract trace: entry (bb1 bb1_t bb2)^{5} bb1_f bb3 ret
 user-defined assertion checker
 1  Number of total safe checks
@@ -2846,8 +2846,8 @@ user-defined assertion checker
 0  Number of total warning checks
 0  Number of total unreachable checks
 
-=== End ./test-bin/ref-1 ===
-=== Begin ./test-bin/ref-2 ===
+=== End ./test-bin/region-1 ===
+=== Begin ./test-bin/region-2 ===
 entry:
   region_init(region_0);
   region_init(region_1);
@@ -2892,7 +2892,7 @@ ret:
   assert(-*x+*y <= 0);
 
 
-Invariants using ReferenceDomain(SplitDBM)
+Invariants using RegionDomain(SplitDBM)
 Abstract trace: entry (bb1 bb1_t bb2)^{5} bb1_f ret
 user-defined assertion checker
 3  Number of total safe checks
@@ -2900,7 +2900,7 @@ user-defined assertion checker
 0  Number of total warning checks
 0  Number of total unreachable checks
 
-=== End ./test-bin/ref-2 ===
+=== End ./test-bin/region-2 ===
 === Begin ./test-bin/td_inter_1 ===
 z:int declare foo(x:int)
 entry:

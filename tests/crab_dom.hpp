@@ -15,7 +15,7 @@
 #include <crab/domains/generic_abstract_domain.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/powerset_domain.hpp>
-#include <crab/domains/reference_domain.hpp>
+#include <crab/domains/region_domain.hpp>
 #include <crab/domains/sparse_dbm.hpp>
 #include <crab/domains/split_dbm.hpp>
 #include <crab/domains/term_equiv.hpp>
@@ -100,21 +100,21 @@ using z_wrapped_interval_domain_t =
 // Reference domain
 /*===================================================================*/
 using var_allocator = crab::var_factory_impl::str_var_alloc_col;
-using z_ref_aa_int_params_t = reference_domain_impl::Params<
+using z_rgn_aa_int_params_t = region_domain_impl::Params<
     z_number, varname_t,
     array_adaptive_domain<
         interval_domain<z_number, typename var_allocator::varname_t>,
         ArrayAdaptParams>>;
-using z_ref_int_params_t = reference_domain_impl::Params<
+using z_rgn_int_params_t = region_domain_impl::Params<
     z_number, varname_t,
     interval_domain<z_number, typename var_allocator::varname_t>>;
-using z_ref_sdbm_params_t = reference_domain_impl::Params<
+using z_rgn_sdbm_params_t = region_domain_impl::Params<
     z_number, varname_t,
     split_dbm_domain<z_number, typename var_allocator::varname_t,
                      z_SplitGraph>>;
-using z_ref_int_t = reference_domain<z_ref_int_params_t>;
-using z_ref_sdbm_t = reference_domain<z_ref_sdbm_params_t>;
-using z_ref_aa_int_t = reference_domain<z_ref_aa_int_params_t>;
+using z_rgn_int_t = region_domain<z_rgn_int_params_t>;
+using z_rgn_sdbm_t = region_domain<z_rgn_sdbm_params_t>;
+using z_rgn_aa_int_t = region_domain<z_rgn_aa_int_params_t>;
 /*===================================================================*/
 /// Numerical domains over real
 /*===================================================================*/
