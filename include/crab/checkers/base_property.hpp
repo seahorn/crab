@@ -179,8 +179,8 @@ public:
       crab::cfg::array_assign_stmt<basic_block_label_t, number_t, varname_t>;
   using region_init_t =
       crab::cfg::region_init_stmt<basic_block_label_t, number_t, varname_t>;
-  using region_assign_t =
-      crab::cfg::region_assign_stmt<basic_block_label_t, number_t, varname_t>;
+  using region_copy_t =
+      crab::cfg::region_copy_stmt<basic_block_label_t, number_t, varname_t>;
   using make_ref_t =
       crab::cfg::make_ref_stmt<basic_block_label_t, number_t, varname_t>;
   using load_from_ref_t =
@@ -368,7 +368,7 @@ protected:
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(region_assign_t &s) {
+  virtual void check(region_copy_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
@@ -488,7 +488,7 @@ public:
   void visit(arr_store_t &s) { check(s); }
   void visit(arr_load_t &s) { check(s); }
   void visit(region_init_t &s) { check(s); }
-  void visit(region_assign_t &s) { check(s); }  
+  void visit(region_copy_t &s) { check(s); }  
   void visit(make_ref_t &s) { check(s); }
   void visit(load_from_ref_t &s) { check(s); }
   void visit(store_to_ref_t &s) { check(s); }

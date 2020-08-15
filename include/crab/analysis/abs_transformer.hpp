@@ -83,8 +83,8 @@ public:
 
   using region_init_t =
       crab::cfg::region_init_stmt<bb_label_t, number_t, varname_t>;
-  using region_assign_t =
-      crab::cfg::region_assign_stmt<bb_label_t, number_t, varname_t>;
+  using region_copy_t =
+      crab::cfg::region_copy_stmt<bb_label_t, number_t, varname_t>;
   using make_ref_t = crab::cfg::make_ref_stmt<bb_label_t, number_t, varname_t>;
   using load_from_ref_t =
       crab::cfg::load_from_ref_stmt<bb_label_t, number_t, varname_t>;
@@ -133,7 +133,7 @@ protected:
   virtual void exec(arr_load_t &) {}
   virtual void exec(arr_assign_t &) {}
   virtual void exec(region_init_t &) {}
-  virtual void exec(region_assign_t &) {}  
+  virtual void exec(region_copy_t &) {}  
   virtual void exec(make_ref_t &) {}
   virtual void exec(load_from_ref_t &) {}
   virtual void exec(store_to_ref_t &) {}
@@ -168,7 +168,7 @@ public: /* visitor api */
   void visit(arr_load_t &s) { exec(s); }
   void visit(arr_assign_t &s) { exec(s); }
   void visit(region_init_t &s) { exec(s); }
-  void visit(region_assign_t &s) { exec(s); }  
+  void visit(region_copy_t &s) { exec(s); }  
   void visit(make_ref_t &s) { exec(s); }
   void visit(load_from_ref_t &s) { exec(s); }
   void visit(store_to_ref_t &s) { exec(s); }
@@ -329,7 +329,7 @@ public:
   using typename abs_transform_api_t::load_from_ref_t;
   using typename abs_transform_api_t::make_ref_t;
   using typename abs_transform_api_t::region_init_t;
-  using typename abs_transform_api_t::region_assign_t;  
+  using typename abs_transform_api_t::region_copy_t;  
   using typename abs_transform_api_t::ref_to_int_t;
   using typename abs_transform_api_t::int_to_ref_t;  
   using typename abs_transform_api_t::return_t;
@@ -709,13 +709,13 @@ public:
     }
   }
 
-  void exec(region_assign_t &stmt) {
+  void exec(region_copy_t &stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
     }
 
-    m_inv.region_assign(stmt.lhs_region(), stmt.rhs_region());
+    m_inv.region_copy(stmt.lhs_region(), stmt.rhs_region());
 
     if (::crab::CrabSanityCheckFlag) {
       bool post_bot = m_inv.is_bottom();
@@ -898,7 +898,7 @@ public:
     case REG_ARR_BOOL_TYPE:
     case REG_ARR_INT_TYPE:
     case REG_ARR_REAL_TYPE:            
-      inv.region_assign(lhs, rhs);
+      inv.region_copy(lhs, rhs);
       break;
     case ARR_BOOL_TYPE:
     case ARR_INT_TYPE:
@@ -961,7 +961,7 @@ public:
   using typename abs_transform_api_t::load_from_ref_t;
   using typename abs_transform_api_t::make_ref_t;
   using typename abs_transform_api_t::region_init_t;
-  using typename abs_transform_api_t::region_assign_t;  
+  using typename abs_transform_api_t::region_copy_t;  
   using typename abs_transform_api_t::ref_to_int_t;
   using typename abs_transform_api_t::int_to_ref_t;  
   using typename abs_transform_api_t::return_t;
@@ -1240,7 +1240,7 @@ public:
 
   // NOT IMPLEMENTED
   void exec(region_init_t &stmt) {}
-  void exec(region_assign_t &stmt) {}  
+  void exec(region_copy_t &stmt) {}  
   void exec(make_ref_t &stmt) {}
   void exec(load_from_ref_t &stmt) {}
   void exec(store_to_ref_t &stmt) {}

@@ -157,7 +157,7 @@ public:
   // Initialize region. If reg already exists then error.
   virtual void region_init(const variable_t &reg) = 0;
   // Assign the content of one region to another
-  virtual void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) = 0;
+  virtual void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) = 0;
   // Create a new reference ref to region reg.
   virtual void ref_make(const variable_t &ref, const variable_t &reg) = 0;
   // Read the content of reference ref within reg. The content is

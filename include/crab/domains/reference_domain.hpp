@@ -1006,22 +1006,22 @@ public:
                                        << ")=" << *this << "\n";);
   }
 
-  void region_assign(const variable_t &lhs_rgn, const variable_t &rhs_rgn) override {
-    crab::CrabStats::count(domain_name() + ".count.region_assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".region_assign");
+  void region_copy(const variable_t &lhs_rgn, const variable_t &rhs_rgn) override {
+    crab::CrabStats::count(domain_name() + ".count.region_copy");
+    crab::ScopedCrabStats __st__(domain_name() + ".region_copy");
     
     if (is_bottom()) {
       return;
     }
 
     if (!lhs_rgn.is_region_type()) {
-      CRAB_ERROR(domain_name() + "::region_assign ", lhs_rgn, " must have a region type");      
+      CRAB_ERROR(domain_name() + "::region_copy ", lhs_rgn, " must have a region type");      
     }
     if (!rhs_rgn.is_region_type()) {
-      CRAB_ERROR(domain_name() + "::region_assign ", rhs_rgn, " must have a region type");            
+      CRAB_ERROR(domain_name() + "::region_copy ", rhs_rgn, " must have a region type");            
     } 
     if (!lhs_rgn.same_type_and_bitwidth(rhs_rgn)) {
-      CRAB_ERROR(domain_name() + "::region_assign ", lhs_rgn, ":=", rhs_rgn, " with different types");
+      CRAB_ERROR(domain_name() + "::region_copy ", lhs_rgn, ":=", rhs_rgn, " with different types");
     }
     
     m_rgn_counting_dom.set(lhs_rgn, m_rgn_counting_dom[rhs_rgn]);
@@ -1044,7 +1044,7 @@ public:
       break;
     default:;
       CRAB_ERROR(domain_name() + 
-          "::region_assign with unexpected region  type");
+          "::region_copy with unexpected region  type");
     }
   }
   

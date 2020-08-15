@@ -112,7 +112,7 @@ private:
                                    const linear_expression_t &val) = 0;
     virtual void array_assign(const variable_t &a, const variable_t &b) = 0;
     virtual void region_init(const variable_t &reg) = 0;
-    virtual void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) = 0;
+    virtual void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) = 0;
     virtual void ref_make(const variable_t &ref, const variable_t &reg) = 0;
     virtual void ref_load(const variable_t &ref, const variable_t &reg,
                           const variable_t &res) = 0;
@@ -361,8 +361,8 @@ private:
     void region_init(const variable_t &reg) override {
       m_inv.region_init(reg);
     }
-    void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
-      m_inv.region_assign(lhs_reg, rhs_reg);
+    void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
+      m_inv.region_copy(lhs_reg, rhs_reg);
     }
     void ref_make(const variable_t &ref, const variable_t &reg) override {
       m_inv.ref_make(ref, reg);
@@ -698,8 +698,8 @@ public:
   void region_init(const variable_t &reg) override {
     m_concept->region_init(reg);
   }
-  void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
-    m_concept->region_assign(lhs_reg, rhs_reg);
+  void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
+    m_concept->region_copy(lhs_reg, rhs_reg);
   }      
   void ref_make(const variable_t &ref, const variable_t &reg) override {
     m_concept->ref_make(ref, reg);
@@ -1096,9 +1096,9 @@ public:
     norm().region_init(reg);
   }
 
-  void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
+  void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
     detach();
-    norm().region_assign(lhs_reg, rhs_reg);
+    norm().region_copy(lhs_reg, rhs_reg);
   }
   
   void ref_make(const variable_t &ref, const variable_t &reg) override {

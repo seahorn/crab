@@ -135,7 +135,7 @@ enum stmt_code {
   REGION_INIT = 48,
   REF_TO_INT = 49,
   INT_TO_REF = 50,
-  REGION_ASSIGN = 51,
+  REGION_COPY = 51,
   // functions calls
   CALLSITE = 60,
   RETURN = 61,
@@ -287,7 +287,7 @@ public:
   bool is_ref_to_int() const { return (m_stmt_code == REF_TO_INT); }
   bool is_int_to_ref() const { return (m_stmt_code == INT_TO_REF); }  
   bool is_region_init() const { return (m_stmt_code == REGION_INIT); }
-  bool is_region_assign() const { return (m_stmt_code == REGION_ASSIGN); }  
+  bool is_region_copy() const { return (m_stmt_code == REGION_COPY); }  
   bool is_bool_bin_op() const { return (m_stmt_code == BOOL_BIN_OP); }
   bool is_bool_assign_cst() const { return (m_stmt_code == BOOL_ASSIGN_CST); }
   bool is_bool_assign_var() const { return (m_stmt_code == BOOL_ASSIGN_VAR); }
@@ -979,10 +979,10 @@ private:
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class region_assign_stmt
+class region_copy_stmt
     : public statement<BasicBlockLabel, Number, VariableName> {
   //! a = b
-  using this_type = region_assign_stmt<BasicBlockLabel, Number, VariableName>;
+  using this_type = region_copy_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
@@ -990,8 +990,8 @@ public:
   using variable_t = variable<Number, VariableName>;
   using type_t = typename variable_t::type_t;
 
-  region_assign_stmt(variable_t lhs_region, variable_t rhs_region, basic_block_t *parent)
-      : statement_t(REGION_ASSIGN, parent), m_lhs_region(lhs_region), m_rhs_region(rhs_region) {
+  region_copy_stmt(variable_t lhs_region, variable_t rhs_region, basic_block_t *parent)
+      : statement_t(REGION_COPY, parent), m_lhs_region(lhs_region), m_rhs_region(rhs_region) {
     this->m_live.add_def(lhs_region);
     this->m_live.add_use(rhs_region);
   }
@@ -1012,7 +1012,7 @@ public:
   }
 
   virtual void write(crab_os &o) const {
-    o << "region_assign(" << m_lhs_region << ", " << m_rhs_region << ")";
+    o << "region_copy(" << m_lhs_region << ", " << m_rhs_region << ")";
   }
 
 private:
@@ -2152,7 +2152,7 @@ public:
   using arr_assign_t = array_assign_stmt<BasicBlockLabel, Number, VariableName>;
   // Regions and references
   using region_init_t = region_init_stmt<BasicBlockLabel, Number, VariableName>;
-  using region_assign_t = region_assign_stmt<BasicBlockLabel, Number, VariableName>;  
+  using region_copy_t = region_copy_stmt<BasicBlockLabel, Number, VariableName>;  
   using make_ref_t = make_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using load_from_ref_t =
       load_from_ref_stmt<BasicBlockLabel, Number, VariableName>;
@@ -2628,8 +2628,8 @@ public:
     return insert(new region_init_t(region, this));
   }
 
-  const statement_t *region_assign(variable_t lhs, variable_t rhs) {
-    return insert(new region_assign_t(lhs, rhs, this));
+  const statement_t *region_copy(variable_t lhs, variable_t rhs) {
+    return insert(new region_copy_t(lhs, rhs, this));
   }
   
   const statement_t *make_ref(variable_t lhs_ref, variable_t region) {
@@ -2835,7 +2835,7 @@ struct statement_visitor {
   using arr_assign_t = array_assign_stmt<BasicBlockLabel, Number, VariableName>;
   using make_ref_t = make_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using region_init_t = region_init_stmt<BasicBlockLabel, Number, VariableName>;
-  using region_assign_t = region_assign_stmt<BasicBlockLabel, Number, VariableName>;
+  using region_copy_t = region_copy_stmt<BasicBlockLabel, Number, VariableName>;
   using load_from_ref_t =
       load_from_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using store_to_ref_t =
@@ -2874,7 +2874,7 @@ struct statement_visitor {
   virtual void visit(arr_load_t &){};
   virtual void visit(arr_assign_t &){};
   virtual void visit(region_init_t &) {}
-  virtual void visit(region_assign_t &) {}  
+  virtual void visit(region_copy_t &) {}  
   virtual void visit(make_ref_t &) {}
   virtual void visit(load_from_ref_t &) {}
   virtual void visit(store_to_ref_t &) {}
@@ -3961,7 +3961,7 @@ private:
     using arr_assign_t = typename statement_visitor<B, N, V>::arr_assign_t;
     using make_ref_t = typename statement_visitor<B, N, V>::make_ref_t;
     using region_init_t = typename statement_visitor<B, N, V>::region_init_t;
-    using region_assign_t = typename statement_visitor<B, N, V>::region_assign_t;    
+    using region_copy_t = typename statement_visitor<B, N, V>::region_copy_t;    
     using load_from_ref_t =
         typename statement_visitor<B, N, V>::load_from_ref_t;
     using store_to_ref_t = typename statement_visitor<B, N, V>::store_to_ref_t;
@@ -4525,7 +4525,7 @@ private:
 
     /** TODO: type checking of the following statements: **/
     void visit(region_init_t &){};
-    void visit(region_assign_t &){};    
+    void visit(region_copy_t &){};    
     void visit(make_ref_t &){};
     void visit(load_from_ref_t &){};
     void visit(store_to_ref_t &){};

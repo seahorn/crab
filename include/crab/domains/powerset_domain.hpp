@@ -542,10 +542,10 @@ public:
     }
   }
 
-  virtual void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
+  virtual void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
-        m_disjuncts[i].region_assign(lhs_reg, rhs_reg);
+        m_disjuncts[i].region_copy(lhs_reg, rhs_reg);
       }
     }
   }

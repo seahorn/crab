@@ -1566,7 +1566,7 @@ public:
                              const apron_domain_t &invariant) override {}
   // region/reference operations
   void region_init(const variable_t &reg) override {}
-  void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) override {}  
+  void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {}  
   void ref_make(const variable_t &ref, const variable_t &reg) override {}
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {}

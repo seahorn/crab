@@ -546,9 +546,9 @@ public:
     this->reduce();
   }
 
-  virtual void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
-    this->_product.first().region_assign(lhs_reg, rhs_reg);
-    this->_product.second().region_assign(lhs_reg, rhs_reg);
+  virtual void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
+    this->_product.first().region_copy(lhs_reg, rhs_reg);
+    this->_product.second().region_copy(lhs_reg, rhs_reg);
     this->reduce();
   }
   
@@ -1242,7 +1242,7 @@ public:
       const reduced_numerical_domain_product2_t &invariant) override {}
   // region/reference operations
   void region_init(const variable_t &reg) override {}
-  void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) override {}  
+  void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {}  
   void ref_make(const variable_t &ref, const variable_t &reg) override {}
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {}
@@ -1895,7 +1895,7 @@ public:
                              const rnc_domain_t &invariant) override {}
   // region/reference operations
   void region_init(const variable_t &reg) override {}
-  void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) override {}    
+  void region_copy(const variable_t &lhs_reg, const variable_t &rhs_reg) override {}    
   void ref_make(const variable_t &ref, const variable_t &reg) override {}
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {}
