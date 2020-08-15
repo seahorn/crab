@@ -19,8 +19,12 @@
  * - reals,
  * - references,
  * - array of booleans,
- * - array of integers, and
- * - array of reals.
+ * - array of integers, 
+ * - array of reals,
+ * - regions of booleans,
+ * - regions of integers,
+ * - regions of reals, and
+ * - regions of references.
  *
  * Crab CFG supports the modeling of:
  *
@@ -91,7 +95,6 @@
 #include <crab/domains/interval.hpp>
 #include <crab/numbers/bignums.hpp>
 #include <crab/types/linear_constraints.hpp>
-#include <crab/types/memory_regions.hpp>
 #include <crab/types/reference_constraints.hpp>
 #include <crab/types/variable.hpp>
 
@@ -120,7 +123,7 @@ enum stmt_code {
   ARR_STORE = 31,
   ARR_LOAD = 32,
   ARR_ASSIGN = 33,
-  // references
+  // regions and references
   REF_MAKE = 40,
   REF_LOAD = 41,
   REF_STORE = 42,
@@ -132,6 +135,7 @@ enum stmt_code {
   REGION_INIT = 48,
   REF_TO_INT = 49,
   INT_TO_REF = 50,
+  REGION_ASSIGN = 51,
   // functions calls
   CALLSITE = 60,
   RETURN = 61,
@@ -283,6 +287,7 @@ public:
   bool is_ref_to_int() const { return (m_stmt_code == REF_TO_INT); }
   bool is_int_to_ref() const { return (m_stmt_code == INT_TO_REF); }  
   bool is_region_init() const { return (m_stmt_code == REGION_INIT); }
+  bool is_region_assign() const { return (m_stmt_code == REGION_ASSIGN); }  
   bool is_bool_bin_op() const { return (m_stmt_code == BOOL_BIN_OP); }
   bool is_bool_assign_cst() const { return (m_stmt_code == BOOL_ASSIGN_CST); }
   bool is_bool_assign_var() const { return (m_stmt_code == BOOL_ASSIGN_VAR); }
@@ -950,11 +955,11 @@ public:
   using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
 
-  region_init_stmt(memory_region region, basic_block_t *parent,
+  region_init_stmt(variable_t region, basic_block_t *parent,
                    debug_info dbg_info = debug_info())
       : statement_t(REGION_INIT, parent, dbg_info), m_region(region) {}
 
-  const memory_region &region() const { return m_region; }
+  const variable_t &region() const { return m_region; }
 
   virtual void
   accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
@@ -970,9 +975,51 @@ public:
   }
 
 private:
-  memory_region m_region;
+  variable_t m_region;
 };
 
+template <class BasicBlockLabel, class Number, class VariableName>
+class region_assign_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
+  //! a = b
+  using this_type = region_assign_stmt<BasicBlockLabel, Number, VariableName>;
+
+public:
+  using statement_t = statement<BasicBlockLabel, Number, VariableName>;
+  using basic_block_t = typename statement_t::basic_block_t;
+  using variable_t = variable<Number, VariableName>;
+  using type_t = typename variable_t::type_t;
+
+  region_assign_stmt(variable_t lhs_region, variable_t rhs_region, basic_block_t *parent)
+      : statement_t(REGION_ASSIGN, parent), m_lhs_region(lhs_region), m_rhs_region(rhs_region) {
+    this->m_live.add_def(lhs_region);
+    this->m_live.add_use(rhs_region);
+  }
+
+  const variable_t &lhs_region() const { return m_lhs_region; }
+
+  const variable_t &rhs_region() const { return m_rhs_region; }
+
+  type_t region_type() const { return m_lhs_region.get_type(); }
+
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+    v->visit(*this);
+  }
+
+  virtual statement_t *clone(basic_block_t *parent) const {
+    return new this_type(m_lhs_region, m_rhs_region, parent);
+  }
+
+  virtual void write(crab_os &o) const {
+    o << "region_assign(" << m_lhs_region << ", " << m_rhs_region << ")";
+  }
+
+private:
+  variable_t m_lhs_region;
+  variable_t m_rhs_region;
+};
+  
 template <class BasicBlockLabel, class Number, class VariableName>
 class make_ref_stmt : public statement<BasicBlockLabel, Number, VariableName> {
   // lhs := make_ref(region)
@@ -983,7 +1030,7 @@ public:
   using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
 
-  make_ref_stmt(variable_t lhs, memory_region region, basic_block_t *parent,
+  make_ref_stmt(variable_t lhs, variable_t region, basic_block_t *parent,
                 debug_info dbg_info = debug_info())
       : statement_t(REF_MAKE, parent, dbg_info), m_lhs(lhs), m_region(region) {
     this->m_live.add_def(lhs);
@@ -991,7 +1038,7 @@ public:
 
   const variable_t &lhs() const { return m_lhs; }
 
-  const memory_region &region() const { return m_region; }
+  const variable_t &region() const { return m_region; }
 
   virtual void
   accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
@@ -1009,7 +1056,7 @@ public:
 
 private:
   variable_t m_lhs;
-  memory_region m_region;
+  variable_t m_region;
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
@@ -1023,7 +1070,7 @@ public:
   using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
 
-  load_from_ref_stmt(variable_t lhs, variable_t ref, memory_region region,
+  load_from_ref_stmt(variable_t lhs, variable_t ref, variable_t region,
                      basic_block_t *parent, debug_info dbg_info = debug_info())
       : statement_t(REF_LOAD, parent, dbg_info), m_lhs(lhs), m_ref(ref),
         m_region(region) {
@@ -1035,7 +1082,7 @@ public:
 
   const variable_t &ref() const { return m_ref; }
 
-  const memory_region &region() const { return m_region; }
+  const variable_t &region() const { return m_region; }
 
   virtual void
   accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
@@ -1054,7 +1101,7 @@ public:
 private:
   variable_t m_lhs;
   variable_t m_ref;
-  memory_region m_region;
+  variable_t m_region;
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
@@ -1069,7 +1116,7 @@ public:
   using variable_t = variable<Number, VariableName>;
   using linear_expression_t = ikos::linear_expression<Number, VariableName>;
 
-  store_to_ref_stmt(variable_t ref, memory_region region,
+  store_to_ref_stmt(variable_t ref, variable_t region,
                     linear_expression_t val, basic_block_t *parent,
                     debug_info dbg_info = debug_info())
       : statement_t(REF_STORE, parent, dbg_info), m_ref(ref), m_region(region),
@@ -1084,7 +1131,7 @@ public:
 
   const linear_expression_t &val() const { return m_val; }
 
-  const memory_region &region() const { return m_region; }
+  const variable_t &region() const { return m_region; }
 
   virtual void
   accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
@@ -1101,7 +1148,7 @@ public:
 
 private:
   variable_t m_ref;
-  memory_region m_region;
+  variable_t m_region;
   linear_expression_t m_val;
 };
 
@@ -1115,9 +1162,8 @@ public:
   using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
   using linear_expression_t = ikos::linear_expression<Number, VariableName>;
-
-  gep_ref_stmt(variable_t lhs, memory_region lhs_region, variable_t rhs,
-               memory_region rhs_region, linear_expression_t offset,
+  gep_ref_stmt(variable_t lhs, variable_t lhs_region, variable_t rhs,
+               variable_t rhs_region, linear_expression_t offset,
                basic_block_t *parent, debug_info dbg_info = debug_info())
       : statement_t(REF_GEP, parent, dbg_info), m_lhs(lhs),
         m_lhs_region(lhs_region), m_rhs(rhs), m_rhs_region(rhs_region),
@@ -1135,9 +1181,9 @@ public:
 
   const linear_expression_t &offset() const { return m_offset; }
 
-  const memory_region &lhs_region() const { return m_lhs_region; }
+  const variable_t &lhs_region() const { return m_lhs_region; }
 
-  const memory_region &rhs_region() const { return m_rhs_region; }
+  const variable_t &rhs_region() const { return m_rhs_region; }
 
   virtual void
   accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
@@ -1150,17 +1196,20 @@ public:
   }
 
   virtual void write(crab_os &o) const {
-    linear_expression_t off(m_offset); // FIX: write method is not const in ikos
-    o << "(" << m_lhs << "," << m_lhs_region << ") := "
-      << "gep_ref(" << m_rhs_region << "," << m_rhs << " + " << off << ")";
+    o << "(" << m_lhs_region << "," << m_lhs << ") := ";
+    if (m_offset.equal(Number(0))) {
+      o  << "gep_ref(" << m_rhs_region << "," << m_rhs << ")";
+    } else {
+      o  << "gep_ref(" << m_rhs_region << "," << m_rhs << " + " << m_offset << ")";
+    }
     return;
   }
 
 private:
   variable_t m_lhs;
-  memory_region m_lhs_region;
+  variable_t m_lhs_region;
   variable_t m_rhs;
-  memory_region m_rhs_region;
+  variable_t m_rhs_region;
   linear_expression_t m_offset;
 };
 
@@ -1178,7 +1227,7 @@ public:
   using variable_t = variable<Number, VariableName>;
   using type_t = typename variable_t::type_t;
 
-  load_from_arr_ref_stmt(variable_t lhs, variable_t ref, memory_region region,
+  load_from_arr_ref_stmt(variable_t lhs, variable_t ref, variable_t region,
                          linear_expression_t index,
                          linear_expression_t elem_size, basic_block_t *parent,
                          debug_info dbg_info = debug_info())
@@ -1203,7 +1252,7 @@ public:
 
   const linear_expression_t &elem_size() const { return m_elem_size; }
 
-  const memory_region &region() const { return m_region; }
+  const variable_t &region() const { return m_region; }
 
   virtual void
   accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
@@ -1224,7 +1273,7 @@ public:
 private:
   variable_t m_lhs;
   variable_t m_ref;
-  memory_region m_region;
+  variable_t m_region;
   linear_expression_t m_index;
   linear_expression_t m_elem_size; //! size in bytes
 };
@@ -1243,7 +1292,7 @@ public:
   using variable_t = variable<Number, VariableName>;
   using type_t = typename variable_t::type_t;
 
-  store_to_arr_ref_stmt(variable_t ref, memory_region region,
+  store_to_arr_ref_stmt(variable_t ref, variable_t region,
                         linear_expression_t lb, linear_expression_t ub,
                         linear_expression_t value,
                         linear_expression_t elem_size, bool is_strong_update,
@@ -1271,7 +1320,7 @@ public:
 
   const variable_t &ref() const { return m_ref; }
 
-  const memory_region &region() const { return m_region; }
+  const variable_t &region() const { return m_region; }
 
   const linear_expression_t &lb_index() const { return m_lb; }
 
@@ -1308,7 +1357,7 @@ private:
   // reference
   variable_t m_ref;
   // region
-  memory_region m_region;
+  variable_t m_region;
   // smallest array index
   linear_expression_t m_lb;
   // largest array index
@@ -1415,7 +1464,7 @@ public:
   using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
 
-  ref_to_int_stmt(memory_region region, variable_t ref_var, variable_t int_var,
+  ref_to_int_stmt(variable_t region, variable_t ref_var, variable_t int_var,
 		  basic_block_t *parent, debug_info dbg_info = debug_info())
       : statement_t(REF_TO_INT, parent, dbg_info),
 	m_region(region), m_ref_var(ref_var), m_int_var(int_var) {
@@ -1423,7 +1472,7 @@ public:
     this->m_live.add_def(int_var);
   }
 
-  const memory_region &region() const { return m_region; }
+  const variable_t &region() const { return m_region; }
 
   const variable_t &ref_var() const { return m_ref_var; }
 
@@ -1445,7 +1494,7 @@ public:
   }
 
 private:
-  memory_region m_region;
+  variable_t m_region;
   variable_t m_ref_var;
   variable_t m_int_var;
 };
@@ -1460,7 +1509,7 @@ public:
   using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
 
-  int_to_ref_stmt(variable_t int_var, memory_region region, variable_t ref_var, 
+  int_to_ref_stmt(variable_t int_var, variable_t region, variable_t ref_var, 
 		  basic_block_t *parent, debug_info dbg_info = debug_info())
       : statement_t(INT_TO_REF, parent, dbg_info),
 	m_int_var(int_var), m_region(region), m_ref_var(ref_var) {
@@ -1470,7 +1519,7 @@ public:
 
   const variable_t &int_var() const { return m_int_var; }  
   
-  const memory_region &region() const { return m_region; }
+  const variable_t &region() const { return m_region; }
 
   const variable_t &ref_var() const { return m_ref_var; }
 
@@ -1490,7 +1539,7 @@ public:
 
 private:
   variable_t m_int_var;  
-  memory_region m_region;
+  variable_t m_region;
   variable_t m_ref_var;
 };
     
@@ -2101,8 +2150,9 @@ public:
   using arr_store_t = array_store_stmt<BasicBlockLabel, Number, VariableName>;
   using arr_load_t = array_load_stmt<BasicBlockLabel, Number, VariableName>;
   using arr_assign_t = array_assign_stmt<BasicBlockLabel, Number, VariableName>;
-  // References
+  // Regions and references
   using region_init_t = region_init_stmt<BasicBlockLabel, Number, VariableName>;
+  using region_assign_t = region_assign_stmt<BasicBlockLabel, Number, VariableName>;  
   using make_ref_t = make_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using load_from_ref_t =
       load_from_ref_stmt<BasicBlockLabel, Number, VariableName>;
@@ -2574,39 +2624,43 @@ public:
     return insert(new arr_assign_t(lhs, rhs, this));
   }
 
-  const statement_t *region_init(memory_region region) {
+  const statement_t *region_init(variable_t region) {
     return insert(new region_init_t(region, this));
   }
 
-  const statement_t *make_ref(variable_t lhs_ref, memory_region region) {
+  const statement_t *region_assign(variable_t lhs, variable_t rhs) {
+    return insert(new region_assign_t(lhs, rhs, this));
+  }
+  
+  const statement_t *make_ref(variable_t lhs_ref, variable_t region) {
     return insert(new make_ref_t(lhs_ref, region, this));
   }
 
   const statement_t *load_from_ref(variable_t lhs, variable_t ref,
-                                   memory_region region) {
+                                   variable_t region) {
     return insert(new load_from_ref_t(lhs, ref, region, this));
   }
 
-  const statement_t *store_to_ref(variable_t ref, memory_region region,
+  const statement_t *store_to_ref(variable_t ref, variable_t region,
                                   lin_exp_t val) {
     return insert(new store_to_ref_t(ref, region, val, this));
   }
 
-  const statement_t *gep_ref(variable_t lhs_ref, memory_region lhs_region,
-                             variable_t rhs_ref, memory_region rhs_region,
+  const statement_t *gep_ref(variable_t lhs_ref, variable_t lhs_region,
+                             variable_t rhs_ref, variable_t rhs_region,
                              lin_exp_t offset = number_t(0)) {
     return insert(
         new gep_ref_t(lhs_ref, lhs_region, rhs_ref, rhs_region, offset, this));
   }
 
   const statement_t *load_from_arr_ref(variable_t lhs, variable_t ref,
-                                       memory_region region, lin_exp_t index,
+                                       variable_t region, lin_exp_t index,
                                        lin_exp_t elem_size) {
     return insert(
         new load_from_arr_ref_t(lhs, ref, region, index, elem_size, this));
   }
 
-  const statement_t *store_to_arr_ref(variable_t ref, memory_region region,
+  const statement_t *store_to_arr_ref(variable_t ref, variable_t region,
                                       lin_exp_t lb_index, lin_exp_t ub_index,
                                       lin_exp_t elem_size,
                                       bool is_strong_update) {
@@ -2623,11 +2677,11 @@ public:
   }
 
   const statement_t *int_to_ref(variable_t int_var,
-				memory_region region, variable_t ref_var) {
+				variable_t region, variable_t ref_var) {
     return insert(new int_to_ref_t(int_var, region, ref_var, this));
   }
 
-  const statement_t *ref_to_int(memory_region region, variable_t ref_var,
+  const statement_t *ref_to_int(variable_t region, variable_t ref_var,
 				variable_t int_var) {
     return insert(new ref_to_int_t(region, ref_var, int_var, this));
   }
@@ -2781,6 +2835,7 @@ struct statement_visitor {
   using arr_assign_t = array_assign_stmt<BasicBlockLabel, Number, VariableName>;
   using make_ref_t = make_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using region_init_t = region_init_stmt<BasicBlockLabel, Number, VariableName>;
+  using region_assign_t = region_assign_stmt<BasicBlockLabel, Number, VariableName>;
   using load_from_ref_t =
       load_from_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using store_to_ref_t =
@@ -2819,6 +2874,7 @@ struct statement_visitor {
   virtual void visit(arr_load_t &){};
   virtual void visit(arr_assign_t &){};
   virtual void visit(region_init_t &) {}
+  virtual void visit(region_assign_t &) {}  
   virtual void visit(make_ref_t &) {}
   virtual void visit(load_from_ref_t &) {}
   virtual void visit(store_to_ref_t &) {}
@@ -3905,6 +3961,7 @@ private:
     using arr_assign_t = typename statement_visitor<B, N, V>::arr_assign_t;
     using make_ref_t = typename statement_visitor<B, N, V>::make_ref_t;
     using region_init_t = typename statement_visitor<B, N, V>::region_init_t;
+    using region_assign_t = typename statement_visitor<B, N, V>::region_assign_t;    
     using load_from_ref_t =
         typename statement_visitor<B, N, V>::load_from_ref_t;
     using store_to_ref_t = typename statement_visitor<B, N, V>::store_to_ref_t;
@@ -4468,6 +4525,7 @@ private:
 
     /** TODO: type checking of the following statements: **/
     void visit(region_init_t &){};
+    void visit(region_assign_t &){};    
     void visit(make_ref_t &){};
     void visit(load_from_ref_t &){};
     void visit(store_to_ref_t &){};

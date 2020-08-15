@@ -533,8 +533,8 @@ public:
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
-  // references
-  virtual void region_init(const memory_region &reg) override {
+  // region/references
+  virtual void region_init(const variable_t &reg) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
         m_disjuncts[i].region_init(reg);
@@ -542,8 +542,16 @@ public:
     }
   }
 
+  virtual void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
+    if (!is_bottom()) {
+      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+        m_disjuncts[i].region_assign(lhs_reg, rhs_reg);
+      }
+    }
+  }
+  
   virtual void ref_make(const variable_t &ref,
-                        const memory_region &reg) override {
+                        const variable_t &reg) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
         m_disjuncts[i].ref_make(ref, reg);
@@ -551,7 +559,7 @@ public:
     }
   }
 
-  virtual void ref_load(const variable_t &ref, const memory_region &reg,
+  virtual void ref_load(const variable_t &ref, const variable_t &reg,
                         const variable_t &res) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
@@ -560,7 +568,7 @@ public:
     }
   }
 
-  virtual void ref_store(const variable_t &ref, const memory_region &reg,
+  virtual void ref_store(const variable_t &ref, const variable_t &reg,
                          const linear_expression_t &val) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
@@ -569,8 +577,8 @@ public:
     }
   }
 
-  virtual void ref_gep(const variable_t &ref1, const memory_region &reg1,
-                       const variable_t &ref2, const memory_region &reg2,
+  virtual void ref_gep(const variable_t &ref1, const variable_t &reg1,
+                       const variable_t &ref2, const variable_t &reg2,
                        const linear_expression_t &offset) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
@@ -581,7 +589,7 @@ public:
 
   virtual void
   ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                      const memory_region &region,
+                      const variable_t &region,
                       const linear_expression_t &index,
                       const linear_expression_t &elem_size) override {
     if (!is_bottom()) {
@@ -592,7 +600,7 @@ public:
   }
 
   virtual void ref_store_to_array(const variable_t &ref,
-                                  const memory_region &region,
+                                  const variable_t &region,
                                   const linear_expression_t &index,
                                   const linear_expression_t &elem_size,
                                   const linear_expression_t &val) override {
@@ -618,7 +626,7 @@ public:
     }
   }
 
-  void ref_to_int(const memory_region reg, const variable_t &ref_var,
+  void ref_to_int(const variable_t &reg, const variable_t &ref_var,
 		  const variable_t &int_var) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
@@ -628,7 +636,7 @@ public:
   }
   
   void int_to_ref(const variable_t &int_var,
-		  const memory_region reg, const variable_t &ref_var) override {
+		  const variable_t &reg, const variable_t &ref_var) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
         m_disjuncts[i].int_to_ref(int_var, reg, ref_var);

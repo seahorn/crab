@@ -30,6 +30,7 @@ z_cfg_t *prog1(variable_factory_t &vfac) {
   z_var o(vfac["o"], crab::INT_TYPE, 32);
   z_var p(vfac["p"], crab::REF_TYPE);
   z_var q(vfac["q"], crab::REF_TYPE);
+  z_var mem(vfac["region_0"], crab::REG_INT_TYPE, 32);  
   // entry and exit block
   auto cfg = new z_cfg_t("x0", "ret");
   // adding blocks
@@ -54,9 +55,6 @@ z_cfg_t *prog1(variable_factory_t &vfac) {
   bb1_t >> bb2;
   bb2 >> bb1;
   bb1_f >> ret;
-
-  // create an untyped memory region
-  auto mem = crab::memory_region::make_memory_region(0);
 
   // adding statements
   x0.assign(k, 2147483648);
@@ -99,6 +97,7 @@ z_cfg_t *prog2(variable_factory_t &vfac) {
   z_var o(vfac["o"], crab::INT_TYPE, 32);
   z_var p(vfac["p"], crab::REF_TYPE);
   z_var q(vfac["q"], crab::REF_TYPE);
+  z_var mem(vfac["region_0"], crab::REG_INT_TYPE, 32);    
   // entry and exit block
   auto cfg = new z_cfg_t("x0", "ret");
   // adding blocks
@@ -123,9 +122,6 @@ z_cfg_t *prog2(variable_factory_t &vfac) {
   bb1_t >> bb2;
   bb2 >> bb1;
   bb1_f >> ret;
-
-  // create an untyped memory region
-  auto mem = crab::memory_region::make_memory_region(0);
 
   // adding statements
   x0.assign(k, 2147483648);

@@ -539,36 +539,42 @@ public:
     this->reduce();
   }
 
-  // reference  operators
-  virtual void region_init(const memory_region &reg) override {
+  // region/reference operators
+  virtual void region_init(const variable_t &reg) override {
     this->_product.first().region_init(reg);
     this->_product.second().region_init(reg);
     this->reduce();
   }
 
+  virtual void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
+    this->_product.first().region_assign(lhs_reg, rhs_reg);
+    this->_product.second().region_assign(lhs_reg, rhs_reg);
+    this->reduce();
+  }
+  
   virtual void ref_make(const variable_t &ref,
-                        const memory_region &reg) override {
+                        const variable_t &reg) override {
     this->_product.first().ref_make(ref, reg);
     this->_product.second().ref_make(ref, reg);
     this->reduce();
   }
 
-  virtual void ref_load(const variable_t &ref, const memory_region &reg,
+  virtual void ref_load(const variable_t &ref, const variable_t &reg,
                         const variable_t &res) override {
     this->_product.first().ref_load(ref, reg, res);
     this->_product.second().ref_load(ref, reg, res);
     this->reduce();
   }
 
-  virtual void ref_store(const variable_t &ref, const memory_region &reg,
+  virtual void ref_store(const variable_t &ref, const variable_t &reg,
                          const linear_expression_t &val) override {
     this->_product.first().ref_store(ref, reg, val);
     this->_product.second().ref_store(ref, reg, val);
     this->reduce();
   }
 
-  virtual void ref_gep(const variable_t &ref1, const memory_region &reg1,
-                       const variable_t &ref2, const memory_region &reg2,
+  virtual void ref_gep(const variable_t &ref1, const variable_t &reg1,
+                       const variable_t &ref2, const variable_t &reg2,
                        const linear_expression_t &offset) override {
     this->_product.first().ref_gep(ref1, reg1, ref2, reg2, offset);
     this->_product.second().ref_gep(ref1, reg1, ref2, reg2, offset);
@@ -577,7 +583,7 @@ public:
 
   virtual void
   ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                      const memory_region &region,
+                      const variable_t &region,
                       const linear_expression_t &index,
                       const linear_expression_t &elem_size) override {
     this->_product.first().ref_load_from_array(lhs, ref, region, index,
@@ -588,7 +594,7 @@ public:
   }
 
   virtual void ref_store_to_array(const variable_t &ref,
-                                  const memory_region &region,
+                                  const variable_t &region,
                                   const linear_expression_t &index,
                                   const linear_expression_t &elem_size,
                                   const linear_expression_t &val) override {
@@ -605,7 +611,7 @@ public:
     this->reduce();
   }
 
-  void ref_to_int(const memory_region reg, const variable_t &ref_var,
+  void ref_to_int(const variable_t &reg, const variable_t &ref_var,
 		  const variable_t &int_var) override {
     this->_product.first().ref_to_int(reg, ref_var, int_var);
     this->_product.second().ref_to_int(reg, ref_var, int_var);
@@ -613,7 +619,7 @@ public:
   }
   
   void int_to_ref(const variable_t &int_var,
-		  const memory_region reg, const variable_t &ref_var) override {
+		  const variable_t &reg, const variable_t &ref_var) override {
     this->_product.first().int_to_ref(int_var, reg, ref_var);
     this->_product.second().int_to_ref(int_var, reg, ref_var);
     this->reduce();
@@ -1234,29 +1240,30 @@ public:
   void backward_array_assign(
       const variable_t &lhs, const variable_t &rhs,
       const reduced_numerical_domain_product2_t &invariant) override {}
-  // reference operations
-  void region_init(const memory_region &reg) override {}
-  void ref_make(const variable_t &ref, const memory_region &reg) override {}
-  void ref_load(const variable_t &ref, const memory_region &reg,
+  // region/reference operations
+  void region_init(const variable_t &reg) override {}
+  void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) override {}  
+  void ref_make(const variable_t &ref, const variable_t &reg) override {}
+  void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {}
-  void ref_store(const variable_t &ref, const memory_region &reg,
+  void ref_store(const variable_t &ref, const variable_t &reg,
                  const linear_expression_t &val) override {}
-  void ref_gep(const variable_t &ref1, const memory_region &reg1,
-               const variable_t &ref2, const memory_region &reg2,
+  void ref_gep(const variable_t &ref1, const variable_t &reg1,
+               const variable_t &ref2, const variable_t &reg2,
                const linear_expression_t &offset) override {}
   void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                           const memory_region &region,
+                           const variable_t &region,
                            const linear_expression_t &index,
                            const linear_expression_t &elem_size) override {}
-  void ref_store_to_array(const variable_t &ref, const memory_region &region,
+  void ref_store_to_array(const variable_t &ref, const variable_t &region,
                           const linear_expression_t &index,
                           const linear_expression_t &elem_size,
                           const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
-  void ref_to_int(const memory_region reg, const variable_t &ref_var,
+  void ref_to_int(const variable_t &reg, const variable_t &ref_var,
 		  const variable_t &int_var) override {}
   void int_to_ref(const variable_t &int_var,
-		  const memory_region reg, const variable_t &ref_var) override {}    
+		  const variable_t &reg, const variable_t &ref_var) override {}    
   /* End unimplemented operations */
 
   void rename(const variable_vector_t &from,
@@ -1886,29 +1893,30 @@ public:
                                   const rnc_domain_t &invariant) override {}
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
                              const rnc_domain_t &invariant) override {}
-  // reference operations
-  void region_init(const memory_region &reg) override {}
-  void ref_make(const variable_t &ref, const memory_region &reg) override {}
-  void ref_load(const variable_t &ref, const memory_region &reg,
+  // region/reference operations
+  void region_init(const variable_t &reg) override {}
+  void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) override {}    
+  void ref_make(const variable_t &ref, const variable_t &reg) override {}
+  void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {}
-  void ref_store(const variable_t &ref, const memory_region &reg,
+  void ref_store(const variable_t &ref, const variable_t &reg,
                  const linear_expression_t &val) override {}
-  void ref_gep(const variable_t &ref1, const memory_region &reg1,
-               const variable_t &ref2, const memory_region &reg2,
+  void ref_gep(const variable_t &ref1, const variable_t &reg1,
+               const variable_t &ref2, const variable_t &reg2,
                const linear_expression_t &offset) override {}
   void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                           const memory_region &region,
+                           const variable_t &region,
                            const linear_expression_t &index,
                            const linear_expression_t &elem_size) override {}
-  void ref_store_to_array(const variable_t &ref, const memory_region &region,
+  void ref_store_to_array(const variable_t &ref, const variable_t &region,
                           const linear_expression_t &index,
                           const linear_expression_t &elem_size,
                           const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
-  void ref_to_int(const memory_region reg, const variable_t &ref_var,
+  void ref_to_int(const variable_t &reg, const variable_t &ref_var,
 		  const variable_t &int_var) override {}
   void int_to_ref(const variable_t &int_var,
-		  const memory_region reg, const variable_t &ref_var) override {}    
+		  const variable_t &reg, const variable_t &ref_var) override {}    
   /* End unimplemented operations */
 
   void forget(const variable_vector_t &variables) override {

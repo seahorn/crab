@@ -111,30 +111,31 @@ private:
                                    const linear_expression_t &j,
                                    const linear_expression_t &val) = 0;
     virtual void array_assign(const variable_t &a, const variable_t &b) = 0;
-    virtual void region_init(const memory_region &reg) = 0;
-    virtual void ref_make(const variable_t &ref, const memory_region &reg) = 0;
-    virtual void ref_load(const variable_t &ref, const memory_region &reg,
+    virtual void region_init(const variable_t &reg) = 0;
+    virtual void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) = 0;
+    virtual void ref_make(const variable_t &ref, const variable_t &reg) = 0;
+    virtual void ref_load(const variable_t &ref, const variable_t &reg,
                           const variable_t &res) = 0;
-    virtual void ref_store(const variable_t &ref, const memory_region &reg,
+    virtual void ref_store(const variable_t &ref, const variable_t &reg,
                            const linear_expression_t &val) = 0;
-    virtual void ref_gep(const variable_t &ref1, const memory_region &reg1,
-                         const variable_t &ref2, const memory_region &reg2,
+    virtual void ref_gep(const variable_t &ref1, const variable_t &reg1,
+                         const variable_t &ref2, const variable_t &reg2,
                          const linear_expression_t &offset) = 0;
     virtual void ref_load_from_array(const variable_t &lhs,
                                      const variable_t &ref,
-                                     const memory_region &region,
+                                     const variable_t &region,
                                      const linear_expression_t &index,
                                      const linear_expression_t &elem_size) = 0;
     virtual void ref_store_to_array(const variable_t &ref,
-                                    const memory_region &region,
+                                    const variable_t &region,
                                     const linear_expression_t &index,
                                     const linear_expression_t &elem_size,
                                     const linear_expression_t &val) = 0;
     virtual void ref_assume(const reference_constraint_t &cst) = 0;
-    virtual void ref_to_int(const memory_region reg, const variable_t &ref_var,
+    virtual void ref_to_int(const variable_t &reg, const variable_t &ref_var,
 			    const variable_t &int_var) = 0;
     virtual void int_to_ref(const variable_t &int_var,
-			    const memory_region reg, const variable_t &ref_var) = 0;
+			    const variable_t &reg, const variable_t &ref_var) = 0;
     
     virtual void backward_apply(arith_operation_t op, const variable_t &x,
                                 const variable_t &y, const variable_t &z,
@@ -357,32 +358,35 @@ private:
     void array_assign(const variable_t &a, const variable_t &b) override {
       m_inv.array_assign(a, b);
     }
-    void region_init(const memory_region &reg) override {
+    void region_init(const variable_t &reg) override {
       m_inv.region_init(reg);
     }
-    void ref_make(const variable_t &ref, const memory_region &reg) override {
+    void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
+      m_inv.region_assign(lhs_reg, rhs_reg);
+    }
+    void ref_make(const variable_t &ref, const variable_t &reg) override {
       m_inv.ref_make(ref, reg);
     }
-    void ref_load(const variable_t &ref, const memory_region &reg,
+    void ref_load(const variable_t &ref, const variable_t &reg,
                   const variable_t &res) override {
       m_inv.ref_load(ref, reg, res);
     }
-    void ref_store(const variable_t &ref, const memory_region &reg,
+    void ref_store(const variable_t &ref, const variable_t &reg,
                    const linear_expression_t &val) override {
       m_inv.ref_store(ref, reg, val);
     }
-    void ref_gep(const variable_t &ref1, const memory_region &reg1,
-                 const variable_t &ref2, const memory_region &reg2,
+    void ref_gep(const variable_t &ref1, const variable_t &reg1,
+                 const variable_t &ref2, const variable_t &reg2,
                  const linear_expression_t &offset) override {
       m_inv.ref_gep(ref1, reg1, ref2, reg2, offset);
     }
     void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                             const memory_region &region,
+                             const variable_t &region,
                              const linear_expression_t &index,
                              const linear_expression_t &elem_size) override {
       m_inv.ref_load_from_array(lhs, ref, region, index, elem_size);
     }
-    void ref_store_to_array(const variable_t &ref, const memory_region &region,
+    void ref_store_to_array(const variable_t &ref, const variable_t &region,
                             const linear_expression_t &index,
                             const linear_expression_t &elem_size,
                             const linear_expression_t &val) override {
@@ -391,12 +395,12 @@ private:
     void ref_assume(const reference_constraint_t &cst) override {
       m_inv.ref_assume(cst);
     }
-    void ref_to_int(const memory_region reg, const variable_t &ref_var,
+    void ref_to_int(const variable_t &reg, const variable_t &ref_var,
 		    const variable_t &int_var) override {
       m_inv.ref_to_int(reg, ref_var, int_var);
     }
     void int_to_ref(const variable_t &int_var,
-		    const memory_region reg, const variable_t &ref_var) override {
+		    const variable_t &reg, const variable_t &ref_var) override {
       m_inv.int_to_ref(int_var, reg, ref_var);
     }  
 
@@ -691,32 +695,35 @@ public:
   void array_assign(const variable_t &a, const variable_t &b) override {
     m_concept->array_assign(a, b);
   }
-  void region_init(const memory_region &reg) override {
+  void region_init(const variable_t &reg) override {
     m_concept->region_init(reg);
   }
-  void ref_make(const variable_t &ref, const memory_region &reg) override {
+  void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
+    m_concept->region_assign(lhs_reg, rhs_reg);
+  }      
+  void ref_make(const variable_t &ref, const variable_t &reg) override {
     m_concept->ref_make(ref, reg);
   }
-  void ref_load(const variable_t &ref, const memory_region &reg,
+  void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {
     m_concept->ref_load(ref, reg, res);
   }
-  void ref_store(const variable_t &ref, const memory_region &reg,
+  void ref_store(const variable_t &ref, const variable_t &reg,
                  const linear_expression_t &val) override {
     m_concept->ref_store(ref, reg, val);
   }
-  void ref_gep(const variable_t &ref1, const memory_region &reg1,
-               const variable_t &ref2, const memory_region &reg2,
+  void ref_gep(const variable_t &ref1, const variable_t &reg1,
+               const variable_t &ref2, const variable_t &reg2,
                const linear_expression_t &offset) override {
     m_concept->ref_gep(ref1, reg1, ref2, reg2, offset);
   }
   void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                           const memory_region &region,
+                           const variable_t &region,
                            const linear_expression_t &index,
                            const linear_expression_t &elem_size) override {
     m_concept->ref_load_from_array(lhs, ref, region, index, elem_size);
   }
-  void ref_store_to_array(const variable_t &ref, const memory_region &region,
+  void ref_store_to_array(const variable_t &ref, const variable_t &region,
                           const linear_expression_t &index,
                           const linear_expression_t &elem_size,
                           const linear_expression_t &val) override {
@@ -725,12 +732,12 @@ public:
   void ref_assume(const reference_constraint_t &cst) override {
     m_concept->ref_assume(cst);
   }
-  void ref_to_int(const memory_region reg, const variable_t &ref_var,
+  void ref_to_int(const variable_t &reg, const variable_t &ref_var,
 		  const variable_t &int_var) override {
     m_concept->ref_to_int(reg, ref_var, int_var);
   }
   void int_to_ref(const variable_t &int_var,
-		  const memory_region reg, const variable_t &ref_var) override {
+		  const variable_t &reg, const variable_t &ref_var) override {
     m_concept->int_to_ref(int_var, reg, ref_var);
   }  
   void backward_apply(arith_operation_t op, const variable_t &x,
@@ -1084,44 +1091,49 @@ public:
     norm().array_assign(a, b);
   }
   
-  void region_init(const memory_region &reg) override {
+  void region_init(const variable_t &reg) override {
     detach();    
     norm().region_init(reg);
   }
+
+  void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) override {
+    detach();
+    norm().region_assign(lhs_reg, rhs_reg);
+  }
   
-  void ref_make(const variable_t &ref, const memory_region &reg) override {
+  void ref_make(const variable_t &ref, const variable_t &reg) override {
     detach();    
     norm().ref_make(ref, reg);
   }
   
-  void ref_load(const variable_t &ref, const memory_region &reg,
+  void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {
     detach();    
     norm().ref_load(ref, reg, res);
   }
   
-  void ref_store(const variable_t &ref, const memory_region &reg,
+  void ref_store(const variable_t &ref, const variable_t &reg,
                  const linear_expression_t &val) override {
     detach();    
     norm().ref_store(ref, reg, val);
   }
   
-  void ref_gep(const variable_t &ref1, const memory_region &reg1,
-               const variable_t &ref2, const memory_region &reg2,
+  void ref_gep(const variable_t &ref1, const variable_t &reg1,
+               const variable_t &ref2, const variable_t &reg2,
                const linear_expression_t &offset) override {
     detach();    
     norm().ref_gep(ref1, reg1, ref2, reg2, offset);
   }
   
   void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                           const memory_region &region,
+                           const variable_t &region,
                            const linear_expression_t &index,
                            const linear_expression_t &elem_size) override {
     detach();    
     norm().ref_load_from_array(lhs, ref, region, index, elem_size);
   }
   
-  void ref_store_to_array(const variable_t &ref, const memory_region &region,
+  void ref_store_to_array(const variable_t &ref, const variable_t &region,
                           const linear_expression_t &index,
                           const linear_expression_t &elem_size,
                           const linear_expression_t &val) override {
@@ -1134,14 +1146,14 @@ public:
     norm().ref_assume(cst);
   }
 
-  void ref_to_int(const memory_region reg, const variable_t &ref_var,
+  void ref_to_int(const variable_t &reg, const variable_t &ref_var,
 		  const variable_t &int_var) override {
     detach();
     norm().ref_to_int(reg, ref_var, int_var);
   }
   
   void int_to_ref(const variable_t &int_var,
-		  const memory_region reg, const variable_t &ref_var) override {
+		  const variable_t &reg, const variable_t &ref_var) override {
     detach();
     norm().int_to_ref(int_var, reg, ref_var);
   }

@@ -43,6 +43,9 @@ z_cfg_t *prog(variable_factory_t &vfac) {
   z_var p(vfac["p"], crab::REF_TYPE);
   z_var p_next(vfac["p_next"], crab::REF_TYPE);
   z_var q(vfac["q"], crab::REF_TYPE);
+  // create an  memory region
+  z_var mem(vfac["region_0"], crab::REG_INT_TYPE, 32);
+  
   // entry and exit block
   z_cfg_t *cfg = new z_cfg_t("entry", "ret");
   // adding blocks
@@ -60,8 +63,6 @@ z_cfg_t *prog(variable_factory_t &vfac) {
   bb2 >> bb1;
   bb1_f >> ret;
 
-  // create an untyped memory region
-  auto mem = crab::memory_region::make_memory_region(0);
 
   // adding statements
   entry.assign(i, 0);

@@ -2149,7 +2149,7 @@ bb1_t:
   goto bb2;
 bb2:
   havoc(nd);
-  (q,region_0) := gep_ref(region_0,p + o);
+  (region_0,q) := gep_ref(region_0,p + o);
   k = 5;
   inc = ite(-nd <= -1,1,2);
   i = i+inc;
@@ -2210,7 +2210,7 @@ bb1_t:
   goto bb2;
 bb2:
   havoc(nd);
-  (q,region_0) := gep_ref(region_0,p + o);
+  (region_0,q) := gep_ref(region_0,p + o);
   k = 5;
   inc = ite(-nd <= -1,1,2);
   i = i+inc;
@@ -2243,7 +2243,7 @@ bb1_t:
   goto bb2;
 bb2:
   havoc(nd);
-  (q,region_0) := gep_ref(region_0,p + o);
+  (region_0,q) := gep_ref(region_0,p + o);
   k = 5;
   inc = ite(-nd <= -1,1,2);
   i = i+inc;
@@ -2277,7 +2277,7 @@ bb1_t:
   goto bb2;
 bb2:
   havoc(nd);
-  (q,region_0) := gep_ref(region_0,p + o);
+  (region_0,q) := gep_ref(region_0,p + o);
   inc = ite(-nd <= -1,1,2);
   i = i+inc;
   goto bb1;
@@ -2311,7 +2311,7 @@ bb1_t:
   goto bb2;
 bb2:
   havoc(nd);
-  (q,region_0) := gep_ref(region_0,p + o);
+  (region_0,q) := gep_ref(region_0,p + o);
   k = 5;
   inc = ite(-nd <= -1,1,2);
   i = i+inc;
@@ -2641,7 +2641,7 @@ entry:
   x = 1;
   y = 0;
   p := make_ref(region_0);
-  (l,region_0) := gep_ref(region_0,p + 0);
+  (region_0,l) := gep_ref(region_0,p);
   goto bb1;
 bb1:
   goto bb1_t,bb1_f;
@@ -2653,9 +2653,9 @@ bb2:
   y = y+1;
   store_to_ref(region_0,p,i);
   q := make_ref(region_0);
-  (p_next,region_0) := gep_ref(region_0,p + 4);
+  (region_0,p_next) := gep_ref(region_0,p + 4);
   store_to_ref(region_0,p_next,q);
-  (p,region_0) := gep_ref(region_0,p_next + 0);
+  (region_0,p) := gep_ref(region_0,p_next);
   i = i+1;
   goto bb1;
 bb1_f:
@@ -2675,7 +2675,7 @@ entry:
   x = 1;
   y = 0;
   p := make_ref(region_0);
-  (l,region_0) := gep_ref(region_0,p + 0);
+  (region_0,l) := gep_ref(region_0,p);
   goto bb1;
 bb1:
   goto bb1_t,bb1_f;
@@ -2687,9 +2687,9 @@ bb2:
   y = y+1;
   store_to_ref(region_0,p,i);
   q := make_ref(region_0);
-  (p_next,region_0) := gep_ref(region_0,p + 4);
+  (region_0,p_next) := gep_ref(region_0,p + 4);
   store_to_ref(region_0,p_next,q);
-  (p,region_0) := gep_ref(region_0,p_next + 0);
+  (region_0,p) := gep_ref(region_0,p_next);
   i = i+1;
   goto bb1;
 bb1_f:
@@ -2988,9 +2988,9 @@ entry:
   i := make_ref(region_0);
   x := make_ref(region_1);
   y := make_ref(region_2);
-  assume(i != NULL);
-  assume(x != NULL);
-  assume(y != NULL);
+  assume(i != NULL_REF);
+  assume(x != NULL_REF);
+  assume(y != NULL_REF);
   store_to_ref(region_0,i,0);
   store_to_ref(region_1,x,1);
   store_to_ref(region_2,y,0);
@@ -3018,8 +3018,8 @@ bb1_f:
   assume(-*i <= -100);
   goto ret;
 ret:
-  assert(x != NULL);
-  assert(y != NULL);
+  assert(x != NULL_REF);
+  assert(y != NULL_REF);
   *x := load_from_ref(region_1,x);
   *y := load_from_ref(region_2,y);
   assert(-*x+*y <= 0);

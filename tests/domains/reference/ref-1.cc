@@ -35,9 +35,9 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
   z_var deref_x(vfac["*x"], crab::INT_TYPE, 32);
   z_var deref_y(vfac["*y"], crab::INT_TYPE, 32);
   // === Define memory regions
-  auto mem1 = crab::memory_region::make_int_memory_region(0, 32);
-  auto mem2 = crab::memory_region::make_int_memory_region(1, 32);
-  auto mem3 = crab::memory_region::make_int_memory_region(2, 32);
+  z_var mem1(vfac["region_0"], crab::REG_INT_TYPE, 32);
+  z_var mem2(vfac["region_1"], crab::REG_INT_TYPE, 32);
+  z_var mem3(vfac["region_2"], crab::REG_INT_TYPE, 32);
   // === Create empty CFG
   z_cfg_t *cfg = new z_cfg_t("entry", "ret");
   // === Adding CFG blocks

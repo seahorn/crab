@@ -3,7 +3,6 @@
 #include <crab/domains/abstract_domain_operators.hpp>
 #include <crab/iterators/thresholds.hpp>
 #include <crab/types/linear_constraints.hpp>
-#include <crab/types/memory_regions.hpp>
 #include <crab/types/reference_constraints.hpp>
 #include <crab/types/variable.hpp>
 
@@ -154,52 +153,45 @@ public:
                                  const linear_expression_t &val) = 0;
   // forall i :: a[i] := b[i]
   virtual void array_assign(const variable_t &a, const variable_t &b) = 0;
-  /**************************** Reference operations ************************/
-  // A reference is a non-deterministic address within a region
-  //
-  // There are two operations that can create references to a region:
-  // - ref_make
-  // - ref_gep
-  //
-  // The rest of operations (except ref_assume) take a reference to a
-  // region and read/write from/to it.
-  //
+  /**************************** Regions and reference operations ***************/
   // Initialize region. If reg already exists then error.
-  virtual void region_init(const memory_region &reg) = 0;
+  virtual void region_init(const variable_t &reg) = 0;
+  // Assign the content of one region to another
+  virtual void region_assign(const variable_t &lhs_reg, const variable_t &rhs_reg) = 0;
   // Create a new reference ref to region reg.
-  virtual void ref_make(const variable_t &ref, const memory_region &reg) = 0;
+  virtual void ref_make(const variable_t &ref, const variable_t &reg) = 0;
   // Read the content of reference ref within reg. The content is
   // stored in res.
-  virtual void ref_load(const variable_t &ref, const memory_region &reg,
+  virtual void ref_load(const variable_t &ref, const variable_t &reg,
                         const variable_t &res) = 0;
   // Write the content of val to the address pointed by ref in region
   // reg.
-  virtual void ref_store(const variable_t &ref, const memory_region &reg,
+  virtual void ref_store(const variable_t &ref, const variable_t &reg,
                          const linear_expression_t &val) = 0;
   // Create a new reference ref2 to region reg2.
   // The reference ref2 is created by adding offset to ref1.
-  virtual void ref_gep(const variable_t &ref1, const memory_region &reg1,
-                       const variable_t &ref2, const memory_region &reg2,
+  virtual void ref_gep(const variable_t &ref1, const variable_t &reg1,
+                       const variable_t &ref2, const variable_t &reg2,
                        const linear_expression_t &offset) = 0;
   // Treat memory pointed by ref  as an array and perform an array load.
   virtual void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                                   const memory_region &region,
+                                   const variable_t &region,
                                    const linear_expression_t &index,
                                    const linear_expression_t &elem_size) = 0;
   // Treat region as an array and perform an array store.
   virtual void ref_store_to_array(const variable_t &ref,
-                                  const memory_region &region,
+                                  const variable_t &region,
                                   const linear_expression_t &index,
                                   const linear_expression_t &elem_size,
                                   const linear_expression_t &val) = 0;
   // Add constraints between references
   virtual void ref_assume(const reference_constraint_t &cst) = 0;
   // Convert a reference to an integer variable
-  virtual void ref_to_int(const memory_region reg, const variable_t &ref,
+  virtual void ref_to_int(const variable_t &reg, const variable_t &ref,
 			  const variable_t &int_var) = 0;
   // Convert an integer variable to a reference
   virtual void int_to_ref(const variable_t &int_var,
-			  const memory_region reg, const variable_t &ref) = 0;
+			  const variable_t &reg, const variable_t &ref) = 0;
   /**************************** Backward arithmetic operations ***************/
   // x = y op z
   // Substitute x with y op z in the abstract value

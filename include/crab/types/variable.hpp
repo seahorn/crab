@@ -22,7 +22,17 @@ enum variable_type {
   ARR_BOOL_TYPE,
   ARR_INT_TYPE,
   ARR_REAL_TYPE,
-
+  // region types: a region can contain either a scalar or an array of
+  // a non-reference type
+  REG_BOOL_TYPE,
+  REG_INT_TYPE,
+  REG_REAL_TYPE,
+  REG_REF_TYPE,
+  // 
+  REG_ARR_BOOL_TYPE,
+  REG_ARR_INT_TYPE,
+  REG_ARR_REAL_TYPE,
+  // unknown type
   UNK_TYPE
 };
 
@@ -37,19 +47,42 @@ inline crab_os &operator<<(crab_os &o, variable_type t) {
   case REAL_TYPE:
     o << "real";
     break;
+  case REF_TYPE:
+    o << "ref";
+    break;    
+    /////////////
   case ARR_BOOL_TYPE:
     o << "arr(bool)";
     break;
-
   case ARR_INT_TYPE:
     o << "arr(int)";
     break;
   case ARR_REAL_TYPE:
     o << "arr(real)";
     break;
-  case REF_TYPE:
-    o << "ref";
+    /////////////
+  case REG_BOOL_TYPE:
+    o << "region(bool)";
     break;
+  case REG_INT_TYPE:
+    o << "region(int)";
+    break;
+  case REG_REAL_TYPE:
+    o << "region(real)";
+    break;
+  case REG_REF_TYPE:
+    o << "region(ref)";
+    break;
+  case REG_ARR_BOOL_TYPE:
+    o << "region(arr(bool))";
+    break;
+  case REG_ARR_INT_TYPE:
+    o << "region(arr(int))";
+    break;
+  case REG_ARR_REAL_TYPE:
+    o << "region(arr(real))";
+    break;
+    //////////////
   default:
     o << "unknown";
     break;
@@ -121,6 +154,19 @@ public:
     return _type >= crab::ARR_BOOL_TYPE && _type <= crab::ARR_REAL_TYPE;
   }
 
+  bool is_region_type() const {
+    return is_scalar_region_type() || is_array_region_type();
+  }
+
+  bool is_scalar_region_type() const {
+    return _type >= crab::REG_BOOL_TYPE && _type <= crab::REG_REF_TYPE;
+  }
+
+  bool is_array_region_type() const {
+    return _type >= crab::REG_ARR_BOOL_TYPE && _type <= crab::REG_ARR_REAL_TYPE;
+  }
+  
+  
   type_t get_type() const { return _type; }
 
   bool has_bitwidth() const { return _width > 0; }
@@ -154,6 +200,8 @@ public:
         "crab-print-types", o << ":" << get_type(); switch (get_type()) {
           case crab::INT_TYPE:
           case crab::ARR_INT_TYPE:
+          case crab::REG_INT_TYPE:
+	  case crab::REG_ARR_INT_TYPE:
             o << ":" << get_bitwidth();
             break;
           default:;
