@@ -288,7 +288,7 @@ private:
   using base_varname_allocator_t = typename Params::varname_allocator_t;
 
   // Abstract domains
-  using ref_counting_domain_t =
+  using rgn_counting_domain_t =
       ikos::separate_domain<variable_t, small_range>;
   // Variable map: variable to base domain's variable.
   using var_map_t = std::unordered_map<variable_t, base_variable_t>;
@@ -311,7 +311,7 @@ private:
   // Abstract domain to count how many addresses are in a region.
   // This allows us to decide when strong update is sound: only if
   // exactly one address per region (i.e., singleton).
-  ref_counting_domain_t m_ref_counting_dom;
+  rgn_counting_domain_t m_rgn_counting_dom;
   // Abstract domain to keep track all possible regions for a
   // reference variable.
   //
@@ -321,25 +321,25 @@ private:
 
   reference_domain(base_varname_allocator_t &&alloc,
                    var_map_t &&var_map, rev_var_map_t &&rev_var_map,
-                   ref_counting_domain_t &&ref_counting_dom,
+                   rgn_counting_domain_t &&rgn_counting_dom,
                    base_abstract_domain_t &&base_dom)
       : m_is_bottom(base_dom.is_bottom()), m_alloc(std::move(alloc)),
         m_var_map(std::move(var_map)), m_rev_var_map(std::move(rev_var_map)),
-        m_ref_counting_dom(std::move(ref_counting_dom)),
+        m_rgn_counting_dom(std::move(rgn_counting_dom)),
         m_base_dom(std::move(base_dom)) {
   }
 
-  using ref_counting_binop_t = std::function<ref_counting_domain_t(
-      ref_counting_domain_t, ref_counting_domain_t)>;
+  using rgn_counting_binop_t = std::function<rgn_counting_domain_t(
+      rgn_counting_domain_t, rgn_counting_domain_t)>;
   using base_dom_binop_t = std::function<base_abstract_domain_t(
       base_abstract_domain_t, base_abstract_domain_t)>;
 
   reference_domain_t do_join_or_widening(const reference_domain_t &left,
                                          const reference_domain_t &right,
-                                         ref_counting_binop_t ref_counting_op,
+                                         rgn_counting_binop_t rgn_counting_op,
                                          base_dom_binop_t base_dom_op) const {
-    ref_counting_domain_t out_ref_counting_dom(
-        ref_counting_op(left.m_ref_counting_dom, right.m_ref_counting_dom));
+    rgn_counting_domain_t out_rgn_counting_dom(
+        rgn_counting_op(left.m_rgn_counting_dom, right.m_rgn_counting_dom));
 
     base_varname_allocator_t out_alloc(left.m_alloc, right.m_alloc);
     base_abstract_domain_t left_dom(left.m_base_dom);
@@ -383,17 +383,17 @@ private:
 
     reference_domain_t res(
         std::move(out_alloc), std::move(out_var_map),
-        std::move(out_rev_var_map), std::move(out_ref_counting_dom),
+        std::move(out_rev_var_map), std::move(out_rgn_counting_dom),
 	std::move(out_base_dom));
     return res;
   }
 
   reference_domain_t do_meet_or_narrowing(const reference_domain_t &left,
                                           const reference_domain_t &right,
-                                          ref_counting_binop_t ref_counting_op,
+                                          rgn_counting_binop_t rgn_counting_op,
                                           base_dom_binop_t base_dom_op) const {
-    ref_counting_domain_t out_ref_counting_dom(
-        ref_counting_op(left.m_ref_counting_dom, right.m_ref_counting_dom));
+    rgn_counting_domain_t out_rgn_counting_dom(
+        rgn_counting_op(left.m_rgn_counting_dom, right.m_rgn_counting_dom));
 
     base_varname_allocator_t out_alloc(left.m_alloc, right.m_alloc);
     base_abstract_domain_t left_dom(left.m_base_dom);
@@ -461,7 +461,7 @@ private:
 
     reference_domain_t res(
         std::move(out_alloc), std::move(out_var_map),
-        std::move(out_rev_var_map), std::move(out_ref_counting_dom),
+        std::move(out_rev_var_map), std::move(out_rgn_counting_dom),
         std::move(out_base_dom));
     return res;
   }
@@ -514,7 +514,7 @@ private:
   }
 
   bool is_initialized_region(const variable_t &rgn) const {
-    small_range count_num = m_ref_counting_dom[rgn];
+    small_range count_num = m_rgn_counting_dom[rgn];
     return (count_num <= small_range::oneOrMore());
   }
 
@@ -663,7 +663,7 @@ public:
   reference_domain(const reference_domain_t &o)
       : m_is_bottom(o.m_is_bottom), m_alloc(o.m_alloc),
         m_var_map(o.m_var_map), m_rev_var_map(o.m_rev_var_map),
-        m_ref_counting_dom(o.m_ref_counting_dom),
+        m_rgn_counting_dom(o.m_rgn_counting_dom),
         m_base_dom(o.m_base_dom) {
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
@@ -672,7 +672,7 @@ public:
       : m_is_bottom(o.m_is_bottom), m_alloc(std::move(o.m_alloc)),
         m_var_map(std::move(o.m_var_map)),
         m_rev_var_map(std::move(o.m_rev_var_map)),
-        m_ref_counting_dom(std::move(o.m_ref_counting_dom)),
+        m_rgn_counting_dom(std::move(o.m_rgn_counting_dom)),
         m_base_dom(std::move(o.m_base_dom)) {}
 
   reference_domain_t &operator=(const reference_domain_t &o) {
@@ -683,7 +683,7 @@ public:
       m_alloc = o.m_alloc;
       m_var_map = o.m_var_map;
       m_rev_var_map = o.m_rev_var_map;
-      m_ref_counting_dom = o.m_ref_counting_dom;
+      m_rgn_counting_dom = o.m_rgn_counting_dom;
       m_base_dom = o.m_base_dom;
     }
     return *this;
@@ -695,7 +695,7 @@ public:
       m_alloc = std::move(o.m_alloc);
       m_var_map = std::move(o.m_var_map);
       m_rev_var_map = std::move(o.m_rev_var_map);
-      m_ref_counting_dom = std::move(o.m_ref_counting_dom);
+      m_rgn_counting_dom = std::move(o.m_rgn_counting_dom);
       m_base_dom = std::move(o.m_base_dom);
     }
     return *this;
@@ -704,7 +704,7 @@ public:
   bool is_bottom() const override { return m_is_bottom; }
 
   bool is_top() const override {
-    return m_base_dom.is_top() && m_ref_counting_dom.is_top();
+    return m_base_dom.is_top() && m_rgn_counting_dom.is_top();
   }
 
   bool operator<=(const reference_domain_t &o) const override {
@@ -719,7 +719,7 @@ public:
     CRAB_LOG("reference",
 	     crab::outs() << "Inclusion test:\n\t" << *this << "\n\t" << o << "\n";);
     
-    if (!(m_ref_counting_dom <= o.m_ref_counting_dom)) {
+    if (!(m_rgn_counting_dom <= o.m_rgn_counting_dom)) {
       CRAB_LOG("reference", crab::outs() << "Result=0\n";);
       return false;
     }
@@ -771,8 +771,8 @@ public:
     CRAB_LOG("reference", crab::outs()
                               << "Join " << *this << " and " << o << "=");
 
-    ref_counting_domain_t out_ref_counting_dom(m_ref_counting_dom |
-                                               o.m_ref_counting_dom);
+    rgn_counting_domain_t out_rgn_counting_dom(m_rgn_counting_dom |
+                                               o.m_rgn_counting_dom);
     base_varname_allocator_t out_alloc(m_alloc, o.m_alloc);
     base_abstract_domain_t left_dom(m_base_dom);
     base_abstract_domain_t right_dom(o.m_base_dom);
@@ -810,7 +810,7 @@ public:
 
     m_is_bottom = out_base_dom.is_bottom();
     std::swap(m_alloc, out_alloc);
-    std::swap(m_ref_counting_dom, out_ref_counting_dom);
+    std::swap(m_rgn_counting_dom, out_rgn_counting_dom);
     std::swap(m_var_map, out_var_map);
     std::swap(m_rev_var_map, out_rev_var_map);
     std::swap(m_base_dom, out_base_dom);
@@ -836,14 +836,14 @@ public:
     CRAB_LOG("reference", crab::outs()
                               << "Join " << *this << " and " << o << "=");
 
-    auto ref_counting_op = [](const ref_counting_domain_t &v1,
-                              const ref_counting_domain_t &v2) {
+    auto rgn_counting_op = [](const rgn_counting_domain_t &v1,
+                              const rgn_counting_domain_t &v2) {
       return v1 | v2;
     };
     auto base_dom_op = [](const base_abstract_domain_t &v1,
                           const base_abstract_domain_t &v2) { return v1 | v2; };
     reference_domain_t res(std::move(do_join_or_widening(
-        *this, o, ref_counting_op, base_dom_op)));
+        *this, o, rgn_counting_op, base_dom_op)));
 
     CRAB_LOG("reference", crab::outs() << res << "\n");
     return res;
@@ -862,8 +862,8 @@ public:
     CRAB_LOG("reference", crab::outs()
                               << "Meet " << *this << " and " << o << "=");
 
-    auto ref_counting_op = [](const ref_counting_domain_t &v1,
-                              const ref_counting_domain_t &v2) {
+    auto rgn_counting_op = [](const rgn_counting_domain_t &v1,
+                              const rgn_counting_domain_t &v2) {
       return (v1 & v2);
     };
     auto base_dom_op = [](const base_abstract_domain_t &v1,
@@ -871,7 +871,7 @@ public:
       return (v1 & v2);
     };
     reference_domain_t res(std::move(do_meet_or_narrowing(
-        *this, o, ref_counting_op, base_dom_op)));
+        *this, o, rgn_counting_op, base_dom_op)));
 
     CRAB_LOG("reference", crab::outs() << res << "\n");
     return res;
@@ -893,8 +893,8 @@ public:
     CRAB_LOG("reference", crab::outs()
                               << "Widening " << *this << " and " << o << "=");
 
-    auto ref_counting_op = [](const ref_counting_domain_t &v1,
-                              const ref_counting_domain_t &v2) {
+    auto rgn_counting_op = [](const rgn_counting_domain_t &v1,
+                              const rgn_counting_domain_t &v2) {
       return v1 || v2;
     };
     auto base_dom_op = [](const base_abstract_domain_t &v1,
@@ -902,7 +902,7 @@ public:
       return v1 || v2;
     };
     reference_domain_t res(std::move(do_join_or_widening(
-        *this, o, ref_counting_op, base_dom_op)));
+        *this, o, rgn_counting_op, base_dom_op)));
 
     CRAB_LOG("reference", crab::outs() << res << "\n");
     return res;
@@ -926,8 +926,8 @@ public:
     CRAB_LOG("reference", crab::outs()
                               << "Widening " << *this << " and " << o << "=");
 
-    auto ref_counting_op = [](const ref_counting_domain_t &v1,
-                              const ref_counting_domain_t &v2) {
+    auto rgn_counting_op = [](const rgn_counting_domain_t &v1,
+                              const rgn_counting_domain_t &v2) {
       return v1 || v2;
     };
     auto base_dom_op = [&thresholds](const base_abstract_domain_t &v1,
@@ -936,7 +936,7 @@ public:
     };
 
     reference_domain_t res(std::move(do_join_or_widening(
-        *this, o, ref_counting_op, base_dom_op)));
+        *this, o, rgn_counting_op, base_dom_op)));
 
     CRAB_LOG("reference", crab::outs() << res << "\n");
     return res;
@@ -955,12 +955,12 @@ public:
     CRAB_LOG("reference", crab::outs()
                               << "Meet " << *this << " and " << o << "=");
 
-    auto ref_counting_op = [](ref_counting_domain_t v1,
-                              ref_counting_domain_t v2) { return (v1 && v2); };
+    auto rgn_counting_op = [](rgn_counting_domain_t v1,
+                              rgn_counting_domain_t v2) { return (v1 && v2); };
     auto base_dom_op = [](base_abstract_domain_t v1,
                           base_abstract_domain_t v2) { return (v1 && v2); };
     reference_domain_t res(std::move(do_meet_or_narrowing(
-        *this, o, ref_counting_op, base_dom_op)));
+        *this, o, rgn_counting_op, base_dom_op)));
 
     CRAB_LOG("reference", crab::outs() << res << "\n");
     return res;
@@ -972,7 +972,7 @@ public:
 
     if (!is_bottom()) {
       if (v.is_region_type()) {
-	m_ref_counting_dom -= v;
+	m_rgn_counting_dom -= v;
       }
       auto it = m_var_map.find(v);
       if (it != m_var_map.end()) {
@@ -998,7 +998,7 @@ public:
     }
 
     // Set to zero the number of references
-    m_ref_counting_dom.set(rgn, small_range::zero());
+    m_rgn_counting_dom.set(rgn, small_range::zero());
 
     // Assign a synthetic variable to rgn for modeling its content.
     base_variable_t v = make_base_variable(m_alloc, rgn);
@@ -1024,7 +1024,7 @@ public:
       CRAB_ERROR(domain_name() + "::region_assign ", lhs_rgn, ":=", rhs_rgn, " with different types");
     }
     
-    m_ref_counting_dom.set(lhs_rgn, m_ref_counting_dom[rhs_rgn]);
+    m_rgn_counting_dom.set(lhs_rgn, m_rgn_counting_dom[rhs_rgn]);
     
     const base_variable_t &base_lhs = rename_var(lhs_rgn);
     const base_variable_t &base_rhs = rename_var(rhs_rgn);    
@@ -1064,8 +1064,8 @@ public:
     }
 
     // Update reference counting
-    auto num_refs = m_ref_counting_dom[rgn];
-    m_ref_counting_dom.set(rgn, num_refs.increment());
+    auto num_refs = m_rgn_counting_dom[rgn];
+    m_rgn_counting_dom.set(rgn, num_refs.increment());
 
     // Assign a base domain variable to ref
     rename_var(ref);
@@ -1129,7 +1129,7 @@ public:
         }
       };
 
-    auto num_refs = m_ref_counting_dom[rgn];
+    auto num_refs = m_rgn_counting_dom[rgn];
     if (num_refs.is_one()) {
       CRAB_LOG("reference", crab::outs() << "Reading from singleton\n";);
       if (auto region_var_opt = get_var(rgn)) {
@@ -1214,7 +1214,7 @@ public:
         }
       };
 
-    auto num_refs = m_ref_counting_dom[rgn];    
+    auto num_refs = m_rgn_counting_dom[rgn];    
     if (num_refs.is_one()) {
       /* strong update */
       CRAB_LOG("reference", crab::outs() << "Performing strong update\n";);
@@ -1245,8 +1245,8 @@ public:
 
       if (!(rgn1 == rgn2 && offset.equal(number_t(0)))) {
 	// Update reference counting
-	auto num_refs = m_ref_counting_dom[rgn2];
-	m_ref_counting_dom.set(rgn2, num_refs.increment());
+	auto num_refs = m_rgn_counting_dom[rgn2];
+	m_rgn_counting_dom.set(rgn2, num_refs.increment());
       }
     }
 
@@ -1306,7 +1306,7 @@ public:
     // }
 
     if (boost::optional<base_variable_t> arr_var_opt = get_var(rgn)) {
-      auto num_refs = m_ref_counting_dom[rgn];
+      auto num_refs = m_rgn_counting_dom[rgn];
       if (num_refs.is_one()) {
 	CRAB_LOG("reference", crab::outs() << "Reading from singleton\n";);
 	m_base_dom.array_load(base_lhs, *arr_var_opt, rename_linear_expr(elem_size),
@@ -1358,7 +1358,7 @@ public:
     //   return;
     // }
 
-    auto num_refs = m_ref_counting_dom[rgn];
+    auto num_refs = m_rgn_counting_dom[rgn];
     base_variable_t arr_var = rename_var(rgn);
     if (num_refs.is_one()) {
       CRAB_LOG("reference", crab::outs() << "Reading from singleton\n";);
@@ -1779,7 +1779,7 @@ public:
     base_vars.reserve(variables.size());
     for (auto &v: variables) {
       if (v.is_region_type()) {
-	m_ref_counting_dom -= v;
+	m_rgn_counting_dom -= v;
       } 
       auto it = m_var_map.find(v);
       if (it != m_var_map.end()) {
@@ -1823,17 +1823,17 @@ public:
       m_var_map.erase(v);
     }
 
-    // -- update m_ref_counting_dom
-    if (!m_ref_counting_dom.is_top() && !m_ref_counting_dom.is_bottom()) {
-      std::vector<variable_t> ref_counting_vars;
-      ref_counting_vars.reserve(m_ref_counting_dom.size());
-      for (auto kv: m_ref_counting_dom) {
+    // -- update m_rgn_counting_dom
+    if (!m_rgn_counting_dom.is_top() && !m_rgn_counting_dom.is_bottom()) {
+      std::vector<variable_t> rgn_counting_vars;
+      rgn_counting_vars.reserve(m_rgn_counting_dom.size());
+      for (auto kv: m_rgn_counting_dom) {
 	if (!std::binary_search(sorted_variables.begin(), sorted_variables.end(), kv.first)) {            
-	  ref_counting_vars.push_back(kv.first);
+	  rgn_counting_vars.push_back(kv.first);
 	}
       }
-      for (auto &v: ref_counting_vars) {
-	m_ref_counting_dom -= v;
+      for (auto &v: rgn_counting_vars) {
+	m_rgn_counting_dom -= v;
       }
     }
     
@@ -1913,7 +1913,7 @@ public:
       o << "{}";
     } else {
       CRAB_LOG("reference-print",      
-	       o << "(RefCounter=" << m_ref_counting_dom << ","
+	       o << "(RgnCounter=" << m_rgn_counting_dom << ","
 	       << "MapVar={";
 	       for (auto &kv : m_var_map) {
 		 o << kv.first << "->" << kv.second << ";";
