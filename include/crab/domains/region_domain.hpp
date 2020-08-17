@@ -128,9 +128,9 @@ public:
 
   /*
      [0,+oo]
-       |  \
-       |  [1,+oo]
-      [0,1] /
+       |   \
+       |    \
+      [0,1] [1,+oo]
        / \ /
       0   1
    */
@@ -153,7 +153,7 @@ public:
     return false;
   }
 
-  bool operator==(small_range other) { return m_value == other.m_value; }
+  bool operator==(small_range other) const { return m_value == other.m_value; }
 
   small_range operator|(small_range other) const {
     if (is_bottom()) {
@@ -245,6 +245,8 @@ public:
   using base_abstract_domain_t = BaseAbsDom;
   using base_varname_t = typename BaseAbsDom::varname_t;
 
+  enum { refine_uninitialized_regions = 1};
+  
   static_assert(std::is_same<Number, typename BaseAbsDom::number_t>::value,
                 "Number type and BaseAbsDom::number_t must be the same");
   // This is a strong requirement
@@ -328,10 +330,116 @@ private:
   using base_dom_binop_t = std::function<base_abstract_domain_t(
       base_abstract_domain_t, base_abstract_domain_t)>;
 
+  
+  bool can_propagate_initialized_regions(const rgn_counting_domain_t &left_counting_dom,
+					 const var_map_t  &right_varmap,
+					 variable_vector_t &regions,
+					 base_variable_vector_t &right_base_vars) const {
+    bool propagate = false;
+    for(auto kv: left_counting_dom) {
+      if (kv.second == small_range::zero()) {
+	auto it = right_varmap.find(kv.first);
+	if (it != right_varmap.end()) {
+	  // uninitialized on the left but initilized on the right
+	  regions.push_back(it->first);
+	  right_base_vars.push_back(it->second);
+	  propagate = true;
+	}
+      }
+    }
+    return propagate;
+  }
+
+  // Special step: if one region is uninitialized on left operand but
+  // initialized on the right then we extract the information from the
+  // right and add it to the left. This can happen if the first store
+  // to a region happens inside a loop. At the entry of the loop
+  // nothing is known about the region so the join there would lose
+  // all the information about the region.
+  // 
+  // This step is not perfect because it keeps only non-relational
+  // information about regions but no relational information between
+  // regions and other variables.
+  void refine_regions(const variable_vector_t &left_regions,
+		      /* the base variable for each regions[i] on right_dom*/
+		      const base_variable_vector_t &right_base_vars,
+		      /* left operand */
+		      var_map_t  &left_varmap,
+		      rev_var_map_t &left_rev_varmap,
+		      base_varname_allocator_t &left_alloc,					
+		      base_abstract_domain_t &left_dom,
+		      /* right operand */
+		      const base_abstract_domain_t &right_dom) const {
+    assert(left_regions.size() == right_base_vars.size());
+    if (left_regions.empty()) return;
+
+    /* Modify the left by creating a variable in the base domain for
+       the region*/
+    base_variable_vector_t left_base_vars;
+    left_base_vars.reserve(left_regions.size());
+    for (unsigned i=0,sz=left_regions.size();i<sz;++i) {
+      left_base_vars.push_back(
+       rename_var(left_regions[i], left_varmap, left_rev_varmap, left_alloc));
+    }
+
+    /* Propagate invariants on the region from the right to the
+       left */
+    base_abstract_domain_t dom(right_dom);
+    dom.project(right_base_vars);
+    dom.rename(right_base_vars, left_base_vars);
+    left_dom = left_dom & dom;
+  }
+
+  // Perform *this = join(*this, right)
+  void do_join(const region_domain_t &right) {
+    rgn_counting_domain_t out_rgn_counting_dom(m_rgn_counting_dom |
+                                               right.m_rgn_counting_dom);
+    base_varname_allocator_t out_alloc(m_alloc, right.m_alloc);
+    base_abstract_domain_t right_dom(right.m_base_dom);
+    var_map_t out_var_map;
+    rev_var_map_t out_rev_var_map;
+    base_variable_vector_t left_vars, right_vars, out_vars;
+    // upper bound to avoid reallocations
+    size_t num_renamings = m_var_map.size();
+    left_vars.reserve(num_renamings);
+    right_vars.reserve(num_renamings);
+    out_vars.reserve(num_renamings);
+    // perform the common renamings
+    for (auto &kv : m_var_map) {
+      const variable_t &v = kv.first;
+      auto it = right.m_var_map.find(v);
+      if (it != right.m_var_map.end()) {
+        base_variable_t out_v(std::move(make_base_variable(out_alloc, v)));
+        left_vars.push_back(kv.second);
+        right_vars.push_back(it->second);
+        out_vars.push_back(out_v);
+        out_var_map.insert({v, out_v});
+        out_rev_var_map.insert({out_v, v});
+      }
+    }
+
+    // See comments in do_join_or_widening
+    m_base_dom.project(left_vars);
+    m_base_dom.rename(left_vars, out_vars);
+    right_dom.project(right_vars);
+    right_dom.rename(right_vars, out_vars);
+
+    m_base_dom |= right_dom;
+    m_is_bottom = m_base_dom.is_bottom();
+    std::swap(m_alloc, out_alloc);
+    std::swap(m_rgn_counting_dom, out_rgn_counting_dom);
+    std::swap(m_var_map, out_var_map);
+    std::swap(m_rev_var_map, out_rev_var_map);
+
+    CRAB_LOG("region", crab::outs() << *this << "\n");
+  }
+  
   region_domain_t do_join_or_widening(const region_domain_t &left,
                                       const region_domain_t &right,
                                       rgn_counting_binop_t rgn_counting_op,
                                       base_dom_binop_t base_dom_op) const {
+    
+    // rgn_counting_dom does not require common renaming
     rgn_counting_domain_t out_rgn_counting_dom(
         rgn_counting_op(left.m_rgn_counting_dom, right.m_rgn_counting_dom));
 
@@ -362,8 +470,8 @@ private:
       }
     }
 
-    // JN: project might necessary to avoid keep variables that exist
-    // in the base domain but they doen't exist on m_var_map.
+    // JN: project might be necessary to avoid keeping variables that
+    // exist in the base domain but they doen't exist on m_var_map.
     //
     // If such a variable exists only on either left_dom or right_dom
     // the join removes it.  However, if we have the same variable in
@@ -373,8 +481,10 @@ private:
     left_dom.rename(left_vars, out_vars);
     right_dom.project(right_vars);
     right_dom.rename(right_vars, out_vars);
-    base_abstract_domain_t out_base_dom(base_dom_op(left_dom, right_dom));
 
+    // Final join or widening
+    base_abstract_domain_t out_base_dom(base_dom_op(left_dom, right_dom));
+    
     region_domain_t res(std::move(out_alloc), std::move(out_var_map),
                         std::move(out_rev_var_map),
                         std::move(out_rgn_counting_dom),
@@ -528,14 +638,20 @@ private:
 
   // Rename variable
   const base_variable_t &rename_var(const variable_t &v) {
-    auto it = m_var_map.find(v);
-    if (it != m_var_map.end()) {
+    return rename_var(v, m_var_map, m_rev_var_map, m_alloc);
+  }
+  
+  const base_variable_t &rename_var(const variable_t &v,
+				    var_map_t &varmap, rev_var_map_t &rev_varmap,
+				    base_varname_allocator_t &alloc) const {
+    auto it = varmap.find(v);
+    if (it != varmap.end()) {
       return it->second;
     } else {
-      base_variable_t bv = make_base_variable(m_alloc, v);
-      auto res = m_var_map.insert({v, bv});
+      base_variable_t bv = make_base_variable(alloc, v);
+      auto res = varmap.insert({v, bv});
       if (res.second) {
-        m_rev_var_map.insert({bv, v});
+        rev_varmap.insert({bv, v});
       }
       return res.first->second;
     }
@@ -760,51 +876,48 @@ public:
 
     CRAB_LOG("region", crab::outs() << "Join " << *this << " and " << o << "=");
 
-    rgn_counting_domain_t out_rgn_counting_dom(m_rgn_counting_dom |
-                                               o.m_rgn_counting_dom);
-    base_varname_allocator_t out_alloc(m_alloc, o.m_alloc);
-    base_abstract_domain_t left_dom(m_base_dom);
-    base_abstract_domain_t right_dom(o.m_base_dom);
-    var_map_t out_var_map;
-    rev_var_map_t out_rev_var_map;
-    base_variable_vector_t left_vars, right_vars, out_vars;
-    // upper bound to avoid reallocations
-    size_t num_renamings = m_var_map.size();
-    left_vars.reserve(num_renamings);
-    right_vars.reserve(num_renamings);
-    out_vars.reserve(num_renamings);
-    // perform the common renamings
 
-    for (auto &kv : m_var_map) {
-      const variable_t &v = kv.first;
-      auto it = o.m_var_map.find(v);
-      if (it != o.m_var_map.end()) {
-        base_variable_t out_v(std::move(make_base_variable(out_alloc, v)));
-        left_vars.push_back(kv.second);
-        right_vars.push_back(it->second);
-        out_vars.push_back(out_v);
-        out_var_map.insert({v, out_v});
-        out_rev_var_map.insert({out_v, v});
-      }
+    variable_vector_t left_regions, right_regions;
+    base_variable_vector_t regions_left_base_vars, regions_right_base_vars;
+    
+    bool refine_left = false;
+    bool refine_right = false;
+    if (Params::refine_uninitialized_regions) {
+      refine_left =
+	can_propagate_initialized_regions(m_rgn_counting_dom, o.m_var_map,
+					  left_regions, regions_right_base_vars);
+      refine_right =
+	can_propagate_initialized_regions(o.m_rgn_counting_dom, m_var_map,
+					  right_regions, regions_left_base_vars);
     }
-
-    // See comments in do_join_or_widening
-    //
-    left_dom.project(left_vars);
-    left_dom.rename(left_vars, out_vars);
-    right_dom.project(right_vars);
-    right_dom.rename(right_vars, out_vars);
-
-    base_abstract_domain_t out_base_dom(left_dom | right_dom);
-
-    m_is_bottom = out_base_dom.is_bottom();
-    std::swap(m_alloc, out_alloc);
-    std::swap(m_rgn_counting_dom, out_rgn_counting_dom);
-    std::swap(m_var_map, out_var_map);
-    std::swap(m_rev_var_map, out_rev_var_map);
-    std::swap(m_base_dom, out_base_dom);
-
-    CRAB_LOG("region", crab::outs() << *this << "\n");
+    
+    // The code is complicated to achieve a zero-cost abstraction. If
+    // we cannot improve invariants on the right operand we avoid
+    // making a copy of it.
+    if (refine_left && !refine_right) {
+      refine_regions(left_regions, regions_right_base_vars,
+		     m_var_map, m_rev_var_map, m_alloc, m_base_dom,
+		     o.m_base_dom);
+      do_join(o);
+    } else if(!refine_left && refine_right) {
+      region_domain_t right(o);
+      refine_regions(right_regions, regions_left_base_vars,
+		     right.m_var_map, right.m_rev_var_map, right.m_alloc, right.m_base_dom,
+		     m_base_dom);
+      do_join(right);
+    } else if (refine_left && refine_right) {
+      region_domain_t right(o);      
+      refine_regions(left_regions, regions_right_base_vars,
+		     m_var_map, m_rev_var_map, m_alloc, m_base_dom,
+		     right.m_base_dom);
+      refine_regions(right_regions, regions_left_base_vars,
+		     right.m_var_map, right.m_rev_var_map, right.m_alloc, right.m_base_dom,
+		     m_base_dom);
+      do_join(right);
+    } else {
+      do_join(o);
+    }
+    
   }
 
   region_domain_t operator|(const region_domain_t &o) const override {
@@ -829,12 +942,72 @@ public:
       return v1 | v2;
     };
     auto base_dom_op = [](const base_abstract_domain_t &v1,
-                          const base_abstract_domain_t &v2) { return v1 | v2; };
-    region_domain_t res(
+                          const base_abstract_domain_t &v2) {
+      return v1 | v2;
+    };
+
+    variable_vector_t left_regions, right_regions;
+    base_variable_vector_t regions_left_base_vars, regions_right_base_vars;
+   
+    bool refine_left = false;
+    bool refine_right = false;
+    if (Params::refine_uninitialized_regions) {
+      refine_left =
+	can_propagate_initialized_regions(m_rgn_counting_dom, o.m_var_map,
+					  left_regions, regions_right_base_vars);
+      refine_right =
+	can_propagate_initialized_regions(o.m_rgn_counting_dom, m_var_map,
+					  right_regions, regions_left_base_vars);
+    }
+
+    // The code is complicated to achieve a zero-cost abstraction. If
+    // we cannot improve invariants then we try to avoid making copies
+    // of left and/or right operands.
+
+    if (refine_left && !refine_right) {
+      // Refine left by propagating information from right's regions
+      region_domain_t left(*this);
+      refine_regions(left_regions, regions_right_base_vars,
+		     left.m_var_map, left.m_rev_var_map, left.m_alloc, left.m_base_dom,
+		     o.m_base_dom);
+      region_domain_t res(
+	  std::move(do_join_or_widening(left, o, rgn_counting_op, base_dom_op)));
+      CRAB_LOG("region", crab::outs() << res << "\n");
+      return res;
+      
+    } else if (!refine_left && refine_right) {
+      // Refine right by propagating information from left's regions
+      region_domain_t right(o);
+      refine_regions(right_regions, regions_left_base_vars,
+		     right.m_var_map, right.m_rev_var_map, right.m_alloc, right.m_base_dom,
+		     m_base_dom);
+      region_domain_t res(
+          std::move(do_join_or_widening(*this, right, rgn_counting_op, base_dom_op)));
+      CRAB_LOG("region", crab::outs() << res << "\n");
+      return res;
+      
+    } else if (refine_left && refine_right) {
+      // Refine both left and right
+      region_domain_t left(*this);
+      region_domain_t right(o);      
+      refine_regions(left_regions, regions_right_base_vars,
+		     left.m_var_map, left.m_rev_var_map, left.m_alloc, left.m_base_dom,
+		     right.m_base_dom);
+      refine_regions(right_regions, regions_left_base_vars,
+		     right.m_var_map, right.m_rev_var_map, right.m_alloc, right.m_base_dom,
+		     left.m_base_dom);
+      region_domain_t res(
+          std::move(do_join_or_widening(left, right, rgn_counting_op, base_dom_op)));
+      CRAB_LOG("region", crab::outs() << res << "\n");
+      return res;
+      
+    } else {
+      region_domain_t res(
         std::move(do_join_or_widening(*this, o, rgn_counting_op, base_dom_op)));
 
-    CRAB_LOG("region", crab::outs() << res << "\n");
-    return res;
+      CRAB_LOG("region", crab::outs() << res << "\n");
+      return res;
+    }
   }
 
   region_domain_t operator&(const region_domain_t &o) const override {
@@ -1928,6 +2101,7 @@ public:
                : m_var_map) { o << kv.first << "->" << kv.second << ";"; } o
           << "},"
           << "BaseDom=" << m_base_dom << ")\n";);
+      
       std::unordered_map<std::string, std::string> renaming_map;
       for (auto &kv : m_rev_var_map) {
         renaming_map[kv.first.name().str()] = kv.second.name().str();
