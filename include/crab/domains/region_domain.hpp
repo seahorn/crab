@@ -362,33 +362,45 @@ private:
   // regions and other variables.
   void refine_regions(const variable_vector_t &left_regions,
 		      /* the base variable for each regions[i] on right_dom*/
-		      const base_variable_vector_t &right_base_vars,
+		      const base_variable_vector_t &old_right_base_vars,
 		      /* left operand */
 		      var_map_t  &left_varmap,
 		      rev_var_map_t &left_rev_varmap,
 		      base_varname_allocator_t &left_alloc,					
 		      base_abstract_domain_t &left_dom,
 		      /* right operand */
-		      const base_abstract_domain_t &right_dom) const {
-    assert(left_regions.size() == right_base_vars.size());
+		      const base_abstract_domain_t &right_dom,
+		      base_varname_allocator_t old_right_alloc) const {
+    assert(left_regions.size() == old_right_base_vars.size());
     if (left_regions.empty()) return;
 
+    // This is needed to avoid variable clashing with the left operand
+    base_varname_allocator_t right_alloc(left_alloc, old_right_alloc);    
+    
     /* Modify the left by creating a variable in the base domain for
        the region*/
-    base_variable_vector_t left_base_vars;
+    base_variable_vector_t left_base_vars, right_base_vars;
     left_base_vars.reserve(left_regions.size());
     for (unsigned i=0,sz=left_regions.size();i<sz;++i) {
       left_base_vars.push_back(
        rename_var(left_regions[i], left_varmap, left_rev_varmap, left_alloc));
+      right_base_vars.push_back(base_variable_t(right_alloc.next(),
+						old_right_base_vars[i].get_type(),
+						old_right_base_vars[i].get_bitwidth()));
     }
 
     /* Propagate invariants on the region from the right to the
        left */
     base_abstract_domain_t dom(right_dom);
-    dom.project(right_base_vars);
+    dom.project(old_right_base_vars);
+
+    // Renaming in two steps to avoid variable clashing with the left
+    // operand. The assumption is that old_right_base_vars and
+    // left_base_vars might have common names.
+    dom.rename(old_right_base_vars, right_base_vars);
     dom.rename(right_base_vars, left_base_vars);
     left_dom = left_dom & dom;
-  }
+  }    
 
   // Perform *this = join(*this, right)
   void do_join(const region_domain_t &right) {
@@ -897,22 +909,22 @@ public:
     if (refine_left && !refine_right) {
       refine_regions(left_regions, regions_right_base_vars,
 		     m_var_map, m_rev_var_map, m_alloc, m_base_dom,
-		     o.m_base_dom);
+		     o.m_base_dom, o.m_alloc);
       do_join(o);
     } else if(!refine_left && refine_right) {
       region_domain_t right(o);
       refine_regions(right_regions, regions_left_base_vars,
 		     right.m_var_map, right.m_rev_var_map, right.m_alloc, right.m_base_dom,
-		     m_base_dom);
+		     m_base_dom, m_alloc);
       do_join(right);
     } else if (refine_left && refine_right) {
       region_domain_t right(o);      
       refine_regions(left_regions, regions_right_base_vars,
 		     m_var_map, m_rev_var_map, m_alloc, m_base_dom,
-		     right.m_base_dom);
+		     right.m_base_dom, right.m_alloc);
       refine_regions(right_regions, regions_left_base_vars,
 		     right.m_var_map, right.m_rev_var_map, right.m_alloc, right.m_base_dom,
-		     m_base_dom);
+		     m_base_dom, m_alloc);
       do_join(right);
     } else {
       do_join(o);
@@ -969,7 +981,7 @@ public:
       region_domain_t left(*this);
       refine_regions(left_regions, regions_right_base_vars,
 		     left.m_var_map, left.m_rev_var_map, left.m_alloc, left.m_base_dom,
-		     o.m_base_dom);
+		     o.m_base_dom, o.m_alloc);
       region_domain_t res(
 	  std::move(do_join_or_widening(left, o, rgn_counting_op, base_dom_op)));
       CRAB_LOG("region", crab::outs() << res << "\n");
@@ -980,7 +992,7 @@ public:
       region_domain_t right(o);
       refine_regions(right_regions, regions_left_base_vars,
 		     right.m_var_map, right.m_rev_var_map, right.m_alloc, right.m_base_dom,
-		     m_base_dom);
+		     m_base_dom, m_alloc);
       region_domain_t res(
           std::move(do_join_or_widening(*this, right, rgn_counting_op, base_dom_op)));
       CRAB_LOG("region", crab::outs() << res << "\n");
@@ -992,10 +1004,10 @@ public:
       region_domain_t right(o);      
       refine_regions(left_regions, regions_right_base_vars,
 		     left.m_var_map, left.m_rev_var_map, left.m_alloc, left.m_base_dom,
-		     right.m_base_dom);
+		     right.m_base_dom, right.m_alloc);
       refine_regions(right_regions, regions_left_base_vars,
 		     right.m_var_map, right.m_rev_var_map, right.m_alloc, right.m_base_dom,
-		     left.m_base_dom);
+		     left.m_base_dom, left.m_alloc);
       region_domain_t res(
           std::move(do_join_or_widening(left, right, rgn_counting_op, base_dom_op)));
       CRAB_LOG("region", crab::outs() << res << "\n");
