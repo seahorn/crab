@@ -97,7 +97,7 @@ using z_pow_aa_int_t = powerset_domain<z_aa_int_t>;
 using z_wrapped_interval_domain_t =
     wrapped_interval_domain<z_number, varname_t>;
 /*===================================================================*/
-// Reference domain
+// Region domain
 /*===================================================================*/
 using var_allocator = crab::var_factory_impl::str_var_alloc_col;
 using z_rgn_aa_int_params_t = region_domain_impl::Params<

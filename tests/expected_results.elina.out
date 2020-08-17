@@ -4026,6 +4026,18 @@ result={-y <= 0; y <= 80; -z <= 0; z <= 20; -x <= -4; x <= 4}
 Before normalize constraints {x <= 8; -y <= -5; y <= 6; -x <= -8; -v <= -9888; z = 10; w <= 0; v <= 9888}
 After normalize constraints {x = 8; v = 9888; -y <= -5; y <= 6; z = 10; w <= 0}
 === End ./test-bin/unittests-linear-constraints ===
+=== Begin ./test-bin/unittests-regions ===
+Join of
+	{x -> [5, +oo]; y -> [10, +oo]}
+and
+	{x -> [5, +oo]; region_0 -> [34, 34]} =
+	{region_0 -> [34, 34]; x -> [5, +oo]}
+Join of
+	{x -> [5, +oo]; y -> [10, +oo]}
+and
+	{x -> [5, +oo]; region_0 -> [34, 34]} =
+	{region_0 -> [34, 34]; x -> [5, +oo]}
+=== End ./test-bin/unittests-regions ===
 === Begin ./test-bin/unittests-rename ===
  ===== Intervals ====
 Before renaming {x -> [-oo, 0]; y -> [5, 5]}
