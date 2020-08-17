@@ -1554,7 +1554,7 @@ public:
         if (cst.is_equality()) {
           m_base_dom += base_linear_constraint_t(x == number_t(0));
         } else if (cst.is_disequality()) {
-          m_base_dom += base_linear_constraint_t(x > number_t(0));
+          m_base_dom += base_linear_constraint_t(x != number_t(0));
         } else if (cst.is_less_or_equal_than()) {
           m_base_dom += base_linear_constraint_t(x <= number_t(0));
         } else if (cst.is_less_than()) {
