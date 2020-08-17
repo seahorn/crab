@@ -2988,9 +2988,9 @@ entry:
   i := make_ref(region_0);
   x := make_ref(region_1);
   y := make_ref(region_2);
-  assume(i != NULL_REF);
-  assume(x != NULL_REF);
-  assume(y != NULL_REF);
+  assume(i > NULL_REF);
+  assume(x > NULL_REF);
+  assume(y > NULL_REF);
   store_to_ref(region_0,i,0);
   store_to_ref(region_1,x,1);
   store_to_ref(region_2,y,0);

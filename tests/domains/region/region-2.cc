@@ -72,9 +72,24 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
   entry.make_ref(i, mem1);
   entry.make_ref(x, mem2);
   entry.make_ref(y, mem3);
+  #if 0
+  // Disequalities too hard
   entry.assume_ref(z_ref_cst_t::mk_not_null(i));
+  #else
+  entry.assume_ref(z_ref_cst_t::mk_le_null(i).negate());
+  #endif
+  #if 0
+  // Disequalities too hard
   entry.assume_ref(z_ref_cst_t::mk_not_null(x));
+  #else
+  entry.assume_ref(z_ref_cst_t::mk_le_null(x).negate());
+  #endif 
+  #if 0
+  // Disequalities too hard
   entry.assume_ref(z_ref_cst_t::mk_not_null(y));
+  #else
+  entry.assume_ref(z_ref_cst_t::mk_le_null(y).negate());
+  #endif 
   //// *i := 0;
   entry.store_to_ref(i, mem1, z_number(0));
   //// *x := 1;
