@@ -1351,7 +1351,7 @@ public:
       }
     }
     CRAB_LOG(
-        "array-sgraph-domain-landmark",
+        "array-sgraph-landmark",
         crab::outs() << "Added " << num_vl << " variable landmarks "
                      << "and " << num_cl << " constant landmarks={";
         bool first = true; for (auto &l
@@ -1391,7 +1391,7 @@ public: // public only for tests
       set_to_bottom();
     }
 
-    CRAB_LOG("array-sgraph-domain-landmark",
+    CRAB_LOG("array-sgraph-landmark",
              crab::outs() << "Added landmark " << v << "\n";);
   }
 
@@ -1400,7 +1400,7 @@ public: // public only for tests
     forget_prime_var(v);
     s_var_landmarks.erase(landmark_ref_t(v));
 
-    CRAB_LOG("array-sgraph-domain-landmark",
+    CRAB_LOG("array-sgraph-landmark",
              crab::outs() << "Removed landmark " << v << "\n";);
   }
 
@@ -1671,7 +1671,7 @@ private:
   // return a pair with the normalized offset and a bool that is
   // true if a new landmark was added in the array graph
   std::pair<variable_t, bool> normalize_offset(variable_t o, ikos::z_number n) {
-    CRAB_LOG("array-sgraph-domain-norm",
+    CRAB_LOG("array-sgraph-norm",
              crab::outs() << "BEFORE NORMALIZE OFFSET: expressions="
                           << _expressions << "\n");
 
@@ -1686,13 +1686,13 @@ private:
     // -- simplify the expression domain
     bool simp_done = _expressions.simplify(no);
 
-    CRAB_LOG("array-sgraph-domain-norm",
+    CRAB_LOG("array-sgraph-norm",
              crab::outs() << "AFTER NORMALIZE OFFSET: expressions="
                           << _expressions << "\n");
 
     if (!simp_done) {
       CRAB_LOG(
-          "array-sgraph-domain-norm",
+          "array-sgraph-norm",
           crab::outs()
               << "NO NORMALIZATION done using the expression abstraction\n");
 
@@ -1708,7 +1708,7 @@ private:
       return std::make_pair(o, added_lm);
     }
 
-    CRAB_LOG("array-sgraph-domain-norm",
+    CRAB_LOG("array-sgraph-norm",
              crab::outs()
                  << "NORMALIZATION DONE! using the expression abstraction\n");
 
@@ -1797,7 +1797,7 @@ private:
       return;
     }
 
-    CRAB_LOG("array-sgraph-domain", crab::outs()
+    CRAB_LOG("array-sgraph", crab::outs()
                                         << "Assign " << x << " := " << e
                                         << " ==> " << *this << "\n";);
   }
@@ -1924,13 +1924,13 @@ public:
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
 
-    CRAB_LOG("array-sgraph-domain", array_graph_domain_t left(*this);
+    CRAB_LOG("array-sgraph", array_graph_domain_t left(*this);
              array_graph_domain_t right(o);
              crab::outs() << "Leq " << left << " and\n"
                           << right << "=\n";);
     bool res = (_scalar <= o._scalar) && (_expressions <= o._expressions) &&
                (_g <= o._g);
-    CRAB_LOG("array-sgraph-domain", crab::outs() << res << "\n";);
+    CRAB_LOG("array-sgraph", crab::outs() << res << "\n";);
     return res;
   }
 
@@ -1942,11 +1942,11 @@ public:
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
-    CRAB_LOG("array-sgraph-domain",
+    CRAB_LOG("array-sgraph",
              crab::outs() << "Join " << *this << " and " << o << "=\n");
     array_graph_domain_t join(_scalar | o._scalar,
                               _expressions | o._expressions, _g | o._g);
-    CRAB_LOG("array-sgraph-domain", crab::outs() << join << "\n";);
+    CRAB_LOG("array-sgraph", crab::outs() << join << "\n";);
     return join;
   }
 
@@ -1956,18 +1956,18 @@ public:
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
-    CRAB_LOG("array-sgraph-domain", crab::outs()
+    CRAB_LOG("array-sgraph", crab::outs()
                                         << "Widening (w/ thresholds) " << *this
                                         << " and " << o << "=\n";);
     auto widen_scalar(_scalar.widening_thresholds(o._scalar, ts));
     auto widen_expr(_expressions.widening_thresholds(o._expressions, ts));
     auto widen_g(_g.widening_thresholds(o._g, ts));
     if (!reduce(widen_scalar, widen_g)) {
-      CRAB_LOG("array-sgraph-domain", crab::outs() << "_|_\n";);
+      CRAB_LOG("array-sgraph", crab::outs() << "_|_\n";);
       return make_bottom();
     } else {
       array_graph_domain_t widen(widen_scalar, widen_expr, widen_g);
-      CRAB_LOG("array-sgraph-domain", crab::outs() << widen << "\n";);
+      CRAB_LOG("array-sgraph", crab::outs() << widen << "\n";);
       return widen;
     }
   }
@@ -1977,17 +1977,17 @@ public:
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
-    CRAB_LOG("array-sgraph-domain",
+    CRAB_LOG("array-sgraph",
              crab::outs() << "Widening " << *this << " and " << o << "=\n");
     auto widen_scalar(_scalar || o._scalar);
     auto widen_expr(_expressions || o._expressions);
     auto widen_g(_g || o._g);
     if (!reduce(widen_scalar, widen_g)) {
-      CRAB_LOG("array-sgraph-domain", crab::outs() << "_|_\n";);
+      CRAB_LOG("array-sgraph", crab::outs() << "_|_\n";);
       return make_bottom();
     } else {
       array_graph_domain_t widen(widen_scalar, widen_expr, widen_g);
-      CRAB_LOG("array-sgraph-domain", crab::outs() << widen << "\n";);
+      CRAB_LOG("array-sgraph", crab::outs() << widen << "\n";);
       return widen;
     }
   }
@@ -1996,17 +1996,17 @@ public:
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
 
-    CRAB_LOG("array-sgraph-domain",
+    CRAB_LOG("array-sgraph",
              crab::outs() << "Meet " << *this << " and " << o << "=\n");
     auto meet_scalar(_scalar & o._scalar);
     auto meet_expr(_expressions & o._expressions);
     auto meet_g(_g & o._g);
     if (!reduce(meet_scalar, meet_g)) {
-      CRAB_LOG("array-sgraph-domain", crab::outs() << "_|_\n";);
+      CRAB_LOG("array-sgraph", crab::outs() << "_|_\n";);
       return make_bottom();
     } else {
       array_graph_domain_t meet(meet_scalar, meet_expr, meet_g);
-      CRAB_LOG("array-sgraph-domain", crab::outs() << meet << "\n";);
+      CRAB_LOG("array-sgraph", crab::outs() << meet << "\n";);
       return meet;
     }
   }
@@ -2016,17 +2016,17 @@ public:
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
 
-    CRAB_LOG("array-sgraph-domain",
+    CRAB_LOG("array-sgraph",
              crab::outs() << "Narrowing " << *this << " and " << o << "=\n");
     auto narrow_scalar(_scalar && o._scalar);
     auto narrow_expr(_expressions && o._expressions);
     auto narrow_g(_g && o._g);
     if (!reduce(narrow_scalar, narrow_g)) {
-      CRAB_LOG("array-sgraph-domain", crab::outs() << "_|_\n";);
+      CRAB_LOG("array-sgraph", crab::outs() << "_|_\n";);
       return make_bottom();
     } else {
       array_graph_domain_t narrow(narrow_scalar, narrow_expr, narrow_g);
-      CRAB_LOG("array-sgraph-domain", crab::outs() << narrow << "\n";);
+      CRAB_LOG("array-sgraph", crab::outs() << narrow << "\n";);
       return narrow;
     }
   }
@@ -2139,7 +2139,7 @@ public:
       set_to_bottom();
       return;
     }
-    CRAB_LOG("array-sgraph-domain",
+    CRAB_LOG("array-sgraph",
              crab::outs() << "Assume(" << csts << ") --- " << *this << "\n";);
   }
 
@@ -2154,7 +2154,7 @@ public:
       crab::ScopedCrabStats __st__(domain_name() + ".apply");
       _expressions.apply(op, x, y, z);
       apply_one_variable<number_t>(op, x, z);
-      CRAB_LOG("array-sgraph-domain",
+      CRAB_LOG("array-sgraph",
                crab::outs() << "Apply " << x << " := " << y << " " << op << " "
                             << z << " ==> " << *this << "\n";);
     } else {
@@ -2169,7 +2169,7 @@ public:
         assign(x, y * z);
         break;
       default:
-        CRAB_WARN(op, "not implemented in array-sgraph-domain\n");
+        CRAB_WARN(op, "not implemented in array-sgraph\n");
       }
     }
   }
@@ -2181,7 +2181,7 @@ public:
       crab::ScopedCrabStats __st__(domain_name() + ".apply");
       _expressions.apply(op, x, y, z);
       apply_one_variable<variable_t>(op, x, z);
-      CRAB_LOG("array-sgraph-domain",
+      CRAB_LOG("array-sgraph",
                crab::outs() << "Apply " << x << " := " << y << " " << op << " "
                             << z << " ==> " << *this << "\n";);
     } else {
@@ -2193,7 +2193,7 @@ public:
         assign(x, y - z);
         break;
       default:
-        CRAB_WARN(op, "not implemented in array-sgraph-domain");
+        CRAB_WARN(op, "not implemented in array-sgraph");
       }
     }
   }
@@ -2224,24 +2224,24 @@ public:
   void assign_bool_cst(const variable_t &lhs,
                        const linear_constraint_t &rhs) override {
     operator-=(lhs);
-    CRAB_WARN("assign_bool_cst not implemented in array-sgraph-domain");
+    CRAB_WARN("assign_bool_cst not implemented in array-sgraph");
   }
 
   void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                        bool is_not_rhs) override {
     operator-=(lhs);
-    CRAB_WARN("assign_bool_var not implemented in array-sgraph-domain");
+    CRAB_WARN("assign_bool_var not implemented in array-sgraph");
   }
 
   void apply_binary_bool(bool_operation_t op, const variable_t &x,
                          const variable_t &y, const variable_t &z) override {
 
     operator-=(x);
-    CRAB_WARN("apply_binary_bool not implemented in array-sgraph-domain");
+    CRAB_WARN("apply_binary_bool not implemented in array-sgraph");
   }
 
   void assume_bool(const variable_t &v, bool is_negated) override {
-    CRAB_WARN("assume_bool not implemented in array-sgraph-domain");
+    CRAB_WARN("assume_bool not implemented in array-sgraph");
   }
 
   // backward boolean operations
@@ -2251,7 +2251,7 @@ public:
                            const array_graph_domain_t &invariant) override {
     operator-=(lhs);
     CRAB_WARN(
-        "backward_assign_bool_cst not implemented in array-sgraph-domain");
+        "backward_assign_bool_cst not implemented in array-sgraph");
   }
 
   void
@@ -2260,7 +2260,7 @@ public:
                            const array_graph_domain_t &invariant) override {
     operator-=(lhs);
     CRAB_WARN(
-        "backward_assign_bool_var not implemented in array-sgraph-domain");
+        "backward_assign_bool_var not implemented in array-sgraph");
   }
 
   void
@@ -2269,7 +2269,7 @@ public:
                              const array_graph_domain_t &invariant) override {
     operator-=(x);
     CRAB_WARN(
-        "backward_apply_binary_bool not implemented in array-sgraph-domain");
+        "backward_apply_binary_bool not implemented in array-sgraph");
   }
 
   // cast operations
@@ -2422,7 +2422,7 @@ public:
       if (!reduce(_scalar, _g)) // FIXME: incremental version
         set_to_bottom();
 
-    CRAB_LOG("array-sgraph-domain", crab::outs() << "Array read " << lhs
+    CRAB_LOG("array-sgraph", crab::outs() << "Array read " << lhs
                                                  << " := " << a << "[" << i
                                                  << "] ==> " << *this << "\n";);
   }
@@ -2465,7 +2465,7 @@ public:
     // XXX: since we do not propagate from the array weights to
     // the scalar domain I think we don't need to reduce here.
 
-    CRAB_LOG("array-sgraph-domain", crab::outs() << "Array write " << a << "["
+    CRAB_LOG("array-sgraph", crab::outs() << "Array write " << a << "["
                                                  << i << "] := " << val
                                                  << " ==> " << *this << "\n";);
   }
@@ -2520,7 +2520,6 @@ public:
   }
 
   void write(crab_os &o) const override {
-#if 1
     NumDom copy_scalar(_scalar);
     array_graph_t copy_g(_g);
     // Remove all primed variables for pretty printing
@@ -2536,12 +2535,12 @@ public:
     array_graph_t::write(o, copy_g, false); // we do not print bottom edges
     o << ")";
     // o << "##" << _expressions;
-#else
-    o << "("
-      << "S=" << _scalar << ","
-      << "E=" << _expressions << ","
-      << "G=" << _g << ")";
-#endif
+    
+    CRAB_LOG("array-sgraph-print",
+	     o << "\n("
+	     << "S=" << _scalar << ","
+	     << "E=" << _expressions << ","
+	     << "G=" << _g << ")";);
   }
 
   // XXX: the array domain is disjunctive so it is not really
