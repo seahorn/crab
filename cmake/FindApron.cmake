@@ -16,7 +16,7 @@ if (NOT APRON_FOUND)
   set (APRON_ROOT "" CACHE PATH "Root of Apron install.")
   
   find_package (Gmp QUIET)
-  find_package (Mpfr QUIET)
+  find_package (MPFR QUIET)
   
   find_path(APRON_INCLUDE_DIR NAMES ap_abstract0.h PATHS ${APRON_ROOT}/include)
   
