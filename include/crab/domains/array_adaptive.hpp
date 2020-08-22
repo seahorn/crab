@@ -59,8 +59,10 @@ public:
   enum { smash_at_nonzero_offset = 1 };
   enum { max_smashable_cells = 512 };
   /* options for array expansion */
-  // only used for now by array_store_range operation
   enum { max_array_size = 512 };
+  
+  static_assert(max_array_size <= max_smashable_cells,
+		"max_array_size must be less or equal than max_smashable_cells");
 };
 
 class NoSmashableParams {
@@ -70,8 +72,10 @@ public:
   enum { smash_at_nonzero_offset = 0 };
   enum { max_smashable_cells = 512 };
   /* options for array expansion */
-  // only used for now by array_store_range operation
   enum { max_array_size = 512 };
+  
+  static_assert(max_array_size <= max_smashable_cells,
+		"max_array_size must be less or equal than max_smashable_cells");  
 };
 
 // Trivial constant propagation lattice
@@ -696,6 +700,15 @@ public:
     return res;
   }
 
+  unsigned get_number_cells() const {
+    unsigned count = 0;
+    for (auto it = m_map.begin(), et = m_map.end(); it != et; ++it) {
+      auto const &o_cells = it->second;
+      count += o_cells.size();
+    }
+    return count;
+  }
+  
   // Return in out all cells that might overlap with (o, size).
   //
   // It is not marked as const because we insert temporary a cell.
@@ -1623,7 +1636,11 @@ private:
   }
 
   static variable_t mk_smashed_variable(const variable_t &v) {
-    assert(v.is_array_type());
+    if (!v.is_array_type()) {
+      CRAB_ERROR(
+          "array_adaptive::mk_smashed_variable only takes array variables");
+    }
+    
     auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
     crab::crab_string_os os;
     os << "smashed(" << v << ")";
@@ -2918,10 +2935,13 @@ public:
       interval_t ii = to_interval(i);
       array_state next_as(as);
       offset_map_t &offset_map = next_as.get_offset_map();
-      if (boost::optional<number_t> n = ii.singleton()) {
+      boost::optional<number_t> n_opt = ii.singleton();
+      if (n_opt &&
+	  (offset_map.get_number_cells() < Params::max_array_size)) {
+	   
         // -- Constant index: kill overlapping cells + perform strong update
         std::vector<cell_t> cells;
-        offset_t o(static_cast<int64_t>(*n));
+        offset_t o(static_cast<int64_t>(*n_opt));
         offset_map.get_overlap_cells(o, e_sz, cells);
         if (cells.size() > 0) {
           CRAB_LOG("array-adaptive",
@@ -2938,10 +2958,17 @@ public:
       } else {
         // -- Non-constant index: kill overlapping cells
 
-        CRAB_LOG("array-adaptive", crab::outs() << "array write to " << a
-                                                << " with non-constant index "
-                                                << i << "=" << ii << "\n";);
-
+	if (n_opt) {
+	  CRAB_LOG("array-adaptive", crab::outs() << "array write to " << a
+		   << " with constant index "
+		   << i << "=" << ii << " but array size exceeded threshold of "
+		   << Params::max_array_size << " so smashing is happening.\n";);
+	} else {
+	  CRAB_LOG("array-adaptive", crab::outs() << "array write to " << a
+		   << " with non-constant index "
+		   << i << "=" << ii << "\n";);
+	}
+	  
         bool smashed = false; // whether smashing took place
         if (Params::is_smashable) {
           std::vector<cell_t> cells = offset_map.get_all_cells();
