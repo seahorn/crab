@@ -1680,6 +1680,7 @@ private:
 
     m_array_map -= v;
     m_cell_varmap.erase(v);
+    m_smashed_varmap.erase(v);
     m_inv.forget(scalar_vars);
   }
 
@@ -2486,10 +2487,10 @@ public:
     // synthetic cells in m_inv.
 
     variable_vector_t keep_vars;
-    std::set<variable_t> keep_array_varset;
+    std::set<variable_t> keep_arrays;
     for (variable_t v : variables) {
       if (v.is_array_type()) {
-        keep_array_varset.insert(v);
+        keep_arrays.insert(v);
       } else {
         keep_vars.push_back(v);
       }
@@ -2497,7 +2498,7 @@ public:
 
     std::vector<variable_t> array_variables = get_array_variables();
     for (variable_t v : array_variables) {
-      if (keep_array_varset.count(v) > 0) {
+      if (keep_arrays.count(v) > 0) {
         // keep all cells of v
         const array_state &as = lookup_array_state(v);
         if (!as.is_smashed()) {
@@ -2514,6 +2515,7 @@ public:
       } else {
         m_array_map -= v;
         m_cell_varmap.erase(v);
+	m_smashed_varmap.erase(v);
       }
     }
 
