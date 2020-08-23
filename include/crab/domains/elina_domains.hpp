@@ -939,11 +939,13 @@ public:
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
-    if (is_bottom() || o.is_top())
+    if (is_bottom()) {
       *this = o;
-    else if (is_top() || o.is_bottom())
-      return;
-    else {
+    } else if (o.is_top()) {
+      set_to_top();
+    } else if (is_top() || o.is_bottom()) {
+      // do nothing
+    } else {
       CRAB_LOG("elina", crab::outs()
                             << "JOIN \n\t" << *this << "\n\t" << o << "\n";);
       elina_state_ptr x =
@@ -960,11 +962,15 @@ public:
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
-    if (is_bottom() || o.is_top())
+
+    if (is_bottom()) {
       return o;
-    else if (is_top() || o.is_bottom())
+    } else if (o.is_top() || is_top()) {
+      elina_domain_t res;
+      return res;
+    } else if (o.is_bottom()) {
       return *this;
-    else {
+    } else {
       elina_state_ptr x =
           elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*m_apstate));
       elina_state_ptr y =
@@ -1905,14 +1911,20 @@ public:
         continue;
       }
 
-      {
+      { // We do garbage collection of unconstrained variables only
+	// after joins so it's possible to find new_v but we are ok as
+	// long as it's unconstrained.
         auto it = m_var_map.left.find(new_v);
         if (it != m_var_map.left.end()) {
-          CRAB_ERROR(domain_name() + "::rename assumes that ", new_v,
-                     " does not exist");
+	  if (auto dim = get_var_dim(new_v)) {
+	    if (!elina_abstract0_is_dimension_unconstrained(get_man(), &*m_apstate, *dim)) {
+	      CRAB_ERROR(domain_name() + "::rename assumes that ", new_v,
+			 " does not exist");
+	    }
+	  }
         }
       }
-
+      
       auto it = m_var_map.left.find(v);
       if (it != m_var_map.left.end()) {
         elina_dim_t dim = it->second;

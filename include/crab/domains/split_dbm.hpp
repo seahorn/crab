@@ -1189,12 +1189,17 @@ protected:
 
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
-
+    
+    if (is_top()) {
+      // Garbage collection from unconstrained variables in vert_map
+      // and rev_map.
+      set_to_top();
+    }
+    
     CRAB_LOG("zones-split-size", auto p = size();
              crab::outs() << "#nodes = " << p.first << " #edges=" << p.second
                           << "\n";);
 
-    assert(g.size() > 0);
   }
 
 public:
@@ -1210,7 +1215,7 @@ public:
         potential(o.potential), unstable(o.unstable), _is_bottom(false) {
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
-
+    
     if (o._is_bottom)
       set_to_bottom();
 
@@ -1371,8 +1376,10 @@ public:
                                          << "DBM 2\n"
                                          << o << "\n");
 
-    if (is_bottom() || o.is_top()) {
+    if (is_bottom()) {
       *this = o;
+    } else if (o.is_top()) {
+      set_to_top();
     } else if (is_top() || o.is_bottom()) {
       // do nothing
     } else {
@@ -1448,18 +1455,21 @@ public:
       unstable.clear();
       _is_bottom = false;
     }
-    CRAB_LOG("zones-split", crab::outs() << "Result join:\n" << this << "\n");
+    CRAB_LOG("zones-split", crab::outs() << "Result join:\n" << *this << "\n");
   }
 
   DBM_t operator|(const DBM_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
-    if (is_bottom() || o.is_top())
+    if (is_bottom()) {
       return o;
-    else if (is_top() || o.is_bottom())
+    } else if (o.is_top() || is_top()) {
+      DBM_t res;
+      return res;
+    } else if (o.is_bottom()) {
       return *this;
-    else {
+    } else {
       CRAB_LOG("zones-split", crab::outs() << "Before join:\n"
                                            << "DBM 1\n"
                                            << *this << "\n"
@@ -2517,12 +2527,17 @@ public:
         continue;
       }
 
-      {
+      { // We do garbage collection of unconstrained variables only
+	// after joins so it's possible to find new_v but we are ok as
+	// long as it's unconstrained.
         auto it = vert_map.find(new_v);
         if (it != vert_map.end()) {
-          CRAB_ERROR(domain_name() + "::rename assumes that ", new_v,
-                     " does not exist");
-        }
+	  vert_id dim = it->second;
+	  if (g.succs(dim).size() != 0 || g.preds(dim).size() != 0) {	  
+	    CRAB_ERROR(domain_name() + "::rename assumes that ", new_v,
+		       " does not exist");
+	  }
+	}
       }
 
       auto it = vert_map.find(v);
