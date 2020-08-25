@@ -567,9 +567,20 @@ private:
       }
     }
 
-    left_dom.rename(left_vars, out_vars);
+    // append only_left_vars and left_vars
+    only_left_vars.insert(only_left_vars.end(), left_vars.begin(), left_vars.end());
+    // append only_left_out_vars end out_vars
+    only_left_out_vars.insert(only_left_out_vars.end(), out_vars.begin(), out_vars.end());
+    // need to project before renaming
+    left_dom.project(only_left_vars);
     left_dom.rename(only_left_vars, only_left_out_vars);
-    right_dom.rename(right_vars, out_vars);
+
+    // append only_right_vars and right_vars
+    only_right_vars.insert(only_right_vars.end(), right_vars.begin(), right_vars.end());
+    // append only_right_out_vars end out_vars
+    only_right_out_vars.insert(only_right_out_vars.end(), out_vars.begin(), out_vars.end());
+    // need to project before renaming    
+    right_dom.project(only_right_vars);
     right_dom.rename(only_right_vars, only_right_out_vars);
     
     base_abstract_domain_t out_base_dom(base_dom_op(left_dom, right_dom));
