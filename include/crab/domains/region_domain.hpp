@@ -571,7 +571,7 @@ private:
     left_dom.rename(only_left_vars, only_left_out_vars);
     right_dom.rename(right_vars, out_vars);
     right_dom.rename(only_right_vars, only_right_out_vars);
-
+    
     base_abstract_domain_t out_base_dom(base_dom_op(left_dom, right_dom));
 
     region_domain_t res(std::move(out_alloc), std::move(out_var_map),
@@ -1276,9 +1276,11 @@ public:
     }
 
     if (is_null_ref(ref)) {
-      CRAB_WARN("region_domain::ref_load: reference ", ref, " is null. ",
-                " Set to bottom ...");
-      set_to_bottom();
+      CRAB_LOG("region", CRAB_WARN("region_domain::ref_load: reference ", ref, " is null."
+				   //, " Set to bottom ..."
+				   ););
+      //set_to_bottom();
+      m_base_dom -= base_res;      
       return;
     }
 
@@ -1350,8 +1352,9 @@ public:
 
     if (is_null_ref(ref)) {
       CRAB_LOG("region", CRAB_WARN("region_domain::ref_store: reference ", ref,
-                                   " is null. ", " Set to bottom ..."););
-      set_to_bottom();
+                                   " is null. "//, " Set to bottom ..."
+				   ););
+      //set_to_bottom();
       return;
     }
 
