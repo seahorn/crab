@@ -1622,11 +1622,11 @@ public:
     if (m_lhs.empty()) {
       // do nothing
     } else if (m_lhs.size() == 1) {
-      o << (*m_lhs.begin()) << " =";
+      o << (*m_lhs.begin()) << ":" << (*m_lhs.begin()).get_type() << " =";
     } else {
       o << "(";
       for (const_iterator It = m_lhs.begin(), Et = m_lhs.end(); It != Et;) {
-        o << (*It);
+        o << (*It) << ":" << (*It).get_type();
         ++It;
         if (It != Et)
           o << ",";
