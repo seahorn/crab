@@ -963,7 +963,9 @@ public:
 
   region_init_stmt(variable_t region, basic_block_t *parent,
                    debug_info dbg_info = debug_info())
-      : statement_t(REGION_INIT, parent, dbg_info), m_region(region) {}
+      : statement_t(REGION_INIT, parent, dbg_info), m_region(region) {
+    this->m_live.add_def(m_region);
+  }
 
   const variable_t &region() const { return m_region; }
 
@@ -1000,8 +1002,8 @@ public:
                    basic_block_t *parent)
       : statement_t(REGION_COPY, parent), m_lhs_region(lhs_region),
         m_rhs_region(rhs_region) {
-    this->m_live.add_def(lhs_region);
-    this->m_live.add_use(rhs_region);
+    this->m_live.add_def(m_lhs_region);
+    this->m_live.add_use(m_rhs_region);
   }
 
   const variable_t &lhs_region() const { return m_lhs_region; }
@@ -1041,7 +1043,8 @@ public:
   make_ref_stmt(variable_t lhs, variable_t region, basic_block_t *parent,
                 debug_info dbg_info = debug_info())
       : statement_t(REF_MAKE, parent, dbg_info), m_lhs(lhs), m_region(region) {
-    this->m_live.add_def(lhs);
+    this->m_live.add_def(m_lhs);
+    this->m_live.add_use(m_region);    
   }
 
   const variable_t &lhs() const { return m_lhs; }
@@ -1083,6 +1086,7 @@ public:
       : statement_t(REF_LOAD, parent, dbg_info), m_lhs(lhs), m_ref(ref),
         m_region(region) {
     this->m_live.add_def(m_lhs);
+    this->m_live.add_use(m_region);        
     this->m_live.add_use(m_ref);
   }
 
@@ -1129,7 +1133,8 @@ public:
       : statement_t(REF_STORE, parent, dbg_info), m_ref(ref), m_region(region),
         m_val(val) {
     this->m_live.add_def(m_ref);
-    for (auto const &v : val.variables()) {
+    this->m_live.add_use(m_region);            
+    for (auto const &v : m_val.variables()) {
       this->m_live.add_use(v);
     }
   }
@@ -1175,9 +1180,11 @@ public:
       : statement_t(REF_GEP, parent, dbg_info), m_lhs(lhs),
         m_lhs_region(lhs_region), m_rhs(rhs), m_rhs_region(rhs_region),
         m_offset(offset) {
-    this->m_live.add_def(lhs);
-    this->m_live.add_use(rhs);
-    for (auto const &v : offset.variables()) {
+    this->m_live.add_def(m_lhs);
+    this->m_live.add_def(m_lhs_region);
+    this->m_live.add_use(m_rhs);
+    this->m_live.add_use(m_rhs_region);            
+    for (auto const &v : m_offset.variables()) {
       this->m_live.add_use(v);
     }
   }
@@ -1243,6 +1250,7 @@ public:
         m_region(region), m_index(index), m_elem_size(elem_size) {
 
     this->m_live.add_def(m_lhs);
+    this->m_live.add_use(m_region);    
     this->m_live.add_use(m_ref);
     for (auto const &v : m_elem_size.variables()) {
       this->m_live.add_use(v);
@@ -1310,8 +1318,12 @@ public:
         m_region(region), m_lb(lb), m_ub(ub), m_value(value),
         m_elem_size(elem_size), m_is_strong_update(is_strong_update) {
 
-    this->m_live.add_def(m_ref);
+    this->m_live.add_def(m_ref);    
     this->m_live.add_use(m_ref);
+
+    this->m_live.add_use(m_region);
+    this->m_live.add_def(m_region);    
+    
     for (auto const &v : m_elem_size.variables()) {
       this->m_live.add_use(v);
     }
@@ -1394,12 +1406,12 @@ public:
 
   assume_ref_stmt(reference_constraint_t cst, basic_block_t *parent)
       : statement_t(REF_ASSUME, parent), m_cst(cst) {
-    if (!cst.is_tautology() && !cst.is_contradiction()) {
-      if (cst.is_unary()) {
-        this->m_live.add_use(cst.lhs());
+    if (!m_cst.is_tautology() && !m_cst.is_contradiction()) {
+      if (m_cst.is_unary()) {
+        this->m_live.add_use(m_cst.lhs());
       } else {
-        this->m_live.add_use(cst.lhs());
-        this->m_live.add_use(cst.rhs());
+        this->m_live.add_use(m_cst.lhs());
+        this->m_live.add_use(m_cst.rhs());
       }
     }
   }
@@ -1435,12 +1447,12 @@ public:
   assert_ref_stmt(reference_constraint_t cst, basic_block_t *parent,
                   debug_info dbg_info = debug_info())
       : statement_t(REF_ASSERT, parent, dbg_info), m_cst(cst) {
-    if (!cst.is_tautology() && !cst.is_contradiction()) {
-      if (cst.is_unary()) {
-        this->m_live.add_use(cst.lhs());
+    if (!m_cst.is_tautology() && !m_cst.is_contradiction()) {
+      if (m_cst.is_unary()) {
+        this->m_live.add_use(m_cst.lhs());
       } else {
-        this->m_live.add_use(cst.lhs());
-        this->m_live.add_use(cst.rhs());
+        this->m_live.add_use(m_cst.lhs());
+        this->m_live.add_use(m_cst.rhs());
       }
     }
   }
@@ -1477,8 +1489,8 @@ public:
                   basic_block_t *parent, debug_info dbg_info = debug_info())
       : statement_t(REF_TO_INT, parent, dbg_info), m_region(region),
         m_ref_var(ref_var), m_int_var(int_var) {
-    this->m_live.add_use(ref_var);
-    this->m_live.add_def(int_var);
+    this->m_live.add_use(m_ref_var);
+    this->m_live.add_def(m_int_var);
   }
 
   const variable_t &region() const { return m_region; }
@@ -1523,8 +1535,8 @@ public:
                   basic_block_t *parent, debug_info dbg_info = debug_info())
       : statement_t(INT_TO_REF, parent, dbg_info), m_int_var(int_var),
         m_region(region), m_ref_var(ref_var) {
-    this->m_live.add_use(int_var);
-    this->m_live.add_def(ref_var);
+    this->m_live.add_use(m_int_var);
+    this->m_live.add_def(m_ref_var);
   }
 
   const variable_t &int_var() const { return m_int_var; }
