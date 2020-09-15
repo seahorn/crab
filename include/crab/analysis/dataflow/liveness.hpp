@@ -116,19 +116,14 @@ public:
       typename liveness_analysis_operations_t::varset_domain_t varset_domain_t;
 
 private:
-  // output of the analysis: map basic blocks to set of live
-  // variables at the end of the blocks
-  std::unordered_map<basic_block_label_t, varset_domain_t> _live_map;
-
-public:
-  liveness_analysis(CFG cfg) : killgen_fixpoint_iterator_t(cfg) {}
+  bool m_release_in;
+  
+public:  
+  liveness_analysis(CFG cfg, bool release_in = true)
+    : killgen_fixpoint_iterator_t(cfg), m_release_in(release_in) {}
 
   void exec() {
     this->run();
-
-    crab::ScopedCrabStats __st__("Liveness.store_results");
-    _live_map.insert(make_move_iterator(this->out_begin()),
-                     make_move_iterator(this->out_end()));
 
     CRAB_LOG(
         "liveness-live",
@@ -139,12 +134,14 @@ public:
           ;
         });
 
-    this->release_memory();
+    if (m_release_in) {
+      this->m_in_map.clear();
+    }
   }
 
   varset_domain_t get(const basic_block_label_t &bb) const {
-    auto it = _live_map.find(bb);
-    if (it != _live_map.end()) {
+    auto it = this->m_out_map.find(bb);
+    if (it != this->m_out_map.end()) {
       return it->second;
     } else {
       return varset_domain_t::bottom();
