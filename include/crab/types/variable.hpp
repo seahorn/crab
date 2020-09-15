@@ -18,6 +18,7 @@ enum variable_type_kind {
   ARR_REAL_TYPE,
   // region types: a region can contain either a scalar or an array of
   // a non-reference type
+  REG_UNKNOWN_TYPE, // any REG_X unifies with this
   REG_BOOL_TYPE,
   REG_INT_TYPE,
   REG_REAL_TYPE,
@@ -26,6 +27,7 @@ enum variable_type_kind {
   REG_ARR_BOOL_TYPE,
   REG_ARR_INT_TYPE,
   REG_ARR_REAL_TYPE,
+
   // unknown type
   UNK_TYPE
 };
@@ -99,6 +101,7 @@ public:
   bool is_real_array() const { return m_kind == ARR_REAL_TYPE; }
   bool is_array() const { return is_integer_array() || is_bool_array() || is_real_array();}
   //// regions
+  bool is_unknown_region() const { return m_kind == REG_UNKNOWN_TYPE; }
   bool is_bool_region() const { return m_kind == REG_BOOL_TYPE; }
   bool is_integer_region() const { return m_kind == REG_INT_TYPE; }
   bool is_real_region() const { return m_kind == REG_REAL_TYPE; }
@@ -106,7 +109,7 @@ public:
   bool is_bool_array_region() const { return m_kind == REG_ARR_BOOL_TYPE; }
   bool is_int_array_region() const { return m_kind == REG_ARR_INT_TYPE; }
   bool is_real_array_region() const { return m_kind == REG_ARR_REAL_TYPE; }
-  bool is_region() const { return is_scalar_region() || is_array_region();}
+  bool is_region() const { return is_unknown_region() || is_scalar_region() || is_array_region();}
   bool is_scalar_region() const { return is_bool_region() || is_integer_region() || is_real_region() ||
                                          is_reference_region();}
   bool is_array_region() const { return is_bool_array_region() || is_int_array_region() || is_real_array_region(); }
@@ -134,9 +137,12 @@ public:
     case ARR_REAL_TYPE:
       o << "arr(real)";
       break;
+    case REG_UNKNOWN_TYPE:
+      o << "region(unknown)";
+      break;
     case REG_BOOL_TYPE:
       o << "region(bool)";
-    break;
+      break;
     case REG_INT_TYPE:
       o << "region(int)";
       break;
