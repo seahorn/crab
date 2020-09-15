@@ -1173,8 +1173,10 @@ public:
     // Set to zero the number of references
     m_rgn_counting_dom.set(rgn, small_range::zero());
 
-    // Assign a synthetic variable to rgn for modeling its content.
-    base_variable_t v = make_base_variable(m_alloc, rgn);
+    if (!rgn.get_type().is_unknown_region()) {
+      // Assign a synthetic variable to rgn for modeling its content.
+      base_variable_t v = make_base_variable(m_alloc, rgn);
+    }
     CRAB_LOG("region", crab::outs() << "After region_init(" << rgn
                                     << ")=" << *this << "\n";);
   }
@@ -1196,13 +1198,21 @@ public:
       CRAB_ERROR(domain_name() + "::region_copy ", rhs_rgn,
                  " must have a region type");
     }
+
+    m_rgn_counting_dom.set(lhs_rgn, m_rgn_counting_dom[rhs_rgn]);
+
+
+    if (lhs_rgn.get_type().is_unknown_region() ||
+	rhs_rgn.get_type().is_unknown_region()) {
+      return;
+    }
+
+    
     if (lhs_rgn.get_type() != rhs_rgn.get_type()) {
       CRAB_ERROR(domain_name() + "::region_copy ", lhs_rgn, ":=", rhs_rgn,
                  " with different types");
     }
-
-    m_rgn_counting_dom.set(lhs_rgn, m_rgn_counting_dom[rhs_rgn]);
-
+    
     const base_variable_t &base_lhs = rename_var(lhs_rgn);
     const base_variable_t &base_rhs = rename_var(rhs_rgn);
     auto ty = lhs_rgn.get_type();
@@ -1259,8 +1269,13 @@ public:
     const base_variable_t &base_res = rename_var(res);
 
     if (!rgn.get_type().is_scalar_region()) {
-      CRAB_LOG("region", CRAB_WARN("region_domain::ref_load: ", rgn,
-                                   " must be a scalar region"););
+      if (rgn.get_type().is_unknown_region()) {
+	CRAB_LOG("region", CRAB_WARN("region_domain::ref_load: skip unknown region ",
+				     rgn););
+      } else {
+	CRAB_LOG("region", CRAB_WARN("region_domain::ref_load: ", rgn,
+				     " must be a scalar region"););
+      }
       m_base_dom -= base_res;
       return;
     }
@@ -1332,8 +1347,13 @@ public:
     }
 
     if (!rgn.get_type().is_scalar_region()) {
-      CRAB_LOG("region", CRAB_WARN("region_domain::ref_store: ", rgn,
-                                   " must be a scalar region"););
+      if (rgn.get_type().is_unknown_region()) {
+	CRAB_LOG("region", CRAB_WARN("region_domain::ref_load: skip unknown region ",
+				     rgn););
+      } else {
+	CRAB_LOG("region", CRAB_WARN("region_domain::ref_store: ", rgn,
+				     " must be a scalar region"););
+      }
       return;
     }
 
@@ -1377,7 +1397,7 @@ public:
     };
 
     auto num_refs = m_rgn_counting_dom[rgn];
-    if (num_refs.is_one()) {
+    if (num_refs.is_zero() || num_refs.is_one()) {
       /* strong update */
       CRAB_LOG("region", crab::outs() << "Performing strong update\n";);
       ref_store(m_base_dom);
@@ -1469,7 +1489,7 @@ public:
 
     if (boost::optional<base_variable_t> arr_var_opt = get_var(rgn)) {
       auto num_refs = m_rgn_counting_dom[rgn];
-      if (num_refs.is_one()) {
+      if (num_refs.is_zero() || num_refs.is_one()) {
         CRAB_LOG("region", crab::outs() << "Reading from singleton\n";);
         m_base_dom.array_load(base_lhs, *arr_var_opt,
                               rename_linear_expr(elem_size),
@@ -1991,6 +2011,10 @@ public:
     std::vector<base_variable_t> base_vars;
     base_vars.reserve(variables.size());
     for (auto const &v : variables) {
+      if (v.get_type().is_unknown_region()) {
+	// skip those for now
+	continue;
+      }
       base_vars.push_back(rename_var(v));
     }
     m_base_dom.project(base_vars);
