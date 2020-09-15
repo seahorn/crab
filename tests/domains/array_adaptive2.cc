@@ -28,7 +28,7 @@ z_cfg_t *prog1(variable_factory_t &vfac) { // no overlapping, no joins
   z_var val(vfac["val"], crab::INT_TYPE, 32);
   z_var tmp1(vfac["tmp1"], crab::INT_TYPE, 32);
   z_var tmp2(vfac["tmp2"], crab::INT_TYPE, 32);
-  z_var mem(vfac["Mem"], crab::ARR_INT_TYPE, 32);
+  z_var mem(vfac["Mem"], crab::ARR_INT_TYPE);
 
   bb0.assign(x, 2);  // index in mem
   bb0.assign(y, 6);  // index in mem
@@ -70,7 +70,7 @@ z_cfg_t *prog2(variable_factory_t &vfac) { // overlapping, no joins
   z_var tmp1(vfac["tmp1"], crab::INT_TYPE, 32);
   z_var tmp2(vfac["tmp2"], crab::INT_TYPE, 32);
   z_var tmp3(vfac["tmp3"], crab::INT_TYPE, 32);
-  z_var mem(vfac["Mem"], crab::ARR_INT_TYPE, 32);
+  z_var mem(vfac["Mem"], crab::ARR_INT_TYPE);
 
   bb0.assign(x, 4);  // index in mem
   bb0.assign(y, 6);  // index in mem
@@ -176,7 +176,7 @@ z_cfg_t *prog4(variable_factory_t &vfac) {
   loop2_bb2 >> loop2_bb1;
   loop2_bb1_f >> ret;
 
-  z_var mem(vfac["Mem"], crab::ARR_INT_TYPE, 32);
+  z_var mem(vfac["Mem"], crab::ARR_INT_TYPE);
   z_var base(vfac["Mem_base"], crab::INT_TYPE, 32);
   z_var i(vfac["i"], crab::INT_TYPE, 32);
   z_var j(vfac["j"], crab::INT_TYPE, 32);
@@ -253,7 +253,7 @@ z_cfg_t *prog5(variable_factory_t &vfac) {
   loop2_bb2 >> loop2_bb1;
   loop2_bb1_f >> ret;
 
-  z_var mem(vfac["Mem"], crab::ARR_INT_TYPE, 32);
+  z_var mem(vfac["Mem"], crab::ARR_INT_TYPE);
   z_var base(vfac["Mem_base"], crab::INT_TYPE, 32);
   z_var i(vfac["i"], crab::INT_TYPE, 32);
   z_var j(vfac["j"], crab::INT_TYPE, 32);
@@ -350,7 +350,7 @@ z_cfg_t *prog6(variable_factory_t &vfac) {
   loop2_bb2 >> loop2_bb1;
   loop2_bb1_f >> ret;
 
-  z_var mem(vfac["Mem"], crab::ARR_INT_TYPE, 32);
+  z_var mem(vfac["Mem"], crab::ARR_INT_TYPE);
   z_var base(vfac["Mem_base"], crab::INT_TYPE, 32);
   z_var i(vfac["i"], crab::INT_TYPE, 32);
   z_var j(vfac["j"], crab::INT_TYPE, 32);
@@ -423,9 +423,9 @@ z_cfg_t *prog7(variable_factory_t &vfac) {
   z_cfg_t *cfg = new z_cfg_t("entry", "ret");
   z_basic_block_t &entry = cfg->insert("entry");
   z_basic_block_t &ret = cfg->insert("ret");
-  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE, 32);
-  z_var m2(vfac["Mem2"], crab::ARR_INT_TYPE, 32);
-  z_var m3(vfac["Mem3"], crab::ARR_INT_TYPE, 32);
+  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
+  z_var m2(vfac["Mem2"], crab::ARR_INT_TYPE);
+  z_var m3(vfac["Mem3"], crab::ARR_INT_TYPE);
   z_var x(vfac["x"], crab::INT_TYPE, 32);
   z_var y(vfac["y"], crab::INT_TYPE, 32);
   z_var z(vfac["z"], crab::INT_TYPE, 32);
@@ -464,9 +464,9 @@ z_cfg_t *prog8(variable_factory_t &vfac) {
   z_cfg_t *cfg = new z_cfg_t("entry", "ret");
   z_basic_block_t &entry = cfg->insert("entry");
   z_basic_block_t &ret = cfg->insert("ret");
-  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE, 32);
-  z_var m2(vfac["Mem2"], crab::ARR_INT_TYPE, 32);
-  z_var m3(vfac["Mem3"], crab::ARR_INT_TYPE, 32);
+  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
+  z_var m2(vfac["Mem2"], crab::ARR_INT_TYPE);
+  z_var m3(vfac["Mem3"], crab::ARR_INT_TYPE);
   z_var x(vfac["x"], crab::INT_TYPE, 32);
   z_var y(vfac["y"], crab::INT_TYPE, 32);
   z_var z(vfac["z"], crab::INT_TYPE, 32);
@@ -505,7 +505,7 @@ z_cfg_t *prog9(variable_factory_t &vfac) {
   z_cfg_t *cfg = new z_cfg_t("entry", "ret");
   z_basic_block_t &entry = cfg->insert("entry");
   z_basic_block_t &ret = cfg->insert("ret");
-  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE, 32);
+  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
   z_var m1_lb(vfac["m1_lb"], crab::INT_TYPE, 32);
   z_var m1_ub(vfac["m1_ub"], crab::INT_TYPE, 32);
   z_var x(vfac["x"], crab::INT_TYPE, 32);
@@ -541,7 +541,7 @@ z_cfg_t *prog10(variable_factory_t &vfac) {
   z_basic_block_t &bb3 = cfg->insert("bb3");
   z_basic_block_t &bb4 = cfg->insert("bb4");
 
-  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE, 32);
+  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
   z_var i(vfac["i"], crab::INT_TYPE, 32);
   z_var x(vfac["x"], crab::INT_TYPE, 32);
 
@@ -573,8 +573,8 @@ z_cfg_t *prog11(variable_factory_t &vfac) {
   z_basic_block_t &bb3 = cfg->insert("bb3");
   z_basic_block_t &bb4 = cfg->insert("bb4");
 
-  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE, 32);
-  z_var m2(vfac["Mem2"], crab::ARR_INT_TYPE, 32);
+  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
+  z_var m2(vfac["Mem2"], crab::ARR_INT_TYPE);
   z_var i(vfac["i"], crab::INT_TYPE, 32);
   z_var x(vfac["x"], crab::INT_TYPE, 32);
   z_var y(vfac["y"], crab::INT_TYPE, 32);
@@ -608,7 +608,7 @@ z_cfg_t *prog12(variable_factory_t &vfac) {
   z_cfg_t *cfg = new z_cfg_t("bb0", "bb0");
   z_basic_block_t &bb0 = cfg->insert("bb0");
 
-  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE, 32);
+  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
   z_var i(vfac["i"], crab::INT_TYPE, 32);
   z_var j(vfac["j"], crab::INT_TYPE, 32);
   z_var x(vfac["x"], crab::INT_TYPE, 32);
@@ -650,7 +650,7 @@ z_cfg_t *prog13(variable_factory_t &vfac) {
   z_cfg_t *cfg = new z_cfg_t("bb0", "bb0");
   z_basic_block_t &bb0 = cfg->insert("bb0");
 
-  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE, 32);
+  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
   z_var i(vfac["i"], crab::INT_TYPE, 32);
   z_var j(vfac["j"], crab::INT_TYPE, 32);
   z_var x(vfac["x"], crab::INT_TYPE, 32);

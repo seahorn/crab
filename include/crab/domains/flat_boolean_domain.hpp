@@ -1126,7 +1126,7 @@ public:
     for (const linear_constraint_t &cst : csts) {
       if (std::any_of(cst.expression().variables_begin(),
                       cst.expression().variables_end(),
-                      [](const variable_t &v) { return v.is_bool_type(); })) {
+                      [](const variable_t &v) { return v.get_type().is_bool(); })) {
         all_non_boolean = false;
         break;
       }
@@ -1147,7 +1147,7 @@ public:
         if (cst.is_equality() &&
             std::all_of(cst.expression().variables_begin(),
                         cst.expression().variables_end(),
-                        [](const variable_t &v) { return v.is_bool_type(); })) {
+                        [](const variable_t &v) { return v.get_type().is_bool(); })) {
           // boolean component
           const linear_expression_t &exp = cst.expression();
           if (exp.size() == 1) {
@@ -1442,12 +1442,19 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    CRAB_LOG("flat-boolean", crab::outs() << src << ":" << src.get_bitwidth()
+    auto get_bitwidth = [](const variable_t v) {
+			  auto ty = v.get_type();
+			  if (!(ty.is_integer() || ty.is_bool())) {
+			    CRAB_ERROR("unexpected types in cast operation");
+			  }
+			  return (ty.is_integer() ? ty.get_integer_bitwidth() : 1);
+			};
+    CRAB_LOG("flat-boolean", crab::outs() << src << ":" << get_bitwidth(src)
                                           << " " << op << " " << dst << ":"
-                                          << dst.get_bitwidth() << " with "
+                                          << get_bitwidth(dst) << " with "
                                           << *this << "\n");
 
-    if (op == OP_TRUNC && (src.get_bitwidth() > 1 && dst.get_bitwidth() == 1)) {
+    if (op == OP_TRUNC && (get_bitwidth(src) > 1 && get_bitwidth(dst) == 1)) {
       // -- int to bool:
       // assume that zero is false and non-zero is true
       interval_t i_src = _product.second()[src];
@@ -1460,7 +1467,7 @@ public:
         _product.first().set_bool(dst, boolean_value::top());
       }
     } else if ((op == OP_ZEXT || op == OP_SEXT) &&
-               (src.get_bitwidth() == 1 && dst.get_bitwidth() > 1)) {
+               (get_bitwidth(src) == 1 && get_bitwidth(dst) > 1)) {
       // -- bool to int:
       // if OP_SEXT then true is -1 and false is zero
       // if OP_ZEXT then true is 1 and false is zero
@@ -1517,7 +1524,7 @@ public:
                           const linear_expression_t &elem_size,
                           const linear_expression_t &i) override {
     _product.array_load(lhs, a, elem_size, i);
-    if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE)
+    if (a.get_type().is_integer_array() || a.get_type().is_real_array())
       _unchanged_vars -= variable_t(lhs);
   }
 
@@ -1560,7 +1567,7 @@ public:
                       const linear_expression_t &i,
                       const bool_num_domain_t &invariant) override {
     _product.backward_array_load(lhs, a, elem_size, i, invariant._product);
-    if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE) {
+    if (a.get_type().is_integer_array() || a.get_type().is_real_array()) {
       _unchanged_vars -= variable_t(lhs);
     }
   }

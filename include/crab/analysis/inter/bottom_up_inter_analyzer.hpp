@@ -150,15 +150,13 @@ public:
     unsigned i = 0;
     for (auto v : m_inputs) {
       auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
-      variable_t fresh_v(vfac.get(prefix + std::to_string(i)), v.get_type(),
-                         v.get_bitwidth());
+      variable_t fresh_v(vfac.get(prefix + std::to_string(i)), v.get_type());
       m_internal_inputs.push_back(fresh_v);
       i++;
     }
     for (auto v : m_outputs) {
       auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
-      variable_t fresh_v(vfac.get(prefix + std::to_string(i)), v.get_type(),
-                         v.get_bitwidth());
+      variable_t fresh_v(vfac.get(prefix + std::to_string(i)), v.get_type());
       m_internal_outputs.push_back(fresh_v);
       i++;
     }

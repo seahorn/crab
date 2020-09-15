@@ -364,105 +364,105 @@ Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 Program 1: forall 0<= i< 10. a[i] = 123456
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
 entry=({}, {})
-bb1=({}, {n1 -> [1, 1]; i -> [0, 10]; A0_prop -> [0, 0]; smashed(A0) -> [0, 123456]})
-bb1_f=({}, {n1 -> [1, 1]; i -> [0, 10]; A0_prop -> [0, 0]; smashed(A0) -> [0, 123456]})
-ret=({}, {n1 -> [1, 1]; i -> [10, 10]; A0_prop -> [0, 0]; smashed(A0) -> [0, 123456]})
-bb1_t=({}, {n1 -> [1, 1]; i -> [0, 10]; A0_prop -> [0, 0]; smashed(A0) -> [0, 123456]})
-bb2=({}, {n1 -> [1, 1]; i -> [0, 9]; A0_prop -> [0, 0]; smashed(A0) -> [0, 123456]})
+bb1=({}, {i -> [0, 10]; smashed(A0) -> [0, 123456]})
+bb1_f=({}, {i -> [0, 10]; smashed(A0) -> [0, 123456]})
+ret=({}, {i -> [10, 10]; smashed(A0) -> [0, 123456]})
+bb1_t=({}, {i -> [0, 10]; smashed(A0) -> [0, 123456]})
+bb2=({}, {i -> [0, 9]; smashed(A0) -> [0, 123456]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 2: forall 0<= i< 10. a[i] = b[i] = x and x = 123456
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
 entry=({}, {})
-bb1=({}, {n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
-bb1_f=({}, {n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
-ret=({}, {n1 -> [1, 1]; i -> [10, 10]; A_p -> [0, 0]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
-bb1_t=({}, {n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
-bb2=({}, {n1 -> [1, 1]; i -> [0, 9]; A_p -> [0, 0]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
+bb1=({}, {i -> [0, 10]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
+bb1_f=({}, {i -> [0, 10]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
+ret=({}, {i -> [10, 10]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
+bb1_t=({}, {i -> [0, 10]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
+bb2=({}, {i -> [0, 9]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 3: forall 0<= i< 10. a[i] = 8 and b[i] = 5
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
 entry=({}, {})
-bb1=({}, {n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
-bb1_f=({}, {n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
-ret=({}, {n1 -> [1, 1]; i -> [10, 10]; A_p -> [0, 0]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
-bb1_t=({}, {n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
-bb2=({}, {n1 -> [1, 1]; i -> [0, 9]; A_p -> [0, 0]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
+bb1=({}, {i -> [0, 10]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
+bb1_f=({}, {i -> [0, 10]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
+ret=({}, {i -> [10, 10]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
+bb1_t=({}, {i -> [0, 10]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
+bb2=({}, {i -> [0, 9]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 4: forall 0<= i < n. a[i] = 123456 (unbounded loop)
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
 entry=({}, {})
-bb1=({}, {n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
-bb1_f=({}, {n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
-ret=({}, {n1 -> [1, 1]; i -> [1, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
-bb1_t=({}, {n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
-bb2=({}, {n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
+bb1=({}, {i -> [0, +oo]; n -> [1, +oo]})
+bb1_f=({}, {i -> [0, +oo]; n -> [1, +oo]})
+ret=({}, {i -> [1, +oo]; n -> [1, +oo]})
+bb1_t=({}, {i -> [0, +oo]; n -> [1, +oo]})
+bb2=({}, {i -> [0, +oo]; n -> [1, +oo]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 5: for all 0<= i< 10. a[i] = 123456 (assume elem size=4 bytes)
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
 entry=({}, {})
-bb1=({}, {i -> [0, 10]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
-bb1_f=({}, {i -> [0, 10]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
-ret=({}, {i -> [10, 10]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
-bb1_t=({}, {i -> [0, 10]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
-bb2=({}, {i -> [0, 9]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+bb1=({}, {i -> [0, 10]; smashed(A) -> [0, 123456]})
+bb1_f=({}, {i -> [0, 10]; smashed(A) -> [0, 123456]})
+ret=({}, {i -> [10, 10]; smashed(A) -> [0, 123456]})
+bb1_t=({}, {i -> [0, 10]; smashed(A) -> [0, 123456]})
+bb2=({}, {i -> [0, 9]; smashed(A) -> [0, 123456]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
 entry=({}, {})
-bb1=({}, {n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]})
-bb1_f=({}, {n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]})
-ret=({}, {n1 -> [1, 1]; i -> [2, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]})
-bb1_t=({}, {n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]})
-bb2=({}, {n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]})
+bb1=({}, {i -> [1, +oo]; n -> [2, +oo]; val -> [89, 89]})
+bb1_f=({}, {i -> [1, +oo]; n -> [2, +oo]; val -> [89, 89]})
+ret=({}, {i -> [2, +oo]; n -> [2, +oo]; val -> [89, 89]})
+bb1_t=({}, {i -> [1, +oo]; n -> [2, +oo]; val -> [89, 89]})
+bb2=({}, {i -> [1, +oo]; n -> [2, +oo]; val -> [89, 89]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 7: forall 0<= i< 10 and i % 2 = 0. a[i] = 123456
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
 entry=({}, {})
-bb1=({}, {n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 11]; n -> [1, +oo]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
-bb1_f=({}, {n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 11]; n -> [1, +oo]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
-ret=({}, {n1 -> [1, 1]; n2 -> [2, 2]; i -> [10, 11]; n -> [1, +oo]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
-bb1_t=({}, {n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 11]; n -> [1, +oo]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
-bb2=({}, {n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 9]; n -> [1, +oo]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+bb1=({}, {i -> [0, 11]; n -> [1, +oo]; smashed(A) -> [0, 123456]})
+bb1_f=({}, {i -> [0, 11]; n -> [1, +oo]; smashed(A) -> [0, 123456]})
+ret=({}, {i -> [10, 11]; n -> [1, +oo]; smashed(A) -> [0, 123456]})
+bb1_t=({}, {i -> [0, 11]; n -> [1, +oo]; smashed(A) -> [0, 123456]})
+bb2=({}, {i -> [0, 9]; n -> [1, +oo]; smashed(A) -> [0, 123456]})
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
 Program 8: forall 0<= i < n. 1 <= a[i] <= 2
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
 entry=({}, {})
-bb1=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
-bb1_f2=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
-bb1_f=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
-ret=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
-bb1_f1=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
-bb1_t=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
-bb2=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
-bb2b=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
-bb2a=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
+bb1=({}, {i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]})
+bb1_f2=({}, {i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]})
+bb1_f=({}, {i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]})
+ret=({}, {i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]})
+bb1_f1=({}, {i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]})
+bb1_t=({}, {i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]})
+bb2=({}, {i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]})
+bb2b=({}, {i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]})
+bb2a=({}, {i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]})
 Abstract trace: entry (bb1 bb1_t bb2 bb2b bb2a)^{3} bb1_f2 bb1_f1 bb1_f ret
 
 Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
 entry=({}, {})
-bb1=({}, {n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
-bb1_f=({}, {n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
-ret=({}, {n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, -1]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
-bb1_t=({}, {n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
-bb2=({}, {n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [0, 9]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+bb1=({}, {i -> [-1, 9]; smashed(A) -> [0, 123456]})
+bb1_f=({}, {i -> [-1, 9]; smashed(A) -> [0, 123456]})
+ret=({}, {i -> [-1, -1]; smashed(A) -> [0, 123456]})
+bb1_t=({}, {i -> [-1, 9]; smashed(A) -> [0, 123456]})
+bb2=({}, {i -> [0, 9]; smashed(A) -> [0, 123456]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 11: forall 0<= i< 10. a[i] = true and b[i] = false
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
 entry=({}, {})
-bb1=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {n1 -> [1, 1]; i -> [0, 10]})
-bb1_f=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {n1 -> [1, 1]; i -> [0, 10]})
-ret=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {n1 -> [1, 1]; i -> [10, 10]})
-bb1_t=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {n1 -> [1, 1]; i -> [0, 10]})
-bb2=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {n1 -> [1, 1]; i -> [0, 9]})
+bb1=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {i -> [0, 10]})
+bb1_f=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {i -> [0, 10]})
+ret=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {i -> [10, 10]})
+bb1_t=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {i -> [0, 10]})
+bb2=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {i -> [0, 9]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 === End ./test-bin/array_adaptive1 ===
@@ -1725,7 +1725,7 @@ CONVEX(OP2)={x -> [1, +oo]; y -> [0, 3]}
 [A] and [B] should be the same if CONVEX distributes over WIDENING 
 === End ./test-bin/boxes_bug ===
 === Begin ./test-bin/bu_inter ===
-z:int declare foo(x:int)
+z:int32 declare foo(x:int32)
 entry:
   y = x+1;
   goto exit;
@@ -1734,103 +1734,103 @@ exit:
   return z;
 
 
-y1:int declare bar(a:int)
+y1:int32 declare bar(a:int32)
 entry:
   x1 = a;
   w1 = 5;
   goto exit;
 exit:
-  y1 = call foo(x1:int);
+  y1:int32 = call foo(x1:int32);
   return y1;
 
 
-t:int declare rec1(s:int)
+t:int32 declare rec1(s:int32)
 entry:
   r = s-1;
   goto exit;
 exit:
-  t = call rec2(r:int);
+  t:int32 = call rec2(r:int32);
   return t;
 
 
-t1:int declare rec2(s1:int)
+t1:int32 declare rec2(s1:int32)
 entry:
   r1 = s1-1;
   goto exit;
 exit:
-  t1 = call rec1(r1:int);
+  t1:int32 = call rec1(r1:int32);
   return t1;
 
 
-w2:int declare main()
+w2:int32 declare main()
 entry:
   x2 = 3;
-  y2 = call bar(x2:int);
-  z3 = call rec1(y2:int);
+  y2:int32 = call bar(x2:int32);
+  z3:int32 = call rec1(y2:int32);
   goto exit;
 exit:
   z2 = y2+2;
-  w2 = call foo(z2:int);
+  w2:int32 = call foo(z2:int32);
   return w2;
 
 
 Running summary domain=SparseDBM and forward domain=Intervals
-z:int declare foo(x:int)
+z:int32 declare foo(x:int32)
 exit={x -> [3, 8]; y -> [4, 9]; z -> [6, 11]}
 entry={x -> [3, 8]; y -> [4, 9]}
 =================================
-y1:int declare bar(a:int)
+y1:int32 declare bar(a:int32)
 exit={a -> [3, 3]; x1 -> [3, 3]; y1 -> [6, 6]; w1 -> [5, 5]}
 entry={a -> [3, 3]; x1 -> [3, 3]; w1 -> [5, 5]}
 =================================
-t:int declare rec1(s:int)
+t:int32 declare rec1(s:int32)
 exit={}
 entry={}
 =================================
-t1:int declare rec2(s1:int)
+t1:int32 declare rec2(s1:int32)
 exit={}
 entry={}
 =================================
-w2:int declare main()
+w2:int32 declare main()
 exit={x2 -> [3, 3]; y2 -> [6, 6]; z2 -> [8, 8]; w2 -> [11, 11]}
 entry={x2 -> [3, 3]; y2 -> [6, 6]}
 =================================
-Summary foo(IN:{x:int},OUT:{z:int}) ==>
+Summary foo(IN:{x:int32},OUT:{z:int32}) ==>
 {z-x<=3, x-z<=-3}
-Summary bar(IN:{a:int},OUT:{y1:int}) ==>
+Summary bar(IN:{a:int32},OUT:{y1:int32}) ==>
 {y1-a<=3, a-y1<=-3}
-Summary rec1(IN:{s:int},OUT:{t:int}) ==>
+Summary rec1(IN:{s:int32},OUT:{t:int32}) ==>
 {}
-Summary rec2(IN:{s1:int},OUT:{t1:int}) ==>
+Summary rec2(IN:{s1:int32},OUT:{t1:int32}) ==>
 {}
 Running summary domain=ApronOctagon and forward domain=Intervals
-z:int declare foo(x:int)
+z:int32 declare foo(x:int32)
 exit={x -> [3, 8]; y -> [4, 9]; z -> [6, 11]}
 entry={x -> [3, 8]; y -> [4, 9]}
 =================================
-y1:int declare bar(a:int)
+y1:int32 declare bar(a:int32)
 exit={a -> [3, 3]; x1 -> [3, 3]; y1 -> [6, 6]; w1 -> [5, 5]}
 entry={a -> [3, 3]; x1 -> [3, 3]; w1 -> [5, 5]}
 =================================
-t:int declare rec1(s:int)
+t:int32 declare rec1(s:int32)
 exit={}
 entry={}
 =================================
-t1:int declare rec2(s1:int)
+t1:int32 declare rec2(s1:int32)
 exit={}
 entry={}
 =================================
-w2:int declare main()
+w2:int32 declare main()
 exit={x2 -> [3, 3]; y2 -> [6, 6]; z2 -> [8, 8]; w2 -> [11, 11]}
 entry={x2 -> [3, 3]; y2 -> [6, 6]}
 =================================
-Summary foo(IN:{x:int},OUT:{z:int}) ==>
+Summary foo(IN:{x:int32},OUT:{z:int32}) ==>
 {x-z <= -3; -x+z <= 3}
-Summary bar(IN:{a:int},OUT:{y1:int}) ==>
+Summary bar(IN:{a:int32},OUT:{y1:int32}) ==>
 {a-y1 <= -3; -a+y1 <= 3}
-Summary rec1(IN:{s:int},OUT:{t:int}) ==>
+Summary rec1(IN:{s:int32},OUT:{t:int32}) ==>
 {}
-Summary rec2(IN:{s1:int},OUT:{t1:int}) ==>
+Summary rec2(IN:{s1:int32},OUT:{t1:int32}) ==>
 {}
 === End ./test-bin/bu_inter ===
 === Begin ./test-bin/cfg ===
@@ -1966,29 +1966,29 @@ Control-dependence graph
 {x7;x8;}  control-dependent on x6
 === End ./test-bin/cfg ===
 === Begin ./test-bin/cg ===
-z:int declare foo(x:int)
+z:int32 declare foo(x:int32)
 entry:
   y = x+1;
   goto exit;
 exit:
   z = y+2;
-  w = call barz(z:int);
+  w:int32 = call barz(z:int32);
   return w;
 
 
-y:int declare bar(a:int)
+y:int32 declare bar(a:int32)
 entry:
   x = a;
   goto exit;
 exit:
-  y = call foo(x:int);
+  y:int32 = call foo(x:int32);
   return y;
 
 
 void declare main()
 entry:
   x = 3;
-  y = call bar(x:int);
+  y:int32 = call bar(x:int32);
   goto exit;
 exit:
   z = y+2;
@@ -2554,7 +2554,7 @@ w:=x+ 5 in {z -> [10, +oo], y-x<=0}={z -> [10, +oo], y-x<=0, w-x<=5, x-w<=-5, y-
 === Begin ./test-bin/intrinsics ===
 x0:
   k = 2147483648;
-  i = crab_intrinsic(foo1,i:int,k:int);
+  i = crab_intrinsic(foo1,i:int32,k:int32);
   i = 0;
   goto bb1;
 bb1:
@@ -2564,7 +2564,7 @@ bb1_t:
   havoc(nd);
   inc = ite(-nd <= -1,1,2);
   i = i+inc;
-  i = crab_intrinsic(foo2,i:int,k:int);
+  i = crab_intrinsic(foo2,i:int32,k:int32);
   goto bb1;
 bb1_f:
   assume(-i <= -100);
@@ -3035,7 +3035,7 @@ user-defined assertion checker
 
 === End ./test-bin/region-2 ===
 === Begin ./test-bin/td_inter_1 ===
-z:int declare foo(x:int)
+z:int32 declare foo(x:int32)
 entry:
   y = x+1;
   goto exit;
@@ -3044,60 +3044,60 @@ exit:
   return z;
 
 
-y1:int declare bar(a:int)
+y1:int32 declare bar(a:int32)
 entry:
   x1 = a;
   w1 = 5;
   goto exit;
 exit:
-  y1 = call foo(x1:int);
+  y1:int32 = call foo(x1:int32);
   assert(-y1 <= -6);
   assert(y1 <= 17);
   return y1;
 
 
-t:int declare rec1(s:int)
+t:int32 declare rec1(s:int32)
 entry:
   r = s-1;
   goto exit;
 exit:
-  t = call rec2(r:int);
+  t:int32 = call rec2(r:int32);
   return t;
 
 
-t1:int declare rec2(s1:int)
+t1:int32 declare rec2(s1:int32)
 entry:
   a = 10;
   r1 = s1-1;
   goto exit;
 exit:
-  t1 = call rec1(r1:int);
+  t1:int32 = call rec1(r1:int32);
   assert(-a <= -5);
   return t1;
 
 
-w2:int declare main()
+w2:int32 declare main()
 entry:
   x2 = 3;
   x3 = 4;
   x4 = 5;
   x5 = 6;
-  y2 = call bar(x2:int);
+  y2:int32 = call bar(x2:int32);
   assert(y2 = 6);
-  __ = call rec1(y2:int);
+  __:int32 = call rec1(y2:int32);
   goto exit;
 exit:
   z2 = y2+2;
-  y3 = call bar(x2:int);
+  y3:int32 = call bar(x2:int32);
   assert(y3 = 6);
   z3 = y3+z2;
-  w2 = call foo(z3:int);
+  w2:int32 = call foo(z3:int32);
   assert(w2 = 17);
-  y4 = call bar(x3:int);
+  y4:int32 = call bar(x3:int32);
   assert(y4 = 7);
-  y5 = call bar(x4:int);
+  y5:int32 = call bar(x4:int32);
   assert(y5 = 8);
-  y6 = call bar(x5:int);
+  y6:int32 = call bar(x5:int32);
   assert(y6 = 9);
   res = w2+y4;
   res = res+y5;
@@ -3135,14 +3135,14 @@ Running top-down inter-procedural analysis with ApronOctagon
  0  Number of total unreachable checks
 === End ./test-bin/td_inter_1 ===
 === Begin ./test-bin/td_inter_2 ===
-(x_out:int,y_out:int) declare loop(x_in:int,y_in:int)
+(x_out:int32,y_out:int32) declare loop(x_in:int32,y_in:int32)
 entry:
   goto rec_case,base_case;
 rec_case:
   assume(x_in <= 100);
   x_next = x_in+1;
   y_next = y_in+1;
-  (x_out,y_out)= call loop(x_next:int,y_next:int);
+  (x_out:int32,y_out:int32)= call loop(x_next:int32,y_next:int32);
   goto exit;
 exit:
   return (x_out,y_out);
@@ -3153,29 +3153,29 @@ base_case:
   y_out = y_in;
   goto exit;
 
-(x_res:int,y_res:int) declare main()
+(x_res:int32,y_res:int32) declare main()
 entry:
   x = 0;
   y = 0;
-  (x_res,y_res)= call loop(x:int,y:int);
+  (x_res:int32,y_res:int32)= call loop(x:int32,y:int32);
   goto exit;
 exit:
   return (x_res,y_res);
 
 
-(x_out:int,y_out:int) declare loop(x_in:int,y_in:int)
+(x_out:int32,y_out:int32) declare loop(x_in:int32,y_in:int32)
 entry={}
 base_case={}
 exit={}
 rec_case={}
 =================================
-(x_res:int,y_res:int) declare main()
+(x_res:int32,y_res:int32) declare main()
 entry={}
 exit={x -> [0, 0], y -> [0, 0], y-x<=0, x-y<=0}
 =================================
 === End ./test-bin/td_inter_2 ===
 === Begin ./test-bin/td_inter_3 ===
-z:int declare foo(x:int,y:int)
+z:int32 declare foo(x:int32,y:int32)
 entry:
   goto exit;
 exit:
@@ -3190,7 +3190,7 @@ entry:
   z = 8;
   goto exit;
 exit:
-  z = call foo(x:int,y:int);
+  z:int32 = call foo(x:int32,y:int32);
   assert(x = 5);
   assert(y = 10);
   assert(z = 5);

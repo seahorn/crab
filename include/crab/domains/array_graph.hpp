@@ -858,7 +858,7 @@ void propagate_between_weight_and_scalar(
     Dom1 src, typename Dom1::linear_expression_t src_e, variable_type ty,
     Dom2 &dst, typename Dom2::variable_t dst_var) {
 
-  if (ty == ARR_INT_TYPE || ty == ARR_REAL_TYPE) {
+  if (ty.is_integer_array()  || ty.is_real_array()) {
     // --- XXX: simplification wrt Gange et.al.:
     //     Only non-relational numerical invariants are
     //     propagated from the graph domain to the scalar domain.
@@ -2402,7 +2402,7 @@ public:
 
     Content w = array_edge(norm_idx);
 
-    if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE) {
+    if (a.get_type().is_integer_array() || a.get_type().is_real_array()) {
       // Only non-relational numerical invariants are
       // propagated from the graph domain to the expressions domain.
       _expressions.set(lhs, w[a]);

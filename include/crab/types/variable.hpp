@@ -2,17 +2,11 @@
 
 #include <crab/support/os.hpp>
 #include <crab/types/indexable.hpp>
+#include <boost/functional/hash_fwd.hpp> // for hash_combine
 
 namespace crab {
-
-/*
- * Container for typed variables used by the abstract domains and
- * linear_constraints.
- */
-
-// XXX: we try to avoid having a type as a generic class that has a
-// subclass for each subtype.
-enum variable_type {
+  
+enum variable_type_kind {
   // scalar types
   BOOL_TYPE,
   INT_TYPE,
@@ -36,60 +30,143 @@ enum variable_type {
   UNK_TYPE
 };
 
-inline crab_os &operator<<(crab_os &o, variable_type t) {
-  switch (t) {
-  case BOOL_TYPE:
-    o << "bool";
-    break;
-  case INT_TYPE:
-    o << "int";
-    break;
-  case REAL_TYPE:
-    o << "real";
-    break;
-  case REF_TYPE:
-    o << "ref";
-    break;
-    /////////////
-  case ARR_BOOL_TYPE:
-    o << "arr(bool)";
-    break;
-  case ARR_INT_TYPE:
-    o << "arr(int)";
-    break;
-  case ARR_REAL_TYPE:
-    o << "arr(real)";
-    break;
-    /////////////
-  case REG_BOOL_TYPE:
-    o << "region(bool)";
-    break;
-  case REG_INT_TYPE:
-    o << "region(int)";
-    break;
-  case REG_REAL_TYPE:
-    o << "region(real)";
-    break;
-  case REG_REF_TYPE:
-    o << "region(ref)";
-    break;
-  case REG_ARR_BOOL_TYPE:
-    o << "region(arr(bool))";
-    break;
-  case REG_ARR_INT_TYPE:
-    o << "region(arr(int))";
-    break;
-  case REG_ARR_REAL_TYPE:
-    o << "region(arr(real))";
-    break;
-    //////////////
-  default:
-    o << "unknown";
-    break;
-  }
-  return o;
-}
 
+/*
+ * Variable type used by the abstract domains and linear expressions.
+ *
+ * We try to avoid having a type as a generic class that has a
+ * subclass for each subtype.
+ */
+class variable_type {
+  variable_type_kind m_kind;
+  /* 
+   * Important: the bitwidth (m_bitwidth) is only used if the type is
+   * an integer or Boolean. Booleans always have a bitwidth of
+   * 1. Reals do not have a bitwidth associated with. For references,
+   * we might want to use a bitwidth in the future but for now, we
+   * don't. Arrays of integers do not have a bitwidth associated with
+   * because arrays can be indexed using different bitwidths so each
+   * array store and load must say how many bytes is being
+   * accessed. In the future, we might want to use bitwidth for
+   * regions of integers but for now, we don't.
+  */
+  unsigned m_bitwidth; /* in bits */
+public:
+  variable_type(variable_type_kind kind, unsigned width = 0):
+    m_kind(kind), m_bitwidth(width) {
+    if (m_kind == INT_TYPE && m_bitwidth <= 1) {
+      CRAB_ERROR("Cannot create integer variable without bitwidth");
+    }
+    
+    if (m_kind == BOOL_TYPE) {
+      m_bitwidth = 1;
+    }
+  }
+  
+  variable_type(const variable_type &o) = default;
+  variable_type(variable_type &&o) = default;
+  variable_type &operator=(const variable_type &o) = default;
+  variable_type &operator=(variable_type &&o) = default;  
+  bool operator==(const variable_type &o) const {
+    if (m_kind == INT_TYPE) {
+      return m_kind == o.m_kind && m_bitwidth == o.m_bitwidth;
+    } else {
+      return m_kind == o.m_kind;
+    }
+  }
+  bool operator!=(const variable_type &o) const {
+    return (!(operator==(o)));
+  }
+
+  size_t hash() const {
+    size_t res = std::hash<size_t>{}(static_cast<size_t>(m_kind));
+    boost::hash_combine(res, std::hash<size_t>{}(static_cast<size_t>(m_bitwidth)));
+    return res;
+  }
+
+  bool is_typed() const { return m_kind != UNK_TYPE;}
+  
+  //// scalars
+  bool is_bool() const { return m_kind == BOOL_TYPE; }
+  bool is_integer() const { return m_kind == INT_TYPE; }
+  bool is_integer(unsigned bitwidth) const { return m_kind == INT_TYPE && m_bitwidth == bitwidth; }
+  unsigned get_integer_bitwidth() const { assert(m_kind == INT_TYPE); return m_bitwidth;}
+  bool is_real() const { return m_kind == REAL_TYPE; }
+  bool is_reference() const { return m_kind == REF_TYPE; }
+  //// arrays
+  bool is_bool_array() const { return m_kind == ARR_BOOL_TYPE; }  
+  bool is_integer_array() const { return m_kind == ARR_INT_TYPE; }
+  bool is_real_array() const { return m_kind == ARR_REAL_TYPE; }
+  bool is_array() const { return is_integer_array() || is_bool_array() || is_real_array();}
+  //// regions
+  bool is_bool_region() const { return m_kind == REG_BOOL_TYPE; }
+  bool is_integer_region() const { return m_kind == REG_INT_TYPE; }
+  bool is_real_region() const { return m_kind == REG_REAL_TYPE; }
+  bool is_reference_region() const { return m_kind == REG_REF_TYPE; }
+  bool is_bool_array_region() const { return m_kind == REG_ARR_BOOL_TYPE; }
+  bool is_int_array_region() const { return m_kind == REG_ARR_INT_TYPE; }
+  bool is_real_array_region() const { return m_kind == REG_ARR_REAL_TYPE; }
+  bool is_region() const { return is_scalar_region() || is_array_region();}
+  bool is_scalar_region() const { return is_bool_region() || is_integer_region() || is_real_region() ||
+                                         is_reference_region();}
+  bool is_array_region() const { return is_bool_array_region() || is_int_array_region() || is_real_array_region(); }
+  
+  void write(crab_os &o) const {
+    switch (m_kind) {
+    case BOOL_TYPE:
+      o << "bool";
+      break;
+    case INT_TYPE:
+      o << "int" << m_bitwidth;
+      break;
+    case REAL_TYPE:
+      o << "real";
+      break;
+    case REF_TYPE:
+      o << "ref";
+      break;
+    case ARR_BOOL_TYPE:
+      o << "arr(bool)";
+      break;
+    case ARR_INT_TYPE:
+      o << "arr(int)";
+      break;
+    case ARR_REAL_TYPE:
+      o << "arr(real)";
+      break;
+    case REG_BOOL_TYPE:
+      o << "region(bool)";
+    break;
+    case REG_INT_TYPE:
+      o << "region(int)";
+      break;
+    case REG_REAL_TYPE:
+      o << "region(real)";
+      break;
+    case REG_REF_TYPE:
+      o << "region(ref)";
+      break;
+    case REG_ARR_BOOL_TYPE:
+      o << "region(arr(bool))";
+      break;
+    case REG_ARR_INT_TYPE:
+      o << "region(arr(int))";
+      break;
+    case REG_ARR_REAL_TYPE:
+      o << "region(arr(real))";
+      break;
+    default:
+      o << "unknown";
+      break;
+    }
+  }
+  
+  friend inline crab_os &operator<<(crab_os &o, const variable_type &vt) {
+    vt.write(o);
+    return o;
+  }
+};
+  
 template <typename Number, typename VariableName>
 class variable : public indexable {
   // XXX: template parameter Number is required even if the class
@@ -97,6 +174,7 @@ class variable : public indexable {
   // deduce the kind of Number from constraints like x < y.
 
 public:
+
   using variable_t = variable<Number, VariableName>;
   using bitwidth_t = unsigned;
   using type_t = variable_type;
@@ -105,72 +183,41 @@ public:
 
 private:
   VariableName _n;
-  type_t _type;
-  bitwidth_t _width;
+  variable_type m_ty;
 
 public:
-  /**
-   * DO NOT USE this constructor to create a CFG since all CFG
-   * statements must be strongly typed.  This constructor is
-   * intended to be used only abstract domains to generate temporary
-   * variables.
-   **/
+  /* ========== Begin internal API  ============= */
+  /* Call this constructor only from abstract domains */  
   explicit variable(const VariableName &n)
-      : _n(n), _type(crab::UNK_TYPE), _width(0) {}
+    : _n(n), m_ty(crab::UNK_TYPE, 0) {}
 
+  /* Call this constructor only from abstract domains */
+  variable(const VariableName &n, variable_type_kind ty_kind)
+    : _n(n), m_ty(ty_kind, 0) {}
+
+  /* Call this constructor only from abstract domains */  
+  variable(const VariableName &n, variable_type_kind ty_kind, bitwidth_t width)
+    : _n(n), m_ty(ty_kind, width) {}
+  /* ========== End internal API  =============== */
 public:
-  variable(const VariableName &n, type_t type)
-      : _n(n), _type(type), _width(0) {}
 
-  variable(const VariableName &n, type_t type, bitwidth_t width)
-      : _n(n), _type(type), _width(width) {}
+  variable(const VariableName &n, variable_type ty)
+    : _n(n), m_ty(ty) {}
 
-  variable(const variable_t &o) : _n(o._n), _type(o._type), _width(o._width) {}
+  variable(const variable_t &o) : _n(o._n), m_ty(o.m_ty) {}
 
   variable(variable_t &&o)
-      : _n(std::move(o._n)), _type(std::move(o._type)),
-        _width(std::move(o._width)) {}
+    : _n(std::move(o._n)), m_ty(std::move(o.m_ty)) {}
 
   variable_t &operator=(const variable_t &o) {
     if (this != &o) {
       _n = o._n;
-      _type = o._type;
-      _width = o._width;
+      m_ty = o.m_ty;
     }
     return *this;
   }
 
-  bool is_typed() const { return _type != crab::UNK_TYPE; }
-
-  bool is_int_type() const { return _type == crab::INT_TYPE; }
-
-  bool is_bool_type() const { return _type == crab::BOOL_TYPE; }
-
-  bool is_real_type() const { return _type == crab::REAL_TYPE; }
-
-  bool is_ref_type() const { return _type == crab::REF_TYPE; }
-
-  bool is_array_type() const {
-    return _type >= crab::ARR_BOOL_TYPE && _type <= crab::ARR_REAL_TYPE;
-  }
-
-  bool is_region_type() const {
-    return is_scalar_region_type() || is_array_region_type();
-  }
-
-  bool is_scalar_region_type() const {
-    return _type >= crab::REG_BOOL_TYPE && _type <= crab::REG_REF_TYPE;
-  }
-
-  bool is_array_region_type() const {
-    return _type >= crab::REG_ARR_BOOL_TYPE && _type <= crab::REG_ARR_REAL_TYPE;
-  }
-
-  type_t get_type() const { return _type; }
-
-  bool has_bitwidth() const { return _width > 0; }
-
-  bitwidth_t get_bitwidth() const { return _width; }
+  type_t get_type() const { return m_ty; }
 
   const VariableName &name() const { return _n; }
 
@@ -182,11 +229,6 @@ public:
     return std::hash<size_t>{}(static_cast<size_t>(_n.index()));
   }
 
-  // check that o has the same type and bitwidth than this
-  bool same_type_and_bitwidth(const variable_t &o) const {
-    return (_type == o._type && _width == o._width);
-  }
-
   bool operator==(const variable_t &o) const { return index() == o.index(); }
 
   bool operator!=(const variable_t &o) const { return (!(operator==(o))); }
@@ -195,20 +237,11 @@ public:
 
   virtual void write(crab::crab_os &o) const override {
     o << _n;
-    CRAB_LOG(
-        "crab-print-types", o << ":" << get_type(); switch (get_type()) {
-          case crab::INT_TYPE:
-          case crab::ARR_INT_TYPE:
-          case crab::REG_INT_TYPE:
-          case crab::REG_ARR_INT_TYPE:
-            o << ":" << get_bitwidth();
-            break;
-          default:;
-        });
+    CRAB_LOG("crab-print-types", o << ":" << get_type(););
   }
 
   void dump(crab::crab_os &o) const {
-    o << _n << ":" << get_type() << ":" << get_bitwidth();
+    o << _n << ":" << get_type();
   }
 
   friend crab::crab_os &operator<<(crab::crab_os &o,

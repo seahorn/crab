@@ -130,12 +130,20 @@ private:
     return false;
   }
 
+  static unsigned get_bitwidth(const variable_t &v) {
+    if (v.get_type().is_integer()) {
+      return v.get_type().get_integer_bitwidth();
+    } else {
+      return 0;
+    }
+  }
+  
   Interval compute_residual(const linear_constraint_t &cst,
                             const variable_t &pivot, IntervalCollection &env) {
     crab::ScopedCrabStats __st__(
         "Linear Interval Solver.Solving computing residual");
     namespace interval_traits = linear_interval_solver_impl;
-    bitwidth_t w = pivot.get_bitwidth();
+    bitwidth_t w = get_bitwidth(pivot);
     Interval residual =
         interval_traits::mk_interval<Interval>(cst.constant(), w);
     for (auto kv : cst) {
@@ -167,7 +175,7 @@ private:
       Interval rhs = Interval::top();
       if (!res.is_top()) {
         Interval ic =
-            interval_traits::mk_interval<Interval>(c, pivot.get_bitwidth());
+	  interval_traits::mk_interval<Interval>(c, get_bitwidth(pivot));
         rhs = res / ic;
       }
 

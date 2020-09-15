@@ -82,8 +82,8 @@ private:
 
   // Only offset_map<Variable> can create cells
   cell() : _offset(0), _size(0), _scalar(boost::optional<Variable>()) {}
-  cell(offset_t offset, Variable scalar)
-      : _offset(offset), _size(scalar.get_bitwidth()), _scalar(scalar) {}
+  cell(offset_t offset, uint64_t size, Variable scalar)
+      : _offset(offset), _size(size), _scalar(scalar) {}
 
   cell(offset_t offset, uint64_t size)
       : _offset(offset), _size(size), _scalar(boost::optional<Variable>()) {}
@@ -241,7 +241,7 @@ private:
   using varname_t = typename variable_t::varname_t;
   using offset_map_t = offset_map<Variable>;
   using cell_set_t = std::set<cell_t>;
-  using type_t = crab::variable_type;
+  using type_t = typename variable_t::type_t;
 
   /*
     The keys in the patricia tree are processing in big-endian
@@ -368,13 +368,13 @@ private:
     return os.str();
   }
 
-  static type_t get_array_element_type(type_t array_type) {
-    if (array_type == ARR_BOOL_TYPE) {
+  static variable_type_kind get_array_element_type(type_t array_type) {
+    if (array_type.is_bool_array()) {
       return BOOL_TYPE;
-    } else if (array_type == ARR_INT_TYPE) {
+    } else if (array_type.is_integer_array()) {
       return INT_TYPE;
     } else {
-      assert(array_type == ARR_REAL_TYPE);
+      assert(array_type.is_real_array());
       return REAL_TYPE;
     }
   }
@@ -390,19 +390,21 @@ private:
     }
   }
 
-  cell_t mk_cell(Variable array, offset_t o, uint64_t size) {
+  cell_t mk_cell(Variable array, offset_t o, uint64_t size /*bytes*/) {
     // TODO: check array is the array associated to this offset map
 
     cell_t c = get_cell(o, size);
     if (c.is_null()) {
       auto &vfac = const_cast<varname_t *>(&(array.name()))->get_var_factory();
       std::string vname = mk_scalar_name(array, o, size);
-      type_t vtype = get_array_element_type(array.get_type());
+      variable_type_kind vtype_kind = get_array_element_type(array.get_type());
       // create a new scalar variable for representing the contents
       // of bytes array[o,o+1,..., o+size-1]
       ikos::index_t vindex = get_index(array, o, size);
-      Variable scalar_var(vfac.get(vindex, vname), vtype, size);
-      c = cell_t(o, scalar_var);
+      Variable scalar_var(vfac.get(vindex, vname), vtype_kind,
+			  (vtype_kind == BOOL_TYPE ? 1 :
+			   (vtype_kind == INT_TYPE ? 8*size: 0)));
+      c = cell_t(o, size, scalar_var);
       insert_cell(c);
       CRAB_LOG("array-expansion", crab::outs()
                                       << "**Created cell " << c << "\n";);
@@ -682,7 +684,6 @@ public:
 
 private:
   using bound_t = ikos::bound<number_t>;
-  using type_t = crab::variable_type;
   using offset_map_t = offset_map<variable_t>;
   using cell_t = cell<variable_t>;
   using array_map_t = std::unordered_map<variable_t, offset_map_t>;
@@ -760,17 +761,15 @@ private:
   // the right type.
   void do_assign(variable_t lhs, variable_t rhs) {
     if (lhs.get_type() != rhs.get_type()) {
-      CRAB_ERROR("array_expansion assignment with different types");
+      CRAB_ERROR("array_expansion assignment ", lhs, ":=" , rhs,
+		 " with different types ", lhs.get_type(), " and ", rhs.get_type());
     }
-    switch (lhs.get_type()) {
-    case BOOL_TYPE:
+    auto lhs_ty = lhs.get_type();
+    if (lhs_ty.is_bool()) {
       _inv.assign_bool_var(lhs, rhs, false);
-      break;
-    case INT_TYPE:
-    case REAL_TYPE:
+    } else if (lhs_ty.is_integer() || lhs_ty.is_real()) {
       _inv.assign(lhs, rhs);
-      break;
-    default:;
+    } else {
       CRAB_ERROR(
           "array_expansion assignment with unexpected array element type");
     }
@@ -784,15 +783,15 @@ private:
     variable_t rhs = rhs_c.get_scalar();
     do_assign(lhs, rhs);
   }
-
+  
   // helper to assign a linear expression into a cell
   void do_assign(cell_t lhs_c, linear_expression_t v) {
     if (!lhs_c.has_scalar()) {
       CRAB_ERROR("array_expansion cell without scalar");
     }
     variable_t lhs = lhs_c.get_scalar();
-    switch (lhs.get_type()) {
-    case BOOL_TYPE:
+    auto lhs_ty = lhs.get_type();
+    if (lhs_ty.is_bool()) {
       if (v.is_constant()) {
         if (v.constant() >= number_t(1)) {
           _inv.assign_bool_cst(lhs, linear_constraint_t::get_true());
@@ -802,12 +801,9 @@ private:
       } else if (auto var = v.get_variable()) {
         _inv.assign_bool_var(lhs, (*var), false);
       }
-      break;
-    case INT_TYPE:
-    case REAL_TYPE:
+    } else if (lhs_ty.is_integer() || lhs_ty.is_real()) {
       _inv.assign(lhs, v);
-      break;
-    default:;
+    } else {
       CRAB_ERROR(
           "array_expansion assignment with unexpected array element type");
     }
@@ -820,15 +816,13 @@ private:
     if (lhs.get_type() != rhs.get_type()) {
       CRAB_ERROR("array_expansion backward assignment with different types");
     }
-    switch (lhs.get_type()) {
-    case BOOL_TYPE:
+
+    auto lhs_ty = lhs.get_type();
+    if (lhs_ty.is_bool()) {
       _inv.backward_assign_bool_var(lhs, rhs, false, dom);
-      break;
-    case INT_TYPE:
-    case REAL_TYPE:
+    } else if (lhs_ty.is_integer() || lhs_ty.is_real()) {
       _inv.backward_assign(lhs, rhs, dom);
-      break;
-    default:;
+    } else {
       CRAB_ERROR("array_expansion backward_assignment with unexpected array "
                  "element type");
     }
@@ -851,8 +845,8 @@ private:
       CRAB_ERROR("array_expansion cell without scalar");
     }
     variable_t lhs = lhs_c.get_scalar();
-    switch (lhs.get_type()) {
-    case BOOL_TYPE:
+    auto lhs_ty = lhs.get_type();
+    if (lhs_ty.is_bool()) {
       if (v.is_constant()) {
         if (v.constant() >= number_t(1)) {
           _inv.backward_assign_bool_cst(lhs, linear_constraint_t::get_true(),
@@ -864,12 +858,9 @@ private:
       } else if (auto var = v.get_variable()) {
         _inv.backward_assign_bool_var(lhs, (*var), false, dom);
       }
-      break;
-    case INT_TYPE:
-    case REAL_TYPE:
+    } else if (lhs_ty.is_integer() || lhs_ty.is_real()) {
       _inv.backward_assign(lhs, v, dom);
-      break;
-    default:;
+    } else {
       CRAB_ERROR("array_expansion backward assignment with unexpected array "
                  "element type");
     }
@@ -1002,7 +993,7 @@ public:
     _inv.forget(variables);
 
     for (variable_t v : variables) {
-      if (v.is_array_type()) {
+      if (v.get_type().is_array()) {
         remove_array_map(v);
       }
     }
@@ -1036,7 +1027,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.forget");
     crab::ScopedCrabStats __st__(domain_name() + ".forget");
 
-    if (var.is_array_type()) {
+    if (var.get_type().is_array()) {
       remove_array_map(var);
     } else {
       _inv -= var;

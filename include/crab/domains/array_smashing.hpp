@@ -59,8 +59,8 @@ private:
 
   void do_strong_update(NumDomain &dom, const variable_t &a,
                         const linear_expression_t &rhs) {
-    switch (a.get_type()) {
-    case ARR_BOOL_TYPE:
+    auto ty = a.get_type();
+    if (ty.is_bool_array()) {      
       if (rhs.is_constant()) {
         if (rhs.constant() >= number_t(1)) {
           dom.assign_bool_cst(a, linear_constraint_t::get_true());
@@ -70,12 +70,10 @@ private:
       } else if (auto rhs_v = rhs.get_variable()) {
         dom.assign_bool_var(a, (*rhs_v), false);
       }
-      break;
-    case ARR_INT_TYPE:
-    case ARR_REAL_TYPE:
+    } else if (ty.is_integer_array() || ty.is_real_array()) {
       dom.assign(a, rhs);
-      break;
-    default:; /* unreachable */
+    } else {
+      /* unreachable */
     }
   }
 
@@ -102,7 +100,7 @@ private:
       if (std::all_of(cst.expression().variables_begin(),
                       cst.expression().variables_end(),
                       [](const variable_t &v) {
-                        return v.is_int_type() || v.is_bool_type();
+                        return v.get_type().is_integer() || v.get_type().is_bool();
                       })) {
         res += cst;
       }
@@ -208,7 +206,7 @@ public:
   }
 
   void expand(const variable_t &var, const variable_t &new_var) override {
-    if (!var.same_type_and_bitwidth(new_var)) {
+    if (var.get_type() != new_var.get_type()) {
       CRAB_ERROR(domain_name(), "::expand must preserve the same type");
     }
     _inv.expand(var, new_var);
@@ -334,8 +332,8 @@ public:
                           const linear_expression_t & /*lb_idx*/,
                           const linear_expression_t & /*ub_idx*/,
                           const linear_expression_t &val) override {
-    switch (a.get_type()) {
-    case ARR_BOOL_TYPE: {
+    auto ty = a.get_type();
+    if (ty.is_bool_array()) {
       if (val.is_constant()) {
         if (val.constant() >= number_t(1)) {
           _inv.assign_bool_cst(a, linear_constraint_t::get_true());
@@ -345,13 +343,8 @@ public:
       } else if (auto var = val.get_variable()) {
         _inv.assign_bool_var(a, (*var), false);
       }
-      break;
-    }
-    case ARR_INT_TYPE:
-    case ARR_REAL_TYPE:
+    } else if (ty.is_integer_array() || ty.is_real_array()) {
       _inv.assign(a, val);
-      break;
-    default:;
     }
     CRAB_LOG("smashing", crab::outs() << "forall i:: " << a << "[i]==" << val
                                       << " -- " << *this << "\n";);
@@ -369,16 +362,12 @@ public:
     auto &vfac = const_cast<varname_t *>(&(a.name()))->get_var_factory();
     variable_t a_prime(vfac.get());
     _inv.expand(a, a_prime);
-    switch (a.get_type()) {
-    case ARR_BOOL_TYPE:
+    auto ty = a.get_type();
+    if (ty.is_bool_array()) {
       _inv.assign_bool_var(lhs, a_prime, false);
-      break;
-    case ARR_INT_TYPE:
-    case ARR_REAL_TYPE:
+    } else if (ty.is_integer_array() || ty.is_real_array()) {
       _inv.assign(lhs, a_prime);
-      break;
-    default:;
-    }
+    } 
     _inv -= a_prime;
 
     CRAB_LOG("smashing", crab::outs() << lhs << ":=" << a << "[" << i
@@ -417,16 +406,12 @@ public:
 
   virtual void array_assign(const variable_t &lhs,
                             const variable_t &rhs) override {
-    switch (lhs.get_type()) {
-    case ARR_BOOL_TYPE:
+    auto ty = lhs.get_type();
+    if (ty.is_bool_array()) {
       _inv.assign_bool_var(lhs, rhs, false);
-      break;
-    case ARR_INT_TYPE:
-    case ARR_REAL_TYPE:
+    } else if (ty.is_integer_array() || ty.is_real_array()) {
       _inv.assign(lhs, rhs);
-      break;
-    default:;
-    }
+    } 
   }
 
   // backward array operations
@@ -534,7 +519,7 @@ public:
       CRAB_ERROR(domain_name(), "::rename expects vectors same sizes");
     }
     for (unsigned i = 0, sz = from.size(); i < sz; ++i) {
-      if (!from[i].same_type_and_bitwidth(to[i])) {
+      if (from[i].get_type() != to[i].get_type()) {
         CRAB_ERROR(domain_name(), "::rename must preserve the same type");
       }
     }

@@ -1337,6 +1337,10 @@ private:
 
   wrapped_interval_t eval_expr(const linear_expression_t &expr,
                                bitwidth_t width) {
+    if (width == 0) {
+      return wrapped_interval_t::top();
+    }
+    
     wrapped_interval_t r =
         wrapped_interval_t::mk_winterval(expr.constant(), width);
     for (auto kv : expr) {
@@ -1514,7 +1518,10 @@ public:
     if (boost::optional<variable_t> v = e.get_variable()) {
       this->_env.set(x, this->_env[*v]);
     } else {
-      wrapped_interval_t r = eval_expr(e, x.get_bitwidth());
+      wrapped_interval_t r = eval_expr(e,
+				       x.get_type().is_integer() ?
+				       x.get_type().get_integer_bitwidth() :
+				       0);
       this->_env.set(x, r);
     }
     CRAB_LOG("wrapped-int", crab::outs()
@@ -1567,7 +1574,8 @@ public:
 
     wrapped_interval_t yi = this->_env[y];
     wrapped_interval_t zi =
-        wrapped_interval_t::mk_winterval(k, x.get_bitwidth());
+      wrapped_interval_t::mk_winterval(k, (x.get_type().is_integer() ?
+					   x.get_type().get_integer_bitwidth() : 0));
     wrapped_interval_t xi = wrapped_interval_t::bottom();
 
     switch (op) {
@@ -1610,24 +1618,32 @@ public:
     wrapped_interval_t src_i = this->_env[src];
     wrapped_interval_t dst_i;
 
+    auto get_bitwidth = [](const variable_t v) {
+			  auto ty = v.get_type();
+			  if (!(ty.is_integer() || ty.is_bool())) {
+			    CRAB_ERROR("unexpected types in cast operation");
+			  }
+			  return (ty.is_integer() ? ty.get_integer_bitwidth() : 1);
+			};
+    
     if (src_i.is_bottom() || src_i.is_top()) {
       dst_i = src_i;
     } else {
       switch (op) {
       case OP_ZEXT:
       case OP_SEXT: {
-        if (dst.get_bitwidth() < src.get_bitwidth()) {
+        if (get_bitwidth(dst) < get_bitwidth(src)) {
           CRAB_ERROR("destination must be larger than source in sext/zext");
         }
-        unsigned bits_to_add = dst.get_bitwidth() - src.get_bitwidth();
+        unsigned bits_to_add = get_bitwidth(dst) - get_bitwidth(src);
         dst_i =
             (op == OP_SEXT ? src_i.SExt(bits_to_add) : src_i.ZExt(bits_to_add));
       } break;
       case OP_TRUNC: {
-        if (src.get_bitwidth() < dst.get_bitwidth()) {
+        if (get_bitwidth(src) < get_bitwidth(dst)) {
           CRAB_ERROR("destination must be smaller than source in truncate");
         }
-        unsigned bits_to_keep = dst.get_bitwidth();
+        unsigned bits_to_keep = get_bitwidth(dst);
         wrapped_interval_t dst_i;
         dst_i = src_i.Trunc(bits_to_keep);
       } break;
@@ -1687,7 +1703,8 @@ public:
 
     wrapped_interval_t yi = this->_env[y];
     wrapped_interval_t zi =
-        wrapped_interval_t::mk_winterval(k, x.get_bitwidth());
+      wrapped_interval_t::mk_winterval(k,(x.get_type().is_integer() ?
+					  x.get_type().get_integer_bitwidth(): 0));
     wrapped_interval_t xi = wrapped_interval_t::bottom();
     switch (op) {
     case OP_AND: {
@@ -1723,7 +1740,17 @@ public:
   void operator+=(const linear_constraint_system_t &csts) override {
     crab::CrabStats::count(domain_name() + ".count.add_constraints");
     crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
-    this->add(csts);
+    linear_constraint_system_t wt_csts;
+    for (auto const& cst: csts) {
+      if (cst.is_well_typed()) {
+	wt_csts += cst;
+      } else {
+	CRAB_WARN(domain_name(), "::add_constraints ignored ", cst ,
+		  " because it not well typed");
+      }
+    }
+    
+    this->add(wt_csts);
     CRAB_LOG("wrapped-int", crab::outs()
                                 << "Added " << csts << " = " << *this << "\n");
   }
@@ -2934,6 +2961,8 @@ private:
 
   // return true if interval i fits in [min(b), max(b)]
   inline bool fit(interval_t i, bitwidth_t b, signedness_t signedness) const {
+    if (b  == 0) return false;
+    
     // TODO: cache min and max
     if (signedness == SIGNED) {
       auto max = wrapint::get_signed_max(b).get_signed_bignum();
@@ -2968,7 +2997,9 @@ private:
   bool may_overflow_residuals(const linear_constraint_t &cst,
                               number_t coef_pivot, const variable_t &pivot,
                               signedness_t signedness) {
-    bitwidth_t b = pivot.get_bitwidth();
+    bitwidth_t b = (pivot.get_type().is_integer() ?
+		    pivot.get_type().get_integer_bitwidth() :
+		    0);
     interval_t residual = cst.constant();
     if (!fit(residual, b, signedness)) {
       // If the constant is to large we bail out
@@ -3043,26 +3074,6 @@ private:
     return false;
   }
 
-  // return true iff all variables in the linear constraint cst have
-  // the same bitwidth
-  static bool has_same_bitwidth(const linear_constraint_t &cst) {
-    bool first = true;
-    typename variable_t::bitwidth_t b;
-    bool same_bitwidth = true;
-    for (auto const &v : cst.variables()) {
-      if (first) {
-        b = v.get_bitwidth();
-        first = false;
-      } else {
-        if (b != v.get_bitwidth()) {
-          same_bitwidth = false;
-          break;
-        }
-      }
-    }
-    return same_bitwidth;
-  }
-
   // If the wrapped domain + history abstraction cannot tell that v
   // does not overflow then v is forgotten from the numerical domain.
   //
@@ -3109,7 +3120,7 @@ private:
     // -- filter out constraints that shouldn't be propagated to the
     // -- wrapped interval domain
     for (auto const &c : csts) {
-      if (!has_same_bitwidth(c)) {
+      if (!c.is_well_typed()) {
         continue;
       }
       if (may_overflow(c, signedness)) {

@@ -878,33 +878,19 @@ public:
 
   static void unify(AbsDom &inv, const variable_t &lhs, const variable_t &rhs) {
     assert(lhs.get_type() == rhs.get_type());
-    switch (lhs.get_type()) {
-    case BOOL_TYPE:
+    auto ty = lhs.get_type();
+    if (ty.is_bool()) {
       inv.assign_bool_var(lhs, rhs, false);
-      break;
-    case INT_TYPE:
-    case REAL_TYPE:
+    } else if (ty.is_integer() || ty.is_real()) {
       inv.assign(lhs, rhs);
-      break;
-    case REF_TYPE:
+    } else if (ty.is_reference()) {
       inv -= lhs;
       inv.ref_assume(reference_constraint_t::mk_eq(lhs, rhs, number_t(0)));
-      break;
-    case REG_BOOL_TYPE:
-    case REG_INT_TYPE:
-    case REG_REAL_TYPE:
-    case REG_REF_TYPE:
-    case REG_ARR_BOOL_TYPE:
-    case REG_ARR_INT_TYPE:
-    case REG_ARR_REAL_TYPE:
+    } else if (ty.is_region()) {
       inv.region_copy(lhs, rhs);
-      break;
-    case ARR_BOOL_TYPE:
-    case ARR_INT_TYPE:
-    case ARR_REAL_TYPE:
+    } else if (ty.is_array()) {
       inv.array_assign(lhs, rhs);
-      break;
-    default:
+    } else {
       CRAB_ERROR("abs_transformer::unify unsupported type");
     }
   }

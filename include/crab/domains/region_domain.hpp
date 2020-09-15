@@ -385,8 +385,7 @@ private:
       left_base_vars.push_back(
        rename_var(left_regions[i], left_varmap, left_rev_varmap, left_alloc));
       right_base_vars.push_back(base_variable_t(right_alloc.next(),
-						old_right_base_vars[i].get_type(),
-						old_right_base_vars[i].get_bitwidth()));
+						old_right_base_vars[i].get_type()));
     }
 
     /* Propagate invariants on the region from the right to the
@@ -595,46 +594,38 @@ private:
   // Create a fresh variable in the base domain to shadow v
   base_variable_t make_base_variable(base_varname_allocator_t &var_allocator,
                                      const variable_t &v) const {
-    if (v.is_ref_type()) {
+    if (v.get_type().is_reference()) {
       base_variable_t bv(var_allocator.next(), crab::INT_TYPE, 32);
       return bv;
-    } else if (v.is_region_type()) {
-      typename base_variable_t::type_t ty;
+    } else if (v.get_type().is_region()) {
+      variable_type_kind ty;
       unsigned bitwidth = 0;
-      switch (v.get_type()) {
-      case REG_BOOL_TYPE:
-        ty = BOOL_TYPE;
-        bitwidth = 1;
-        break;
-      case REG_ARR_BOOL_TYPE:
-        ty = ARR_BOOL_TYPE;
-        bitwidth = 1;
-        break;
-      case REG_INT_TYPE:
+      auto vty = v.get_type();
+      if (vty.is_bool_region()) {
+	ty = BOOL_TYPE;
+	bitwidth = 1;
+      } else if (vty.is_integer_region()) {
+	// TODO: update this if we decide to allow REG_INT_TYPE to have bitwidth
         ty = INT_TYPE;
-        bitwidth = v.get_bitwidth();
-        break;
-      case REG_ARR_INT_TYPE:
-        ty = ARR_INT_TYPE;
-        bitwidth = v.get_bitwidth();
-        break;
-      case REG_REF_TYPE:
+        bitwidth = 32; 
+      } else if (vty.is_reference_region()) {
         ty = INT_TYPE;
         bitwidth = 32;
-        break;
-      case REG_REAL_TYPE:
+      } else if (vty.is_real_region()) {
         ty = REAL_TYPE;
-        break;
-      case REG_ARR_REAL_TYPE:
+      } else if (vty.is_bool_array_region()) {
+        ty = ARR_BOOL_TYPE;
+      } else if (vty.is_int_array_region()) {
+        ty = ARR_INT_TYPE;
+      } else if (vty.is_real_array_region()) {
         ty = ARR_REAL_TYPE;
-        break;
-      default:;
+      } else {
         CRAB_ERROR(domain_name() + "::make_base_variable: unreachable");
       }
       base_variable_t bv(var_allocator.next(), ty, bitwidth);
       return bv;
     } else {
-      base_variable_t bv(var_allocator.next(), v.get_type(), v.get_bitwidth());
+      base_variable_t bv(var_allocator.next(), v.get_type());
       return bv;
     }
   }
@@ -685,7 +676,7 @@ private:
                                              bool ignore_references) const {
     auto it = m_rev_var_map.find(v);
     if (it != m_rev_var_map.end()) {
-      if (!ignore_references || !it->second.is_ref_type()) {
+      if (!ignore_references || !it->second.get_type().is_reference()) {
         return it->second;
       }
     }
@@ -758,7 +749,7 @@ private:
   // Return true if ref is definitely null. Ask the base numerical
   // domain for that.
   bool is_null_ref(const variable_t &ref) {
-    if (!ref.is_ref_type()) {
+    if (!ref.get_type().is_reference()) {
       return false;
     }
     if (auto var_opt = get_var(ref)) {
@@ -1153,7 +1144,7 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".forget");
 
     if (!is_bottom()) {
-      if (v.is_region_type()) {
+      if (v.get_type().is_region()) {
         m_rgn_counting_dom -= v;
       }
       auto it = m_var_map.find(v);
@@ -1197,15 +1188,15 @@ public:
       return;
     }
 
-    if (!lhs_rgn.is_region_type()) {
+    if (!lhs_rgn.get_type().is_region()) {
       CRAB_ERROR(domain_name() + "::region_copy ", lhs_rgn,
                  " must have a region type");
     }
-    if (!rhs_rgn.is_region_type()) {
+    if (!rhs_rgn.get_type().is_region()) {
       CRAB_ERROR(domain_name() + "::region_copy ", rhs_rgn,
                  " must have a region type");
     }
-    if (!lhs_rgn.same_type_and_bitwidth(rhs_rgn)) {
+    if (lhs_rgn.get_type() != rhs_rgn.get_type()) {
       CRAB_ERROR(domain_name() + "::region_copy ", lhs_rgn, ":=", rhs_rgn,
                  " with different types");
     }
@@ -1214,21 +1205,16 @@ public:
 
     const base_variable_t &base_lhs = rename_var(lhs_rgn);
     const base_variable_t &base_rhs = rename_var(rhs_rgn);
-    switch (lhs_rgn.get_type()) {
-    case REG_BOOL_TYPE:
+    auto ty = lhs_rgn.get_type();
+    if (ty.is_bool_region()) {
       m_base_dom.assign_bool_var(base_lhs, base_rhs, false);
-      break;
-    case REG_INT_TYPE:
-    case REG_REAL_TYPE:
-    case REG_REF_TYPE:
+    } else if (ty.is_integer_region() || ty.is_real_region() || ty.is_reference_region()) {
       m_base_dom.assign(base_lhs, base_rhs);
-      break;
-    case REG_ARR_BOOL_TYPE:
-    case REG_ARR_INT_TYPE:
-    case REG_ARR_REAL_TYPE:
+    } else if (ty.is_bool_array_region() ||
+	       ty.is_int_array_region() ||
+	       ty.is_real_array_region()) {
       m_base_dom.array_assign(base_lhs, base_rhs);
-      break;
-    default:;
+    } else {
       CRAB_ERROR(domain_name() + "::region_copy with unexpected region  type");
     }
   }
@@ -1242,7 +1228,7 @@ public:
       return;
     }
 
-    if (!ref.is_ref_type()) {
+    if (!ref.get_type().is_reference()) {
       CRAB_LOG("region", CRAB_WARN("region_domain::ref_make: ", ref,
                                    " must be a reference"););
       return;
@@ -1272,14 +1258,14 @@ public:
 
     const base_variable_t &base_res = rename_var(res);
 
-    if (!rgn.is_scalar_region_type()) {
+    if (!rgn.get_type().is_scalar_region()) {
       CRAB_LOG("region", CRAB_WARN("region_domain::ref_load: ", rgn,
                                    " must be a scalar region"););
       m_base_dom -= base_res;
       return;
     }
 
-    if (!ref.is_ref_type()) {
+    if (!ref.get_type().is_reference()) {
       CRAB_LOG("region", CRAB_WARN("region_domain::ref_load: ", ref,
                                    " must be a reference"););
       m_base_dom -= base_res;
@@ -1300,15 +1286,11 @@ public:
         CRAB_ERROR("region_domain::ref_load: ", "Type of region ", rgn,
                    " does not match with ", base_res);
       }
-      switch (base_res.get_type()) {
-      case BOOL_TYPE:
-        this->m_base_dom.assign_bool_var(base_res, rgn_var, false);
-        break;
-      case INT_TYPE:
-      case REAL_TYPE:
+      if (base_res.get_type().is_bool()) {
+	this->m_base_dom.assign_bool_var(base_res, rgn_var, false);
+      } else if (base_res.get_type().is_integer() || base_res.get_type().is_real()) {
         this->m_base_dom.assign(base_res, rgn_var);
-        break;
-      default:
+      } else {
         // variables of type base_variable_t cannot be REF_TYPE or
         // ARR_TYPE
         CRAB_ERROR("region_domain::ref_load: unsupported type in ", base_res);
@@ -1349,13 +1331,13 @@ public:
       return;
     }
 
-    if (!rgn.is_scalar_region_type()) {
+    if (!rgn.get_type().is_scalar_region()) {
       CRAB_LOG("region", CRAB_WARN("region_domain::ref_store: ", rgn,
                                    " must be a scalar region"););
       return;
     }
 
-    if (!ref.is_ref_type()) {
+    if (!ref.get_type().is_reference()) {
       CRAB_LOG("region", CRAB_WARN("region_domain::ref_store: ", ref,
                                    " must be a reference"););
       return;
@@ -1371,8 +1353,7 @@ public:
 
     auto ref_store = [&rgn, &val, this](base_abstract_domain_t &base_dom) {
       base_variable_t rgn_var = rename_var(rgn);
-      switch (rgn_var.get_type()) {
-      case BOOL_TYPE:
+      if (rgn_var.get_type().is_bool()) {	
         if (val.is_constant()) {
           if (val.constant() >= number_t(1)) {
             base_dom.assign_bool_cst(rgn_var,
@@ -1386,12 +1367,9 @@ public:
         } else {
           CRAB_ERROR("region_domain::ref_store: unsupported boolean ", val);
         }
-        break;
-      case INT_TYPE:
-      case REAL_TYPE:
+      } else if (rgn_var.get_type().is_integer() || rgn_var.get_type().is_real()) {
         base_dom.assign(rgn_var, rename_linear_expr(val));
-        break;
-      default:
+      } else {
         // variables of type base_variable_t cannot be REF_TYPE or
         // ARR_TYPE
         CRAB_ERROR("region_domain::ref_store: unsupported type in ", rgn_var);
@@ -1458,13 +1436,13 @@ public:
      * These syntactic checks are only needed if the abstract domain
      * API is called directly.
      **/
-    if (!lhs.is_int_type() && !lhs.is_bool_type() && !lhs.is_real_type()) {
+    if (!lhs.get_type().is_integer() && !lhs.get_type().is_bool() && !lhs.get_type().is_real()) {
       CRAB_LOG("region", CRAB_WARN("region_domain::ref_load_from_array: ", lhs,
                                    " must be bool/int/real type"););
       m_base_dom -= base_lhs;
     }
 
-    if (!rgn.is_array_region_type()) {
+    if (!rgn.get_type().is_array_region()) {
       CRAB_LOG("region", CRAB_WARN("region_domain::ref_load_from_array: ", rgn,
                                    " must be an array region"););
       m_base_dom -= base_lhs;
@@ -1473,7 +1451,7 @@ public:
 
     // TODO: check that the array element matches the type of lhs
 
-    // if (!ref.is_ref_type()) {
+    // if (!ref.get_type().is_reference()) {
     //   CRAB_LOG("region",
     // 	       CRAB_WARN("region_domain::ref_load_from_array: ", ref, " must be
     // a reference"););
@@ -1524,7 +1502,7 @@ public:
      * These syntactic checks are only needed if the abstract domain
      * API is called directly.
      **/
-    if (!rgn.is_array_region_type()) {
+    if (!rgn.get_type().is_array_region()) {
       CRAB_LOG("region", CRAB_WARN("region_domain::ref_store_to_array: ", rgn,
                                    " must be an array region"););
       return;
@@ -1532,7 +1510,7 @@ public:
 
     // TODO: check that the array element matches the type of val
 
-    // if (!ref.is_ref_type()) {
+    // if (!ref.get_type().is_reference()) {
     //   CRAB_LOG("region",
     // 	       CRAB_WARN("region_domain::ref_store_to_array: ", ref, " must be a
     // reference"););
@@ -1575,7 +1553,7 @@ public:
         return;
       }
       if (cst.is_unary()) {
-        assert(cst.lhs().is_ref_type());
+        assert(cst.lhs().get_type().is_reference());
         base_variable_t x = rename_var(cst.lhs());
         if (cst.is_equality()) {
           m_base_dom += base_linear_constraint_t(x == number_t(0));
@@ -1591,8 +1569,8 @@ public:
           m_base_dom += base_linear_constraint_t(x > number_t(0));
         }
       } else {
-        assert(cst.lhs().is_ref_type());
-        assert(cst.rhs().is_ref_type());
+        assert(cst.lhs().get_type().is_reference());
+        assert(cst.rhs().get_type().is_reference());
         base_variable_t x = rename_var(cst.lhs());
         base_variable_t y = rename_var(cst.rhs());
         number_t offset = cst.offset();
@@ -1621,8 +1599,8 @@ public:
     crab::CrabStats::count(domain_name() + ".count.ref_to_int");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_to_int");
 
-    assert(ref_var.is_ref_type());
-    assert(int_var.is_int_type());
+    assert(ref_var.get_type().is_reference());
+    assert(int_var.get_type().is_integer());
 
     if (!is_bottom()) {
       base_variable_t src_var = rename_var(ref_var);
@@ -1636,8 +1614,8 @@ public:
     crab::CrabStats::count(domain_name() + ".count.int_to_ref");
     crab::ScopedCrabStats __st__(domain_name() + ".int_to_ref");
 
-    assert(ref_var.is_ref_type());
-    assert(int_var.is_int_type());
+    assert(ref_var.get_type().is_reference());
+    assert(int_var.get_type().is_integer());
 
     if (!is_bottom()) {
       base_variable_t src_var = rename_var(int_var);
@@ -1985,7 +1963,7 @@ public:
     std::vector<base_variable_t> base_vars;
     base_vars.reserve(variables.size());
     for (auto &v : variables) {
-      if (v.is_region_type()) {
+      if (v.get_type().is_region()) {
         m_rgn_counting_dom -= v;
       }
       auto it = m_var_map.find(v);

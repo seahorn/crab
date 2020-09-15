@@ -630,9 +630,9 @@ public:
 
   cast_operation_t op() const { return m_op; }
   const variable_t &src() const { return m_src; }
-  bitwidth_t src_width() const { return m_src.get_bitwidth(); }
+  bitwidth_t src_width() const { return get_bitwidth(m_src); }
   const variable_t &dst() const { return m_dst; }
-  bitwidth_t dst_width() const { return m_dst.get_bitwidth(); }
+  bitwidth_t dst_width() const { return get_bitwidth(m_dst); }
 
   virtual void
   accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
@@ -651,6 +651,12 @@ public:
   }
 
 private:
+  static bitwidth_t get_bitwidth(const variable_t &v) {
+    auto ty = v.get_type();
+    assert(ty.is_integer() || ty.is_bool());
+    return (ty.is_integer() ? ty.get_integer_bitwidth(): 1);
+  }
+  
   cast_operation_t m_op;
   variable_t m_src;
   variable_t m_dst;
@@ -1860,7 +1866,7 @@ public:
   }
 
 private:
-  variable_t m_lhs; // pre: BOOL_TYPE
+  variable_t m_lhs; // pre: boolean type
   linear_constraint_t m_rhs;
 };
 
@@ -1912,8 +1918,8 @@ public:
   }
 
 private:
-  variable_t m_lhs; // pre: BOOL_TYPE
-  variable_t m_rhs; // pre: BOOL_TYPE
+  variable_t m_lhs; // pre: boolean type
+  variable_t m_rhs; // pre: boolean type
 
   // if m_is_rhs_negated is true then lhs := not(rhs).
   bool m_is_rhs_negated;
@@ -1963,10 +1969,10 @@ public:
   }
 
 private:
-  variable_t m_lhs; // pre: BOOL_TYPE
+  variable_t m_lhs; // pre: boolean type
   bool_binary_operation_t m_op;
-  variable_t m_op1; // pre: BOOL_TYPE
-  variable_t m_op2; // pre: BOOL_TYPE
+  variable_t m_op1; // pre: boolean type
+  variable_t m_op2; // pre: boolean type
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
@@ -2006,7 +2012,7 @@ public:
   }
 
 private:
-  variable_t m_var; // pre: BOOL_TYPE
+  variable_t m_var; // pre: boolean type
   bool m_is_negated;
 };
 
@@ -2055,10 +2061,10 @@ public:
   }
 
 private:
-  variable_t m_lhs;  // pre: BOOL_TYPE
-  variable_t m_cond; // pre: BOOL_TYPE
-  variable_t m_b1;   // pre: BOOL_TYPE
-  variable_t m_b2;   // pre: BOOL_TYPE
+  variable_t m_lhs;  // pre: boolean type
+  variable_t m_cond; // pre: boolean type
+  variable_t m_b1;   // pre: boolean type
+  variable_t m_b2;   // pre: boolean type
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
@@ -2091,7 +2097,7 @@ public:
   virtual void write(crab_os &o) const { o << "assert(" << m_var << ")"; }
 
 private:
-  variable_t m_var; // pre: BOOL_TYPE
+  variable_t m_var; // pre: boolean type
 };
 
 template <class BasicBlockLabel, class VariableName, class Number> class cfg;
@@ -3890,13 +3896,19 @@ template <typename CFG> struct cfg_hasher {
   using callsite_t = typename CFG::basic_block_t::callsite_t;
   using fdecl_t = typename CFG::fdecl_t;
 
+  static size_t combine(size_t seed, size_t hash_val) {
+    // Similar to boost::hash_combine
+    seed ^= hash_val + 0x9e3779b9 + (seed<<6) + (seed>>2);
+    return seed;
+  }
+  
   static size_t hash(callsite_t cs) {
     size_t res = boost::hash_value(cs.get_func_name());
     for (unsigned i = 0; i < cs.get_num_args(); i++) {
-      boost::hash_combine(res, cs.get_arg_type(i));
+      combine(res, cs.get_arg_type(i).hash());
     }
     for (auto vt : cs.get_lhs()) {
-      boost::hash_combine(res, vt.get_type());
+      combine(res, vt.get_type().hash());
     }
     return res;
   }
@@ -3904,10 +3916,10 @@ template <typename CFG> struct cfg_hasher {
   static size_t hash(fdecl_t d) {
     size_t res = boost::hash_value(d.get_func_name());
     for (unsigned i = 0; i < d.get_num_inputs(); i++) {
-      boost::hash_combine(res, d.get_input_type(i));
+      combine(res, d.get_input_type(i).hash());
     }
     for (unsigned i = 0; i < d.get_num_outputs(); i++) {
-      boost::hash_combine(res, d.get_output_type(i));
+      combine(res, d.get_output_type(i).hash());
     }
     return res;
   }
@@ -4017,8 +4029,7 @@ private:
         v2_os << it->second.name();
         std::string v2_strname = v2_os.str();
         if (v1_strname == v2_strname &&
-            (it->second.get_type() != v.get_type() ||
-             it->second.get_bitwidth() != v.get_bitwidth())) {
+            (it->second.get_type() != v.get_type())) {
           crab::crab_string_os os;
           os << "(type checking) variable name " << v.name()
              << " is used with different types ";
@@ -4032,7 +4043,7 @@ private:
 
     // check variable is a number
     void check_num(const variable_t &v, std::string msg, statement_t &s) {
-      if (v.get_type() != INT_TYPE && v.get_type() != REAL_TYPE) {
+      if (!v.get_type().is_integer() && !v.get_type().is_real()) {
         crab::crab_string_os os;
         os << "(type checking) " << msg << " in " << s;
         CRAB_ERROR(os.str());
@@ -4042,7 +4053,7 @@ private:
     // check variable is an integer or boolean
     void check_int_or_bool(const variable_t &v, std::string msg,
                            statement_t &s) {
-      if (v.get_type() != INT_TYPE && v.get_type() != BOOL_TYPE) {
+      if (!v.get_type().is_integer() && !v.get_type().is_bool()) {
         crab::crab_string_os os;
         os << "(type checking) " << msg << " in " << s;
         CRAB_ERROR(os.str());
@@ -4051,7 +4062,7 @@ private:
 
     // check variable is an integer
     void check_int(const variable_t &v, std::string msg, statement_t &s) {
-      if ((v.get_type() != INT_TYPE) || (v.get_bitwidth() <= 1)) {
+      if (!v.get_type().is_integer()) {
         crab::crab_string_os os;
         os << "(type checking) " << msg << " in " << s;
         CRAB_ERROR(os.str());
@@ -4060,34 +4071,10 @@ private:
 
     // check variable is a boolean
     void check_bool(const variable_t &v, std::string msg, statement_t &s) {
-      if ((v.get_type() != BOOL_TYPE) || (v.get_bitwidth() != 1)) {
+      if (!v.get_type().is_bool()) {
         crab::crab_string_os os;
         os << "(type checking) " << msg << " in " << s;
         CRAB_ERROR(os.str());
-      }
-    }
-
-    // check bitwidth if variable is an integer
-    void check_bitwidth_if_int(const variable_t &v, std::string msg,
-                               statement_t &s) {
-      if (v.get_type() == INT_TYPE) {
-        if (v.get_bitwidth() <= 1) {
-          crab::crab_string_os os;
-          os << "(type checking) " << msg << " in " << s;
-          CRAB_ERROR(os.str());
-        }
-      }
-    }
-
-    // check bitwidth if variable is a boolean
-    void check_bitwidth_if_bool(const variable_t &v, std::string msg,
-                                statement_t &s) {
-      if (v.get_type() == BOOL_TYPE) {
-        if (v.get_bitwidth() != 1) {
-          crab::crab_string_os os;
-          os << "(type checking) " << msg << " in " << s;
-          CRAB_ERROR(os.str());
-        }
       }
     }
 
@@ -4111,19 +4098,6 @@ private:
       }
     }
 
-    // check two variables have same bitwidth
-    void check_same_bitwidth(const variable_t &v1, const variable_t &v2,
-                             std::string msg, statement_t &s) {
-      // assume v1 and v2 have same type
-      if (v1.get_type() == INT_TYPE || v1.get_type() == BOOL_TYPE) {
-        if (v1.get_bitwidth() != v2.get_bitwidth()) {
-          crab::crab_string_os os;
-          os << "(type checking) " << msg << " in " << s;
-          CRAB_ERROR(os.str());
-        }
-      }
-    }
-
     // check linear expressinon is just a number or variable
     void check_num_or_var(const lin_exp_t &e, std::string msg, statement_t &s) {
       if (!(e.is_constant() || e.get_variable())) {
@@ -4135,43 +4109,28 @@ private:
 
     // check variable is an array
     void check_is_array(const variable_t &v, statement_t &s) {
-      switch (v.get_type()) {
-      case ARR_BOOL_TYPE:
-        break;
-      case ARR_INT_TYPE:
-        break;
-      case ARR_REAL_TYPE:
-        break;
-      default: {
+      if (!v.get_type().is_array()) {
         crab::crab_string_os os;
         os << "(type checking) " << v << " must be an array variable in " << s;
         CRAB_ERROR(os.str());
-      }
       }
     }
 
     // v1 is array type and v2 is a scalar type consistent with v1
     void check_array_and_scalar_type(const variable_t &v1, const variable_t &v2,
                                      statement_t &s) {
-      switch (v1.get_type()) {
-      case ARR_BOOL_TYPE:
-        if (v2.get_type() == BOOL_TYPE)
-          return;
-        break;
-      case ARR_INT_TYPE:
-        if (v2.get_type() == INT_TYPE)
-          return;
-        break;
-      case ARR_REAL_TYPE:
-        if (v2.get_type() == REAL_TYPE)
-          return;
-        break;
-      default: {
+      if (v1.get_type().is_bool_array()) {
+	if (v2.get_type().is_bool()) return;
+      } else if (v1.get_type().is_integer_array()) {
+	if (v2.get_type().is_integer()) return;	
+      } else if (v1.get_type().is_real_array()) {
+	if (v2.get_type().is_real()) return;		
+      } else {
         crab::crab_string_os os;
         os << "(type checking) " << v1 << " must be an array variable in " << s;
         CRAB_ERROR(os.str());
       }
-      }
+      
       crab::crab_string_os os;
       os << "(type checking) " << v1 << " and " << v2
          << " do not have consistent types in " << s;
@@ -4187,15 +4146,11 @@ private:
 
       check_varname(lhs);
       check_num(lhs, "lhs must be integer or real", s);
-      check_bitwidth_if_int(lhs, "lhs must be have bitwidth > 1", s);
 
       if (boost::optional<variable_t> v1 = op1.get_variable()) {
         check_varname(*v1);
         check_same_type(lhs, *v1,
                         "first operand cannot have different type from lhs", s);
-        check_same_bitwidth(
-            lhs, *v1, "first operand cannot have different bitwidth from lhs",
-            s);
       } else {
         CRAB_ERROR(
             "(type checking) first binary operand must be a variable in ", s);
@@ -4204,9 +4159,6 @@ private:
         check_varname(*v2);
         check_same_type(
             lhs, *v2, "second operand cannot have different type from lhs", s);
-        check_same_bitwidth(
-            lhs, *v2, "second operand cannot have different bitwidth from lhs",
-            s);
       } else {
         // TODO: we can still check that we use z_number
         // (q_number) of INT_TYPE (REAL_TYPE)
@@ -4219,14 +4171,10 @@ private:
 
       check_varname(lhs);
       check_num(lhs, "lhs must be integer or real", s);
-      check_bitwidth_if_int(lhs, "lhs must be have bitwidth > 1", s);
 
       for (auto const &v : rhs.variables()) {
         check_varname(v);
-        check_same_type(lhs, v, "variable cannot have different type from lhs",
-                        s);
-        check_same_bitwidth(
-            lhs, v, "variable cannot have different bitwidth from lhs", s);
+        check_same_type(lhs, v, "variable cannot have different type from lhs", s);
       }
     }
 
@@ -4241,10 +4189,7 @@ private:
           first = false;
         }
         assert(first_var);
-        check_same_type(*first_var, v, "inconsistent types in assume variables",
-                        s);
-        check_same_bitwidth(*first_var, v,
-                            "inconsistent bitwidths in assume variables", s);
+        check_same_type(*first_var, v, "inconsistent types in assume variables", s);
       }
     }
 
@@ -4259,34 +4204,24 @@ private:
           first = false;
         }
         assert(first_var);
-        check_same_type(*first_var, v, "inconsistent types in assert variables",
-                        s);
-        check_same_bitwidth(*first_var, v,
-                            "inconsistent bitwidths in assert variables", s);
+        check_same_type(*first_var, v, "inconsistent types in assert variables", s);
       }
     }
 
     void visit(select_t &s) {
       check_num(s.lhs(), "lhs must be integer or real", s);
-      check_bitwidth_if_int(s.lhs(), "lhs must be have bitwidth > 1", s);
       check_varname(s.lhs());
       for (auto const &v : s.left().variables()) {
         check_varname(v);
-        check_same_type(s.lhs(), v, "inconsistent types in select variables",
-                        s);
-        check_same_bitwidth(s.lhs(), v,
-                            "inconsistent bitwidths in select variables", s);
+        check_same_type(s.lhs(), v, "inconsistent types in select variables", s);
       }
       for (auto const &v : s.right().variables()) {
         check_varname(v);
-        check_same_type(s.lhs(), v, "inconsistent types in select variables",
-                        s);
-        check_same_bitwidth(s.lhs(), v,
-                            "inconsistent bitwidths in select variables", s);
+        check_same_type(s.lhs(), v, "inconsistent types in select variables", s);
       }
 
-      // -- The condition can have different bitwidth from
-      //    lhs/left/right operands but must have same type.
+      // -- The condition can have different type from lhs/left/right
+      //    operands.
       bool first = true;
       const variable_t *first_var;
       for (auto const &v : s.cond().variables()) {
@@ -4297,13 +4232,8 @@ private:
           first = false;
         }
         assert(first_var);
-        check_same_type(s.lhs(), v,
-                        "inconsistent types in select condition variables", s);
         check_same_type(*first_var, v,
                         "inconsistent types in select condition variables", s);
-        check_same_bitwidth(
-            *first_var, v,
-            "inconsistent bitwidths in select condition variables", s);
       }
     }
 
@@ -4311,17 +4241,17 @@ private:
       const variable_t &src = s.src();
       const variable_t &dst = s.dst();
 
+      auto get_bitwidth = [](const variable_t &v) {
+			    return (v.get_type().is_integer() ? v.get_type().get_integer_bitwidth(): 1);
+			  };
+      
       check_varname(src);
       check_varname(dst);
       switch (s.op()) {
       case CAST_TRUNC:
         check_int(src, "source operand must be integer", s);
         check_int_or_bool(dst, "destination must be integer or bool", s);
-        check_bitwidth_if_bool(
-            dst, "type and bitwidth of destination operand do not match", s);
-        check_bitwidth_if_int(
-            dst, "type and bitwidth of destination operand do not match", s);
-        if (src.get_bitwidth() <= dst.get_bitwidth()) {
+        if (get_bitwidth(src) <= get_bitwidth(dst)) {
           CRAB_ERROR("(type checking) bitwidth of source operand must be "
                      "greater than destination in ",
                      s);
@@ -4331,11 +4261,7 @@ private:
       case CAST_ZEXT:
         check_int(dst, "destination operand must be integer", s);
         check_int_or_bool(src, "source must be integer or bool", s);
-        check_bitwidth_if_bool(
-            src, "type and bitwidth of source operand do not match", s);
-        check_bitwidth_if_int(
-            src, "type and bitwidth of source operand do not match", s);
-        if (dst.get_bitwidth() <= src.get_bitwidth()) {
+        if (get_bitwidth(dst) <= get_bitwidth(src)) {
           CRAB_ERROR("(type checking) bitwidth of destination must be greater "
                      "than source in ",
                      s);
@@ -4371,10 +4297,7 @@ private:
           first = false;
         }
         assert(first_var);
-        check_same_type(*first_var, v, "inconsistent types in rhs variables",
-                        s);
-        check_same_bitwidth(*first_var, v,
-                            "inconsistent bitwidths in rhs variables", s);
+        check_same_type(*first_var, v, "inconsistent types in rhs variables", s);
       }
     };
 
@@ -4494,10 +4417,7 @@ private:
       check_is_array(rhs, s);
       check_varname(lhs);
       check_varname(rhs);
-      check_same_type(lhs, rhs, "array assign variables must have same type",
-                      s);
-      check_same_bitwidth(lhs, rhs,
-                          "array assign variables must have same bitwidth", s);
+      check_same_type(lhs, rhs, "array assign variables must have same type", s);
     }
 
     void visit(callsite_t &s) {

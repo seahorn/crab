@@ -324,15 +324,13 @@ public:
   }
 
   bool is_well_typed() const {
-    typename variable_t::bitwidth_t b;
-    crab::variable_type type;
+    crab::variable_type vt(crab::UNK_TYPE, 0);
     for (const_iterator it = begin(), et = end(); it != et; ++it) {
-      variable_t v = it->second;
+      const variable_t &v = it->second;
       if (it == begin()) {
-        b = v.get_bitwidth();
-        type = v.get_type();
+	vt = v.get_type();
       } else {
-        if (v.get_bitwidth() != b || v.get_type() != type) {
+        if (v.get_type() != vt) {
           return false;
         }
       }
