@@ -193,6 +193,27 @@ public:
   iterator out_end() { return m_out_map.end(); }
   const_iterator out_begin() const { return m_out_map.begin(); }
   const_iterator out_end() const { return m_out_map.end(); }
+
+  // return null if not found
+  const killgen_domain_t* get_in(const basic_block_label_t &bb) const {
+    auto it = m_in_map.find(bb);
+    if (it!= m_in_map.end()) {
+      return &(it->second);
+    } else {
+      return nullptr;
+    }
+  }
+
+  // return null if not found
+  const killgen_domain_t* get_out(const basic_block_label_t &bb) const {
+    auto it = m_out_map.find(bb);
+    if (it!= m_out_map.end()) {
+      return &(it->second);
+    } else {
+      return nullptr;
+    }
+  }
+  
 };
 
 } // end namespace iterators
