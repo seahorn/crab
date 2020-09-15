@@ -119,14 +119,14 @@ private:
 public:
   fwd_analyzer(CFG cfg, const wto_t *wto, abs_tr_t *abs_tr,
                // live can be nullptr if no live info is available
-               const liveness_t *live,
+               const liveness_t *live_and_dead_symbols,
                // fixpoint parameters
                unsigned int widening_delay, unsigned int descending_iters,
                size_t jump_set_size)
       : fixpo_iterator_t(cfg, abs_tr->get_abs_value(), wto, widening_delay,
                          descending_iters, jump_set_size,
                          false /*disable processor*/),
-        m_abs_tr(abs_tr), m_live(live), m_pre_clear_done(false),
+        m_abs_tr(abs_tr), m_live(live_and_dead_symbols), m_pre_clear_done(false),
         m_post_clear_done(false) {
     assert(m_abs_tr);
     CRAB_VERBOSE_IF(1, crab::outs() << "CFG with " << get_cfg().size()
@@ -138,8 +138,35 @@ public:
     crab::CrabStats::stop("CFG type checking");
     CRAB_VERBOSE_IF(1, get_msg_stream() << "OK\n";);
 
-    if (live) {
-      // --- collect input and output parameters
+    if (::crab::CrabSanityCheckFlag) {
+      // -- This sanity check typically flags whether a variable is
+      //    used without proper definition.
+      if (get_cfg().has_func_decl()) {
+	crab::CrabStats::resume("Live symbols sanity check");      
+	CRAB_VERBOSE_IF(1, get_msg_stream() << "Live symbols sanity check ... ";);
+	liveness_analysis<CFG> live_symbols(cfg, false /* keep IN sets*/);
+	live_symbols.exec();
+	if (auto const* entry_ls = live_symbols.get_in(get_cfg().entry())) {
+	  auto const &fdecl = get_cfg().get_func_decl();
+	  typename liveness_analysis<CFG>::varset_domain_t suspicious_vars(*entry_ls);
+	  for (unsigned i = 0; i < fdecl.get_num_inputs(); i++) {
+	    suspicious_vars -= fdecl.get_input_name(i);
+	  }
+	  if (!suspicious_vars.is_bottom()) {
+	    crab::outs() << "\n--- Sanity check FAILED: " 
+			 << suspicious_vars  << " might not be initialized  in"
+			 << "\n    " << get_cfg().get_func_decl() << "\n";
+	  } else {
+	    CRAB_VERBOSE_IF(1, crab::outs() << "OK";);	
+	  }
+	}
+	CRAB_VERBOSE_IF(1, crab::outs() << "\n";);		
+	crab::CrabStats::stop("Live symbols sanity check");
+      }
+    }
+      
+    if (m_live) {
+      // --- collect input and output parameters for later use
       if (get_cfg().has_func_decl()) {
         auto const &fdecl = get_cfg().get_func_decl();
         for (unsigned i = 0; i < fdecl.get_num_inputs(); i++)
