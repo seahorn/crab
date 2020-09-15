@@ -94,8 +94,9 @@ private:
     while (change) {
       change = false;
       ++iterations;
-      for (auto const &n : order) {
-        auto in = m_analysis.entry();
+      for (unsigned i=0, e=order.size(); i<e; ++i) {
+	auto const &n = order[i];
+        auto in = (i==0 ? m_analysis.entry() : killgen_domain_t::bottom());
         for (auto const &p : m_cfg.prev_nodes(n))
           in = m_analysis.merge(in, m_out_map[p]);
         auto old_out = m_out_map[n];
@@ -119,8 +120,9 @@ private:
     while (change) {
       change = false;
       ++iterations;
-      for (auto const &n : order) {
-        auto out = m_analysis.entry();
+      for (unsigned i=0, e=order.size(); i<e; ++i) {
+	auto const &n = order[i];
+        auto out = (i==0 ? m_analysis.entry() : killgen_domain_t::bottom());
         for (auto const &p : m_cfg.next_nodes(n))
           out = m_analysis.merge(out, m_in_map[p]);
         auto old_in = m_in_map[n];
