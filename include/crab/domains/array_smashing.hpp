@@ -289,6 +289,11 @@ public:
     _inv.assign_bool_cst(lhs, rhs);
   }
 
+  virtual void assign_bool_ref_cst(const variable_t &lhs,
+				   const reference_constraint_t &rhs) override {
+    _inv.assign_bool_ref_cst(lhs, rhs);
+  }
+  
   virtual void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                bool is_not_rhs) override {
     _inv.assign_bool_var(lhs, rhs, is_not_rhs);
@@ -311,6 +316,12 @@ public:
     _inv.backward_assign_bool_cst(lhs, rhs, inv._inv);
   }
 
+  virtual void backward_assign_bool_ref_cst(const variable_t &lhs,
+					    const reference_constraint_t &rhs,
+					    const array_smashing_t &inv) override {
+    _inv.backward_assign_bool_ref_cst(lhs, rhs, inv._inv);
+  }
+  
   virtual void backward_assign_bool_var(const variable_t &lhs,
                                         const variable_t &rhs, bool is_not_rhs,
                                         const array_smashing_t &inv) override {

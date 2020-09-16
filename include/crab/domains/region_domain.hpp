@@ -746,6 +746,53 @@ private:
     return out;
   }
 
+  base_linear_constraint_t
+  convert_ref_cst_to_linear_cst(const reference_constraint_t &ref_cst) {
+    if (ref_cst.is_tautology()) {
+      return base_linear_constraint_t::get_true();
+    } else if (ref_cst.is_contradiction()) {
+      return base_linear_constraint_t::get_false();
+    } else {
+      if (ref_cst.is_unary()) {
+        assert(ref_cst.lhs().get_type().is_reference());
+        base_variable_t x = rename_var(ref_cst.lhs());
+        if (ref_cst.is_equality()) {
+          return base_linear_constraint_t(x == number_t(0));
+        } else if (ref_cst.is_disequality()) {
+          return base_linear_constraint_t(x != number_t(0));
+        } else if (ref_cst.is_less_or_equal_than()) {
+          return base_linear_constraint_t(x <= number_t(0));
+        } else if (ref_cst.is_less_than()) {
+          return base_linear_constraint_t(x < number_t(0));
+        } else if (ref_cst.is_greater_or_equal_than()) {
+          return base_linear_constraint_t(x >= number_t(0));
+        } else if (ref_cst.is_greater_than()) {
+          return base_linear_constraint_t(x > number_t(0));
+        }
+      } else {
+        assert(ref_cst.lhs().get_type().is_reference());
+        assert(ref_cst.rhs().get_type().is_reference());
+        base_variable_t x = rename_var(ref_cst.lhs());
+        base_variable_t y = rename_var(ref_cst.rhs());
+        number_t offset = ref_cst.offset();
+        if (ref_cst.is_equality()) {
+          return base_linear_constraint_t(x == y + offset);
+        } else if (ref_cst.is_disequality()) {
+          return base_linear_constraint_t(x != y + offset);
+        } else if (ref_cst.is_less_or_equal_than()) {
+          return base_linear_constraint_t(x <= y + offset);
+        } else if (ref_cst.is_less_than()) {
+          return base_linear_constraint_t(x < y + offset);
+        } else if (ref_cst.is_greater_or_equal_than()) {
+          return base_linear_constraint_t(x >= y + offset);
+        } else if (ref_cst.is_greater_than()) {
+          return base_linear_constraint_t(x > y + offset);
+        }
+      }
+    }
+    CRAB_ERROR("unexpected reference constraint");
+  }
+  
   // Return true if ref is definitely null. Ask the base numerical
   // domain for that.
   bool is_null_ref(const variable_t &ref) {
@@ -1470,22 +1517,8 @@ public:
     }
 
     // TODO: check that the array element matches the type of lhs
+    // (bool or int)
 
-    // if (!ref.get_type().is_reference()) {
-    //   CRAB_LOG("region",
-    // 	       CRAB_WARN("region_domain::ref_load_from_array: ", ref, " must be
-    // a reference"););
-    //   m_base_dom -= base_lhs;
-    //   return;
-    // }
-
-    // if (is_null_ref(ref)) {
-    //   CRAB_WARN("region_domain::ref_load_from_array: reference ", ref, " is
-    //   null. ",
-    //             " Set to bottom ...");
-    //   set_to_bottom();
-    //   return;
-    // }
 
     if (boost::optional<base_variable_t> arr_var_opt = get_var(rgn)) {
       auto num_refs = m_rgn_counting_dom[rgn];
@@ -1529,25 +1562,11 @@ public:
     }
 
     // TODO: check that the array element matches the type of val
-
-    // if (!ref.get_type().is_reference()) {
-    //   CRAB_LOG("region",
-    // 	       CRAB_WARN("region_domain::ref_store_to_array: ", ref, " must be a
-    // reference"););
-    //   return;
-    // }
-
-    // if (is_null_ref(ref)) {
-    //   CRAB_WARN("region_domain::ref_store_to_array: reference ", ref, " is
-    //   null. ",
-    //             " Set to bottom ...");
-    //   set_to_bottom();
-    //   return;
-    // }
-
+    // (bool or integer)
+    
     auto num_refs = m_rgn_counting_dom[rgn];
     base_variable_t arr_var = rename_var(rgn);
-    if (num_refs.is_one()) {
+    if (num_refs.is_zero() || num_refs.is_one()) {
       CRAB_LOG("region", crab::outs() << "Reading from singleton\n";);
       m_base_dom.array_store(arr_var, rename_linear_expr(elem_size),
                              rename_linear_expr(index), rename_linear_expr(val),
@@ -1560,58 +1579,23 @@ public:
     }
   }
 
-  void ref_assume(const reference_constraint_t &cst) override {
+  void ref_assume(const reference_constraint_t &ref_cst) override {
     crab::CrabStats::count(domain_name() + ".count.ref_assume");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_assume");
 
     if (!is_bottom()) {
-      if (cst.is_tautology()) {
+      if (ref_cst.is_tautology()) {
         return;
       }
-      if (cst.is_contradiction()) {
+      if (ref_cst.is_contradiction()) {
         set_to_bottom();
         return;
       }
-      if (cst.is_unary()) {
-        assert(cst.lhs().get_type().is_reference());
-        base_variable_t x = rename_var(cst.lhs());
-        if (cst.is_equality()) {
-          m_base_dom += base_linear_constraint_t(x == number_t(0));
-        } else if (cst.is_disequality()) {
-          m_base_dom += base_linear_constraint_t(x != number_t(0));
-        } else if (cst.is_less_or_equal_than()) {
-          m_base_dom += base_linear_constraint_t(x <= number_t(0));
-        } else if (cst.is_less_than()) {
-          m_base_dom += base_linear_constraint_t(x < number_t(0));
-        } else if (cst.is_greater_or_equal_than()) {
-          m_base_dom += base_linear_constraint_t(x >= number_t(0));
-        } else if (cst.is_greater_than()) {
-          m_base_dom += base_linear_constraint_t(x > number_t(0));
-        }
-      } else {
-        assert(cst.lhs().get_type().is_reference());
-        assert(cst.rhs().get_type().is_reference());
-        base_variable_t x = rename_var(cst.lhs());
-        base_variable_t y = rename_var(cst.rhs());
-        number_t offset = cst.offset();
-        if (cst.is_equality()) {
-          m_base_dom += base_linear_constraint_t(x == y + offset);
-        } else if (cst.is_disequality()) {
-          m_base_dom += base_linear_constraint_t(x != y + offset);
-        } else if (cst.is_less_or_equal_than()) {
-          m_base_dom += base_linear_constraint_t(x <= y + offset);
-        } else if (cst.is_less_than()) {
-          m_base_dom += base_linear_constraint_t(x < y + offset);
-        } else if (cst.is_greater_or_equal_than()) {
-          m_base_dom += base_linear_constraint_t(x >= y + offset);
-        } else if (cst.is_greater_than()) {
-          m_base_dom += base_linear_constraint_t(x > y + offset);
-        }
-      }
+      m_base_dom += convert_ref_cst_to_linear_cst(ref_cst);
+      m_is_bottom = m_base_dom.is_bottom();
     }
-    m_is_bottom = m_base_dom.is_bottom();
     CRAB_LOG("region", crab::outs()
-                           << "ref_assume(" << cst << ")" << *this << "\n";);
+	     << "ref_assume(" << ref_cst << ")" << *this << "\n";);
   }
 
   void ref_to_int(const variable_t &rgn, const variable_t &ref_var,
@@ -1782,6 +1766,17 @@ public:
       m_base_dom.assign_bool_cst(rename_var(lhs), rename_linear_cst(rhs));
     }
   }
+
+  void assign_bool_ref_cst(const variable_t &lhs,
+			   const reference_constraint_t &rhs) override {
+    crab::CrabStats::count(domain_name() + ".count.assign_bool_cst");
+    crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst");
+
+    if (!is_bottom()) {
+      m_base_dom.assign_bool_cst(rename_var(lhs), convert_ref_cst_to_linear_cst(rhs));
+    }
+  }
+  
   void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                        bool is_not_rhs) override {
     crab::CrabStats::count(domain_name() + ".count.assign_bool_var");
@@ -1821,6 +1816,19 @@ public:
           rename_var(lhs), rename_linear_cst(rhs), invariant.m_base_dom);
     }
   }
+
+  void backward_assign_bool_ref_cst(const variable_t &lhs,
+				    const reference_constraint_t &rhs,
+				    const region_domain_t &invariant) override {
+    crab::CrabStats::count(domain_name() + ".count.backward_assign_bool_cst");
+    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign_bool_cst");
+
+    if (!is_bottom()) {      
+      m_base_dom.backward_assign_bool_cst(
+          rename_var(lhs), convert_ref_cst_to_linear_cst(rhs), invariant.m_base_dom);
+    }
+  }
+  
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                 bool is_not_rhs,
                                 const region_domain_t &invariant) override {

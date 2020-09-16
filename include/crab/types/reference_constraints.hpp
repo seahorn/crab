@@ -115,6 +115,17 @@ public:
     return *m_rhs;
   }
 
+  std::vector<variable_t> variables() const {
+    std::vector<variable_t> res;
+    if (m_lhs) {
+      res.push_back(*m_lhs);
+    }
+    if (m_rhs) {
+      res.push_back(*m_rhs);
+    }
+    return res;
+  }
+  
   number_t offset() const { return m_offset; }
 
   reference_constraint_t negate() const {

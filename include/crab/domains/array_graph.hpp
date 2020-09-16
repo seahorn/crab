@@ -2227,6 +2227,12 @@ public:
     CRAB_WARN("assign_bool_cst not implemented in array-sgraph");
   }
 
+  void assign_bool_ref_cst(const variable_t &lhs,
+			   const reference_constraint_t &rhs) override {
+    operator-=(lhs);
+    CRAB_WARN("assign_bool_cst not implemented in array-sgraph");
+  }
+  
   void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                        bool is_not_rhs) override {
     operator-=(lhs);
@@ -2254,6 +2260,15 @@ public:
         "backward_assign_bool_cst not implemented in array-sgraph");
   }
 
+  void
+  backward_assign_bool_ref_cst(const variable_t &lhs,
+			       const reference_constraint_t &rhs,
+			       const array_graph_domain_t &invariant) override {
+    operator-=(lhs);
+    CRAB_WARN(
+        "backward_assign_bool_cst not implemented in array-sgraph");
+  }
+  
   void
   backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                            bool is_not_rhs,

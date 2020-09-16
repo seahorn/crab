@@ -101,6 +101,7 @@
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/range/iterator_range.hpp>
+#include <boost/variant.hpp>
 
 #include <functional> // for wrapper_reference
 #include <unordered_map>
@@ -1845,41 +1846,90 @@ public:
   using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
   using linear_constraint_t = ikos::linear_constraint<Number, VariableName>;
+  using reference_constraint_t = reference_constraint<Number, VariableName>;
+  using linear_or_reference_constraint_t = boost::variant<linear_constraint_t, reference_constraint_t>;
 
   bool_assign_cst(variable_t lhs, linear_constraint_t rhs,
                   basic_block_t *parent)
-      : statement_t(BOOL_ASSIGN_CST, parent), m_lhs(lhs), m_rhs(rhs) {
+    : statement_t(BOOL_ASSIGN_CST, parent), m_is_rhs_linear_constraint(true),
+      m_lhs(lhs), m_rhs(rhs) {
     this->m_live.add_def(m_lhs);
-    for (auto const &v : m_rhs.variables())
+    for (auto const &v : rhs_as_linear_constraint().variables())
       this->m_live.add_use(v);
   }
 
+  bool_assign_cst(variable_t lhs, reference_constraint_t rhs,
+                  basic_block_t *parent)
+    : statement_t(BOOL_ASSIGN_CST, parent), m_is_rhs_linear_constraint(false),
+      m_lhs(lhs), m_rhs(rhs) {
+    this->m_live.add_def(m_lhs);
+    for (auto const &v : rhs_as_reference_constraint().variables())
+      this->m_live.add_use(v);
+  }
+  
   const variable_t &lhs() const { return m_lhs; }
 
-  const linear_constraint_t &rhs() const { return m_rhs; }
+  const linear_constraint_t &rhs_as_linear_constraint() const {
+    if (m_is_rhs_linear_constraint) {
+      return boost::get<linear_constraint_t>(m_rhs);
+    } else {
+      CRAB_ERROR("rhs of bool_assign_cst is not a linear constraint");
+    }
+  }
 
+  const reference_constraint_t &rhs_as_reference_constraint() const {
+    if (!m_is_rhs_linear_constraint) {
+      return boost::get<reference_constraint_t>(m_rhs);
+    } else {
+      CRAB_ERROR("rhs of bool_assign_cst is not a reference constraint");
+    }
+  }
+  
+  bool is_rhs_linear_constraint() const {
+    return m_is_rhs_linear_constraint;
+  }
+  
   virtual void
   accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
   virtual statement_t *clone(basic_block_t *parent) const {
-    return new this_type(m_lhs, m_rhs, parent);
+    if (is_rhs_linear_constraint()) {
+      return new this_type(m_lhs, rhs_as_linear_constraint(), parent);
+    } else {
+      return new this_type(m_lhs, rhs_as_reference_constraint(), parent);      
+    } 
   }
 
   virtual void write(crab_os &o) const {
-    if (m_rhs.is_tautology()) {
-      o << m_lhs << " = true ";
-    } else if (m_rhs.is_contradiction()) {
-      o << m_lhs << " = false ";
+    o << m_lhs << " = ";    
+    if (is_rhs_linear_constraint()) {
+      auto const &rhs = rhs_as_linear_constraint();
+      if (rhs.is_tautology()) {
+	o << "true";
+      } else if (rhs.is_contradiction()) {
+	o << "false";
+      } else {
+	o << "(" << rhs << ")";
+      }
     } else {
-      o << m_lhs << " = (" << m_rhs << ")";
-    }
+      auto const &rhs = rhs_as_reference_constraint();
+      if (rhs.is_tautology()) {
+	o << "true";
+      } else if (rhs.is_contradiction()) {
+	o << "false";
+      } else {
+	o << "(" << rhs << ")";
+      }
+    } 
   }
 
 private:
+  bool m_is_rhs_linear_constraint;
   variable_t m_lhs; // pre: boolean type
-  linear_constraint_t m_rhs;
+  linear_or_reference_constraint_t m_rhs;
+  
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
@@ -2713,6 +2763,10 @@ public:
     return insert(new bool_assign_cst_t(lhs, rhs, this));
   }
 
+  const statement_t *bool_assign(variable_t lhs, ref_cst_t rhs) {
+    return insert(new bool_assign_cst_t(lhs, rhs, this));
+  }
+  
   const statement_t *bool_assign(variable_t lhs, variable_t rhs,
                                  bool is_not_rhs = false) {
     return insert(new bool_assign_var_t(lhs, rhs, is_not_rhs, this));
@@ -4090,6 +4144,15 @@ private:
       }
     }
 
+    // check variable is a reference
+    void check_ref(const variable_t &v, std::string msg, statement_t &s) {
+      if (!v.get_type().is_reference()) {
+        crab::crab_string_os os;
+        os << "(type checking) " << msg << " in " << s;
+        CRAB_ERROR(os.str());
+      }
+    }
+    
     // check two variables have same types
     void check_same_type(const variable_t &v1, const variable_t &v2,
                          std::string msg, statement_t &s) {
@@ -4301,16 +4364,30 @@ private:
       check_varname(s.lhs());
       bool first = true;
       const variable_t *first_var;
-      for (auto const &v : s.rhs().variables()) {
-        check_varname(v);
-        check_num(v, "rhs variables must be integer or real", s);
-        if (first) {
-          first_var = &v;
-          first = false;
-        }
-        assert(first_var);
+
+      if (s.is_rhs_linear_constraint()) {
+	for (auto const &v : s.rhs_as_linear_constraint().variables()) {
+	  check_varname(v);
+	  check_num(v, "rhs variables must be integer or real", s);
+	  if (first) {
+	    first_var = &v;
+	    first = false;
+	  }
+	  assert(first_var);
         check_same_type(*first_var, v, "inconsistent types in rhs variables", s);
-      }
+	}
+      } else {
+	for (auto const &v : s.rhs_as_reference_constraint().variables()) {
+	  check_varname(v);
+	  check_ref(v, "rhs variables must be reference", s);
+	  if (first) {
+	    first_var = &v;
+	    first = false;
+	  }
+	  assert(first_var);
+        check_same_type(*first_var, v, "inconsistent types in rhs variables", s);
+	}
+      } 
     };
 
     void visit(bool_assign_var_t &s) {

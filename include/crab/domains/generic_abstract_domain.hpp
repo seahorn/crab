@@ -85,6 +85,8 @@ private:
                        const variable_t &src) = 0;
     virtual void assign_bool_cst(const variable_t &lhs,
                                  const linear_constraint_t &rhs) = 0;
+    virtual void assign_bool_ref_cst(const variable_t &lhs,
+				     const reference_constraint_t &rhs) = 0;
     virtual void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                  bool is_not_rhs) = 0;
     virtual void apply_binary_bool(bool_operation_t op, const variable_t &x,
@@ -150,6 +152,10 @@ private:
     backward_assign_bool_cst(const variable_t &lhs,
                              const linear_constraint_t &rhs,
                              const abstract_domain_concept &invariant) = 0;
+    virtual void
+    backward_assign_bool_ref_cst(const variable_t &lhs,
+				 const reference_constraint_t &rhs,
+				 const abstract_domain_concept &invariant) = 0;    
     virtual void
     backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                              bool is_not_rhs,
@@ -320,6 +326,10 @@ private:
                          const linear_constraint_t &rhs) override {
       m_inv.assign_bool_cst(lhs, rhs);
     }
+    void assign_bool_ref_cst(const variable_t &lhs,
+                         const reference_constraint_t &rhs) override {
+      m_inv.assign_bool_ref_cst(lhs, rhs);
+    }
     void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                          bool is_not_rhs) override {
       m_inv.assign_bool_var(lhs, rhs, is_not_rhs);
@@ -434,6 +444,15 @@ private:
         const variable_t &lhs, const linear_constraint_t &rhs,
         const abstract_domain_concept &invariant) override {
       m_inv.backward_assign_bool_cst(
+          lhs, rhs,
+          static_cast<const abstract_domain_model *>(&invariant)->m_inv);
+    }
+    // unsafe: if the underlying domain in invariant is not Domain then it will
+    // crash
+    void backward_assign_bool_ref_cst(
+        const variable_t &lhs, const reference_constraint_t &rhs,
+        const abstract_domain_concept &invariant) override {
+      m_inv.backward_assign_bool_ref_cst(
           lhs, rhs,
           static_cast<const abstract_domain_model *>(&invariant)->m_inv);
     }
@@ -647,6 +666,10 @@ public:
                        const linear_constraint_t &rhs) override {
     m_concept->assign_bool_cst(lhs, rhs);
   }
+  void assign_bool_ref_cst(const variable_t &lhs,
+                       const reference_constraint_t &rhs) override {
+    m_concept->assign_bool_ref_cst(lhs, rhs);
+  }
   void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                        bool is_not_rhs) override {
     m_concept->assign_bool_var(lhs, rhs, is_not_rhs);
@@ -748,6 +771,11 @@ public:
                                 const linear_constraint_t &rhs,
                                 const abstract_domain &invariant) override {
     m_concept->backward_assign_bool_cst(lhs, rhs, *invariant.m_concept);
+  }
+  void backward_assign_bool_ref_cst(const variable_t &lhs,
+                                const reference_constraint_t &rhs,
+                                const abstract_domain &invariant) override {
+    m_concept->backward_assign_bool_ref_cst(lhs, rhs, *invariant.m_concept);
   }
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                 bool is_not_rhs,
@@ -1016,6 +1044,12 @@ public:
     norm().assign_bool_cst(lhs, rhs);
   }
 
+  void assign_bool_ref_cst(const variable_t &lhs,
+                       const reference_constraint_t &rhs) override {
+    detach();
+    norm().assign_bool_ref_cst(lhs, rhs);
+  }
+  
   void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                        bool is_not_rhs) override {
     detach();
@@ -1164,6 +1198,13 @@ public:
     norm().backward_assign_bool_cst(lhs, rhs, invariant.norm());
   }
 
+  void backward_assign_bool_ref_cst(const variable_t &lhs,
+				    const reference_constraint_t &rhs,
+				    const abstract_domain_ref &invariant) override {
+    detach();
+    norm().backward_assign_bool_ref_cst(lhs, rhs, invariant.norm());
+  }
+  
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                 bool is_not_rhs,
                                 const abstract_domain_ref &invariant) override {

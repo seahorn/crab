@@ -114,6 +114,8 @@ public:
   // lhs := rhs
   virtual void assign_bool_cst(const variable_t &lhs,
                                const linear_constraint_t &rhs) = 0;
+  virtual void assign_bool_ref_cst(const variable_t &lhs,
+				   const reference_constraint_t &rhs) = 0;
   // lhs := not(rhs) if is_not_rhs
   // lhs := rhs      otherwise
   virtual void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
@@ -218,6 +220,9 @@ public:
   virtual void backward_assign_bool_cst(const variable_t &lhs,
                                         const linear_constraint_t &rhs,
                                         const Dom &invariant) = 0;
+  virtual void backward_assign_bool_ref_cst(const variable_t &lhs,
+					    const reference_constraint_t &rhs,
+					    const Dom &invariant) = 0;
   virtual void backward_assign_bool_var(const variable_t &lhs,
                                         const variable_t &rhs, bool is_not_rhs,
                                         const Dom &invariant) = 0;

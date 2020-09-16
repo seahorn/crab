@@ -654,6 +654,15 @@ public:
     }
   }
 
+  virtual void assign_bool_ref_cst(const variable_t &lhs,
+				   const reference_constraint_t &rhs) override {
+    if (!is_bottom()) {
+      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+        m_disjuncts[i].assign_bool_ref_cst(lhs, rhs);
+      }
+    }
+  }
+  
   virtual void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                bool is_not_rhs) override {
     if (!is_bottom()) {
@@ -695,6 +704,12 @@ public:
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
+  virtual void backward_assign_bool_ref_cst(const variable_t &lhs,
+					    const reference_constraint_t &rhs,
+					    const powerset_domain_t &inv) override {
+    CRAB_WARN(domain_name(), " does not implement backward operations");
+  }
+  
   virtual void backward_assign_bool_var(const variable_t &lhs,
                                         const variable_t &rhs, bool is_not_rhs,
                                         const powerset_domain_t &inv) override {

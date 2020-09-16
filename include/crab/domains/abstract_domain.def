@@ -81,6 +81,10 @@
       override {                                                               \
     CRAB_ERROR(Msg);                                                           \
   }                                                                            \
+  void assign_bool_ref_cst(const variable_t &lhs, const reference_constraint_t &rhs)  \
+      override {                                                               \
+    CRAB_ERROR(Msg);                                                           \
+  }                                                                            \
   void assign_bool_var(const variable_t &lhs, const variable_t &rhs,           \
                        bool is_not_rhs) override {                             \
     CRAB_ERROR(Msg);                                                           \
@@ -97,7 +101,11 @@
                                 const this_type &invariant) override {         \
     CRAB_ERROR(Msg);                                                           \
   }                                                                            \
-                                                                               \
+  void backward_assign_bool_ref_cst(const variable_t &lhs,                     \
+                                    const reference_constraint_t &rhs,         \
+                                    const this_type &invariant) override {     \
+    CRAB_ERROR(Msg);                                                           \
+  }                                                                            \
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,  \
                                 bool is_not_rhs, const this_type &invariant)   \
       override {                                                               \

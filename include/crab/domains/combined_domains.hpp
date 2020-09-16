@@ -633,6 +633,13 @@ public:
     this->reduce();
   }
 
+  virtual void assign_bool_ref_cst(const variable_t &lhs,
+				   const reference_constraint_t &rhs) override {
+    this->_product.first().assign_bool_ref_cst(lhs, rhs);
+    this->_product.second().assign_bool_ref_cst(lhs, rhs);
+    this->reduce();
+  }
+
   virtual void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                bool is_not_rhs) override {
     this->_product.first().assign_bool_var(lhs, rhs, is_not_rhs);
@@ -663,6 +670,14 @@ public:
     this->reduce();
   }
 
+  virtual void backward_assign_bool_ref_cst(const variable_t &lhs,
+					    const reference_constraint_t &rhs,
+					    const domain_product2_t &inv) override {
+    this->_product.first().backward_assign_bool_ref_cst(lhs, rhs, inv.first());
+    this->_product.second().backward_assign_bool_ref_cst(lhs, rhs, inv.second());
+    this->reduce();
+  }
+  
   virtual void backward_assign_bool_var(const variable_t &lhs,
                                         const variable_t &rhs, bool is_not_rhs,
                                         const domain_product2_t &inv) override {
@@ -1184,6 +1199,8 @@ public:
   // boolean operations
   void assign_bool_cst(const variable_t &lhs,
                        const linear_constraint_t &rhs) override {}
+  void assign_bool_ref_cst(const variable_t &lhs,
+			   const reference_constraint_t &rhs) override {}
   void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                        bool is_not_rhs) override {}
   void apply_binary_bool(bool_operation_t op, const variable_t &x,
@@ -1192,6 +1209,9 @@ public:
   // backward boolean operations
   void backward_assign_bool_cst(
       const variable_t &lhs, const linear_constraint_t &rhs,
+      const reduced_numerical_domain_product2_t &invariant) override {}
+  void backward_assign_bool_ref_cst(
+      const variable_t &lhs, const reference_constraint_t &rhs,
       const reduced_numerical_domain_product2_t &invariant) override {}
   void backward_assign_bool_var(
       const variable_t &lhs, const variable_t &rhs, bool is_not_rhs,
@@ -1838,6 +1858,8 @@ public:
   // boolean operations
   void assign_bool_cst(const variable_t &lhs,
                        const linear_constraint_t &rhs) override {}
+  void assign_bool_ref_cst(const variable_t &lhs,
+			   const reference_constraint_t &rhs) override {}
   void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                        bool is_not_rhs) override {}
   void apply_binary_bool(bool_operation_t op, const variable_t &x,
@@ -1847,6 +1869,9 @@ public:
   void backward_assign_bool_cst(const variable_t &lhs,
                                 const linear_constraint_t &rhs,
                                 const rnc_domain_t &invariant) override {}
+  void backward_assign_bool_ref_cst(const variable_t &lhs,
+				    const reference_constraint_t &rhs,
+				    const rnc_domain_t &invariant) override {}
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                 bool is_not_rhs,
                                 const rnc_domain_t &invariant) override {}

@@ -1097,6 +1097,8 @@ public:
   // boolean operations
   void assign_bool_cst(const variable_t &lhs,
                        const linear_constraint_t &rhs) override {}
+  void assign_bool_ref_cst(const variable_t &lhs,
+			   const reference_constraint_t &rhs) override {}
   void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                        bool is_not_rhs) override {}
   void apply_binary_bool(crab::domains::bool_operation_t op,
@@ -1107,6 +1109,10 @@ public:
   void backward_assign_bool_cst(const variable_t &lhs,
                                 const linear_constraint_t &rhs,
                                 const congruence_domain_t &invariant) override {
+  }
+  void backward_assign_bool_ref_cst(const variable_t &lhs,
+				    const reference_constraint_t &rhs,
+				    const congruence_domain_t &invariant) override {
   }
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                 bool is_not_rhs,

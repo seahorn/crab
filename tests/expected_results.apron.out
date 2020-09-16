@@ -2370,8 +2370,8 @@ Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 === Begin ./test-bin/flat_bool_domain1 ===
 entry:
   i = 0;
-  bf = false ;
-  bt = true ;
+  bf = false;
+  bt = true;
   goto bb1;
 bb1:
   goto bb1_t,bb1_f;

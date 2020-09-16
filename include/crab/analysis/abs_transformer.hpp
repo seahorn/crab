@@ -501,7 +501,11 @@ public:
       pre_bot = m_inv.is_bottom();
     }
 
-    m_inv.assign_bool_cst(stmt.lhs(), stmt.rhs());
+    if (stmt.is_rhs_linear_constraint()) {
+      m_inv.assign_bool_cst(stmt.lhs(), stmt.rhs_as_linear_constraint());
+    } else {
+      m_inv.assign_bool_ref_cst(stmt.lhs(), stmt.rhs_as_reference_constraint());      
+    }
 
     if (::crab::CrabSanityCheckFlag) {
       bool post_bot = m_inv.is_bottom();

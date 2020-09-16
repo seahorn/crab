@@ -372,6 +372,13 @@ public:
              crab::outs() << x << ":=" << bx << "\n");
   }
 
+  void assign_bool_ref_cst(const variable_t &x,
+			   const reference_constraint_t &cst) override {
+    _env -= x;
+    CRAB_LOG("flat-boolean", auto bx = _env[x];
+             crab::outs() << x << ":=" << bx << "\n");
+  }
+  
   void assign_bool_var(const variable_t &x, const variable_t &y,
                        bool is_not_y) override {
     crab::CrabStats::count(domain_name() + ".count.assign_bool_var");
@@ -445,6 +452,18 @@ public:
     _env -= lhs;
   }
 
+  void backward_assign_bool_ref_cst(const variable_t &lhs,
+				    const reference_constraint_t &rhs,
+				    const flat_boolean_domain_t &inv) override {
+    crab::CrabStats::count(domain_name() + ".count.backward_assign_bool_cst");
+    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign_bool_cst");
+    if (is_bottom())
+      return;
+
+    /* nothing to do: flat_boolean_domain ignores this */
+    _env -= lhs;
+  }
+  
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                 bool is_not_rhs,
                                 const flat_boolean_domain_t &inv) override {
@@ -1276,6 +1295,17 @@ public:
                           << "\n";);
   }
 
+  void assign_bool_ref_cst(const variable_t &x,
+			   const reference_constraint_t &cst) override {
+    crab::CrabStats::count(domain_name() + ".count.assign_bool_cst");
+    crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst");
+    
+    if (is_bottom())
+      return;
+    
+    operator-=(x);
+  }
+  
   void assign_bool_var(const variable_t &x, const variable_t &y,
                        bool is_not_y) override {
     crab::CrabStats::count(domain_name() + ".count.assign_bool_var");
@@ -1419,6 +1449,13 @@ public:
     _var_to_csts -= lhs;
   }
 
+  void backward_assign_bool_ref_cst(const variable_t &lhs,
+				    const reference_constraint_t &rhs,
+				    const bool_num_domain_t &inv) override {
+    /** TODO: this can be done better **/    
+    operator-=(lhs);
+  }
+  
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                 bool is_not_rhs,
                                 const bool_num_domain_t &inv) override {

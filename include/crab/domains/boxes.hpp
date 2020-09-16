@@ -1495,6 +1495,15 @@ public:
                                    << *this << "\n");
   }
 
+  void assign_bool_ref_cst(const variable_t &lhs,
+			   const reference_constraint_t &cst) override {
+    if (is_bottom())
+      return;
+
+    this->operator-=(lhs);
+    CRAB_WARN("boxes boolean assignment of reference constraints not implemented");
+  }
+  
   void assign_bool_var(const variable_t &x, const variable_t &y,
                        bool is_not_y) override {
     if (!m_bool_reasoning)
@@ -1583,6 +1592,16 @@ public:
     CRAB_WARN("boxes backward boolean assignment not implemented");
   }
 
+  void backward_assign_bool_ref_cst(const variable_t &lhs,
+				    const reference_constraint_t &rhs,
+				    const boxes_domain_t &inv) override {
+    if (is_bottom())
+      return;
+
+    this->operator-=(lhs);
+    CRAB_WARN("boxes backward boolean assignment of reference constraints not implemented");
+  }
+  
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                 bool is_not_rhs,
                                 const boxes_domain_t &inv) override {
