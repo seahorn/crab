@@ -489,8 +489,8 @@ public:
   using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
 
-  havoc_stmt(variable_t lhs, basic_block_t *parent)
-      : statement_t(HAVOC, parent), m_lhs(lhs) {
+  havoc_stmt(variable_t lhs, std::string comment, basic_block_t *parent)
+    : statement_t(HAVOC, parent), m_lhs(lhs), m_comment(comment) {
     this->m_live.add_def(m_lhs);
   }
 
@@ -502,13 +502,19 @@ public:
   }
 
   virtual statement_t *clone(basic_block_t *parent) const {
-    return new this_type(m_lhs, parent);
+    return new this_type(m_lhs, m_comment, parent);
   }
 
-  void write(crab_os &o) const { o << "havoc(" << m_lhs << ")"; }
+  void write(crab_os &o) const {
+    o << "havoc(" << m_lhs << ")";
+    if (!m_comment.empty()) {
+      o << " /* " << m_comment << "*/";
+    }
+  }
 
 private:
   variable_t m_lhs;
+  std::string m_comment;
 };
 
 // select x, c, e1, e2:
@@ -601,10 +607,12 @@ public:
 
   virtual void write(crab_os &o) const {
     o << "assert(" << m_cst << ")";
-    if (this->m_dbg_info.has_debug()) {
-      o << " // line=" << this->m_dbg_info.m_line
-        << " column=" << this->m_dbg_info.m_col;
-    }
+    if (this->m_dbg_info.has_debug()) {    
+      o << "   /* Property check at "
+	<< "file=" << this->m_dbg_info.m_file  << " "
+	<< "line=" << this->m_dbg_info.m_line  << " "
+	<< "col=" << this->m_dbg_info.m_col   << "*/";
+    }    
   }
 
 private:
@@ -1469,7 +1477,16 @@ public:
     return new this_type(m_cst, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const { o << "assert(" << m_cst << ")"; }
+  virtual void write(crab_os &o) const {
+    o << "assert(" << m_cst << ")";
+    if (this->m_dbg_info.has_debug()) {    
+      o << "   /* Property check at "
+	<< "file=" << this->m_dbg_info.m_file  << " "
+	<< "line=" << this->m_dbg_info.m_line  << " "
+	<< "col=" << this->m_dbg_info.m_col   << "*/";
+    }
+    
+  }
 
 private:
   reference_constraint_t m_cst;
@@ -2156,7 +2173,15 @@ public:
     return new this_type(m_var, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const { o << "assert(" << m_var << ")"; }
+  virtual void write(crab_os &o) const {
+    o << "assert(" << m_var << ")";
+    if (this->m_dbg_info.has_debug()) {    
+      o << "   /* Property check at " 
+	<< "file=" << this->m_dbg_info.m_file  << " "
+	<< "line=" << this->m_dbg_info.m_line  << " "
+	<< "col=" << this->m_dbg_info.m_col   << "*/";
+    }
+  }
 
 private:
   variable_t m_var; // pre: boolean type
@@ -2610,8 +2635,8 @@ public:
     return insert(new assume_t(cst, this));
   }
 
-  const statement_t *havoc(variable_t lhs) {
-    return insert(new havoc_t(lhs, this));
+  const statement_t *havoc(variable_t lhs, std::string comment = "") {
+    return insert(new havoc_t(lhs, comment, this));
   }
 
   const statement_t *unreachable() { return insert(new unreach_t(this)); }
