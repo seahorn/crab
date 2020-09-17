@@ -183,6 +183,7 @@ public:
     return reference_constraint_t(opt_var_t(), opt_var_t(), REF_DISEQ);
   }
 
+  /* constraint a variable with null */
   static reference_constraint_t mk_null(variable_t v) {
     if (!v.get_type().is_reference()) {
       CRAB_ERROR("reference_constraint::mk_null:", v, " must be a reference");
@@ -198,6 +199,36 @@ public:
     return reference_constraint_t(opt_var_t(v), opt_var_t(), REF_DISEQ);
   }
 
+  static reference_constraint_t mk_le_null(variable_t v) {
+    if (!v.get_type().is_reference()) {
+      CRAB_ERROR("reference_constraint::mk_leq:", v, " must be a reference");
+    }
+    return reference_constraint_t(opt_var_t(v), opt_var_t(), REF_LEQ);
+  }
+
+
+  static reference_constraint_t mk_lt_null(variable_t v) {
+    if (!v.get_type().is_reference()) {
+      CRAB_ERROR("reference_constraint::mk_lt:", v, " must be a reference");
+    }
+    return reference_constraint_t(opt_var_t(v), opt_var_t(), REF_LT);
+  }
+
+  static reference_constraint_t mk_ge_null(variable_t v) {
+    if (!v.get_type().is_reference()) {
+      CRAB_ERROR("reference_constraint::mk_leq:", v, " must be a reference");
+    }
+    return reference_constraint_t(opt_var_t(v), opt_var_t(), REF_GEQ);
+  }
+
+  static reference_constraint_t mk_gt_null(variable_t v) {
+    if (!v.get_type().is_reference()) {
+      CRAB_ERROR("reference_constraint::mk_lt:", v, " must be a reference");
+    }
+    return reference_constraint_t(opt_var_t(v), opt_var_t(), REF_GT);
+  }
+  
+  /* constraint two variables */  
   static reference_constraint_t mk_eq(variable_t v1, variable_t v2,
                                       number_t offset = number_t(0)) {
     if (!v1.get_type().is_reference()) {
@@ -219,15 +250,7 @@ public:
       CRAB_ERROR("reference_constraint::mk_not_eq:", v2,
                  " must be a reference");
     }
-    return reference_constraint_t(opt_var_t(v1), opt_var_t(v2), offset,
-                                  REF_DISEQ);
-  }
-
-  static reference_constraint_t mk_lt_null(variable_t v) {
-    if (!v.get_type().is_reference()) {
-      CRAB_ERROR("reference_constraint::mk_lt:", v, " must be a reference");
-    }
-    return reference_constraint_t(opt_var_t(v), opt_var_t(), REF_LT);
+    return reference_constraint_t(opt_var_t(v1), opt_var_t(v2), offset, REF_DISEQ);
   }
 
   static reference_constraint_t mk_lt(variable_t v1, variable_t v2,
@@ -241,12 +264,6 @@ public:
     return reference_constraint_t(opt_var_t(v1), opt_var_t(v2), offset, REF_LT);
   }
 
-  static reference_constraint_t mk_le_null(variable_t v) {
-    if (!v.get_type().is_reference()) {
-      CRAB_ERROR("reference_constraint::mk_leq:", v, " must be a reference");
-    }
-    return reference_constraint_t(opt_var_t(v), opt_var_t(), REF_LEQ);
-  }
 
   static reference_constraint_t mk_le(variable_t v1, variable_t v2,
                                       number_t offset = number_t(0)) {
@@ -256,10 +273,32 @@ public:
     if (!v2.get_type().is_reference()) {
       CRAB_ERROR("reference_constraint::mk_leq:", v2, " must be a reference");
     }
-    return reference_constraint_t(opt_var_t(v1), opt_var_t(v2), offset,
-                                  REF_LEQ);
+    return reference_constraint_t(opt_var_t(v1), opt_var_t(v2), offset, REF_LEQ);
   }
 
+  static reference_constraint_t mk_gt(variable_t v1, variable_t v2,
+                                      number_t offset = number_t(0)) {
+    if (!v1.get_type().is_reference()) {
+      CRAB_ERROR("reference_constraint::mk_lt:", v1, " must be a reference");
+    }
+    if (!v2.get_type().is_reference()) {
+      CRAB_ERROR("reference_constraint::mk_lt:", v2, " must be a reference");
+    }
+    return reference_constraint_t(opt_var_t(v1), opt_var_t(v2), offset, REF_GT);
+  }
+
+
+  static reference_constraint_t mk_ge(variable_t v1, variable_t v2,
+                                      number_t offset = number_t(0)) {
+    if (!v1.get_type().is_reference()) {
+      CRAB_ERROR("reference_constraint::mk_leq:", v1, " must be a reference");
+    }
+    if (!v2.get_type().is_reference()) {
+      CRAB_ERROR("reference_constraint::mk_leq:", v2, " must be a reference");
+    }
+    return reference_constraint_t(opt_var_t(v1), opt_var_t(v2), offset, REF_GEQ);
+  }
+  
   void write(crab_os &o) const {
     if (is_contradiction()) {
       o << "false";
