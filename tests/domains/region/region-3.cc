@@ -81,6 +81,8 @@ int main() {
   bb8.add_succ(bb9);
   bb9.add_succ(bb6_loop);
 
+  z_var_or_num_t n30000_32(z_number(30000), crab::variable_type(crab::INT_TYPE, 32));
+    
   entry.region_init(mem_field_next);
   entry.region_init(mem_field_s);
   entry.region_init(mem_field_f);
@@ -97,13 +99,13 @@ int main() {
   // tmp = malloc(...)
   bb5.make_ref(ref2, mem_field_f);
   
-  bb5.assume_ref(z_ref_cst_t::mk_le_null(ref2).negate());
+  bb5.assume_ref(z_ref_cst_t::mk_gt_null(ref2));
   /// tmp->f = i  
   bb5.gep_ref(ref3, mem_field_f, ref2, mem_field_f);
   bb5.store_to_ref(ref3, mem_field_f, i0);
   // tmp->s = N*3
   bb5.gep_ref(ref5, mem_field_s, ref2, mem_field_f, 4);
-  bb5.store_to_ref(ref5, mem_field_s, 30000);
+  bb5.store_to_ref(ref5, mem_field_s, n30000_32);
   // tmp->n = l
   bb5.gep_ref(ref4, mem_field_next, ref2, mem_field_f, 8);
   bb5.store_to_ref(ref4, mem_field_next, ref0);

@@ -37,6 +37,7 @@ public:
   using disjunctive_linear_constraint_system_t =
       ikos::disjunctive_linear_constraint_system<number_t, varname_t>;
   using variable_t = variable<number_t, varname_t>;
+  using variable_or_number_t = variable_or_number<number_t, varname_t>;
   using variable_vector_t = std::vector<variable_t>;
   using reference_constraint_t = reference_constraint<number_t, varname_t>;
   using interval_t = ikos::interval<number_t>;
@@ -119,7 +120,7 @@ private:
     virtual void ref_load(const variable_t &ref, const variable_t &reg,
                           const variable_t &res) = 0;
     virtual void ref_store(const variable_t &ref, const variable_t &reg,
-                           const linear_expression_t &val) = 0;
+                           const variable_or_number_t &val) = 0;
     virtual void ref_gep(const variable_t &ref1, const variable_t &reg1,
                          const variable_t &ref2, const variable_t &reg2,
                          const linear_expression_t &offset) = 0;
@@ -381,7 +382,7 @@ private:
       m_inv.ref_load(ref, reg, res);
     }
     void ref_store(const variable_t &ref, const variable_t &reg,
-                   const linear_expression_t &val) override {
+                   const variable_or_number_t &val) override {
       m_inv.ref_store(ref, reg, val);
     }
     void ref_gep(const variable_t &ref1, const variable_t &reg1,
@@ -722,7 +723,7 @@ public:
     m_concept->ref_load(ref, reg, res);
   }
   void ref_store(const variable_t &ref, const variable_t &reg,
-                 const linear_expression_t &val) override {
+                 const variable_or_number_t &val) override {
     m_concept->ref_store(ref, reg, val);
   }
   void ref_gep(const variable_t &ref1, const variable_t &reg1,
@@ -883,6 +884,7 @@ public:
   using disjunctive_linear_constraint_system_t =
       ikos::disjunctive_linear_constraint_system<number_t, varname_t>;
   using variable_t = variable<number_t, varname_t>;
+  using variable_or_number_t = variable_or_number<number_t, varname_t>;
   using variable_vector_t = std::vector<variable_t>;
   using reference_constraint_t = reference_constraint<number_t, varname_t>;
   using interval_t = ikos::interval<number_t>;
@@ -1126,7 +1128,7 @@ public:
   }
 
   void ref_store(const variable_t &ref, const variable_t &reg,
-                 const linear_expression_t &val) override {
+                 const variable_or_number_t &val) override {
     detach();
     norm().ref_store(ref, reg, val);
   }

@@ -63,6 +63,9 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
 
   // === adding statements
 
+  z_var_or_num_t zero32(z_number(0), crab::variable_type(crab::INT_TYPE, 32));
+  z_var_or_num_t one32(z_number(1), crab::variable_type(crab::INT_TYPE, 32));  
+  
   // Intialization of memory regions
   entry.region_init(mem1);
   entry.region_init(mem2);
@@ -76,26 +79,26 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
   // Disequalities too hard
   entry.assume_ref(z_ref_cst_t::mk_not_null(i));
   #else
-  entry.assume_ref(z_ref_cst_t::mk_le_null(i).negate());
+  entry.assume_ref(z_ref_cst_t::mk_gt_null(i));
   #endif
   #if 0
   // Disequalities too hard
   entry.assume_ref(z_ref_cst_t::mk_not_null(x));
   #else
-  entry.assume_ref(z_ref_cst_t::mk_le_null(x).negate());
+  entry.assume_ref(z_ref_cst_t::mk_gt_null(x));
   #endif 
   #if 0
   // Disequalities too hard
   entry.assume_ref(z_ref_cst_t::mk_not_null(y));
   #else
-  entry.assume_ref(z_ref_cst_t::mk_le_null(y).negate());
+  entry.assume_ref(z_ref_cst_t::mk_gt_null(y));
   #endif 
   //// *i := 0;
-  entry.store_to_ref(i, mem1, z_number(0));
+  entry.store_to_ref(i, mem1, zero32);
   //// *x := 1;
-  entry.store_to_ref(x, mem2, z_number(1));
+  entry.store_to_ref(x, mem2, one32);
   //// *y := 0;
-  entry.store_to_ref(y, mem3, z_number(0));
+  entry.store_to_ref(y, mem3, zero32);
   //// assume(*i <= 99);
   bb1_t.load_from_ref(deref_i, i, mem1);
   bb1_t.assume(deref_i <= 99);

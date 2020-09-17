@@ -1135,22 +1135,22 @@ public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
   using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
-  using linear_expression_t = ikos::linear_expression<Number, VariableName>;
+  using variable_or_number_t = variable_or_number<Number, VariableName>;
 
-  store_to_ref_stmt(variable_t ref, variable_t region, linear_expression_t val,
+  store_to_ref_stmt(variable_t ref, variable_t region, variable_or_number_t val,
                     basic_block_t *parent, debug_info dbg_info = debug_info())
       : statement_t(REF_STORE, parent, dbg_info), m_ref(ref), m_region(region),
         m_val(val) {
     this->m_live.add_def(m_ref);
-    this->m_live.add_use(m_region);            
-    for (auto const &v : m_val.variables()) {
-      this->m_live.add_use(v);
+    this->m_live.add_use(m_region);
+    if (m_val.is_variable()) {
+      this->m_live.add_use(m_val.get_variable());
     }
   }
 
   const variable_t &ref() const { return m_ref; }
 
-  const linear_expression_t &val() const { return m_val; }
+  const variable_or_number_t &val() const { return m_val; }
 
   const variable_t &region() const { return m_region; }
 
@@ -1170,7 +1170,7 @@ public:
 private:
   variable_t m_ref;
   variable_t m_region;
-  linear_expression_t m_val;
+  variable_or_number_t m_val;
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
@@ -2200,6 +2200,7 @@ public:
 
   // helper types to build statements
   using variable_t = variable<Number, VariableName>;
+  using variable_or_number_t = variable_or_number<Number, VariableName>;
   using lin_exp_t = ikos::linear_expression<Number, VariableName>;
   using lin_cst_t = ikos::linear_constraint<Number, VariableName>;
   using ref_cst_t = reference_constraint<Number, VariableName>;
@@ -2627,6 +2628,7 @@ public:
     return insert(new bin_op_t(lhs, BINOP_ASHR, op1, op2, this));
   }
 
+  // numerical assignment
   const statement_t *assign(variable_t lhs, lin_exp_t rhs) {
     return insert(new assign_t(lhs, rhs, this));
   }
@@ -2740,7 +2742,7 @@ public:
   }
 
   const statement_t *store_to_ref(variable_t ref, variable_t region,
-                                  lin_exp_t val) {
+                                  variable_or_number_t val) {
     return insert(new store_to_ref_t(ref, region, val, this));
   }
 
@@ -2760,10 +2762,11 @@ public:
 
   const statement_t *store_to_arr_ref(variable_t ref, variable_t region,
                                       lin_exp_t lb_index, lin_exp_t ub_index,
+				      lin_exp_t val,
                                       lin_exp_t elem_size,
                                       bool is_strong_update) {
     return insert(new store_to_arr_ref_t(ref, region, lb_index, ub_index,
-                                         elem_size, is_strong_update, this));
+                                         val, elem_size, is_strong_update, this));
   }
 
   const statement_t *assume_ref(ref_cst_t cst) {

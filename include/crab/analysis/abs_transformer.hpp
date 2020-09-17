@@ -20,7 +20,7 @@
      v := a[i];
      a := b
 
-   REFERENCES
+   REGIONS and REFERENCES
      TODO
 
    FUNCTIONS
@@ -52,6 +52,7 @@ public:
   using bb_label_t = BasicBlockLabel;
 
   using var_t = variable<number_t, varname_t>;
+  using var_or_num_t = variable_or_number<number_t, varname_t>;
   using lin_exp_t = ikos::linear_expression<number_t, varname_t>;
   using lin_cst_t = ikos::linear_constraint<number_t, varname_t>;
   using lin_cst_sys_t = ikos::linear_constraint_system<number_t, varname_t>;
@@ -288,6 +289,7 @@ public:
   using number_t = typename abs_dom_t::number_t;
   using varname_t = typename abs_dom_t::varname_t;
   using variable_t = typename abs_dom_t::variable_t;
+  using variable_or_number_t = variable_or_number<number_t, varname_t>;
   using basic_block_label_t = typename BasicBlock::basic_block_label_t;
 
   static_assert(std::is_same<typename AbsD::number_t,

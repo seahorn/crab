@@ -59,6 +59,9 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
 
   // === Adding statements
 
+  z_var_or_num_t zero32(z_number(0), crab::variable_type(crab::INT_TYPE, 32));
+  z_var_or_num_t one32(z_number(1), crab::variable_type(crab::INT_TYPE, 32));  
+  
   // Intialization of memory regions
   entry.region_init(mem1);
   entry.region_init(mem2);
@@ -69,11 +72,11 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
   entry.make_ref(x, mem2);
   entry.make_ref(y, mem3);
   //// *i := 0;
-  entry.store_to_ref(i, mem1, z_number(0));
+  entry.store_to_ref(i, mem1, zero32);
   //// *x := 1;
-  entry.store_to_ref(x, mem2, z_number(1));
+  entry.store_to_ref(x, mem2, one32);
   //// *y := 0;
-  entry.store_to_ref(y, mem3, z_number(0));
+  entry.store_to_ref(y, mem3, zero32);
   //// assume(*i <= 99);
   bb1_t.load_from_ref(deref_i, i, mem1);
   bb1_t.assume(deref_i <= 99);

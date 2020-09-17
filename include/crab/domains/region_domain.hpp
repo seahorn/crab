@@ -271,6 +271,7 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
+  using typename abstract_domain_t::variable_or_number_t;
   using typename abstract_domain_t::variable_vector_t;
   using number_t = typename Params::number_t;
   using varname_t = typename Params::varname_t;
@@ -1315,21 +1316,26 @@ public:
 
     const base_variable_t &base_res = rename_var(res);
 
+    // TODO: handle unknown regions
+    if (rgn.get_type().is_unknown_region()) {
+      CRAB_LOG("region",
+	       CRAB_WARN("region_domain::ref_load: skip unknown region ", rgn););
+      m_base_dom -= base_res;
+      return;
+    }
+
+    // Non-scalar regions should be handled by ref_load_from_array
     if (!rgn.get_type().is_scalar_region()) {
-      if (rgn.get_type().is_unknown_region()) {
-	CRAB_LOG("region", CRAB_WARN("region_domain::ref_load: skip unknown region ",
-				     rgn););
-      } else {
-	CRAB_LOG("region", CRAB_WARN("region_domain::ref_load: ", rgn,
-				     " must be a scalar region"););
-      }
+      CRAB_LOG("region",
+	  CRAB_WARN("region_domain::ref_load: ", rgn, " must be a scalar region"););
       m_base_dom -= base_res;
       return;
     }
 
     if (!ref.get_type().is_reference()) {
-      CRAB_LOG("region", CRAB_WARN("region_domain::ref_load: ", ref,
-                                   " must be a reference"););
+      // This shouldn't happen
+      CRAB_LOG("region",
+	  CRAB_WARN("region_domain::ref_load: ", ref, " must be a reference"););
       m_base_dom -= base_res;
       return;
     }
@@ -1344,6 +1350,8 @@ public:
     }
 
     auto ref_load = [&rgn, &base_res, this](const base_variable_t &rgn_var) {
+       // At this point references and region of references have been
+       // translated to integers and region of integers, respectively.
       if (rgn_var.get_type() != base_res.get_type()) {
         CRAB_ERROR("region_domain::ref_load: ", "Type of region ", rgn,
                    " does not match with ", base_res);
@@ -1353,8 +1361,7 @@ public:
       } else if (base_res.get_type().is_integer() || base_res.get_type().is_real()) {
         this->m_base_dom.assign(base_res, rgn_var);
       } else {
-        // variables of type base_variable_t cannot be REF_TYPE or
-        // ARR_TYPE
+        // variables of type base_variable_t cannot be REF_TYPE or ARR_TYPE
         CRAB_ERROR("region_domain::ref_load: unsupported type in ", base_res);
       }
     };
@@ -1385,7 +1392,7 @@ public:
   // Write the content of val to the address pointed by ref in region
   // rgn.
   void ref_store(const variable_t &ref, const variable_t &rgn,
-                 const linear_expression_t &val) override {
+                 const variable_or_number_t &val) override {
     crab::CrabStats::count(domain_name() + ".count.ref_store");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_store");
 
@@ -1393,20 +1400,37 @@ public:
       return;
     }
 
-    if (!rgn.get_type().is_scalar_region()) {
-      if (rgn.get_type().is_unknown_region()) {
-	CRAB_LOG("region", CRAB_WARN("region_domain::ref_load: skip unknown region ",
-				     rgn););
-      } else {
-	CRAB_LOG("region", CRAB_WARN("region_domain::ref_store: ", rgn,
-				     " must be a scalar region"););
-      }
+    // TODO: handle unknown regions
+    if (rgn.get_type().is_unknown_region()) {
+      CRAB_LOG("region", CRAB_WARN("region_domain::ref_store: skip unknown region ",
+				   rgn););
       return;
     }
 
+    base_variable_t rgn_var = rename_var(rgn);
+
+    // Non-scalar regions should be handled by ref_store_to_array
+    if (!rgn.get_type().is_scalar_region()) {
+      CRAB_LOG("region", CRAB_WARN("region_domain::ref_store: ", rgn,
+				   " must be a scalar region"););
+      m_base_dom -= rgn_var;
+      return;
+    } else {
+      if ((rgn.get_type().is_bool_region() && !val.get_type().is_bool()) ||
+	  (rgn.get_type().is_integer_region() && !val.get_type().is_integer()) ||
+	  (rgn.get_type().is_real_region() && !val.get_type().is_real()) ||
+	  (rgn.get_type().is_reference_region() && !val.get_type().is_reference())) {
+	CRAB_ERROR(domain_name(), "::ref_store: type of value ",
+		   val, " (", val.get_type(), ") is not compatible with region ",
+		   rgn, " (", rgn.get_type(), ")");
+      }
+    }
+    
     if (!ref.get_type().is_reference()) {
+      // This shouldn't happen
       CRAB_LOG("region", CRAB_WARN("region_domain::ref_store: ", ref,
                                    " must be a reference"););
+      m_base_dom -= rgn_var;      
       return;
     }
 
@@ -1415,31 +1439,32 @@ public:
                                    " is null. "//, " Set to bottom ..."
 				   ););
       //set_to_bottom();
+      m_base_dom -= rgn_var;      
       return;
     }
-
-    auto ref_store = [&rgn, &val, this](base_abstract_domain_t &base_dom) {
-      base_variable_t rgn_var = rename_var(rgn);
-      if (rgn_var.get_type().is_bool()) {	
-        if (val.is_constant()) {
-          if (val.constant() >= number_t(1)) {
-            base_dom.assign_bool_cst(rgn_var,
-                                     base_linear_constraint_t::get_true());
-          } else {
-            base_dom.assign_bool_cst(rgn_var,
-                                     base_linear_constraint_t::get_false());
-          }
-        } else if (auto var = val.get_variable()) {
-          base_dom.assign_bool_var(rgn_var, rename_var(*var), false);
-        } else {
-          CRAB_ERROR("region_domain::ref_store: unsupported boolean ", val);
+    
+    auto ref_store = [&rgn_var, &val, this](base_abstract_domain_t &base_dom) {
+       // At this point region of references has been translated to region of integers.
+       // val can be any scalar including a reference.
+      if (val.get_type().is_bool()) {
+        if (val.is_number()) {
+	  base_dom.assign_bool_cst(rgn_var,
+				   (val.get_number() >= number_t(1) ?
+				    base_linear_constraint_t::get_true():
+				    base_linear_constraint_t::get_false()));
+        } else { 
+          base_dom.assign_bool_var(rgn_var, rename_var(val.get_variable()), false);
         }
-      } else if (rgn_var.get_type().is_integer() || rgn_var.get_type().is_real()) {
-        base_dom.assign(rgn_var, rename_linear_expr(val));
+      } else if (val.get_type().is_integer() ||
+		 val.get_type().is_real() ||
+		 val.get_type().is_reference()) {
+	if (val.is_number()) {
+	  base_dom.assign(rgn_var, val.get_number());
+	} else {
+	  base_dom.assign(rgn_var, rename_var(val.get_variable()));
+	}
       } else {
-        // variables of type base_variable_t cannot be REF_TYPE or
-        // ARR_TYPE
-        CRAB_ERROR("region_domain::ref_store: unsupported type in ", rgn_var);
+        CRAB_ERROR(domain_name(), "::ref_store: unsupported type ", val.get_type());
       }
     };
 

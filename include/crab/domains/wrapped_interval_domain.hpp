@@ -1307,6 +1307,7 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
+  using typename abstract_domain_t::variable_or_number_t;
   using typename abstract_domain_t::variable_vector_t;
   using number_t = Number;
   using varname_t = VariableName;
@@ -1862,7 +1863,7 @@ public:
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {}
   void ref_store(const variable_t &ref, const variable_t &reg,
-                 const linear_expression_t &val) override {}
+                 const variable_or_number_t &val) override {}
   void ref_gep(const variable_t &ref1, const variable_t &reg1,
                const variable_t &ref2, const variable_t &reg2,
                const linear_expression_t &offset) override {}
@@ -2241,6 +2242,7 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
+  using typename abstract_domain_t::variable_or_number_t;
   using typename abstract_domain_t::variable_vector_t;
   using number_t = Number;
   using varname_t = VariableName;
@@ -2739,7 +2741,7 @@ public:
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {}
   void ref_store(const variable_t &ref, const variable_t &reg,
-                 const linear_expression_t &val) override {}
+                 const variable_or_number_t &val) override {}
   void ref_gep(const variable_t &ref1, const variable_t &reg1,
                const variable_t &ref2, const variable_t &reg2,
                const linear_expression_t &offset) override {}
@@ -2938,6 +2940,7 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
+  using typename abstract_domain_t::variable_or_number_t;  
   using typename abstract_domain_t::variable_vector_t;
   using number_t = typename NumDom::number_t;
   using varname_t = typename NumDom::varname_t;
@@ -3579,7 +3582,7 @@ public:
     _product.ref_load(ref, reg, res);
   }
   void ref_store(const variable_t &ref, const variable_t &reg,
-                 const linear_expression_t &val) override {
+                 const variable_or_number_t &val) override {
     _product.ref_store(ref, reg, val);
   }
   void ref_gep(const variable_t &ref1, const variable_t &reg1,
