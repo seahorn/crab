@@ -606,9 +606,8 @@ private:
 	ty = BOOL_TYPE;
 	bitwidth = 1;
       } else if (vty.is_integer_region()) {
-	// TODO: update this if we decide to allow REG_INT_TYPE to have bitwidth
         ty = INT_TYPE;
-        bitwidth = 32; 
+        bitwidth = vty.get_integer_region_bitwidth(); 
       } else if (vty.is_reference_region()) {
         ty = INT_TYPE;
         bitwidth = 32;
@@ -1330,6 +1329,15 @@ public:
 	  CRAB_WARN("region_domain::ref_load: ", rgn, " must be a scalar region"););
       m_base_dom -= base_res;
       return;
+    } else {
+      if ((rgn.get_type().is_bool_region() && !res.get_type().is_bool()) ||
+	  (rgn.get_type().is_integer_region() && !res.get_type().is_integer()) ||
+	  (rgn.get_type().is_real_region() && !res.get_type().is_real()) ||
+	  (rgn.get_type().is_reference_region() && !res.get_type().is_reference())) {
+	CRAB_ERROR(domain_name(), "::ref_load: type of lhs ",
+		   res, " (", res.get_type(), ") is not compatible with region ",
+		   rgn, " (", rgn.get_type(), ")");
+      }
     }
 
     if (!ref.get_type().is_reference()) {

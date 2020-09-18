@@ -42,15 +42,15 @@ enum variable_type_kind {
 class variable_type {
   variable_type_kind m_kind;
   /* 
-   * Important: the bitwidth (m_bitwidth) is only used if the type is
-   * an integer or Boolean. Booleans always have a bitwidth of
-   * 1. Reals do not have a bitwidth associated with. For references,
-   * we might want to use a bitwidth in the future but for now, we
-   * don't. Arrays of integers do not have a bitwidth associated with
-   * because arrays can be indexed using different bitwidths so each
-   * array store and load must say how many bytes is being
-   * accessed. In the future, we might want to use bitwidth for
-   * regions of integers but for now, we don't.
+   * Important: the bitwidth (m_bitwidth) is only relevant if the type
+   * is an integer or a region of integers. Booleans always have a
+   * bitwidth of 1. Reals do not have a bitwidth associated with. For
+   * references, we might want to use a bitwidth in the future but for
+   * now, we don't. Arrays of integers do not have a bitwidth
+   * associated with because arrays can be indexed using different
+   * bitwidths so each array store and load must say how many bytes
+   * are being accessed. For region of integers, the bitwidth
+   * represents the bitwidth of the integer stored in the region.
   */
   unsigned m_bitwidth; /* in bits */
 public:
@@ -58,6 +58,9 @@ public:
     m_kind(kind), m_bitwidth(width) {
     if (m_kind == INT_TYPE && m_bitwidth <= 1) {
       CRAB_ERROR("Cannot create integer variable without bitwidth");
+    }
+    if (m_kind == REG_INT_TYPE && m_bitwidth <= 1) {
+      CRAB_ERROR("Cannot create integer region variable without bitwidth");
     }
     
     if (m_kind == BOOL_TYPE) {
@@ -72,7 +75,9 @@ public:
   bool operator==(const variable_type &o) const {
     if (m_kind == INT_TYPE) {
       return m_kind == o.m_kind && m_bitwidth == o.m_bitwidth;
-    } else {
+    } else if (m_kind == REG_INT_TYPE) {
+      return m_kind == o.m_kind && m_bitwidth == o.m_bitwidth;
+    } else { 
       return m_kind == o.m_kind;
     }
   }
@@ -105,6 +110,7 @@ public:
   bool is_unknown_region() const { return m_kind == REG_UNKNOWN_TYPE; }
   bool is_bool_region() const { return m_kind == REG_BOOL_TYPE; }
   bool is_integer_region() const { return m_kind == REG_INT_TYPE; }
+  unsigned get_integer_region_bitwidth() const { assert(m_kind == REG_INT_TYPE); return m_bitwidth;}
   bool is_real_region() const { return m_kind == REG_REAL_TYPE; }
   bool is_reference_region() const { return m_kind == REG_REF_TYPE; }
   bool is_bool_array_region() const { return m_kind == REG_ARR_BOOL_TYPE; }
