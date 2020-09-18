@@ -153,9 +153,9 @@ public:
 	    suspicious_vars -= fdecl.get_input_name(i);
 	  }
 	  if (!suspicious_vars.is_bottom()) {
-	    crab::outs() << "\n--- Sanity check FAILED: " 
-			 << suspicious_vars  << " might not be initialized  in"
-			 << "\n    " << get_cfg().get_func_decl() << "\n";
+	    crab::outs() << "\n*** Sanity check FAILED: " 
+			 << suspicious_vars  << " might not be initialized  in "
+			 << get_cfg().get_func_decl().get_func_name() << "\n";
 	  } else {
 	    CRAB_VERBOSE_IF(1, crab::outs() << "OK";);	
 	  }
