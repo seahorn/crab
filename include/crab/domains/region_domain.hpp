@@ -1500,11 +1500,18 @@ public:
     crab::CrabStats::count(domain_name() + ".count.ref_gep");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_gep");
 
-    if (!is_bottom()) {
-      m_base_dom.assign(rename_var(ref2),
-                        rename_var(ref1) + rename_linear_expr(offset));
+    auto eval = [this](const linear_expression_t &e) {
+    		  interval_t r = e.constant();
+    		  for (auto p : e) {
+    		    r += p.first * m_base_dom.operator[](rename_var(p.second));	 
+    		  }
+    		  return r;
+    		};
 
-      if (!(rgn1 == rgn2 && offset.equal(number_t(0)))) {
+    if (!is_bottom()) {
+      m_base_dom.assign(rename_var(ref2), rename_var(ref1) +
+			rename_linear_expr(offset));
+      if (!(rgn1 == rgn2 && (eval(offset) == (number_t(0))))) {
         // Update region counting
         auto num_refs = m_rgn_counting_dom[rgn2];
         m_rgn_counting_dom.set(rgn2, num_refs.increment());
