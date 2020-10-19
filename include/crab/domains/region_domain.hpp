@@ -1283,18 +1283,20 @@ public:
 
     const base_variable_t &base_lhs = rename_var(lhs_rgn);
     const base_variable_t &base_rhs = rename_var(rhs_rgn);
-    auto ty = lhs_rgn.get_type();
-    if (ty.is_bool_region()) {
-      m_base_dom.assign_bool_var(base_lhs, base_rhs, false);
-    } else if (ty.is_integer_region() || ty.is_real_region() || ty.is_reference_region()) {
-      m_base_dom.assign(base_lhs, base_rhs);
-    } else if (ty.is_bool_array_region() ||
-	       ty.is_int_array_region() ||
-	       ty.is_real_array_region()) {
-      m_base_dom.array_assign(base_lhs, base_rhs);
-    } else {
-      CRAB_ERROR(domain_name() + "::region_copy with unexpected region  type");
-    }
+    m_base_dom.expand(base_rhs, base_lhs);
+    
+    // auto ty = lhs_rgn.get_type();
+    // if (ty.is_bool_region()) {
+    //   m_base_dom.assign_bool_var(base_lhs, base_rhs, false);
+    // } else if (ty.is_integer_region() || ty.is_real_region() || ty.is_reference_region()) {
+    //   m_base_dom.assign(base_lhs, base_rhs);
+    // } else if (ty.is_bool_array_region() ||
+    // 	       ty.is_int_array_region() ||
+    // 	       ty.is_real_array_region()) {
+    //   m_base_dom.array_assign(base_lhs, base_rhs);
+    // } else {
+    //   CRAB_ERROR(domain_name() + "::region_copy with unexpected region  type");
+    // }
   }
 
   // Create a new reference ref to region rgn.
