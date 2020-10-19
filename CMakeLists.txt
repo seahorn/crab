@@ -118,7 +118,7 @@ if (CRAB_ENABLE_TESTS)
   add_definitions(-DBOOST_NO_EXCEPTIONS)
 
   if (CRAB_USE_GENERIC_WRAPPER)
-    set(USE_GENERIC_WRAPPER)
+    set(USE_GENERIC_WRAPPER TRUE)
   endif ()
 else ()
   find_package (Boost 1.65.0)
