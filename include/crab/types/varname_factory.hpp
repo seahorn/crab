@@ -47,8 +47,10 @@ public:
     // first constructor
     indexed_varname(ikos::index_t id, variable_factory *vfac,
                     std::string name = "")
-        : m_s(boost::none), m_id(id),
-          m_name(std::make_shared<std::string>(name)), m_vfac(vfac) {}
+        : m_s(boost::none),
+	  m_id(id),
+          m_name(name == "" ? nullptr : std::make_shared<std::string>(name)),
+	  m_vfac(vfac) {}
     // second constructor
     indexed_varname(T s, ikos::index_t id, variable_factory *vfac)
         : m_s(s), m_id(id), m_name(nullptr), m_vfac(vfac) {}
@@ -65,7 +67,9 @@ public:
   public:
     ~indexed_varname() = default;
     indexed_varname(const indexed_varname &is) = default;
+    indexed_varname(indexed_varname &&is) = default;
     indexed_varname &operator=(const indexed_varname &is) = default;
+    indexed_varname &operator=(indexed_varname &&is) = default;
 
     virtual ikos::index_t index() const override { return m_id; }
 
