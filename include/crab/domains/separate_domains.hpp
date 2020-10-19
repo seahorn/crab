@@ -299,8 +299,7 @@ public:
   void set(Key k, Value v) {
     if (!this->is_bottom()) {
       if (v.is_bottom()) {
-        this->_is_bottom = true;
-        this->_tree = patricia_tree_t();
+	set_to_bottom();
       } else if (v.is_top()) {
         this->_tree.remove(k);
       } else {
