@@ -2392,7 +2392,9 @@ public:
     return boost::make_indirect_iterator(m_stmts.rend());
   }
 
-  size_t size() const { return std::distance(begin(), end()); }
+  size_t size() const {
+    return m_stmts.size();
+  }
 
   live_domain_t &live() { return m_live; }
 
@@ -2873,7 +2875,7 @@ public:
 
   const_iterator end() const { return _bb.rend(); }
 
-  std::size_t size() const { return std::distance(begin(), end()); }
+  std::size_t size() const { return _bb.size(); }
 
   void accept(statement_visitor<basic_block_label_t, number_t, varname_t> *v) {
     v->visit(*this);
@@ -3471,7 +3473,7 @@ public:
     return boost::make_transform_iterator(m_blocks.end(), get_label());
   }
 
-  size_t size() const { return std::distance(begin(), end()); }
+  size_t size() const { return m_blocks.size(); }
 
   void write(crab_os &o) const {
     if (has_func_decl()) {
