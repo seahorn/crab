@@ -217,18 +217,13 @@ public:
   variable(const VariableName &n, variable_type ty)
     : _n(n), m_ty(ty) {}
 
-  variable(const variable_t &o) : _n(o._n), m_ty(o.m_ty) {}
+  variable(const variable_t &o) = default;
 
-  variable(variable_t &&o)
-    : _n(std::move(o._n)), m_ty(std::move(o.m_ty)) {}
+  variable(variable_t &&o) = default;
 
-  variable_t &operator=(const variable_t &o) {
-    if (this != &o) {
-      _n = o._n;
-      m_ty = o.m_ty;
-    }
-    return *this;
-  }
+  variable_t &operator=(const variable_t &o) = default;
+
+  variable_t &operator=(variable_t &&o) = default;  
 
   type_t get_type() const { return m_ty; }
 
