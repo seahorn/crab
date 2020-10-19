@@ -10,6 +10,21 @@
   variables.
 
   All the assertions should be proven.
+
+  int foo(int x, int y) {
+    int z = x;
+    return z;
+  }
+
+  void  main() {
+    int x = 5;
+    int y = 10;
+    int z = 8;
+    z = call foo(x, y);
+    assert(x = 5);
+    assert(y = 10);
+    assert(z = 5);
+  }
  */
 using namespace std;
 using namespace crab::analyzer;
