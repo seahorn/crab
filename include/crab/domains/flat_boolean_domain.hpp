@@ -1512,19 +1512,25 @@ public:
       // if OP_ZEXT then true is 1 and false is zero
       boolean_value b_src = _product.first().get_bool(src);
       if (b_src.is_true()) {
-        _product.second().assign(dst,
-                                 linear_expression_t(op == OP_SEXT ? -1 : 1));
+        // _product.second().assign(dst, linear_expression_t(op == OP_SEXT ? -1 : 1));
+        _product.second().assign(dst, number_t(1));
       } else if (b_src.is_false()) {
-        _product.second().assign(dst, linear_expression_t(0));
+        _product.second().assign(dst, number_t(0));
       } else {
         _product.second() -= dst;
-        if (op == OP_SEXT) {
-          _product.second() += linear_constraint_t(variable_t(dst) >= -1);
-          _product.second() += linear_constraint_t(variable_t(dst) <= 0);
-        } else {
-          _product.second() += linear_constraint_t(variable_t(dst) >= 0);
-          _product.second() += linear_constraint_t(variable_t(dst) <= 1);
-        }
+	// The flat boolean domain shouldn't know whether we try to
+	// model integers faithfully or not (i.e., obeying
+	// machine-arithmetic laws). This code should probably go to
+	// domains who model machine arithmetic (e.g., wrapped
+	// interval domain).
+	// 
+        // if (op == OP_SEXT) {
+        //   _product.second() += linear_constraint_t(variable_t(dst) >= -1);
+        //   _product.second() += linear_constraint_t(variable_t(dst) <= 0);
+        // } else {
+	//   _product.second() += linear_constraint_t(variable_t(dst) >= 0);
+	//   _product.second() += linear_constraint_t(variable_t(dst) <= 1);
+	//}
       }
       _unchanged_vars -= variable_t(dst);
     } else {
