@@ -165,8 +165,8 @@ private:
     crab::ScopedCrabStats __st__("Linear Interval Solver.Solving propagation");
     namespace interval_traits = linear_interval_solver_impl;
 
-    CRAB_LOG("integer-solver", linear_constraint_t tmp(cst);
-             crab::outs() << "Integer solver processing " << tmp << "\n";);
+    CRAB_LOG("integer-solver", 
+             crab::outs() << "Integer solver processing " << cst << "\n";);
 
     for (auto kv : cst) {
       Number c = kv.first;
