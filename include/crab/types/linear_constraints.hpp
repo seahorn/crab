@@ -210,7 +210,7 @@ public:
 
   std::size_t size() const { return this->_map->size(); }
 
-  Number operator[](variable_t x) const {
+  Number operator[](const variable_t &x) const {
     typename map_t::const_iterator it = this->_map->find(x);
     if (it != this->_map->end()) {
       return it->second;
@@ -715,7 +715,7 @@ public:
     return (index_t)hash();
   }
 
-  Number operator[](variable_t x) const { return this->_expr.operator[](x); }
+  Number operator[](const variable_t &x) const { return this->_expr.operator[](x); }
 
   const_var_range variables() const { return _expr.variables(); }
 
