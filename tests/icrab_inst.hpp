@@ -32,6 +32,7 @@ Z_BU_RUNNER(crab::domain_impl::z_num_domain_t,
             crab::domain_impl::z_num_domain_t)
 Z_TD_RUNNER(crab::domain_impl::z_dbm_domain_t)
 Z_TD_RUNNER(crab::domain_impl::z_sdbm_domain_t)
+Z_TD_RUNNER(crab::domain_impl::z_rgn_sdbm_t)
 #ifdef HAVE_APRON
 Z_TD_RUNNER(crab::domain_impl::z_oct_apron_domain_t)
 #endif
