@@ -3041,27 +3041,27 @@ Running top-down inter-procedural analysis with SparseDBM
  0  Number of total error checks
  0  Number of total warning checks
  0  Number of total unreachable checks
-15  Number of total safe checks
+16  Number of total safe checks
  0  Number of total error checks
- 1  Number of total warning checks
+ 0  Number of total warning checks
  0  Number of total unreachable checks
 Running top-down inter-procedural analysis with SplitDBM
 16  Number of total safe checks
  0  Number of total error checks
  0  Number of total warning checks
  0  Number of total unreachable checks
-15  Number of total safe checks
+16  Number of total safe checks
  0  Number of total error checks
- 1  Number of total warning checks
+ 0  Number of total warning checks
  0  Number of total unreachable checks
 Running top-down inter-procedural analysis with ElinaOctagon
 16  Number of total safe checks
  0  Number of total error checks
  0  Number of total warning checks
  0  Number of total unreachable checks
-15  Number of total safe checks
+16  Number of total safe checks
  0  Number of total error checks
- 1  Number of total warning checks
+ 0  Number of total warning checks
  0  Number of total unreachable checks
 === End ./test-bin/td_inter_1 ===
 === Begin ./test-bin/td_inter_2 ===
@@ -3132,6 +3132,68 @@ Running top-down inter-procedural analysis with SplitDBM
 0  Number of total warning checks
 0  Number of total unreachable checks
 === End ./test-bin/td_inter_3 ===
+=== Begin ./test-bin/td_inter_4 ===
+z:region(int) declare foo(x:int32)
+entry:
+  region_init(z);
+  ref := make_ref(z);
+  assume(-x+tmp <= 0);
+  assume(-tmp < 0);
+  goto exit;
+exit:
+  store_to_ref(z,ref,tmp);
+  return z;
+
+
+void declare main()
+entry:
+  havoc(x);
+  assume(-x < 0);
+  goto exit;
+exit:
+  z:region(int) = call foo(x:int32);
+  lhs := load_from_ref(z,ref);
+  assert(-x+lhs <= 0);
+  assert(-lhs < 0);
+
+
+Running top-down inter-procedural analysis with RegionDomain(SplitDBM)
+2  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+=== End ./test-bin/td_inter_4 ===
+=== Begin ./test-bin/td_inter_5 ===
+b:region(int) declare foo(a:int32)
+entry:
+  region_init(b);
+  ref := make_ref(b);
+  assume(-a+tmp <= 0);
+  assume(-tmp < 0);
+  goto exit;
+exit:
+  store_to_ref(b,ref,tmp);
+  return b;
+
+
+void declare main()
+entry:
+  havoc(x);
+  assume(-x < 0);
+  goto exit;
+exit:
+  z:region(int) = call foo(x:int32);
+  lhs := load_from_ref(z,ref);
+  assert(-x+lhs <= 0);
+  assert(-lhs < 0);
+
+
+Running top-down inter-procedural analysis with RegionDomain(SplitDBM)
+2  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+=== End ./test-bin/td_inter_5 ===
 === Begin ./test-bin/terms-1 ===
 x0:
   k = 50;

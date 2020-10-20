@@ -718,6 +718,17 @@ private:
     return out;
   }
 
+  static std::vector<variable_t> set_intersection(std::vector<variable_t> v1,
+						  std::vector<variable_t> v2) {
+    std::vector<variable_t> out;
+    std::sort(v1.begin(), v1.end());
+    std::sort(v2.begin(), v2.end());
+    std::set_intersection(v1.begin(), v1.end(), v2.begin(), v2.end(),
+			  std::inserter(out, out.end()));
+    return out;
+  }
+
+  
   /**
    * Extend operation
    *
@@ -742,8 +753,9 @@ private:
       return caller_dom;
     }
 
-    CRAB_LOG("inter-extend", crab::outs() << "Caller before " << cs << "="
-                                          << caller_dom << "\n";);
+    CRAB_LOG("inter-extend",
+	     crab::outs() << "[INTER] Computing continuation for " << cs << "\n"
+	                  << "\tCaller before the call=" << caller_dom << "\n";);
 
     // make sure **output** actual parameters are unconstrained
     caller_dom.forget(cs.get_lhs());
@@ -752,48 +764,73 @@ private:
                                  << "Caller after forgetting lhs variables="
                                  << caller_dom << "\n";);
 
-    // Meet
-    caller_dom = caller_dom & sum_out_dom;
-
-    CRAB_LOG("inter-extend", crab::outs()
-                                 << "Caller after meet with callee's summary="
-                                 << caller_dom << "\n";);
-
-    // propagate from callee's outputs to caller's lhs of the callsite
+    // Wire-up outputs: propagate from callee's outputs to caller's
+    // lhs of the callsite
     for (unsigned i = 0, e = fdecl.get_outputs().size(); i < e; ++i) {
-      const variable_t &formal = fdecl.get_outputs()[i];
-      const variable_t &actual = cs.get_lhs()[i];
-      if (!(formal == actual)) {
-        CRAB_LOG("inter-extend", crab::outs() << "Unifying " << formal
-                                              << " and " << actual << "\n";);
-        inter_transformer_helpers<AbsDom>::unify(caller_dom, actual, formal);
+      const variable_t &out_formal = fdecl.get_outputs()[i];
+      const variable_t &out_actual = cs.get_lhs()[i];
+      if (!(out_formal == out_actual)) {
+        CRAB_LOG("inter-extend",
+		 crab::outs() << "Unifying output " << out_actual << ":= " << out_formal << "\n";);
+        inter_transformer_helpers<AbsDom>::unify(sum_out_dom, out_actual, out_formal);
       }
     }
 
-    CRAB_LOG("inter-extend",
-             crab::outs() << "Caller after unifying formal/actual paramters="
-                          << caller_dom << "\n";);
-
-    // Remove the callee variables from the caller continuation
+    // Wire-up inputs (propagate from callee's inputs to caller's
+    // inputs at callsite) and remove the callee variables from the
+    // caller continuation.
     //
-    // Note that we don't forget a callee variable if it appears
-    // either on cs.get_lhs() or cs.get_args().
-
-    std::set<variable_t> cs_args(cs.get_args().begin(), cs.get_args().end());
+    // This step is a bit tricky because of two things we need to consider:
+    // 1) We cannot forget a callee variable if it appears on the callsite
+    // 2) We cannot propagate up if a callsite input parameter is
+    //    killed at the callsite (i.e., re-defined via callsite output)
+    std::set<variable_t> cs_in_args(cs.get_args().begin(), cs.get_args().end());
+    std::vector<variable_t> killed_cs_in_args = set_intersection(cs.get_args(), cs.get_lhs());
+							     
     // Variables that appear both as callsite argument and callee's
-    // formal parameter.
+    // formal parameter so they shouldn't be forgotten.
     std::vector<variable_t> caller_and_callee_vars;
     caller_and_callee_vars.reserve(fdecl.get_inputs().size());
     for (unsigned i = 0, e = fdecl.get_inputs().size(); i < e; ++i) {
       const variable_t &in_formal = fdecl.get_inputs()[i];
-      if (cs_args.count(in_formal) > 0) {
+      if (cs_in_args.count(in_formal) > 0) {
         caller_and_callee_vars.push_back(in_formal);
+      } else {
+	auto lower = std::lower_bound(killed_cs_in_args.begin(), killed_cs_in_args.end(), in_formal);
+	if (lower == killed_cs_in_args.end()) { // not found
+	  // the formal parameter will be forgotten so we need to
+	  // unify it with the corresponding actual parameter at the
+	  // callsite to propagate up new relationships created in the
+	  // callee.
+	  // 
+	  // Note that this can destroy relationships of the actual
+	  // parameter at the caller before the call but the meet will
+	  // restore them later.
+	  const variable_t &in_actual = cs.get_args()[i];	
+	  CRAB_LOG("inter-extend",
+		   crab::outs() << "Unifying input " << in_actual << ":=" 
+		                << in_formal << "\n";);
+	  inter_transformer_helpers<AbsDom>::unify(sum_out_dom, in_actual, in_formal);
+	}
       }
     }
+
     caller_and_callee_vars.insert(caller_and_callee_vars.end(),
                                   cs.get_lhs().begin(), cs.get_lhs().end());
-    caller_dom.forget(
-        set_difference(sum_out_variables, caller_and_callee_vars));
+    auto local_vars = set_difference(sum_out_variables, caller_and_callee_vars);
+    // Forget callee's local variables
+    sum_out_dom.forget(local_vars);
+
+    CRAB_LOG("inter-extend",
+             crab::outs() << "Forgotten all local callee variables {";
+	     for (auto const& v: local_vars) {
+	       crab::outs() << v << ";";
+	     }
+	     crab::outs() << "}\n";);
+    
+    // Meet with the caller
+    caller_dom = caller_dom & sum_out_dom;
+
     return caller_dom;
   }
 
