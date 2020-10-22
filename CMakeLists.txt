@@ -29,9 +29,6 @@ set(CMAKE_MODULE_PATH
 #Setup CMake to run tests
 enable_testing()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-
 set (CUSTOM_BOOST_ROOT "" CACHE PATH "Path to custom boost installation.")
 if (CUSTOM_BOOST_ROOT)
   set (BOOST_ROOT ${CUSTOM_BOOST_ROOT})
@@ -54,9 +51,13 @@ if (CRAB_USE_APRON AND CRAB_USE_ELINA)
   message(FATAL_ERROR "Apron and Elina are not compatible: choose one")
 endif()
 
-# Directory where all (binary) tests will be located
-# Binary tests do not go to install directory by default
 if (CRAB_ENABLE_TESTS)
+  ## Enforce these flags only when compiling our tests
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+  # Directory where all (binary) tests will be located
+  # Binary tests do not go to install directory by default
   if (NOT TEST_DIR)
     set(TEST_DIR ${CMAKE_BINARY_DIR}/test-bin)
   endif()  
