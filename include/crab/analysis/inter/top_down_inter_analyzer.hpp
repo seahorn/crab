@@ -527,7 +527,7 @@ get_inter_analysis(CallGraphNode cg_node,
     /// -- 2. Create intra analyzer (with inter-procedural semantics for
     /// call/return)
     std::unique_ptr<IntraCallSemAnalyzer> new_analyzer(new IntraCallSemAnalyzer(
-        cfg, wto, &abs_tr, live, ctx.get_widening_delay(),
+	cfg, wto, &abs_tr, live, ctx.get_widening_delay(),
         ctx.get_descending_iters(), ctx.get_thresholds_size()));
     analyzer = &(abs_tr.add_analyzer(cg_node, std::move(new_analyzer)));
   }
@@ -618,7 +618,14 @@ private:
   std::unordered_map<cg_node_t,
                      std::unique_ptr<intra_analyzer_with_call_semantics_t>>
       m_intra_analyzer;
-
+  // recursion depth (for debugging)
+  unsigned m_depth;
+  // Produce warning if m_depth >= m_max_depth.
+  // If m_max_depth is large enough then it's a good indication that
+  // we failed in detecting a cycle in the call graph and the analysis
+  // will not terminate.
+  const unsigned m_max_depth = 500;
+  
   inline abs_dom_t make_top() {
     auto const &dom = this->get_abs_value();
     return dom.make_top();
@@ -973,14 +980,15 @@ private:
 
 public:
   top_down_inter_transformer(CallGraph *cg, global_context_t *ctx, AbsDom init)
-      : intra_abs_transformer_t(init), m_cg(cg), m_ctx(ctx) {
+    : intra_abs_transformer_t(init), m_cg(cg), m_ctx(ctx), m_depth(0) {
     assert(cg);
     assert(ctx);
   }
 
   top_down_inter_transformer(const this_type &&o)
       : intra_abs_transformer_t(std::move(o.get_abs_value())),
-        m_cg(std::move(o.m_cg)), m_ctx(std::move(o.m_ctx)) {}
+        m_cg(std::move(o.m_cg)), m_ctx(std::move(o.m_ctx)),
+	m_depth(std::move(o.m_depth)) {}
 
   top_down_inter_transformer(const this_type &o) = delete;
 
@@ -1007,13 +1015,22 @@ public:
     auto &call_stack = m_ctx->get_call_stack();
     if (std::find(call_stack.begin(), call_stack.end(), callee_cg_node) ==
         call_stack.end()) {
-      if (m_ctx->get_widening_set().count(callee_cg_node) > 0) {
-        call_stack.push_back(callee_cg_node);
+      call_stack.push_back(callee_cg_node);
+      ++m_depth;
+      if (m_depth >= m_max_depth) {
+	CRAB_ERROR("The recursion depth exceeded ", m_max_depth, ". ",
+		   "This might be legitimate if the program is too deep, ",
+		   "but it can also indicate a non-termination problem so we prefer to abort the analysis.");
       }
+      CRAB_LOG("inter-depth", 
+	       for(unsigned i=0;i<m_depth;++i) {
+		 crab::outs() << "--";
+	       }
+	       crab::outs() << "| depth=" << m_depth
+	                    << " call=" << cs.get_func_name() << "\n";);
       analyze_callee(cs, callee_cg_node);
-      if (m_ctx->get_widening_set().count(callee_cg_node) > 0) {
-        call_stack.pop_back();
-      }
+      call_stack.pop_back();
+      --m_depth;
     } else {
       // we break the cycle by ignoring the effect of the recursive
       // call.
