@@ -692,20 +692,19 @@ protected:
     // There may be a cheaper way to do this.
     // GKG: Now implemented.
     std::vector<std::pair<vert_id, Wt>> src_dec;
+    // we add in delta so that we don't invalidate graph iterators
+    edge_vector delta;    
     for (auto edge : g_excl.e_preds(ii)) {
       vert_id se = edge.vert;
       Wt wt_sij = edge.val + c;
-
       assert(g_excl.succs(se).begin() != g_excl.succs(se).end());
       if (se != jj) {
         if (g_excl.lookup(se, jj, &w)) {
           if (w.get() <= wt_sij)
             continue;
-
           w = wt_sij;
-          // g_excl.set_edge(se, wt_sij, jj);
         } else {
-          g_excl.add_edge(se, wt_sij, jj);
+	  delta.push_back({{se, jj}, wt_sij});
         }
         src_dec.push_back(std::make_pair(se, edge.val));
         if (Params::close_bounds_inline) {
@@ -714,34 +713,10 @@ protected:
           if (g.lookup(jj, 0, &w))
             g.update_edge(se, w.get() + wt_sij, 0, min_op);
         }
-
-        /*
-        for(auto edge : g_excl.e_succs(jj))
-        {
-          vert_id de = edge.vert;
-          if(se != de)
-          {
-            Wt wt_sijd = wt_sij + edge.val;
-            if(g_excl.lookup(se, de, &w))
-            {
-              if((*w) <= wt_sijd)
-                continue;
-              (*w) = wt_sijd;
-            } else {
-              g_excl.add_edge(se, wt_sijd, de);
-            }
-            if (Params::close_bounds_inline) {
-              if(g.lookup(0, se, &w))
-                g.update_edge(0, (*w) + wt_sijd, de, min_op);
-              if(g.lookup(de, 0, &w))
-                g.update_edge(se, (*w) + wt_sijd, 0, min_op);
-            }
-          }
-        }
-        */
       }
     }
-
+    GrOps::apply_delta(g, delta);
+    delta.clear();
     std::vector<std::pair<vert_id, Wt>> dest_dec;
     for (auto edge : g_excl.e_succs(jj)) {
       vert_id de = edge.vert;
@@ -752,7 +727,7 @@ protected:
             continue;
           w = wt_ijd;
         } else {
-          g_excl.add_edge(ii, wt_ijd, de);
+	  delta.push_back({{ii, de}, {wt_ijd}});
         }
         dest_dec.push_back(std::make_pair(de, edge.val));
         if (Params::close_bounds_inline) {
@@ -763,7 +738,8 @@ protected:
         }
       }
     }
-
+    GrOps::apply_delta(g, delta);
+    
     for (auto s_p : src_dec) {
       vert_id se = s_p.first;
       Wt wt_sij = c + s_p.second;
@@ -2493,15 +2469,16 @@ public:
 
     vert_id ii = get_vert(x);
     vert_id jj = get_vert(y);
-
+    edge_vector delta;    
     for (auto edge : g.e_preds(ii)) {
-      g.add_edge(edge.vert, edge.val, jj);
+      delta.push_back({{edge.vert, jj}, edge.val});
     }
 
     for (auto edge : g.e_succs(ii)) {
-      g.add_edge(jj, edge.val, edge.vert);
+      delta.push_back({{jj, edge.vert}, edge.val});
     }
-
+    GrOps::apply_delta(g, delta);
+    
     potential[jj] = potential[ii];
 
     CRAB_LOG("zones-split", crab::outs() << "After expand " << x << " into "
