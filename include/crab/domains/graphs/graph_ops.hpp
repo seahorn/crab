@@ -837,9 +837,9 @@ public:
 
   static void apply_delta(graph_t &g, edge_vector &delta) {
     for (std::pair<std::pair<vert_id, vert_id>, Wt> &e : delta) {
-      //        assert(e.first.first != e.first.second);
-      //        assert(e.first.first < g.size());
-      //        assert(e.first.second < g.size());
+      assert(e.first.first != e.first.second);
+      assert(e.first.first < g.size());
+      assert(e.first.second < g.size());
       g.set_edge(e.first.first, e.second, e.first.second);
     }
   }
