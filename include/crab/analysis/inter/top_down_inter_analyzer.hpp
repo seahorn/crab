@@ -29,6 +29,17 @@
 
 namespace crab {
 namespace analyzer {
+
+static const std::string TimerCallGraphTC = "CallGraph type checking";
+static const std::string TimerInter = "Interprocedural";
+static const std::string TimerInterCheckCycle = TimerInter + "." + "check_cycles";
+static const std::string TimerInterCheckCache = TimerInter + "." + "lookup_summary";
+static const std::string TimerInterStoreSum = TimerInter + "." + "store_summary";
+static const std::string TimerInterStoreSumQueue = TimerInter + "." + "store_summary.enqueue";  
+static const std::string TimerInterAnalyzeFunc = TimerInter + "." + "analyze_function";
+static const std::string TimerInterRestrict = TimerInter + "." + "callee_entry";
+static const std::string TimerInterExtend = TimerInter + "." + "callee_continuation";      
+  
 namespace top_down_inter_impl {
 
 /**
@@ -248,7 +259,7 @@ public:
 
   virtual void add(calling_context_ptr_deque &ccs,
                    calling_context_ptr cc) override {
-    crab::ScopedCrabStats __st__("Interprocedural.add_context");
+    crab::ScopedCrabStats __st__(TimerInterStoreSumQueue);
 
     if (this->m_max_call_contexts == UINT_MAX) {
       ccs.push_back(std::move(cc));
@@ -481,9 +492,9 @@ public:
 // semantics for call and return statements.
 template <typename CallGraphNode, typename IntraCallSemAnalyzer>
 IntraCallSemAnalyzer &
-get_inter_analysis(CallGraphNode cg_node,
-                   typename IntraCallSemAnalyzer::abs_tr_t &abs_tr) {
-
+analyze_recursively_function(CallGraphNode cg_node,
+			     typename IntraCallSemAnalyzer::abs_tr_t &abs_tr) {
+  crab::ScopedCrabStats __st__(TimerInterAnalyzeFunc);
   using cfg_t = typename CallGraphNode::cfg_t;
   // -- intra-procedural checker stuff
   using intra_checker_t = checker::intra_checker<IntraCallSemAnalyzer>;
@@ -676,7 +687,7 @@ private:
    **/
   static AbsDom get_callee_entry(const callsite_t &cs, const fdecl_t &fdecl,
                                  AbsDom caller_dom, AbsDom callee_dom) {
-    crab::ScopedCrabStats __st__("Interprocedural.get_callee_entry");
+    crab::ScopedCrabStats __st__(TimerInterRestrict);
 
     // caller_dom.normalize();
     if (caller_dom.is_bottom()) {
@@ -754,7 +765,7 @@ private:
   static AbsDom get_caller_continuation(
       const callsite_t &cs, const fdecl_t &fdecl, AbsDom caller_dom,
       const std::vector<variable_t> &sum_out_variables, AbsDom sum_out_dom) {
-    crab::ScopedCrabStats __st__("Interprocedural.get_caller_continuation");
+    crab::ScopedCrabStats __st__(TimerInterExtend);
 
     if (caller_dom.is_bottom()) {
       return caller_dom;
@@ -843,7 +854,7 @@ private:
 
   /* Analysis of a callsite */
   void analyze_callee(const callsite_t &cs, cg_node_t callee_cg_node) {
-
+    //crab::ScopedCrabStats __st__("Interprocedural.analyze_callee");
     // 1. Get CFG from the callee
     cfg_t callee_cfg = callee_cg_node.get_cfg();
 
@@ -878,6 +889,7 @@ private:
     std::vector<variable_t> callee_exit_vars;
     get_fdecl_parameters(fdecl, callee_exit_vars);
 
+    crab::CrabStats::resume(TimerInterCheckCache);        
     // 3. Check if the same call context has been seen already
     bool call_context_already_seen = false;
     auto it = m_ctx->get_calling_context_table().find(callee_cfg);
@@ -903,7 +915,8 @@ private:
         }
       }
     }
-
+    crab::CrabStats::stop(TimerInterCheckCache);
+    
     if (call_context_already_seen) {
       if (!m_ctx->get_is_checking_phase()) {
         crab::CrabStats::count("Interprocedural.num_reused_callsites");
@@ -921,7 +934,7 @@ private:
       abs_dom_t callee_init(callee_entry);
       this->set_abs_value(std::move(callee_init));
       intra_analyzer_with_call_semantics_t &callee_analysis =
-          top_down_inter_impl::get_inter_analysis<
+          top_down_inter_impl::analyze_recursively_function<
               typename CallGraph::node_t, intra_analyzer_with_call_semantics_t>(
               m_cg->get_callee(cs), *this);
 
@@ -938,7 +951,6 @@ private:
                                        << "\" with exit=" << callee_exit
                                        << ": the callee has no exit block.\n";);
       }
-
       CRAB_LOG("inter2", callee_analysis.write(crab::outs());
                crab::outs() << "\n";);
 
@@ -946,6 +958,7 @@ private:
       callee_exit.project(callee_exit_vars);
 
       // 5. Add the new calling context
+      crab::CrabStats::resume(TimerInterStoreSum);      
       auto &pre_invariants = callee_analysis.get_pre_invariants();
       auto &post_invariants = callee_analysis.get_post_invariants();
       calling_context_ptr cc(new calling_context_t(
@@ -953,6 +966,7 @@ private:
           std::move(pre_invariants), std::move(post_invariants)));
       add_calling_context(callee_cfg, std::move(cc));
       callee_analysis.clear();
+      crab::CrabStats::stop(TimerInterStoreSum);            
     }
 
     pre_bot = false;
@@ -999,6 +1013,8 @@ public:
   global_context_t &get_context() { return *m_ctx; }
 
   virtual void exec(callsite_t &cs) override {
+    // crab::ScopedCrabStats __st__("Interprocedural.exec_callsite");
+    
     if (!m_cg->has_callee(cs)) {
       CRAB_ERROR("Cannot find callee CFG for ", cs);
     }
@@ -1013,8 +1029,10 @@ public:
 
     cg_node_t callee_cg_node = m_cg->get_callee(cs);
     auto &call_stack = m_ctx->get_call_stack();
-    if (std::find(call_stack.begin(), call_stack.end(), callee_cg_node) ==
-        call_stack.end()) {
+    crab::CrabStats::resume(TimerInterCheckCycle);    
+    auto it = std::find(call_stack.begin(), call_stack.end(), callee_cg_node);
+    crab::CrabStats::stop(TimerInterCheckCycle);        
+    if (it == call_stack.end()) {
       call_stack.push_back(callee_cg_node);
       ++m_depth;
       if (m_depth >= m_max_depth) {
@@ -1170,7 +1188,7 @@ private:
   CallGraph m_cg;
   global_context_t m_ctx;
   std::unique_ptr<td_inter_abs_tr_t> m_abs_tr;
-
+  
 public:
   top_down_inter_analyzer(CallGraph cg, abs_dom_t init,
                           const params_t &params = params_t())
@@ -1179,10 +1197,20 @@ public:
                         params.max_call_contexts, params.widening_delay,
                         params.descending_iters, params.thresholds_size),
         m_abs_tr(new td_inter_abs_tr_t(&m_cg, &m_ctx, std::move(init))) {
+    crab::CrabStats::start(TimerCallGraphTC);
+    crab::CrabStats::start(TimerInter);
+    crab::CrabStats::start(TimerInterCheckCycle);
+    crab::CrabStats::start(TimerInterCheckCache);
+    crab::CrabStats::start(TimerInterStoreSum);
+    crab::CrabStats::start(TimerInterStoreSumQueue);
+    crab::CrabStats::start(TimerInterAnalyzeFunc);
+    crab::CrabStats::start(TimerInterRestrict);
+    crab::CrabStats::start(TimerInterExtend);
+    
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
-    crab::CrabStats::resume("CallGraph type checking");
+    crab::CrabStats::resume(TimerCallGraphTC);
     cg.type_check();
-    crab::CrabStats::stop("CallGraph type checking");
+    crab::CrabStats::stop(TimerCallGraphTC);
     CRAB_VERBOSE_IF(1, get_msg_stream() << "OK\n";);
   }
 
@@ -1195,8 +1223,8 @@ public:
    * The top-down analysis runs multiple analyses, one per callgraph
    * entry, starting with init.
    **/
-  void run(abs_dom_t init) {
-    crab::ScopedCrabStats __st__("Inter");
+  void run(abs_dom_t init) {    
+    crab::ScopedCrabStats __st__(TimerInter);
 
     CRAB_VERBOSE_IF(
         1, get_msg_stream()
@@ -1227,7 +1255,7 @@ public:
           CRAB_ERROR("Entry point cannot be recursive");
         }
         intra_analyzer_with_call_semantics_t &entry_analysis =
-            top_down_inter_impl::get_inter_analysis<
+            top_down_inter_impl::analyze_recursively_function<
                 cg_node_t, intra_analyzer_with_call_semantics_t>(cg_node,
                                                                  *m_abs_tr);
         entry_analysis.clear();
