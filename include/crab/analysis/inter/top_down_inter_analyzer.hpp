@@ -94,7 +94,10 @@ private:
   // if true then the calling context has not been joined yet with
   // other contexts.
   bool m_exact;
-
+  // whether to keep all the invariants. Useful for printing
+  // context-sensitive invariants but very expensive.
+  bool m_keep_invariants;
+  
   inline abs_dom_t make_bottom() const { return m_input.make_bottom(); }
 
   static invariant_map_t join(invariant_map_t &m1, invariant_map_t &m2) {
@@ -110,32 +113,34 @@ private:
     return std::move(out);
   }
 
-  // Private constructor used to join calling contexts
+  // Private constructor used to join calling contexts while keeping
+  // all invariants
   calling_context(const fdecl_t &fdecl, abs_dom_t input, abs_dom_t output,
                   invariant_map_t &&pre_invariants,
                   invariant_map_t &&post_invariants)
       : m_fdecl(fdecl), m_input(input), m_output(output),
         m_pre_invariants(std::move(pre_invariants)),
-        m_post_invariants(std::move(post_invariants)), m_exact(false) {}
+        m_post_invariants(std::move(post_invariants)),
+	m_exact(false), m_keep_invariants(true) {}
 
+  // Private constructor used to join calling contexts but without
+  // keeping invariants
+  calling_context(const fdecl_t &fdecl, abs_dom_t input, abs_dom_t output)
+      : m_fdecl(fdecl), m_input(input), m_output(output),
+	m_exact(false), m_keep_invariants(false) {}
+  
 public:
   calling_context(const fdecl_t &fdecl, abs_dom_t input, abs_dom_t output,
-                  // if true then the calling context maintains only
-                  // invariants for the entry and exit blocks.
-                  bool minimize_invariants, invariant_map_t &&pre_invariants,
+                  bool keep_invariants, invariant_map_t &&pre_invariants,
                   invariant_map_t &&post_invariants)
       : m_fdecl(fdecl), m_input(input), m_output(output),
         m_pre_invariants(std::move(pre_invariants)),
-        m_post_invariants(std::move(post_invariants)), m_exact(true) {
+        m_post_invariants(std::move(post_invariants)),
+	m_exact(true), m_keep_invariants(keep_invariants) {
 
-    if (minimize_invariants) {
-      // XXX: don't remove the invariants, just make them top.
-      for (auto &kv : m_pre_invariants) {
-        kv.second.set_to_top();
-      }
-      for (auto &kv : m_post_invariants) {
-        kv.second.set_to_top();
-      }
+    if (!m_keep_invariants) {
+      m_pre_invariants.clear();
+      m_post_invariants.clear();
     }
   }
 
@@ -176,29 +181,45 @@ public:
                  "functions");
     }
 
-    return std::unique_ptr<calling_context_t>(new calling_context_t(
-        m_fdecl, m_input | other.get_input(), m_output | other.get_output(),
-        std::move(join(m_pre_invariants, other.m_pre_invariants)),
-        std::move(join(m_post_invariants, other.m_post_invariants))));
+    if (!m_keep_invariants) {
+      return std::unique_ptr<calling_context_t>(new calling_context_t(
+	  m_fdecl, m_input | other.get_input(), m_output | other.get_output()));
+
+    } else {
+      return std::unique_ptr<calling_context_t>(new calling_context_t(
+          m_fdecl, m_input | other.get_input(), m_output | other.get_output(),
+	  std::move(join(m_pre_invariants, other.m_pre_invariants)),
+	  std::move(join(m_post_invariants, other.m_post_invariants))));
+    }
   }
 
   // invariants that hold at the entry of basic block bb
   abs_dom_t get_pre(const basic_block_label_t &bb) const {
-    auto it = m_pre_invariants.find(bb);
-    if (it == m_pre_invariants.end()) {
-      return make_bottom(); // dead block under particular context
-    } else {
-      return it->second;
+    if (!m_keep_invariants) {
+      abs_dom_t top;
+      return top;
+    }  else {
+      auto it = m_pre_invariants.find(bb);
+      if (it == m_pre_invariants.end()) {
+	return make_bottom(); // dead block under particular context
+      } else {
+	return it->second;
+      }
     }
   }
 
   // invariants that hold at the exit of basic block bb
   abs_dom_t get_post(const basic_block_label_t &bb) const {
-    auto it = m_post_invariants.find(bb);
-    if (it == m_post_invariants.end()) {
-      return make_bottom(); // dead block under particular context
-    } else {
-      return it->second;
+    if (!m_keep_invariants) {
+      abs_dom_t top;
+      return top;
+    }  else {
+      auto it = m_post_invariants.find(bb);
+      if (it == m_post_invariants.end()) {
+	return make_bottom(); // dead block under particular context
+      } else {
+	return it->second;
+      }
     }
   }
 
@@ -356,6 +377,7 @@ private:
   // -- wto for each function
   const wto_cfg_map_t *m_wto_cfg_map; // to avoid recomputing wto of cfgs
   // -- context-insensitive invariants (for external queries)
+  //    populated only if keep_invariants is enabled.
   global_invariant_map_t m_pre_invariants;
   global_invariant_map_t m_post_invariants;
   // -- the policy for making tractable the number of calling contexts
@@ -367,8 +389,11 @@ private:
   bool m_is_checking_phase;
   // -- all calling contexts
   calling_context_table_t m_cc_table;
-  // -- minimize the number of invariants per calling context
-  bool m_minimize_invariants;
+  // -- keep context-sensitive invariants 
+  bool m_keep_cc_invariants;
+  // -- keep context-insensitive invariants: used to populate
+  //    m_pre_invariants and m_post_invariants.
+  bool m_keep_invariants;
   // -- max number of calling contexts
   unsigned int m_max_call_contexts;
   // -- fixpoint parameters
@@ -378,6 +403,8 @@ private:
 
   void join_with(global_invariant_map_t &global_table, cfg_t cfg,
                  invariant_map_t &other) {
+    assert(m_keep_invariants);
+    
     auto it = global_table.find(cfg);
     if (it != global_table.end()) {
       invariant_map_t &invariants = it->second;
@@ -401,7 +428,8 @@ private:
 public:
   global_context(const liveness_map_t *live_map,
                  const wto_cfg_map_t *wto_cfg_map, bool enable_checker,
-                 unsigned checker_verbosity, bool minimize_invariants,
+                 unsigned checker_verbosity,
+		 bool keep_cc_invariants, bool keep_invariants,
                  unsigned int max_call_contexts, unsigned int widening_delay,
                  unsigned int descending_iters, unsigned int thresholds_size)
       : m_live_map(live_map), m_wto_cfg_map(wto_cfg_map),
@@ -409,7 +437,8 @@ public:
             new default_context_sensitivity_policy_t(max_call_contexts)),
         m_enable_checker(enable_checker),
         m_checker_verbosity(checker_verbosity), m_is_checking_phase(false),
-        m_minimize_invariants(minimize_invariants),
+        m_keep_cc_invariants(keep_cc_invariants),
+	m_keep_invariants(keep_invariants),
         m_max_call_contexts(max_call_contexts),
         m_widening_delay(widening_delay), m_descending_iters(descending_iters),
         m_thresholds_size(thresholds_size) {}
@@ -452,8 +481,10 @@ public:
     return m_cc_table;
   }
 
-  bool minimize_invariants() const { return m_minimize_invariants; }
+  bool keep_cc_invariants() const { return m_keep_cc_invariants;}
 
+  bool keep_invariants() const { return m_keep_invariants;}
+  
   unsigned int get_max_call_contexts() const { return m_max_call_contexts; }
 
   unsigned int get_widening_delay() const { return m_widening_delay; }
@@ -462,7 +493,8 @@ public:
 
   unsigned int get_thresholds_size() const { return m_thresholds_size; }
 
-  // context-insensitive invariants for each function
+  // context-insensitive invariants for each function (if
+  // m_keep_invariants enabled)
 
   global_invariant_map_t &get_global_pre_invariants() {
     return m_pre_invariants;
@@ -483,8 +515,10 @@ public:
   void join_invariants_with(CallGraphNode cg_node,
                             invariant_map_t &pre_invariants,
                             invariant_map_t &post_invariants) {
-    join_with(get_global_pre_invariants(), cg_node.get_cfg(), pre_invariants);
-    join_with(get_global_post_invariants(), cg_node.get_cfg(), post_invariants);
+    if (m_keep_invariants) {
+      join_with(get_global_pre_invariants(), cg_node.get_cfg(), pre_invariants);
+      join_with(get_global_post_invariants(), cg_node.get_cfg(), post_invariants);
+    }
   }
 };
 
@@ -962,7 +996,7 @@ private:
       auto &pre_invariants = callee_analysis.get_pre_invariants();
       auto &post_invariants = callee_analysis.get_post_invariants();
       calling_context_ptr cc(new calling_context_t(
-          fdecl, callee_entry, callee_exit, m_ctx->minimize_invariants(),
+          fdecl, callee_entry, callee_exit, m_ctx->keep_cc_invariants(),
           std::move(pre_invariants), std::move(post_invariants)));
       add_calling_context(callee_cfg, std::move(cc));
       callee_analysis.clear();
@@ -1193,7 +1227,8 @@ public:
   top_down_inter_analyzer(CallGraph cg, abs_dom_t init,
                           const params_t &params = params_t())
       : m_cg(cg), m_ctx(params.live_map, params.wto_map, params.run_checker,
-                        params.checker_verbosity, params.minimize_invariants,
+                        params.checker_verbosity,
+			params.keep_cc_invariants, params.keep_invariants,
                         params.max_call_contexts, params.widening_delay,
                         params.descending_iters, params.thresholds_size),
         m_abs_tr(new td_inter_abs_tr_t(&m_cg, &m_ctx, std::move(init))) {
