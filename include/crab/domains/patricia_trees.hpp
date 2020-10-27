@@ -1270,12 +1270,13 @@ public:
 public:
   patricia_tree() {}
 
-  patricia_tree(const patricia_tree_t &t) : _tree(t._tree) {}
+  patricia_tree(const patricia_tree_t &t) = default;
 
-  patricia_tree_t &operator=(const patricia_tree_t &t) {
-    this->_tree = t._tree;
-    return *this;
-  }
+  patricia_tree(patricia_tree_t &&t) = default;
+  
+  patricia_tree_t &operator=(const patricia_tree_t &t) = default;
+  
+  patricia_tree_t &operator=(patricia_tree_t &&t) = default;
 
   std::size_t size() const {
     if (this->_tree) {
