@@ -47,6 +47,7 @@
 
 #include <set>
 #include <vector>
+#include <algorithm>
 
 namespace ikos {
 
@@ -364,6 +365,42 @@ public:
     }
   }
 
+  void project(const std::vector<Key> &keys)  {
+    if (is_bottom() || is_top()) {
+      return;
+    }
+    const int factor = 60;   // between 0 and 100
+    const int small_env = 5; // size of a small environment
+    int num_total_keys = (int) this->_tree.size();
+    int num_keys = (int) keys.size();
+    if (num_total_keys <= small_env ||
+    	num_keys < num_total_keys * factor / 100) {
+      // project on less than factor% of keys: we copy
+      separate_domain_t env;
+      for (auto key: keys) {
+    	env.set(key, operator[](key));
+      }
+      std::swap(*this, env);
+    } else {
+      // project on more or equal then factor% of keys: that
+      // might be too many copies so we remove instead.
+      std::vector<Key> sorted_keys(keys);
+      std::sort(sorted_keys.begin(), sorted_keys.end());
+      std::vector<Key> project_out_keys;
+      project_out_keys.reserve(num_total_keys);
+      for (auto it = this->_tree.begin(); it!=this->_tree.end(); ++it) {
+    	Key key = it->first;
+    	if (!std::binary_search(sorted_keys.begin(),
+    				sorted_keys.end(), key)) {
+    	  project_out_keys.push_back(key);
+    	}
+      }
+      for (auto const &key: project_out_keys) {
+    	this->operator-=(key);
+      }
+    }
+  }
+  
   // Assume that from does not have duplicates.
   void rename(const std::vector<Key> &from, const std::vector<Key> &to) {
     if (is_top() || is_bottom()) {

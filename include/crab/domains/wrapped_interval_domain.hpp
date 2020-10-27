@@ -1896,15 +1896,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.project");
     crab::ScopedCrabStats __st__(domain_name() + ".project");
 
-    if (is_bottom() || is_top()) {
-      return;
-    }
-
-    separate_domain_t projected_env;
-    for (variable_t v : variables) {
-      projected_env.set(v, this->_env[v]);
-    }
-    std::swap(this->_env, projected_env);
+    _env.project(variables);            
   }
 
   void expand(const variable_t &x, const variable_t &new_x) override {

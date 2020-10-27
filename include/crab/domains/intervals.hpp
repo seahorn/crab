@@ -558,7 +558,7 @@ public:
     if (is_bottom() || is_top()) {
       return;
     }
-    for (variable_t var : variables) {
+    for (auto const& var : variables) {
       this->operator-=(var);
     }
   }
@@ -567,17 +567,9 @@ public:
     crab::CrabStats::count(domain_name() + ".count.project");
     crab::ScopedCrabStats __st__(domain_name() + ".project");
 
-    if (is_bottom() || is_top()) {
-      return;
-    }
-
-    separate_domain_t env;
-    for (variable_t var : variables) {
-      env.set(var, this->_env[var]);
-    }
-    std::swap(_env, env);
+    _env.project(variables);
   }
-
+  
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
     crab::CrabStats::count(domain_name() + ".count.rename");
