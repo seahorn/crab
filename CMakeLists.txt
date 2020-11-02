@@ -51,10 +51,11 @@ if (CRAB_USE_APRON AND CRAB_USE_ELINA)
   message(FATAL_ERROR "Apron and Elina are not compatible: choose one")
 endif()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
 if (CRAB_ENABLE_TESTS)
   ## Enforce these flags only when compiling our tests
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
   # Directory where all (binary) tests will be located
   # Binary tests do not go to install directory by default
