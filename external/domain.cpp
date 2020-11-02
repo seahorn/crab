@@ -37,9 +37,9 @@ using zones_domain_t = domains::split_dbm_domain<z_number, varname_t>;
 int main(int argc, char**argv) {
 
   variable_factory_t vfac;
-  var_t x(vfac["x"], INT_TYPE);
-  var_t y(vfac["y"], INT_TYPE);
-  var_t z(vfac["z"], INT_TYPE);
+  var_t x(vfac["x"], INT_TYPE, 32);
+  var_t y(vfac["y"], INT_TYPE, 32);
+  var_t z(vfac["z"], INT_TYPE, 32);
 
   {
     outs() << "Example using intervals\n";
