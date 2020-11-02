@@ -3,6 +3,7 @@
 #include <crab/support/os.hpp>
 #include <crab/types/indexable.hpp>
 #include <boost/functional/hash_fwd.hpp> // for hash_combine
+#include <boost/optional.hpp>
 
 namespace crab {
   
