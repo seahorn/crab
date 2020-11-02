@@ -61,7 +61,6 @@ using fwd_analyzer_t = analyzer::intra_fwd_analyzer<cfg_ref_t, abs_domain_t>;
 ///////// End Analyses /////////////
 
 int main(int argc, char**argv) {
-
   variable_factory_t vfac;
   var_t x(vfac["x"], INT_TYPE, 32);
   var_t i(vfac["i"], INT_TYPE, 32);
@@ -88,10 +87,10 @@ int main(int argc, char**argv) {
 
   entry.assign(x, 0);
   entry.assign(i, 0);
-  body.assume(lin_cst_t(i <= 99));
-  exit.assume(lin_cst_t(i >= 100));
+  body.assume(lin_cst_t(i <= 9999));
+  exit.assume(lin_cst_t(i >= 10000));
   body_if_tt.add(x, x, 1);
-  body_if_ff.add(x, x, 2);
+  body_if_ff.add(x, x, 3);
   body_tail.add(i, i, 1);
 
   outs() << prog << "\n";
@@ -105,7 +104,10 @@ int main(int argc, char**argv) {
 			 };
   interval_domain_t top_intv;
   abs_domain_t init(top_intv);
-  fwd_analyzer_t analyzer(prog, init);
+  unsigned widening_delay = 1;
+  unsigned narrowing_iterations = 1;
+  fwd_analyzer_t analyzer(prog, init, nullptr, nullptr,
+			  widening_delay, narrowing_iterations, 0);
   analyzer.run();
   outs () << "Invariants using intervals\n";
   print_invariants(analyzer);

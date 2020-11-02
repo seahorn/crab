@@ -10,12 +10,7 @@ PWD=$(shell pwd)
 CRAB_INSTALL=${PWD}/crab-install
 
 UNAME := $(shell uname)
-ifeq ($(UNAME),Darwin)
-    DYLIB=dylib
-else
-    DYLIB=so
-endif
-CRAB_LIBS = $(CRAB_INSTALL)/crab/lib/libCrab.${DYLIB}
+CRAB_LIBS = $(CRAB_INSTALL)/crab/lib/libCrab.a
 
 # Elina shared libraries have extension .so even on mac
 ELINA_LIBS := \
@@ -73,11 +68,10 @@ clean:
 	rm -f domain analysis  *.a *.o
 
 crab_install:
-	git clone https://github.com/seahorn/crab.git crab
+	git clone https://github.com/seahorn/crab.git crab -b dev
 	mkdir -p crab/build
 	cd crab/build \
-	    && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL) -DCRAB_BUILD_LIBS_SHARED=ON \
+	    && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL) -DCRAB_BUILD_LIBS_SHARED=OFF \
 	             -DCRAB_USE_ELINA=ON ../ \
-	    && cmake --build . --target ldd && cmake ../ \
 	    && cmake --build . --target elina && cmake ../ \
 	    && cmake --build . --target install

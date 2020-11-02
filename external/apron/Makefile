@@ -10,12 +10,7 @@ PWD=$(shell pwd)
 CRAB_INSTALL=${PWD}/crab-install
 
 UNAME := $(shell uname)
-ifeq ($(UNAME),Darwin)
-    DYLIB=dylib
-else
-    DYLIB=so
-endif
-CRAB_LIBS = $(CRAB_INSTALL)/crab/lib/libCrab.${DYLIB}
+CRAB_LIBS = $(CRAB_INSTALL)/crab/lib/libCrab.a
 
 LDD_LIBS := \
     $(CRAB_INSTALL)/ldd/lib/libldd.a \
@@ -57,7 +52,7 @@ CXXFLAGS += -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk
 endif
 
 # Lookup paths for crab shared libraries
-LDFLAGS := -Wl,-rpath,$(CRAB_INSTALL)/crab/lib/
+#LDFLAGS := -Wl,-rpath,$(CRAB_INSTALL)/crab/lib/
 # For gmp library (you might need to adapt this)
 LDFLAGS := -L/usr/local/lib
 
@@ -79,7 +74,7 @@ crab_install:
 	mkdir -p crab/build
 	@echo "Installing crab in ${CRAB_INSTALL} ... "
 	cd crab/build \
-	     && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL) -DCRAB_BUILD_LIBS_SHARED=ON \
+	     && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL) -DCRAB_BUILD_LIBS_SHARED=OFF \
 	              -DCRAB_USE_LDD=ON -DCRAB_USE_APRON=ON ../ \
 	     && cmake --build . --target ldd && cmake ../ \
 	     && cmake --build . --target apron && cmake ../ \

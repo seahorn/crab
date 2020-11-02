@@ -8,18 +8,10 @@
 
 PWD=$(shell pwd)
 CRAB_INSTALL=${PWD}/crab-install
-CRAB_INSTALL=/Users/E30338/Repos/crab-ref/install-debug
 
 UNAME := $(shell uname)
-ifeq ($(UNAME),Darwin)
-    DYLIB=dylib
-else
-    DYLIB=so
-endif
-CRAB_LIBS = $(CRAB_INSTALL)/crab/lib/libCrab.${DYLIB}
-
-LDLIBS := \
-     $(CRAB_LIBS) -lgmp -lm -lstdc++ 
+CRAB_LIBS = $(CRAB_INSTALL)/crab/lib/libCrab.a
+LDLIBS := $(CRAB_LIBS) -lgmp -lm -lstdc++ 
 
 CXXFLAGS := \
      -Wall -Werror -Wfatal-errors \
@@ -37,7 +29,7 @@ CXXFLAGS += -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk
 endif
 
 # Lookup paths for crab shared libraries
-LDFLAGS := -Wl,-rpath,$(CRAB_INSTALL)/crab/lib/
+# LDFLAGS := -Wl,-rpath,$(CRAB_INSTALL)/crab/lib/
 # For gmp library (you might need to adapt this)
 LDFLAGS := -L/usr/local/lib
 
@@ -52,12 +44,12 @@ analysis: analysis.o
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) analysis.o $(LDLIBS) -o analysis
 
 clean:
-	rm -f domain analysis  *.a *.o
+	rm -f domain analysis *.a *.o
 
 crab_install:
-	git clone https://github.com/seahorn/crab.git crab
+	git clone https://github.com/seahorn/crab.git -b dev crab
 	mkdir -p crab/build
 	cd crab/build \
 	    && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL)  \
-	       -DCRAB_BUILD_LIBS_SHARED=ON ../ \
+	       -DCRAB_BUILD_LIBS_SHARED=OFF ../ \
 	    && cmake --build . --target install
