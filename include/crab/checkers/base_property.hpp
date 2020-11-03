@@ -9,6 +9,7 @@
 
 #include <set>
 #include <vector>
+#include <map>
 
 namespace crab {
 
@@ -18,8 +19,7 @@ typedef enum { _SAFE, _ERR, _WARN, _UNREACH } check_kind_t;
 // Toy database to store invariants. We may want to replace it with
 // a permanent external database.
 class checks_db {
-  using check_t = std::pair<crab::cfg::debug_info, check_kind_t>;
-  using checks_db_t = std::set<check_t>;
+  using checks_db_t = std::map<crab::cfg::debug_info, std::vector<check_kind_t>>;
 
   checks_db_t m_db;
   unsigned m_total_safe;
@@ -27,10 +27,24 @@ class checks_db {
   unsigned m_total_unreach;
   unsigned m_total_warn;
 
-public:
-  checks_db()
-      : m_total_safe(0), m_total_err(0), m_total_unreach(0), m_total_warn(0) {}
+  void insert_db(const crab::cfg::debug_info &di, check_kind_t check) {
+    m_db[di].push_back(check);
+  }
 
+  void merge_db(const checks_db_t &o) {
+    for (auto const &kv: o) {
+      m_db[kv.first].insert(m_db[kv.first].end(), kv.second.begin(), kv.second.end());
+    }
+  }
+
+  
+public:
+  checks_db():
+    m_total_safe(0),
+    m_total_err(0),
+    m_total_unreach(0),
+    m_total_warn(0) {}
+  
   void clear() {
     m_db.clear();
     m_total_safe = 0;
@@ -39,6 +53,16 @@ public:
     m_total_warn = 0;
   }
 
+  bool has_checks(const crab::cfg::debug_info &dbg) const {
+    return m_db.find(dbg) != m_db.end();
+  }
+
+  const std::vector<check_kind_t>& get_checks(const crab::cfg::debug_info &dbg) const {
+    assert(has_checks(dbg));
+    auto it = m_db.find(dbg);
+    return it->second;
+  }
+  
   unsigned get_total_safe() const { return m_total_safe + m_total_unreach; }
 
   unsigned get_total_warning() const { return m_total_warn; }
@@ -46,8 +70,7 @@ public:
   unsigned get_total_error() const { return m_total_err; }
 
   // add an entry in the database
-  void add(check_kind_t status,
-           crab::cfg::debug_info dbg = crab::cfg::debug_info()) {
+  void add(check_kind_t status, crab::cfg::debug_info dbg) {
     switch (status) {
     case _SAFE:
       m_total_safe++;
@@ -61,20 +84,21 @@ public:
     default:
       m_total_warn++;
     }
-    if (dbg.has_debug())
-      m_db.insert(check_t(dbg, status));
+    if (dbg.has_debug()) {
+      insert_db(dbg, status);
+    }
   }
 
   // merge two databases
   void operator+=(const checks_db &other) {
-    m_db.insert(other.m_db.begin(), other.m_db.end());
+    merge_db(other.m_db);
     m_total_safe += other.m_total_safe;
     m_total_err += other.m_total_err;
     m_total_warn += other.m_total_warn;
     m_total_unreach += other.m_total_unreach;
   }
 
-  void write(crab_os &o) const {
+  void write(crab_os &o, bool print_content = false) const {
     std::vector<unsigned> cnts = {m_total_safe, m_total_err, m_total_warn,
                                   m_total_unreach};
     unsigned MaxValLen = 0;
@@ -94,32 +118,34 @@ public:
       << m_total_unreach << std::string(2, ' ')
       << "Number of total unreachable checks\n";
 
-    unsigned MaxFileLen = 0;
-    for (auto const &p : m_db) {
-      MaxFileLen = std::max(MaxFileLen, (unsigned)p.first.m_file.size());
-    }
-
-    for (auto const &p : m_db) {
-      switch (p.second) {
-      case _SAFE:
-        o << "safe: ";
-        break;
-      case _ERR:
-        o << "error: ";
-        break;
-      case _UNREACH:
-        o << "unreachable: ";
-        break;
-      default:
-        o << "warning: ";
-        break;
+    if (print_content){
+      o << "\nCheck database content:\n";
+      unsigned MaxFileLen = 0;
+      for (auto const &kv : m_db) {
+	MaxFileLen = std::max(MaxFileLen, (unsigned)kv.first.m_file.size());
       }
-      // print all checks here
-      // o << p.first.m_file << std::string((int) MaxFileLen -
-      // p.first.m_file.size(), ' ')
-      //   << std::string(2, ' ')
-      //   << " line " << p.first.m_line
-      //   << " col " << p.first.m_col << "\n";
+      for (auto const& kv: m_db) {
+	o << kv.first.m_file << std::string((int) MaxFileLen -
+					    kv.first.m_file.size(), ' ')
+	  << std::string(2, ' ')
+	  << " line " << kv.first.m_line
+	  << " col "  << kv.first.m_col << ":\n"
+	  << "\t";
+	auto const& checks = kv.second;
+	for (unsigned i=0, num_checks = checks.size(); i<num_checks;) {
+	  switch(checks[i]) {
+	  case _SAFE: o << "safe"; break;
+	  case _ERR:  o << "error"; break;
+	  case _WARN: o << "warning"; break;
+	  case _UNREACH: o << "unreachable (safe)"; break;
+	  }
+	  ++i;
+	  if (i < num_checks) {
+	    o << " ";
+	  }
+	}
+	o << "\n";
+      }
     }
   }
 };
@@ -231,7 +257,7 @@ protected:
   std::vector<const statement_t *> m_error_checks;
 
   void add_safe(std::string msg, const statement_t *s) {
-    m_db.add(_SAFE);
+    m_db.add(_SAFE, s->get_debug_info());
     m_safe_checks.push_back(s);
 
     if (m_verbose >= 3) {

@@ -43,7 +43,7 @@ public:
 
       auto &inv = this->m_abs_tr->get_abs_value();
       if (inv.is_bottom()) {
-        this->m_db.add(_UNREACH);
+        this->m_db.add(_UNREACH, s.get_debug_info());
         return;
       }
 
@@ -51,9 +51,9 @@ public:
       if (divisor_expr.is_constant()) {
         number_t divisor = divisor_expr.constant();
         if (divisor == number_t(0)) {
-          this->m_db.add(_ERR);
+          this->m_db.add(_ERR, s.get_debug_info());
         } else {
-          this->m_db.add(_SAFE);
+          this->m_db.add(_SAFE, s.get_debug_info());
         }
       } else if (auto var = divisor_expr.get_variable()) {
         interval_t divisor_intv = inv[(*var)];
@@ -67,7 +67,7 @@ public:
             }
             this->add_error(os.str(), &s);
           } else {
-            this->m_db.add(_SAFE);
+            this->m_db.add(_SAFE, s.get_debug_info());
           }
         } else if (interval_t(number_t(0)) <= divisor_intv) {
           lin_cst_t w_cst(*var != number_t(0));
@@ -78,7 +78,7 @@ public:
           }
           this->add_warning(os.str(), &s);
         } else {
-          this->m_db.add(_SAFE);
+          this->m_db.add(_SAFE, s.get_debug_info());
         }
       } else
         CRAB_ERROR("DivZero only supports constant or single var as divisor.");
