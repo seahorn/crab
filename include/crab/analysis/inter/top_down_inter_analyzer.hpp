@@ -1283,12 +1283,12 @@ public:
       CRAB_VERBOSE_IF(1, get_msg_stream()
                              << "Started inter-procedural analysis\n";);
 
-      abs_dom_t dom(init);
-      m_abs_tr->set_abs_value(std::move(dom));
-      for (auto cg_node : entries) {
+      for (auto cg_node : entries) {	
         if (widening_set.count(cg_node) > 0) {
           CRAB_ERROR("Entry point cannot be recursive");
         }
+	abs_dom_t dom(init);
+	m_abs_tr->set_abs_value(std::move(dom));
         intra_analyzer_with_call_semantics_t &entry_analysis =
             top_down_inter_impl::analyze_recursively_function<
                 cg_node_t, intra_analyzer_with_call_semantics_t>(cg_node,
