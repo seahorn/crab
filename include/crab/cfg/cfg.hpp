@@ -216,8 +216,17 @@ struct debug_info {
       : m_file(file), m_line(line), m_col(col) {}
 
   bool operator<(const debug_info &other) const {
-    return (m_file < other.m_file && m_line < other.m_line &&
-            m_col < other.m_col);
+    if (m_file < other.m_file) {
+      return true;
+    } else if (m_file > other.m_file) {
+      return false;
+    }
+    if (m_line < other.m_line) {
+      return true;
+    } else if (m_line > other.m_line) {
+      return false;
+    }
+    return (m_col < other.m_col);
   }
 
   bool operator==(const debug_info &other) const {
@@ -229,6 +238,10 @@ struct debug_info {
     return ((m_file != "") && (m_line >= 0) && (m_col >= 0));
   }
 
+  std::string get_file() const { return m_file;} 
+  int get_line() const { return m_line;}
+  int get_column() const { return m_col;}
+  
   void write(crab_os &o) const {
     o << "File  : " << m_file << "\n"
       << "Line  : " << m_line << "\n"
@@ -2775,8 +2788,8 @@ public:
     return insert(new assume_ref_t(cst, this));
   }
 
-  const statement_t *assert_ref(ref_cst_t cst) {
-    return insert(new assert_ref_t(cst, this));
+  const statement_t *assert_ref(ref_cst_t cst, debug_info di = debug_info()) {
+    return insert(new assert_ref_t(cst, this, di));
   }
 
   const statement_t *int_to_ref(variable_t int_var, variable_t region,
