@@ -117,8 +117,6 @@ if (CRAB_ENABLE_TESTS)
   if (CRAB_BUILD_LIBS_SHARED)
     set(Boost_USE_STATIC_LIBS OFF)
   endif ()
-  add_definitions(-DBOOST_NO_EXCEPTIONS)
-
   if (CRAB_USE_GENERIC_WRAPPER)
     set(USE_GENERIC_WRAPPER TRUE)
   endif ()
