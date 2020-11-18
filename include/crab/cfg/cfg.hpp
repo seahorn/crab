@@ -1001,7 +1001,7 @@ public:
   }
 
   virtual void write(crab_os &o) const {
-    o << "region_init(" << m_region << ")";
+    o << "region_init(" << m_region << ":" << m_region.get_type() << ")";
   }
 
 private:
@@ -1044,7 +1044,8 @@ public:
   }
 
   virtual void write(crab_os &o) const {
-    o << "region_copy(" << m_lhs_region << ", " << m_rhs_region << ")";
+    o << "region_copy(" << m_lhs_region << ":" << m_lhs_region.get_type() << ", "
+      << m_rhs_region << ":" << m_rhs_region.get_type() << ")";
   }
 
 private:
@@ -1084,7 +1085,7 @@ public:
 
   virtual void write(crab_os &o) const {
     o << m_lhs << " := "
-      << "make_ref(" << m_region << ")";
+      << "make_ref(" << m_region << ":" << m_region.get_type() << ")";
   }
 
 private:
@@ -1128,8 +1129,9 @@ public:
   }
 
   virtual void write(crab_os &o) const {
-    o << m_lhs << " := "
-      << "load_from_ref(" << m_region << "," << m_ref << ")";
+    o << m_lhs << ":" << m_lhs.get_type() << " := "
+      << "load_from_ref(" << m_region << ":" << m_region.get_type() << ","
+      << m_ref << ":" << m_ref.get_type() << ")";
   }
 
 private:
@@ -1177,7 +1179,8 @@ public:
   }
 
   virtual void write(crab_os &o) const {
-    o << "store_to_ref(" << m_region << "," << m_ref << "," << m_val << ")";
+    o << "store_to_ref(" << m_region << ":" << m_region.get_type() << ","
+      << m_ref << ":" << m_ref.get_type()  << "," << m_val << ":" << m_val.get_type() << ")";
   }
 
 private:
@@ -1232,11 +1235,14 @@ public:
   }
 
   virtual void write(crab_os &o) const {
-    o << "(" << m_lhs_region << "," << m_lhs << ") := ";
+    o << "(" << m_lhs_region << ":" << m_lhs_region.get_type() << ","
+      << m_lhs << ":" << m_lhs.get_type()  << ") := ";
     if (m_offset.equal(Number(0))) {
-      o << "gep_ref(" << m_rhs_region << "," << m_rhs << ")";
+      o << "gep_ref(" << m_rhs_region << ":" << m_rhs_region.get_type()
+	<< "," << m_rhs << ":" << m_rhs.get_type() << ")";
     } else {
-      o << "gep_ref(" << m_rhs_region << "," << m_rhs << " + " << m_offset
+      o << "gep_ref(" << m_rhs_region << ":" << m_rhs_region.get_type()
+	<< "," << m_rhs << ":" << m_rhs.get_type() << " + " << m_offset
         << ")";
     }
     return;
@@ -1303,8 +1309,9 @@ public:
   }
 
   virtual void write(crab_os &o) const {
-    o << m_lhs << " = "
-      << "load_from_arr_ref(" << m_region << "," << m_ref << "," << m_index
+    o << m_lhs << ":" << m_lhs.get_type() << " = "
+      << "load_from_arr_ref(" << m_region << ":" << m_region.get_type() << ","
+      << m_ref << ":" << m_ref.get_type() << "," << m_index
       << ",sz " << m_elem_size << ")";
   }
 
@@ -1385,11 +1392,12 @@ public:
   }
 
   virtual void write(crab_os &o) const {
-    o << "store_to_arr_ref(" << m_region << ",";
+    o << "store_to_arr_ref(" << m_region << ":" << m_region.get_type() << ","
+      << m_ref << ":" << m_ref.get_type();
     if (m_lb.equal(m_ub)) {
-      o << m_ref << "," << m_lb << "," << m_value << ",sz " << m_elem_size;
+      o << "," << m_lb << "," << m_value << ",sz " << m_elem_size;
     } else {
-      o << m_ref << "," << m_lb << ".." << m_ub << "," << m_value << ",sz "
+      o	<< "," << m_lb << ".." << m_ub << "," << m_value << ",sz "
         << m_elem_size;
     }
     o << ")";
@@ -1541,8 +1549,9 @@ public:
   }
 
   virtual void write(crab_os &o) const {
-    o << m_int_var << " := "
-      << "ref_to_int(" << m_region << "," << m_ref_var << ")";
+    o << m_int_var << ":" << m_int_var.get_type() << " := "
+      << "ref_to_int(" << m_region << ":" << m_region.get_type()
+      << "," << m_ref_var << ":" << m_ref_var.get_type() << ")";
   }
 
 private:
@@ -1587,8 +1596,9 @@ public:
   }
 
   virtual void write(crab_os &o) const {
-    o << m_ref_var << " := "
-      << "int_to_ref(" << m_region << "," << m_int_var << ")";
+    o << m_ref_var << ":" << m_ref_var.get_type() << " := "
+      << "int_to_ref(" << m_region << ":" << m_region.get_type()
+      << "," << m_int_var << ":" << m_int_var.get_type() << ")";
   }
 
 private:
