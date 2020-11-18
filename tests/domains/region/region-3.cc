@@ -81,7 +81,7 @@ int main() {
   bb8.add_succ(bb9);
   bb9.add_succ(bb6_loop);
 
-  z_var_or_num_t n30000_32(z_number(30000), crab::variable_type(crab::INT_TYPE, 32));
+  z_var_or_cst_t n30000_32(z_number(30000), crab::variable_type(crab::INT_TYPE, 32));
     
   entry.region_init(mem_field_next);
   entry.region_init(mem_field_s);

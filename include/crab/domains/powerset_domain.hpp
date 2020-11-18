@@ -43,7 +43,7 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
-  using typename abstract_domain_t::variable_or_number_t;
+  using typename abstract_domain_t::variable_or_constant_t;
   using typename abstract_domain_t::variable_vector_t;
 
 private:
@@ -570,7 +570,7 @@ public:
   }
 
   virtual void ref_store(const variable_t &ref, const variable_t &reg,
-                         const variable_or_number_t &val) override {
+                         const variable_or_constant_t &val) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
         m_disjuncts[i].ref_store(ref, reg, val);

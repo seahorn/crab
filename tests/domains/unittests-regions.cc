@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
     z_var y(vfac["y"], crab::INT_TYPE, 32);
     z_var ref(vfac["ref"], crab::REF_TYPE, 32);    
     z_var rgn1(vfac["region_0"], crab::REG_INT_TYPE, 32);
-    z_var_or_num_t n34_32(z_number(34), crab::variable_type(crab::INT_TYPE, 32));
+    z_var_or_cst_t n34_32(z_number(34), crab::variable_type(crab::INT_TYPE, 32));
     
     z_rgn_int_t inv1, inv2, inv3;
     inv1 += (x >= z_number(5));
@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
     z_var ref(vfac["ref"], crab::REF_TYPE, 32);    
     z_var rgn1(vfac["region_0"], crab::REG_INT_TYPE, 32);
 
-    z_var_or_num_t n34_32(z_number(34), crab::variable_type(crab::INT_TYPE, 32));
+    z_var_or_cst_t n34_32(z_number(34), crab::variable_type(crab::INT_TYPE, 32));
     z_rgn_int_t inv1, inv2;
     inv1 += (x >= z_number(5));
     inv1 += (y >= z_number(10));

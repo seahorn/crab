@@ -272,7 +272,7 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
-  using typename abstract_domain_t::variable_or_number_t;
+  using typename abstract_domain_t::variable_or_constant_t;
   using typename abstract_domain_t::variable_vector_t;
   using number_t = typename Params::number_t;
   using varname_t = typename Params::varname_t;
@@ -1423,7 +1423,7 @@ public:
   // Write the content of val to the address pointed by ref in region
   // rgn.
   void ref_store(const variable_t &ref, const variable_t &rgn,
-                 const variable_or_number_t &val) override {
+                 const variable_or_constant_t &val) override {
     crab::CrabStats::count(domain_name() + ".count.ref_store");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_store");
 
@@ -1481,9 +1481,9 @@ public:
        // At this point region of references has been translated to region of integers.
        // val can be any scalar including a reference.
       if (val.get_type().is_bool()) {
-        if (val.is_number()) {
+        if (val.is_constant()) {
 	  base_dom.assign_bool_cst(rgn_var,
-				   (val.get_number() >= number_t(1) ?
+				   (val.is_bool_true() ?
 				    base_linear_constraint_t::get_true():
 				    base_linear_constraint_t::get_false()));
         } else { 
@@ -1492,8 +1492,8 @@ public:
       } else if (val.get_type().is_integer() ||
 		 val.get_type().is_real() ||
 		 val.get_type().is_reference()) {
-	if (val.is_number()) {
-	  base_dom.assign(rgn_var, val.get_number());
+	if (val.is_constant()) {
+	  base_dom.assign(rgn_var, val.get_constant());
 	} else {
 	  base_dom.assign(rgn_var, rename_var(val.get_variable()));
 	}

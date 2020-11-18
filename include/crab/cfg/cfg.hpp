@@ -1150,9 +1150,9 @@ public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
   using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
-  using variable_or_number_t = variable_or_number<Number, VariableName>;
+  using variable_or_constant_t = variable_or_constant<Number, VariableName>;
 
-  store_to_ref_stmt(variable_t ref, variable_t region, variable_or_number_t val,
+  store_to_ref_stmt(variable_t ref, variable_t region, variable_or_constant_t val,
                     basic_block_t *parent, debug_info dbg_info = debug_info())
       : statement_t(REF_STORE, parent, dbg_info), m_ref(ref), m_region(region),
         m_val(val) {
@@ -1165,7 +1165,7 @@ public:
 
   const variable_t &ref() const { return m_ref; }
 
-  const variable_or_number_t &val() const { return m_val; }
+  const variable_or_constant_t &val() const { return m_val; }
 
   const variable_t &region() const { return m_region; }
 
@@ -1186,7 +1186,7 @@ public:
 private:
   variable_t m_ref;
   variable_t m_region;
-  variable_or_number_t m_val;
+  variable_or_constant_t m_val;
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
@@ -2223,7 +2223,7 @@ public:
 
   // helper types to build statements
   using variable_t = variable<Number, VariableName>;
-  using variable_or_number_t = variable_or_number<Number, VariableName>;
+  using variable_or_constant_t = variable_or_constant<Number, VariableName>;
   using lin_exp_t = ikos::linear_expression<Number, VariableName>;
   using lin_cst_t = ikos::linear_constraint<Number, VariableName>;
   using ref_cst_t = reference_constraint<Number, VariableName>;
@@ -2767,7 +2767,7 @@ public:
   }
 
   const statement_t *store_to_ref(variable_t ref, variable_t region,
-                                  variable_or_number_t val) {
+                                  variable_or_constant_t val) {
     return insert(new store_to_ref_t(ref, region, val, this));
   }
 

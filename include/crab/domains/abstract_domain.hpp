@@ -50,7 +50,7 @@ public:
   using disjunctive_linear_constraint_system_t =
       ikos::disjunctive_linear_constraint_system<number_t, varname_t>;
   using variable_t = variable<number_t, varname_t>;
-  using variable_or_number_t = variable_or_number<number_t, varname_t>;
+  using variable_or_constant_t = variable_or_constant<number_t, varname_t>;
   using variable_vector_t = std::vector<variable_t>;
   using reference_constraint_t = reference_constraint<number_t, varname_t>;
   using interval_t = ikos::interval<number_t>;
@@ -172,7 +172,7 @@ public:
   // Write the content of val to the address pointed by ref in region
   // reg.
   virtual void ref_store(const variable_t &ref, const variable_t &reg,
-                         const variable_or_number_t &val) = 0;
+                         const variable_or_constant_t &val) = 0;
   // Create a new reference ref2 to region reg2.
   // The reference ref2 is created by adding offset to ref1.
   virtual void ref_gep(const variable_t &ref1, const variable_t &reg1,

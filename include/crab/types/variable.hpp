@@ -268,37 +268,51 @@ inline size_t hash_value(const variable<Number, VariableName> &v) {
 }
 
 /* 
- * This class represents either a variable or a **typed** number.
+ * This class represents either a variable or a **typed** constant.
  */
 template <typename Number, typename VariableName>
-class variable_or_number {
+class variable_or_constant {
 public:
   using variable_t = variable<Number, VariableName>;
   using number_t = Number;
 private:
-  using this_type = variable_or_number<Number, VariableName>;
+  using this_type = variable_or_constant<Number, VariableName>;
 
   boost::optional<variable_t> m_var;
   // A number can be a boolean, a real, an integer, or a reference.
   std::pair<number_t, variable_type> m_num;
 
-  void check_number_type(const variable_type &ty) {
+  void check_number_type(const variable_type &ty, number_t num) {
+    if (ty.is_bool()) {
+      // 0: false, 1: true
+      if (num == number_t(0) || num == number_t(1))
+	return;
+    } else if (ty.is_reference()) {
+      // 0: null
+      if (num == number_t(0))
+	return;
+    } else if (ty.is_real() || ty.is_integer()) {
+      return;
+    }
+    
     if (!ty.is_scalar()) {
-      CRAB_ERROR("variable_or_number supports only scalar types");
+      CRAB_ERROR("variable_or_constant supports only scalar types");
+    } else {
+      CRAB_ERROR("Constant ", num, " is not supported for type ", ty);
     }
   }
   
 public:
-  variable_or_number(variable_t var)
+  variable_or_constant(variable_t var)
     : m_var(var), m_num(std::make_pair(0, UNK_TYPE)) {}
   
-  variable_or_number(number_t num, variable_type num_ty)
+  variable_or_constant(number_t num, variable_type num_ty)
     : m_var(boost::none), m_num(std::make_pair(num, num_ty)) {
-    check_number_type(num_ty);
+    check_number_type(num_ty, num);
   }
 
-  variable_or_number(const this_type& o) = default;
-  variable_or_number(this_type&& o) = default;
+  variable_or_constant(const this_type& o) = default;
+  variable_or_constant(this_type&& o) = default;
   this_type &operator=(const this_type& o) = default;
   this_type &operator=(this_type&& o) = default;    
 
@@ -306,7 +320,7 @@ public:
     return (m_var ? true: false);
   }
   
-  bool is_number() const {
+  bool is_constant() const {
     return !is_variable();
   }
   
@@ -320,23 +334,42 @@ public:
 
   variable_t get_variable() const {
     if (!is_variable()) {
-      CRAB_ERROR("variable_or_number is not a variable");
+      CRAB_ERROR("variable_or_constant is not a variable");
     }
     return (*m_var);
   }
 
-  number_t get_number() const {
-    if (!is_number()) {
-      CRAB_ERROR("variable_or_number is not a variable");
+  number_t get_constant() const {
+    if (!is_constant()) {
+      CRAB_ERROR("variable_or_constant is not a constant");
     }
     return m_num.first;
+  }
+
+  bool is_bool_false() const {
+    return is_constant() && get_type().is_bool() &&
+      get_constant() == number_t(0);    
+  }
+  
+  bool is_bool_true() const {
+    return is_constant() && get_type().is_bool() &&
+      get_constant() == number_t(1);
+  }
+  
+  bool is_reference_null() const {
+    return is_constant() && get_type().is_reference() &&
+      get_constant() == number_t(0);    
+  }
+
+  bool is_number()  const {
+    return is_constant() && (get_type().is_real() || get_type().is_integer());
   }
   
   void write(crab_os &o) const {
     if (is_variable()) {
       o << get_variable();
     } else {
-      o << get_number();
+      o << get_constant();
     }
   }
 

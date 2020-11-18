@@ -63,8 +63,8 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
 
   // === adding statements
 
-  z_var_or_num_t zero32(z_number(0), crab::variable_type(crab::INT_TYPE, 32));
-  z_var_or_num_t one32(z_number(1), crab::variable_type(crab::INT_TYPE, 32));  
+  z_var_or_cst_t zero32(z_number(0), crab::variable_type(crab::INT_TYPE, 32));
+  z_var_or_cst_t one32(z_number(1), crab::variable_type(crab::INT_TYPE, 32));  
   
   // Intialization of memory regions
   entry.region_init(mem1);
