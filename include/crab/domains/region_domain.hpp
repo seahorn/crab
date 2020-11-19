@@ -899,18 +899,20 @@ public:
   bool is_bottom() const override { return m_is_bottom; }
 
   bool is_top() const override {
-    return m_base_dom.is_top() && m_rgn_counting_dom.is_top();
+    return (!is_bottom() &&
+	    m_base_dom.is_top() && m_rgn_counting_dom.is_top());
   }
 
   bool operator<=(const region_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
+    
     if (is_bottom() || o.is_top()) {
       return true;
     } else if (is_top() || o.is_bottom()) {
       return false;
     }
-
+    
     CRAB_LOG("region", crab::outs() << "Inclusion test:\n\t" << *this << "\n\t"
                                     << o << "\n";);
 
@@ -923,6 +925,7 @@ public:
       CRAB_LOG("region", crab::outs() << "Result=0\n";);
       return false;
     }
+
     
     // perform the common renaming
     base_varname_allocator_t out_alloc(m_alloc, o.m_alloc);
@@ -946,7 +949,9 @@ public:
       }
     }
 
+    left_dom.forget(out_vars);
     left_dom.rename(left_vars, out_vars);
+    right_dom.forget(out_vars);    
     right_dom.rename(right_vars, out_vars);
     bool res = left_dom <= right_dom;
     CRAB_LOG("region", crab::outs() << "Result=" << res << "\n";);
@@ -1283,6 +1288,7 @@ public:
 
     const base_variable_t &base_lhs = rename_var(lhs_rgn);
     const base_variable_t &base_rhs = rename_var(rhs_rgn);
+    m_base_dom.forget({base_lhs});
     m_base_dom.expand(base_rhs, base_lhs);
     
     // auto ty = lhs_rgn.get_type();
@@ -1340,7 +1346,7 @@ public:
 
     // TODO: handle unknown regions
     if (rgn.get_type().is_unknown_region()) {
-      CRAB_LOG("region",
+      CRAB_LOG("region-load",
 	       CRAB_WARN("region_domain::ref_load: skip unknown region ", rgn););
       m_base_dom -= base_res;
       return;
@@ -1348,7 +1354,7 @@ public:
 
     // Non-scalar regions should be handled by ref_load_from_array
     if (!rgn.get_type().is_scalar_region()) {
-      CRAB_LOG("region",
+      CRAB_LOG("region-load",
 	  CRAB_WARN("region_domain::ref_load: ", rgn, " must be a scalar region"););
       m_base_dom -= base_res;
       return;
@@ -1365,14 +1371,14 @@ public:
 
     if (!ref.get_type().is_reference()) {
       // This shouldn't happen
-      CRAB_LOG("region",
+      CRAB_LOG("region-load",
 	  CRAB_WARN("region_domain::ref_load: ", ref, " must be a reference"););
       m_base_dom -= base_res;
       return;
     }
 
     if (is_null_ref(ref)) {
-      CRAB_LOG("region", CRAB_WARN("region_domain::ref_load: reference ", ref, " is null."
+      CRAB_LOG("region-load", CRAB_WARN("region_domain::ref_load: reference ", ref, " is null."
 				   //, " Set to bottom ..."
 				   ););
       //set_to_bottom();
@@ -1399,14 +1405,14 @@ public:
 
     auto num_refs = m_rgn_counting_dom[rgn];
     if (num_refs.is_zero() || num_refs.is_one()) {
-      CRAB_LOG("region", crab::outs() << "Reading from singleton\n";);
+      CRAB_LOG("region-load", crab::outs() << "Reading from singleton\n";);
       if (auto region_var_opt = get_var(rgn)) {
         ref_load(*region_var_opt);
       } else {
         m_base_dom -= base_res;
       }
     } else {
-      CRAB_LOG("region", crab::outs() << "Reading from non-singleton\n";);
+      CRAB_LOG("region-load", crab::outs() << "Reading from non-singleton\n";);
       if (auto region_var_opt = get_var(rgn)) {
         base_variable_t fresh_region_var = make_base_variable(m_alloc, rgn);
         m_base_dom.expand(*region_var_opt, fresh_region_var);
@@ -1415,7 +1421,7 @@ public:
         m_base_dom -= base_res;
       }
     }
-    CRAB_LOG("region", crab::outs() << "After " << res << ":="
+    CRAB_LOG("region-load", crab::outs() << "After " << res << ":="
                                     << "ref_load(" << ref << "," << rgn
                                     << ")=" << *this << "\n";);
   }
@@ -1433,11 +1439,13 @@ public:
 
     // TODO: handle unknown regions
     if (rgn.get_type().is_unknown_region()) {
-      CRAB_LOG("region", CRAB_WARN("region_domain::ref_store: skip unknown region ",
+      CRAB_LOG("region-store", CRAB_WARN("region_domain::ref_store: skip unknown region ",
 				   rgn););
       return;
     }
 
+    bool is_uninitialized_rgn =  m_rgn_init_dom[rgn].is_false();
+    
     // We conservatively mark the region as may-initialized
     m_rgn_init_dom.set(rgn, boolean_value::top());
     
@@ -1445,7 +1453,7 @@ public:
 
     // Non-scalar regions should be handled by ref_store_to_array
     if (!rgn.get_type().is_scalar_region()) {
-      CRAB_LOG("region", CRAB_WARN("region_domain::ref_store: ", rgn,
+      CRAB_LOG("region-store", CRAB_WARN("region_domain::ref_store: ", rgn,
 				   " must be a scalar region"););
       m_base_dom -= rgn_var;
       return;
@@ -1462,14 +1470,14 @@ public:
     
     if (!ref.get_type().is_reference()) {
       // This shouldn't happen
-      CRAB_LOG("region", CRAB_WARN("region_domain::ref_store: ", ref,
+      CRAB_LOG("region-store", CRAB_WARN("region_domain::ref_store: ", ref,
                                    " must be a reference"););
       m_base_dom -= rgn_var;      
       return;
     }
 
     if (is_null_ref(ref)) {
-      CRAB_LOG("region", CRAB_WARN("region_domain::ref_store: reference ", ref,
+      CRAB_LOG("region-store", CRAB_WARN("region_domain::ref_store: reference ", ref,
                                    " is null. "//, " Set to bottom ..."
 				   ););
       //set_to_bottom();
@@ -1503,18 +1511,29 @@ public:
     };
 
     auto num_refs = m_rgn_counting_dom[rgn];
-    if (num_refs.is_zero() || num_refs.is_one()) {
+
+    // A region can have more than one reference but we can still
+    // perform a strong update as long as nobody wrote yet in the
+    // region. The use of "is_uninitialized_rgn" avoids fooling the
+    // abstract domain with code like this:
+    // 
+    //   r1 := make_ref(R);
+    //   r2 := make_ref(R);
+    //   store_ref(R, r1, v1);
+    //   store_ref(R, r2, v2);
+    // 
+    if (is_uninitialized_rgn || num_refs.is_zero() || num_refs.is_one()) {
       /* strong update */
-      CRAB_LOG("region", crab::outs() << "Performing strong update\n";);
+      CRAB_LOG("region-store", crab::outs() << "Performing strong update\n";);
       ref_store(m_base_dom);
     } else {
       /* weak update */
-      CRAB_LOG("region", crab::outs() << "Performing weak update\n";);
+      CRAB_LOG("region-store", crab::outs() << "Performing weak update\n";);
       base_abstract_domain_t tmp(m_base_dom);
       ref_store(tmp);
       m_base_dom |= tmp;
     }
-    CRAB_LOG("region", crab::outs() << "After ref_store(" << ref << "," << rgn
+    CRAB_LOG("region-store", crab::outs() << "After ref_store(" << ref << "," << rgn
                                     << "," << val << ")=" << *this << "\n";);
   }
 
