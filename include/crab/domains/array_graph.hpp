@@ -42,6 +42,8 @@
 #include <crab/domains/graphs/adapt_sgraph.hpp>
 #include <crab/domains/graphs/sparse_graph.hpp>
 #include <crab/domains/intervals.hpp>
+// XXX: for now the only scalar domain
+#include <crab/domains/split_dbm.hpp>
 // XXX: if expression domain is a template parameter no need to include
 #include <crab/domains/term_equiv.hpp>
 // XXX: for customized propagations between weight and scalar domains
@@ -1126,6 +1128,11 @@ private:
   static_assert(std::is_same<varname_t, typename Content::varname_t>::value,
                 "Scalar and Content domains must have the same varname type");
 
+  // We need the operations is_unsat and active_variables from the
+  // scalar domain
+  static_assert(std::is_same<NumDom, split_dbm_domain<number_t, varname_t>>::value,
+		"Scalar domain is supposed to be generic but currently only split_dbm_domain supported");
+		
   using array_graph_domain_t =
       array_graph_domain<NumDom, Content, IsDistContent>;
   using abstract_domain_t = abstract_domain_api<array_graph_domain_t>;
@@ -1167,7 +1174,7 @@ private:
     bool is_unsat(linear_constraint_t cst) {
       // XXX: it might modify _inv so that's why we make a copy in
       // the constructor.
-      return array_graph_domain_helper_traits<NumDom>::is_unsat(_inv, cst);
+      return _inv.is_unsat(cst);
     }
   };
 
@@ -1275,8 +1282,10 @@ private:
   }
 
 public:
-  template <class CFG> static void do_initialization(CFG cfg) {
 
+  // Horrible hack: this method needs to be called before the analysis
+  // starts so that the domain can collect relevant indexes.
+  template <class CFG> static void do_initialization(CFG cfg) {
     using array_segment_analysis_t = crab::analyzer::array_segmentation<CFG>;
     using array_segment_domain_t =
         typename array_segment_analysis_t::array_segment_domain_t;
@@ -1285,7 +1294,6 @@ public:
                                                        array_segment_domain_t>;
 
     std::set<landmark_ref_t> lms;
-
     // add variables
     array_segment_analysis_t analysis(cfg);
     analysis.exec();
@@ -1416,8 +1424,7 @@ private:
       landmarks.push_back(p.second);
     }
     std::vector<variable_t> active_vars;
-    array_graph_domain_helper_traits<NumDom>::active_variables(scalar,
-                                                               active_vars);
+    scalar.active_variables(active_vars);
     for (auto v : active_vars) {
       auto it = s_var_landmarks.find(landmark_ref_t(v));
       if (it != s_var_landmarks.end()) {
@@ -2065,8 +2072,7 @@ public:
 
     std::set<variable_t> keep_vars(variables.begin(), variables.end());
     std::vector<variable_t> active_vars;
-    array_graph_domain_helper_traits<NumDom>::active_variables(_scalar,
-                                                               active_vars);
+    _scalar.active_variables(active_vars);
     for (auto v : active_vars) {
       if (!keep_vars.count(v)) {
         array_forget(v);
@@ -2586,16 +2592,7 @@ struct abstract_domain_traits<array_graph_domain<Dom, Content, IsDistContent>> {
   using number_t = typename Dom::number_t;
   using varname_t = typename Dom::varname_t;
 };
-
-template <typename Dom, typename Content, bool IsDistContent>
-class array_graph_domain_traits<
-    array_graph_domain<Dom, Content, IsDistContent>> {
-public:
-  template <class CFG> static void do_initialization(CFG cfg) {
-    array_graph_domain<Dom, Content, IsDistContent>::do_initialization(cfg);
-  }
-};
-
+  
 template <typename Dom, typename Content, bool IsDistContent>
 class special_domain_traits<array_graph_domain<Dom, Content, IsDistContent>> {
 public:

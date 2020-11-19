@@ -2591,10 +2591,60 @@ public:
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
-  // -- begin array_graph_domain_helper_traits
+  // Output function
+  void write(crab_os &o) const override {
+    crab::CrabStats::count(domain_name() + ".count.write");
+    crab::ScopedCrabStats __st__(domain_name() + ".write");
 
+    // linear_constraint_system_t inv = to_linear_constraint_system();
+    // o << inv;
+
+    if (need_normalization()) {
+      DBM_t tmp(*this);
+      tmp.normalize();
+      write(o, tmp);
+    } else {
+      write(o, *this);
+    }
+  }
+
+  linear_constraint_system_t to_linear_constraint_system() const override {
+    crab::CrabStats::count(domain_name() + ".count.to_linear_constraints");
+    crab::ScopedCrabStats __st__(domain_name() + ".to_linear_constraints");
+
+    if (need_normalization()) {
+      DBM_t tmp(*this);
+      tmp.normalize();
+      return to_linear_constraint_system(tmp);
+    } else {
+      return to_linear_constraint_system(*this);
+    }
+  }
+
+  disjunctive_linear_constraint_system_t
+  to_disjunctive_linear_constraint_system() const override {
+    auto lin_csts = to_linear_constraint_system();
+    if (lin_csts.is_false()) {
+      return disjunctive_linear_constraint_system_t(true /*is_false*/);
+    } else if (lin_csts.is_true()) {
+      return disjunctive_linear_constraint_system_t(false /*is_false*/);
+    } else {
+      return disjunctive_linear_constraint_system_t(lin_csts);
+    }
+  }
+
+  // return number of vertices and edges
+  std::pair<std::size_t, std::size_t> size() const {
+    return {g.size(), g.num_edges()};
+  }
+
+  std::string domain_name() const override { return "SplitDBM"; }
+
+
+
+  // =====  begin array_graph domain
   // return true iff cst is unsatisfiable without modifying the DBM
-  bool is_unsat(const linear_constraint_t &cst) {
+  bool is_unsat(const linear_constraint_t &cst) /*const*/ {
     if (is_bottom() || cst.is_contradiction()) {
       return true;
     }
@@ -2602,7 +2652,7 @@ public:
     if (is_top() || cst.is_tautology()) {
       return false;
     }
-
+    
     std::vector<std::pair<variable_t, Wt>> lbs, ubs;
     std::vector<diffcst_t> diffcsts;
 
@@ -2661,57 +2711,7 @@ public:
       }
     }
   }
-  // -- end array_graph_domain_helper_traits
-
-  // Output function
-  void write(crab_os &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.write");
-    crab::ScopedCrabStats __st__(domain_name() + ".write");
-
-    // linear_constraint_system_t inv = to_linear_constraint_system();
-    // o << inv;
-
-    if (need_normalization()) {
-      DBM_t tmp(*this);
-      tmp.normalize();
-      write(o, tmp);
-    } else {
-      write(o, *this);
-    }
-  }
-
-  linear_constraint_system_t to_linear_constraint_system() const override {
-    crab::CrabStats::count(domain_name() + ".count.to_linear_constraints");
-    crab::ScopedCrabStats __st__(domain_name() + ".to_linear_constraints");
-
-    if (need_normalization()) {
-      DBM_t tmp(*this);
-      tmp.normalize();
-      return to_linear_constraint_system(tmp);
-    } else {
-      return to_linear_constraint_system(*this);
-    }
-  }
-
-  disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() const override {
-    auto lin_csts = to_linear_constraint_system();
-    if (lin_csts.is_false()) {
-      return disjunctive_linear_constraint_system_t(true /*is_false*/);
-    } else if (lin_csts.is_true()) {
-      return disjunctive_linear_constraint_system_t(false /*is_false*/);
-    } else {
-      return disjunctive_linear_constraint_system_t(lin_csts);
-    }
-  }
-
-  // return number of vertices and edges
-  std::pair<std::size_t, std::size_t> size() const {
-    return {g.size(), g.num_edges()};
-  }
-
-  std::string domain_name() const override { return "SplitDBM"; }
-
+  // =====  end array_graph domain
 }; // class split_dbm_domain
 
 template <typename Number, typename VariableName, typename Params>
@@ -2731,23 +2731,6 @@ public:
   static void extract(sdbm_domain_t &dom, const variable_t &x,
                       linear_constraint_system_t &csts, bool only_equalities) {
     dom.extract(x, csts, only_equalities);
-  }
-};
-
-template <typename Number, typename VariableName, typename Params>
-struct array_graph_domain_helper_traits<
-    split_dbm_domain<Number, VariableName, Params>> {
-  using sdbm_domain_t = split_dbm_domain<Number, VariableName, Params>;
-  using linear_constraint_t = typename sdbm_domain_t::linear_constraint_t;
-  using variable_t = typename sdbm_domain_t::variable_t;
-
-  static bool is_unsat(sdbm_domain_t &inv, linear_constraint_t cst) {
-    return inv.is_unsat(cst);
-  }
-
-  static void active_variables(sdbm_domain_t &inv,
-                               std::vector<variable_t> &out) {
-    inv.active_variables(out);
   }
 };
 

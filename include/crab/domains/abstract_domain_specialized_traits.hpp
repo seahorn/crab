@@ -1,11 +1,15 @@
 /*******************************************************************************
  * Extend abstract domains with very specialized operations.
+ *
+ * FIXME: if we use the generic abtract domain (based on the
+ * type-erasure idiom) we cannot extend abstract domains using traits
+ * because we cannot access to the underlying domains.
  ******************************************************************************/
 
 #pragma once
+#include <crab/domains/generic_abstract_domain.hpp>
 
 namespace crab {
-
 namespace domains {
 
 // Perform constraint simplifications depending on the abstract domain
@@ -15,7 +19,7 @@ public:
   using linear_constraint_t = typename Domain::linear_constraint_t;
   typedef
       typename Domain::linear_constraint_system_t linear_constraint_system_t;
-
+  
   // Convert an equality into two inequalities. This is not
   // possible for machine arithmetic domains.
   static void lower_equality(linear_constraint_t cst,
@@ -41,7 +45,7 @@ public:
       typename Domain::linear_constraint_system_t linear_constraint_system_t;
   using disjunctive_linear_constraint_system_t =
       typename Domain::disjunctive_linear_constraint_system_t;
-
+  
 private:
   struct entailment {
     Domain _dom;
@@ -185,8 +189,14 @@ public:
   typedef
       typename Domain::linear_constraint_system_t linear_constraint_system_t;
 
-  // extract linear constraints from dom involving x and store in
-  // ctsts
+  static_assert(std::is_same<Domain,
+		abstract_domain<typename Domain::variable_t>>::value,
+		"reduced_domain_traits not supported for generic domain");
+  static_assert(std::is_same<Domain,
+		abstract_domain_ref<typename Domain::variable_t>>::value,
+		"reduced_domain_traits not supported for generic domain");
+  
+  // extract linear constraints from dom involving x and store in ctsts
   static void extract(Domain &dom, const variable_t &x,
                       linear_constraint_system_t &csts, bool only_equalities) {
     auto all_csts = dom.to_linear_constraint_system();
@@ -205,37 +215,9 @@ public:
 // Some abstract domains have global state that should be reset by
 // the client if multiple crab instances will be run. This is just
 // a temporary hack. The proper solution is to avoid global state.
-template <typename Domain> class special_domain_traits {
+template <typename Domain> class special_domain_traits {  
 public:
   static void clear_global_state(void) {}
-};
-
-// Experimental (TO BE REMOVED):
-//
-// Special operations to be called by array_sparse_graph domain's
-// clients.
-template <typename Domain> class array_graph_domain_traits {
-public:
-  template <class CFG> static void do_initialization(CFG cfg) {}
-};
-
-// Operations needed by the array_sparse_graph domain.
-template <typename Domain> class array_graph_domain_helper_traits {
-public:
-  using linear_constraint_t = typename Domain::linear_constraint_t;
-  using variable_vector_t = typename Domain::variable_vector_t;
-
-  // FIXME: this does similar thing to
-  // checker_domain_traits<Domain>::entail
-  static bool is_unsat(Domain &inv, linear_constraint_t cst) {
-    Domain copy(inv);
-    copy += cst;
-    return copy.is_bottom();
-  }
-
-  static void active_variables(Domain &inv, variable_vector_t &out) {
-    CRAB_ERROR("operation active_variables not implemented");
-  }
 };
 
 } // end namespace domains

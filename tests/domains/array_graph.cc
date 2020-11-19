@@ -427,6 +427,7 @@ void test1(bool stats_enabled) {
   z_cfg_t *cfg = prog1(vfac, false);
   crab::outs() << "Program 1: forall 0<= i< 10. a[i] = 123456";
   array_graph_domain_t init;
+  init.do_initialization(z_cfg_ref_t(*cfg)); // store all CFG array indexes as global state
   run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
   delete cfg;
 }
@@ -436,6 +437,7 @@ void test2(bool stats_enabled) {
   z_cfg_t *cfg = prog3(vfac);
   crab::outs() << "Program 2: forall 0<= i< 10. a[i] = b[i] = x and x = 123456";
   array_graph_domain_t init;
+  init.do_initialization(z_cfg_ref_t(*cfg)); // store all CFG array indexes as global state  
   run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
   delete cfg;
 }
@@ -445,6 +447,7 @@ void test3(bool stats_enabled) {
   z_cfg_t *cfg = prog4(vfac);
   crab::outs() << "Program 3: forall 0<= i< 10. a[i] = 8 and b[i] = 5";
   array_graph_domain_t init;
+  init.do_initialization(z_cfg_ref_t(*cfg)); // store all CFG array indexes as global state    
   run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
   delete cfg;
 }
@@ -454,6 +457,7 @@ void test4(bool stats_enabled) {
   z_cfg_t *cfg = prog5(vfac);
   crab::outs() << "Program 4: forall 0<= i < n. a[i] = 123456 (unbounded loop)";
   array_graph_domain_t init;
+  init.do_initialization(z_cfg_ref_t(*cfg)); // store all CFG array indexes as global state    
   run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
   delete cfg;
 }
@@ -464,6 +468,7 @@ void test5(bool stats_enabled) {
   crab::outs() << "Program 5: for all 0<= i< 10. a[i] = 123456 (assume elem "
                   "size of 4 bytes)";
   array_graph_domain_t init;
+  init.do_initialization(z_cfg_ref_t(*cfg)); // store all CFG array indexes as global state    
   run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
   delete cfg;
 }
@@ -473,6 +478,7 @@ void test6(bool stats_enabled) {
   z_cfg_t *cfg = prog7(vfac);
   crab::outs() << "Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]";
   array_graph_domain_t init;
+  init.do_initialization(z_cfg_ref_t(*cfg)); // store all CFG array indexes as global state    
   run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
   delete cfg;
 }
@@ -482,6 +488,7 @@ void test7(bool stats_enabled) {
   z_cfg_t *cfg = prog8(vfac);
   crab::outs() << "Program 7: forall 0<= i< 10 and i % 2 = 0. a[i] = 123456";
   array_graph_domain_t init;
+  init.do_initialization(z_cfg_ref_t(*cfg)); // store all CFG array indexes as global state    
   run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
   delete cfg;
 }
@@ -491,6 +498,7 @@ void test8(bool stats_enabled) {
   z_cfg_t *cfg = prog9(vfac);
   crab::outs() << "Program 8: forall 0<= i < n. 1 <= a[i] <= 2";
   array_graph_domain_t init;
+  init.do_initialization(z_cfg_ref_t(*cfg)); // store all CFG array indexes as global state    
   run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
   delete cfg;
 }
@@ -501,6 +509,7 @@ void test9(bool stats_enabled) {
   crab::outs()
       << "Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)";
   array_graph_domain_t init;
+  init.do_initialization(z_cfg_ref_t(*cfg)); // store all CFG array indexes as global state    
   run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
   delete cfg;
 }
@@ -511,6 +520,7 @@ void test10(bool stats_enabled) {
   crab::outs() << "Program 10: forall 0<= i < n. a[i] == 123456 (decrementing "
                   "loop w/ temp vars)";
   array_graph_domain_t init;
+  init.do_initialization(z_cfg_ref_t(*cfg)); // store all CFG array indexes as global state    
   run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
   delete cfg;
 }
@@ -520,6 +530,7 @@ void test11(bool stats_enabled) {
   z_cfg_t *cfg = prog1(vfac, true);
   crab::outs() << "Program 11: forall 0<= i< 10. a[i] = 123456 (w/ temp vars)";
   array_graph_domain_t init;
+  init.do_initialization(z_cfg_ref_t(*cfg)); // store all CFG array indexes as global state    
   run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
   delete cfg;
 }
