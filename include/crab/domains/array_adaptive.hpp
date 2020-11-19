@@ -60,9 +60,12 @@ public:
   enum { max_smashable_cells = 512 };
   /* options for array expansion */
   enum { max_array_size = 512 };
-  
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wenum-compare"
   static_assert(max_array_size <= max_smashable_cells,
 		"max_array_size must be less or equal than max_smashable_cells");
+#pragma GCC diagnostic pop  
 };
 
 class NoSmashableParams {
@@ -73,9 +76,12 @@ public:
   enum { max_smashable_cells = 512 };
   /* options for array expansion */
   enum { max_array_size = 512 };
-  
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wenum-compare"  
   static_assert(max_array_size <= max_smashable_cells,
-		"max_array_size must be less or equal than max_smashable_cells");  
+		"max_array_size must be less or equal than max_smashable_cells");
+#pragma GCC diagnostic pop    
 };
 
 // Trivial constant propagation lattice
