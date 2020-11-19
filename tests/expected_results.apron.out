@@ -3327,6 +3327,132 @@ Running top-down inter-procedural analysis with RegionDomain(SplitDBM)
 0  Number of total warning checks
 0  Number of total unreachable checks
 === End ./test-bin/td_inter_5 ===
+=== Begin ./test-bin/td_inter_6 ===
+res:int32 declare foo(n:int32)
+entry:
+  goto base,rec;
+base:
+  assume(n <= 0);
+  res = n;
+  goto exit;
+exit:
+  return res;
+
+rec:
+  assume(-n <= -1);
+  n1 = n-1;
+  foo_ret:int32 = call foo(n1:int32);
+  res = foo_ret+1;
+  goto exit;
+
+CallGraph=foo--> foo
+
+Running top-down inter-procedural analysis with SplitDBM
+0  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+res:int32 declare foo(n:int32)
+entry={}
+rec={}
+exit={res-n<=0, n-res<=0}
+base={}
+=================================
+=== End ./test-bin/td_inter_6 ===
+=== Begin ./test-bin/td_inter_7 ===
+res:int32 declare foo(n:int32)
+entry:
+  goto base,rec;
+base:
+  assume(n <= 0);
+  res = n;
+  goto exit;
+exit:
+  return res;
+
+rec:
+  assume(-n <= -1);
+  n1 = n-1;
+  foo_ret:int32 = call foo(n1:int32);
+  res = foo_ret+1;
+  goto exit;
+
+void declare main()
+entry:
+  n = 10;
+  res:int32 = call foo(n:int32);
+  goto exit;
+exit:
+  assert(res = 10);
+
+
+CallGraph=foo--> foo
+main--> foo
+
+Running top-down inter-procedural analysis with SplitDBM
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+res:int32 declare foo(n:int32)
+entry={n -> [-oo, 10]}
+rec={n -> [-oo, 10]}
+exit={n -> [-oo, 10], res -> [-oo, 10], res-n<=0, n-res<=0}
+base={n -> [-oo, 10]}
+=================================
+void declare main()
+entry={}
+exit={n -> [10, 10], res -> [10, 10], res-n<=0, n-res<=0}
+=================================
+=== End ./test-bin/td_inter_7 ===
+=== Begin ./test-bin/td_inter_8 ===
+res:int32 declare foo(n:int32)
+entry:
+  goto base,rec;
+base:
+  assume(n <= 0);
+  res = n;
+  goto exit;
+exit:
+  return res;
+
+rec:
+  assume(-n <= -1);
+  n1 = n-1;
+  foo_ret:int32 = call foo(n1:int32);
+  res = foo_ret+1;
+  goto exit;
+
+void declare main()
+entry:
+  n = 10;
+  res1:int32 = call foo(n:int32);
+  res2:int32 = call foo(n:int32);
+  goto exit;
+exit:
+  assert(res1 = 10);
+  assert(res2 = 10);
+
+
+CallGraph=foo--> foo
+main--> foo
+
+Running top-down inter-procedural analysis with SplitDBM
+2  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+res:int32 declare foo(n:int32)
+entry={n -> [-oo, 10]}
+rec={n -> [-oo, 10]}
+exit={n -> [-oo, 10], res -> [-oo, 10], res-n<=0, n-res<=0}
+base={n -> [-oo, 10]}
+=================================
+void declare main()
+entry={}
+exit={n -> [10, 10], res1 -> [10, 10], res2 -> [10, 10], res1-n<=0, res2-n<=0, n-res1<=0, res2-res1<=0, n-res2<=0, res1-res2<=0}
+=================================
+=== End ./test-bin/td_inter_8 ===
 === Begin ./test-bin/terms-1 ===
 x0:
   k = 50;
