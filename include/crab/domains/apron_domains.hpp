@@ -4,6 +4,7 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/intervals.hpp>
+#include <crab/numbers/bignums.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -12,6 +13,20 @@
 namespace crab {
 namespace domains {
 using apron_domain_id_t = enum { APRON_INT, APRON_OCT, APRON_PK };
+
+template <typename Number>
+class ApronDefaultParams {
+public:
+  // use integers with truncation rounding
+  enum { use_integers = 1 };
+};
+
+template<>
+class ApronDefaultParams<ikos::q_number> {
+public:
+  // use reals
+  enum { use_integers = 0 };
+};
 }
 } // namespace crab
 
@@ -22,10 +37,10 @@ using apron_domain_id_t = enum { APRON_INT, APRON_OCT, APRON_PK };
 #include "crab/domains/abstract_domain.def"
 namespace crab {
 namespace domains {
-template <typename N, typename V, apron_domain_id_t Dom>
-class apron_domain final : public abstract_domain_api<apron_domain<N, V, Dom>> {
+template <typename N, typename V, apron_domain_id_t Dom, class Params = ApronDefaultParams<N>>
+class apron_domain final : public abstract_domain_api<apron_domain<N, V, Dom, Params>> {
 public:
-  using this_type = apron_domain<N, V, Dom>;
+  using this_type = apron_domain<N, V, Dom, Params>;
   apron_domain() {}
   UNAVAILABLE_DOMAIN("No Apron. Run cmake with -DCRAB_USE_APRON=ON")
 };
@@ -53,10 +68,11 @@ namespace domains {
 
 using namespace apron;
 
-template <typename Number, typename VariableName, apron_domain_id_t ApronDom>
+template <typename Number, typename VariableName, apron_domain_id_t ApronDom,
+	  class Params = ApronDefaultParams<Number>>
 class apron_domain final
-    : public abstract_domain_api<apron_domain<Number, VariableName, ApronDom>> {
-  using apron_domain_t = apron_domain<Number, VariableName, ApronDom>;
+  : public abstract_domain_api<apron_domain<Number, VariableName, ApronDom, Params>> {
+  using apron_domain_t = apron_domain<Number, VariableName, ApronDom, Params>;
   using abstract_domain_t = abstract_domain_api<apron_domain_t>;
 
 public:
@@ -346,40 +362,38 @@ private:
     return res;
   }
 
-// FIXME: dispatch based on number_t ?
-#if 0
-	static ap_texpr0_t* ADD(ap_texpr0_t* a, ap_texpr0_t*b)
-	{ /// XXX: should not be the rounding direction AP_RDIR_ZERO 
-	  ///      (i.e., truncation for integers) ?
-          return ap_texpr0_binop(AP_TEXPR_ADD,a,b,AP_RTYPE_INT,AP_RDIR_NEAREST);
-	}
-	static ap_texpr0_t* SUB(ap_texpr0_t* a, ap_texpr0_t*b)
-	{ return ap_texpr0_binop(AP_TEXPR_SUB,a,b,AP_RTYPE_INT,AP_RDIR_NEAREST);}	  
-	static ap_texpr0_t* MUL(ap_texpr0_t* a, ap_texpr0_t*b)
-	{ return ap_texpr0_binop(AP_TEXPR_MUL,a,b,AP_RTYPE_INT,AP_RDIR_NEAREST); }	  
-	static ap_texpr0_t* DIV(ap_texpr0_t* a, ap_texpr0_t*b)
-	{ return ap_texpr0_binop(AP_TEXPR_DIV,a,b,AP_RTYPE_INT,AP_RDIR_NEAREST);}
-#else
-  ///////////
-  // XXX: we approximate integers and rationals using reals
-  //////////
-
-  static ap_texpr0_t *ADD(ap_texpr0_t *a,
-                          ap_texpr0_t *b) { /// XXX: AP_RTYPE_REAL does not have
-                                            /// rounding so we choose
-                                            ///      an arbitrary one
-    return ap_texpr0_binop(AP_TEXPR_ADD, a, b, AP_RTYPE_REAL, AP_RDIR_UP);
+  static ap_texpr0_t* ADD(ap_texpr0_t* a, ap_texpr0_t*b) {
+    if (Params::use_integers) {
+      return ap_texpr0_binop(AP_TEXPR_ADD,a,b,AP_RTYPE_INT,AP_RDIR_ZERO);
+    } else {
+      // With reals the rounding mode is ignored
+      return ap_texpr0_binop(AP_TEXPR_ADD, a, b, AP_RTYPE_REAL, AP_RDIR_ZERO);
+    }
   }
-  static ap_texpr0_t *SUB(ap_texpr0_t *a, ap_texpr0_t *b) {
-    return ap_texpr0_binop(AP_TEXPR_SUB, a, b, AP_RTYPE_REAL, AP_RDIR_UP);
+  static ap_texpr0_t* SUB(ap_texpr0_t* a, ap_texpr0_t*b) {
+    if (Params::use_integers) {
+      return ap_texpr0_binop(AP_TEXPR_SUB,a,b,AP_RTYPE_INT,AP_RDIR_ZERO);
+    } else {
+      // With reals the rounding mode is ignored
+      return ap_texpr0_binop(AP_TEXPR_SUB, a, b, AP_RTYPE_REAL, AP_RDIR_ZERO);      
+    } 
   }
-  static ap_texpr0_t *MUL(ap_texpr0_t *a, ap_texpr0_t *b) {
-    return ap_texpr0_binop(AP_TEXPR_MUL, a, b, AP_RTYPE_REAL, AP_RDIR_UP);
+  static ap_texpr0_t* MUL(ap_texpr0_t* a, ap_texpr0_t*b) {
+    if (Params::use_integers) {
+      return ap_texpr0_binop(AP_TEXPR_MUL,a,b,AP_RTYPE_INT,AP_RDIR_ZERO);
+    } else {
+      // With reals the rounding mode is ignored
+      return ap_texpr0_binop(AP_TEXPR_MUL, a, b, AP_RTYPE_REAL, AP_RDIR_ZERO);      
+    } 
+  }	  
+  static ap_texpr0_t* DIV(ap_texpr0_t* a, ap_texpr0_t*b) {
+    if (Params::use_integers) {
+      return ap_texpr0_binop(AP_TEXPR_DIV,a,b,AP_RTYPE_INT,AP_RDIR_ZERO);
+    } else {
+      // With reals the rounding mode is ignored
+      return ap_texpr0_binop(AP_TEXPR_DIV, a, b, AP_RTYPE_REAL, AP_RDIR_ZERO);
+    } 
   }
-  static ap_texpr0_t *DIV(ap_texpr0_t *a, ap_texpr0_t *b) {
-    return ap_texpr0_binop(AP_TEXPR_DIV, a, b, AP_RTYPE_REAL, AP_RDIR_UP);
-  }
-#endif
 
   // --- from crab to apron
 
@@ -1799,8 +1813,8 @@ public:
 };
 
 // --- global datastructures
-template <typename N, typename V, apron_domain_id_t D>
-ap_manager_t *apron_domain<N, V, D>::s_apman = nullptr;
+template <typename N, typename V, apron_domain_id_t D, class P>
+ap_manager_t *apron_domain<N, V, D, P>::s_apman = nullptr;
 
 } // namespace domains
 } // namespace crab
@@ -1808,8 +1822,8 @@ ap_manager_t *apron_domain<N, V, D>::s_apman = nullptr;
 
 namespace crab {
 namespace domains {
-template <typename Number, typename VariableName, apron_domain_id_t ApronDom>
-struct abstract_domain_traits<apron_domain<Number, VariableName, ApronDom>> {
+template <typename Number, typename VariableName, apron_domain_id_t ApronDom, class Params>
+struct abstract_domain_traits<apron_domain<Number, VariableName, ApronDom, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 };

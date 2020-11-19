@@ -10,6 +10,24 @@
 namespace crab {
 namespace domains {
 using elina_domain_id_t = enum { ELINA_ZONES, ELINA_OCT, ELINA_PK };
+
+template <typename Number>
+class ElinaDefaultParams {
+public:
+  // use integers with truncation rounding
+  enum { use_integers = 1 };
+  // build (if possible) all expressions using Elina tree
+  // expressions. Otherwise, we use linear expressions.
+  enum { use_tree_expressions = 1};
+};
+
+template<>
+class ElinaDefaultParams<ikos::q_number> {
+public:
+  // use reals
+  enum { use_integers = 0 };
+  enum { use_tree_expressions = 1};  
+};
 }
 } // namespace crab
 
@@ -20,10 +38,10 @@ using elina_domain_id_t = enum { ELINA_ZONES, ELINA_OCT, ELINA_PK };
 #include "crab/domains/abstract_domain.def"
 namespace crab {
 namespace domains {
-template <typename N, typename V, elina_domain_id_t Dom>
-class elina_domain final : public abstract_domain_api<elina_domain<N, V, Dom>> {
+template <typename N, typename V, elina_domain_id_t Dom, class Params = ElinaDefaultParams<N>>
+class elina_domain final : public abstract_domain_api<elina_domain<N, V, Dom,Params>> {
 public:
-  using this_type = elina_domain<N, V, Dom>;
+  using this_type = elina_domain<N, V, Dom, Params>;
   elina_domain() {}
   UNAVAILABLE_DOMAIN("No Elina. Run cmake with -DCRAB_USE_ELINA=ON")
 };
@@ -43,11 +61,6 @@ public:
 #include <boost/optional.hpp>
 #include <type_traits>
 
-/**
- * If enable we build (if possible) all expressions using Elina tree
- * expressions. Otherwise, we use linear expressions.
- **/
-#define USE_TREE_EXPR
 
 /**
  * If template parameter Number is ikos::q_number then the Elina
@@ -58,11 +71,12 @@ namespace crab {
 namespace domains {
 
 using namespace elina;
-
-template <typename Number, typename VariableName, elina_domain_id_t ElinaDom>
+  
+template <typename Number, typename VariableName, elina_domain_id_t ElinaDom,
+	    class Params = ElinaDefaultParams<Number>>
 class elina_domain final
-    : public abstract_domain_api<elina_domain<Number, VariableName, ElinaDom>> {
-  using elina_domain_t = elina_domain<Number, VariableName, ElinaDom>;
+  : public abstract_domain_api<elina_domain<Number, VariableName, ElinaDom, Params>> {
+  using elina_domain_t = elina_domain<Number, VariableName, ElinaDom, Params>;
   using abstract_domain_t = abstract_domain_api<elina_domain_t>;
 
 public:
@@ -370,26 +384,51 @@ private:
     return elina_texpr0_cst_interval_mpq(qa.get_mpq_t(), qb.get_mpq_t());
   }
 
-  // XXX: we approximate integers and rationals using reals
   static elina_texpr0_t *texpr_add(elina_texpr0_t *a, elina_texpr0_t *b) {
-    /// XXX: ELINA_RTYPE_REAL does not have rounding so we choose
-    ///      an arbitrary one
-    return elina_texpr0_binop(ELINA_TEXPR_ADD, a, b, ELINA_RTYPE_REAL,
-                              ELINA_RDIR_UP);
+    if (Params::use_integers) {
+      return elina_texpr0_binop(ELINA_TEXPR_ADD, a, b, ELINA_RTYPE_INT,
+				ELINA_RDIR_ZERO);
+    } else {
+      // ELINA_RTYPE_REAL does not have rounding so we choose an
+      // arbitrary one
+      return elina_texpr0_binop(ELINA_TEXPR_ADD, a, b, ELINA_RTYPE_REAL,
+				ELINA_RDIR_ZERO);
+    } 
   }
   static elina_texpr0_t *texpr_sub(elina_texpr0_t *a, elina_texpr0_t *b) {
-    return elina_texpr0_binop(ELINA_TEXPR_SUB, a, b, ELINA_RTYPE_REAL,
-                              ELINA_RDIR_UP);
+    if (Params::use_integers) {
+      return elina_texpr0_binop(ELINA_TEXPR_SUB, a, b, ELINA_RTYPE_INT,
+				ELINA_RDIR_ZERO);
+    } else {
+      // ELINA_RTYPE_REAL does not have rounding so we choose an
+      // arbitrary one
+      return elina_texpr0_binop(ELINA_TEXPR_SUB, a, b, ELINA_RTYPE_REAL,
+				ELINA_RDIR_ZERO);
+    }
   }
   static elina_texpr0_t *texpr_mul(elina_texpr0_t *a, elina_texpr0_t *b) {
-    return elina_texpr0_binop(ELINA_TEXPR_MUL, a, b, ELINA_RTYPE_REAL,
-                              ELINA_RDIR_UP);
+    if (Params::use_integers) {
+      return elina_texpr0_binop(ELINA_TEXPR_MUL, a, b, ELINA_RTYPE_INT,
+				ELINA_RDIR_ZERO);
+    } else {
+      // ELINA_RTYPE_REAL does not have rounding so we choose an
+      // arbitrary one
+      return elina_texpr0_binop(ELINA_TEXPR_MUL, a, b, ELINA_RTYPE_REAL,
+				ELINA_RDIR_ZERO);
+    } 
   }
   static elina_texpr0_t *texpr_div(elina_texpr0_t *a, elina_texpr0_t *b) {
-    return elina_texpr0_binop(ELINA_TEXPR_DIV, a, b, ELINA_RTYPE_REAL,
-                              ELINA_RDIR_UP);
+    if (Params::use_integers) {    
+      return elina_texpr0_binop(ELINA_TEXPR_DIV, a, b, ELINA_RTYPE_INT,
+				ELINA_RDIR_ZERO);
+    } else {
+      // ELINA_RTYPE_REAL does not have rounding so we choose an
+      // arbitrary one
+      return elina_texpr0_binop(ELINA_TEXPR_DIV, a, b, ELINA_RTYPE_REAL,
+				ELINA_RDIR_ZERO);
+    }
   }
-
+  
   inline elina_texpr0_t *expr2texpr(const linear_expression_t &e) {
     number_t cst = e.constant();
     elina_texpr0_t *res = num2texpr(cst);
@@ -1397,11 +1436,11 @@ public:
     CRAB_LOG("elina", crab::outs() << "--- "
                                    << "Assume " << csts << " --> ";);
 
-#ifdef USE_TREE_EXPR
-    add_tcons(csts);
-#else
-    add_lincons(csts);
-#endif
+    if (Params::use_tree_expressions) {
+      add_tcons(csts);
+    } else {
+      add_lincons(csts);
+    }
 
     CRAB_LOG("elina", crab::outs() << *this << "\n";);
   }
@@ -1420,11 +1459,11 @@ public:
       // expression
       assign_texpr(x, e);
     } else {
-#ifdef USE_TREE_EXPR
-      assign_texpr(x, e);
-#else
-      assign_linexpr(x, e);
-#endif
+      if (Params::use_tree_expressions) {      
+	assign_texpr(x, e);
+      } else {
+	assign_linexpr(x, e);
+      }
     }
 
     CRAB_LOG("elina", crab::outs() << *this << "\n";);
@@ -1444,11 +1483,11 @@ public:
         // expression
         apply_texpr(op, x, y, z);
       } else {
-#ifdef USE_TREE_EXPR
-        apply_texpr(op, x, y, z);
-#else
-        apply_linexpr(op, x, y, z);
-#endif
+	if (Params::use_tree_expressions) {      
+	  apply_texpr(op, x, y, z);
+	} else {
+	  apply_linexpr(op, x, y, z);
+	}
       }
 
       CRAB_LOG("elina", crab::outs() << "--- " << x << ":=" << y << op << z
@@ -1489,11 +1528,11 @@ public:
         // expression
         apply_texpr(op, x, y, z);
       } else {
-#ifdef USE_TREE_EXPR
-        apply_texpr(op, x, y, z);
-#else
-        apply_linexpr(op, x, y, z);
-#endif
+	if (Params::use_tree_expressions) {      
+	  apply_texpr(op, x, y, z);
+	} else {
+	  apply_linexpr(op, x, y, z);
+	}
       }
 
       CRAB_LOG("elina", crab::outs() << "--- " << x << ":=" << y << op << z
@@ -2042,8 +2081,8 @@ public:
 };
 
 // --- global datastructures
-template <typename N, typename V, elina_domain_id_t D>
-elina_manager_t *elina_domain<N, V, D>::s_apman = nullptr;
+template <typename N, typename V, elina_domain_id_t D, class P>
+elina_manager_t *elina_domain<N, V, D, P>::s_apman = nullptr;
 
 } // namespace domains
 } // namespace crab
@@ -2051,8 +2090,8 @@ elina_manager_t *elina_domain<N, V, D>::s_apman = nullptr;
 
 namespace crab {
 namespace domains {
-template <typename Number, typename VariableName, elina_domain_id_t ElinaDom>
-struct abstract_domain_traits<elina_domain<Number, VariableName, ElinaDom>> {
+template <typename Number, typename VariableName, elina_domain_id_t ElinaDom, class Params>
+struct abstract_domain_traits<elina_domain<Number, VariableName, ElinaDom, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 };
