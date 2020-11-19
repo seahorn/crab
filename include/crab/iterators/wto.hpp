@@ -315,6 +315,7 @@ template <typename G> class wto {
 public:
   using wto_nesting_t = wto_nesting<G>;
   using wto_component_t = wto_component<G>;
+  using wto_component_visitor_t = wto_component_visitor<G>;  
   using wto_vertex_t = wto_vertex<G>;
   using wto_cycle_t = wto_cycle<G>;
   using wto_t = wto<G>;
@@ -616,6 +617,19 @@ public:
     this->build_nesting();
   }
 
+  wto(G g, typename boost::graph_traits<G>::vertex_descriptor entry)
+      : _wto_components(std::make_shared<wto_component_list_t>()),
+        _dfn_table(std::make_shared<dfn_table_t>()), _num(0),
+        _stack(std::make_shared<stack_t>()),
+        _nesting_table(std::make_shared<nesting_table_t>()) {
+    crab::ScopedCrabStats __st__("Fixpo.WTO");
+
+    this->visit(g, entry, this->_wto_components);
+    this->_dfn_table.reset();
+    this->_stack.reset();
+    this->build_nesting();
+  }
+  
   // deep copy
   wto(const wto_t &other)
       : _wto_components(
@@ -662,10 +676,10 @@ public:
     return boost::make_indirect_iterator(_wto_components->end());
   }
 
-  wto_nesting_t nesting(typename boost::graph_traits<G>::vertex_descriptor n) {
+  boost::optional<wto_nesting_t> nesting(typename boost::graph_traits<G>::vertex_descriptor n) {
     typename nesting_table_t::iterator it = this->_nesting_table->find(n);
     if (it == this->_nesting_table->end()) {
-      CRAB_ERROR("WTO nesting: node ", n, " not found");
+      return boost::optional<wto_nesting_t>();
     } else {
       return it->second;
     }
