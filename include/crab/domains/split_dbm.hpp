@@ -26,13 +26,20 @@
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
-#include <boost/container/flat_map.hpp>
 #include <boost/optional.hpp>
 #include <unordered_set>
 
 #define JOIN_CLOSE_AFTER_MEET
 //#define CHECK_POTENTIAL
 //#define SDBM_NO_NORMALIZE
+#define USE_FLAT_MAP
+
+#ifdef USE_FLAT_MAP
+#include <boost/container/flat_map.hpp>
+#else
+// Operations like rename are much faster using unordered_map
+#include <unordered_map>
+#endif 
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-compare"
@@ -69,7 +76,11 @@ private:
   using graph_t = typename Params::graph_t;
   using ntow = DBM_impl::NtoW<number_t, Wt>;
   using vert_id = typename graph_t::vert_id;
+#ifdef USE_FLAT_MAP  
   using vert_map_t = boost::container::flat_map<variable_t, vert_id>;
+#else  
+  using vert_map_t = std::unordered_map<variable_t, vert_id>;
+#endif   
   using vmap_elt_t = typename vert_map_t::value_type;
   using rev_map_t = std::vector<boost::optional<variable_t>>;
   using GrOps = GraphOps<graph_t>;
@@ -501,6 +512,14 @@ protected:
 
       vert_id src = get_vert(diff.first.second);
       vert_id dest = get_vert(diff.first.first);
+
+      // Check if the edge (src,dest) via bounds already exists
+      typename graph_t::mut_val_ref_t w1,w2;
+      if (g.lookup(src, 0, &w1) && g.lookup(0, dest, &w2) &&
+          w1.get() + w2.get() <= diff.second) {
+        continue;
+      }
+      
       g.update_edge(src, diff.second, dest, min_op);
       if (!repair_potential(src, dest)) {
         set_to_bottom();
