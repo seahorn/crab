@@ -113,6 +113,7 @@ using z_rgn_sdbm_params_t = region_domain_impl::Params<
     split_dbm_domain<z_number, typename var_allocator::varname_t,
                      z_SplitGraph>>;
 using z_rgn_int_t = region_domain<z_rgn_int_params_t>;
+using z_bool_rgn_int_t = flat_boolean_numerical_domain<z_rgn_int_t>;
 using z_rgn_sdbm_t = region_domain<z_rgn_sdbm_params_t>;
 using z_rgn_aa_int_t = region_domain<z_rgn_aa_int_params_t>;
 /*===================================================================*/

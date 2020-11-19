@@ -225,6 +225,8 @@ public:
       crab::cfg::assume_ref_stmt<basic_block_label_t, number_t, varname_t>;
   using assert_ref_t =
       crab::cfg::assert_ref_stmt<basic_block_label_t, number_t, varname_t>;
+  using select_ref_t =
+      crab::cfg::ref_select_stmt<basic_block_label_t, number_t, varname_t>;
   using int_to_ref_t =
       crab::cfg::int_to_ref_stmt<basic_block_label_t, number_t, varname_t>;
   using ref_to_int_t =
@@ -448,6 +450,12 @@ protected:
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
+  virtual void check(select_ref_t &s) {
+    if (!this->m_abs_tr)
+      return;
+    s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
+  }
+  
   virtual void check(int_to_ref_t &s) {
     if (!this->m_abs_tr)
       return;
@@ -523,6 +531,7 @@ public:
   void visit(store_to_arr_ref_t &s) { check(s); }
   void visit(assume_ref_t &s) { check(s); }
   void visit(assert_ref_t &s) { check(s); }
+  void visit(select_ref_t &s) { check(s); }  
   void visit(int_to_ref_t &s) { check(s); }
   void visit(ref_to_int_t &s) { check(s); }
   void visit(bool_bin_op_t &s) { check(s); }

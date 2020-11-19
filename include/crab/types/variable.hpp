@@ -316,6 +316,18 @@ public:
   this_type &operator=(const this_type& o) = default;
   this_type &operator=(this_type&& o) = default;    
 
+  static this_type make_bool_false() {
+    return variable_or_constant(number_t(0), BOOL_TYPE);
+  }
+
+  static this_type make_bool_true() {
+    return variable_or_constant(number_t(1), BOOL_TYPE);
+  }
+
+  static this_type make_reference_null() {
+    return variable_or_constant(number_t(0), REF_TYPE);
+  }
+  
   bool is_variable() const {
     return (m_var ? true: false);
   }
@@ -369,7 +381,15 @@ public:
     if (is_variable()) {
       o << get_variable();
     } else {
-      o << get_constant();
+      if (is_bool_false()) {
+	o << "false";
+      } else if (is_bool_true()) {
+	o << "true";
+      } else if (is_reference_null()) {
+	o << "NULL_REF";
+      } else {
+	o << get_constant();
+      }
     }
   }
 

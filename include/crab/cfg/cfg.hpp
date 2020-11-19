@@ -133,10 +133,11 @@ enum stmt_code {
   REF_ARR_LOAD = 45,
   REF_ASSUME = 46,
   REF_ASSERT = 47,
-  REGION_INIT = 48,
-  REF_TO_INT = 49,
-  INT_TO_REF = 50,
-  REGION_COPY = 51,
+  REF_SELECT = 48,
+  REGION_INIT = 49,
+  REF_TO_INT = 50,
+  INT_TO_REF = 51,
+  REGION_COPY = 52,
   // functions calls
   CALLSITE = 60,
   RETURN = 61,
@@ -298,6 +299,7 @@ public:
   bool is_ref_arr_store() const { return m_stmt_code == REF_ARR_STORE; }
   bool is_ref_assume() const { return (m_stmt_code == REF_ASSUME); }
   bool is_ref_assert() const { return (m_stmt_code == REF_ASSERT); }
+  bool is_ref_select() const { return (m_stmt_code == REF_SELECT); }  
   bool is_ref_to_int() const { return (m_stmt_code == REF_TO_INT); }
   bool is_int_to_ref() const { return (m_stmt_code == INT_TO_REF); }
   bool is_region_init() const { return (m_stmt_code == REGION_INIT); }
@@ -1513,6 +1515,97 @@ private:
   reference_constraint_t m_cst;
 };
 
+// ref_select lhs, b, op1, op2:
+//    if b then lhs=op1 else lhs=op2
+template <class BasicBlockLabel, class Number, class VariableName>
+class ref_select_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
+  using this_type = ref_select_stmt<BasicBlockLabel, Number, VariableName>;
+
+public:
+  using statement_t = statement<BasicBlockLabel, Number, VariableName>;
+  using basic_block_t = typename statement_t::basic_block_t;
+  using variable_t = variable<Number, VariableName>;
+  using variable_or_constant_t = variable_or_constant<Number, VariableName>;  
+
+  /* opX_rgn can be none if opX_ref is a null constant */
+  ref_select_stmt(variable_t lhs_ref, variable_t lhs_rgn, variable_t cond,
+		  variable_or_constant_t op1_ref, boost::optional<variable_t> op1_rgn,
+		  variable_or_constant_t op2_ref, boost::optional<variable_t> op2_rgn,
+		  basic_block_t *parent)
+      : statement_t(REF_SELECT, parent),
+	m_lhs_ref(lhs_ref), m_lhs_rgn(lhs_rgn),
+	m_cond(cond),
+	m_op1_ref(op1_ref), m_op1_rgn(op1_rgn),
+	m_op2_ref(op2_ref), m_op2_rgn(op2_rgn) {
+    
+    this->m_live.add_def(m_lhs_ref);
+    this->m_live.add_def(m_lhs_rgn);
+    this->m_live.add_use(m_cond);
+    if (m_op1_ref.is_variable())
+      this->m_live.add_use(m_op1_ref.get_variable());
+    if (m_op2_ref.is_variable()) 
+      this->m_live.add_use(m_op2_ref.get_variable());
+    if (m_op1_rgn)
+      this->m_live.add_use(*m_op1_rgn);
+    if (m_op2_rgn)
+      this->m_live.add_use(*m_op2_rgn);      
+  }
+
+  const variable_t &lhs_ref() const { return m_lhs_ref; }
+
+  const variable_t &lhs_rgn() const { return m_lhs_rgn; }  
+
+  const variable_t &cond() const { return m_cond; }
+
+  const variable_or_constant_t &left_ref() const { return m_op1_ref; }
+
+  // if left_ref() is a null constant then left_rgn() returns none
+  boost::optional<variable_t> left_rgn() const { return m_op1_rgn; }  
+
+  const variable_or_constant_t &right_ref() const { return m_op2_ref; }
+
+  // if right_ref() is a null constant then right_rgn() returns none  
+  boost::optional<variable_t> right_rgn() const { return m_op2_rgn; }    
+
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+    v->visit(*this);
+  }
+
+  virtual statement_t *clone(basic_block_t *parent) const {
+    return new this_type(m_lhs_ref, m_lhs_rgn, m_cond,
+			 m_op1_ref, m_op1_rgn,
+			 m_op2_ref, m_op2_rgn, parent);
+  }
+
+  virtual void write(crab_os &o) const {
+    o << "(" << m_lhs_ref << "," << m_lhs_rgn << ")" << " = "
+      << "ite(" << m_cond << ",";
+    if (m_op1_rgn) {
+      o << "(" << m_op1_ref << "," << *m_op1_rgn << ")";
+    } else {
+      o << m_op1_ref;
+    }
+    o << ",";
+    if (m_op2_rgn) {
+      o << "(" << m_op2_ref << "," << *m_op2_rgn << ")";
+    } else {
+      o << m_op2_ref;
+    }
+    o <<  ")";
+  }
+
+private:
+  variable_t m_lhs_ref;  // pre: reference type
+  variable_t m_lhs_rgn;
+  variable_t m_cond; // pre: boolean type
+  variable_or_constant_t m_op1_ref;  // pre: reference type
+  boost::optional<variable_t> m_op1_rgn;
+  variable_or_constant_t m_op2_ref;  // pre: reference type
+  boost::optional<variable_t> m_op2_rgn;  
+};
+  
 template <class BasicBlockLabel, class Number, class VariableName>
 class ref_to_int_stmt
     : public statement<BasicBlockLabel, Number, VariableName> {
@@ -2287,6 +2380,7 @@ public:
       store_to_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assume_ref_t = assume_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assert_ref_t = assert_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using ref_select_t = ref_select_stmt<BasicBlockLabel, Number, VariableName>;  
   using int_to_ref_t = int_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using ref_to_int_t = ref_to_int_stmt<BasicBlockLabel, Number, VariableName>;
   // Boolean
@@ -2802,6 +2896,35 @@ public:
     return insert(new assert_ref_t(cst, this, di));
   }
 
+  // (lhs_ref, lhs_rgn) := select_ref(cond, (op1_ref, op1_rgn), (op2_ref, op2_rgn))    
+  const statement_t *select_ref(variable_t lhs_ref, variable_t lhs_rgn,
+				variable_t cond,
+				variable_t op1_ref, variable_t op1_rgn,
+				variable_t op2_ref, variable_t op2_rgn) {
+    return insert(new ref_select_t(lhs_ref, lhs_rgn, cond,
+				   op1_ref, op1_rgn, op2_ref, op2_rgn, this));
+  }
+
+  // (lhs_ref, lhs_rgn) := select_ref(cond, null, (op_ref, op_rgn))  
+  const statement_t *select_ref_null_true_value(variable_t lhs_ref, variable_t lhs_rgn,
+						variable_t cond,
+						variable_t op_ref, variable_t op_rgn) {
+    return insert(new ref_select_t(lhs_ref, lhs_rgn, cond,
+				   variable_or_constant_t::make_reference_null(), boost::none,
+				   op_ref, op_rgn,
+				   this));
+  }
+
+  // (lhs_ref, lhs_rgn) := select_ref(cond, (op_ref, op_rgn), null)
+  const statement_t *select_ref_null_false_value(variable_t lhs_ref, variable_t lhs_rgn,
+						 variable_t cond,
+						 variable_t op_ref, variable_t op_rgn) {
+    return insert(new ref_select_t(lhs_ref, lhs_rgn, cond,
+				   op_ref, op_rgn,
+				   variable_or_constant_t::make_reference_null(), boost::none,
+				   this));
+  }
+  
   const statement_t *int_to_ref(variable_t int_var, variable_t region,
                                 variable_t ref_var) {
     return insert(new int_to_ref_t(int_var, region, ref_var, this));
@@ -2977,6 +3100,7 @@ struct statement_visitor {
       store_to_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assume_ref_t = assume_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assert_ref_t = assert_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using select_ref_t = ref_select_stmt<BasicBlockLabel, Number, VariableName>;  
   using int_to_ref_t = int_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using ref_to_int_t = ref_to_int_stmt<BasicBlockLabel, Number, VariableName>;
   using bool_bin_op_t = bool_binary_op<BasicBlockLabel, Number, VariableName>;
@@ -3013,6 +3137,7 @@ struct statement_visitor {
   virtual void visit(store_to_arr_ref_t &) {}
   virtual void visit(assume_ref_t &){};
   virtual void visit(assert_ref_t &){};
+  virtual void visit(select_ref_t &){};
   virtual void visit(int_to_ref_t &){};
   virtual void visit(ref_to_int_t &){};
   virtual void visit(bool_bin_op_t &){};
@@ -4108,6 +4233,7 @@ private:
         store_to_arr_ref_t;
     using assume_ref_t = typename statement_visitor<B, N, V>::assume_ref_t;
     using assert_ref_t = typename statement_visitor<B, N, V>::assert_ref_t;
+    using select_ref_t = typename statement_visitor<B, N, V>::select_ref_t;    
     using int_to_ref_t = typename statement_visitor<B, N, V>::int_to_ref_t;
     using ref_to_int_t = typename statement_visitor<B, N, V>::ref_to_int_t;
     using bool_bin_op_t = typename statement_visitor<B, N, V>::bool_bin_op_t;
@@ -4122,6 +4248,7 @@ private:
     using lin_exp_t = ikos::linear_expression<N, V>;
     using lin_cst_t = ikos::linear_constraint<N, V>;
     using variable_t = variable<N, V>;
+    using variable_or_constant_t = variable_or_constant<N, V>;    
     using variable_type_t = typename variable_t::type_t;
     using variable_bitwidth_t = typename variable_t::bitwidth_t;
 
@@ -4199,6 +4326,14 @@ private:
 
     // check variable is a reference
     void check_ref(const variable_t &v, std::string msg, statement_t &s) {
+      if (!v.get_type().is_reference()) {
+        crab::crab_string_os os;
+        os << "(type checking) " << msg << " in " << s;
+        CRAB_ERROR(os.str());
+      }
+    }
+
+    void check_ref(const variable_or_constant_t &v, std::string msg, statement_t &s) {
       if (!v.get_type().is_reference()) {
         crab::crab_string_os os;
         os << "(type checking) " << msg << " in " << s;
@@ -4601,6 +4736,21 @@ private:
     void visit(store_to_arr_ref_t &){};
     void visit(assume_ref_t &){};
     void visit(assert_ref_t &){};
+    void visit(select_ref_t &s) {
+      // TODO: check region operands
+      
+      check_ref(s.lhs_ref(), "lhs must be reference", s);
+      check_bool(s.cond(), "condition must be boolean", s);
+      check_ref(s.left_ref(), "first operand must be reference", s);
+      check_ref(s.right_ref(), "second operand must be reference", s);
+      
+      check_varname(s.lhs_ref());
+      if (s.left_ref().is_variable()) 
+	check_varname(s.left_ref().get_variable());
+      if (s.right_ref().is_variable())
+	check_varname(s.right_ref().get_variable());
+    };
+    
     void visit(int_to_ref_t &){};
     void visit(ref_to_int_t &){};
 

@@ -4162,6 +4162,103 @@ Join of
 and
 	{x -> [5, +oo]; region_0 -> [34, 34]} =
 	{region_0 -> [34, 34]; x -> [5, +oo]}
+Unit test 1 for select_ref
+entry:
+  region_init(rgn1:region(int));
+  region_init(rgn2:region(int));
+  region_init(rgn3:region(int));
+  assume(ref2 > NULL_REF);
+  assume(ref3 > NULL_REF);
+  havoc(cond);
+  (ref1,rgn1) = ite(cond,(ref2,rgn2),(ref3,rgn3));
+  goto exit;
+exit:
+  assert(ref1 != NULL_REF);
+
+Invariants using RegionDomain(Intervals)
+Abstract trace: entry exit
+user-defined assertion checker
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+Unit test 2 for select_ref
+entry:
+  region_init(rgn1:region(int));
+  region_init(rgn2:region(int));
+  region_init(rgn3:region(int));
+  assume(ref2 > NULL_REF);
+  (ref1,rgn1) = ite(cond,(ref2,rgn2),(ref3,rgn3));
+  goto exit;
+exit:
+  assert(ref1 != NULL_REF);
+
+Invariants using Product(Boolean,RegionDomain(Intervals))
+Abstract trace: entry exit
+user-defined assertion checker
+0  Number of total safe checks
+0  Number of total error checks
+1  Number of total warning checks
+0  Number of total unreachable checks
+
+Unit test 3 for select_ref
+entry:
+  region_init(rgn1:region(int));
+  region_init(rgn2:region(int));
+  region_init(rgn3:region(int));
+  assume(ref2 == NULL_REF);
+  havoc(cond);
+  (ref1,rgn1) = ite(cond,NULL_REF,(ref2,rgn2));
+  goto exit;
+exit:
+  assert(ref1 == NULL_REF);
+
+Invariants using RegionDomain(Intervals)
+Abstract trace: entry exit
+user-defined assertion checker
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+Unit test 4 for select_ref
+entry:
+  region_init(rgn1:region(int));
+  region_init(rgn2:region(int));
+  region_init(rgn3:region(int));
+  assume(ref2 > NULL_REF);
+  cond = true;
+  (ref1,rgn1) = ite(cond,(ref2,rgn2),(ref3,rgn3));
+  goto exit;
+exit:
+  assert(ref1 != NULL_REF);
+
+Invariants using Product(Boolean,RegionDomain(Intervals))
+Abstract trace: entry exit
+user-defined assertion checker
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+Unit test 5 for select_ref
+entry:
+  assume(ref3 > NULL_REF);
+  cond = false;
+  (ref1,rgn1) = ite(cond,(ref2,rgn2),(ref3,rgn3));
+  goto exit;
+exit:
+  assert(ref1 != NULL_REF);
+
+Invariants using Product(Boolean,RegionDomain(Intervals))
+Abstract trace: entry exit
+user-defined assertion checker
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+	
 === End ./test-bin/unittests-regions ===
 === Begin ./test-bin/unittests-rename ===
  ===== Intervals ====
