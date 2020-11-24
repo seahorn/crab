@@ -23,7 +23,7 @@ namespace domains {
 class small_range {
 
   using kind_t = enum {
-    Bottom, /*unused*/
+    Bottom, 
     ExactlyZero,
     ExactlyOne,
     ZeroOrOne,
@@ -105,6 +105,78 @@ class small_range {
     }
   }
 
+  /*
+      [0,0] & [0,0] = [0,0]
+      [0,0] & [1,1] = _|_
+      [0,0] & [0,1] = [0,0]
+      [0,0] & [0,+oo] = [0,0]
+      [0,0] & [1,+oo] = _|_
+  */
+  
+  small_range meet_zero_with(const small_range &other) const {
+    assert(is_zero());
+    if (other.m_value == ExactlyOne || other.m_value == OneOrMore) {
+      return small_range::bottom();
+    } else {
+      return *this;
+    } 
+  }
+
+  /*
+      [1,1] & [0,0] = _|_
+      [1,1] & [1,1] = [1,1]
+      [1,1] & [0,1] = [1,1]
+      [1,1] & [0,+oo] = [1,1]
+      [1,1] & [1,+oo] = [1,1]
+  */
+  small_range meet_one_with(const small_range &other) const {
+    assert(is_one());
+    if (other.m_value == ExactlyZero) {
+      return small_range::bottom();
+    } else {
+      return *this;
+    } 
+  }
+
+  /*
+      [0,1] & [0,0] = [0,0]
+      [0,1] & [1,1] = [1,1]
+      [0,1] & [0,1] = [0,1]
+      [0,1] & [0,+oo] = [0,1]
+      [0,1] & [1,+oo] = [1,1]
+  */
+  small_range meet_zero_or_one_with(const small_range &other) const {
+    assert(m_value == ZeroOrOne);
+    if (other.is_zero() || other.is_one()) {
+      return other;
+    } else if (other.m_value == OneOrMore) {
+      return one();
+    } else {
+      return *this;
+    }
+  }
+
+  /*
+      [1,+oo] & [0,0] = _|_
+      [1,+oo] & [1,1] = [1,1]
+      [1,+oo] & [0,1] = [1,1]
+      [1,+oo] & [0,+oo] = [1,+oo]
+      [1,+oo] & [1,+oo] = [1,+oo]
+  */
+  
+  small_range meet_one_or_more_with(const small_range &other) const {
+    if (other.is_zero()) {
+      return small_range::bottom();
+    } else if (other.is_one()) {
+      return other;
+    } else if (other.m_value == ZeroOrOne) {
+      return one();
+    } else {
+      assert(other.is_top() || other.m_value == OneOrMore);
+      return *this;
+    }
+  }
+  
 public:
   small_range() : m_value(ZeroOrMore) {}
 
@@ -155,7 +227,7 @@ public:
   }
 
   bool operator==(small_range other) const { return m_value == other.m_value; }
-
+  
   small_range operator|(small_range other) const {
     if (is_bottom()) {
       return other;
@@ -183,11 +255,33 @@ public:
   }
 
   small_range operator||(small_range other) const { return *this | other; }
-
+  
   small_range operator&(small_range other) const {
-    // TODO
-    CRAB_WARN("small_range::meet not implemented");
-    return *this;
+    if (is_bottom() || other.is_top()) {
+      return *this;
+    } else if (other.is_bottom() || is_top()) {
+      return other;
+    }
+
+    if (is_zero()) {
+      return meet_zero_with(other);
+    } else if (other.is_zero()) {
+      return other.meet_zero_with(*this);
+    } else if (is_one()) {
+      return meet_one_with(other);
+    } else if (other.is_one()) {
+      return other.meet_one_with(*this);
+    } else if (m_value == ZeroOrOne) {
+      return meet_zero_or_one_with(other);
+    } else if (other.m_value == ZeroOrOne) {
+      return other.meet_zero_or_one_with(*this);
+    } else if (m_value == OneOrMore) {
+      return meet_one_or_more_with(other);
+    } else if (other.m_value == OneOrMore) {
+      return other.meet_one_or_more_with(*this);
+    } else { // unreachable because top cases handled above
+      CRAB_ERROR("unexpected small_range::meet operands");
+    }
   }
 
   small_range operator&&(small_range other) const { return *this & other; }
@@ -906,23 +1000,25 @@ public:
   bool operator<=(const region_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
-    
+
+    CRAB_LOG("region-leq", crab::outs() << "Inclusion test:\n\t" << *this << "\n\t"
+	                            << o << "\n";);
     if (is_bottom() || o.is_top()) {
+      CRAB_LOG("region-leq", crab::outs() << "Result1=1\n";);      
       return true;
     } else if (is_top() || o.is_bottom()) {
+      CRAB_LOG("region-leq", crab::outs() << "Result2=0\n";);      
       return false;
     }
     
-    CRAB_LOG("region", crab::outs() << "Inclusion test:\n\t" << *this << "\n\t"
-                                    << o << "\n";);
 
     if (!(m_rgn_counting_dom <= o.m_rgn_counting_dom)) {
-      CRAB_LOG("region", crab::outs() << "Result=0\n";);
+      CRAB_LOG("region-leq", crab::outs() << "Result3=0\n";);
       return false;
     }
 
     if (!(m_rgn_init_dom <= o.m_rgn_init_dom)) {
-      CRAB_LOG("region", crab::outs() << "Result=0\n";);
+      CRAB_LOG("region-leq", crab::outs() << "Result4=0\n";);
       return false;
     }
 
@@ -953,8 +1049,12 @@ public:
     left_dom.rename(left_vars, out_vars);
     right_dom.forget(out_vars);    
     right_dom.rename(right_vars, out_vars);
+
+    CRAB_LOG("region-leq", crab::outs() << "Inclusion test (after renaming):\n\t" << left_dom << "\n\t"
+	     << right_dom << "\n";);
+    
     bool res = left_dom <= right_dom;
-    CRAB_LOG("region", crab::outs() << "Result=" << res << "\n";);
+    CRAB_LOG("region-leq", crab::outs() << "Result5=" << res << "\n";);
     return res;
   }
 
@@ -2267,13 +2367,13 @@ public:
     } else {
       CRAB_LOG(
           "region-print", o << "(RgnCounter=" << m_rgn_counting_dom << ","
-	                    << "RgnInit=" << m_rgn_init_dom << ","
-                            << "MapVar={";
+	  << "RgnInit=" << m_rgn_init_dom << ")\n";);
+      CRAB_LOG(
+          "region-print2", o << "MapVar={";
           for (auto &kv
                : m_var_map) { o << kv.first << "->" << kv.second << ";"; } o
           << "},"
           << "BaseDom=" << m_base_dom << ")\n";);
-      
       std::unordered_map<std::string, std::string> renaming_map;
       for (auto &kv : m_rev_var_map) {
         renaming_map[kv.first.name().str()] = kv.second.name().str();
