@@ -153,18 +153,14 @@ public:
   const fdecl_t &get_fdecl() const { return m_fdecl; }
 
   // return I from the pair (I,O)
-  abs_dom_t get_input() const { return m_input; }
+  const abs_dom_t &get_input() const { return m_input; }
 
   // return O from the pair (I,O)
-  abs_dom_t get_output() const { return m_output; }
+  const abs_dom_t &get_output() const { return m_output; }
 
   // Check if d entails the summary input
-  bool is_subsumed(abs_dom_t d, bool exact_check) const {
-    // XXX: we choose for now to use equality for reusing the
-    // strongest possible summaries. But we might want to use
-    // inclusion by default so that we increase the chance of reusing
-    // summaries.
-    abs_dom_t input = get_input();
+  bool is_subsumed(const abs_dom_t &d, bool exact_check) const {
+    const abs_dom_t &input = get_input();
     if (m_exact && exact_check) {
       return (d <= input && input <= d);
     } else {
@@ -222,8 +218,8 @@ public:
   }
 
   void write(crab_os &o) const {
-    abs_dom_t input = get_input();
-    abs_dom_t output = get_output();
+    const abs_dom_t &input = get_input();
+    const abs_dom_t &output = get_output();
     o << "SUMMARY"
       << "\n\tI=" << input << "\n\tO=" << output << "\n";
   }
@@ -311,8 +307,8 @@ public:
       // -- remove redundant contexts
       assert(!ccs.empty());
       calling_context_ptr_deque new_ccs;
-      abs_dom_t joined_input = ccs.front()->get_input();
-      abs_dom_t joined_output = ccs.front()->get_output();
+      const abs_dom_t &joined_input = ccs.front()->get_input();
+      const abs_dom_t &joined_output = ccs.front()->get_output();
       auto it = ccs.begin();
       // the first one is the joined calling context so we keep it.
       new_ccs.push_back(std::move(*it));
@@ -1167,6 +1163,11 @@ private:
           CRAB_LOG("inter-subsume", crab::outs()
                                 << "[INTER] Reusing call context at \"" << cs
                                 << "\" with entry=" << callee_entry << "\n";);
+	  CRAB_VERBOSE_IF(1, get_msg_stream()
+			  << "++ Skip redundant analysis of function  "
+			  << cs.get_func_name()
+			  << "\n";);
+	  
           callee_exit = call_contexts[i]->get_output();
           call_context_already_seen = true;
           break;
