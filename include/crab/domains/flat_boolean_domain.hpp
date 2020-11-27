@@ -500,109 +500,15 @@ public:
     *this = *this & inv;
   }
 
-  /*
-     Begin unimplemented operations
-
-     flat_boolean_domain implements only boolean operations.
-  */
-
-  // numerical_domains_api
-  void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
-             const variable_t &z) override {}
-  void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
-             number_t k) override {}
-  void assign(const variable_t &x, const linear_expression_t &e) override {}
-  void backward_assign(const variable_t &x, const linear_expression_t &e,
-                       const flat_boolean_domain_t &invariant) override {}
-  void backward_apply(arith_operation_t op, const variable_t &x,
-                      const variable_t &y, number_t z,
-                      const flat_boolean_domain_t &invariant) override {}
-  void backward_apply(arith_operation_t op, const variable_t &x,
-                      const variable_t &y, const variable_t &z,
-                      const flat_boolean_domain_t &invariant) override {}
-  void operator+=(const linear_constraint_system_t &csts) override {}
+  /// flat_boolean_domain implements only boolean operations.  It is
+  /// intended to be used as part of a reduced product with a
+  /// numerical domain.
+  NUMERICAL_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
+  
   // not part of the numerical_domains api but it should be
   void set(const variable_t &x, interval_t intv) {}
-  interval_t operator[](const variable_t &x) override {
-    return interval_t::top();
-  }
-  // int_cast_operators_api and bitwise_operators_api
-  // XXX: needed for making a reduced product with a numerical domain
-  void apply(int_conv_operation_t op, const variable_t &dst,
-             const variable_t &src) override {}
-  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
-             const variable_t &z) override {}
-  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
-             number_t z) override {}
-  // array operations
-  void array_init(const variable_t &a, const linear_expression_t &elem_size,
-                  const linear_expression_t &lb_idx,
-                  const linear_expression_t &ub_idx,
-                  const linear_expression_t &val) override {}
-  void array_load(const variable_t &lhs, const variable_t &a,
-                  const linear_expression_t &elem_size,
-                  const linear_expression_t &i) override {
-    operator-=(lhs);
-  }
-  void array_store(const variable_t &a, const linear_expression_t &elem_size,
-                   const linear_expression_t &i, const linear_expression_t &v,
-                   bool is_strong_update) override {}
-  void array_store_range(const variable_t &a,
-                         const linear_expression_t &elem_size,
-                         const linear_expression_t &i,
-                         const linear_expression_t &j,
-                         const linear_expression_t &v) override {}
-  void array_assign(const variable_t &lhs, const variable_t &rhs) override {}
-  // backward array operations
-  void backward_array_init(const variable_t &a,
-                           const linear_expression_t &elem_size,
-                           const linear_expression_t &lb_idx,
-                           const linear_expression_t &ub_idx,
-                           const linear_expression_t &val,
-                           const flat_boolean_domain_t &invariant) override {}
-  void backward_array_load(const variable_t &lhs, const variable_t &a,
-                           const linear_expression_t &elem_size,
-                           const linear_expression_t &i,
-                           const flat_boolean_domain_t &invariant) override {}
-  void backward_array_store(const variable_t &a,
-                            const linear_expression_t &elem_size,
-                            const linear_expression_t &i,
-                            const linear_expression_t &v, bool is_strong_update,
-                            const flat_boolean_domain_t &invariant) override {}
-  void backward_array_store_range(
-      const variable_t &a, const linear_expression_t &elem_size,
-      const linear_expression_t &i, const linear_expression_t &j,
-      const linear_expression_t &v,
-      const flat_boolean_domain_t &invariant) override {}
-  void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
-                             const flat_boolean_domain_t &invariant) override {}
-  // region/reference operations
-  void region_init(const variable_t &reg) override {}
-  void region_copy(const variable_t &lhs_reg,
-                   const variable_t &rhs_reg) override {}
-  void ref_make(const variable_t &ref, const variable_t &reg) override {}
-  void ref_load(const variable_t &ref, const variable_t &reg,
-                const variable_t &res) override {}
-  void ref_store(const variable_t &ref, const variable_t &reg,
-                 const variable_or_constant_t &val) override {}
-  void ref_gep(const variable_t &ref1, const variable_t &reg1,
-               const variable_t &ref2, const variable_t &reg2,
-               const linear_expression_t &offset) override {}
-  void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                           const variable_t &region,
-                           const linear_expression_t &index,
-                           const linear_expression_t &elem_size) override {}
-  void ref_store_to_array(const variable_t &ref, const variable_t &region,
-                          const linear_expression_t &index,
-                          const linear_expression_t &elem_size,
-                          const linear_expression_t &val) override {}
-  void ref_assume(const reference_constraint_t &cst) override {}
-  void ref_to_int(const variable_t &reg, const variable_t &ref,
-                  const variable_t &int_var) override {}
-  void int_to_ref(const variable_t &int_var, const variable_t &reg,
-                  const variable_t &ref) override {}
-
-  /* End unimplemented operations */
 
   std::string domain_name() const override { return "Boolean"; }
 
@@ -1556,7 +1462,7 @@ public:
   }
 
   // array_operators_api
-
+  
   virtual void array_init(const variable_t &a,
                           const linear_expression_t &elem_size,
                           const linear_expression_t &lb_idx,

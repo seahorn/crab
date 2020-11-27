@@ -2326,106 +2326,13 @@ public:
     set(x, xi);
   }
 
-  /*
-     Begin unimplemented operations
-
-     split_dbm_domain implements only standard abstract operations of a
-     numerical domain.
-  */
-  // boolean operations
-  void assign_bool_cst(const variable_t &lhs,
-                       const linear_constraint_t &rhs) override {}
-  void assign_bool_ref_cst(const variable_t &lhs,
-			   const reference_constraint_t &rhs) override {}
-  void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
-                       bool is_not_rhs) override {}
-  void apply_binary_bool(bool_operation_t op, const variable_t &x,
-                         const variable_t &y, const variable_t &z) override {}
-  void assume_bool(const variable_t &v, bool is_negated) override {}
-  // backward boolean operations
-  void backward_assign_bool_cst(const variable_t &lhs,
-                                const linear_constraint_t &rhs,
-                                const DBM_t &invariant) override {}
-  void backward_assign_bool_ref_cst(const variable_t &lhs,
-				    const reference_constraint_t &rhs,
-				    const DBM_t &invariant) override {}
-  void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
-                                bool is_not_rhs,
-                                const DBM_t &invariant) override {}
-  void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
-                                  const variable_t &y, const variable_t &z,
-                                  const DBM_t &invariant) override {}
-
-  // array operations
-  void array_init(const variable_t &a, const linear_expression_t &elem_size,
-                  const linear_expression_t &lb_idx,
-                  const linear_expression_t &ub_idx,
-                  const linear_expression_t &val) override {}
-  void array_load(const variable_t &lhs, const variable_t &a,
-                  const linear_expression_t &elem_size,
-                  const linear_expression_t &i) override {
-    operator-=(lhs);
-  }
-  void array_store(const variable_t &a, const linear_expression_t &elem_size,
-                   const linear_expression_t &i, const linear_expression_t &v,
-                   bool is_strong_update) override {}
-  void array_store_range(const variable_t &a,
-                         const linear_expression_t &elem_size,
-                         const linear_expression_t &i,
-                         const linear_expression_t &j,
-                         const linear_expression_t &v) override {}
-  void array_assign(const variable_t &lhs, const variable_t &rhs) override {}
-  // backward array operations
-  void backward_array_init(const variable_t &a,
-                           const linear_expression_t &elem_size,
-                           const linear_expression_t &lb_idx,
-                           const linear_expression_t &ub_idx,
-                           const linear_expression_t &val,
-                           const DBM_t &invariant) override {}
-  void backward_array_load(const variable_t &lhs, const variable_t &a,
-                           const linear_expression_t &elem_size,
-                           const linear_expression_t &i,
-                           const DBM_t &invariant) override {}
-  void backward_array_store(const variable_t &a,
-                            const linear_expression_t &elem_size,
-                            const linear_expression_t &i,
-                            const linear_expression_t &v, bool is_strong_update,
-                            const DBM_t &invariant) override {}
-  void backward_array_store_range(const variable_t &a,
-                                  const linear_expression_t &elem_size,
-                                  const linear_expression_t &i,
-                                  const linear_expression_t &j,
-                                  const linear_expression_t &v,
-                                  const DBM_t &invariant) override {}
-  void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
-                             const DBM_t &invariant) override {}
-  // region/reference operations
-  void region_init(const variable_t &reg) override {}
-  void region_copy(const variable_t &lhs_reg,
-                   const variable_t &rhs_reg) override {}
-  void ref_make(const variable_t &ref, const variable_t &reg) override {}
-  void ref_load(const variable_t &ref, const variable_t &reg,
-                const variable_t &res) override {}
-  void ref_store(const variable_t &ref, const variable_t &reg,
-                 const variable_or_constant_t &val) override {}
-  void ref_gep(const variable_t &ref1, const variable_t &reg1,
-               const variable_t &ref2, const variable_t &reg2,
-               const linear_expression_t &offset) override {}
-  void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                           const variable_t &region,
-                           const linear_expression_t &index,
-                           const linear_expression_t &elem_size) override {}
-  void ref_store_to_array(const variable_t &ref, const variable_t &region,
-                          const linear_expression_t &index,
-                          const linear_expression_t &elem_size,
-                          const linear_expression_t &val) override {}
-  void ref_assume(const reference_constraint_t &cst) override {}
-  void ref_to_int(const variable_t &reg, const variable_t &ref_var,
-                  const variable_t &int_var) override {}
-  void int_to_ref(const variable_t &int_var, const variable_t &reg,
-                  const variable_t &ref_var) override {}
-  /* End unimplemented operations */
-
+  /// split_dbm_domain implements only standard abstract operations
+  /// of a numerical domain so it is intended to be used as a leaf
+  /// domain in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(DBM_t)  
+  
   void project(const variable_vector_t &variables) override {
     crab::CrabStats::count(domain_name() + ".count.project");
     crab::ScopedCrabStats __st__(domain_name() + ".project");

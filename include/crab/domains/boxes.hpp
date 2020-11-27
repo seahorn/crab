@@ -1623,82 +1623,12 @@ public:
     CRAB_WARN("boxes backward boolean apply not implemented");
   }
 
-  /*
-    Begin unimplemented operations.
 
-    boxes_domain implements standard abstract operations of a
-    numerical domain plus boolean operations.
-  */
-  // array operations
-  void array_init(const variable_t &a, const linear_expression_t &elem_size,
-                  const linear_expression_t &lb_idx,
-                  const linear_expression_t &ub_idx,
-                  const linear_expression_t &val) override {}
-  void array_load(const variable_t &lhs, const variable_t &a,
-                  const linear_expression_t &elem_size,
-                  const linear_expression_t &i) override {
-    operator-=(lhs);
-  }
-  void array_store(const variable_t &a, const linear_expression_t &elem_size,
-                   const linear_expression_t &i, const linear_expression_t &v,
-                   bool is_strong_update) override {}
-  void array_store_range(const variable_t &a,
-                         const linear_expression_t &elem_size,
-                         const linear_expression_t &i,
-                         const linear_expression_t &j,
-                         const linear_expression_t &v) override {}
-  void array_assign(const variable_t &lhs, const variable_t &rhs) override {}
-  // backward array operations
-  void backward_array_init(const variable_t &a,
-                           const linear_expression_t &elem_size,
-                           const linear_expression_t &lb_idx,
-                           const linear_expression_t &ub_idx,
-                           const linear_expression_t &val,
-                           const boxes_domain_t &invariant) override {}
-  void backward_array_load(const variable_t &lhs, const variable_t &a,
-                           const linear_expression_t &elem_size,
-                           const linear_expression_t &i,
-                           const boxes_domain_t &invariant) override {}
-  void backward_array_store(const variable_t &a,
-                            const linear_expression_t &elem_size,
-                            const linear_expression_t &i,
-                            const linear_expression_t &v, bool is_strong_update,
-                            const boxes_domain_t &invariant) override {}
-  void backward_array_store_range(const variable_t &a,
-                                  const linear_expression_t &elem_size,
-                                  const linear_expression_t &i,
-                                  const linear_expression_t &j,
-                                  const linear_expression_t &v,
-                                  const boxes_domain_t &invariant) override {}
-  void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
-                             const boxes_domain_t &invariant) override {}
-  // region/reference operations
-  void region_init(const variable_t &reg) override {}
-  void region_copy(const variable_t &lhs_reg,
-                   const variable_t &rhs_reg) override {}
-  void ref_make(const variable_t &ref, const variable_t &reg) override {}
-  void ref_load(const variable_t &ref, const variable_t &reg,
-                const variable_t &res) override {}
-  void ref_store(const variable_t &ref, const variable_t &reg,
-                 const variable_or_constant_t &val) override {}
-  void ref_gep(const variable_t &ref1, const variable_t &reg1,
-               const variable_t &ref2, const variable_t &reg2,
-               const linear_expression_t &offset) override {}
-  void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                           const variable_t &region,
-                           const linear_expression_t &index,
-                           const linear_expression_t &elem_size) override {}
-  void ref_store_to_array(const variable_t &ref, const variable_t &region,
-                          const linear_expression_t &index,
-                          const linear_expression_t &elem_size,
-                          const linear_expression_t &val) override {}
-  void ref_assume(const reference_constraint_t &cst) override {}
-  void ref_to_int(const variable_t &reg, const variable_t &ref,
-                  const variable_t &int_var) override {}
-  void int_to_ref(const variable_t &int_var, const variable_t &reg,
-                  const variable_t &ref) override {}
-
-  /* End unimplemented operations */
+  /// Boxes domain implements only standard abstract operations of a
+  /// numerical domain plus boolean operations. It is intended to be
+  /// used as a leaf domain in the hierarchy of domains.
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(boxes_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(boxes_domain_t)  
 
   linear_constraint_system_t to_linear_constraint_system() const override {
     crab::CrabStats::count(domain_name() +

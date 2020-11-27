@@ -90,7 +90,7 @@ public:
       const Dom &abs,
       const crab::iterators::thresholds<number_t> &ts) const = 0;
 
-  /**************************** Arithmetic operations *************************/
+  /**************************** Numerical operations *************************/
   // x := y op z
   virtual void apply(arith_operation_t op, const variable_t &x,
                      const variable_t &y, const variable_t &z) = 0;
@@ -156,8 +156,8 @@ public:
                                  const linear_expression_t &val) = 0;
   // forall i :: a[i] := b[i]
   virtual void array_assign(const variable_t &a, const variable_t &b) = 0;
-  /**************************** Regions and reference operations
-   * ***************/
+  
+  /***************** Regions and reference operations *****************/
   // Initialize region. If reg already exists then error.
   virtual void region_init(const variable_t &reg) = 0;
   // Assign the content of one region to another
@@ -197,7 +197,7 @@ public:
   // Convert an integer variable to a reference
   virtual void int_to_ref(const variable_t &int_var, const variable_t &reg,
                           const variable_t &ref) = 0;
-  /**************************** Backward arithmetic operations ***************/
+  /**************************** Backward numerical operations ***************/
   // x = y op z
   // Substitute x with y op z in the abstract value
   // The result is meet with invariant.
@@ -323,3 +323,125 @@ public:
 
 } // end namespace domains
 } // end namespace crab
+
+///
+///==== BEGIN MACROS FOR EMPTY IMPLEMENTATIONS ====
+///
+#define NUMERICAL_OPERATIONS_NOT_IMPLEMENTED(DOM)			\
+virtual void apply(crab::domains::arith_operation_t op, const variable_t &x, const variable_t &y, \
+		   const variable_t &z) override {}			\
+virtual void apply(crab::domains::arith_operation_t op, const variable_t &x, const variable_t &y, \
+		   number_t k) override {}				\
+virtual void assign(const variable_t &x, const linear_expression_t &e) override {} \
+virtual void backward_assign(const variable_t &x, const linear_expression_t &e, \
+			     const DOM &invariant) override {}		\
+virtual void backward_apply(crab::domains::arith_operation_t op, const variable_t &x, \
+			    const variable_t &y, number_t z,		\
+			    const DOM &invariant) override {}		\
+virtual void backward_apply(crab::domains::arith_operation_t op, const variable_t &x, \
+			    const variable_t &y, const variable_t &z,	\
+			    const DOM &invariant) override {}		\
+virtual void operator+=(const linear_constraint_system_t &csts) override {} \
+virtual interval_t operator[](const variable_t &x) override {		\
+  return interval_t::top();						\
+}									\
+virtual void apply(crab::domains::int_conv_operation_t op, const variable_t &dst, \
+		   const variable_t &src) override {}			\
+virtual void apply(crab::domains::bitwise_operation_t op, const variable_t &x, const variable_t &y, \
+		   const variable_t &z) override {}			\
+virtual void apply(crab::domains::bitwise_operation_t op, const variable_t &x, const variable_t &y, \
+		   number_t z) override {}
+
+#define BOOL_OPERATIONS_NOT_IMPLEMENTED(DOM)				\
+  virtual void assign_bool_cst(const variable_t &lhs,			\
+			       const linear_constraint_t &rhs) override {} \
+  virtual void assign_bool_ref_cst(const variable_t &lhs,		\
+				   const reference_constraint_t &rhs) override {} \
+  virtual void assign_bool_var(const variable_t &lhs, const variable_t &rhs, \
+			       bool is_not_rhs) override {}		\
+  virtual void apply_binary_bool(crab::domains::bool_operation_t op, const variable_t &x, \
+				 const variable_t &y, const variable_t &z) override {} \
+  virtual void assume_bool(const variable_t &v, bool is_negated) override {} \
+  virtual void backward_assign_bool_cst(const variable_t &lhs,		\
+					const linear_constraint_t &rhs,	\
+					const DOM &invariant) override {} \
+  virtual void backward_assign_bool_ref_cst(const variable_t &lhs,	\
+					    const reference_constraint_t &rhs, \
+					    const DOM &invariant) override {} \
+  virtual void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs, \
+					bool is_not_rhs,		\
+					const DOM &invariant) override {} \
+  virtual void backward_apply_binary_bool(crab::domains::bool_operation_t op, \
+					  const variable_t &x, const variable_t &y, \
+					  const variable_t &z,		\
+					  const DOM &invariant) override {}
+  
+#define REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(DOM)		\
+  virtual void region_init(const variable_t &reg) override {}		\
+  virtual void region_copy(const variable_t &lhs_reg,			\
+			   const variable_t &rhs_reg) override {}	\
+  virtual void ref_make(const variable_t &ref, const variable_t &reg) override {} \
+  virtual void ref_load(const variable_t &ref, const variable_t &reg,	\
+			const variable_t &res) override {}		\
+  virtual void ref_store(const variable_t &ref, const variable_t &reg,	\
+			 const variable_or_constant_t &val) override {}	\
+  virtual void ref_gep(const variable_t &ref1, const variable_t &reg1,	\
+		       const variable_t &ref2, const variable_t &reg2,	\
+		       const linear_expression_t &offset) override {}	\
+  virtual void ref_load_from_array(const variable_t &lhs, const variable_t &ref, \
+				   const variable_t &region,		\
+				   const linear_expression_t &index,	\
+				   const linear_expression_t &elem_size) override {} \
+  virtual void ref_store_to_array(const variable_t &ref, const variable_t &region, \
+				  const linear_expression_t &index,	\
+				  const linear_expression_t &elem_size,	\
+			  const linear_expression_t &val) override {}	\
+  virtual void ref_assume(const reference_constraint_t &cst) override {} \
+  virtual void ref_to_int(const variable_t &reg, const variable_t &ref,	\
+			  const variable_t &int_var) override {}	\
+  virtual void int_to_ref(const variable_t &int_var, const variable_t &reg, \
+			  const variable_t &ref) override {}		    
+  
+#define ARRAY_OPERATIONS_NOT_IMPLEMENTED(DOM)				\
+  virtual void array_init(const variable_t &a, const linear_expression_t &elem_size, \
+			  const linear_expression_t &lb_idx,		\
+			  const linear_expression_t &ub_idx,		\
+			  const linear_expression_t &val) override {}	\
+  virtual void array_load(const variable_t &lhs, const variable_t &a,	\
+			  const linear_expression_t &elem_size,		\
+			  const linear_expression_t &i) override {	\
+    operator-=(lhs);							\
+  }									\
+  virtual void array_store(const variable_t &a, const linear_expression_t &elem_size, \
+			   const linear_expression_t &i, const linear_expression_t &v, \
+			   bool is_strong_update) override {}		\
+  virtual void array_store_range(const variable_t &a,			\
+				 const linear_expression_t &elem_size,	\
+				 const linear_expression_t &i,		\
+				 const linear_expression_t &j,		\
+				 const linear_expression_t &v) override {} \
+  virtual void array_assign(const variable_t &lhs, const variable_t &rhs) override {} \
+  virtual void backward_array_init(const variable_t &a,			\
+				   const linear_expression_t &elem_size, \
+				   const linear_expression_t &lb_idx,	\
+				   const linear_expression_t &ub_idx,	\
+				   const linear_expression_t &val,	\
+				   const DOM &invariant) override {} \
+  virtual void backward_array_load(const variable_t &lhs, const variable_t &a, \
+				   const linear_expression_t &elem_size, \
+				   const linear_expression_t &i,	\
+				   const DOM &invariant) override {} \
+  virtual void backward_array_store(const variable_t &a,		\
+				    const linear_expression_t &elem_size, \
+				    const linear_expression_t &i,	\
+				    const linear_expression_t &v, bool is_strong_update, \
+				    const DOM &invariant) override {} \
+  virtual void backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size, \
+					  const linear_expression_t &i, const linear_expression_t &j, \
+					  const linear_expression_t &v,	\
+					  const DOM &invariant) override {} \
+  virtual void backward_array_assign(const variable_t &lhs, const variable_t &rhs, \
+				     const DOM &invariant) override {}
+///
+///==== END MACROS FOR EMPTY IMPLEMENTATIONS ====
+///
