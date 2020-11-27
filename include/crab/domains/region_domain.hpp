@@ -2316,13 +2316,35 @@ public:
   /* begin intrinsics operations */
   void intrinsic(std::string name, const variable_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    if (!is_bottom()) {
+      std::vector<base_variable_t> base_inputs, base_outputs;
+      base_inputs.reserve(inputs.size());
+      base_outputs.reserve(outputs.size());
+      for (unsigned i=0, sz=inputs.size(); i<sz; ++i){
+	base_inputs.push_back(rename_var(inputs[i]));
+      }
+      for (unsigned i=0, sz=outputs.size(); i<sz; ++i){
+	base_outputs.push_back(rename_var(outputs[i]));
+      }
+      m_base_dom.intrinsic(name, base_inputs, base_outputs);
+    }
   }
 
   void backward_intrinsic(std::string name, const variable_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const region_domain_t &invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    if (!is_bottom()) {
+      std::vector<base_variable_t> base_inputs, base_outputs;
+      base_inputs.reserve(inputs.size());
+      base_outputs.reserve(outputs.size());
+      for (unsigned i=0, sz=inputs.size(); i<sz; ++i){
+	base_inputs.push_back(rename_var(inputs[i]));
+      }
+      for (unsigned i=0, sz=outputs.size(); i<sz; ++i){
+	base_outputs.push_back(rename_var(outputs[i]));
+      }
+      m_base_dom.backward_intrinsic(name, base_inputs, base_outputs, invariant.m_base_dom);
+    }
   }
   /* end intrinsics operations */
 
