@@ -539,7 +539,7 @@ private:
     crab::outs() << "]\n";
     ap_abstract0_fprint(stdout, get_man(), &*apstate, &names[0]);
     for (auto n : names) {
-      delete n;
+      delete[] n;
     }
   }
 
@@ -1144,7 +1144,7 @@ public:
 	    names.push_back(name);
 	  }
 	  ap_tcons0_array_fprint(stdout, &array, &names[0]);
-	  for (auto n : names) { delete n; }
+	  for (auto n : names) { delete[] n; }
 #endif
 
     m_apstate = apPtr(get_man(), ap_abstract0_meet_tcons_array(

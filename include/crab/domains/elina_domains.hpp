@@ -493,7 +493,7 @@ private:
     }
     elina_linexpr0_print(e, &names[0]);
     for (auto n : names) {
-      delete n;
+      delete[] n;
     }
   }
 
@@ -621,7 +621,7 @@ private:
     crab::outs() << "]\n";
     elina_abstract0_fprint(stdout, get_man(), &*apstate, &names[0]);
     for (auto n : names) {
-      delete n;
+      delete[] n;
     }
   }
 
@@ -834,7 +834,7 @@ private:
     // 	names.push_back(name);
     // }
     // elina_tcons0_array_fprint(stdout, &array, &names[0]);
-    // for (auto n : names) { delete n; }
+    // for (auto n : names) { delete[] n; }
 
     m_apstate = elinaPtr(get_man(), elina_abstract0_meet_tcons_array(
                                         get_man(), false, &*m_apstate, &array));
