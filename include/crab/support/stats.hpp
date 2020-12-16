@@ -7,6 +7,9 @@
 
 namespace crab {
 
+extern bool CrabStatsFlag;
+void CrabEnableStats(bool v = true);
+  
 class Stopwatch {
   long started;
   long finished;

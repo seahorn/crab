@@ -1,6 +1,12 @@
 #include <crab/config.h>
 #include <crab/support/stats.hpp>
 
+namespace crab {
+bool CrabStatsFlag = false;
+void CrabEnableStats(bool v)
+{ CrabStatsFlag = v; }
+} // end namespace
+
 #ifndef CRAB_STATS
 namespace crab {
 Stopwatch::Stopwatch() {}
@@ -118,51 +124,89 @@ void CrabStats::reset() {
   getTimers().clear();
 }
 
-void CrabStats::count(const std::string &name) { ++getCounters()[name]; }
+void CrabStats::count(const std::string &name) {
+  if (!crab::CrabStatsFlag)
+    return;
+  ++getCounters()[name];
+}
 void CrabStats::count_max(const std::string &name, unsigned v) {
+  if (!crab::CrabStatsFlag)
+    return;  
   getCounters()[name] = std::max(getCounters()[name], v);
 }
 
 unsigned CrabStats::uset(const std::string &n, unsigned v) {
+  if (!crab::CrabStatsFlag)
+    return 0;  
   return getCounters()[n] = v;
 }
-unsigned CrabStats::get(const std::string &n) { return getCounters()[n]; }
+unsigned CrabStats::get(const std::string &n) {
+  if (!crab::CrabStatsFlag)
+    return 0;  
+  return getCounters()[n];
+}
 
-void CrabStats::start(const std::string &name) { getTimers()[name].start(); }
-void CrabStats::stop(const std::string &name) { getTimers()[name].stop(); }
-void CrabStats::resume(const std::string &name) { getTimers()[name].resume(); }
+void CrabStats::start(const std::string &name) {
+  if (!crab::CrabStatsFlag)
+    return;
+  getTimers()[name].start();
+}
+void CrabStats::stop(const std::string &name) {
+  if (!crab::CrabStatsFlag)
+    return;  
+  getTimers()[name].stop();
+}
+void CrabStats::resume(const std::string &name) {
+  if (!crab::CrabStatsFlag)
+    return;  
+  getTimers()[name].resume();
+}
 
 /** Outputs all statistics to std output */
 void CrabStats::Print(crab_os &OS) {
   OS << "\n\n************** STATS ***************** \n";
-  for (auto &kv : getCounters())
-    OS << kv.first << ": " << kv.second << "\n";
-  for (auto &kv : getTimers())
-    OS << kv.first << ": " << kv.second << "\n";
+  if (!crab::CrabStatsFlag) {
+    OS << "Need to call CrabEnableStats()\n";
+  } else {
+    for (auto &kv : getCounters())
+      OS << kv.first << ": " << kv.second << "\n";
+    for (auto &kv : getTimers())
+      OS << kv.first << ": " << kv.second << "\n";
+  }
   OS << "************** STATS END ***************** \n";
 }
 
 void CrabStats::PrintBrunch(crab_os &OS) {
   OS << "\n\n************** BRUNCH STATS ***************** \n";
-  for (auto &kv : getCounters())
-    OS << "BRUNCH_STAT " << kv.first << " " << kv.second << "\n";
-  for (auto &kv : getTimers())
-    OS << "BRUNCH_STAT " << kv.first << " " << (kv.second).toSeconds()
-       << "sec \n";
+  if (!crab::CrabStatsFlag) {
+    OS << "Need to call CrabEnableStats()\n";
+  } else {
+    for (auto &kv : getCounters())
+      OS << "BRUNCH_STAT " << kv.first << " " << kv.second << "\n";
+    for (auto &kv : getTimers())
+      OS << "BRUNCH_STAT " << kv.first << " " << (kv.second).toSeconds()
+	 << "sec \n";
+  }
   OS << "************** BRUNCH STATS END ***************** \n";
 }
 
 ScopedCrabStats::ScopedCrabStats(const std::string &name, bool reset)
-    : m_name(name) {
-  if (reset) {
-    m_name += ".last";
-    CrabStats::start(m_name);
-  } else {
-    CrabStats::resume(m_name);
+  : m_name("") {
+  if (crab::CrabStatsFlag) {
+    m_name = name;
+    if (reset) {
+      m_name += ".last";
+      CrabStats::start(m_name);
+    } else {
+      CrabStats::resume(m_name);
+    }
   }
 }
 
-ScopedCrabStats::~ScopedCrabStats() { CrabStats::stop(m_name); }
-
+ScopedCrabStats::~ScopedCrabStats() {
+  if(crab::CrabStatsFlag) {
+    CrabStats::stop(m_name);
+  }
+}
 } // namespace crab
 #endif

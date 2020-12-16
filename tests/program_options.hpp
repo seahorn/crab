@@ -2,6 +2,7 @@
 
 #include <boost/program_options.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 #include <iostream>
 
 namespace crab_tests {
@@ -47,6 +48,7 @@ int parse_user_options(int argc, char **argv, bool &stats_enabled) {
   if (vm.count("sanity")) {
     crab::CrabEnableSanityChecks(true);
   }
+  crab::CrabEnableStats();
   return 1;
 }
 
