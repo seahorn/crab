@@ -21,6 +21,7 @@ template <typename CallGraph> struct top_down_inter_analyzer_parameters {
 	keep_cc_invariants(false), keep_invariants(true),
         max_call_contexts(UINT_MAX),
 	analyze_recursive_functions(false), exact_summary_reuse(true),
+	only_main_as_entry(false),
 	widening_delay(2), descending_iters(2 /*UINT_MAX*/), thresholds_size(20 /*0*/),
         live_map(nullptr), wto_map(nullptr) {}
 
@@ -37,6 +38,8 @@ template <typename CallGraph> struct top_down_inter_analyzer_parameters {
   bool analyze_recursive_functions;
   // reuse summaries without losing precision
   bool exact_summary_reuse;
+  // Start the analysis from main
+  bool only_main_as_entry;
   // fixpoint parameters
   unsigned int widening_delay;
   unsigned int descending_iters;
