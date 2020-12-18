@@ -2584,6 +2584,20 @@ public:
     m_live = m_live | other.m_live;
   }
 
+  // insert all statements of other at the back
+  void move_back(basic_block_t& other) {
+    m_stmts.reserve(m_stmts.size() + other.m_stmts.size());
+    std::move(other.m_stmts.begin(), other.m_stmts.end(), std::back_inserter(m_stmts));
+  }
+
+  size_t in_degree() const {
+    return m_prev.size();
+  }
+
+  size_t out_degree() const {
+    return m_next.size();
+  }
+  
   // Remove s (and free) from this
   void remove(const statement_t *s, bool must_update_uses_and_defs = true) {
     // remove statement using the remove-erase idiom
@@ -3652,16 +3666,31 @@ public:
     // after removing useless blocks there can be opportunities to
     // merge more blocks.
     merge_blocks();
-    merge_blocks();
+    // merge_blocks();
   }
 
 private:
+  
   ////
   // Trivial cfg simplifications
   // TODO: move to transform directory
   ////
 
   // Helpers
+
+  basic_block_t &get_child(BasicBlockLabel b) {
+    //assert(has_one_child(b));
+    auto rng = next_nodes(b);
+    return get_node(*(rng.begin()));
+  }
+
+  basic_block_t &get_parent(BasicBlockLabel b) {
+    //assert(has_one_parent(b));
+    auto rng = prev_nodes(b);
+    return get_node(*(rng.begin()));
+  }
+
+#if 1
   bool has_one_child(BasicBlockLabel b) const {
     auto rng = next_nodes(b);
     return (std::distance(rng.begin(), rng.end()) == 1);
@@ -3671,19 +3700,7 @@ private:
     auto rng = prev_nodes(b);
     return (std::distance(rng.begin(), rng.end()) == 1);
   }
-
-  basic_block_t &get_child(BasicBlockLabel b) {
-    assert(has_one_child(b));
-    auto rng = next_nodes(b);
-    return get_node(*(rng.begin()));
-  }
-
-  basic_block_t &get_parent(BasicBlockLabel b) {
-    assert(has_one_parent(b));
-    auto rng = prev_nodes(b);
-    return get_node(*(rng.begin()));
-  }
-
+  
   void merge_blocks_rec(BasicBlockLabel curId, visited_t &visited) {
     if (!visited.insert(curId).second)
       return;
@@ -3717,23 +3734,73 @@ private:
     visited_t visited;
     merge_blocks_rec(entry(), visited);
   }
+#else
+  // Non-recursive version thanks to Prevail
+  void merge_blocks() {
+    std::set<basic_block_label_t> worklist(this->label_begin(), this->label_end());
+    while (!worklist.empty()) {
+      auto label = *worklist.begin();
+      worklist.erase(label);
+      
+      basic_block_t& bb = get_node(label);
 
-  // mark reachable blocks from curId
-  template <class AnyCfg>
-  void mark_alive_blocks(BasicBlockLabel curId, AnyCfg &cfg,
-                         visited_t &visited) {
-    if (visited.count(curId) > 0)
-      return;
-    visited.insert(curId);
-    for (auto child : cfg.next_nodes(curId)) {
-      mark_alive_blocks(child, cfg, visited);
+      // skip bb for now but it will be folded into its parent when
+      // the parent is processed.
+      if (bb.in_degree() == 1 && get_parent(label).out_degree() == 1) {
+	continue;
+      }
+      while (bb.out_degree() == 1) {
+	basic_block_t& next_bb = get_child(label);
+
+	// skip self-loops or if next_bb has in-degree > 1
+	if (&next_bb == &bb || next_bb.in_degree() != 1) {
+	  break;
+	}
+	
+	worklist.erase(next_bb.label());
+	
+	if (next_bb.label() == m_exit) {
+	  m_exit = label;
+	}
+
+	// fold next_bb into bb
+	bb.copy_back(next_bb);
+	bb -= next_bb;
+	auto children = next_bb.m_next;
+	for (auto const & next_next_label : children) {
+	  basic_block_t& next_next_bb = get_node(next_next_label);
+	  bb >> next_next_bb;
+	}
+	remove(next_bb.label());
+      }
     }
   }
+#endif   
+
+// mark reachable blocks from entry
+template <class AnyCfg>
+void mark_alive_blocks(AnyCfg &cfg, visited_t &alive_set) {
+  std::vector<typename AnyCfg::basic_block_label_t> worklist;
+  worklist.push_back(cfg.entry());
+  
+  while (!worklist.empty()) {
+    auto bb_label = worklist.back();
+    worklist.pop_back();
+    alive_set.insert(bb_label);
+    
+    for (auto child : cfg.next_nodes(bb_label)) {
+      if (!(alive_set.count(child) > 0)) {
+	worklist.push_back(child);
+      }
+    }
+  }
+}
+  
 
   // remove unreachable blocks
   void remove_unreachable_blocks() {
     visited_t alive, dead;
-    mark_alive_blocks(entry(), *this, alive);
+    mark_alive_blocks(*this, alive);
 
     for (auto const &bb : *this) {
       if (!(alive.count(bb.label()) > 0)) {
@@ -3752,9 +3819,8 @@ private:
       return;
 
     cfg_rev<cfg_ref<cfg_t>> rev_cfg(*this);
-
     visited_t useful, useless;
-    mark_alive_blocks(rev_cfg.entry(), rev_cfg, useful);
+    mark_alive_blocks(rev_cfg, useful);
 
     for (auto const &bb : *this) {
       if (!(useful.count(bb.label()) > 0)) {
