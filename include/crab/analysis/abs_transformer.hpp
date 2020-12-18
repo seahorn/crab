@@ -408,6 +408,9 @@ public:
   }
 
   void exec(select_t &stmt) {
+    crab::CrabStats::count(m_inv.domain_name() + ".count.select_num");
+    crab::ScopedCrabStats __st__(m_inv.domain_name() + ".select_num");
+    
     /* Can be done more efficiently inside the abstract domain */
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
@@ -570,6 +573,9 @@ public:
   }
 
   void exec(bool_select_t &stmt) {
+    crab::CrabStats::count(m_inv.domain_name() + ".count.select_bool");
+    crab::ScopedCrabStats __st__(m_inv.domain_name() + ".select_bool");
+    
     /* Can be done more efficiently inside the abstract domain */
     
     bool pre_bot = false;
@@ -848,6 +854,9 @@ public:
 
 
   void exec(select_ref_t &stmt) {
+    crab::CrabStats::count(m_inv.domain_name() + ".count.select_ref");
+    crab::ScopedCrabStats __st__(m_inv.domain_name() + ".select_ref");
+    
     /* Can be done more efficiently inside the abstract domain */
     
     bool pre_bot = false;
