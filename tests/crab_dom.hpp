@@ -100,20 +100,29 @@ using z_wrapped_interval_domain_t =
 // Region domain
 /*===================================================================*/
 using var_allocator = crab::var_factory_impl::str_var_alloc_col;
-using z_rgn_aa_int_params_t = region_domain_impl::Params<
-    z_number, varname_t,
-    array_adaptive_domain<
-        interval_domain<z_number, typename var_allocator::varname_t>,
-        ArrayAdaptParams>>;
-using z_rgn_int_params_t = region_domain_impl::Params<
-    z_number, varname_t,
-    interval_domain<z_number, typename var_allocator::varname_t>>;
-using z_rgn_sdbm_params_t = region_domain_impl::Params<
-    z_number, varname_t,
-    split_dbm_domain<z_number, typename var_allocator::varname_t,
-                     z_SplitGraph>>;
+template<class BaseAbsDom>
+struct TestRegionParams {
+  using number_t = z_number;
+  using varname_t = varname_t;
+  using varname_allocator_t = crab::var_factory_impl::str_var_alloc_col;  
+  using base_abstract_domain_t = BaseAbsDom;
+  using base_varname_t = typename BaseAbsDom::varname_t;
+  enum { refine_uninitialized_regions = 1};
+};
+using z_rgn_aa_int_params_t = TestRegionParams<
+  array_adaptive_domain<
+    interval_domain<z_number, typename var_allocator::varname_t>,
+    ArrayAdaptParams>>;
+using z_rgn_int_params_t = TestRegionParams<
+  interval_domain<z_number, typename var_allocator::varname_t>>;
+using z_rgn_bool_int_params_t = TestRegionParams<
+  flat_boolean_numerical_domain<
+    interval_domain<z_number, typename var_allocator::varname_t>>>;
+using z_rgn_sdbm_params_t = TestRegionParams<
+  split_dbm_domain<z_number, typename var_allocator::varname_t,
+		   z_SplitGraph>>;
 using z_rgn_int_t = region_domain<z_rgn_int_params_t>;
-using z_bool_rgn_int_t = flat_boolean_numerical_domain<z_rgn_int_t>;
+using z_rgn_bool_int_t = region_domain<z_rgn_bool_int_params_t>;
 using z_rgn_sdbm_t = region_domain<z_rgn_sdbm_params_t>;
 using z_rgn_aa_int_t = region_domain<z_rgn_aa_int_params_t>;
 /*===================================================================*/

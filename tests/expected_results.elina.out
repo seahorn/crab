@@ -2964,6 +2964,159 @@ user-defined assertion checker
 0  Number of total unreachable checks
 
 === End ./test-bin/region-3 ===
+=== Begin ./test-bin/region-4 ===
+entry:
+  region_init(region_field_next:region(ref));
+  region_init(region_field_s:region(ref));
+  region_init(region_field_deref_s:region(int));
+  region_init(region_field_f:region(int));
+  i0 = 0;
+  assume(ref0 == NULL_REF);
+  goto bb2_loop;
+bb2_loop:
+  goto bb3,bb4;
+bb3:
+  assume(i0 <= 9999);
+  goto bb5;
+bb5:
+  ref2 := make_ref(region_field_f:region(int));
+  assume(ref2 > NULL_REF);
+  (region_field_f:region(int),ref3:ref) := gep_ref(region_field_f:region(int),ref2:ref);
+  store_to_ref(region_field_f:region(int),ref3:ref,i0:int32);
+  (region_field_s:region(ref),ref5:ref) := gep_ref(region_field_f:region(int),ref2:ref + 4);
+  ref10 := make_ref(region_field_deref_s:region(int));
+  assume(ref10 > NULL_REF);
+  store_to_ref(region_field_s:region(ref),ref5:ref,ref10:ref);
+  (region_field_next:region(ref),ref4:ref) := gep_ref(region_field_f:region(int),ref2:ref + 8);
+  store_to_ref(region_field_next:region(ref),ref4:ref,ref0:ref);
+  i0 = i0+1;
+  (region_field_f:region(int),ref0:ref) := gep_ref(region_field_f:region(int),ref2:ref);
+  goto bb2_loop;
+bb4:
+  assume(-i0 <= -10000);
+  (region_field_f:region(int),ref1:ref) := gep_ref(region_field_f:region(int),ref0:ref);
+  goto bb6_loop;
+bb6_loop:
+  goto bb7,bb8;
+bb7:
+  assume(ref1 == NULL_REF);
+  goto exit;
+exit:
+
+bb8:
+  assume(ref1 != NULL_REF);
+  goto bb9;
+bb9:
+  (region_field_s:region(ref),ref7:ref) := gep_ref(region_field_f:region(int),ref1:ref + 4);
+  ref6:ref := load_from_ref(region_field_s:region(ref),ref7:ref);
+  b2 = crab_intrinsic(is_unfreed_or_null,region_field_deref_s:region(int),ref6:ref);
+  goto bb9_assert;
+bb9_assert:
+  assert(b2);
+  (region_field_next:region(ref),ref8:ref) := gep_ref(region_field_f:region(int),ref1:ref + 8);
+  ref9:ref := load_from_ref(region_field_next:region(ref),ref8:ref);
+  (region_field_f:region(int),ref1:ref) := gep_ref(region_field_f:region(int),ref9:ref);
+  goto bb6_loop;
+
+Invariants using RegionDomain(Product(Boolean,Intervals))
+Abstract trace: entry (bb2_loop bb3 bb5)^{4} bb4 (bb6_loop bb8 bb9 bb9_assert)^{1} bb7 exit
+user-defined assertion checker
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+Invariants using RegionDomain(Product(Boolean,Intervals))
+entry={}
+bb2_loop=({}, {region_field_next -> [0, +oo]; region_field_f -> [0, 10000]; region_field_s -> [1, +oo]; i0 -> [0, 10000]; ref0 -> [0, +oo]})
+bb4=({}, {region_field_next -> [0, +oo]; region_field_f -> [0, 10000]; region_field_s -> [1, +oo]; i0 -> [0, 10000]; ref0 -> [0, +oo]})
+bb6_loop=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [0, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
+bb8=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [0, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
+bb9=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [1, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
+bb9_assert=({b2 -> true}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [1, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]; ref7 -> [5, +oo]; ref6 -> [1, +oo]; _x8 -> [1, +oo]})
+bb7=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [0, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
+exit=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [0, 0]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
+bb3=({}, {region_field_next -> [0, +oo]; region_field_f -> [0, 10000]; region_field_s -> [1, +oo]; i0 -> [0, 10000]; ref0 -> [0, +oo]})
+bb5=({}, {region_field_next -> [0, +oo]; region_field_f -> [0, 10000]; region_field_s -> [1, +oo]; i0 -> [0, 9999]; ref0 -> [0, +oo]})
+Abstract trace: entry (bb2_loop bb3 bb5)^{4} bb4 (bb6_loop bb8 bb9 bb9_assert)^{1} bb7 exit
+
+entry:
+  region_init(region_field_next:region(ref));
+  region_init(region_field_s:region(ref));
+  region_init(region_field_deref_s:region(int));
+  region_init(region_field_f:region(int));
+  i0 = 0;
+  assume(ref0 == NULL_REF);
+  goto bb2_loop;
+bb2_loop:
+  goto bb3,bb4;
+bb3:
+  assume(i0 <= 9999);
+  goto bb5;
+bb5:
+  ref2 := make_ref(region_field_f:region(int));
+  assume(ref2 > NULL_REF);
+  (region_field_f:region(int),ref3:ref) := gep_ref(region_field_f:region(int),ref2:ref);
+  store_to_ref(region_field_f:region(int),ref3:ref,i0:int32);
+  (region_field_s:region(ref),ref5:ref) := gep_ref(region_field_f:region(int),ref2:ref + 4);
+  ref10 := make_ref(region_field_deref_s:region(int));
+  assume(ref10 > NULL_REF);
+  store_to_ref(region_field_s:region(ref),ref5:ref,ref10:ref);
+  (region_field_next:region(ref),ref4:ref) := gep_ref(region_field_f:region(int),ref2:ref + 8);
+  store_to_ref(region_field_next:region(ref),ref4:ref,ref0:ref);
+  i0 = i0+1;
+  (region_field_f:region(int),ref0:ref) := gep_ref(region_field_f:region(int),ref2:ref);
+  goto bb2_loop;
+bb4:
+  assume(-i0 <= -10000);
+  (region_field_f:region(int),ref1:ref) := gep_ref(region_field_f:region(int),ref0:ref);
+  goto bb6_loop;
+bb6_loop:
+  goto bb7,bb8;
+bb7:
+  assume(ref1 == NULL_REF);
+  goto exit;
+exit:
+
+bb8:
+  assume(ref1 != NULL_REF);
+  goto bb9;
+bb9:
+  (region_field_s:region(ref),ref7:ref) := gep_ref(region_field_f:region(int),ref1:ref + 4);
+  ref6:ref := load_from_ref(region_field_s:region(ref),ref7:ref);
+  b2 = crab_intrinsic(is_unfreed_or_null,region_field_deref_s:region(int),ref6:ref);
+  crab_intrinsic(free,region_field_deref_s:region(int),ref6:ref);
+  goto bb9_assert;
+bb9_assert:
+  assert(b2);
+  (region_field_next:region(ref),ref8:ref) := gep_ref(region_field_f:region(int),ref1:ref + 8);
+  ref9:ref := load_from_ref(region_field_next:region(ref),ref8:ref);
+  (region_field_f:region(int),ref1:ref) := gep_ref(region_field_f:region(int),ref9:ref);
+  goto bb6_loop;
+
+Invariants using RegionDomain(Product(Boolean,Intervals))
+Abstract trace: entry (bb2_loop bb3 bb5)^{4} bb4 (bb6_loop bb8 bb9 bb9_assert)^{2} bb7 exit
+user-defined assertion checker
+0  Number of total safe checks
+0  Number of total error checks
+1  Number of total warning checks
+0  Number of total unreachable checks
+
+Invariants using RegionDomain(Product(Boolean,Intervals))
+entry={}
+bb2_loop=({}, {region_field_next -> [0, +oo]; region_field_f -> [0, 10000]; region_field_s -> [1, +oo]; i0 -> [0, 10000]; ref0 -> [0, +oo]})
+bb4=({}, {region_field_next -> [0, +oo]; region_field_f -> [0, 10000]; region_field_s -> [1, +oo]; i0 -> [0, 10000]; ref0 -> [0, +oo]})
+bb6_loop=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [0, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
+bb8=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [0, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
+bb9=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [1, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
+bb9_assert=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [1, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]; ref7 -> [5, +oo]; ref6 -> [1, +oo]; _x8 -> [1, +oo]})
+bb7=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [0, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
+exit=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [0, 0]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
+bb3=({}, {region_field_next -> [0, +oo]; region_field_f -> [0, 10000]; region_field_s -> [1, +oo]; i0 -> [0, 10000]; ref0 -> [0, +oo]})
+bb5=({}, {region_field_next -> [0, +oo]; region_field_f -> [0, 10000]; region_field_s -> [1, +oo]; i0 -> [0, 9999]; ref0 -> [0, +oo]})
+Abstract trace: entry (bb2_loop bb3 bb5)^{4} bb4 (bb6_loop bb8 bb9 bb9_assert)^{2} bb7 exit
+
+=== End ./test-bin/region-4 ===
 === Begin ./test-bin/td_inter_1 ===
 z:int32 declare foo(x:int32)
 entry:
@@ -3037,29 +3190,29 @@ exit:
 
 
 Running top-down inter-procedural analysis with SparseDBM
-16  Number of total safe checks
+17  Number of total safe checks
  0  Number of total error checks
  0  Number of total warning checks
  0  Number of total unreachable checks
-16  Number of total safe checks
+17  Number of total safe checks
  0  Number of total error checks
  0  Number of total warning checks
  0  Number of total unreachable checks
 Running top-down inter-procedural analysis with SplitDBM
-16  Number of total safe checks
+17  Number of total safe checks
  0  Number of total error checks
  0  Number of total warning checks
  0  Number of total unreachable checks
-16  Number of total safe checks
+17  Number of total safe checks
  0  Number of total error checks
  0  Number of total warning checks
  0  Number of total unreachable checks
 Running top-down inter-procedural analysis with ElinaOctagon
-16  Number of total safe checks
+17  Number of total safe checks
  0  Number of total error checks
  0  Number of total warning checks
  0  Number of total unreachable checks
-16  Number of total safe checks
+17  Number of total safe checks
  0  Number of total error checks
  0  Number of total warning checks
  0  Number of total unreachable checks
@@ -4320,7 +4473,7 @@ entry:
 exit:
   assert(ref1 != NULL_REF);
 
-Invariants using Product(Boolean,RegionDomain(Intervals))
+Invariants using RegionDomain(Product(Boolean,Intervals))
 Abstract trace: entry exit
 user-defined assertion checker
 0  Number of total safe checks
@@ -4360,7 +4513,7 @@ entry:
 exit:
   assert(ref1 != NULL_REF);
 
-Invariants using Product(Boolean,RegionDomain(Intervals))
+Invariants using RegionDomain(Product(Boolean,Intervals))
 Abstract trace: entry exit
 user-defined assertion checker
 1  Number of total safe checks
@@ -4377,7 +4530,7 @@ entry:
 exit:
   assert(ref1 != NULL_REF);
 
-Invariants using Product(Boolean,RegionDomain(Intervals))
+Invariants using RegionDomain(Product(Boolean,Intervals))
 Abstract trace: entry exit
 user-defined assertion checker
 1  Number of total safe checks

@@ -46,7 +46,7 @@ Z_RUNNER(crab::domain_impl::z_aa_bool_int_t)
 Z_RUNNER(crab::domain_impl::z_pow_aa_int_t)
 Z_RUNNER(crab::domain_impl::z_rgn_aa_int_t)
 Z_RUNNER(crab::domain_impl::z_rgn_int_t)
-Z_RUNNER(crab::domain_impl::z_bool_rgn_int_t)
+Z_RUNNER(crab::domain_impl::z_rgn_bool_int_t)
 Z_RUNNER(crab::domain_impl::z_rgn_sdbm_t)
 
 Q_RUNNER(crab::domain_impl::q_interval_domain_t)

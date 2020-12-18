@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
       z_var rgn2(vfac["rgn2"], crab::REG_INT_TYPE, 32);
       z_var rgn3(vfac["rgn3"], crab::REG_INT_TYPE, 32);
       z_var cond(vfac["cond"], crab::BOOL_TYPE, 1);    
-      z_bool_rgn_int_t init;
+      z_rgn_bool_int_t init;
       entry.region_init(rgn1);
       entry.region_init(rgn2);
       entry.region_init(rgn3);
@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
       z_var rgn2(vfac["rgn2"], crab::REG_INT_TYPE, 32);
       z_var rgn3(vfac["rgn3"], crab::REG_INT_TYPE, 32);
       z_var cond(vfac["cond"], crab::BOOL_TYPE, 1);    
-      z_bool_rgn_int_t init;
+      z_rgn_bool_int_t init;
       entry.region_init(rgn1);
       entry.region_init(rgn2);
       entry.region_init(rgn3);
@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
       z_var rgn2(vfac["rgn2"], crab::REG_INT_TYPE, 32);
       z_var rgn3(vfac["rgn3"], crab::REG_INT_TYPE, 32);
       z_var cond(vfac["cond"], crab::BOOL_TYPE, 1);    
-      z_bool_rgn_int_t init;
+      z_rgn_bool_int_t init;
       entry.assume_ref(z_ref_cst_t::mk_gt_null(ref3));
       entry.bool_assign(cond, z_lin_cst_t::get_false());
       entry.select_ref(ref1, rgn1, cond, ref2, rgn2, ref3, rgn3);

@@ -340,7 +340,8 @@ public:
   using base_abstract_domain_t = BaseAbsDom;
   using base_varname_t = typename BaseAbsDom::varname_t;
 
-  enum { refine_uninitialized_regions = 1};
+  // Enable this might not be sound
+  enum { refine_uninitialized_regions = 0};
   
   static_assert(std::is_same<Number, typename BaseAbsDom::number_t>::value,
                 "Number type and BaseAbsDom::number_t must be the same");
@@ -352,7 +353,8 @@ public:
 };
 } // end namespace region_domain_impl
 
-// Abstract domain for regions and references
+// Abstract domain for regions and references.
+// The domain smashes all the memory objects of a region.
 template <typename Params>
 class region_domain final : public abstract_domain_api<region_domain<Params>> {
   using region_domain_t = region_domain<Params>;
@@ -384,18 +386,17 @@ private:
       typename base_abstract_domain_t::linear_constraint_system_t;
   using base_varname_allocator_t = typename Params::varname_allocator_t;
 
-  // Abstract domains
-  using rgn_counting_domain_t = ikos::separate_domain<variable_t, small_range>;
-  using rgn_init_domain_t = ikos::separate_domain<variable_t, boolean_value>;
+  // Environment domains: map regions to finite domain
+  using rgn_counting_env_t = ikos::separate_domain<variable_t, small_range>;
+  using rgn_bool_env_t = ikos::separate_domain<variable_t, boolean_value>;
   // Variable map: variable to base domain's variable.
   using var_map_t = std::unordered_map<variable_t, base_variable_t>;
   using rev_var_map_t = std::unordered_map<base_variable_t, variable_t>;
 
-  bool m_is_bottom;
-
+  bool m_is_bottom; // special symbol for bottom
+  
   // To create synthetic variables for the base domain.
   base_varname_allocator_t m_alloc;
-
   // Map a variable_t to base domain's variable:
   //  - int/real/bool variable is mapped while preserving its type
   //  - ref variables are mapped to **integer** variables to ensure
@@ -407,30 +408,34 @@ private:
   rev_var_map_t m_rev_var_map;
   // Abstract domain to count how many addresses are in a region.
   // This allows us to decide when strong update is sound: only if
-  // exactly one address per region (i.e., singleton).
-  rgn_counting_domain_t m_rgn_counting_dom;
-  // Whether the region has been initialized or not
-  rgn_init_domain_t m_rgn_init_dom;
+  // one address per region (i.e., singleton).
+  rgn_counting_env_t m_rgn_counting_dom;
+  // Whether the region has some object that has been initialized
+  rgn_bool_env_t m_rgn_init_dom;
+  // Whether the region has some object that has been deallocated
+  rgn_bool_env_t m_rgn_dealloc_dom;
   // The base abstract domain: all the heavy lifting is done here.
   // m_base_dom does not have any variable of reference type.
   base_abstract_domain_t m_base_dom;
 
   region_domain(base_varname_allocator_t &&alloc, var_map_t &&var_map,
                 rev_var_map_t &&rev_var_map,
-                rgn_counting_domain_t &&rgn_counting_dom,
-		rgn_init_domain_t &&rgn_init_dom,
+                rgn_counting_env_t &&rgn_counting_dom,
+		rgn_bool_env_t &&rgn_init_dom,
+		rgn_bool_env_t &&rgn_dealloc_dom,
                 base_abstract_domain_t &&base_dom)
       : m_is_bottom(base_dom.is_bottom()), m_alloc(std::move(alloc)),
         m_var_map(std::move(var_map)), m_rev_var_map(std::move(rev_var_map)),
         m_rgn_counting_dom(std::move(rgn_counting_dom)),
 	m_rgn_init_dom(std::move(rgn_init_dom)),
+	m_rgn_dealloc_dom(std::move(rgn_dealloc_dom)),
         m_base_dom(std::move(base_dom)) {}
 
   using base_dom_binop_t = std::function<base_abstract_domain_t(
       base_abstract_domain_t, base_abstract_domain_t)>;
 
   
-  bool can_propagate_initialized_regions(const rgn_init_domain_t &left_init_dom,
+  bool can_propagate_initialized_regions(const rgn_bool_env_t &left_init_dom,
 					 const var_map_t  &right_varmap,
 					 variable_vector_t &regions,
 					 base_variable_vector_t &right_base_vars) const {
@@ -502,10 +507,13 @@ private:
 
   // Perform *this = join(*this, right)
   void do_join(const region_domain_t &right) {
-    rgn_counting_domain_t out_rgn_counting_dom(m_rgn_counting_dom |
-                                               right.m_rgn_counting_dom);
-    rgn_init_domain_t out_rgn_init_dom(m_rgn_init_dom |
-				       right.m_rgn_init_dom);
+    rgn_counting_env_t out_rgn_counting_dom(m_rgn_counting_dom |
+					    right.m_rgn_counting_dom);
+    rgn_bool_env_t out_rgn_init_dom(m_rgn_init_dom |
+				    right.m_rgn_init_dom);
+
+    rgn_bool_env_t out_rgn_dealloc_dom(m_rgn_dealloc_dom |
+				       right.m_rgn_dealloc_dom);
     
     base_varname_allocator_t out_alloc(m_alloc, right.m_alloc);
     base_abstract_domain_t right_dom(right.m_base_dom);
@@ -541,7 +549,8 @@ private:
     m_is_bottom = m_base_dom.is_bottom();
     std::swap(m_alloc, out_alloc);
     std::swap(m_rgn_counting_dom, out_rgn_counting_dom);
-    std::swap(m_rgn_init_dom, out_rgn_init_dom);    
+    std::swap(m_rgn_init_dom, out_rgn_init_dom);
+    std::swap(m_rgn_dealloc_dom, out_rgn_dealloc_dom);
     std::swap(m_var_map, out_var_map);
     std::swap(m_rev_var_map, out_rev_var_map);
 
@@ -554,10 +563,13 @@ private:
     
     // rgn_counting_dom does not require common renaming
     // the domain is finite
-    rgn_counting_domain_t out_rgn_counting_dom(left.m_rgn_counting_dom | right.m_rgn_counting_dom);
+    rgn_counting_env_t out_rgn_counting_dom(left.m_rgn_counting_dom | right.m_rgn_counting_dom);
     // rgn_init_dom does not require common renaming
     // the domain is finite    
-    rgn_init_domain_t out_rgn_init_dom(left.m_rgn_init_dom | right.m_rgn_init_dom);
+    rgn_bool_env_t out_rgn_init_dom(left.m_rgn_init_dom | right.m_rgn_init_dom);
+    // rgn_dealloc_dom does not require common renaming
+    // the domain is finite
+    rgn_bool_env_t out_rgn_dealloc_dom(left.m_rgn_dealloc_dom | right.m_rgn_dealloc_dom);
     
     base_varname_allocator_t out_alloc(left.m_alloc, right.m_alloc);
     base_abstract_domain_t left_dom(left.m_base_dom);
@@ -605,6 +617,7 @@ private:
                         std::move(out_rev_var_map),
                         std::move(out_rgn_counting_dom),
 			std::move(out_rgn_init_dom),
+			std::move(out_rgn_dealloc_dom),
                         std::move(out_base_dom));
     return res;
   }
@@ -614,8 +627,9 @@ private:
                                        base_dom_binop_t base_dom_op) const {
 
     // these two domains are finite
-    rgn_counting_domain_t out_rgn_counting_dom(left.m_rgn_counting_dom & right.m_rgn_counting_dom);
-    rgn_init_domain_t out_rgn_init_dom(left.m_rgn_init_dom & right.m_rgn_init_dom);
+    rgn_counting_env_t out_rgn_counting_dom(left.m_rgn_counting_dom & right.m_rgn_counting_dom);
+    rgn_bool_env_t out_rgn_init_dom(left.m_rgn_init_dom & right.m_rgn_init_dom);
+    rgn_bool_env_t out_rgn_dealloc_dom(left.m_rgn_dealloc_dom & right.m_rgn_dealloc_dom);    
 
     base_varname_allocator_t out_alloc(left.m_alloc, right.m_alloc);
     base_abstract_domain_t left_dom(left.m_base_dom);
@@ -695,6 +709,7 @@ private:
                         std::move(out_rev_var_map),
                         std::move(out_rgn_counting_dom),
 			std::move(out_rgn_init_dom),
+			std::move(out_rgn_dealloc_dom),
                         std::move(out_base_dom));
     return res;
   }
@@ -950,7 +965,9 @@ public:
       : m_is_bottom(o.m_is_bottom), m_alloc(o.m_alloc), m_var_map(o.m_var_map),
         m_rev_var_map(o.m_rev_var_map),
         m_rgn_counting_dom(o.m_rgn_counting_dom),
-	m_rgn_init_dom(o.m_rgn_init_dom), m_base_dom(o.m_base_dom) {
+	m_rgn_init_dom(o.m_rgn_init_dom),
+	m_rgn_dealloc_dom(o.m_rgn_dealloc_dom),
+	m_base_dom(o.m_base_dom) {
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
   }
@@ -960,6 +977,7 @@ public:
         m_rev_var_map(std::move(o.m_rev_var_map)),
         m_rgn_counting_dom(std::move(o.m_rgn_counting_dom)),
 	m_rgn_init_dom(std::move(o.m_rgn_init_dom)),
+	m_rgn_dealloc_dom(std::move(o.m_rgn_dealloc_dom)),
         m_base_dom(std::move(o.m_base_dom)) {}
 
   region_domain_t &operator=(const region_domain_t &o) {
@@ -971,7 +989,8 @@ public:
       m_var_map = o.m_var_map;
       m_rev_var_map = o.m_rev_var_map;
       m_rgn_counting_dom = o.m_rgn_counting_dom;
-      m_rgn_init_dom = o.m_rgn_init_dom;      
+      m_rgn_init_dom = o.m_rgn_init_dom;
+      m_rgn_dealloc_dom = o.m_rgn_dealloc_dom;            
       m_base_dom = o.m_base_dom;
     }
     return *this;
@@ -984,7 +1003,8 @@ public:
       m_var_map = std::move(o.m_var_map);
       m_rev_var_map = std::move(o.m_rev_var_map);
       m_rgn_counting_dom = std::move(o.m_rgn_counting_dom);
-      m_rgn_init_dom = std::move(o.m_rgn_init_dom);      
+      m_rgn_init_dom = std::move(o.m_rgn_init_dom);
+      m_rgn_dealloc_dom = std::move(o.m_rgn_dealloc_dom);            
       m_base_dom = std::move(o.m_base_dom);
     }
     return *this;
@@ -1022,6 +1042,11 @@ public:
       return false;
     }
 
+    if (!(m_rgn_dealloc_dom <= o.m_rgn_dealloc_dom)) {
+      CRAB_LOG("region-leq", crab::outs() << "Result5=0\n";);
+      return false;
+    }
+    
     
     // perform the common renaming
     base_varname_allocator_t out_alloc(m_alloc, o.m_alloc);
@@ -1054,7 +1079,7 @@ public:
 	     << right_dom << "\n";);
     
     bool res = left_dom <= right_dom;
-    CRAB_LOG("region-leq", crab::outs() << "Result5=" << res << "\n";);
+    CRAB_LOG("region-leq", crab::outs() << "Result6=" << res << "\n";);
     return res;
   }
 
@@ -1313,7 +1338,8 @@ public:
     if (!is_bottom()) {
       if (v.get_type().is_region()) {
         m_rgn_counting_dom -= v;
-        m_rgn_init_dom -= v;	
+        m_rgn_init_dom -= v;
+	m_rgn_dealloc_dom -= v;
       }
       auto it = m_var_map.find(v);
       if (it != m_var_map.end()) {
@@ -1344,6 +1370,9 @@ public:
 
     // No stores in the region
     m_rgn_init_dom.set(rgn, boolean_value::get_false());
+
+    // No deallocated objects in the region
+    m_rgn_dealloc_dom.set(rgn, boolean_value::get_false());
     
     if (!rgn.get_type().is_unknown_region()) {
       // Assign a synthetic variable to rgn for modeling its content.
@@ -1372,8 +1401,8 @@ public:
     }
 
     m_rgn_counting_dom.set(lhs_rgn, m_rgn_counting_dom[rhs_rgn]);
-    m_rgn_init_dom.set(lhs_rgn, m_rgn_init_dom[rhs_rgn]);    
-
+    m_rgn_init_dom.set(lhs_rgn, m_rgn_init_dom[rhs_rgn]);
+    m_rgn_dealloc_dom.set(lhs_rgn, m_rgn_dealloc_dom[rhs_rgn]);        
 
     if (lhs_rgn.get_type().is_unknown_region() ||
 	rhs_rgn.get_type().is_unknown_region()) {
@@ -1548,7 +1577,7 @@ public:
     
     // We conservatively mark the region as may-initialized
     m_rgn_init_dom.set(rgn, boolean_value::top());
-    
+
     base_variable_t rgn_var = rename_var(rgn);
 
     // Non-scalar regions should be handled by ref_store_to_array
@@ -1825,6 +1854,22 @@ public:
     }
   }
 
+  void ref_remove(const variable_t &ref, const variable_t &rgn) {
+    if (is_bottom()) {
+      return;
+    }
+    assert(ref.get_type().is_reference());
+    assert(rgn.get_type().is_region());
+    
+    // We conservatively mark the whole region as possibly
+    // deallocated
+    m_rgn_dealloc_dom.set(rgn, boolean_value::top());
+
+    CRAB_LOG("region", crab::outs() << "After ref_remove(" << ref << "," << rgn
+	     << ")=" << *this << "\n";);
+  }
+
+  
   // arithmetic operations
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
@@ -2211,7 +2256,8 @@ public:
     for (auto &v : variables) {
       if (v.get_type().is_region()) {
         m_rgn_counting_dom -= v;
-        m_rgn_init_dom -= v;	
+        m_rgn_init_dom -= v;
+	m_rgn_dealloc_dom -= v;
       }
       auto it = m_var_map.find(v);
       if (it != m_var_map.end()) {
@@ -2260,36 +2306,9 @@ public:
       m_var_map.erase(v);
     }
 
-    // -- update m_rgn_counting_dom
-    if (!m_rgn_counting_dom.is_top() && !m_rgn_counting_dom.is_bottom()) {
-      std::vector<variable_t> rgn_counting_vars;
-      rgn_counting_vars.reserve(m_rgn_counting_dom.size());
-      for (auto kv : m_rgn_counting_dom) {
-        if (!std::binary_search(sorted_variables.begin(),
-                                sorted_variables.end(), kv.first)) {
-          rgn_counting_vars.push_back(kv.first);
-        }
-      }
-      for (auto &v : rgn_counting_vars) {
-        m_rgn_counting_dom -= v;
-      }
-    }
-
-    // -- update m_rgn_init_dom
-    if (!m_rgn_init_dom.is_top() && !m_rgn_init_dom.is_bottom()) {
-      std::vector<variable_t> rgn_init_vars;
-      rgn_init_vars.reserve(m_rgn_init_dom.size());
-      for (auto kv : m_rgn_init_dom) {
-        if (!std::binary_search(sorted_variables.begin(),
-                                sorted_variables.end(), kv.first)) {
-          rgn_init_vars.push_back(kv.first);
-        }
-      }
-      for (auto &v : rgn_init_vars) {
-        m_rgn_init_dom -= v;
-      }
-    }
-    
+    m_rgn_counting_dom.project(sorted_variables);
+    m_rgn_init_dom.project(sorted_variables);
+    m_rgn_dealloc_dom.project(sorted_variables);
   }
 
   void normalize() override {}
@@ -2313,10 +2332,114 @@ public:
     CRAB_ERROR("region_domain::rename not implemented");
   }
 
+  
   /* begin intrinsics operations */
   void intrinsic(std::string name, const variable_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    if (!is_bottom()) {
+    //=================================================================//
+    //       Special intrinsics supported by the region domain
+    //=================================================================//    
+    // free(rgn, ref)
+    //       deallocate the memory object pointed by the reference
+    // b := is_unfreed_or_null(rgn, ref)
+    //       b is true if the reference does not point to a freed
+    //       memory object or it is null.
+    // unfreed_or_null(rgn, ref)
+    //       ensures that the reference does not point to a freed memory object
+    // nonnull(ref)
+    //       ensures that the reference is not null
+    //=================================================================//
+    auto error_if_not_arity=
+      [&name, &inputs, &outputs](unsigned num_inputs, unsigned num_outputs) {
+	if (inputs.size() != num_inputs || outputs.size() != num_outputs){
+	  CRAB_ERROR("Intrinsics ", name, " unexpected number of parameters");
+	}
+      };
+    auto error_if_not_bool =
+      [&name](const variable_t &var) {
+	if (!var.get_type().is_bool()) {
+	  CRAB_ERROR("Intrinsics ", name, " parameter ", var, " should be Bool");
+	}
+      };
+    auto error_if_not_rgn =
+      [&name](const variable_t &var) {
+	if (!var.get_type().is_region()) {
+	  CRAB_ERROR("Intrinsics ", name, " parameter ", var, " should be a region");
+	}
+      };
+    auto error_if_not_ref =
+      [&name](const variable_t &var) {
+	if (!var.get_type().is_reference()) {
+	  CRAB_ERROR("Intrinsics ", name, " parameter ", var, " should be a reference");
+	}
+      };
+
+    
+    if (is_bottom()) {
+      return;
+    }
+
+    if (name == "free") {
+      error_if_not_arity(2,0);
+      variable_t rgn = inputs[0];
+      variable_t ref = inputs[1];
+      error_if_not_rgn(rgn);
+      error_if_not_ref(ref);
+      
+      ref_remove(ref, rgn);
+    } else if (name == "is_unfreed_or_null") {
+      error_if_not_arity(2,1);
+      variable_t rgn = inputs[0];
+      variable_t ref = inputs[1];
+      variable_t bv = outputs[0];
+      error_if_not_rgn(rgn);
+      error_if_not_ref(ref);
+      error_if_not_bool(bv);
+
+      auto set_bool_var_to_true =
+	[this](const variable_t & bool_var) {
+	  /// Require that the base domain can reason about booleans
+	  operator-=(bool_var);
+	  assume_bool(bool_var, false /*not negated*/);
+	};
+      
+      // the reference is definitely null
+      if (is_null_ref(ref)) { 
+	set_bool_var_to_true(bv);
+      } else {
+	bool is_allocated = m_rgn_dealloc_dom[rgn].is_false();
+	/// the reference belongs to a memory region that doesn't have
+	/// any deallocated memory object.
+	if (is_allocated) { 
+	  set_bool_var_to_true(bv);
+	}
+      }
+    } else if (name == "unfreed_or_null") {
+      error_if_not_arity(2,0);
+      variable_t rgn = inputs[0];
+      variable_t ref = inputs[1];
+      error_if_not_rgn(rgn);
+      error_if_not_ref(ref);
+
+      if (!is_null_ref(ref)) {
+      	// We can only mark the region as "deallocated" if it doesn't
+      	// have any reference yet. Even if it has only one we cannot
+      	// tell whether it's the same ref than ref.
+      	auto num_refs = m_rgn_counting_dom[rgn];
+      	if (num_refs.is_zero()) {
+      	    m_rgn_dealloc_dom.set(rgn, boolean_value::get_false());
+      	}
+      }
+    } else if (name == "nonnull") {
+      error_if_not_arity(1,0);
+      variable_t ref = inputs[0];
+      error_if_not_ref(ref);
+
+      auto nonnull_cst = reference_constraint_t::mk_gt_null(ref);
+      ref_assume(nonnull_cst);
+    } else {
+      // pass the intrinsics to the base domain
+      //=== base domain ===/
       std::vector<base_variable_t> base_inputs, base_outputs;
       base_inputs.reserve(inputs.size());
       base_outputs.reserve(outputs.size());
@@ -2334,6 +2457,7 @@ public:
                           const variable_vector_t &outputs,
                           const region_domain_t &invariant) override {
     if (!is_bottom()) {
+      //=== base domain ===/      
       std::vector<base_variable_t> base_inputs, base_outputs;
       base_inputs.reserve(inputs.size());
       base_outputs.reserve(outputs.size());
@@ -2389,7 +2513,8 @@ public:
     } else {
       CRAB_LOG(
           "region-print", o << "(RgnCounter=" << m_rgn_counting_dom << ","
-	  << "RgnInit=" << m_rgn_init_dom << ")\n";);
+	  << "RgnInit=" << m_rgn_init_dom << ","
+	  << "RgnDealloc=" << m_rgn_dealloc_dom <<  ")\n";);
       CRAB_LOG(
           "region-print2", o << "MapVar={";
           for (auto &kv
