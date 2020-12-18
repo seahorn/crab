@@ -216,7 +216,9 @@ public:
 
   //! Return the WTO of the CFG. The WTO contains also how many
   //! times each head was visited by the fixpoint iterator.
+  wto_t &get_wto(){ return fixpo_iterator_t::get_wto(); }  
   const wto_t &get_wto() const { return fixpo_iterator_t::get_wto(); }
+
 
   void clear() {
     clear_and_always_top_after();
@@ -351,6 +353,7 @@ public:
     return m_analyzer.get_post(b);
   }
 
+  wto_t &get_wto() { return m_analyzer.get_wto(); }
   const wto_t &get_wto() const { return m_analyzer.get_wto(); }
 
   void clear() { m_analyzer.clear(); }

@@ -280,6 +280,7 @@ public:
 
   CFG get_cfg() const { return this->_cfg; }
 
+  wto_t &get_wto() { return this->_wto; }  
   const wto_t &get_wto() const { return this->_wto; }
 
   /* Begin access methods for getting invariants */
@@ -307,7 +308,8 @@ public:
     crab::ScopedCrabStats __st__("Fixpo");
 
     _init_inv = std::move(init);
-    CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Started fixpoint\n");
+    CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Started analysis of "
+		    << func_name(_cfg) << "\n");
     this->set_pre(this->_cfg.entry(), _init_inv);
     wto_iterator_t iterator(this, _init_inv);
     this->_wto.accept(&iterator);
@@ -315,10 +317,12 @@ public:
       wto_processor_t processor(this);
       this->_wto.accept(&processor);
     }
-    CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Fixpoint reached.\n");
-    CRAB_VERBOSE_IF(2, crab::outs() << "Wto:\n" << _wto << "\n");
-    CRAB_LOG("fixpo-trace", crab::outs() << "Fixpoint trace:\n"
-                                         << _wto << "\n";);
+    CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Finished analysis of "
+		    << func_name(_cfg) << "\n");
+    //CRAB_VERBOSE_IF(2, crab::outs() << "Wto:\n" << _wto << "\n");
+    CRAB_LOG("fixpo-trace",
+	     crab::get_msg_stream() << "Fixpoint trace " << func_name(_cfg) << ":\n"
+	                            << _wto << "\n";);
   }
 
   void run(basic_block_label_t entry, AbstractValue init,
@@ -338,10 +342,12 @@ public:
       wto_processor_t processor(this);
       this->_wto.accept(&processor);
     }
-    CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Fixpoint reached.\n");
-    CRAB_VERBOSE_IF(2, crab::outs() << "Wto:\n" << _wto << "\n");
-    CRAB_LOG("fixpo-trace", crab::outs() << "Fixpoint trace:\n"
-                                         << _wto << "\n";);
+    CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Fixpoint reached for "
+		    << func_name(_cfg) << "\n");
+    //CRAB_VERBOSE_IF(2, crab::outs() << "Wto:\n" << _wto << "\n");
+    CRAB_LOG("fixpo-trace",
+	     crab::get_msg_stream() << "Fixpoint trace " << func_name(_cfg) << ":\n"
+	                            << _wto << "\n";);
   }
 
   void clear_pre() { this->_pre.clear(); }

@@ -278,6 +278,10 @@ public:
 
   unsigned get_fixpo_visits() const { return _num_fixpo; }
 
+  void reset_fixpo_visits() {
+    _num_fixpo = 0;
+  }
+  
   void write(crab::crab_os &o) const {
     o << "(" << this->_head;
     if (!this->_wto_components->empty()) {
@@ -707,6 +711,24 @@ public:
     return o;
   }
 
-}; // class wto
-
+}; // class wto  
 } // namespace ikos
+
+namespace crab {
+
+template<typename G>  
+class reset_wto_cycle_counter_visitor: public ikos::wto_component_visitor<G>  {
+  using wto_component_visitor_t = ikos::wto_component_visitor<G>;
+public:
+  using wto_cycle_t = typename wto_component_visitor_t::wto_cycle_t;
+  using wto_vertex_t = typename wto_component_visitor_t::wto_vertex_t;  
+  void visit(wto_vertex_t &) override {}
+  void visit(wto_cycle_t &cycle) override {
+    cycle.reset_fixpo_visits();
+    for (auto &wto_component : cycle) {
+      wto_component.accept(this);
+    }
+  }
+};
+
+} // namespace crab
