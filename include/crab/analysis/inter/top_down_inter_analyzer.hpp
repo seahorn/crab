@@ -1124,8 +1124,9 @@ private:
       if (cs_in_args.count(in_formal) > 0) {
         caller_and_callee_vars.push_back(in_formal);
       } else {
-	auto lower = std::lower_bound(killed_cs_in_args.begin(), killed_cs_in_args.end(), in_formal);
-	if (lower == killed_cs_in_args.end() || in_formal < *lower) { // not found
+	const variable_t &in_actual = cs.get_args()[i];	  	
+	auto lower = std::lower_bound(killed_cs_in_args.begin(), killed_cs_in_args.end(), in_actual);
+	if (lower == killed_cs_in_args.end() || in_actual < *lower) { // not found
 	  // the formal parameter will be forgotten so we need to
 	  // unify it with the corresponding actual parameter at the
 	  // callsite to propagate up new relationships created in the
@@ -1135,7 +1136,6 @@ private:
 	  // parameter at the caller before the call but the meet will
 	  // restore them later.
 	  // 
-	  const variable_t &in_actual = cs.get_args()[i];	  
 	  CRAB_LOG("inter-extend",
 		   crab::outs() << "Unifying input " << in_actual << ":=" 
 		                << in_formal << "\n";);
