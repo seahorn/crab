@@ -47,7 +47,7 @@ void intra_run_impl(CFG *cfg, crab::cfg_impl::basic_block_label_t entry,
       crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(cur_label)
 		   << "=" << inv << "\n";
       auto const &cur_node = cfg->get_node(cur_label);
-      for (auto const kid_label :
+      for (auto const& kid_label :
          boost::make_iterator_range(cur_node.next_blocks())) {
 	if (visited.insert(kid_label).second) {
 	  worklist.push_back(kid_label);

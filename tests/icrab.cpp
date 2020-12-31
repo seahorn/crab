@@ -84,7 +84,7 @@ void td_inter_run_impl(crab::cg_impl::z_cg_t *cg, Dom init,
 	  ::to_string(cur_label)
 		     << "=" << inv << "\n";
         auto const &cur_node = cfg.get_node(cur_label);
-        for (auto const kid_label :
+        for (auto const &kid_label :
              boost::make_iterator_range(cur_node.next_blocks())) {
           if (visited.insert(kid_label).second) {
             worklist.push_back(kid_label);

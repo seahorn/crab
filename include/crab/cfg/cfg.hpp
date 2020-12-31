@@ -3413,7 +3413,7 @@ private:
 
     const basic_block_t &cur = get_node(curId);
     f(cur);
-    for (auto const n : boost::make_iterator_range(cur.next_blocks())) {
+    for (auto const& n : boost::make_iterator_range(cur.next_blocks())) {
       dfs_rec(n, visited, f);
     }
   }
@@ -4059,7 +4059,7 @@ private:
       return;
     const basic_block_t &cur = get_node(curId);
     f(cur);
-    for (auto const n : next_nodes(curId)) {
+    for (auto const& n : next_nodes(curId)) {
       dfs_rec(n, visited, f);
     }
   }

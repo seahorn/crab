@@ -182,7 +182,7 @@ private:
 
         std::vector<value_type> kvs;
         kvs.reserve(std::distance(inv.begin(), inv.end()));
-        for (auto const &kv : inv)
+        for (auto kv : inv)
           kvs.push_back(value_type(kv.first, kv.second));
 
         for (auto &kv : kvs) {
@@ -613,7 +613,7 @@ public:
                    << "=" << inv << "\n";
 
       auto const &cur_node = this->m_cfg.get_node(cur_label);
-      for (auto const kid_label :
+      for (auto const &kid_label :
            boost::make_iterator_range(cur_node.next_blocks())) {
         if (visited.insert(kid_label).second) {
           worklist.push_back(kid_label);

@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
 		   << "=" << inv << "\n";
                    
       auto const &cur_node = cfg->get_node(cur_label);
-      for (auto const kid_label :
+      for (auto const &kid_label :
            boost::make_iterator_range(cur_node.next_blocks())) {
         if (visited.insert(kid_label).second) {
           worklist.push_back(kid_label);
@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
       crab::outs() << crab::basic_block_traits<z_basic_block_t>::to_string(cur_label)
 		   << "=" << inv << "\n";
       auto const &cur_node = cfg->get_node(cur_label);
-      for (auto const kid_label :
+      for (auto const &kid_label :
            boost::make_iterator_range(cur_node.next_blocks())) {
         if (visited.insert(kid_label).second) {
           worklist.push_back(kid_label);
