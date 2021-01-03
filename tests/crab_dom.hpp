@@ -107,6 +107,7 @@ struct TestRegionParams {
   using varname_allocator_t = crab::var_factory_impl::str_var_alloc_col;  
   using base_abstract_domain_t = BaseAbsDom;
   using base_varname_t = typename BaseAbsDom::varname_t;
+  enum { deallocation = 1};  
   enum { refine_uninitialized_regions = 1};
 };
 using z_rgn_aa_int_params_t = TestRegionParams<

@@ -4561,6 +4561,30 @@ Before renaming {x -> t0[_x0], y -> t1[_x1]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 After rename x with w and y with z={z -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 After rename x with w={y -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 === End ./test-bin/unittests-rename ===
+=== Begin ./test-bin/unittests-union-find ===
+Dom1={{v4}=>{x -> [5, 5]; y -> [10, 10]},{v3}=>{x -> [5, 5]; y -> [10, 10]},{v2}=>{x -> [5, 5]; y -> [10, 10]},{v1}=>{x -> [5, 5]; y -> [10, 10]}}
+After join v1 and v2={{v4}=>{x -> [5, 5]; y -> [10, 10]},{v3}=>{x -> [5, 5]; y -> [10, 10]},{v1; v2}=>{x -> [5, 5]; y -> [10, 10]}}
+Dom2={{v4}=>{x -> [10, 10]; y -> [20, 20]},{v3}=>{x -> [10, 10]; y -> [20, 20]},{v2}=>{x -> [10, 10]; y -> [20, 20]},{v1}=>{x -> [10, 10]; y -> [20, 20]}}
+After join v3 and v4={{v3; v4}=>{x -> [10, 10]; y -> [20, 20]},{v2}=>{x -> [10, 10]; y -> [20, 20]},{v1}=>{x -> [10, 10]; y -> [20, 20]}}
+Dom1 <= Dom2 = 0
+Dom2 <= Dom1 = 0
+Dom3 = Dom1 | Dom2 = {{v1; v2}=>{x -> [5, 10]; y -> [10, 20]},{v3; v4}=>{x -> [5, 10]; y -> [10, 20]}}
+Dom1 <= Dom3 = 1
+Dom2 <= Dom3 = 1
+Dom4 = Dom1 & Dom2 = _|_
+After forgetting v2:{{v3; v4}=>{x -> [5, 10]; y -> [10, 20]},{v1}=>{x -> [5, 10]; y -> [10, 20]}}
+After renaming {v1,v2,v3,v4} with {v5,v6,v7,v8} in Dom3:{{v7; v8}=>{x -> [5, 10]; y -> [10, 20]},{v5; v6}=>{x -> [5, 10]; y -> [10, 20]}}
+After projecting on v1 and v3 in Dom3:{{v3}=>{x -> [5, 10]; y -> [10, 20]},{v1}=>{x -> [5, 10]; y -> [10, 20]}}
+Dom1={{v3; v4}=>false,{v1; v2}=>false}
+Dom2={{v4}=>false,{v2; v3}=>false,{v1}=>false}
+Dom1 & Dom2 = {{v1; v2; v3; v4}=>false}
+Dom1={{v3; v4}=>false,{v1; v2}=>false}
+Dom2={{v8}=>false,{v6; v7}=>false,{v5}=>false}
+Dom1 & Dom2 = {{v5}=>false,{v6; v7}=>false,{v1; v2}=>false,{v8}=>false,{v3; v4}=>false}
+Dom1={{v3; v4}=>false,{v1; v2}=>false}
+Dom2={{v4}=>false,{v7; v8}=>false,{v3}=>false}
+Dom1 & Dom2 = {{v7; v8}=>false,{v1; v2}=>false,{v3; v4}=>false}
+=== End ./test-bin/unittests-union-find ===
 === Begin ./test-bin/unittests-zones ===
 {A -> [0, +oo], x -> [0, 0], x-A<=0}
 Before x != 0: {x -> [0, 10], y -> [0, 10], z -> [0, 10], y-x<=0, z-x<=0, x-y<=0, z-y<=0, x-z<=0, y-z<=0}

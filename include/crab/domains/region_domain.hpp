@@ -2,8 +2,8 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/interval.hpp>
-#include <crab/domains/flat_boolean_domain.hpp>
 #include <crab/domains/separate_domains.hpp>
+#include <crab/domains/union_find_domain.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 #include <crab/types/reference_constraints.hpp>
@@ -330,7 +330,7 @@ public:
     return o;
   }
 }; // end class small_range
-
+  
 namespace region_domain_impl {
 template <class Number, class VariableName, class BaseAbsDom> class Params {
 public:
@@ -340,7 +340,9 @@ public:
   using base_abstract_domain_t = BaseAbsDom;
   using base_varname_t = typename BaseAbsDom::varname_t;
 
-  // Enable this might not be sound
+  // Reason about deallocation
+  enum { deallocation = 1}; 
+  // Improve precision but it might not be sound
   enum { refine_uninitialized_regions = 0};
   
   static_assert(std::is_same<Number, typename BaseAbsDom::number_t>::value,
@@ -353,8 +355,9 @@ public:
 };
 } // end namespace region_domain_impl
 
+////////////////////////////////////////////////////////////////////////
 // Abstract domain for regions and references.
-// The domain smashes all the memory objects of a region.
+////////////////////////////////////////////////////////////////////////  
 template <typename Params>
 class region_domain final : public abstract_domain_api<region_domain<Params>> {
   using region_domain_t = region_domain<Params>;
@@ -389,12 +392,13 @@ private:
   // Environment domains: map regions to finite domain
   using rgn_counting_env_t = ikos::separate_domain<variable_t, small_range>;
   using rgn_bool_env_t = ikos::separate_domain<variable_t, boolean_value>;
-  // Variable map: variable to base domain's variable.
+  // Union-find where equivalence classes are attached to boolean values
+  using rgn_dealloc_t = union_find_domain<variable_t, boolean_value>;
+  // Map from variable to base variable
   using var_map_t = std::unordered_map<variable_t, base_variable_t>;
   using rev_var_map_t = std::unordered_map<base_variable_t, variable_t>;
 
   bool m_is_bottom; // special symbol for bottom
-  
   // To create synthetic variables for the base domain.
   base_varname_allocator_t m_alloc;
   // Map a variable_t to base domain's variable:
@@ -410,10 +414,31 @@ private:
   // This allows us to decide when strong update is sound: only if
   // one address per region (i.e., singleton).
   rgn_counting_env_t m_rgn_counting_dom;
-  // Whether the region has some object that has been initialized
+  // Whether the summarized region has some object (or slice) that has
+  // been initialized
   rgn_bool_env_t m_rgn_init_dom;
-  // Whether the region has some object that has been deallocated
-  rgn_bool_env_t m_rgn_dealloc_dom;
+  // To reason about deallocation, we need to know which regions might
+  // belong to the same allocated memory object.  Each call to
+  // ref_make models a new allocation returning a reference to the
+  // base address of the allocated block. Then, ref_gep is used to
+  // perform pointer arithmetic within an allocated block. Very
+  // importantly, ref_gep can switch between regions although we
+  // assume that those regions always belong to the same allocated
+  // block.
+  // 
+  // We partition region variables into equivalence classes attached
+  // to a boolean value. Two region variables are in the same
+  // equivalence class if they might belong to the same allocated
+  // block. The boolean flag indicates whether the allocated block
+  // might have been deallocated.
+  //
+  // The partitioning is done as follows:
+  // 
+  //   ref_init(rgn): create a singleton equivalence class with rgn.
+  //   ref_gep(reg1, rgn1, ref2, rgn2, o): join together the
+  //                                       equivalence classes of rgn1
+  //                                       and rgn2.
+  rgn_dealloc_t m_rgn_dealloc_dom;
   // The base abstract domain: all the heavy lifting is done here.
   // m_base_dom does not have any variable of reference type.
   base_abstract_domain_t m_base_dom;
@@ -422,7 +447,7 @@ private:
                 rev_var_map_t &&rev_var_map,
                 rgn_counting_env_t &&rgn_counting_dom,
 		rgn_bool_env_t &&rgn_init_dom,
-		rgn_bool_env_t &&rgn_dealloc_dom,
+		rgn_dealloc_t &&rgn_dealloc_dom,
                 base_abstract_domain_t &&base_dom)
       : m_is_bottom(base_dom.is_bottom()), m_alloc(std::move(alloc)),
         m_var_map(std::move(var_map)), m_rev_var_map(std::move(rev_var_map)),
@@ -512,9 +537,9 @@ private:
     rgn_bool_env_t out_rgn_init_dom(m_rgn_init_dom |
 				    right.m_rgn_init_dom);
 
-    rgn_bool_env_t out_rgn_dealloc_dom(m_rgn_dealloc_dom |
-				       right.m_rgn_dealloc_dom);
-    
+    rgn_dealloc_t out_rgn_dealloc_dom(m_rgn_dealloc_dom |
+				      right.m_rgn_dealloc_dom);
+
     base_varname_allocator_t out_alloc(m_alloc, right.m_alloc);
     base_abstract_domain_t right_dom(right.m_base_dom);
     var_map_t out_var_map;
@@ -569,7 +594,7 @@ private:
     rgn_bool_env_t out_rgn_init_dom(left.m_rgn_init_dom | right.m_rgn_init_dom);
     // rgn_dealloc_dom does not require common renaming
     // the domain is finite
-    rgn_bool_env_t out_rgn_dealloc_dom(left.m_rgn_dealloc_dom | right.m_rgn_dealloc_dom);
+    rgn_dealloc_t out_rgn_dealloc_dom(left.m_rgn_dealloc_dom | right.m_rgn_dealloc_dom);
     
     base_varname_allocator_t out_alloc(left.m_alloc, right.m_alloc);
     base_abstract_domain_t left_dom(left.m_base_dom);
@@ -629,8 +654,15 @@ private:
     // these two domains are finite
     rgn_counting_env_t out_rgn_counting_dom(left.m_rgn_counting_dom & right.m_rgn_counting_dom);
     rgn_bool_env_t out_rgn_init_dom(left.m_rgn_init_dom & right.m_rgn_init_dom);
-    rgn_bool_env_t out_rgn_dealloc_dom(left.m_rgn_dealloc_dom & right.m_rgn_dealloc_dom);    
+    rgn_dealloc_t out_rgn_dealloc_dom(left.m_rgn_dealloc_dom & right.m_rgn_dealloc_dom);
 
+    // This shouldn't happen but just in case ...
+    if (out_rgn_counting_dom.is_bottom() ||
+	out_rgn_init_dom.is_bottom() ||
+	out_rgn_dealloc_dom.is_bottom()) {
+      return make_bottom();
+    }
+    
     base_varname_allocator_t out_alloc(left.m_alloc, right.m_alloc);
     base_abstract_domain_t left_dom(left.m_base_dom);
     base_abstract_domain_t right_dom(right.m_base_dom);
@@ -1042,9 +1074,11 @@ public:
       return false;
     }
 
-    if (!(m_rgn_dealloc_dom <= o.m_rgn_dealloc_dom)) {
-      CRAB_LOG("region-leq", crab::outs() << "Result5=0\n";);
-      return false;
+    if (Params::deallocation) {
+      if (!(m_rgn_dealloc_dom <= o.m_rgn_dealloc_dom)) {
+	CRAB_LOG("region-leq", crab::outs() << "Result5=0\n";);
+	return false;
+      }
     }
     
     
@@ -1339,7 +1373,9 @@ public:
       if (v.get_type().is_region()) {
         m_rgn_counting_dom -= v;
         m_rgn_init_dom -= v;
-	m_rgn_dealloc_dom -= v;
+	if (Params::deallocation) {
+	  m_rgn_dealloc_dom.forget(v);
+	}
       }
       auto it = m_var_map.find(v);
       if (it != m_var_map.end()) {
@@ -1371,8 +1407,10 @@ public:
     // No stores in the region
     m_rgn_init_dom.set(rgn, boolean_value::get_false());
 
-    // No deallocated objects in the region
-    m_rgn_dealloc_dom.set(rgn, boolean_value::get_false());
+    if (Params::deallocation) {
+      // No deallocated objects in the region
+      m_rgn_dealloc_dom.set(rgn, boolean_value::get_false());
+    }
     
     if (!rgn.get_type().is_unknown_region()) {
       // Assign a synthetic variable to rgn for modeling its content.
@@ -1402,8 +1440,10 @@ public:
 
     m_rgn_counting_dom.set(lhs_rgn, m_rgn_counting_dom[rhs_rgn]);
     m_rgn_init_dom.set(lhs_rgn, m_rgn_init_dom[rhs_rgn]);
-    m_rgn_dealloc_dom.set(lhs_rgn, m_rgn_dealloc_dom[rhs_rgn]);        
-
+    if (Params::deallocation) {    
+      m_rgn_dealloc_dom.expand(rhs_rgn, lhs_rgn);
+    }
+    
     if (lhs_rgn.get_type().is_unknown_region() ||
 	rhs_rgn.get_type().is_unknown_region()) {
       return;
@@ -1690,6 +1730,33 @@ public:
         auto num_refs = m_rgn_counting_dom[rgn2];
         m_rgn_counting_dom.set(rgn2, num_refs.increment());
       }
+      if (Params::deallocation) {
+	bool found1 = m_rgn_dealloc_dom.contains(rgn1);
+	bool found2 = m_rgn_dealloc_dom.contains(rgn2);
+	if (!found1) {
+	  CRAB_LOG("region",
+		   CRAB_WARN("lost track of dealloc status of ", rgn1,
+			     " in ", m_rgn_dealloc_dom));
+	} 
+	if (!found2) {
+	  CRAB_LOG("region",
+		   CRAB_WARN("lost track of dealloc status of ", rgn2,
+			     " in ", m_rgn_dealloc_dom));
+	}
+
+	if (found1 && found2) {
+	  m_rgn_dealloc_dom.join(rgn1, rgn2);
+	} else {
+	  if (found1) {
+	    // forget about the whole equivalence class to play safe
+	    m_rgn_dealloc_dom.remove_equiv_class(rgn1);
+	  }
+	  if (found2) {
+	    // forget about the whole equivalence class to play safe.
+	    m_rgn_dealloc_dom.remove_equiv_class(rgn2);
+	  }
+	}
+      }
     }
 
     CRAB_LOG("region", crab::outs()
@@ -1855,15 +1922,27 @@ public:
   }
 
   void ref_remove(const variable_t &ref, const variable_t &rgn) {
+    if (!Params::deallocation) {
+      return;
+    }
+    
     if (is_bottom()) {
       return;
     }
     assert(ref.get_type().is_reference());
     assert(rgn.get_type().is_region());
-    
-    // We conservatively mark the whole region as possibly
-    // deallocated
-    m_rgn_dealloc_dom.set(rgn, boolean_value::top());
+
+    // We conservatively mark the region's equivalence class as
+    // possibly deallocated
+    if (Params::deallocation) {
+      if (!m_rgn_dealloc_dom.contains(rgn)) {
+	CRAB_LOG("region",
+		 CRAB_WARN("lost track of dealloc status of ", rgn,
+			   " in ", m_rgn_dealloc_dom));
+      } else {
+	m_rgn_dealloc_dom.set(rgn, boolean_value::top());
+      }
+    }
 
     CRAB_LOG("region", crab::outs() << "After ref_remove(" << ref << "," << rgn
 	     << ")=" << *this << "\n";);
@@ -2257,7 +2336,9 @@ public:
       if (v.get_type().is_region()) {
         m_rgn_counting_dom -= v;
         m_rgn_init_dom -= v;
-	m_rgn_dealloc_dom -= v;
+	if (Params::deallocation) {
+	  m_rgn_dealloc_dom.forget(v);
+	}
       }
       auto it = m_var_map.find(v);
       if (it != m_var_map.end()) {
@@ -2308,7 +2389,9 @@ public:
 
     m_rgn_counting_dom.project(sorted_variables);
     m_rgn_init_dom.project(sorted_variables);
-    m_rgn_dealloc_dom.project(sorted_variables);
+    if (Params::deallocation) {
+      m_rgn_dealloc_dom.project(sorted_variables);
+    }
   }
 
   void normalize() override {}
@@ -2379,7 +2462,7 @@ public:
       return;
     }
 
-    if (name == "free") {
+    if (Params::deallocation && name == "free") {
       error_if_not_arity(2,0);
       variable_t rgn = inputs[0];
       variable_t ref = inputs[1];
@@ -2387,7 +2470,7 @@ public:
       error_if_not_ref(ref);
       
       ref_remove(ref, rgn);
-    } else if (name == "is_unfreed_or_null") {
+    } else if (Params::deallocation && name == "is_unfreed_or_null") {
       error_if_not_arity(2,1);
       variable_t rgn = inputs[0];
       variable_t ref = inputs[1];
@@ -2407,14 +2490,15 @@ public:
       if (is_null_ref(ref)) { 
 	set_bool_var_to_true(bv);
       } else {
-	bool is_allocated = m_rgn_dealloc_dom[rgn].is_false();
+	bool is_allocated = (m_rgn_dealloc_dom.contains(rgn) &&
+			     m_rgn_dealloc_dom[rgn].is_false());
 	/// the reference belongs to a memory region that doesn't have
 	/// any deallocated memory object.
 	if (is_allocated) { 
 	  set_bool_var_to_true(bv);
 	}
       }
-    } else if (name == "unfreed_or_null") {
+    } else if (Params::deallocation && name == "unfreed_or_null") {
       error_if_not_arity(2,0);
       variable_t rgn = inputs[0];
       variable_t ref = inputs[1];
@@ -2422,13 +2506,15 @@ public:
       error_if_not_ref(ref);
 
       if (!is_null_ref(ref)) {
-      	// We can only mark the region as "deallocated" if it doesn't
-      	// have any reference yet. Even if it has only one we cannot
-      	// tell whether it's the same ref than ref.
-      	auto num_refs = m_rgn_counting_dom[rgn];
-      	if (num_refs.is_zero()) {
+	if (Params::deallocation) {
+	  // We can only mark the region as "deallocated" if it doesn't
+	  // have any reference yet. Even if it has only one we cannot
+	  // tell whether it's the same ref than ref.
+	  auto num_refs = m_rgn_counting_dom[rgn];
+	  if (num_refs.is_zero()) {
       	    m_rgn_dealloc_dom.set(rgn, boolean_value::get_false());
-      	}
+	  }
+	}
       }
     } else if (name == "nonnull") {
       error_if_not_arity(1,0);
