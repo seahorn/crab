@@ -84,7 +84,7 @@ class small_range {
     if (other.m_value == ExactlyZero) {
       return small_range(ZeroOrOne);
     } else {
-      return small_range(OneOrMore);
+      return small_range(ZeroOrMore);
     }
   }
 
@@ -96,9 +96,7 @@ class small_range {
       [1,+oo] | [1,+oo] = [1,+oo]
   */
   small_range join_one_or_more_with(const small_range &other) const {
-    if (other.m_value == ExactlyZero) {
-      return small_range(ZeroOrOne);
-    } else if (other.m_value == ExactlyOne || other.m_value == OneOrMore) {
+    if (other.m_value == ExactlyOne || other.m_value == OneOrMore) {
       return small_range(OneOrMore);
     } else {
       return small_range(ZeroOrMore);
