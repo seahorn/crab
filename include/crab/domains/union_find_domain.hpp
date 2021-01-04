@@ -157,6 +157,12 @@ private:
     o << "})";
   }
 
+  void get_all_variables(variable_set_t &out) const {
+    for (auto &kv: m_parents) {
+      out += kv.first;
+    }
+  }
+  
 public:
   union_find_domain(lattice_val val = lattice_val::neither_top_nor_bot)
       : m_val(val) {}
@@ -379,36 +385,26 @@ public:
                crab::outs() << "Join \n\t" << *this << "\n\t" << o << "\n";);
       union_find_domain_t left(*this);
       union_find_domain_t right(o);
+
+      // Keep only common variables      
+      variable_set_t left_vars;
+      left.get_all_variables(left_vars);
+      for (auto v: left_vars) {
+	if (!right.contains(v)) {
+	  left.forget(v);
+	}
+      }
+      variable_set_t right_vars;      
+      right.get_all_variables(right_vars);      
+      for (auto v: right_vars) {
+	if (!left.contains(v)) {
+	  right.forget(v);
+	}
+      }
+      
       equiv_class_vars_t right_equiv_classes = right.equiv_classes_vars();
       equiv_class_vars_t left_equiv_classes = left.equiv_classes_vars();
-
-      // Keep only common variables
-      for (auto &kv : right_equiv_classes) {
-        variable_set_t common_right_vars;
-        for (auto v :
-             boost::make_iterator_range(kv.second.begin(), kv.second.end())) {
-          if (!left.contains(v)) {
-            right.forget(v);
-          } else {
-            common_right_vars += v;
-          }
-        }
-        kv.second = common_right_vars;
-      }
-
-      for (auto &kv : left_equiv_classes) {
-        variable_set_t common_left_vars;
-        for (auto v :
-             boost::make_iterator_range(kv.second.begin(), kv.second.end())) {
-          if (!right.contains(v)) {
-            left.forget(v);
-          } else {
-            common_left_vars += v;
-          }
-        }
-        kv.second = common_left_vars;
-      }
-
+      
       // Merge equivalence classes from the left to the right while
       // joining the domains associated to the equivalence classes.
       //
