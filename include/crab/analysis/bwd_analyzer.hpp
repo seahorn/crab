@@ -484,19 +484,18 @@ public:
         }
       }
 
-      CRAB_LOG(
-          "backward", crab::outs() << "Computed dominance tree:\n";
-          for (auto &kv
-               : idom_tree) {
-            crab::outs() << "\t"
-                         << basic_block_traits<basic_block_t>::to_string(
-                                kv.first)
-                         << " dominates={";
-            for (auto d : kv.second) {
-              crab::outs() << d << ";";
-            }
-            crab::outs() << "}\n";
-          });
+      CRAB_LOG("backward", crab::outs() << "Computed dominance tree:\n";
+               for (auto &kv
+                    : idom_tree) {
+                 crab::outs()
+                     << "\t"
+                     << basic_block_traits<basic_block_t>::to_string(kv.first)
+                     << " dominates={";
+                 for (auto d : kv.second) {
+                   crab::outs() << d << ";";
+                 }
+                 crab::outs() << "}\n";
+               });
       crab::CrabStats::stop("CombinedForwardBackward.DominatorTree");
     }
 

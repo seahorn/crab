@@ -126,8 +126,8 @@ public:
       : fixpo_iterator_t(cfg, abs_tr->get_abs_value(), wto, widening_delay,
                          descending_iters, jump_set_size,
                          false /*disable processor*/),
-        m_abs_tr(abs_tr), m_live(live_and_dead_symbols), m_pre_clear_done(false),
-        m_post_clear_done(false) {
+        m_abs_tr(abs_tr), m_live(live_and_dead_symbols),
+        m_pre_clear_done(false), m_post_clear_done(false) {
     assert(m_abs_tr);
     CRAB_VERBOSE_IF(1, crab::outs() << "CFG with " << get_cfg().size()
                                     << " basic blocks\n";);
@@ -142,29 +142,31 @@ public:
       // -- This sanity check typically flags whether a variable is
       //    used without proper definition.
       if (get_cfg().has_func_decl()) {
-	crab::CrabStats::resume("Live symbols sanity check");      
-	CRAB_VERBOSE_IF(1, get_msg_stream() << "Live symbols sanity check ... ";);
-	liveness_analysis<CFG> live_symbols(cfg, false /* keep IN sets*/);
-	live_symbols.exec();
-	if (auto const* entry_ls = live_symbols.get_in(get_cfg().entry())) {
-	  auto const &fdecl = get_cfg().get_func_decl();
-	  typename liveness_analysis<CFG>::varset_domain_t suspicious_vars(*entry_ls);
-	  for (unsigned i = 0; i < fdecl.get_num_inputs(); i++) {
-	    suspicious_vars -= fdecl.get_input_name(i);
-	  }
-	  if (!suspicious_vars.is_bottom()) {
-	    crab::outs() << "\n*** Sanity check FAILED: " 
-			 << suspicious_vars  << " might not be initialized  in "
-			 << get_cfg().get_func_decl().get_func_name() << "\n";
-	  } else {
-	    CRAB_VERBOSE_IF(1, crab::outs() << "OK";);	
-	  }
-	}
-	CRAB_VERBOSE_IF(1, crab::outs() << "\n";);		
-	crab::CrabStats::stop("Live symbols sanity check");
+        crab::CrabStats::resume("Live symbols sanity check");
+        CRAB_VERBOSE_IF(1, get_msg_stream()
+                               << "Live symbols sanity check ... ";);
+        liveness_analysis<CFG> live_symbols(cfg, false /* keep IN sets*/);
+        live_symbols.exec();
+        if (auto const *entry_ls = live_symbols.get_in(get_cfg().entry())) {
+          auto const &fdecl = get_cfg().get_func_decl();
+          typename liveness_analysis<CFG>::varset_domain_t suspicious_vars(
+              *entry_ls);
+          for (unsigned i = 0; i < fdecl.get_num_inputs(); i++) {
+            suspicious_vars -= fdecl.get_input_name(i);
+          }
+          if (!suspicious_vars.is_bottom()) {
+            crab::outs() << "\n*** Sanity check FAILED: " << suspicious_vars
+                         << " might not be initialized  in "
+                         << get_cfg().get_func_decl().get_func_name() << "\n";
+          } else {
+            CRAB_VERBOSE_IF(1, crab::outs() << "OK";);
+          }
+        }
+        CRAB_VERBOSE_IF(1, crab::outs() << "\n";);
+        crab::CrabStats::stop("Live symbols sanity check");
       }
     }
-      
+
     if (m_live) {
       // --- collect input and output parameters for later use
       if (get_cfg().has_func_decl()) {
@@ -182,9 +184,7 @@ public:
   fwd_analyzer &operator=(const fwd_analyzer &o) = delete;
 
   //! Trigger the fixpoint computation
-  void run_forward() {
-    this->run(m_abs_tr->get_abs_value());
-  }
+  void run_forward() { this->run(m_abs_tr->get_abs_value()); }
 
   void run_forward(const basic_block_label_t &entry,
                    const assumption_map_t &assumptions) {
@@ -216,9 +216,8 @@ public:
 
   //! Return the WTO of the CFG. The WTO contains also how many
   //! times each head was visited by the fixpoint iterator.
-  wto_t &get_wto(){ return fixpo_iterator_t::get_wto(); }  
+  wto_t &get_wto() { return fixpo_iterator_t::get_wto(); }
   const wto_t &get_wto() const { return fixpo_iterator_t::get_wto(); }
-
 
   void clear() {
     clear_and_always_top_after();

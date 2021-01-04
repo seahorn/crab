@@ -348,7 +348,7 @@ public:
   public:
     vert_iterator(vert_id _v, const std::vector<bool> &_is_free)
         : v(_v), is_free(_is_free) {}
-    vert_id operator*(void) const { return v; }
+    vert_id operator*(void)const { return v; }
     vert_iterator &operator++(void) {
       ++v;
       return *this;
@@ -408,7 +408,7 @@ public:
         it = std::unique_ptr<adj_iterator>(new adj_iterator());
       return *it;
     }
-    vert_id operator*(void) const { return (vert_id)*ptr; }
+    vert_id operator*(void)const { return (vert_id)*ptr; }
     adj_iterator &operator++(void) {
       ptr++;
       return *this;
@@ -434,7 +434,7 @@ public:
         it = std::unique_ptr<fwd_edge_iterator>(new fwd_edge_iterator());
       return *it;
     }
-    edge_ref operator*(void) const {
+    edge_ref operator*(void)const {
       return edge_ref((*it), g->edge_val(s, (*it)));
     }
     fwd_edge_iterator &operator++(void) {
@@ -465,7 +465,7 @@ public:
       return *it;
     }
 
-    edge_ref operator*(void) const {
+    edge_ref operator*(void)const {
       return edge_ref((*it), g->edge_val((*it), d));
     }
     rev_edge_iterator &operator++(void) {

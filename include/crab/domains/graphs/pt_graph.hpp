@@ -262,7 +262,7 @@ public:
   public:
     vert_iterator(vert_id _v, const std::vector<bool> &_is_free)
         : v(_v), is_free(_is_free) {}
-    vert_id operator*(void) const { return v; }
+    vert_id operator*(void)const { return v; }
     vert_iterator &operator++(void) {
       ++v;
       return *this;
@@ -307,7 +307,7 @@ public:
       ++it;
       return *this;
     }
-    vert_id operator*(void) const { return (*it).v; }
+    vert_id operator*(void)const { return (*it).v; }
 
   protected:
     ItP it;
@@ -333,7 +333,7 @@ public:
       ++it;
       return *this;
     }
-    vert_id operator*(void) const { return (*it).first.v; }
+    vert_id operator*(void)const { return (*it).first.v; }
 
   protected:
     ItS it;
@@ -443,7 +443,7 @@ public:
       return *it;
     }
 
-    edge_ref operator*(void) const {
+    edge_ref operator*(void)const {
       return edge_ref((*it), g->edge_val(s, (*it)));
     }
     fwd_edge_iterator &operator++(void) {
@@ -489,7 +489,7 @@ public:
       return *it;
     }
 
-    edge_ref operator*(void) const {
+    edge_ref operator*(void)const {
       return edge_ref((*it), g->edge_val((*it), d));
     }
     rev_edge_iterator &operator++(void) {

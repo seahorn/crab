@@ -11,24 +11,22 @@ namespace crab {
 namespace domains {
 using elina_domain_id_t = enum { ELINA_ZONES, ELINA_OCT, ELINA_PK };
 
-template <typename Number>
-class ElinaDefaultParams {
+template <typename Number> class ElinaDefaultParams {
 public:
   // use integers with truncation rounding
   enum { use_integers = 1 };
   // build (if possible) all expressions using Elina tree
   // expressions. Otherwise, we use linear expressions.
-  enum { use_tree_expressions = 1};
+  enum { use_tree_expressions = 1 };
 };
 
-template<>
-class ElinaDefaultParams<ikos::q_number> {
+template <> class ElinaDefaultParams<ikos::q_number> {
 public:
   // use reals
   enum { use_integers = 0 };
-  enum { use_tree_expressions = 1};  
+  enum { use_tree_expressions = 1 };
 };
-}
+} // namespace domains
 } // namespace crab
 
 #ifndef HAVE_ELINA
@@ -38,8 +36,10 @@ public:
 #include "crab/domains/abstract_domain.def"
 namespace crab {
 namespace domains {
-template <typename N, typename V, elina_domain_id_t Dom, class Params = ElinaDefaultParams<N>>
-class elina_domain final : public abstract_domain_api<elina_domain<N, V, Dom,Params>> {
+template <typename N, typename V, elina_domain_id_t Dom,
+          class Params = ElinaDefaultParams<N>>
+class elina_domain final
+    : public abstract_domain_api<elina_domain<N, V, Dom, Params>> {
 public:
   using this_type = elina_domain<N, V, Dom, Params>;
   elina_domain() {}
@@ -61,7 +61,6 @@ public:
 #include <boost/optional.hpp>
 #include <type_traits>
 
-
 /**
  * If template parameter Number is ikos::q_number then the Elina
  * domain will use real variables. Otherwise, all variables are
@@ -71,11 +70,12 @@ namespace crab {
 namespace domains {
 
 using namespace elina;
-  
+
 template <typename Number, typename VariableName, elina_domain_id_t ElinaDom,
-	    class Params = ElinaDefaultParams<Number>>
+          class Params = ElinaDefaultParams<Number>>
 class elina_domain final
-  : public abstract_domain_api<elina_domain<Number, VariableName, ElinaDom, Params>> {
+    : public abstract_domain_api<
+          elina_domain<Number, VariableName, ElinaDom, Params>> {
   using elina_domain_t = elina_domain<Number, VariableName, ElinaDom, Params>;
   using abstract_domain_t = abstract_domain_api<elina_domain_t>;
 
@@ -86,8 +86,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using number_t = Number;
   using varname_t = VariableName;
@@ -387,48 +387,48 @@ private:
   static elina_texpr0_t *texpr_add(elina_texpr0_t *a, elina_texpr0_t *b) {
     if (Params::use_integers) {
       return elina_texpr0_binop(ELINA_TEXPR_ADD, a, b, ELINA_RTYPE_INT,
-				ELINA_RDIR_ZERO);
+                                ELINA_RDIR_ZERO);
     } else {
       // ELINA_RTYPE_REAL does not have rounding so we choose an
       // arbitrary one
       return elina_texpr0_binop(ELINA_TEXPR_ADD, a, b, ELINA_RTYPE_REAL,
-				ELINA_RDIR_ZERO);
-    } 
+                                ELINA_RDIR_ZERO);
+    }
   }
   static elina_texpr0_t *texpr_sub(elina_texpr0_t *a, elina_texpr0_t *b) {
     if (Params::use_integers) {
       return elina_texpr0_binop(ELINA_TEXPR_SUB, a, b, ELINA_RTYPE_INT,
-				ELINA_RDIR_ZERO);
+                                ELINA_RDIR_ZERO);
     } else {
       // ELINA_RTYPE_REAL does not have rounding so we choose an
       // arbitrary one
       return elina_texpr0_binop(ELINA_TEXPR_SUB, a, b, ELINA_RTYPE_REAL,
-				ELINA_RDIR_ZERO);
+                                ELINA_RDIR_ZERO);
     }
   }
   static elina_texpr0_t *texpr_mul(elina_texpr0_t *a, elina_texpr0_t *b) {
     if (Params::use_integers) {
       return elina_texpr0_binop(ELINA_TEXPR_MUL, a, b, ELINA_RTYPE_INT,
-				ELINA_RDIR_ZERO);
+                                ELINA_RDIR_ZERO);
     } else {
       // ELINA_RTYPE_REAL does not have rounding so we choose an
       // arbitrary one
       return elina_texpr0_binop(ELINA_TEXPR_MUL, a, b, ELINA_RTYPE_REAL,
-				ELINA_RDIR_ZERO);
-    } 
+                                ELINA_RDIR_ZERO);
+    }
   }
   static elina_texpr0_t *texpr_div(elina_texpr0_t *a, elina_texpr0_t *b) {
-    if (Params::use_integers) {    
+    if (Params::use_integers) {
       return elina_texpr0_binop(ELINA_TEXPR_DIV, a, b, ELINA_RTYPE_INT,
-				ELINA_RDIR_ZERO);
+                                ELINA_RDIR_ZERO);
     } else {
       // ELINA_RTYPE_REAL does not have rounding so we choose an
       // arbitrary one
       return elina_texpr0_binop(ELINA_TEXPR_DIV, a, b, ELINA_RTYPE_REAL,
-				ELINA_RDIR_ZERO);
+                                ELINA_RDIR_ZERO);
     }
   }
-  
+
   inline elina_texpr0_t *expr2texpr(const linear_expression_t &e) {
     number_t cst = e.constant();
     elina_texpr0_t *res = num2texpr(cst);
@@ -1002,7 +1002,6 @@ public:
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
-
     if (is_bottom()) {
       return o;
     } else if (o.is_top() || is_top()) {
@@ -1221,18 +1220,17 @@ public:
 
     remove_dimensions(m_apstate, vector_dims);
     std::swap(m_var_map, res);
-    CRAB_LOG(
-        "elina", crab::outs() << "--- "
-                              << "Forget {";
-        for (variable_t v
-             : vars) { crab::outs() << v << ";"; }
-        // crab::outs()<< "} Elina dimensions ={";
-        // for(unsigned i=0,e=vector_dims.size();i<e;++i) {
-        // 	 crab::outs() << vector_dims[i] << ";";
-        // }
-        crab::outs()
-        << "}\n";
-        crab::outs() << *this << "\n";);
+    CRAB_LOG("elina", crab::outs() << "--- "
+                                   << "Forget {";
+             for (variable_t v
+                  : vars) { crab::outs() << v << ";"; }
+             // crab::outs()<< "} Elina dimensions ={";
+             // for(unsigned i=0,e=vector_dims.size();i<e;++i) {
+             // 	 crab::outs() << vector_dims[i] << ";";
+             // }
+             crab::outs()
+             << "}\n";
+             crab::outs() << *this << "\n";);
   }
 
   void operator-=(const variable_t &var) override {
@@ -1459,10 +1457,10 @@ public:
       // expression
       assign_texpr(x, e);
     } else {
-      if (Params::use_tree_expressions) {      
-	assign_texpr(x, e);
+      if (Params::use_tree_expressions) {
+        assign_texpr(x, e);
       } else {
-	assign_linexpr(x, e);
+        assign_linexpr(x, e);
       }
     }
 
@@ -1483,11 +1481,11 @@ public:
         // expression
         apply_texpr(op, x, y, z);
       } else {
-	if (Params::use_tree_expressions) {      
-	  apply_texpr(op, x, y, z);
-	} else {
-	  apply_linexpr(op, x, y, z);
-	}
+        if (Params::use_tree_expressions) {
+          apply_texpr(op, x, y, z);
+        } else {
+          apply_linexpr(op, x, y, z);
+        }
       }
 
       CRAB_LOG("elina", crab::outs() << "--- " << x << ":=" << y << op << z
@@ -1528,11 +1526,11 @@ public:
         // expression
         apply_texpr(op, x, y, z);
       } else {
-	if (Params::use_tree_expressions) {      
-	  apply_texpr(op, x, y, z);
-	} else {
-	  apply_linexpr(op, x, y, z);
-	}
+        if (Params::use_tree_expressions) {
+          apply_texpr(op, x, y, z);
+        } else {
+          apply_linexpr(op, x, y, z);
+        }
       }
 
       CRAB_LOG("elina", crab::outs() << "--- " << x << ":=" << y << op << z
@@ -1786,7 +1784,7 @@ public:
   /// in the hierarchy of domains.
   BOOL_OPERATIONS_NOT_IMPLEMENTED(elina_domain_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(elina_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(elina_domain_t)  
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(elina_domain_t)
 
   interval_domain_t to_interval_domain() {
     crab::CrabStats::count(domain_name() + ".count.to_interval_domain");
@@ -1863,19 +1861,20 @@ public:
       }
 
       { // We do garbage collection of unconstrained variables only
-	// after joins so it's possible to find new_v but we are ok as
-	// long as it's unconstrained.
+        // after joins so it's possible to find new_v but we are ok as
+        // long as it's unconstrained.
         auto it = m_var_map.left.find(new_v);
         if (it != m_var_map.left.end()) {
-	  if (auto dim = get_var_dim(new_v)) {
-	    if (!elina_abstract0_is_dimension_unconstrained(get_man(), &*m_apstate, *dim)) {
-	      CRAB_ERROR(domain_name() + "::rename assumes that ", new_v,
-			 " does not exist");
-	    }
-	  }
+          if (auto dim = get_var_dim(new_v)) {
+            if (!elina_abstract0_is_dimension_unconstrained(
+                    get_man(), &*m_apstate, *dim)) {
+              CRAB_ERROR(domain_name() + "::rename assumes that ", new_v,
+                         " does not exist");
+            }
+          }
         }
       }
-      
+
       auto it = m_var_map.left.find(v);
       if (it != m_var_map.left.end()) {
         elina_dim_t dim = it->second;
@@ -1996,8 +1995,10 @@ elina_manager_t *elina_domain<N, V, D, P>::s_apman = nullptr;
 
 namespace crab {
 namespace domains {
-template <typename Number, typename VariableName, elina_domain_id_t ElinaDom, class Params>
-struct abstract_domain_traits<elina_domain<Number, VariableName, ElinaDom, Params>> {
+template <typename Number, typename VariableName, elina_domain_id_t ElinaDom,
+          class Params>
+struct abstract_domain_traits<
+    elina_domain<Number, VariableName, ElinaDom, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 };

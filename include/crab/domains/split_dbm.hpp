@@ -39,7 +39,7 @@
 #else
 // Operations like rename are much faster using unordered_map
 #include <unordered_map>
-#endif 
+#endif
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-compare"
@@ -63,8 +63,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using number_t = Number;
   using varname_t = VariableName;
@@ -76,11 +76,11 @@ private:
   using graph_t = typename Params::graph_t;
   using ntow = DBM_impl::NtoW<number_t, Wt>;
   using vert_id = typename graph_t::vert_id;
-#ifdef USE_FLAT_MAP  
+#ifdef USE_FLAT_MAP
   using vert_map_t = boost::container::flat_map<variable_t, vert_id>;
-#else  
+#else
   using vert_map_t = std::unordered_map<variable_t, vert_id>;
-#endif   
+#endif
   using vmap_elt_t = typename vert_map_t::value_type;
   using rev_map_t = std::vector<boost::optional<variable_t>>;
   using GrOps = GraphOps<graph_t>;
@@ -514,12 +514,12 @@ protected:
       vert_id dest = get_vert(diff.first.first);
 
       // Check if the edge (src,dest) via bounds already exists
-      typename graph_t::mut_val_ref_t w1,w2;
+      typename graph_t::mut_val_ref_t w1, w2;
       if (g.lookup(src, 0, &w1) && g.lookup(0, dest, &w2) &&
           w1.get() + w2.get() <= diff.second) {
         continue;
       }
-      
+
       g.update_edge(src, diff.second, dest, min_op);
       if (!repair_potential(src, dest)) {
         set_to_bottom();
@@ -712,7 +712,7 @@ protected:
     // GKG: Now implemented.
     std::vector<std::pair<vert_id, Wt>> src_dec;
     // we add in delta so that we don't invalidate graph iterators
-    edge_vector delta;    
+    edge_vector delta;
     for (auto edge : g_excl.e_preds(ii)) {
       vert_id se = edge.vert;
       Wt wt_sij = edge.val + c;
@@ -723,7 +723,7 @@ protected:
             continue;
           w = wt_sij;
         } else {
-	  delta.push_back({{se, jj}, wt_sij});
+          delta.push_back({{se, jj}, wt_sij});
         }
         src_dec.push_back(std::make_pair(se, edge.val));
         if (Params::close_bounds_inline) {
@@ -746,7 +746,7 @@ protected:
             continue;
           w = wt_ijd;
         } else {
-	  delta.push_back({{ii, de}, {wt_ijd}});
+          delta.push_back({{ii, de}, {wt_ijd}});
         }
         dest_dec.push_back(std::make_pair(de, edge.val));
         if (Params::close_bounds_inline) {
@@ -758,7 +758,7 @@ protected:
       }
     }
     GrOps::apply_delta(g, delta);
-    
+
     for (auto s_p : src_dec) {
       vert_id se = s_p.first;
       Wt wt_sij = c + s_p.second;
@@ -1027,16 +1027,15 @@ protected:
       for (vert_id d : l.succs(s)) {
         if (!g.elem(s, d)) {
           unstable.push_back(s);
-          CRAB_LOG(
-              "zones-split-widening",
-              if (s == 0) {
-                crab::outs() << "Widening 5: added v0"
-                             << " in the normalization queue\n";
-              } else {
-                auto vs = rev_map[s];
-                crab::outs() << "Widening 5: added " << *vs
-                             << " in the normalization queue\n";
-              });
+          CRAB_LOG("zones-split-widening",
+                   if (s == 0) {
+                     crab::outs() << "Widening 5: added v0"
+                                  << " in the normalization queue\n";
+                   } else {
+                     auto vs = rev_map[s];
+                     crab::outs() << "Widening 5: added " << *vs
+                                  << " in the normalization queue\n";
+                   });
           break;
         }
       }
@@ -1185,17 +1184,16 @@ protected:
 
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
-    
+
     if (is_top()) {
       // Garbage collection from unconstrained variables in vert_map
       // and rev_map.
       set_to_top();
     }
-    
+
     CRAB_LOG("zones-split-size", auto p = size();
              crab::outs() << "#nodes = " << p.first << " #edges=" << p.second
                           << "\n";);
-
   }
 
 public:
@@ -1211,7 +1209,7 @@ public:
         potential(o.potential), unstable(o.unstable), _is_bottom(false) {
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
-    
+
     if (o._is_bottom)
       set_to_bottom();
 
@@ -2331,8 +2329,8 @@ public:
   /// domain in the hierarchy of domains.
   BOOL_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(DBM_t)  
-  
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
+
   void project(const variable_vector_t &variables) override {
     crab::CrabStats::count(domain_name() + ".count.project");
     crab::ScopedCrabStats __st__(domain_name() + ".project");
@@ -2395,7 +2393,7 @@ public:
 
     vert_id ii = get_vert(x);
     vert_id jj = get_vert(y);
-    edge_vector delta;    
+    edge_vector delta;
     for (auto edge : g.e_preds(ii)) {
       delta.push_back({{edge.vert, jj}, edge.val});
     }
@@ -2404,7 +2402,7 @@ public:
       delta.push_back({{jj, edge.vert}, edge.val});
     }
     GrOps::apply_delta(g, delta);
-    
+
     potential[jj] = potential[ii];
 
     CRAB_LOG("zones-split", crab::outs() << "After expand " << x << " into "
@@ -2437,16 +2435,16 @@ public:
       }
 
       { // We do garbage collection of unconstrained variables only
-	// after joins so it's possible to find new_v but we are ok as
-	// long as it's unconstrained.
+        // after joins so it's possible to find new_v but we are ok as
+        // long as it's unconstrained.
         auto it = vert_map.find(new_v);
         if (it != vert_map.end()) {
-	  vert_id dim = it->second;
-	  if (g.succs(dim).size() != 0 || g.preds(dim).size() != 0) {	  
-	    CRAB_ERROR(domain_name() + "::rename assumes that ", new_v,
-		       " does not exist");
-	  }
-	}
+          vert_id dim = it->second;
+          if (g.succs(dim).size() != 0 || g.preds(dim).size() != 0) {
+            CRAB_ERROR(domain_name() + "::rename assumes that ", new_v,
+                       " does not exist");
+          }
+        }
       }
 
       auto it = vert_map.find(v);
@@ -2566,8 +2564,6 @@ public:
 
   std::string domain_name() const override { return "SplitDBM"; }
 
-
-
   // =====  begin array_graph domain
   // return true iff cst is unsatisfiable without modifying the DBM
   bool is_unsat(const linear_constraint_t &cst) /*const*/ {
@@ -2578,7 +2574,7 @@ public:
     if (is_top() || cst.is_tautology()) {
       return false;
     }
-    
+
     std::vector<std::pair<variable_t, Wt>> lbs, ubs;
     std::vector<diffcst_t> diffcsts;
 

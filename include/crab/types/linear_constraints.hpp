@@ -328,7 +328,7 @@ public:
     for (const_iterator it = begin(), et = end(); it != et; ++it) {
       variable_t v = it->second;
       if (it == begin()) {
-	vt = v.get_type();
+        vt = v.get_type();
       } else {
         if (v.get_type() != vt) {
           return false;
@@ -715,7 +715,9 @@ public:
     return (index_t)hash();
   }
 
-  Number operator[](const variable_t &x) const { return this->_expr.operator[](x); }
+  Number operator[](const variable_t &x) const {
+    return this->_expr.operator[](x);
+  }
 
   const_var_range variables() const { return _expr.variables(); }
 

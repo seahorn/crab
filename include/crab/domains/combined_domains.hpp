@@ -242,8 +242,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using number_t = Number;
   using varname_t = VariableName;
@@ -635,7 +635,7 @@ public:
   }
 
   virtual void assign_bool_ref_cst(const variable_t &lhs,
-				   const reference_constraint_t &rhs) override {
+                                   const reference_constraint_t &rhs) override {
     this->_product.first().assign_bool_ref_cst(lhs, rhs);
     this->_product.second().assign_bool_ref_cst(lhs, rhs);
     this->reduce();
@@ -671,14 +671,16 @@ public:
     this->reduce();
   }
 
-  virtual void backward_assign_bool_ref_cst(const variable_t &lhs,
-					    const reference_constraint_t &rhs,
-					    const domain_product2_t &inv) override {
+  virtual void
+  backward_assign_bool_ref_cst(const variable_t &lhs,
+                               const reference_constraint_t &rhs,
+                               const domain_product2_t &inv) override {
     this->_product.first().backward_assign_bool_ref_cst(lhs, rhs, inv.first());
-    this->_product.second().backward_assign_bool_ref_cst(lhs, rhs, inv.second());
+    this->_product.second().backward_assign_bool_ref_cst(lhs, rhs,
+                                                         inv.second());
     this->reduce();
   }
-  
+
   virtual void backward_assign_bool_var(const variable_t &lhs,
                                         const variable_t &rhs, bool is_not_rhs,
                                         const domain_product2_t &inv) override {
@@ -823,8 +825,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using number_t = typename Domain1::number_t;
   using varname_t = typename Domain1::varname_t;
@@ -1191,13 +1193,13 @@ public:
     }
   }
 
-
   /// reduced_numerical_domain_product2 implements only standard
   /// abstract operations of a numerical domain so it is intended to be
   /// used as a leaf domain in the hierarchy of domains.
   BOOL_OPERATIONS_NOT_IMPLEMENTED(reduced_numerical_domain_product2_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(reduced_numerical_domain_product2_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(reduced_numerical_domain_product2_t)  
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(
+      reduced_numerical_domain_product2_t)
 
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
@@ -1549,8 +1551,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using number_t = typename NumAbsDom::number_t;
   using varname_t = typename NumAbsDom::varname_t;
@@ -1766,7 +1768,7 @@ public:
   /// a leaf domain in the hierarchy of domains.
   BOOL_OPERATIONS_NOT_IMPLEMENTED(rnc_domain_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(rnc_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(rnc_domain_t)  
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(rnc_domain_t)
 
   void forget(const variable_vector_t &variables) override {
     this->_product.forget(variables);

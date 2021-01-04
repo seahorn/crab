@@ -17,12 +17,11 @@ template <typename CallGraph> struct top_down_inter_analyzer_parameters {
   using wto_map_t = std::unordered_map<cfg_t, const wto_t *>;
 
   top_down_inter_analyzer_parameters()
-      : run_checker(true), checker_verbosity(0),
-	keep_cc_invariants(false), keep_invariants(true),
-        max_call_contexts(UINT_MAX),
-	analyze_recursive_functions(false), exact_summary_reuse(true),
-	only_main_as_entry(false),
-	widening_delay(2), descending_iters(2 /*UINT_MAX*/), thresholds_size(20 /*0*/),
+      : run_checker(true), checker_verbosity(0), keep_cc_invariants(false),
+        keep_invariants(true), max_call_contexts(UINT_MAX),
+        analyze_recursive_functions(false), exact_summary_reuse(true),
+        only_main_as_entry(false), widening_delay(2),
+        descending_iters(2 /*UINT_MAX*/), thresholds_size(20 /*0*/),
         live_map(nullptr), wto_map(nullptr) {}
 
   // whether interleave analysis with checking

@@ -17,7 +17,7 @@ public:
   class value_ref {
   public:
     value_ref(const V &_v) : v(_v) {}
-    const V &operator*(void) const { return v; }
+    const V &operator*(void)const { return v; }
     value_ref &operator++(void) {
       v++;
       return *this;
@@ -101,7 +101,7 @@ public:
     adj_iterator(std::vector<vert_id> &_inv, const ItG &_v)
         : inv(_inv), v(_v) {}
 
-    vert_id operator*(void) const { return inv[*v]; }
+    vert_id operator*(void)const { return inv[*v]; }
 
     adj_iterator &operator++(void) {
       ++v;
@@ -126,9 +126,7 @@ public:
     e_adj_iterator(std::vector<vert_id> &_inv, const ItG &_v)
         : inv(_inv), v(_v) {}
 
-    edge_ref operator*(void) const {
-      return edge_ref(inv[(*v).vert], (*v).val);
-    }
+    edge_ref operator*(void)const { return edge_ref(inv[(*v).vert], (*v).val); }
 
     e_adj_iterator &operator++(void) {
       ++v;
@@ -342,7 +340,7 @@ public:
   template <class It> class adj_iterator {
   public:
     adj_iterator(const It &_iG, vert_id _v_ex) : iG(_iG), v_ex(_v_ex) {}
-    vert_id operator*(void) const { return *iG; }
+    vert_id operator*(void)const { return *iG; }
     adj_iterator &operator++(void) {
       ++iG;
       return *this;
@@ -362,7 +360,7 @@ public:
     using edge_ref = typename It::edge_ref;
 
     e_adj_iterator(const It &_iG, vert_id _v_ex) : iG(_iG), v_ex(_v_ex) {}
-    edge_ref operator*(void) const { return *iG; }
+    edge_ref operator*(void)const { return *iG; }
     e_adj_iterator &operator++(void) {
       ++iG;
       return *this;

@@ -63,9 +63,10 @@ public:
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wenum-compare"
-  static_assert(max_array_size <= max_smashable_cells,
-		"max_array_size must be less or equal than max_smashable_cells");
-#pragma GCC diagnostic pop  
+  static_assert(
+      max_array_size <= max_smashable_cells,
+      "max_array_size must be less or equal than max_smashable_cells");
+#pragma GCC diagnostic pop
 };
 
 class NoSmashableParams {
@@ -78,10 +79,11 @@ public:
   enum { max_array_size = 512 };
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wenum-compare"  
-  static_assert(max_array_size <= max_smashable_cells,
-		"max_array_size must be less or equal than max_smashable_cells");
-#pragma GCC diagnostic pop    
+#pragma GCC diagnostic ignored "-Wenum-compare"
+  static_assert(
+      max_array_size <= max_smashable_cells,
+      "max_array_size must be less or equal than max_smashable_cells");
+#pragma GCC diagnostic pop
 };
 
 // Trivial constant propagation lattice
@@ -713,7 +715,7 @@ public:
     }
     return count;
   }
-  
+
   // Return in out all cells that might overlap with (o, size).
   //
   // It is not marked as const because we insert temporary a cell.
@@ -937,7 +939,7 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
   using variable_t = typename NumDomain::variable_t;
-  using variable_or_constant_t = typename NumDomain::variable_or_constant_t;  
+  using variable_or_constant_t = typename NumDomain::variable_or_constant_t;
   using variable_vector_t = typename NumDomain::variable_vector_t;
   using base_domain_t = array_smashing<NumDomain>;
 
@@ -1622,8 +1624,9 @@ private:
       std::string vname = mk_scalar_name(a.name(), o, sz);
       variable_type_kind vtype_kind = get_array_element_type(a.get_type());
       variable_t scalar_var(vfac.get(vname), vtype_kind,
-			    (vtype_kind == BOOL_TYPE ? 1 :
-			     (vtype_kind == INT_TYPE ? 8*sz: 0)));
+                            (vtype_kind == BOOL_TYPE
+                                 ? 1
+                                 : (vtype_kind == INT_TYPE ? 8 * sz : 0)));
       m_cell_varmap.insert(a, c, scalar_var);
       return {c, scalar_var};
     }
@@ -1642,7 +1645,7 @@ private:
       CRAB_ERROR(
           "array_adaptive::mk_smashed_variable only takes array variables");
     }
-    
+
     auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
     crab::crab_string_os os;
     os << "smashed(" << v << ")";
@@ -1869,11 +1872,11 @@ private:
   filter_nonscalar_vars(linear_constraint_system_t &&csts) const {
     linear_constraint_system_t res;
     for (auto const &cst : csts) {
-      if (std::all_of(cst.expression().variables_begin(),
-                      cst.expression().variables_end(),
-                      [](const variable_t &v) {
-                        return v.get_type().is_integer() || v.get_type().is_bool();
-                      })) {
+      if (std::all_of(
+              cst.expression().variables_begin(),
+              cst.expression().variables_end(), [](const variable_t &v) {
+                return v.get_type().is_integer() || v.get_type().is_bool();
+              })) {
         res += cst;
       }
     }
@@ -2516,7 +2519,7 @@ public:
       } else {
         m_array_map -= v;
         m_cell_varmap.erase(v);
-	m_smashed_varmap.erase(v);
+        m_smashed_varmap.erase(v);
       }
     }
 
@@ -2543,7 +2546,8 @@ public:
                  const variable_vector_t &outputs) override {
     if ((std::all_of(inputs.begin(), inputs.end(),
                      [](const variable_t &v) {
-                       return v.get_type().is_integer() || v.get_type().is_bool();
+                       return v.get_type().is_integer() ||
+                              v.get_type().is_bool();
                      })) &&
         (std::all_of(outputs.begin(), outputs.end(), [](const variable_t &v) {
           return v.get_type().is_integer() || v.get_type().is_bool();
@@ -2674,12 +2678,12 @@ public:
                                const linear_constraint_t &rhs) override {
     m_inv.assign_bool_cst(lhs, rhs);
   }
-  
+
   virtual void assign_bool_ref_cst(const variable_t &lhs,
-				   const reference_constraint_t &rhs) override {
+                                   const reference_constraint_t &rhs) override {
     m_inv.assign_bool_ref_cst(lhs, rhs);
   }
-  
+
   virtual void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                bool is_not_rhs) override {
     m_inv.assign_bool_var(lhs, rhs, is_not_rhs);
@@ -2705,11 +2709,11 @@ public:
 
   virtual void
   backward_assign_bool_ref_cst(const variable_t &lhs,
-			       const reference_constraint_t &rhs,
-			       const array_adaptive_domain_t &inv) override {
+                               const reference_constraint_t &rhs,
+                               const array_adaptive_domain_t &inv) override {
     m_inv.backward_assign_bool_ref_cst(lhs, rhs, inv.m_inv);
   }
-  
+
   virtual void
   backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                            bool is_not_rhs,
@@ -2726,7 +2730,7 @@ public:
 
   /// array_adaptive is a functor domain that implements all
   /// operations except region/reference operations.
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(array_adaptive_domain_t)    
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(array_adaptive_domain_t)
 
   // array_operators_api
 
@@ -2910,9 +2914,8 @@ public:
       array_state next_as(as);
       offset_map_t &offset_map = next_as.get_offset_map();
       boost::optional<number_t> n_opt = ii.singleton();
-      if (n_opt &&
-	  (offset_map.get_number_cells() < Params::max_array_size)) {
-	   
+      if (n_opt && (offset_map.get_number_cells() < Params::max_array_size)) {
+
         // -- Constant index: kill overlapping cells + perform strong update
         std::vector<cell_t> cells;
         offset_t o(static_cast<int64_t>(*n_opt));
@@ -2932,17 +2935,19 @@ public:
       } else {
         // -- Non-constant index: kill overlapping cells
 
-	if (n_opt) {
-	  CRAB_LOG("array-adaptive", crab::outs() << "array write to " << a
-		   << " with constant index "
-		   << i << "=" << ii << " but array size exceeded threshold of "
-		   << Params::max_array_size << " so smashing is happening.\n";);
-	} else {
-	  CRAB_LOG("array-adaptive", crab::outs() << "array write to " << a
-		   << " with non-constant index "
-		   << i << "=" << ii << "\n";);
-	}
-	  
+        if (n_opt) {
+          CRAB_LOG("array-adaptive",
+                   crab::outs()
+                       << "array write to " << a << " with constant index " << i
+                       << "=" << ii << " but array size exceeded threshold of "
+                       << Params::max_array_size
+                       << " so smashing is happening.\n";);
+        } else {
+          CRAB_LOG("array-adaptive", crab::outs() << "array write to " << a
+                                                  << " with non-constant index "
+                                                  << i << "=" << ii << "\n";);
+        }
+
         bool smashed = false; // whether smashing took place
         if (Params::is_smashable) {
           std::vector<cell_t> cells = offset_map.get_all_cells();
@@ -2998,18 +3003,17 @@ public:
                      crab::outs() << "Array " << a
                                   << " has been smashed:" << m_inv << "\n";);
           } else {
-            CRAB_LOG(
-                "array-adaptive",
-                if (cells.size() > Params::max_smashable_cells) {
-                  CRAB_WARN("Array ", a,
-                            " cannot be smashed because too many cells ",
-                            cells.size(), ". Array write at index ", i, "=", ii,
-                            " is safely ignored");
-                } else {
-                  CRAB_WARN("Array ", a,
-                            " cannot be smashed so array write at index ", i,
-                            "=", ii, " is safely ignored");
-                });
+            CRAB_LOG("array-adaptive",
+                     if (cells.size() > Params::max_smashable_cells) {
+                       CRAB_WARN("Array ", a,
+                                 " cannot be smashed because too many cells ",
+                                 cells.size(), ". Array write at index ", i,
+                                 "=", ii, " is safely ignored");
+                     } else {
+                       CRAB_WARN("Array ", a,
+                                 " cannot be smashed so array write at index ",
+                                 i, "=", ii, " is safely ignored");
+                     });
           }
         }
 

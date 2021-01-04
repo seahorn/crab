@@ -47,8 +47,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using number_t = Number;
   using varname_t = VariableName;
@@ -817,9 +817,9 @@ protected:
     }
     CRAB_LOG("zones-sparse-size", auto p = size();
              crab::outs() << "#nodes = " << p.first << " #edges=" << p.second
-	                  << "\n";);
+                          << "\n";);
   }
-  
+
 public:
   sparse_dbm_domain(bool is_bottom = false) : _is_bottom(is_bottom) {
     g.growTo(1); // Allocate the zero vector
@@ -846,7 +846,6 @@ public:
       : vert_map(std::move(o.vert_map)), rev_map(std::move(o.rev_map)),
         g(std::move(o.g)), potential(std::move(o.potential)),
         unstable(std::move(o.unstable)), _is_bottom(o._is_bottom) {}
-
 
   sparse_dbm_domain &operator=(const sparse_dbm_domain &o) {
     crab::CrabStats::count(domain_name() + ".count.copy");
@@ -1900,8 +1899,8 @@ public:
   /// domain in the hierarchy of domains.
   BOOL_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(DBM_t)  
-  
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
+
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
     crab::CrabStats::count(domain_name() + ".count.rename");
@@ -1930,18 +1929,18 @@ public:
       }
 
       { // We do garbage collection of unconstrained variables only
-	// after joins so it's possible to find new_v but we are ok as
-	// long as it's unconstrained.
+        // after joins so it's possible to find new_v but we are ok as
+        // long as it's unconstrained.
         auto it = vert_map.find(new_v);
         if (it != vert_map.end()) {
-	  vert_id dim = it->second;
-	  if (g.succs(dim).size() != 0 || g.preds(dim).size() != 0) {	  
-	    CRAB_ERROR(domain_name() + "::rename assumes that ", new_v,
-		       " does not exist");
-	  }
-	}
+          vert_id dim = it->second;
+          if (g.succs(dim).size() != 0 || g.preds(dim).size() != 0) {
+            CRAB_ERROR(domain_name() + "::rename assumes that ", new_v,
+                       " does not exist");
+          }
+        }
       }
-      
+
       auto it = vert_map.find(v);
       if (it != vert_map.end()) {
         vert_id dim = it->second;

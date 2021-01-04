@@ -38,8 +38,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using content_domain_t = NumDomain;
   using interval_t = ikos::interval<number_t>;
@@ -61,7 +61,7 @@ private:
   void do_strong_update(NumDomain &dom, const variable_t &a,
                         const linear_expression_t &rhs) {
     auto ty = a.get_type();
-    if (ty.is_bool_array()) {      
+    if (ty.is_bool_array()) {
       if (rhs.is_constant()) {
         if (rhs.constant() >= number_t(1)) {
           dom.assign_bool_cst(a, linear_constraint_t::get_true());
@@ -98,11 +98,11 @@ private:
   filter_noninteger_vars(linear_constraint_system_t &&csts) const {
     linear_constraint_system_t res;
     for (auto const &cst : csts) {
-      if (std::all_of(cst.expression().variables_begin(),
-                      cst.expression().variables_end(),
-                      [](const variable_t &v) {
-                        return v.get_type().is_integer() || v.get_type().is_bool();
-                      })) {
+      if (std::all_of(
+              cst.expression().variables_begin(),
+              cst.expression().variables_end(), [](const variable_t &v) {
+                return v.get_type().is_integer() || v.get_type().is_bool();
+              })) {
         res += cst;
       }
     }
@@ -291,10 +291,10 @@ public:
   }
 
   virtual void assign_bool_ref_cst(const variable_t &lhs,
-				   const reference_constraint_t &rhs) override {
+                                   const reference_constraint_t &rhs) override {
     _inv.assign_bool_ref_cst(lhs, rhs);
   }
-  
+
   virtual void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                bool is_not_rhs) override {
     _inv.assign_bool_var(lhs, rhs, is_not_rhs);
@@ -317,12 +317,13 @@ public:
     _inv.backward_assign_bool_cst(lhs, rhs, inv._inv);
   }
 
-  virtual void backward_assign_bool_ref_cst(const variable_t &lhs,
-					    const reference_constraint_t &rhs,
-					    const array_smashing_t &inv) override {
+  virtual void
+  backward_assign_bool_ref_cst(const variable_t &lhs,
+                               const reference_constraint_t &rhs,
+                               const array_smashing_t &inv) override {
     _inv.backward_assign_bool_ref_cst(lhs, rhs, inv._inv);
   }
-  
+
   virtual void backward_assign_bool_var(const variable_t &lhs,
                                         const variable_t &rhs, bool is_not_rhs,
                                         const array_smashing_t &inv) override {
@@ -379,7 +380,7 @@ public:
       _inv.assign_bool_var(lhs, a_prime, false);
     } else if (ty.is_integer_array() || ty.is_real_array()) {
       _inv.assign(lhs, a_prime);
-    } 
+    }
     _inv -= a_prime;
 
     CRAB_LOG("smashing", crab::outs() << lhs << ":=" << a << "[" << i
@@ -423,7 +424,7 @@ public:
       _inv.assign_bool_var(lhs, rhs, false);
     } else if (ty.is_integer_array() || ty.is_real_array()) {
       _inv.assign(lhs, rhs);
-    } 
+    }
   }
 
   // backward array operations
@@ -463,11 +464,10 @@ public:
     CRAB_WARN("backward_array_assign in array smashing domain not implemented");
   }
 
-
   /// array_smashing is a functor domain that implements all
   /// operations except region/reference operations.
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(array_smashing_t)
-  
+
   linear_constraint_system_t to_linear_constraint_system() const override {
     return filter_noninteger_vars(
         std::move(_inv.to_linear_constraint_system()));

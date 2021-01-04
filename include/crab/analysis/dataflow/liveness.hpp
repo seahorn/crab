@@ -117,22 +117,21 @@ public:
 
 private:
   bool m_release_in;
-  
-public:  
+
+public:
   liveness_analysis(CFG cfg, bool release_in = true)
-    : killgen_fixpoint_iterator_t(cfg), m_release_in(release_in) {}
+      : killgen_fixpoint_iterator_t(cfg), m_release_in(release_in) {}
 
   void exec() {
     this->run();
 
-    CRAB_LOG(
-        "liveness-live",
-        for (auto p
-             : boost::make_iterator_range(this->out_begin(), this->out_end())) {
-          crab::outs() << basic_block_traits<basic_block_t>::to_string(p.first)
-                       << " live variables=" << p.second << "\n";
-          ;
-        });
+    CRAB_LOG("liveness-live", for (auto p
+                                   : boost::make_iterator_range(
+                                       this->out_begin(), this->out_end())) {
+      crab::outs() << basic_block_traits<basic_block_t>::to_string(p.first)
+                   << " live variables=" << p.second << "\n";
+      ;
+    });
 
     if (m_release_in) {
       this->m_in_map.clear();

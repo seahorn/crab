@@ -120,7 +120,7 @@ public:
     return ret;
   }
   operator T *(void) { return data; } // (unsafe but convenient)
-  operator const T *(void) const { return data; }
+  operator const T *(void)const { return data; }
 
   // Size operations:
   int size(void) const { return sz; }
@@ -139,7 +139,7 @@ public:
   void clear(bool dealloc = false);
   void capacity(int size) { grow(size); }
 
-  // Stack interface:
+    // Stack interface:
 #if 1
   void push(void) {
     if (sz == cap) {

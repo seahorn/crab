@@ -86,8 +86,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using number_t = Number;
   using varname_t = VariableName;
@@ -1540,8 +1540,8 @@ public:
   /// numerical domain and some array operations. It is intended to be
   /// used as a leaf domain in the hierarchy of domains.
   BOOL_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)  
-  
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
+
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
     crab::CrabStats::count(domain_name() + ".count.rename");

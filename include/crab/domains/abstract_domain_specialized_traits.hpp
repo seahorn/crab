@@ -19,7 +19,7 @@ public:
   using linear_constraint_t = typename Domain::linear_constraint_t;
   typedef
       typename Domain::linear_constraint_system_t linear_constraint_system_t;
-  
+
   // Convert an equality into two inequalities. This is not
   // possible for machine arithmetic domains.
   static void lower_equality(linear_constraint_t cst,
@@ -45,7 +45,7 @@ public:
       typename Domain::linear_constraint_system_t linear_constraint_system_t;
   using disjunctive_linear_constraint_system_t =
       typename Domain::disjunctive_linear_constraint_system_t;
-  
+
 private:
   struct entailment {
     Domain _dom;
@@ -151,11 +151,10 @@ public:
       res = op(rhs);
     }
 
-    CRAB_LOG(
-        "checker-entailment",
-        if (res) { crab::outs() << "\t**entailment holds.\n"; } else {
-          crab::outs() << "\t**entailment does not hold.\n";
-        });
+    CRAB_LOG("checker-entailment",
+             if (res) { crab::outs() << "\t**entailment holds.\n"; } else {
+               crab::outs() << "\t**entailment does not hold.\n";
+             });
 
     // Note: we cannot convert rhs into Domain and then use the <=
     //       operator. The problem is that we cannot know for sure
@@ -189,13 +188,14 @@ public:
   typedef
       typename Domain::linear_constraint_system_t linear_constraint_system_t;
 
-  static_assert(std::is_same<Domain,
-		abstract_domain<typename Domain::variable_t>>::value,
-		"reduced_domain_traits not supported for generic domain");
-  static_assert(std::is_same<Domain,
-		abstract_domain_ref<typename Domain::variable_t>>::value,
-		"reduced_domain_traits not supported for generic domain");
-  
+  static_assert(
+      std::is_same<Domain, abstract_domain<typename Domain::variable_t>>::value,
+      "reduced_domain_traits not supported for generic domain");
+  static_assert(
+      std::is_same<Domain,
+                   abstract_domain_ref<typename Domain::variable_t>>::value,
+      "reduced_domain_traits not supported for generic domain");
+
   // extract linear constraints from dom involving x and store in ctsts
   static void extract(Domain &dom, const variable_t &x,
                       linear_constraint_system_t &csts, bool only_equalities) {
@@ -215,7 +215,7 @@ public:
 // Some abstract domains have global state that should be reset by
 // the client if multiple crab instances will be run. This is just
 // a temporary hack. The proper solution is to avoid global state.
-template <typename Domain> class special_domain_traits {  
+template <typename Domain> class special_domain_traits {
 public:
   static void clear_global_state(void) {}
 };

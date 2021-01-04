@@ -14,20 +14,18 @@ namespace crab {
 namespace domains {
 using apron_domain_id_t = enum { APRON_INT, APRON_OCT, APRON_PK };
 
-template <typename Number>
-class ApronDefaultParams {
+template <typename Number> class ApronDefaultParams {
 public:
   // use integers with truncation rounding
   enum { use_integers = 1 };
 };
 
-template<>
-class ApronDefaultParams<ikos::q_number> {
+template <> class ApronDefaultParams<ikos::q_number> {
 public:
   // use reals
   enum { use_integers = 0 };
 };
-}
+} // namespace domains
 } // namespace crab
 
 #ifndef HAVE_APRON
@@ -37,8 +35,10 @@ public:
 #include "crab/domains/abstract_domain.def"
 namespace crab {
 namespace domains {
-template <typename N, typename V, apron_domain_id_t Dom, class Params = ApronDefaultParams<N>>
-class apron_domain final : public abstract_domain_api<apron_domain<N, V, Dom, Params>> {
+template <typename N, typename V, apron_domain_id_t Dom,
+          class Params = ApronDefaultParams<N>>
+class apron_domain final
+    : public abstract_domain_api<apron_domain<N, V, Dom, Params>> {
 public:
   using this_type = apron_domain<N, V, Dom, Params>;
   apron_domain() {}
@@ -69,9 +69,10 @@ namespace domains {
 using namespace apron;
 
 template <typename Number, typename VariableName, apron_domain_id_t ApronDom,
-	  class Params = ApronDefaultParams<Number>>
+          class Params = ApronDefaultParams<Number>>
 class apron_domain final
-  : public abstract_domain_api<apron_domain<Number, VariableName, ApronDom, Params>> {
+    : public abstract_domain_api<
+          apron_domain<Number, VariableName, ApronDom, Params>> {
   using apron_domain_t = apron_domain<Number, VariableName, ApronDom, Params>;
   using abstract_domain_t = abstract_domain_api<apron_domain_t>;
 
@@ -82,8 +83,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using number_t = Number;
   using varname_t = VariableName;
@@ -362,37 +363,37 @@ private:
     return res;
   }
 
-  static ap_texpr0_t* ADD(ap_texpr0_t* a, ap_texpr0_t*b) {
+  static ap_texpr0_t *ADD(ap_texpr0_t *a, ap_texpr0_t *b) {
     if (Params::use_integers) {
-      return ap_texpr0_binop(AP_TEXPR_ADD,a,b,AP_RTYPE_INT,AP_RDIR_ZERO);
+      return ap_texpr0_binop(AP_TEXPR_ADD, a, b, AP_RTYPE_INT, AP_RDIR_ZERO);
     } else {
       // With reals the rounding mode is ignored
       return ap_texpr0_binop(AP_TEXPR_ADD, a, b, AP_RTYPE_REAL, AP_RDIR_ZERO);
     }
   }
-  static ap_texpr0_t* SUB(ap_texpr0_t* a, ap_texpr0_t*b) {
+  static ap_texpr0_t *SUB(ap_texpr0_t *a, ap_texpr0_t *b) {
     if (Params::use_integers) {
-      return ap_texpr0_binop(AP_TEXPR_SUB,a,b,AP_RTYPE_INT,AP_RDIR_ZERO);
+      return ap_texpr0_binop(AP_TEXPR_SUB, a, b, AP_RTYPE_INT, AP_RDIR_ZERO);
     } else {
       // With reals the rounding mode is ignored
-      return ap_texpr0_binop(AP_TEXPR_SUB, a, b, AP_RTYPE_REAL, AP_RDIR_ZERO);      
-    } 
+      return ap_texpr0_binop(AP_TEXPR_SUB, a, b, AP_RTYPE_REAL, AP_RDIR_ZERO);
+    }
   }
-  static ap_texpr0_t* MUL(ap_texpr0_t* a, ap_texpr0_t*b) {
+  static ap_texpr0_t *MUL(ap_texpr0_t *a, ap_texpr0_t *b) {
     if (Params::use_integers) {
-      return ap_texpr0_binop(AP_TEXPR_MUL,a,b,AP_RTYPE_INT,AP_RDIR_ZERO);
+      return ap_texpr0_binop(AP_TEXPR_MUL, a, b, AP_RTYPE_INT, AP_RDIR_ZERO);
     } else {
       // With reals the rounding mode is ignored
-      return ap_texpr0_binop(AP_TEXPR_MUL, a, b, AP_RTYPE_REAL, AP_RDIR_ZERO);      
-    } 
-  }	  
-  static ap_texpr0_t* DIV(ap_texpr0_t* a, ap_texpr0_t*b) {
+      return ap_texpr0_binop(AP_TEXPR_MUL, a, b, AP_RTYPE_REAL, AP_RDIR_ZERO);
+    }
+  }
+  static ap_texpr0_t *DIV(ap_texpr0_t *a, ap_texpr0_t *b) {
     if (Params::use_integers) {
-      return ap_texpr0_binop(AP_TEXPR_DIV,a,b,AP_RTYPE_INT,AP_RDIR_ZERO);
+      return ap_texpr0_binop(AP_TEXPR_DIV, a, b, AP_RTYPE_INT, AP_RDIR_ZERO);
     } else {
       // With reals the rounding mode is ignored
       return ap_texpr0_binop(AP_TEXPR_DIV, a, b, AP_RTYPE_REAL, AP_RDIR_ZERO);
-    } 
+    }
   }
 
   // --- from crab to apron
@@ -1521,7 +1522,7 @@ public:
   /// in the hierarchy of domains.
   BOOL_OPERATIONS_NOT_IMPLEMENTED(apron_domain_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(apron_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(apron_domain_t)  
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(apron_domain_t)
 
   interval_domain_t to_interval_domain() {
     crab::CrabStats::count(domain_name() + ".count.to_interval_domain");
@@ -1600,16 +1601,17 @@ public:
       }
 
       { // We do garbage collection of unconstrained variables only
-	// after joins so it's possible to find new_v but we are ok as
-	// long as it's unconstrained.
+        // after joins so it's possible to find new_v but we are ok as
+        // long as it's unconstrained.
         auto it = m_var_map.left.find(new_v);
         if (it != m_var_map.left.end()) {
-	  if (auto dim = get_var_dim(new_v)) {
-	    if (!ap_abstract0_is_dimension_unconstrained(get_man(), &*m_apstate, *dim)) {
-	      CRAB_ERROR(domain_name() + "::rename assumes that ", new_v,
-			 " does not exist");
-	    }
-	  }
+          if (auto dim = get_var_dim(new_v)) {
+            if (!ap_abstract0_is_dimension_unconstrained(get_man(), &*m_apstate,
+                                                         *dim)) {
+              CRAB_ERROR(domain_name() + "::rename assumes that ", new_v,
+                         " does not exist");
+            }
+          }
         }
       }
 
@@ -1729,8 +1731,10 @@ ap_manager_t *apron_domain<N, V, D, P>::s_apman = nullptr;
 
 namespace crab {
 namespace domains {
-template <typename Number, typename VariableName, apron_domain_id_t ApronDom, class Params>
-struct abstract_domain_traits<apron_domain<Number, VariableName, ApronDom, Params>> {
+template <typename Number, typename VariableName, apron_domain_id_t ApronDom,
+          class Params>
+struct abstract_domain_traits<
+    apron_domain<Number, VariableName, ApronDom, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 };

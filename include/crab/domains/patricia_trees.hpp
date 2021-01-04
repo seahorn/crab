@@ -1273,9 +1273,9 @@ public:
   patricia_tree(const patricia_tree_t &t) = default;
 
   patricia_tree(patricia_tree_t &&t) = default;
-  
+
   patricia_tree_t &operator=(const patricia_tree_t &t) = default;
-  
+
   patricia_tree_t &operator=(patricia_tree_t &&t) = default;
 
   std::size_t size() const {

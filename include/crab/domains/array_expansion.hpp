@@ -402,8 +402,9 @@ private:
       // of bytes array[o,o+1,..., o+size-1]
       ikos::index_t vindex = get_index(array, o, size);
       Variable scalar_var(vfac.get(vindex, vname), vtype_kind,
-			  (vtype_kind == BOOL_TYPE ? 1 :
-			   (vtype_kind == INT_TYPE ? 8*size: 0)));
+                          (vtype_kind == BOOL_TYPE
+                               ? 1
+                               : (vtype_kind == INT_TYPE ? 8 * size : 0)));
       c = cell_t(o, size, scalar_var);
       insert_cell(c);
       CRAB_LOG("array-expansion", crab::outs()
@@ -678,8 +679,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using content_domain_t = NumDomain;
 
@@ -762,8 +763,9 @@ private:
   // the right type.
   void do_assign(variable_t lhs, variable_t rhs) {
     if (lhs.get_type() != rhs.get_type()) {
-      CRAB_ERROR("array_expansion assignment ", lhs, ":=" , rhs,
-		 " with different types ", lhs.get_type(), " and ", rhs.get_type());
+      CRAB_ERROR("array_expansion assignment ", lhs, ":=", rhs,
+                 " with different types ", lhs.get_type(), " and ",
+                 rhs.get_type());
     }
     auto lhs_ty = lhs.get_type();
     if (lhs_ty.is_bool()) {
@@ -784,7 +786,7 @@ private:
     variable_t rhs = rhs_c.get_scalar();
     do_assign(lhs, rhs);
   }
-  
+
   // helper to assign a linear expression into a cell
   void do_assign(cell_t lhs_c, linear_expression_t v) {
     if (!lhs_c.has_scalar()) {
@@ -1125,10 +1127,10 @@ public:
   }
 
   virtual void assign_bool_ref_cst(const variable_t &lhs,
-				   const reference_constraint_t &rhs) override {
+                                   const reference_constraint_t &rhs) override {
     _inv.assign_bool_ref_cst(lhs, rhs);
   }
-  
+
   virtual void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                bool is_not_rhs) override {
     _inv.assign_bool_var(lhs, rhs, is_not_rhs);
@@ -1154,11 +1156,11 @@ public:
 
   virtual void
   backward_assign_bool_ref_cst(const variable_t &lhs,
-			       const reference_constraint_t &rhs,
-			       const array_expansion_domain_t &inv) override {
+                               const reference_constraint_t &rhs,
+                               const array_expansion_domain_t &inv) override {
     _inv.backward_assign_bool_ref_cst(lhs, rhs, inv._inv);
   }
-  
+
   virtual void
   backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                            bool is_not_rhs,
@@ -1175,8 +1177,8 @@ public:
 
   /// array_expansion is a functor domain that implements all
   /// operations except region/reference operations.
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(array_expansion_domain_t)    
-  
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(array_expansion_domain_t)
+
   // array_operators_api
 
   // array_init returns a fresh array where all elements between

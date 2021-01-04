@@ -68,8 +68,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using number_t = Number;
   using varname_t = VariableName;
@@ -362,7 +362,6 @@ public:
                                                                z, inv);
   }
 
-  
   // cast operations
   void apply(crab::domains::int_conv_operation_t /*op*/, const variable_t &dst,
              const variable_t &src) override {
@@ -455,13 +454,13 @@ public:
   /// in the hierarchy of domains.
   BOOL_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)  
-  
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)
+
   void forget(const variable_vector_t &variables) override {
     if (is_bottom() || is_top()) {
       return;
     }
-    for (auto const& var : variables) {
+    for (auto const &var : variables) {
       this->operator-=(var);
     }
   }
@@ -472,7 +471,7 @@ public:
 
     _env.project(variables);
   }
-  
+
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
     crab::CrabStats::count(domain_name() + ".count.rename");

@@ -57,7 +57,7 @@ public:
   using lin_cst_t = ikos::linear_constraint<number_t, varname_t>;
   using lin_cst_sys_t = ikos::linear_constraint_system<number_t, varname_t>;
   using ref_cst_t = reference_constraint<number_t, varname_t>;
-  
+
   using havoc_t = crab::cfg::havoc_stmt<bb_label_t, number_t, varname_t>;
   using unreach_t =
       crab::cfg::unreachable_stmt<bb_label_t, number_t, varname_t>;
@@ -182,7 +182,7 @@ public: /* visitor api */
   void visit(store_to_arr_ref_t &s) { exec(s); }
   void visit(assume_ref_t &s) { exec(s); }
   void visit(assert_ref_t &s) { exec(s); }
-  void visit(select_ref_t &s) { exec(s); }  
+  void visit(select_ref_t &s) { exec(s); }
   void visit(ref_to_int_t &s) { exec(s); }
   void visit(int_to_ref_t &s) { exec(s); }
   void visit(bool_bin_op_t &s) { exec(s); }
@@ -309,12 +309,12 @@ public:
   using abs_transform_api_t =
       abs_transformer_api<basic_block_label_t, number_t, varname_t>;
 
-  using typename abs_transform_api_t::var_t;
   using typename abs_transform_api_t::lin_cst_sys_t;
   using typename abs_transform_api_t::lin_cst_t;
   using typename abs_transform_api_t::lin_exp_t;
   using typename abs_transform_api_t::ref_cst_t;
-  
+  using typename abs_transform_api_t::var_t;
+
   using typename abs_transform_api_t::arr_assign_t;
   using typename abs_transform_api_t::arr_init_t;
   using typename abs_transform_api_t::arr_load_t;
@@ -341,10 +341,10 @@ public:
   using typename abs_transform_api_t::load_from_ref_t;
   using typename abs_transform_api_t::make_ref_t;
   using typename abs_transform_api_t::ref_to_int_t;
-  using typename abs_transform_api_t::select_ref_t;  
   using typename abs_transform_api_t::region_copy_t;
   using typename abs_transform_api_t::region_init_t;
   using typename abs_transform_api_t::return_t;
+  using typename abs_transform_api_t::select_ref_t;
   using typename abs_transform_api_t::select_t;
   using typename abs_transform_api_t::store_to_arr_ref_t;
   using typename abs_transform_api_t::store_to_ref_t;
@@ -410,7 +410,7 @@ public:
   void exec(select_t &stmt) {
     crab::CrabStats::count(m_inv.domain_name() + ".count.select_num");
     crab::ScopedCrabStats __st__(m_inv.domain_name() + ".select_num");
-    
+
     /* Can be done more efficiently inside the abstract domain */
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
@@ -436,7 +436,7 @@ public:
       inv1.assign(stmt.lhs(), stmt.left());
       m_inv = inv1;
     } else if (inv1.is_bottom()) {
-      // cond is definitely false      
+      // cond is definitely false
       inv2.assign(stmt.lhs(), stmt.right());
       m_inv = inv2;
     } else {
@@ -522,7 +522,7 @@ public:
     if (stmt.is_rhs_linear_constraint()) {
       m_inv.assign_bool_cst(stmt.lhs(), stmt.rhs_as_linear_constraint());
     } else {
-      m_inv.assign_bool_ref_cst(stmt.lhs(), stmt.rhs_as_reference_constraint());      
+      m_inv.assign_bool_ref_cst(stmt.lhs(), stmt.rhs_as_reference_constraint());
     }
 
     if (::crab::CrabSanityCheckFlag) {
@@ -575,9 +575,9 @@ public:
   void exec(bool_select_t &stmt) {
     crab::CrabStats::count(m_inv.domain_name() + ".count.select_bool");
     crab::ScopedCrabStats __st__(m_inv.domain_name() + ".select_bool");
-    
+
     /* Can be done more efficiently inside the abstract domain */
-    
+
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -842,9 +842,7 @@ public:
     }
   }
 
-  void exec(assume_ref_t &stmt) {
-    m_inv.ref_assume(stmt.constraint());
-  }
+  void exec(assume_ref_t &stmt) { m_inv.ref_assume(stmt.constraint()); }
 
   void exec(assert_ref_t &stmt) {
     if (m_ignore_assert)
@@ -852,46 +850,43 @@ public:
     m_inv.ref_assume(stmt.constraint());
   }
 
-
   void exec(select_ref_t &stmt) {
     crab::CrabStats::count(m_inv.domain_name() + ".count.select_ref");
     crab::ScopedCrabStats __st__(m_inv.domain_name() + ".select_ref");
-    
+
     /* Can be done more efficiently inside the abstract domain */
-    
+
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
     }
 
     auto exec_true_value = [&stmt](abs_dom_t &inv) {
-			     if (stmt.left_ref().is_reference_null()) {
-			       inv -= stmt.lhs_ref();
-			       inv.ref_assume(ref_cst_t::mk_null(stmt.lhs_ref()));
-			     } else {
-			       assert(stmt.left_ref().is_variable());
-			       assert(stmt.left_rgn());
-			       lin_exp_t zero_offset(number_t(0));
-			       inv.ref_gep(stmt.left_ref().get_variable(), *(stmt.left_rgn()),
-					   stmt.lhs_ref(), stmt.lhs_rgn(),
-					   zero_offset);
-			     }
-			   };
+      if (stmt.left_ref().is_reference_null()) {
+        inv -= stmt.lhs_ref();
+        inv.ref_assume(ref_cst_t::mk_null(stmt.lhs_ref()));
+      } else {
+        assert(stmt.left_ref().is_variable());
+        assert(stmt.left_rgn());
+        lin_exp_t zero_offset(number_t(0));
+        inv.ref_gep(stmt.left_ref().get_variable(), *(stmt.left_rgn()),
+                    stmt.lhs_ref(), stmt.lhs_rgn(), zero_offset);
+      }
+    };
 
     auto exec_false_value = [&stmt](abs_dom_t &inv) {
-			      if (stmt.right_ref().is_reference_null()) {
-				inv -= stmt.lhs_ref();
-				inv.ref_assume(ref_cst_t::mk_null(stmt.lhs_ref()));
-			      } else {
-				assert(stmt.right_ref().is_variable());
-				assert(stmt.right_rgn());
-				lin_exp_t zero_offset(number_t(0));
-				inv.ref_gep(stmt.right_ref().get_variable(), *(stmt.right_rgn()),
-					    stmt.lhs_ref(), stmt.lhs_rgn(),
-					    zero_offset);
-			      }
-			    };
-    
+      if (stmt.right_ref().is_reference_null()) {
+        inv -= stmt.lhs_ref();
+        inv.ref_assume(ref_cst_t::mk_null(stmt.lhs_ref()));
+      } else {
+        assert(stmt.right_ref().is_variable());
+        assert(stmt.right_rgn());
+        lin_exp_t zero_offset(number_t(0));
+        inv.ref_gep(stmt.right_ref().get_variable(), *(stmt.right_rgn()),
+                    stmt.lhs_ref(), stmt.lhs_rgn(), zero_offset);
+      }
+    };
+
     abs_dom_t inv1(m_inv);
     abs_dom_t inv2(m_inv);
     const bool negate = true;
@@ -919,7 +914,7 @@ public:
       }
     }
   }
-  
+
   void exec(int_to_ref_t &stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
@@ -1046,11 +1041,11 @@ public:
   using typename abs_transform_api_t::load_from_arr_ref_t;
   using typename abs_transform_api_t::load_from_ref_t;
   using typename abs_transform_api_t::make_ref_t;
-  using typename abs_transform_api_t::select_ref_t;  
   using typename abs_transform_api_t::ref_to_int_t;
   using typename abs_transform_api_t::region_copy_t;
   using typename abs_transform_api_t::region_init_t;
   using typename abs_transform_api_t::return_t;
+  using typename abs_transform_api_t::select_ref_t;
   using typename abs_transform_api_t::select_t;
   using typename abs_transform_api_t::store_to_arr_ref_t;
   using typename abs_transform_api_t::store_to_ref_t;
@@ -1335,7 +1330,7 @@ public:
   void exec(store_to_arr_ref_t &stmt) {}
   void exec(assume_ref_t &stmt) {}
   void exec(assert_ref_t &stmt) {}
-  void exec(select_ref_t &stmt) {}  
+  void exec(select_ref_t &stmt) {}
   void exec(int_to_ref_t &stmt) {}
   void exec(ref_to_int_t &stmt) {}
 

@@ -209,11 +209,10 @@ template <typename Number> class wrapped_interval {
     wrapped_interval_t s = signed_mul(x);
     wrapped_interval_t u = unsigned_mul(x);
     s.exact_meet(u, out);
-    CRAB_LOG(
-        "wrapped-int-mul",
-        crab::outs() << "Exact signed x unsigned " << s << " * " << u << "=\n";
-        for (unsigned i = 0; i < out.size();
-             ++i) { crab::outs() << "\t" << out[i] << "\n"; });
+    CRAB_LOG("wrapped-int-mul", crab::outs() << "Exact signed x unsigned " << s
+                                             << " * " << u << "=\n";
+             for (unsigned i = 0; i < out.size();
+                  ++i) { crab::outs() << "\t" << out[i] << "\n"; });
   }
 
   wrapped_interval_t unsigned_div(wrapped_interval_t x) const {
@@ -1306,8 +1305,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using number_t = Number;
   using varname_t = VariableName;
@@ -1341,7 +1340,7 @@ private:
     if (width == 0) {
       return wrapped_interval_t::top();
     }
-    
+
     wrapped_interval_t r =
         wrapped_interval_t::mk_winterval(expr.constant(), width);
     for (auto kv : expr) {
@@ -1519,10 +1518,9 @@ public:
     if (boost::optional<variable_t> v = e.get_variable()) {
       this->_env.set(x, this->_env[*v]);
     } else {
-      wrapped_interval_t r = eval_expr(e,
-				       x.get_type().is_integer() ?
-				       x.get_type().get_integer_bitwidth() :
-				       0);
+      wrapped_interval_t r = eval_expr(
+          e,
+          x.get_type().is_integer() ? x.get_type().get_integer_bitwidth() : 0);
       this->_env.set(x, r);
     }
     CRAB_LOG("wrapped-int", crab::outs()
@@ -1574,9 +1572,9 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     wrapped_interval_t yi = this->_env[y];
-    wrapped_interval_t zi =
-      wrapped_interval_t::mk_winterval(k, (x.get_type().is_integer() ?
-					   x.get_type().get_integer_bitwidth() : 0));
+    wrapped_interval_t zi = wrapped_interval_t::mk_winterval(
+        k,
+        (x.get_type().is_integer() ? x.get_type().get_integer_bitwidth() : 0));
     wrapped_interval_t xi = wrapped_interval_t::bottom();
 
     switch (op) {
@@ -1620,13 +1618,13 @@ public:
     wrapped_interval_t dst_i;
 
     auto get_bitwidth = [](const variable_t v) {
-			  auto ty = v.get_type();
-			  if (!(ty.is_integer() || ty.is_bool())) {
-			    CRAB_ERROR("unexpected types in cast operation");
-			  }
-			  return (ty.is_integer() ? ty.get_integer_bitwidth() : 1);
-			};
-    
+      auto ty = v.get_type();
+      if (!(ty.is_integer() || ty.is_bool())) {
+        CRAB_ERROR("unexpected types in cast operation");
+      }
+      return (ty.is_integer() ? ty.get_integer_bitwidth() : 1);
+    };
+
     if (src_i.is_bottom() || src_i.is_top()) {
       dst_i = src_i;
     } else {
@@ -1703,9 +1701,9 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     wrapped_interval_t yi = this->_env[y];
-    wrapped_interval_t zi =
-      wrapped_interval_t::mk_winterval(k,(x.get_type().is_integer() ?
-					  x.get_type().get_integer_bitwidth(): 0));
+    wrapped_interval_t zi = wrapped_interval_t::mk_winterval(
+        k,
+        (x.get_type().is_integer() ? x.get_type().get_integer_bitwidth() : 0));
     wrapped_interval_t xi = wrapped_interval_t::bottom();
     switch (op) {
     case OP_AND: {
@@ -1742,15 +1740,15 @@ public:
     crab::CrabStats::count(domain_name() + ".count.add_constraints");
     crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
     linear_constraint_system_t wt_csts;
-    for (auto const& cst: csts) {
+    for (auto const &cst : csts) {
       if (cst.is_well_typed()) {
-	wt_csts += cst;
+        wt_csts += cst;
       } else {
-	CRAB_WARN(domain_name(), "::add_constraints ignored ", cst ,
-		  " because it not well typed");
+        CRAB_WARN(domain_name(), "::add_constraints ignored ", cst,
+                  " because it not well typed");
       }
     }
-    
+
     this->add(wt_csts);
     CRAB_LOG("wrapped-int", crab::outs()
                                 << "Added " << csts << " = " << *this << "\n");
@@ -1782,8 +1780,8 @@ public:
   /// a leaf domain in the hierarchy of domains.
   BOOL_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)  
-  
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
+
   void forget(const variable_vector_t &variables) override {
     if (is_bottom() || is_top()) {
       return;
@@ -1797,7 +1795,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.project");
     crab::ScopedCrabStats __st__(domain_name() + ".project");
 
-    _env.project(variables);            
+    _env.project(variables);
   }
 
   void expand(const variable_t &x, const variable_t &new_x) override {
@@ -2134,8 +2132,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using number_t = Number;
   using varname_t = VariableName;
@@ -2744,8 +2742,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
+  using typename abstract_domain_t::variable_or_constant_t;
   using typename abstract_domain_t::variable_t;
-  using typename abstract_domain_t::variable_or_constant_t;  
   using typename abstract_domain_t::variable_vector_t;
   using number_t = typename NumDom::number_t;
   using varname_t = typename NumDom::varname_t;
@@ -2779,8 +2777,9 @@ private:
 
   // return true if interval i fits in [min(b), max(b)]
   inline bool fit(interval_t i, bitwidth_t b, signedness_t signedness) const {
-    if (b  == 0) return false;
-    
+    if (b == 0)
+      return false;
+
     // TODO: cache min and max
     if (signedness == SIGNED) {
       auto max = wrapint::get_signed_max(b).get_signed_bignum();
@@ -2815,9 +2814,9 @@ private:
   bool may_overflow_residuals(const linear_constraint_t &cst,
                               number_t coef_pivot, const variable_t &pivot,
                               signedness_t signedness) {
-    bitwidth_t b = (pivot.get_type().is_integer() ?
-		    pivot.get_type().get_integer_bitwidth() :
-		    0);
+    bitwidth_t b =
+        (pivot.get_type().is_integer() ? pivot.get_type().get_integer_bitwidth()
+                                       : 0);
     interval_t residual = cst.constant();
     if (!fit(residual, b, signedness)) {
       // If the constant is to large we bail out
@@ -2865,11 +2864,10 @@ private:
         }
       }
     }
-    CRAB_LOG(
-        "wrapped-num-reduction",
-        if (res) {
-          crab::outs() << "Last intermediate computation may overflow!\n";
-        } else { crab::outs() << "None of the residuals overflow\n"; });
+    CRAB_LOG("wrapped-num-reduction",
+             if (res) {
+               crab::outs() << "Last intermediate computation may overflow!\n";
+             } else { crab::outs() << "None of the residuals overflow\n"; });
 
     return res;
   }
@@ -3237,10 +3235,10 @@ public:
   }
 
   void assign_bool_ref_cst(const variable_t &x,
-			   const reference_constraint_t &cst) override {
+                           const reference_constraint_t &cst) override {
     _product.assign_bool_ref_cst(x, cst);
   }
-  
+
   void assign_bool_var(const variable_t &x, const variable_t &y,
                        bool is_not_y) override {
     _product.assign_bool_var(x, y, is_not_y);
@@ -3266,12 +3264,12 @@ public:
 
   void
   backward_assign_bool_ref_cst(const variable_t &lhs,
-			       const reference_constraint_t &rhs,
-			       const wrapped_numerical_domain_t &inv) override {
+                               const reference_constraint_t &rhs,
+                               const wrapped_numerical_domain_t &inv) override {
     CRAB_WARN("backward assign bool constraint not implemented");
     this->operator-=(lhs);
   }
-  
+
   void
   backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                            bool is_not_rhs,

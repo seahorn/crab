@@ -7,9 +7,9 @@
 #include <crab/cfg/cfg.hpp>
 #include <crab/support/debug.hpp>
 
+#include <map>
 #include <set>
 #include <vector>
-#include <map>
 
 namespace crab {
 
@@ -19,7 +19,8 @@ typedef enum { _SAFE, _ERR, _WARN, _UNREACH } check_kind_t;
 // Toy database to store invariants. We may want to replace it with
 // a permanent external database.
 class checks_db {
-  using checks_db_t = std::map<crab::cfg::debug_info, std::vector<check_kind_t>>;
+  using checks_db_t =
+      std::map<crab::cfg::debug_info, std::vector<check_kind_t>>;
 
   checks_db_t m_db;
   unsigned m_total_safe;
@@ -32,19 +33,16 @@ class checks_db {
   }
 
   void merge_db(const checks_db_t &o) {
-    for (auto const &kv: o) {
-      m_db[kv.first].insert(m_db[kv.first].end(), kv.second.begin(), kv.second.end());
+    for (auto const &kv : o) {
+      m_db[kv.first].insert(m_db[kv.first].end(), kv.second.begin(),
+                            kv.second.end());
     }
   }
 
-  
 public:
-  checks_db():
-    m_total_safe(0),
-    m_total_err(0),
-    m_total_unreach(0),
-    m_total_warn(0) {}
-  
+  checks_db()
+      : m_total_safe(0), m_total_err(0), m_total_unreach(0), m_total_warn(0) {}
+
   void clear() {
     m_db.clear();
     m_total_safe = 0;
@@ -57,12 +55,13 @@ public:
     return m_db.find(dbg) != m_db.end();
   }
 
-  const std::vector<check_kind_t>& get_checks(const crab::cfg::debug_info &dbg) const {
+  const std::vector<check_kind_t> &
+  get_checks(const crab::cfg::debug_info &dbg) const {
     assert(has_checks(dbg));
     auto it = m_db.find(dbg);
     return it->second;
   }
-  
+
   unsigned get_total_safe() const { return m_total_safe + m_total_unreach; }
 
   unsigned get_total_warning() const { return m_total_warn; }
@@ -118,33 +117,40 @@ public:
       << m_total_unreach << std::string(2, ' ')
       << "Number of total unreachable checks\n";
 
-    if (print_content){
+    if (print_content) {
       o << "\nCheck database content:\n";
       unsigned MaxFileLen = 0;
       for (auto const &kv : m_db) {
-	MaxFileLen = std::max(MaxFileLen, (unsigned)kv.first.m_file.size());
+        MaxFileLen = std::max(MaxFileLen, (unsigned)kv.first.m_file.size());
       }
-      for (auto const& kv: m_db) {
-	o << kv.first.m_file << std::string((int) MaxFileLen -
-					    kv.first.m_file.size(), ' ')
-	  << std::string(2, ' ')
-	  << " line " << kv.first.m_line
-	  << " col "  << kv.first.m_col << ":\n"
-	  << "\t";
-	auto const& checks = kv.second;
-	for (unsigned i=0, num_checks = checks.size(); i<num_checks;) {
-	  switch(checks[i]) {
-	  case _SAFE: o << "safe"; break;
-	  case _ERR:  o << "error"; break;
-	  case _WARN: o << "warning"; break;
-	  case _UNREACH: o << "unreachable (safe)"; break;
-	  }
-	  ++i;
-	  if (i < num_checks) {
-	    o << " ";
-	  }
-	}
-	o << "\n";
+      for (auto const &kv : m_db) {
+        o << kv.first.m_file
+          << std::string((int)MaxFileLen - kv.first.m_file.size(), ' ')
+          << std::string(2, ' ') << " line " << kv.first.m_line << " col "
+          << kv.first.m_col << ":\n"
+          << "\t";
+        auto const &checks = kv.second;
+        for (unsigned i = 0, num_checks = checks.size(); i < num_checks;) {
+          switch (checks[i]) {
+          case _SAFE:
+            o << "safe";
+            break;
+          case _ERR:
+            o << "error";
+            break;
+          case _WARN:
+            o << "warning";
+            break;
+          case _UNREACH:
+            o << "unreachable (safe)";
+            break;
+          }
+          ++i;
+          if (i < num_checks) {
+            o << " ";
+          }
+        }
+        o << "\n";
       }
     }
   }
@@ -455,7 +461,7 @@ protected:
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
-  
+
   virtual void check(int_to_ref_t &s) {
     if (!this->m_abs_tr)
       return;
@@ -531,7 +537,7 @@ public:
   void visit(store_to_arr_ref_t &s) { check(s); }
   void visit(assume_ref_t &s) { check(s); }
   void visit(assert_ref_t &s) { check(s); }
-  void visit(select_ref_t &s) { check(s); }  
+  void visit(select_ref_t &s) { check(s); }
   void visit(int_to_ref_t &s) { check(s); }
   void visit(ref_to_int_t &s) { check(s); }
   void visit(bool_bin_op_t &s) { check(s); }

@@ -158,18 +158,16 @@ void dominance(G g, typename G::node_t entry, VectorMap &df) {
   } // end outer for
   crab::CrabStats::stop("Dominance Frontier");
 
-  CRAB_LOG(
-      "dominance", for (auto &kv
-                        : df) {
-        crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(
-                            kv.first)
-                     << "={";
-        for (auto v : kv.second) {
-          crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(v)
-                       << ";";
-        }
-        crab::outs() << "}\n";
-      });
+  CRAB_LOG("dominance", for (auto &kv
+                             : df) {
+    crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(kv.first)
+                 << "={";
+    for (auto v : kv.second) {
+      crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(v)
+                   << ";";
+    }
+    crab::outs() << "}\n";
+  });
 }
 
 } // namespace graph_algo_impl

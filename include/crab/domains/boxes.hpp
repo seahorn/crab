@@ -91,8 +91,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
 
 private:
@@ -501,15 +501,14 @@ private:
     std::vector<std::pair<variable_t, number_t>> ubs;
 
     unitcsts_of_exp(e, lbs, ubs);
-    CRAB_LOG(
-        "boxes-extract-leq",
-        for (auto p
-             : lbs) {
-          crab::outs() << "\t" << p.first << ">=" << p.second << "\n";
-        } for (auto p
-               : ubs) {
-          crab::outs() << "\t" << p.first << "<=" << p.second << "\n";
-        });
+    CRAB_LOG("boxes-extract-leq",
+             for (auto p
+                  : lbs) {
+               crab::outs() << "\t" << p.first << ">=" << p.second << "\n";
+             } for (auto p
+                    : ubs) {
+               crab::outs() << "\t" << p.first << "<=" << p.second << "\n";
+             });
 
     for (auto p : lbs) {
       apply_unit_constraint(-number_t(1) /*coef*/, p.first, kind_t::INEQUALITY,
@@ -1497,14 +1496,15 @@ public:
   }
 
   void assign_bool_ref_cst(const variable_t &lhs,
-			   const reference_constraint_t &cst) override {
+                           const reference_constraint_t &cst) override {
     if (is_bottom())
       return;
 
     this->operator-=(lhs);
-    CRAB_WARN("boxes boolean assignment of reference constraints not implemented");
+    CRAB_WARN(
+        "boxes boolean assignment of reference constraints not implemented");
   }
-  
+
   void assign_bool_var(const variable_t &x, const variable_t &y,
                        bool is_not_y) override {
     if (!m_bool_reasoning)
@@ -1569,17 +1569,16 @@ public:
                    Ldd_And(get_ldd_man(), &*m_ldd,
                            ((is_negated) ? &*mk_false(x) : &*mk_true(x))));
 
-    CRAB_LOG(
-        "boxes",
-        if (!is_negated) {
-          crab::outs() << "--- bool_assume(" << x << ")"
-                       << "\n"
-                       << *this << "\n";
-        } else {
-          crab::outs() << "--- bool_assume(not(" << x << "))"
-                       << "\n"
-                       << *this << "\n";
-        });
+    CRAB_LOG("boxes",
+             if (!is_negated) {
+               crab::outs() << "--- bool_assume(" << x << ")"
+                            << "\n"
+                            << *this << "\n";
+             } else {
+               crab::outs() << "--- bool_assume(not(" << x << "))"
+                            << "\n"
+                            << *this << "\n";
+             });
   }
 
   // Backward boolean operations
@@ -1594,15 +1593,16 @@ public:
   }
 
   void backward_assign_bool_ref_cst(const variable_t &lhs,
-				    const reference_constraint_t &rhs,
-				    const boxes_domain_t &inv) override {
+                                    const reference_constraint_t &rhs,
+                                    const boxes_domain_t &inv) override {
     if (is_bottom())
       return;
 
     this->operator-=(lhs);
-    CRAB_WARN("boxes backward boolean assignment of reference constraints not implemented");
+    CRAB_WARN("boxes backward boolean assignment of reference constraints not "
+              "implemented");
   }
-  
+
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                 bool is_not_rhs,
                                 const boxes_domain_t &inv) override {
@@ -1623,12 +1623,11 @@ public:
     CRAB_WARN("boxes backward boolean apply not implemented");
   }
 
-
   /// Boxes domain implements only standard abstract operations of a
   /// numerical domain plus boolean operations. It is intended to be
   /// used as a leaf domain in the hierarchy of domains.
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(boxes_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(boxes_domain_t)  
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(boxes_domain_t)
 
   linear_constraint_system_t to_linear_constraint_system() const override {
     crab::CrabStats::count(domain_name() +

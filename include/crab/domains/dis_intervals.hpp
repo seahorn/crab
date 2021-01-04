@@ -1072,8 +1072,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using number_t = Number;
   using varname_t = VariableName;
@@ -1429,13 +1429,12 @@ public:
     this->_env.set(x, xi);
   }
 
-
   /// dis_interval_domain implements only standard abstract operations
   /// of a numerical domain so it is intended to be used as a leaf
   /// domain in the hierarchy of domains.
   BOOL_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)  
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
 
   void expand(const variable_t &x, const variable_t &new_x) override {
     crab::CrabStats::count(domain_name() + ".count.expand");
@@ -1451,7 +1450,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.project");
     crab::ScopedCrabStats __st__(domain_name() + ".project");
 
-    _env.project(variables);    
+    _env.project(variables);
   }
 
   void forget(const variable_vector_t &variables) override {

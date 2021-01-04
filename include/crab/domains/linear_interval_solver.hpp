@@ -137,7 +137,7 @@ private:
       return 0;
     }
   }
-  
+
   Interval compute_residual(const linear_constraint_t &cst,
                             const variable_t &pivot, IntervalCollection &env) {
     crab::ScopedCrabStats __st__(
@@ -165,7 +165,7 @@ private:
     crab::ScopedCrabStats __st__("Linear Interval Solver.Solving propagation");
     namespace interval_traits = linear_interval_solver_impl;
 
-    CRAB_LOG("integer-solver", 
+    CRAB_LOG("integer-solver",
              crab::outs() << "Integer solver processing " << cst << "\n";);
 
     for (auto kv : cst) {
@@ -175,7 +175,7 @@ private:
       Interval rhs = Interval::top();
       if (!res.is_top()) {
         Interval ic =
-	  interval_traits::mk_interval<Interval>(c, get_bitwidth(pivot));
+            interval_traits::mk_interval<Interval>(c, get_bitwidth(pivot));
         rhs = res / ic;
       }
 

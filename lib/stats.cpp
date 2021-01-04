@@ -3,9 +3,8 @@
 
 namespace crab {
 bool CrabStatsFlag = false;
-void CrabEnableStats(bool v)
-{ CrabStatsFlag = v; }
-} // end namespace
+void CrabEnableStats(bool v) { CrabStatsFlag = v; }
+} // namespace crab
 
 #ifndef CRAB_STATS
 namespace crab {
@@ -107,18 +106,17 @@ void Stopwatch::Print(crab_os &out) const {
     out << m << "m";
   out << s << "s";
 }
-  
 
-std::map<std::string, unsigned>& CrabStats::getCounters() {
+std::map<std::string, unsigned> &CrabStats::getCounters() {
   static std::map<std::string, unsigned> counters;
   return counters;
 }
 
-std::map<std::string, Stopwatch>& CrabStats::getTimers() {
+std::map<std::string, Stopwatch> &CrabStats::getTimers() {
   static std::map<std::string, Stopwatch> timers;
   return timers;
 }
-    
+
 void CrabStats::reset() {
   getCounters().clear();
   getTimers().clear();
@@ -131,18 +129,18 @@ void CrabStats::count(const std::string &name) {
 }
 void CrabStats::count_max(const std::string &name, unsigned v) {
   if (!crab::CrabStatsFlag)
-    return;  
+    return;
   getCounters()[name] = std::max(getCounters()[name], v);
 }
 
 unsigned CrabStats::uset(const std::string &n, unsigned v) {
   if (!crab::CrabStatsFlag)
-    return 0;  
+    return 0;
   return getCounters()[n] = v;
 }
 unsigned CrabStats::get(const std::string &n) {
   if (!crab::CrabStatsFlag)
-    return 0;  
+    return 0;
   return getCounters()[n];
 }
 
@@ -153,12 +151,12 @@ void CrabStats::start(const std::string &name) {
 }
 void CrabStats::stop(const std::string &name) {
   if (!crab::CrabStatsFlag)
-    return;  
+    return;
   getTimers()[name].stop();
 }
 void CrabStats::resume(const std::string &name) {
   if (!crab::CrabStatsFlag)
-    return;  
+    return;
   getTimers()[name].resume();
 }
 
@@ -185,13 +183,13 @@ void CrabStats::PrintBrunch(crab_os &OS) {
       OS << "BRUNCH_STAT " << kv.first << " " << kv.second << "\n";
     for (auto &kv : getTimers())
       OS << "BRUNCH_STAT " << kv.first << " " << (kv.second).toSeconds()
-	 << "sec \n";
+         << "sec \n";
   }
   OS << "************** BRUNCH STATS END ***************** \n";
 }
 
 ScopedCrabStats::ScopedCrabStats(const std::string &name, bool reset)
-  : m_name("") {
+    : m_name("") {
   if (crab::CrabStatsFlag) {
     m_name = name;
     if (reset) {
@@ -204,7 +202,7 @@ ScopedCrabStats::ScopedCrabStats(const std::string &name, bool reset)
 }
 
 ScopedCrabStats::~ScopedCrabStats() {
-  if(crab::CrabStatsFlag) {
+  if (crab::CrabStatsFlag) {
     CrabStats::stop(m_name);
   }
 }

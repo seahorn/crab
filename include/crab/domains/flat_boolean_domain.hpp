@@ -225,8 +225,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using bool_t = boolean_value;
   using separate_domain_t = ikos::separate_domain<variable_t, boolean_value>;
@@ -374,12 +374,12 @@ public:
   }
 
   void assign_bool_ref_cst(const variable_t &x,
-			   const reference_constraint_t &cst) override {
+                           const reference_constraint_t &cst) override {
     _env -= x;
     CRAB_LOG("flat-boolean", auto bx = _env[x];
              crab::outs() << x << ":=" << bx << "\n");
   }
-  
+
   void assign_bool_var(const variable_t &x, const variable_t &y,
                        bool is_not_y) override {
     crab::CrabStats::count(domain_name() + ".count.assign_bool_var");
@@ -454,8 +454,8 @@ public:
   }
 
   void backward_assign_bool_ref_cst(const variable_t &lhs,
-				    const reference_constraint_t &rhs,
-				    const flat_boolean_domain_t &inv) override {
+                                    const reference_constraint_t &rhs,
+                                    const flat_boolean_domain_t &inv) override {
     crab::CrabStats::count(domain_name() + ".count.backward_assign_bool_cst");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_assign_bool_cst");
     if (is_bottom())
@@ -464,7 +464,7 @@ public:
     /* nothing to do: flat_boolean_domain ignores this */
     _env -= lhs;
   }
-  
+
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                 bool is_not_rhs,
                                 const flat_boolean_domain_t &inv) override {
@@ -506,7 +506,7 @@ public:
   NUMERICAL_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
-  
+
   // not part of the numerical_domains api but it should be
   void set(const variable_t &x, interval_t intv) {}
 
@@ -663,8 +663,8 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using bound_t = ikos::bound<number_t>;
 
@@ -1051,9 +1051,10 @@ public:
 
     bool all_non_boolean = true;
     for (const linear_constraint_t &cst : csts) {
-      if (std::any_of(cst.expression().variables_begin(),
-                      cst.expression().variables_end(),
-                      [](const variable_t &v) { return v.get_type().is_bool(); })) {
+      if (std::any_of(
+              cst.expression().variables_begin(),
+              cst.expression().variables_end(),
+              [](const variable_t &v) { return v.get_type().is_bool(); })) {
         all_non_boolean = false;
         break;
       }
@@ -1071,10 +1072,11 @@ public:
       linear_constraint_system_t norm_csts = csts.normalize();
       linear_constraint_system_t non_boolean_csts;
       for (const linear_constraint_t &cst : norm_csts) {
-        if (cst.is_equality() &&
-            std::all_of(cst.expression().variables_begin(),
-                        cst.expression().variables_end(),
-                        [](const variable_t &v) { return v.get_type().is_bool(); })) {
+        if (cst.is_equality() && std::all_of(cst.expression().variables_begin(),
+                                             cst.expression().variables_end(),
+                                             [](const variable_t &v) {
+                                               return v.get_type().is_bool();
+                                             })) {
           // boolean component
           const linear_expression_t &exp = cst.expression();
           if (exp.size() == 1) {
@@ -1204,16 +1206,16 @@ public:
   }
 
   void assign_bool_ref_cst(const variable_t &x,
-			   const reference_constraint_t &cst) override {
+                           const reference_constraint_t &cst) override {
     crab::CrabStats::count(domain_name() + ".count.assign_bool_cst");
     crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst");
-    
+
     if (is_bottom())
       return;
-    
+
     operator-=(x);
   }
-  
+
   void assign_bool_var(const variable_t &x, const variable_t &y,
                        bool is_not_y) override {
     crab::CrabStats::count(domain_name() + ".count.assign_bool_var");
@@ -1358,12 +1360,12 @@ public:
   }
 
   void backward_assign_bool_ref_cst(const variable_t &lhs,
-				    const reference_constraint_t &rhs,
-				    const bool_num_domain_t &inv) override {
-    /** TODO: this can be done better **/    
+                                    const reference_constraint_t &rhs,
+                                    const bool_num_domain_t &inv) override {
+    /** TODO: this can be done better **/
     operator-=(lhs);
   }
-  
+
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                 bool is_not_rhs,
                                 const bool_num_domain_t &inv) override {
@@ -1388,16 +1390,16 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     auto get_bitwidth = [](const variable_t v) {
-			  auto ty = v.get_type();
-			  if (!(ty.is_integer() || ty.is_bool())) {
-			    CRAB_ERROR("unexpected types in cast operation");
-			  }
-			  return (ty.is_integer() ? ty.get_integer_bitwidth() : 1);
-			};
-    CRAB_LOG("flat-boolean", crab::outs() << src << ":" << get_bitwidth(src)
-                                          << " " << op << " " << dst << ":"
-                                          << get_bitwidth(dst) << " with "
-                                          << *this << "\n");
+      auto ty = v.get_type();
+      if (!(ty.is_integer() || ty.is_bool())) {
+        CRAB_ERROR("unexpected types in cast operation");
+      }
+      return (ty.is_integer() ? ty.get_integer_bitwidth() : 1);
+    };
+    CRAB_LOG("flat-boolean", crab::outs()
+                                 << src << ":" << get_bitwidth(src) << " " << op
+                                 << " " << dst << ":" << get_bitwidth(dst)
+                                 << " with " << *this << "\n");
 
     if (op == OP_TRUNC && (get_bitwidth(src) > 1 && get_bitwidth(dst) == 1)) {
       // -- int to bool:
@@ -1418,25 +1420,26 @@ public:
       // if OP_ZEXT then true is 1 and false is zero
       boolean_value b_src = _product.first().get_bool(src);
       if (b_src.is_true()) {
-        // _product.second().assign(dst, linear_expression_t(op == OP_SEXT ? -1 : 1));
+        // _product.second().assign(dst, linear_expression_t(op == OP_SEXT ? -1
+        // : 1));
         _product.second().assign(dst, number_t(1));
       } else if (b_src.is_false()) {
         _product.second().assign(dst, number_t(0));
       } else {
         _product.second() -= dst;
-	// The flat boolean domain shouldn't know whether we try to
-	// model integers faithfully or not (i.e., obeying
-	// machine-arithmetic laws). This code should probably go to
-	// domains who model machine arithmetic (e.g., wrapped
-	// interval domain).
-	// 
+        // The flat boolean domain shouldn't know whether we try to
+        // model integers faithfully or not (i.e., obeying
+        // machine-arithmetic laws). This code should probably go to
+        // domains who model machine arithmetic (e.g., wrapped
+        // interval domain).
+        //
         // if (op == OP_SEXT) {
         //   _product.second() += linear_constraint_t(variable_t(dst) >= -1);
         //   _product.second() += linear_constraint_t(variable_t(dst) <= 0);
         // } else {
-	//   _product.second() += linear_constraint_t(variable_t(dst) >= 0);
-	//   _product.second() += linear_constraint_t(variable_t(dst) <= 1);
-	//}
+        //   _product.second() += linear_constraint_t(variable_t(dst) >= 0);
+        //   _product.second() += linear_constraint_t(variable_t(dst) <= 1);
+        //}
       }
       _unchanged_vars -= variable_t(dst);
     } else {
@@ -1462,7 +1465,7 @@ public:
   }
 
   // array_operators_api
-  
+
   virtual void array_init(const variable_t &a,
                           const linear_expression_t &elem_size,
                           const linear_expression_t &lb_idx,

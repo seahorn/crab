@@ -94,9 +94,9 @@ private:
     while (change) {
       change = false;
       ++iterations;
-      for (unsigned i=0, e=order.size(); i<e; ++i) {
-	auto const &n = order[i];
-        auto in = (i==0 ? m_analysis.entry() : killgen_domain_t::bottom());
+      for (unsigned i = 0, e = order.size(); i < e; ++i) {
+        auto const &n = order[i];
+        auto in = (i == 0 ? m_analysis.entry() : killgen_domain_t::bottom());
         for (auto const &p : m_cfg.prev_nodes(n))
           in = m_analysis.merge(in, m_out_map[p]);
         auto old_out = m_out_map[n];
@@ -120,9 +120,9 @@ private:
     while (change) {
       change = false;
       ++iterations;
-      for (unsigned i=0, e=order.size(); i<e; ++i) {
-	auto const &n = order[i];
-        auto out = (i==0 ? m_analysis.entry() : killgen_domain_t::bottom());
+      for (unsigned i = 0, e = order.size(); i < e; ++i) {
+        auto const &n = order[i];
+        auto out = (i == 0 ? m_analysis.entry() : killgen_domain_t::bottom());
         for (auto const &p : m_cfg.next_nodes(n))
           out = m_analysis.merge(out, m_in_map[p]);
         auto old_in = m_in_map[n];
@@ -158,15 +158,14 @@ public:
       run_bwd_fixpo(order, iterations);
     }
 
-    CRAB_LOG(
-        m_analysis.name(), crab::outs() << "fixpoint ordering={";
-        bool first = true; for (auto &v
-                                : order) {
-          if (!first)
-            crab::outs() << ",";
-          first = false;
-          crab::outs() << basic_block_traits<basic_block_t>::to_string(v);
-        } crab::outs() << "}\n";);
+    CRAB_LOG(m_analysis.name(), crab::outs() << "fixpoint ordering={";
+             bool first = true; for (auto &v
+                                     : order) {
+               if (!first)
+                 crab::outs() << ",";
+               first = false;
+               crab::outs() << basic_block_traits<basic_block_t>::to_string(v);
+             } crab::outs() << "}\n";);
 
     CRAB_LOG(m_analysis.name(), crab::outs() << m_analysis.name() << ": "
                                              << "fixpoint reached in "
@@ -195,9 +194,9 @@ public:
   const_iterator out_end() const { return m_out_map.end(); }
 
   // return null if not found
-  const killgen_domain_t* get_in(const basic_block_label_t &bb) const {
+  const killgen_domain_t *get_in(const basic_block_label_t &bb) const {
     auto it = m_in_map.find(bb);
-    if (it!= m_in_map.end()) {
+    if (it != m_in_map.end()) {
       return &(it->second);
     } else {
       return nullptr;
@@ -205,15 +204,14 @@ public:
   }
 
   // return null if not found
-  const killgen_domain_t* get_out(const basic_block_label_t &bb) const {
+  const killgen_domain_t *get_out(const basic_block_label_t &bb) const {
     auto it = m_out_map.find(bb);
-    if (it!= m_out_map.end()) {
+    if (it != m_out_map.end()) {
       return &(it->second);
     } else {
       return nullptr;
     }
   }
-  
 };
 
 } // end namespace iterators

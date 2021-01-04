@@ -278,10 +278,8 @@ public:
 
   unsigned get_fixpo_visits() const { return _num_fixpo; }
 
-  void reset_fixpo_visits() {
-    _num_fixpo = 0;
-  }
-  
+  void reset_fixpo_visits() { _num_fixpo = 0; }
+
   void write(crab::crab_os &o) const {
     o << "(" << this->_head;
     if (!this->_wto_components->empty()) {
@@ -319,7 +317,7 @@ template <typename G> class wto {
 public:
   using wto_nesting_t = wto_nesting<G>;
   using wto_component_t = wto_component<G>;
-  using wto_component_visitor_t = wto_component_visitor<G>;  
+  using wto_component_visitor_t = wto_component_visitor<G>;
   using wto_vertex_t = wto_vertex<G>;
   using wto_cycle_t = wto_cycle<G>;
   using wto_t = wto<G>;
@@ -633,7 +631,7 @@ public:
     this->_stack.reset();
     this->build_nesting();
   }
-  
+
   // deep copy
   wto(const wto_t &other)
       : _wto_components(
@@ -680,7 +678,8 @@ public:
     return boost::make_indirect_iterator(_wto_components->end());
   }
 
-  boost::optional<wto_nesting_t> nesting(typename boost::graph_traits<G>::vertex_descriptor n) {
+  boost::optional<wto_nesting_t>
+  nesting(typename boost::graph_traits<G>::vertex_descriptor n) {
     typename nesting_table_t::iterator it = this->_nesting_table->find(n);
     if (it == this->_nesting_table->end()) {
       return boost::optional<wto_nesting_t>();
@@ -711,17 +710,18 @@ public:
     return o;
   }
 
-}; // class wto  
+}; // class wto
 } // namespace ikos
 
 namespace crab {
 
-template<typename G>  
-class reset_wto_cycle_counter_visitor: public ikos::wto_component_visitor<G>  {
+template <typename G>
+class reset_wto_cycle_counter_visitor : public ikos::wto_component_visitor<G> {
   using wto_component_visitor_t = ikos::wto_component_visitor<G>;
+
 public:
   using wto_cycle_t = typename wto_component_visitor_t::wto_cycle_t;
-  using wto_vertex_t = typename wto_component_visitor_t::wto_vertex_t;  
+  using wto_vertex_t = typename wto_component_visitor_t::wto_vertex_t;
   void visit(wto_vertex_t &) override {}
   void visit(wto_cycle_t &cycle) override {
     cycle.reset_fixpo_visits();

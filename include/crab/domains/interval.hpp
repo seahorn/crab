@@ -538,8 +538,8 @@ public:
 }; //  class interval
 
 template <>
-inline interval<q_number>
-interval<q_number>::operator/(interval<q_number> x) const {
+inline interval<q_number> interval<q_number>::
+operator/(interval<q_number> x) const {
   if (is_bottom() || x.is_bottom()) {
     return bottom();
   } else {
@@ -567,8 +567,8 @@ interval<q_number>::operator/(interval<q_number> x) const {
 }
 
 template <>
-inline interval<z_number>
-interval<z_number>::operator/(interval<z_number> x) const {
+inline interval<z_number> interval<z_number>::
+operator/(interval<z_number> x) const {
   if (is_bottom() || x.is_bottom()) {
     return bottom();
   } else {

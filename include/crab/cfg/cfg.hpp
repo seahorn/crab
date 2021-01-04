@@ -239,10 +239,10 @@ struct debug_info {
     return ((m_file != "") && (m_line >= 0) && (m_col >= 0));
   }
 
-  std::string get_file() const { return m_file;} 
-  int get_line() const { return m_line;}
-  int get_column() const { return m_col;}
-  
+  std::string get_file() const { return m_file; }
+  int get_line() const { return m_line; }
+  int get_column() const { return m_col; }
+
   void write(crab_os &o) const {
     o << "File  : " << m_file << "\n"
       << "Line  : " << m_line << "\n"
@@ -299,7 +299,7 @@ public:
   bool is_ref_arr_store() const { return m_stmt_code == REF_ARR_STORE; }
   bool is_ref_assume() const { return (m_stmt_code == REF_ASSUME); }
   bool is_ref_assert() const { return (m_stmt_code == REF_ASSERT); }
-  bool is_ref_select() const { return (m_stmt_code == REF_SELECT); }  
+  bool is_ref_select() const { return (m_stmt_code == REF_SELECT); }
   bool is_ref_to_int() const { return (m_stmt_code == REF_TO_INT); }
   bool is_int_to_ref() const { return (m_stmt_code == INT_TO_REF); }
   bool is_region_init() const { return (m_stmt_code == REGION_INIT); }
@@ -505,7 +505,7 @@ public:
   using variable_t = variable<Number, VariableName>;
 
   havoc_stmt(variable_t lhs, std::string comment, basic_block_t *parent)
-    : statement_t(HAVOC, parent), m_lhs(lhs), m_comment(comment) {
+      : statement_t(HAVOC, parent), m_lhs(lhs), m_comment(comment) {
     this->m_live.add_def(m_lhs);
   }
 
@@ -622,12 +622,12 @@ public:
 
   virtual void write(crab_os &o) const {
     o << "assert(" << m_cst << ")";
-    if (this->m_dbg_info.has_debug()) {    
+    if (this->m_dbg_info.has_debug()) {
       o << "   /* Property check at "
-	<< "file=" << this->m_dbg_info.m_file  << " "
-	<< "line=" << this->m_dbg_info.m_line  << " "
-	<< "col=" << this->m_dbg_info.m_col   << "*/";
-    }    
+        << "file=" << this->m_dbg_info.m_file << " "
+        << "line=" << this->m_dbg_info.m_line << " "
+        << "col=" << this->m_dbg_info.m_col << "*/";
+    }
   }
 
 private:
@@ -678,9 +678,9 @@ private:
   static bitwidth_t get_bitwidth(const variable_t &v) {
     auto ty = v.get_type();
     assert(ty.is_integer() || ty.is_bool());
-    return (ty.is_integer() ? ty.get_integer_bitwidth(): 1);
+    return (ty.is_integer() ? ty.get_integer_bitwidth() : 1);
   }
-  
+
   cast_operation_t m_op;
   variable_t m_src;
   variable_t m_dst;
@@ -1046,8 +1046,8 @@ public:
   }
 
   virtual void write(crab_os &o) const {
-    o << "region_copy(" << m_lhs_region << ":" << m_lhs_region.get_type() << ", "
-      << m_rhs_region << ":" << m_rhs_region.get_type() << ")";
+    o << "region_copy(" << m_lhs_region << ":" << m_lhs_region.get_type()
+      << ", " << m_rhs_region << ":" << m_rhs_region.get_type() << ")";
   }
 
 private:
@@ -1069,7 +1069,7 @@ public:
                 debug_info dbg_info = debug_info())
       : statement_t(REF_MAKE, parent, dbg_info), m_lhs(lhs), m_region(region) {
     this->m_live.add_def(m_lhs);
-    this->m_live.add_use(m_region);    
+    this->m_live.add_use(m_region);
   }
 
   const variable_t &lhs() const { return m_lhs; }
@@ -1111,7 +1111,7 @@ public:
       : statement_t(REF_LOAD, parent, dbg_info), m_lhs(lhs), m_ref(ref),
         m_region(region) {
     this->m_live.add_def(m_lhs);
-    this->m_live.add_use(m_region);        
+    this->m_live.add_use(m_region);
     this->m_live.add_use(m_ref);
   }
 
@@ -1154,8 +1154,9 @@ public:
   using variable_t = variable<Number, VariableName>;
   using variable_or_constant_t = variable_or_constant<Number, VariableName>;
 
-  store_to_ref_stmt(variable_t ref, variable_t region, variable_or_constant_t val,
-                    basic_block_t *parent, debug_info dbg_info = debug_info())
+  store_to_ref_stmt(variable_t ref, variable_t region,
+                    variable_or_constant_t val, basic_block_t *parent,
+                    debug_info dbg_info = debug_info())
       : statement_t(REF_STORE, parent, dbg_info), m_ref(ref), m_region(region),
         m_val(val) {
     this->m_live.add_def(m_ref);
@@ -1182,7 +1183,8 @@ public:
 
   virtual void write(crab_os &o) const {
     o << "store_to_ref(" << m_region << ":" << m_region.get_type() << ","
-      << m_ref << ":" << m_ref.get_type()  << "," << m_val << ":" << m_val.get_type() << ")";
+      << m_ref << ":" << m_ref.get_type() << "," << m_val << ":"
+      << m_val.get_type() << ")";
   }
 
 private:
@@ -1210,7 +1212,7 @@ public:
     this->m_live.add_def(m_lhs);
     this->m_live.add_def(m_lhs_region);
     this->m_live.add_use(m_rhs);
-    this->m_live.add_use(m_rhs_region);            
+    this->m_live.add_use(m_rhs_region);
     for (auto const &v : m_offset.variables()) {
       this->m_live.add_use(v);
     }
@@ -1237,15 +1239,14 @@ public:
   }
 
   virtual void write(crab_os &o) const {
-    o << "(" << m_lhs_region << ":" << m_lhs_region.get_type() << ","
-      << m_lhs << ":" << m_lhs.get_type()  << ") := ";
+    o << "(" << m_lhs_region << ":" << m_lhs_region.get_type() << "," << m_lhs
+      << ":" << m_lhs.get_type() << ") := ";
     if (m_offset.equal(Number(0))) {
-      o << "gep_ref(" << m_rhs_region << ":" << m_rhs_region.get_type()
-	<< "," << m_rhs << ":" << m_rhs.get_type() << ")";
+      o << "gep_ref(" << m_rhs_region << ":" << m_rhs_region.get_type() << ","
+        << m_rhs << ":" << m_rhs.get_type() << ")";
     } else {
-      o << "gep_ref(" << m_rhs_region << ":" << m_rhs_region.get_type()
-	<< "," << m_rhs << ":" << m_rhs.get_type() << " + " << m_offset
-        << ")";
+      o << "gep_ref(" << m_rhs_region << ":" << m_rhs_region.get_type() << ","
+        << m_rhs << ":" << m_rhs.get_type() << " + " << m_offset << ")";
     }
     return;
   }
@@ -1280,7 +1281,7 @@ public:
         m_region(region), m_index(index), m_elem_size(elem_size) {
 
     this->m_live.add_def(m_lhs);
-    this->m_live.add_use(m_region);    
+    this->m_live.add_use(m_region);
     this->m_live.add_use(m_ref);
     for (auto const &v : m_elem_size.variables()) {
       this->m_live.add_use(v);
@@ -1313,8 +1314,8 @@ public:
   virtual void write(crab_os &o) const {
     o << m_lhs << ":" << m_lhs.get_type() << " = "
       << "load_from_arr_ref(" << m_region << ":" << m_region.get_type() << ","
-      << m_ref << ":" << m_ref.get_type() << "," << m_index
-      << ",sz " << m_elem_size << ")";
+      << m_ref << ":" << m_ref.get_type() << "," << m_index << ",sz "
+      << m_elem_size << ")";
   }
 
 private:
@@ -1349,12 +1350,12 @@ public:
         m_region(region), m_lb(lb), m_ub(ub), m_value(value),
         m_elem_size(elem_size), m_is_strong_update(is_strong_update) {
 
-    this->m_live.add_def(m_ref);    
+    this->m_live.add_def(m_ref);
     this->m_live.add_use(m_ref);
 
     this->m_live.add_use(m_region);
-    this->m_live.add_def(m_region);    
-    
+    this->m_live.add_def(m_region);
+
     for (auto const &v : m_elem_size.variables()) {
       this->m_live.add_use(v);
     }
@@ -1399,7 +1400,7 @@ public:
     if (m_lb.equal(m_ub)) {
       o << "," << m_lb << "," << m_value << ",sz " << m_elem_size;
     } else {
-      o	<< "," << m_lb << ".." << m_ub << "," << m_value << ",sz "
+      o << "," << m_lb << ".." << m_ub << "," << m_value << ",sz "
         << m_elem_size;
     }
     o << ")";
@@ -1502,13 +1503,12 @@ public:
 
   virtual void write(crab_os &o) const {
     o << "assert(" << m_cst << ")";
-    if (this->m_dbg_info.has_debug()) {    
+    if (this->m_dbg_info.has_debug()) {
       o << "   /* Property check at "
-	<< "file=" << this->m_dbg_info.m_file  << " "
-	<< "line=" << this->m_dbg_info.m_line  << " "
-	<< "col=" << this->m_dbg_info.m_col   << "*/";
+        << "file=" << this->m_dbg_info.m_file << " "
+        << "line=" << this->m_dbg_info.m_line << " "
+        << "col=" << this->m_dbg_info.m_col << "*/";
     }
-    
   }
 
 private:
@@ -1526,47 +1526,46 @@ public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
   using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
-  using variable_or_constant_t = variable_or_constant<Number, VariableName>;  
+  using variable_or_constant_t = variable_or_constant<Number, VariableName>;
 
   /* opX_rgn can be none if opX_ref is a null constant */
   ref_select_stmt(variable_t lhs_ref, variable_t lhs_rgn, variable_t cond,
-		  variable_or_constant_t op1_ref, boost::optional<variable_t> op1_rgn,
-		  variable_or_constant_t op2_ref, boost::optional<variable_t> op2_rgn,
-		  basic_block_t *parent)
-      : statement_t(REF_SELECT, parent),
-	m_lhs_ref(lhs_ref), m_lhs_rgn(lhs_rgn),
-	m_cond(cond),
-	m_op1_ref(op1_ref), m_op1_rgn(op1_rgn),
-	m_op2_ref(op2_ref), m_op2_rgn(op2_rgn) {
-    
+                  variable_or_constant_t op1_ref,
+                  boost::optional<variable_t> op1_rgn,
+                  variable_or_constant_t op2_ref,
+                  boost::optional<variable_t> op2_rgn, basic_block_t *parent)
+      : statement_t(REF_SELECT, parent), m_lhs_ref(lhs_ref), m_lhs_rgn(lhs_rgn),
+        m_cond(cond), m_op1_ref(op1_ref), m_op1_rgn(op1_rgn),
+        m_op2_ref(op2_ref), m_op2_rgn(op2_rgn) {
+
     this->m_live.add_def(m_lhs_ref);
     this->m_live.add_def(m_lhs_rgn);
     this->m_live.add_use(m_cond);
     if (m_op1_ref.is_variable())
       this->m_live.add_use(m_op1_ref.get_variable());
-    if (m_op2_ref.is_variable()) 
+    if (m_op2_ref.is_variable())
       this->m_live.add_use(m_op2_ref.get_variable());
     if (m_op1_rgn)
       this->m_live.add_use(*m_op1_rgn);
     if (m_op2_rgn)
-      this->m_live.add_use(*m_op2_rgn);      
+      this->m_live.add_use(*m_op2_rgn);
   }
 
   const variable_t &lhs_ref() const { return m_lhs_ref; }
 
-  const variable_t &lhs_rgn() const { return m_lhs_rgn; }  
+  const variable_t &lhs_rgn() const { return m_lhs_rgn; }
 
   const variable_t &cond() const { return m_cond; }
 
   const variable_or_constant_t &left_ref() const { return m_op1_ref; }
 
   // if left_ref() is a null constant then left_rgn() returns none
-  boost::optional<variable_t> left_rgn() const { return m_op1_rgn; }  
+  boost::optional<variable_t> left_rgn() const { return m_op1_rgn; }
 
   const variable_or_constant_t &right_ref() const { return m_op2_ref; }
 
-  // if right_ref() is a null constant then right_rgn() returns none  
-  boost::optional<variable_t> right_rgn() const { return m_op2_rgn; }    
+  // if right_ref() is a null constant then right_rgn() returns none
+  boost::optional<variable_t> right_rgn() const { return m_op2_rgn; }
 
   virtual void
   accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
@@ -1574,13 +1573,13 @@ public:
   }
 
   virtual statement_t *clone(basic_block_t *parent) const {
-    return new this_type(m_lhs_ref, m_lhs_rgn, m_cond,
-			 m_op1_ref, m_op1_rgn,
-			 m_op2_ref, m_op2_rgn, parent);
+    return new this_type(m_lhs_ref, m_lhs_rgn, m_cond, m_op1_ref, m_op1_rgn,
+                         m_op2_ref, m_op2_rgn, parent);
   }
 
   virtual void write(crab_os &o) const {
-    o << "(" << m_lhs_ref << "," << m_lhs_rgn << ")" << " = "
+    o << "(" << m_lhs_ref << "," << m_lhs_rgn << ")"
+      << " = "
       << "ite(" << m_cond << ",";
     if (m_op1_rgn) {
       o << "(" << m_op1_ref << "," << *m_op1_rgn << ")";
@@ -1593,19 +1592,19 @@ public:
     } else {
       o << m_op2_ref;
     }
-    o <<  ")";
+    o << ")";
   }
 
 private:
-  variable_t m_lhs_ref;  // pre: reference type
+  variable_t m_lhs_ref; // pre: reference type
   variable_t m_lhs_rgn;
-  variable_t m_cond; // pre: boolean type
-  variable_or_constant_t m_op1_ref;  // pre: reference type
+  variable_t m_cond;                // pre: boolean type
+  variable_or_constant_t m_op1_ref; // pre: reference type
   boost::optional<variable_t> m_op1_rgn;
-  variable_or_constant_t m_op2_ref;  // pre: reference type
-  boost::optional<variable_t> m_op2_rgn;  
+  variable_or_constant_t m_op2_ref; // pre: reference type
+  boost::optional<variable_t> m_op2_rgn;
 };
-  
+
 template <class BasicBlockLabel, class Number, class VariableName>
 class ref_to_int_stmt
     : public statement<BasicBlockLabel, Number, VariableName> {
@@ -1643,8 +1642,8 @@ public:
 
   virtual void write(crab_os &o) const {
     o << m_int_var << ":" << m_int_var.get_type() << " := "
-      << "ref_to_int(" << m_region << ":" << m_region.get_type()
-      << "," << m_ref_var << ":" << m_ref_var.get_type() << ")";
+      << "ref_to_int(" << m_region << ":" << m_region.get_type() << ","
+      << m_ref_var << ":" << m_ref_var.get_type() << ")";
   }
 
 private:
@@ -1690,8 +1689,8 @@ public:
 
   virtual void write(crab_os &o) const {
     o << m_ref_var << ":" << m_ref_var.get_type() << " := "
-      << "int_to_ref(" << m_region << ":" << m_region.get_type()
-      << "," << m_int_var << ":" << m_int_var.get_type() << ")";
+      << "int_to_ref(" << m_region << ":" << m_region.get_type() << ","
+      << m_int_var << ":" << m_int_var.get_type() << ")";
   }
 
 private:
@@ -1980,12 +1979,13 @@ public:
   using variable_t = variable<Number, VariableName>;
   using linear_constraint_t = ikos::linear_constraint<Number, VariableName>;
   using reference_constraint_t = reference_constraint<Number, VariableName>;
-  using linear_or_reference_constraint_t = boost::variant<linear_constraint_t, reference_constraint_t>;
+  using linear_or_reference_constraint_t =
+      boost::variant<linear_constraint_t, reference_constraint_t>;
 
   bool_assign_cst(variable_t lhs, linear_constraint_t rhs,
                   basic_block_t *parent)
-    : statement_t(BOOL_ASSIGN_CST, parent), m_is_rhs_linear_constraint(true),
-      m_lhs(lhs), m_rhs(rhs) {
+      : statement_t(BOOL_ASSIGN_CST, parent), m_is_rhs_linear_constraint(true),
+        m_lhs(lhs), m_rhs(rhs) {
     this->m_live.add_def(m_lhs);
     for (auto const &v : rhs_as_linear_constraint().variables())
       this->m_live.add_use(v);
@@ -1993,13 +1993,13 @@ public:
 
   bool_assign_cst(variable_t lhs, reference_constraint_t rhs,
                   basic_block_t *parent)
-    : statement_t(BOOL_ASSIGN_CST, parent), m_is_rhs_linear_constraint(false),
-      m_lhs(lhs), m_rhs(rhs) {
+      : statement_t(BOOL_ASSIGN_CST, parent), m_is_rhs_linear_constraint(false),
+        m_lhs(lhs), m_rhs(rhs) {
     this->m_live.add_def(m_lhs);
     for (auto const &v : rhs_as_reference_constraint().variables())
       this->m_live.add_use(v);
   }
-  
+
   const variable_t &lhs() const { return m_lhs; }
 
   const linear_constraint_t &rhs_as_linear_constraint() const {
@@ -2017,11 +2017,9 @@ public:
       CRAB_ERROR("rhs of bool_assign_cst is not a reference constraint");
     }
   }
-  
-  bool is_rhs_linear_constraint() const {
-    return m_is_rhs_linear_constraint;
-  }
-  
+
+  bool is_rhs_linear_constraint() const { return m_is_rhs_linear_constraint; }
+
   virtual void
   accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
@@ -2031,38 +2029,37 @@ public:
     if (is_rhs_linear_constraint()) {
       return new this_type(m_lhs, rhs_as_linear_constraint(), parent);
     } else {
-      return new this_type(m_lhs, rhs_as_reference_constraint(), parent);      
-    } 
+      return new this_type(m_lhs, rhs_as_reference_constraint(), parent);
+    }
   }
 
   virtual void write(crab_os &o) const {
-    o << m_lhs << " = ";    
+    o << m_lhs << " = ";
     if (is_rhs_linear_constraint()) {
       auto const &rhs = rhs_as_linear_constraint();
       if (rhs.is_tautology()) {
-	o << "true";
+        o << "true";
       } else if (rhs.is_contradiction()) {
-	o << "false";
+        o << "false";
       } else {
-	o << "(" << rhs << ")";
+        o << "(" << rhs << ")";
       }
     } else {
       auto const &rhs = rhs_as_reference_constraint();
       if (rhs.is_tautology()) {
-	o << "true";
+        o << "true";
       } else if (rhs.is_contradiction()) {
-	o << "false";
+        o << "false";
       } else {
-	o << "(" << rhs << ")";
+        o << "(" << rhs << ")";
       }
-    } 
+    }
   }
 
 private:
   bool m_is_rhs_linear_constraint;
   variable_t m_lhs; // pre: boolean type
   linear_or_reference_constraint_t m_rhs;
-  
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
@@ -2291,11 +2288,11 @@ public:
 
   virtual void write(crab_os &o) const {
     o << "assert(" << m_var << ")";
-    if (this->m_dbg_info.has_debug()) {    
-      o << "   /* Property check at " 
-	<< "file=" << this->m_dbg_info.m_file  << " "
-	<< "line=" << this->m_dbg_info.m_line  << " "
-	<< "col=" << this->m_dbg_info.m_col   << "*/";
+    if (this->m_dbg_info.has_debug()) {
+      o << "   /* Property check at "
+        << "file=" << this->m_dbg_info.m_file << " "
+        << "line=" << this->m_dbg_info.m_line << " "
+        << "col=" << this->m_dbg_info.m_col << "*/";
     }
   }
 
@@ -2380,7 +2377,7 @@ public:
       store_to_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assume_ref_t = assume_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assert_ref_t = assert_ref_stmt<BasicBlockLabel, Number, VariableName>;
-  using ref_select_t = ref_select_stmt<BasicBlockLabel, Number, VariableName>;  
+  using ref_select_t = ref_select_stmt<BasicBlockLabel, Number, VariableName>;
   using int_to_ref_t = int_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using ref_to_int_t = ref_to_int_stmt<BasicBlockLabel, Number, VariableName>;
   // Boolean
@@ -2509,9 +2506,7 @@ public:
     return boost::make_indirect_iterator(m_stmts.rend());
   }
 
-  size_t size() const {
-    return m_stmts.size();
-  }
+  size_t size() const { return m_stmts.size(); }
 
   live_domain_t &live() { return m_live; }
 
@@ -2585,19 +2580,16 @@ public:
   }
 
   // insert all statements of other at the back
-  void move_back(basic_block_t& other) {
+  void move_back(basic_block_t &other) {
     m_stmts.reserve(m_stmts.size() + other.m_stmts.size());
-    std::move(other.m_stmts.begin(), other.m_stmts.end(), std::back_inserter(m_stmts));
+    std::move(other.m_stmts.begin(), other.m_stmts.end(),
+              std::back_inserter(m_stmts));
   }
 
-  size_t in_degree() const {
-    return m_prev.size();
-  }
+  size_t in_degree() const { return m_prev.size(); }
 
-  size_t out_degree() const {
-    return m_next.size();
-  }
-  
+  size_t out_degree() const { return m_next.size(); }
+
   // Remove s (and free) from this
   void remove(const statement_t *s, bool must_update_uses_and_defs = true) {
     // remove statement using the remove-erase idiom
@@ -2895,11 +2887,10 @@ public:
 
   const statement_t *store_to_arr_ref(variable_t ref, variable_t region,
                                       lin_exp_t lb_index, lin_exp_t ub_index,
-				      lin_exp_t val,
-                                      lin_exp_t elem_size,
+                                      lin_exp_t val, lin_exp_t elem_size,
                                       bool is_strong_update) {
-    return insert(new store_to_arr_ref_t(ref, region, lb_index, ub_index,
-                                         val, elem_size, is_strong_update, this));
+    return insert(new store_to_arr_ref_t(ref, region, lb_index, ub_index, val,
+                                         elem_size, is_strong_update, this));
   }
 
   const statement_t *assume_ref(ref_cst_t cst) {
@@ -2910,35 +2901,38 @@ public:
     return insert(new assert_ref_t(cst, this, di));
   }
 
-  // (lhs_ref, lhs_rgn) := select_ref(cond, (op1_ref, op1_rgn), (op2_ref, op2_rgn))    
+  // (lhs_ref, lhs_rgn) := select_ref(cond, (op1_ref, op1_rgn), (op2_ref,
+  // op2_rgn))
   const statement_t *select_ref(variable_t lhs_ref, variable_t lhs_rgn,
-				variable_t cond,
-				variable_t op1_ref, variable_t op1_rgn,
-				variable_t op2_ref, variable_t op2_rgn) {
-    return insert(new ref_select_t(lhs_ref, lhs_rgn, cond,
-				   op1_ref, op1_rgn, op2_ref, op2_rgn, this));
+                                variable_t cond, variable_t op1_ref,
+                                variable_t op1_rgn, variable_t op2_ref,
+                                variable_t op2_rgn) {
+    return insert(new ref_select_t(lhs_ref, lhs_rgn, cond, op1_ref, op1_rgn,
+                                   op2_ref, op2_rgn, this));
   }
 
-  // (lhs_ref, lhs_rgn) := select_ref(cond, null, (op_ref, op_rgn))  
-  const statement_t *select_ref_null_true_value(variable_t lhs_ref, variable_t lhs_rgn,
-						variable_t cond,
-						variable_t op_ref, variable_t op_rgn) {
-    return insert(new ref_select_t(lhs_ref, lhs_rgn, cond,
-				   variable_or_constant_t::make_reference_null(), boost::none,
-				   op_ref, op_rgn,
-				   this));
+  // (lhs_ref, lhs_rgn) := select_ref(cond, null, (op_ref, op_rgn))
+  const statement_t *select_ref_null_true_value(variable_t lhs_ref,
+                                                variable_t lhs_rgn,
+                                                variable_t cond,
+                                                variable_t op_ref,
+                                                variable_t op_rgn) {
+    return insert(new ref_select_t(
+        lhs_ref, lhs_rgn, cond, variable_or_constant_t::make_reference_null(),
+        boost::none, op_ref, op_rgn, this));
   }
 
   // (lhs_ref, lhs_rgn) := select_ref(cond, (op_ref, op_rgn), null)
-  const statement_t *select_ref_null_false_value(variable_t lhs_ref, variable_t lhs_rgn,
-						 variable_t cond,
-						 variable_t op_ref, variable_t op_rgn) {
-    return insert(new ref_select_t(lhs_ref, lhs_rgn, cond,
-				   op_ref, op_rgn,
-				   variable_or_constant_t::make_reference_null(), boost::none,
-				   this));
+  const statement_t *select_ref_null_false_value(variable_t lhs_ref,
+                                                 variable_t lhs_rgn,
+                                                 variable_t cond,
+                                                 variable_t op_ref,
+                                                 variable_t op_rgn) {
+    return insert(new ref_select_t(
+        lhs_ref, lhs_rgn, cond, op_ref, op_rgn,
+        variable_or_constant_t::make_reference_null(), boost::none, this));
   }
-  
+
   const statement_t *int_to_ref(variable_t int_var, variable_t region,
                                 variable_t ref_var) {
     return insert(new int_to_ref_t(int_var, region, ref_var, this));
@@ -2956,7 +2950,7 @@ public:
   const statement_t *bool_assign(variable_t lhs, ref_cst_t rhs) {
     return insert(new bool_assign_cst_t(lhs, rhs, this));
   }
-  
+
   const statement_t *bool_assign(variable_t lhs, variable_t rhs,
                                  bool is_not_rhs = false) {
     return insert(new bool_assign_var_t(lhs, rhs, is_not_rhs, this));
@@ -3114,7 +3108,7 @@ struct statement_visitor {
       store_to_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assume_ref_t = assume_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assert_ref_t = assert_ref_stmt<BasicBlockLabel, Number, VariableName>;
-  using select_ref_t = ref_select_stmt<BasicBlockLabel, Number, VariableName>;  
+  using select_ref_t = ref_select_stmt<BasicBlockLabel, Number, VariableName>;
   using int_to_ref_t = int_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using ref_to_int_t = ref_to_int_stmt<BasicBlockLabel, Number, VariableName>;
   using bool_bin_op_t = bool_binary_op<BasicBlockLabel, Number, VariableName>;
@@ -3413,7 +3407,7 @@ private:
 
     const basic_block_t &cur = get_node(curId);
     f(cur);
-    for (auto const& n : boost::make_iterator_range(cur.next_blocks())) {
+    for (auto const &n : boost::make_iterator_range(cur.next_blocks())) {
       dfs_rec(n, visited, f);
     }
   }
@@ -3670,7 +3664,6 @@ public:
   }
 
 private:
-  
   ////
   // Trivial cfg simplifications
   // TODO: move to transform directory
@@ -3679,13 +3672,13 @@ private:
   // Helpers
 
   basic_block_t &get_child(BasicBlockLabel b) {
-    //assert(has_one_child(b));
+    // assert(has_one_child(b));
     auto rng = next_nodes(b);
     return get_node(*(rng.begin()));
   }
 
   basic_block_t &get_parent(BasicBlockLabel b) {
-    //assert(has_one_parent(b));
+    // assert(has_one_parent(b));
     auto rng = prev_nodes(b);
     return get_node(*(rng.begin()));
   }
@@ -3700,7 +3693,7 @@ private:
     auto rng = prev_nodes(b);
     return (std::distance(rng.begin(), rng.end()) == 1);
   }
-  
+
   void merge_blocks_rec(BasicBlockLabel curId, visited_t &visited) {
     if (!visited.insert(curId).second)
       return;
@@ -3737,65 +3730,65 @@ private:
 #else
   // Non-recursive version thanks to Prevail
   void merge_blocks() {
-    std::set<basic_block_label_t> worklist(this->label_begin(), this->label_end());
+    std::set<basic_block_label_t> worklist(this->label_begin(),
+                                           this->label_end());
     while (!worklist.empty()) {
       auto label = *worklist.begin();
       worklist.erase(label);
-      
-      basic_block_t& bb = get_node(label);
+
+      basic_block_t &bb = get_node(label);
 
       // skip bb for now but it will be folded into its parent when
       // the parent is processed.
       if (bb.in_degree() == 1 && get_parent(label).out_degree() == 1) {
-	continue;
+        continue;
       }
       while (bb.out_degree() == 1) {
-	basic_block_t& next_bb = get_child(label);
+        basic_block_t &next_bb = get_child(label);
 
-	// skip self-loops or if next_bb has in-degree > 1
-	if (&next_bb == &bb || next_bb.in_degree() != 1) {
-	  break;
-	}
-	
-	worklist.erase(next_bb.label());
-	
-	if (next_bb.label() == m_exit) {
-	  m_exit = label;
-	}
+        // skip self-loops or if next_bb has in-degree > 1
+        if (&next_bb == &bb || next_bb.in_degree() != 1) {
+          break;
+        }
 
-	// fold next_bb into bb
-	bb.copy_back(next_bb);
-	bb -= next_bb;
-	auto children = next_bb.m_next;
-	for (auto const & next_next_label : children) {
-	  basic_block_t& next_next_bb = get_node(next_next_label);
-	  bb >> next_next_bb;
-	}
-	remove(next_bb.label());
+        worklist.erase(next_bb.label());
+
+        if (next_bb.label() == m_exit) {
+          m_exit = label;
+        }
+
+        // fold next_bb into bb
+        bb.copy_back(next_bb);
+        bb -= next_bb;
+        auto children = next_bb.m_next;
+        for (auto const &next_next_label : children) {
+          basic_block_t &next_next_bb = get_node(next_next_label);
+          bb >> next_next_bb;
+        }
+        remove(next_bb.label());
       }
     }
   }
-#endif   
+#endif
 
-// mark reachable blocks from entry
-template <class AnyCfg>
-void mark_alive_blocks(AnyCfg &cfg, visited_t &alive_set) {
-  std::vector<typename AnyCfg::basic_block_label_t> worklist;
-  worklist.push_back(cfg.entry());
-  
-  while (!worklist.empty()) {
-    auto bb_label = worklist.back();
-    worklist.pop_back();
-    alive_set.insert(bb_label);
-    
-    for (auto child : cfg.next_nodes(bb_label)) {
-      if (!(alive_set.count(child) > 0)) {
-	worklist.push_back(child);
+  // mark reachable blocks from entry
+  template <class AnyCfg>
+  void mark_alive_blocks(AnyCfg &cfg, visited_t &alive_set) {
+    std::vector<typename AnyCfg::basic_block_label_t> worklist;
+    worklist.push_back(cfg.entry());
+
+    while (!worklist.empty()) {
+      auto bb_label = worklist.back();
+      worklist.pop_back();
+      alive_set.insert(bb_label);
+
+      for (auto child : cfg.next_nodes(bb_label)) {
+        if (!(alive_set.count(child) > 0)) {
+          worklist.push_back(child);
+        }
       }
     }
   }
-}
-  
 
   // remove unreachable blocks
   void remove_unreachable_blocks() {
@@ -4059,7 +4052,7 @@ private:
       return;
     const basic_block_t &cur = get_node(curId);
     f(cur);
-    for (auto const& n : next_nodes(curId)) {
+    for (auto const &n : next_nodes(curId)) {
       dfs_rec(n, visited, f);
     }
   }
@@ -4208,10 +4201,10 @@ template <typename CFG> struct cfg_hasher {
 
   static size_t combine(size_t seed, size_t hash_val) {
     // Similar to boost::hash_combine
-    seed ^= hash_val + 0x9e3779b9 + (seed<<6) + (seed>>2);
+    seed ^= hash_val + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     return seed;
   }
-  
+
   static size_t hash(callsite_t cs) {
     size_t res = boost::hash_value(cs.get_func_name());
     for (unsigned i = 0; i < cs.get_num_args(); i++) {
@@ -4299,7 +4292,7 @@ private:
         store_to_arr_ref_t;
     using assume_ref_t = typename statement_visitor<B, N, V>::assume_ref_t;
     using assert_ref_t = typename statement_visitor<B, N, V>::assert_ref_t;
-    using select_ref_t = typename statement_visitor<B, N, V>::select_ref_t;    
+    using select_ref_t = typename statement_visitor<B, N, V>::select_ref_t;
     using int_to_ref_t = typename statement_visitor<B, N, V>::int_to_ref_t;
     using ref_to_int_t = typename statement_visitor<B, N, V>::ref_to_int_t;
     using bool_bin_op_t = typename statement_visitor<B, N, V>::bool_bin_op_t;
@@ -4314,7 +4307,7 @@ private:
     using lin_exp_t = ikos::linear_expression<N, V>;
     using lin_cst_t = ikos::linear_constraint<N, V>;
     using variable_t = variable<N, V>;
-    using variable_or_constant_t = variable_or_constant<N, V>;    
+    using variable_or_constant_t = variable_or_constant<N, V>;
     using variable_type_t = typename variable_t::type_t;
     using variable_bitwidth_t = typename variable_t::bitwidth_t;
 
@@ -4399,14 +4392,15 @@ private:
       }
     }
 
-    void check_ref(const variable_or_constant_t &v, std::string msg, statement_t &s) {
+    void check_ref(const variable_or_constant_t &v, std::string msg,
+                   statement_t &s) {
       if (!v.get_type().is_reference()) {
         crab::crab_string_os os;
         os << "(type checking) " << msg << " in " << s;
         CRAB_ERROR(os.str());
       }
     }
-    
+
     // check two variables have same types
     void check_same_type(const variable_t &v1, const variable_t &v2,
                          std::string msg, statement_t &s) {
@@ -4449,17 +4443,20 @@ private:
     void check_array_and_scalar_type(const variable_t &v1, const variable_t &v2,
                                      statement_t &s) {
       if (v1.get_type().is_bool_array()) {
-	if (v2.get_type().is_bool()) return;
+        if (v2.get_type().is_bool())
+          return;
       } else if (v1.get_type().is_integer_array()) {
-	if (v2.get_type().is_integer()) return;	
+        if (v2.get_type().is_integer())
+          return;
       } else if (v1.get_type().is_real_array()) {
-	if (v2.get_type().is_real()) return;		
+        if (v2.get_type().is_real())
+          return;
       } else {
         crab::crab_string_os os;
         os << "(type checking) " << v1 << " must be an array variable in " << s;
         CRAB_ERROR(os.str());
       }
-      
+
       crab::crab_string_os os;
       os << "(type checking) " << v1 << " and " << v2
          << " do not have consistent types in " << s;
@@ -4503,7 +4500,8 @@ private:
 
       for (auto const &v : rhs.variables()) {
         check_varname(v);
-        check_same_type(lhs, v, "variable cannot have different type from lhs", s);
+        check_same_type(lhs, v, "variable cannot have different type from lhs",
+                        s);
       }
     }
 
@@ -4518,7 +4516,8 @@ private:
           first = false;
         }
         assert(first_var);
-        check_same_type(*first_var, v, "inconsistent types in assume variables", s);
+        check_same_type(*first_var, v, "inconsistent types in assume variables",
+                        s);
       }
     }
 
@@ -4533,7 +4532,8 @@ private:
           first = false;
         }
         assert(first_var);
-        check_same_type(*first_var, v, "inconsistent types in assert variables", s);
+        check_same_type(*first_var, v, "inconsistent types in assert variables",
+                        s);
       }
     }
 
@@ -4542,11 +4542,13 @@ private:
       check_varname(s.lhs());
       for (auto const &v : s.left().variables()) {
         check_varname(v);
-        check_same_type(s.lhs(), v, "inconsistent types in select variables", s);
+        check_same_type(s.lhs(), v, "inconsistent types in select variables",
+                        s);
       }
       for (auto const &v : s.right().variables()) {
         check_varname(v);
-        check_same_type(s.lhs(), v, "inconsistent types in select variables", s);
+        check_same_type(s.lhs(), v, "inconsistent types in select variables",
+                        s);
       }
 
       // -- The condition can have different type from lhs/left/right
@@ -4571,9 +4573,10 @@ private:
       const variable_t &dst = s.dst();
 
       auto get_bitwidth = [](const variable_t &v) {
-			    return (v.get_type().is_integer() ? v.get_type().get_integer_bitwidth(): 1);
-			  };
-      
+        return (v.get_type().is_integer() ? v.get_type().get_integer_bitwidth()
+                                          : 1);
+      };
+
       check_varname(src);
       check_varname(dst);
       switch (s.op()) {
@@ -4620,28 +4623,30 @@ private:
       const variable_t *first_var;
 
       if (s.is_rhs_linear_constraint()) {
-	for (auto const &v : s.rhs_as_linear_constraint().variables()) {
-	  check_varname(v);
-	  check_num(v, "rhs variables must be integer or real", s);
-	  if (first) {
-	    first_var = &v;
-	    first = false;
-	  }
-	  assert(first_var);
-        check_same_type(*first_var, v, "inconsistent types in rhs variables", s);
-	}
+        for (auto const &v : s.rhs_as_linear_constraint().variables()) {
+          check_varname(v);
+          check_num(v, "rhs variables must be integer or real", s);
+          if (first) {
+            first_var = &v;
+            first = false;
+          }
+          assert(first_var);
+          check_same_type(*first_var, v, "inconsistent types in rhs variables",
+                          s);
+        }
       } else {
-	for (auto const &v : s.rhs_as_reference_constraint().variables()) {
-	  check_varname(v);
-	  check_ref(v, "rhs variables must be reference", s);
-	  if (first) {
-	    first_var = &v;
-	    first = false;
-	  }
-	  assert(first_var);
-        check_same_type(*first_var, v, "inconsistent types in rhs variables", s);
-	}
-      } 
+        for (auto const &v : s.rhs_as_reference_constraint().variables()) {
+          check_varname(v);
+          check_ref(v, "rhs variables must be reference", s);
+          if (first) {
+            first_var = &v;
+            first = false;
+          }
+          assert(first_var);
+          check_same_type(*first_var, v, "inconsistent types in rhs variables",
+                          s);
+        }
+      }
     };
 
     void visit(bool_assign_var_t &s) {
@@ -4760,7 +4765,8 @@ private:
       check_is_array(rhs, s);
       check_varname(lhs);
       check_varname(rhs);
-      check_same_type(lhs, rhs, "array assign variables must have same type", s);
+      check_same_type(lhs, rhs, "array assign variables must have same type",
+                      s);
     }
 
     void visit(callsite_t &s) {
@@ -4804,19 +4810,19 @@ private:
     void visit(assert_ref_t &){};
     void visit(select_ref_t &s) {
       // TODO: check region operands
-      
+
       check_ref(s.lhs_ref(), "lhs must be reference", s);
       check_bool(s.cond(), "condition must be boolean", s);
       check_ref(s.left_ref(), "first operand must be reference", s);
       check_ref(s.right_ref(), "second operand must be reference", s);
-      
+
       check_varname(s.lhs_ref());
-      if (s.left_ref().is_variable()) 
-	check_varname(s.left_ref().get_variable());
+      if (s.left_ref().is_variable())
+        check_varname(s.left_ref().get_variable());
       if (s.right_ref().is_variable())
-	check_varname(s.right_ref().get_variable());
+        check_varname(s.right_ref().get_variable());
     };
-    
+
     void visit(int_to_ref_t &){};
     void visit(ref_to_int_t &){};
 
