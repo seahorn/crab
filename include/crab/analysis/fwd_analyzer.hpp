@@ -155,9 +155,12 @@ public:
             suspicious_vars -= fdecl.get_input_name(i);
           }
           if (!suspicious_vars.is_bottom()) {
-            crab::outs() << "\n*** Sanity check FAILED: " << suspicious_vars
+            crab::outs() << "\n*** Sanity check failed: " << suspicious_vars
                          << " might not be initialized  in "
-                         << get_cfg().get_func_decl().get_func_name() << "\n";
+                         << get_cfg().get_func_decl().get_func_name() 
+			 << "\n    This lack of initialization can be legitimate with region statements "
+			 << "such as make_ref, gep_ref, int_to_ref "
+			 << "if the used regions are not read or modified in the code under analysis.\n";
           } else {
             CRAB_VERBOSE_IF(1, crab::outs() << "OK";);
           }
