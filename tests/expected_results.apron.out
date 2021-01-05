@@ -3156,20 +3156,6 @@ user-defined assertion checker
 0  Number of total warning checks
 0  Number of total unreachable checks
 
-Invariants using RegionDomain(Product(Boolean,Intervals))
-entry={}
-bb2_loop=({}, {region_field_next -> [0, +oo]; region_field_f -> [0, 10000]; region_field_s -> [1, +oo]; i0 -> [0, 10000]; ref0 -> [0, +oo]})
-bb4=({}, {region_field_next -> [0, +oo]; region_field_f -> [0, 10000]; region_field_s -> [1, +oo]; i0 -> [0, 10000]; ref0 -> [0, +oo]})
-bb6_loop=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [0, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
-bb8=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [0, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
-bb9=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [1, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
-bb9_assert=({b2 -> true}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [1, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]; ref7 -> [5, +oo]; ref6 -> [1, +oo]; _x8 -> [1, +oo]})
-bb7=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [0, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
-exit=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [0, 0]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
-bb3=({}, {region_field_next -> [0, +oo]; region_field_f -> [0, 10000]; region_field_s -> [1, +oo]; i0 -> [0, 10000]; ref0 -> [0, +oo]})
-bb5=({}, {region_field_next -> [0, +oo]; region_field_f -> [0, 10000]; region_field_s -> [1, +oo]; i0 -> [0, 9999]; ref0 -> [0, +oo]})
-Abstract trace: entry (bb2_loop bb3 bb5)^{4} bb4 (bb6_loop bb8 bb9 bb9_assert)^{1} bb7 exit
-
 entry:
   region_init(region_field_next:region(ref));
   region_init(region_field_s:region(ref));
@@ -3231,20 +3217,6 @@ user-defined assertion checker
 0  Number of total error checks
 1  Number of total warning checks
 0  Number of total unreachable checks
-
-Invariants using RegionDomain(Product(Boolean,Intervals))
-entry={}
-bb2_loop=({}, {region_field_next -> [0, +oo]; region_field_f -> [0, 10000]; region_field_s -> [1, +oo]; i0 -> [0, 10000]; ref0 -> [0, +oo]})
-bb4=({}, {region_field_next -> [0, +oo]; region_field_f -> [0, 10000]; region_field_s -> [1, +oo]; i0 -> [0, 10000]; ref0 -> [0, +oo]})
-bb6_loop=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [0, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
-bb8=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [0, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
-bb9=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [1, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
-bb9_assert=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [1, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]; ref7 -> [5, +oo]; ref6 -> [1, +oo]; _x8 -> [1, +oo]})
-bb7=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [0, +oo]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
-exit=({}, {i0 -> [10000, 10000]; ref0 -> [0, +oo]; region_field_f -> [0, 10000]; ref1 -> [0, 0]; region_field_s -> [1, +oo]; region_field_next -> [0, +oo]})
-bb3=({}, {region_field_next -> [0, +oo]; region_field_f -> [0, 10000]; region_field_s -> [1, +oo]; i0 -> [0, 10000]; ref0 -> [0, +oo]})
-bb5=({}, {region_field_next -> [0, +oo]; region_field_f -> [0, 10000]; region_field_s -> [1, +oo]; i0 -> [0, 9999]; ref0 -> [0, +oo]})
-Abstract trace: entry (bb2_loop bb3 bb5)^{4} bb4 (bb6_loop bb8 bb9 bb9_assert)^{2} bb7 exit
 
 === End ./test-bin/region-4 ===
 === Begin ./test-bin/td_inter_1 ===
@@ -4727,28 +4699,28 @@ After rename x with w and y with z={z -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0];
 After rename x with w={y -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 === End ./test-bin/unittests-rename ===
 === Begin ./test-bin/unittests-union-find ===
-Dom1={{v4}=>{x -> [5, 5]; y -> [10, 10]},{v3}=>{x -> [5, 5]; y -> [10, 10]},{v2}=>{x -> [5, 5]; y -> [10, 10]},{v1}=>{x -> [5, 5]; y -> [10, 10]}}
-After join v1 and v2={{v4}=>{x -> [5, 5]; y -> [10, 10]},{v3}=>{x -> [5, 5]; y -> [10, 10]},{v1; v2}=>{x -> [5, 5]; y -> [10, 10]}}
-Dom2={{v4}=>{x -> [10, 10]; y -> [20, 20]},{v3}=>{x -> [10, 10]; y -> [20, 20]},{v2}=>{x -> [10, 10]; y -> [20, 20]},{v1}=>{x -> [10, 10]; y -> [20, 20]}}
-After join v3 and v4={{v3; v4}=>{x -> [10, 10]; y -> [20, 20]},{v2}=>{x -> [10, 10]; y -> [20, 20]},{v1}=>{x -> [10, 10]; y -> [20, 20]}}
+Dom1={{v1}=>{x -> [5, 5]; y -> [10, 10]},{v2}=>{x -> [5, 5]; y -> [10, 10]},{v3}=>{x -> [5, 5]; y -> [10, 10]},{v4}=>{x -> [5, 5]; y -> [10, 10]}}
+After join v1 and v2={{v1,v2}=>{x -> [5, 5]; y -> [10, 10]},{v3}=>{x -> [5, 5]; y -> [10, 10]},{v4}=>{x -> [5, 5]; y -> [10, 10]}}
+Dom2={{v1}=>{x -> [10, 10]; y -> [20, 20]},{v2}=>{x -> [10, 10]; y -> [20, 20]},{v3}=>{x -> [10, 10]; y -> [20, 20]},{v4}=>{x -> [10, 10]; y -> [20, 20]}}
+After join v3 and v4={{v1}=>{x -> [10, 10]; y -> [20, 20]},{v2}=>{x -> [10, 10]; y -> [20, 20]},{v3,v4}=>{x -> [10, 10]; y -> [20, 20]}}
 Dom1 <= Dom2 = 0
 Dom2 <= Dom1 = 0
-Dom3 = Dom1 | Dom2 = {{v1; v2}=>{x -> [5, 10]; y -> [10, 20]},{v3; v4}=>{x -> [5, 10]; y -> [10, 20]}}
+Dom3 = Dom1 | Dom2 = {{v1,v2}=>{x -> [5, 10]; y -> [10, 20]},{v3,v4}=>{x -> [5, 10]; y -> [10, 20]}}
 Dom1 <= Dom3 = 1
 Dom2 <= Dom3 = 1
 Dom4 = Dom1 & Dom2 = _|_
-After forgetting v2:{{v3; v4}=>{x -> [5, 10]; y -> [10, 20]},{v1}=>{x -> [5, 10]; y -> [10, 20]}}
-After renaming {v1,v2,v3,v4} with {v5,v6,v7,v8} in Dom3:{{v7; v8}=>{x -> [5, 10]; y -> [10, 20]},{v5; v6}=>{x -> [5, 10]; y -> [10, 20]}}
-After projecting on v1 and v3 in Dom3:{{v3}=>{x -> [5, 10]; y -> [10, 20]},{v1}=>{x -> [5, 10]; y -> [10, 20]}}
-Dom1={{v3; v4}=>false,{v1; v2}=>false}
-Dom2={{v4}=>false,{v2; v3}=>false,{v1}=>false}
-Dom1 & Dom2 = {{v1; v2; v3; v4}=>false}
-Dom1={{v3; v4}=>false,{v1; v2}=>false}
-Dom2={{v8}=>false,{v6; v7}=>false,{v5}=>false}
-Dom1 & Dom2 = {{v5}=>false,{v6; v7}=>false,{v1; v2}=>false,{v8}=>false,{v3; v4}=>false}
-Dom1={{v3; v4}=>false,{v1; v2}=>false}
-Dom2={{v4}=>false,{v7; v8}=>false,{v3}=>false}
-Dom1 & Dom2 = {{v7; v8}=>false,{v1; v2}=>false,{v3; v4}=>false}
+After forgetting v2:{{v1}=>{x -> [5, 10]; y -> [10, 20]},{v3,v4}=>{x -> [5, 10]; y -> [10, 20]}}
+After renaming {v1,v2,v3,v4} with {v5,v6,v7,v8} in Dom3:{{v5,v6}=>{x -> [5, 10]; y -> [10, 20]},{v7,v8}=>{x -> [5, 10]; y -> [10, 20]}}
+After projecting on v1 and v3 in Dom3:{{v1}=>{x -> [5, 10]; y -> [10, 20]},{v3}=>{x -> [5, 10]; y -> [10, 20]}}
+Dom1={{v1,v2}=>false,{v3,v4}=>false}
+Dom2={{v1}=>false,{v2,v3}=>false,{v4}=>false}
+Dom1 & Dom2 = {{v1,v2,v3,v4}=>false}
+Dom1={{v1,v2}=>false,{v3,v4}=>false}
+Dom2={{v5}=>false,{v6,v7}=>false,{v8}=>false}
+Dom1 & Dom2 = {{v1,v2}=>false,{v3,v4}=>false,{v5}=>false,{v6,v7}=>false,{v8}=>false}
+Dom1={{v1,v2}=>false,{v3,v4}=>false}
+Dom2={{v3}=>false,{v4}=>false,{v7,v8}=>false}
+Dom1 & Dom2 = {{v1,v2}=>false,{v3,v4}=>false,{v7,v8}=>false}
 === End ./test-bin/unittests-union-find ===
 === Begin ./test-bin/unittests-zones ===
 {A -> [0, +oo], x -> [0, 0], x-A<=0}

@@ -1,4 +1,3 @@
-# Create libraries that contain all the crab stuff
 add_library(IntraCrab ${CRAB_LIBS_TYPE} crab.cpp)
 target_link_libraries(IntraCrab ${CRAB_LIBS})
 add_library(InterCrab ${CRAB_LIBS_TYPE} icrab.cpp)

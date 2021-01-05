@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <unordered_map>
+#include <vector>
 
 /**
  * A standard union-find equipped with lattice operations (inclusion,
@@ -617,13 +618,45 @@ public:
     } else if (is_bottom()) {
       o << "_|_";
     } else {
+
+      // Sort everything to print always the same thing
+      auto sorted_equiv_classes = [](const equiv_class_vars_t &unsorted_map) {
+	     std::vector<std::pair<variable_t, std::vector<variable_t>>> sorted_eq_classes;
+	     for (auto &kv: unsorted_map) {
+	       std::vector<variable_t> sorted_eq_class(kv.second.begin(), kv.second.end());
+	       std::sort(sorted_eq_class.begin(), sorted_eq_class.end());
+	       sorted_eq_classes.emplace_back(std::make_pair(kv.first, sorted_eq_class));
+	     }
+	     std::sort(sorted_eq_classes.begin(), sorted_eq_classes.end(),
+		       [](const std::pair<variable_t, std::vector<variable_t>> &p1,
+			  const std::pair<variable_t, std::vector<variable_t>> &p2) {
+			 return p1.first < p2.first;
+		       });
+	     return sorted_eq_classes;
+      };
+
+      auto print_vars_vector = [&o](const std::vector<variable_t>& vars) {
+				 o << "{";
+				 for (auto it = vars.begin(), et = vars.end(); it!=et;) {
+				   o << *it;
+				   ++it;
+				   if (it != et) {
+				     o << ",";
+				   }
+				 }
+				 o << "}";
+			       };
+      
       union_find_domain_t tmp(*this);
       CRAB_LOG("union-find-print", tmp.print(o); o << "\n";);
       equiv_class_vars_t ec_vars = tmp.equiv_classes_vars();
+      auto sorted_ec_vars = sorted_equiv_classes(ec_vars);
       o << "{";
-      for (auto it = ec_vars.begin(), et = ec_vars.end(); it != et;) {
-        variable_t &rep = tmp.find(it->first);
-        o << it->second << "=>" << tmp.m_classes.at(rep).get_domain();
+      for (auto it = sorted_ec_vars.begin(), et = sorted_ec_vars.end(); it != et;) {
+	auto &p = *it;
+        variable_t &rep = tmp.find(p.first);
+	print_vars_vector(p.second);
+	o << "=>" << tmp.m_classes.at(rep).get_domain();
         ++it;
         if (it != et) {
           o << ",";

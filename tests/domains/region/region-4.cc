@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
     crab::outs() << *p1 << "\n";
     z_rgn_bool_int_t init;
     run_and_check(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
-    run(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
+    //run(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
     // EXPECTED TO PROVE ASSERTION
     delete p1;
   }
@@ -167,7 +167,7 @@ int main(int argc, char **argv) {
     crab::outs() << *p1 << "\n";
     z_rgn_bool_int_t init;
     run_and_check(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
-    run(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
+    //run(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
     // NOT EXPECTED TO PROVE ASSERTION
     delete p1;
   }
