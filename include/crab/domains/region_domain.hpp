@@ -1425,6 +1425,7 @@ public:
     m_rgn_counting_dom.set(lhs_rgn, m_rgn_counting_dom[rhs_rgn]);
     m_rgn_init_dom.set(lhs_rgn, m_rgn_init_dom[rhs_rgn]);
     if (Params::deallocation) {
+      m_rgn_dealloc_dom.forget(lhs_rgn);
       m_rgn_dealloc_dom.expand(rhs_rgn, lhs_rgn);
     }
 
