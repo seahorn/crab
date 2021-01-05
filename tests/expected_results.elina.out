@@ -1736,8 +1736,6 @@ ret:
 
 After Dead Code Elimination
 x0:
-  o = 4;
-  p := make_ref(region_0:region(int));
   goto x1;
 x1:
   goto x2;
@@ -1755,7 +1753,6 @@ bb1_t:
   goto bb2;
 bb2:
   havoc(nd);
-  (region_0:region(int),q:ref) := gep_ref(region_0:region(int),p:ref + o);
   inc = ite(-nd <= -1,1,2);
   i = i+inc;
   goto bb1;
