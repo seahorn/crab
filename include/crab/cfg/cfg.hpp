@@ -1159,8 +1159,9 @@ public:
                     debug_info dbg_info = debug_info())
       : statement_t(REF_STORE, parent, dbg_info), m_ref(ref), m_region(region),
         m_val(val) {
-    this->m_live.add_def(m_ref);
+    this->m_live.add_def(m_region);    
     this->m_live.add_use(m_region);
+    this->m_live.add_use(m_ref);
     if (m_val.is_variable()) {
       this->m_live.add_use(m_val.get_variable());
     }
@@ -1209,8 +1210,15 @@ public:
       : statement_t(REF_GEP, parent, dbg_info), m_lhs(lhs),
         m_lhs_region(lhs_region), m_rhs(rhs), m_rhs_region(rhs_region),
         m_offset(offset) {
-    this->m_live.add_def(m_lhs);
-    this->m_live.add_def(m_lhs_region);
+    // JN: not sure whether lhs_region should be a definition or an
+    // use.
+    // 
+    // Although the abstract state of lhs_region might change, for
+    // dead code/variable elimination purposes, this statement can be
+    // removed if lhs is not used.
+    this->m_live.add_def(m_lhs);    
+    //this->m_live.add_def(m_lhs_region);
+    this->m_live.add_use(m_lhs_region);
     this->m_live.add_use(m_rhs);
     this->m_live.add_use(m_rhs_region);
     for (auto const &v : m_offset.variables()) {
@@ -1350,12 +1358,11 @@ public:
         m_region(region), m_lb(lb), m_ub(ub), m_value(value),
         m_elem_size(elem_size), m_is_strong_update(is_strong_update) {
 
-    this->m_live.add_def(m_ref);
-    this->m_live.add_use(m_ref);
-
     this->m_live.add_use(m_region);
     this->m_live.add_def(m_region);
 
+    this->m_live.add_use(m_ref);
+    
     for (auto const &v : m_elem_size.variables()) {
       this->m_live.add_use(v);
     }
