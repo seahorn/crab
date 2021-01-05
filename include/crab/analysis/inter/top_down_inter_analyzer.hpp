@@ -7,6 +7,24 @@
  * intra-procedural analysis can be called as a black-box without any
  * change. However, it might run out of stack on very deep call graphs
  * so special care must be taken.
+ *
+ * **Important TODO**: the analysis assumes call-by-value semantics
+ * for input variables. However, it does **not** currently ensure it
+ * which can produce incorrect results. The problematic situation
+ * arises when an input variable is modified in the callee and while
+ * propagating the callee's results with its continuation at the
+ * caller some inconsistent state (i.e., bottom) can be incorrectly
+ * produced. To deal with this, the analysis assumes that the
+ * front-end is in charge of modeling properly the call-by-value
+ * semantics. This can be done by renaming the input parameters of the
+ * function and then assign them to the old names before the old body
+ * starts.
+ *
+ * foo(i1,...) {   foo(i1',...) {
+ *                   // where := can be assign/expand/copy_region
+ *                   i1 := i1';  
+ *  BODY       ==>   BODY
+ * }               }
  */
 
 #include <crab/analysis/abs_transformer.hpp>
