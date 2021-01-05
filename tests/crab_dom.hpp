@@ -103,7 +103,7 @@ using var_allocator = crab::var_factory_impl::str_var_alloc_col;
 template<class BaseAbsDom>
 struct TestRegionParams {
   using number_t = z_number;
-  using varname_t = varname_t;
+  using varname_t = crab::cfg_impl::varname_t;
   using varname_allocator_t = crab::var_factory_impl::str_var_alloc_col;  
   using base_abstract_domain_t = BaseAbsDom;
   using base_varname_t = typename BaseAbsDom::varname_t;
