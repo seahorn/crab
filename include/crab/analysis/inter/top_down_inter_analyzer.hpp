@@ -1355,10 +1355,11 @@ private:
       // project callee_exit onto function input-output parameters
       callee_exit.project(callee_exit_vars);
 
-      if (callee_analysis &&
-          (!m_ctx->analyze_recursive_functions() ||
-           !m_ctx->included_nested_wto_component(callee_cg_node) ||
-           m_ctx->get_widening_set().count(callee_cg_node) > 0)) {
+      if (callee_analysis // &&
+          // (!m_ctx->analyze_recursive_functions() ||
+          //  !m_ctx->included_nested_wto_component(callee_cg_node) ||
+          //  m_ctx->get_widening_set().count(callee_cg_node) > 0)
+	  ) {
 
         /***
          *** Either the callee is not in any nested WTO component or
@@ -1366,6 +1367,9 @@ private:
          *** stabilized. In those cases, we store summaries. Note that
          *** the callee can be a widening point but being part of a
          *** non-stabilized-yet WTO component. That's ok.
+	 ***
+	 *** JN: I think we can store summaries even for components
+	 ***     which haven't been stabilized.
          ***/
 
         // 5. Add the new calling context.
@@ -1385,10 +1389,6 @@ private:
 		 << "=== Sumary input  ===\n" << callee_entry << "\n"
 		 << "=== Sumary output ===\n" << callee_exit << "\n"
 		 << "=====================\n";);
-
-        /// JN: we don't store summaries for all the nested WTO
-        /// components but I think we can even if those components
-        /// haven't been stabilized.
       }
 
       if (callee_analysis &&
@@ -1708,7 +1708,7 @@ public:
 
     CRAB_VERBOSE_IF(
         1, get_msg_stream()
-               << "Computing weak topological ordering of the callgraph ... ";);
+               << "Computing weak topological ordering of the callgraph ... \n";);
 
     // Compute all the widening points in the callgraph
     auto &widening_set = m_ctx.get_widening_set();
@@ -1736,18 +1736,26 @@ public:
                                                            : widening_set) {
           crab::outs() << cg_node.name() << ";";
         } crab::outs() << "}\n";);
-    CRAB_VERBOSE_IF(1, get_msg_stream() << "Done.";);
+    CRAB_VERBOSE_IF(1, get_msg_stream() << "Done.\n";);
 
     if (entries.empty()) {
       CRAB_WARN("Found no entry points in the call graph.");
     } else {
-      CRAB_VERBOSE_IF(1, get_msg_stream()
-                             << "Started inter-procedural analysis\n";);
-
+      CRAB_VERBOSE_IF(1,
+		      if (!m_ctx.only_main_as_entry()) {
+			get_msg_stream()
+			  << "Started inter-procedural analysis considering all entry points.\n";
+		      } else {
+			get_msg_stream()
+			  << "Started inter-procedural analysis *only* from main.\n";
+		      });
+    
       for (auto cg_node : entries) {
-
         if (m_ctx.only_main_as_entry()) {
           if (cg_node.name() != "main") {
+	    CRAB_VERBOSE_IF(1, get_msg_stream()
+			    << "Skipped analysis of call graph WTO starting from "
+			    << cg_node.name() << "\n";);
             continue;
           }
         }
