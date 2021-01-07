@@ -875,11 +875,12 @@ analyze_function(CallGraphNode cg_node,
                            analyzer->get_post_invariants());
 
   CRAB_VERBOSE_IF(1, get_msg_stream()
-                         << "++ Finished analysis of function  "
-                         << cfg.get_func_decl().get_func_name() << "\n"
-                         << "Entry=" << analyzer->get_pre(cfg.entry()) << "\n"
-                         << "Exit=" << analyzer->get_post(cfg.entry())
-                         << "\n";);
+		  << "++ Finished analysis of function  "
+		  << cfg.get_func_decl().get_func_name() << "\n";);
+  CRAB_LOG("inter", 
+	   crab::outs() << "Entry=" << analyzer->get_pre(cfg.entry()) << "\n"
+	                << "Exit=" << analyzer->get_post(cfg.entry())
+	                << "\n";);
 
   CRAB_LOG("fixpo-trace",
            /// useful for debugging: reset the counters so that they are not
@@ -1213,12 +1214,13 @@ private:
       pre_bot = caller_dom.is_bottom();
     }
 
-    const bool is_recursive_call =
+    const bool recursive_call_being_analyzed =
         (m_ctx->analyze_recursive_functions() &&
          m_ctx->get_widening_set().count(callee_cg_node) > 0);
+
     AbsDom callee_entry = make_top();
     if (m_ctx->analyze_recursive_functions() ||
-        m_ctx->get_widening_set().count(callee_cg_node) <= 0) {
+	m_ctx->get_widening_set().count(callee_cg_node) <= 0) {
       // If we do not analyze precisely recursive functions then we
       // must start the analysis of a recursive procedure without
       // propagating from caller to callee (i.e., top).
@@ -1260,7 +1262,7 @@ private:
         // create problems during the checking phase which assumes
         // that all function calls are always cached.
         const bool use_exact_subsumption =
-            (!is_recursive_call && m_ctx->exact_summary_reuse());
+            (!recursive_call_being_analyzed && m_ctx->exact_summary_reuse());
         if (call_contexts[i]->is_subsumed(callee_entry,
                                           use_exact_subsumption)) {
           CRAB_LOG("inter-subsume",
@@ -1335,7 +1337,7 @@ private:
                                 << ": the callee has no exit block.\n";);
         }
 
-        if (callee_analysis && is_recursive_call) {
+        if (callee_analysis && recursive_call_being_analyzed) {
           // After the analysis of the recursive function converges,
           // we cannot store the summary with the initial abstract
           // state before the fixpoint started. Instead, we need to
@@ -1378,6 +1380,11 @@ private:
         crab::CrabStats::stop(TimerInterStoreSum);
         CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Stored summary for "
                                             << fdecl.get_func_name() << "\n";);
+	CRAB_LOG("inter",
+		 crab::outs() << fdecl << "\n"
+		 << "=== Sumary input  ===\n" << callee_entry << "\n"
+		 << "=== Sumary output ===\n" << callee_exit << "\n"
+		 << "=====================\n";);
 
         /// JN: we don't store summaries for all the nested WTO
         /// components but I think we can even if those components
@@ -1436,7 +1443,7 @@ private:
     AbsDom caller_cont_dom = get_caller_continuation(
         cs, fdecl, caller_dom, callee_exit_vars, callee_exit);
 
-    if (::crab::CrabSanityCheckFlag && !is_recursive_call) {
+    if (::crab::CrabSanityCheckFlag && !recursive_call_being_analyzed) {
       // If the function is recursive, then caller_cont_dom can be
       // bottom, even after the first fixpoint iteration.
       bool post_bot = caller_cont_dom.is_bottom();
