@@ -2320,6 +2320,9 @@ public:
     apply_only_scalar(op, x, y, k);
   }
 
+  DEFAULT_SELECT(array_graph_domain_t)
+  DEFAULT_SELECT_BOOL(array_graph_domain_t)
+  
   virtual interval_t operator[](const variable_t &v) override {
     return _scalar[v];
   }

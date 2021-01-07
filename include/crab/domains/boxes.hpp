@@ -1629,6 +1629,9 @@ public:
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(boxes_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(boxes_domain_t)
 
+  DEFAULT_SELECT(boxes_domain_t)
+  DEFAULT_SELECT_BOOL(boxes_domain_t)
+  
   linear_constraint_system_t to_linear_constraint_system() const override {
     crab::CrabStats::count(domain_name() +
                            ".count.to_linear_constraint_system");

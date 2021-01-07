@@ -432,6 +432,30 @@ public:
                                << "=" << bx << "\n";);
   }
 
+  void select_bool(const variable_t &lhs, const variable_t &cond,
+		   const variable_t &b1, const variable_t &b2) override {
+    if (!is_bottom()) {
+      const bool negate = true;
+
+      flat_boolean_domain_t inv1(*this);
+      inv1.assume_bool(cond, !negate);
+      if (inv1.is_bottom()) {
+	_env.set(lhs, _env[b2]);
+	return;
+      }
+      
+      
+      flat_boolean_domain_t inv2(*this);
+      inv2.assume_bool(cond, negate);
+      if (inv2.is_bottom()) {
+	_env.set(lhs, _env[b1]);
+	return;
+      }
+      
+      _env.set(lhs, _env[b1] | _env[b2]);
+    }
+  }
+  
   // XXX: these methods are not actually part of boolean_operators
   // api but they are used by flat_boolean_numerical_domain and
   // domain_traits.
@@ -506,7 +530,7 @@ public:
   NUMERICAL_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
-
+  
   // not part of the numerical_domains api but it should be
   void set(const variable_t &x, interval_t intv) {}
 
@@ -1021,6 +1045,12 @@ public:
     _unchanged_vars -= variable_t(x);
   }
 
+  void select(const variable_t &lhs, const linear_constraint_t &cond,
+	      const linear_expression_t &e1,  const linear_expression_t &e2) override {
+    _product.select(lhs, cond, e1, e2);
+    _unchanged_vars -= variable_t(lhs);
+    
+  }  
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const bool_num_domain_t &invariant) override {
     _product.backward_assign(x, e, invariant._product);
@@ -1347,6 +1377,16 @@ public:
              crab::outs() << "After reduction=" << _product.second() << "\n";);
   }
 
+  void select_bool(const variable_t &lhs, const variable_t &cond,
+		   const variable_t &b1, const variable_t &b2) override {
+
+    if (!is_bottom()) {
+      _product.select_bool(lhs, cond, b1, b2);
+      // Maybe a bit too imprecise
+      _var_to_csts -= lhs;
+    }
+  }
+
   void backward_assign_bool_cst(const variable_t &lhs,
                                 const linear_constraint_t &rhs,
                                 const bool_num_domain_t &inv) override {
@@ -1598,7 +1638,14 @@ public:
                   const variable_t &ref_var) override {
     _product.int_to_ref(int_var, reg, ref_var);
   }
-
+  void select_ref(const variable_t &lhs_ref, const variable_t &lhs_rgn,
+		  const variable_t &cond,
+		  const variable_or_constant_t &ref1,
+		  const boost::optional<variable_t> &rgn1,
+		  const variable_or_constant_t &ref2,
+		  const boost::optional<variable_t> &rgn2) override {
+    _product.select_ref(lhs_ref, lhs_rgn, cond, ref1, rgn1, ref2, rgn2);
+  }	
   void write(crab_os &o) const override { _product.write(o); }
 
   linear_constraint_system_t to_linear_constraint_system() const override {

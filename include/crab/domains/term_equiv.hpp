@@ -1541,7 +1541,8 @@ public:
   /// used as a leaf domain in the hierarchy of domains.
   BOOL_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
-
+  DEFAULT_SELECT(term_domain_t)
+  
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
     crab::CrabStats::count(domain_name() + ".count.rename");

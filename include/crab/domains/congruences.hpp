@@ -1084,13 +1084,15 @@ public:
     this->_env.set(x, xi);
   }
 
+  DEFAULT_SELECT(congruence_domain_t)
+  
   /// congruence_domain implements only standard abstract operations
   /// of a numerical domain so it is intended to be used as a leaf
   /// domain in the hierarchy of domains.
   BOOL_OPERATIONS_NOT_IMPLEMENTED(congruence_domain_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(congruence_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(congruence_domain_t)
-
+    
   void forget(const variable_vector_t &variables) override {
     if (is_bottom() || is_top()) {
       return;

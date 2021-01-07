@@ -2330,7 +2330,8 @@ public:
   BOOL_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
-
+  DEFAULT_SELECT(DBM_t)
+  
   void project(const variable_vector_t &variables) override {
     crab::CrabStats::count(domain_name() + ".count.project");
     crab::ScopedCrabStats __st__(domain_name() + ".project");

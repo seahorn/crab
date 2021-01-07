@@ -1781,7 +1781,8 @@ public:
   BOOL_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
-
+  DEFAULT_SELECT(wrapped_interval_domain_t)
+  
   void forget(const variable_vector_t &variables) override {
     if (is_bottom() || is_top()) {
       return;
@@ -1908,10 +1909,9 @@ public:
 } // namespace domains
 } // namespace crab
 
+#if 0
 /*
- *
  EXPERIMENTAL CODE: USE IT ON YOUR OWN RISK!
- *
  */
 namespace crab {
 namespace domains {
@@ -2563,7 +2563,8 @@ public:
   BOOL_OPERATIONS_NOT_IMPLEMENTED(this_type)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(this_type)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(this_type)
-
+  DEFAULT_SELECT(this_type)
+  
   void write(crab_os &o) const override {
     // o << "(" << _w_int_dom << "," << _limit_env << "," << _init_set << ")";
     o << "(" << _w_int_dom << "," << _limit_env << ")";
@@ -3505,3 +3506,4 @@ public:
 
 } // namespace domains
 } // namespace crab
+#endif 

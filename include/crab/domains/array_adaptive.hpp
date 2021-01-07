@@ -2624,6 +2624,11 @@ public:
                                    << " " << z << " " << *this << "\n";);
   }
 
+  void select(const variable_t &lhs, const linear_constraint_t &cond,
+		      const linear_expression_t &e1,  const linear_expression_t &e2) override {
+    m_inv.select(lhs, cond, e1, e2);
+  }
+  
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const array_adaptive_domain_t &inv) override {
     m_inv.backward_assign(x, e, inv.m_inv);
@@ -2673,6 +2678,8 @@ public:
                                    << " " << k << " " << *this << "\n";);
   }
 
+  
+  
   // boolean operators
   virtual void assign_bool_cst(const variable_t &lhs,
                                const linear_constraint_t &rhs) override {
@@ -2699,6 +2706,11 @@ public:
     m_inv.assume_bool(v, is_negated);
   }
 
+  virtual void select_bool(const variable_t &lhs, const variable_t &cond,
+			   const variable_t &b1, const variable_t &b2) override {
+    m_inv.select_bool(lhs, cond, b1, b2);
+  }
+  
   // backward boolean operators
   virtual void
   backward_assign_bool_cst(const variable_t &lhs,

@@ -1641,6 +1641,8 @@ public:
     set(x, xi);
   }
 
+  DEFAULT_SELECT(elina_domain_t)
+  
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const elina_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_assign");
@@ -1785,7 +1787,7 @@ public:
   BOOL_OPERATIONS_NOT_IMPLEMENTED(elina_domain_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(elina_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(elina_domain_t)
-
+  
   interval_domain_t to_interval_domain() {
     crab::CrabStats::count(domain_name() + ".count.to_interval_domain");
     crab::ScopedCrabStats __st__(domain_name() + ".to_interval_domain");

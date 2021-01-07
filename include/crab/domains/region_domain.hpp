@@ -1914,6 +1914,10 @@ public:
     }
   }
 
+  // TODO: this default implementation is expensive because it will
+  // call the join
+  DEFAULT_SELECT_REF(region_domain_t)
+  
   void ref_remove(const variable_t &ref, const variable_t &rgn) {
     if (!Params::deallocation) {
       return;
@@ -1969,6 +1973,17 @@ public:
       m_base_dom.assign(rename_var(x), b_e);
     }
   }
+
+  void select(const variable_t &lhs, const linear_constraint_t &cond,
+	      const linear_expression_t &e1,  const linear_expression_t &e2) override {
+    if (!is_bottom()) {
+      auto b_e1 = rename_linear_expr(e1);
+      auto b_e2 = rename_linear_expr(e2);
+      auto b_cond = rename_linear_cst(cond);
+      m_base_dom.select(rename_var(lhs), b_cond, b_e1, b_e2);
+    }
+  }
+  
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const region_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_assign");
@@ -2116,6 +2131,13 @@ public:
       m_is_bottom = m_base_dom.is_bottom();
     }
   }
+  void select_bool(const variable_t &lhs, const variable_t &cond,
+		   const variable_t &b1, const variable_t &b2) override {
+    if (!is_bottom()) {
+      m_base_dom.select_bool(rename_var(lhs), rename_var(cond),
+			     rename_var(b1), rename_var(b2));
+    }
+  }  
   void backward_assign_bool_cst(const variable_t &lhs,
                                 const linear_constraint_t &rhs,
                                 const region_domain_t &invariant) override {

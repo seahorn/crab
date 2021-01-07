@@ -356,6 +356,15 @@ public:
     }
   }
 
+  virtual void select(const variable_t &lhs, const linear_constraint_t &cond,
+		      const linear_expression_t &e1,  const linear_expression_t &e2) override {
+    if (!is_bottom()) {
+      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+        m_disjuncts[i].select(lhs, cond, e1, e2);
+      }
+    }
+  }
+  
   virtual void backward_assign(const variable_t &x,
                                const linear_expression_t &e,
                                const powerset_domain_t &invariant) override {
@@ -645,6 +654,19 @@ public:
     }
   }
 
+  void select_ref(const variable_t &lhs_ref, const variable_t &lhs_rgn,
+		  const variable_t &cond,
+		  const variable_or_constant_t &ref1,
+		  const boost::optional<variable_t> &rgn1,
+		  const variable_or_constant_t &ref2,
+		  const boost::optional<variable_t> &rgn2) override {
+    if (!is_bottom()) {
+      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+        m_disjuncts[i].select_ref(lhs_ref, lhs_rgn, cond, ref1, rgn1, ref2, rgn2);
+      }
+    }
+  }
+  
   // boolean operators
   virtual void assign_bool_cst(const variable_t &lhs,
                                const linear_constraint_t &rhs) override {
@@ -698,6 +720,15 @@ public:
     }
   }
 
+  void select_bool(const variable_t &lhs, const variable_t &cond,
+		   const variable_t &b1, const variable_t &b2) override {
+    if (!is_bottom()) {
+      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+        m_disjuncts[i].select_bool(lhs, cond, b1, b2);
+      }
+    }
+  }
+  
   // backward boolean operators
   virtual void backward_assign_bool_cst(const variable_t &lhs,
                                         const linear_constraint_t &rhs,

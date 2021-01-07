@@ -84,6 +84,8 @@ private:
                        const variable_t &y, number_t k) = 0;
     virtual void apply(int_conv_operation_t op, const variable_t &dst,
                        const variable_t &src) = 0;
+    virtual void select(const variable_t &lhs, const linear_constraint_t &cond,
+			const linear_expression_t &e1,  const linear_expression_t &e2) = 0;    
     virtual void assign_bool_cst(const variable_t &lhs,
                                  const linear_constraint_t &rhs) = 0;
     virtual void assign_bool_ref_cst(const variable_t &lhs,
@@ -94,6 +96,8 @@ private:
                                    const variable_t &y,
                                    const variable_t &z) = 0;
     virtual void assume_bool(const variable_t &v, bool is_negated) = 0;
+    virtual void select_bool(const variable_t &lhs, const variable_t &cond,
+			     const variable_t &b1, const variable_t &b2) = 0;
     virtual void array_init(const variable_t &a,
                             const linear_expression_t &elem_size,
                             const linear_expression_t &lb_idx,
@@ -139,6 +143,12 @@ private:
                             const variable_t &int_var) = 0;
     virtual void int_to_ref(const variable_t &int_var, const variable_t &reg,
                             const variable_t &ref_var) = 0;
+    virtual void select_ref(const variable_t &lhs_ref, const variable_t &lhs_rgn,
+			    const variable_t &cond,
+			    const variable_or_constant_t &ref1,
+			    const boost::optional<variable_t> &rgn1,
+			    const variable_or_constant_t &ref2,
+			    const boost::optional<variable_t> &rgn2) = 0;
 
     virtual void backward_apply(arith_operation_t op, const variable_t &x,
                                 const variable_t &y, const variable_t &z,
@@ -323,6 +333,10 @@ private:
                const variable_t &src) override {
       m_inv.apply(op, dst, src);
     }
+    void select(const variable_t &lhs, const linear_constraint_t &cond,
+		const linear_expression_t &e1,  const linear_expression_t &e2) override {
+      m_inv.select(lhs, cond, e1, e2);
+    }
     void assign_bool_cst(const variable_t &lhs,
                          const linear_constraint_t &rhs) override {
       m_inv.assign_bool_cst(lhs, rhs);
@@ -341,6 +355,10 @@ private:
     }
     void assume_bool(const variable_t &v, bool is_negated) override {
       m_inv.assume_bool(v, is_negated);
+    }
+    void select_bool(const variable_t &lhs, const variable_t &cond,
+		     const variable_t &b1, const variable_t &b2) override {
+      m_inv.select_bool(lhs, cond, b1, b2);
     }
     void array_init(const variable_t &a, const linear_expression_t &elem_size,
                     const linear_expression_t &lb_idx,
@@ -413,7 +431,14 @@ private:
                     const variable_t &ref_var) override {
       m_inv.int_to_ref(int_var, reg, ref_var);
     }
-
+    void select_ref(const variable_t &lhs_ref, const variable_t &lhs_rgn,
+		    const variable_t &cond,
+		    const variable_or_constant_t &ref1,
+		    const boost::optional<variable_t> &rgn1,
+		    const variable_or_constant_t &ref2,
+		    const boost::optional<variable_t> &rgn2) override {
+      m_inv.select_ref(lhs_ref, lhs_rgn, cond, ref1, rgn1, ref2, rgn2);
+    }
     // unsafe: if the underlying domain in invariant is not Domain then it will
     // crash
     void backward_apply(arith_operation_t op, const variable_t &x,
@@ -663,6 +688,10 @@ public:
              const variable_t &src) override {
     m_concept->apply(op, dst, src);
   }
+  void select(const variable_t &lhs, const linear_constraint_t &cond,
+	      const linear_expression_t &e1,  const linear_expression_t &e2)  override {
+    m_concept->select(lhs, cond, e1, e2);
+  }
   void assign_bool_cst(const variable_t &lhs,
                        const linear_constraint_t &rhs) override {
     m_concept->assign_bool_cst(lhs, rhs);
@@ -681,6 +710,10 @@ public:
   }
   void assume_bool(const variable_t &v, bool is_negated) override {
     m_concept->assume_bool(v, is_negated);
+  }
+  void select_bool(const variable_t &lhs, const variable_t &cond,
+		   const variable_t &b1, const variable_t &b2) override {
+    m_concept->select_bool(lhs, cond, b1, b2);
   }
   void array_init(const variable_t &a, const linear_expression_t &elem_size,
                   const linear_expression_t &lb_idx,
@@ -753,6 +786,14 @@ public:
   void int_to_ref(const variable_t &int_var, const variable_t &reg,
                   const variable_t &ref_var) override {
     m_concept->int_to_ref(int_var, reg, ref_var);
+  }
+  void select_ref(const variable_t &lhs_ref, const variable_t &lhs_rgn,
+		  const variable_t &cond,
+		  const variable_or_constant_t &ref1,
+		  const boost::optional<variable_t> &rgn1,
+		  const variable_or_constant_t &ref2,
+		  const boost::optional<variable_t> &rgn2) override {
+    m_concept->select_ref(lhs_ref, lhs_rgn, cond, ref1, rgn1, ref2, rgn2);
   }
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
@@ -1039,7 +1080,11 @@ public:
     detach();
     norm().apply(op, dst, src);
   }
-
+  void select(const variable_t &lhs, const linear_constraint_t &cond,
+	      const linear_expression_t &e1,  const linear_expression_t &e2) override {
+    detach();
+    norm().select(lhs, cond, e1, e2);
+  }
   void assign_bool_cst(const variable_t &lhs,
                        const linear_constraint_t &rhs) override {
     detach();
@@ -1068,7 +1113,11 @@ public:
     detach();
     norm().assume_bool(v, is_negated);
   }
-
+  void select_bool(const variable_t &lhs, const variable_t &cond,
+		   const variable_t &b1, const variable_t &b2) override {
+    detach();
+    norm().select_bool(lhs, cond, b1, b2);
+  }
   void array_init(const variable_t &a, const linear_expression_t &elem_size,
                   const linear_expression_t &lb_idx,
                   const linear_expression_t &ub_idx,
@@ -1172,7 +1221,15 @@ public:
     detach();
     norm().int_to_ref(int_var, reg, ref_var);
   }
-
+  void select_ref(const variable_t &lhs_ref, const variable_t &lhs_rgn,
+		  const variable_t &cond,
+		  const variable_or_constant_t &ref1,
+		  const boost::optional<variable_t> &rgn1,
+		  const variable_or_constant_t &ref2,
+		  const boost::optional<variable_t> &rgn2) override {
+    detach();
+    norm().select_ref(lhs_ref, lhs_rgn, cond, ref1, rgn1, ref2, rgn2);
+  } 
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const abstract_domain_ref &invariant) override {

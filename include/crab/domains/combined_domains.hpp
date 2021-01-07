@@ -374,6 +374,13 @@ public:
     this->reduce();
   }
 
+  void select(const variable_t &lhs, const linear_constraint_t &cond,
+	      const linear_expression_t &e1,  const linear_expression_t &e2) override {
+    this->_product.first().select(lhs, cond, e1, e2);
+    this->_product.second().select(lhs, cond, e1, e2);
+    this->reduce();
+  }  
+
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const domain_product2_t &invariant) override {
     this->_product.first().backward_assign(x, e, invariant.first());
@@ -625,7 +632,17 @@ public:
     this->_product.second().int_to_ref(int_var, reg, ref_var);
     this->reduce();
   }
-
+  void select_ref(const variable_t &lhs_ref, const variable_t &lhs_rgn,
+		  const variable_t &cond,
+		  const variable_or_constant_t &ref1,
+		  const boost::optional<variable_t> &rgn1,
+		  const variable_or_constant_t &ref2,
+		  const boost::optional<variable_t> &rgn2) override {
+    this->_product.first().select_ref(lhs_ref, lhs_rgn, cond, ref1, rgn1, ref2, rgn2);
+    this->_product.second().select_ref(lhs_ref, lhs_rgn, cond, ref1, rgn1, ref2, rgn2);
+    this->reduce();
+  }
+  
   // boolean operators
   virtual void assign_bool_cst(const variable_t &lhs,
                                const linear_constraint_t &rhs) override {
@@ -662,6 +679,13 @@ public:
     this->reduce();
   }
 
+  virtual void select_bool(const variable_t &lhs, const variable_t &cond,
+			   const variable_t &b1, const variable_t &b2) override {
+    this->_product.first().select_bool(lhs, cond, b1, b2);
+    this->_product.second().select_bool(lhs, cond, b1, b2);
+    this->reduce();
+  }
+  
   // backward boolean operators
   virtual void backward_assign_bool_cst(const variable_t &lhs,
                                         const linear_constraint_t &rhs,
@@ -1193,6 +1217,14 @@ public:
     }
   }
 
+  void select(const variable_t &lhs, const linear_constraint_t &cond,
+	      const linear_expression_t &e1,  const linear_expression_t &e2) override {
+    this->_product.select(lhs, cond, e1, e2);
+    if (!Params::apply_reduction_only_add_constraint) {
+      this->reduce_variable(lhs);
+    }
+  }
+  
   /// reduced_numerical_domain_product2 implements only standard
   /// abstract operations of a numerical domain so it is intended to be
   /// used as a leaf domain in the hierarchy of domains.
@@ -1763,6 +1795,12 @@ public:
     this->reduce_variable(x);
   }
 
+  void select(const variable_t &lhs, const linear_constraint_t &cond,
+	      const linear_expression_t &e1,  const linear_expression_t &e2) override {
+    this->_product.select(lhs, cond, e1, e2);
+    this->reduce_variable(lhs);
+  }
+  
   /// numerical_congruence_domain implements only standard abstract
   /// operations of a numerical domain so it is intended to be used as
   /// a leaf domain in the hierarchy of domains.

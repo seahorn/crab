@@ -408,44 +408,13 @@ public:
   }
 
   void exec(select_t &stmt) {
-    crab::CrabStats::count(m_inv.domain_name() + ".count.select_num");
-    crab::ScopedCrabStats __st__(m_inv.domain_name() + ".select_num");
-
-    /* Can be done more efficiently inside the abstract domain */
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
     }
 
-    abs_dom_t inv1(m_inv);
-    abs_dom_t inv2(m_inv);
-
-    inv1 += stmt.cond();
-    inv2 += stmt.cond().negate();
-
-    if (::crab::CrabSanityCheckFlag) {
-      if (!pre_bot && (inv1.is_bottom() && inv2.is_bottom())) {
-        CRAB_ERROR(
-            "select condition and its negation cannot be false simultaneously ",
-            stmt);
-      }
-    }
-
-    if (inv2.is_bottom()) {
-      // cond is definitely true
-      inv1.assign(stmt.lhs(), stmt.left());
-      m_inv = inv1;
-    } else if (inv1.is_bottom()) {
-      // cond is definitely false
-      inv2.assign(stmt.lhs(), stmt.right());
-      m_inv = inv2;
-    } else {
-      // cond might be true or false
-      inv1.assign(stmt.lhs(), stmt.left());
-      inv2.assign(stmt.lhs(), stmt.right());
-      m_inv = inv1 | inv2;
-    }
-
+    m_inv.select(stmt.lhs(), stmt.cond(), stmt.left(), stmt.right());
+    
     if (::crab::CrabSanityCheckFlag) {
       bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
@@ -573,36 +542,13 @@ public:
   }
 
   void exec(bool_select_t &stmt) {
-    crab::CrabStats::count(m_inv.domain_name() + ".count.select_bool");
-    crab::ScopedCrabStats __st__(m_inv.domain_name() + ".select_bool");
-
-    /* Can be done more efficiently inside the abstract domain */
-
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
     }
 
-    abs_dom_t inv1(m_inv);
-    abs_dom_t inv2(m_inv);
-    const bool negate = true;
-    inv1.assume_bool(stmt.cond(), !negate);
-    inv2.assume_bool(stmt.cond(), negate);
-    if (inv2.is_bottom()) {
-      // cond is definitely true
-      inv1.assign_bool_var(stmt.lhs(), stmt.left(), !negate);
-      m_inv = inv1;
-    } else if (inv1.is_bottom()) {
-      // cond is definitely false
-      inv2.assign_bool_var(stmt.lhs(), stmt.right(), !negate);
-      m_inv = inv2;
-    } else {
-      // cond might be true or false
-      inv1.assign_bool_var(stmt.lhs(), stmt.left(), !negate);
-      inv2.assign_bool_var(stmt.lhs(), stmt.right(), !negate);
-      m_inv = inv1 | inv2;
-    }
-
+    m_inv.select_bool(stmt.lhs(), stmt.cond(), stmt.left(), stmt.right());
+    
     if (::crab::CrabSanityCheckFlag) {
       bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
@@ -851,62 +797,16 @@ public:
   }
 
   void exec(select_ref_t &stmt) {
-    crab::CrabStats::count(m_inv.domain_name() + ".count.select_ref");
-    crab::ScopedCrabStats __st__(m_inv.domain_name() + ".select_ref");
-
-    /* Can be done more efficiently inside the abstract domain */
-
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
     }
 
-    auto exec_true_value = [&stmt](abs_dom_t &inv) {
-      if (stmt.left_ref().is_reference_null()) {
-        inv -= stmt.lhs_ref();
-        inv.ref_assume(ref_cst_t::mk_null(stmt.lhs_ref()));
-      } else {
-        assert(stmt.left_ref().is_variable());
-        assert(stmt.left_rgn());
-        lin_exp_t zero_offset(number_t(0));
-        inv.ref_gep(stmt.left_ref().get_variable(), *(stmt.left_rgn()),
-                    stmt.lhs_ref(), stmt.lhs_rgn(), zero_offset);
-      }
-    };
-
-    auto exec_false_value = [&stmt](abs_dom_t &inv) {
-      if (stmt.right_ref().is_reference_null()) {
-        inv -= stmt.lhs_ref();
-        inv.ref_assume(ref_cst_t::mk_null(stmt.lhs_ref()));
-      } else {
-        assert(stmt.right_ref().is_variable());
-        assert(stmt.right_rgn());
-        lin_exp_t zero_offset(number_t(0));
-        inv.ref_gep(stmt.right_ref().get_variable(), *(stmt.right_rgn()),
-                    stmt.lhs_ref(), stmt.lhs_rgn(), zero_offset);
-      }
-    };
-
-    abs_dom_t inv1(m_inv);
-    abs_dom_t inv2(m_inv);
-    const bool negate = true;
-    inv1.assume_bool(stmt.cond(), !negate);
-    inv2.assume_bool(stmt.cond(), negate);
-    if (inv2.is_bottom()) {
-      // cond is definitely true
-      exec_true_value(inv1);
-      m_inv = inv1;
-    } else if (inv1.is_bottom()) {
-      // cond is definitely false
-      exec_false_value(inv2);
-      m_inv = inv2;
-    } else {
-      // cond might be true or false
-      exec_true_value(inv1);
-      exec_false_value(inv2);
-      m_inv = inv1 | inv2;
-    }
-
+    m_inv.select_ref(stmt.lhs_ref(), stmt.lhs_rgn(),
+		     stmt.cond(),
+		     stmt.left_ref(), stmt.left_rgn(),
+		     stmt.right_ref(), stmt.right_rgn());
+    
     if (::crab::CrabSanityCheckFlag) {
       bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {

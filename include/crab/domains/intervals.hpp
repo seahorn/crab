@@ -449,6 +449,30 @@ public:
     this->_env.set(x, xi);
   }
 
+  virtual void select(const variable_t &lhs, const linear_constraint_t &cond,
+		      const linear_expression_t &e1,  const linear_expression_t &e2) override {
+    crab::CrabStats::count(domain_name() + ".count.select");
+    crab::ScopedCrabStats __st__(domain_name() + ".select");
+    
+    if (!is_bottom()) {
+      interval_domain_t inv1(*this);
+      inv1 += cond;
+      if (inv1.is_bottom()) {
+	assign(lhs, e2);
+	return;
+      }
+      
+      interval_domain_t inv2(*this);
+      inv2 += cond.negate();
+      if (inv2.is_bottom()) {
+	assign(lhs, e1);
+	return;
+      }
+
+      set(lhs, this->operator[](e1) | this->operator[](e2));
+    }
+  }
+  
   /// interval_domain implements only standard abstract operations of
   /// a numerical domain so it is intended to be used as a leaf domain
   /// in the hierarchy of domains.

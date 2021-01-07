@@ -1429,12 +1429,15 @@ public:
     this->_env.set(x, xi);
   }
 
+  DEFAULT_SELECT(dis_interval_domain_t)
+  
   /// dis_interval_domain implements only standard abstract operations
   /// of a numerical domain so it is intended to be used as a leaf
   /// domain in the hierarchy of domains.
   BOOL_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
+  
 
   void expand(const variable_t &x, const variable_t &new_x) override {
     crab::CrabStats::count(domain_name() + ".count.expand");

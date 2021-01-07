@@ -111,6 +111,10 @@ public:
   virtual void apply(int_conv_operation_t op, const variable_t &dst,
                      const variable_t &src) = 0;
 
+  // if(cond) lhs := e1 else lhs := e2
+  virtual void select(const variable_t &lhs, const linear_constraint_t &cond,
+		      const linear_expression_t &e1,  const linear_expression_t &e2) = 0;
+  
   /**************************** Boolean operations ****************************/
   // lhs := rhs
   virtual void assign_bool_cst(const variable_t &lhs,
@@ -128,6 +132,11 @@ public:
   // assume(v)      otherwise
   virtual void assume_bool(const variable_t &v, bool is_negated) = 0;
 
+  // if(cond) lhs := b1 else lhs := b2
+  // lhs, cond, b1, and b2 are boolean variables
+  virtual void select_bool(const variable_t &lhs, const variable_t &cond,
+			   const variable_t &b1, const variable_t &b2) = 0;
+  
   /**************************** Array operations *****************************/
   // make a fresh array with contents a[j] initialized to val such that
   // j \in [lb_idx,ub_idx] and j % elem_size == val.
@@ -160,7 +169,7 @@ public:
   /***************** Regions and reference operations *****************/
   // Initialize region. If reg already exists then error.
   virtual void region_init(const variable_t &reg) = 0;
-  // Assign the content of one region to another
+  // Make a copy of a region
   virtual void region_copy(const variable_t &lhs_reg,
                            const variable_t &rhs_reg) = 0;
   // Create a new reference ref to region reg.
@@ -197,6 +206,16 @@ public:
   // Convert an integer variable to a reference
   virtual void int_to_ref(const variable_t &int_var, const variable_t &reg,
                           const variable_t &ref) = 0;
+  // if (cond) ref_gep(ref1, rgn1, lhs_ref, lhs_rgn, 0) else
+  //           ref_gep(ref2, rgn2, lhs_ref, lhs_rgn, 0)
+  // cond is a boolean variable
+  virtual void select_ref(const variable_t &lhs_ref, const variable_t &lhs_rgn,
+			  const variable_t &cond,
+			  const variable_or_constant_t &ref1,
+			  const boost::optional<variable_t> &rgn1,
+			  const variable_or_constant_t &ref2,
+			  const boost::optional<variable_t> &rgn2) = 0;
+  
   /**************************** Backward numerical operations ***************/
   // x = y op z
   // Substitute x with y op z in the abstract value
@@ -325,7 +344,7 @@ public:
 } // end namespace crab
 
 ///
-///==== BEGIN MACROS FOR EMPTY IMPLEMENTATIONS ====
+///==== BEGIN MACROS FOR EMPTY/DEFAULT IMPLEMENTATIONS ====
 ///
 #define NUMERICAL_OPERATIONS_NOT_IMPLEMENTED(DOM)                              \
   virtual void apply(crab::domains::arith_operation_t op, const variable_t &x, \
@@ -334,6 +353,9 @@ public:
                      const variable_t &y, number_t k) override {}              \
   virtual void assign(const variable_t &x, const linear_expression_t &e)       \
       override {}                                                              \
+  virtual void select(const variable_t &lhs, const linear_constraint_t &cond,  \
+		      const linear_expression_t &e1,			       \
+		      const linear_expression_t &e2) override {}               \
   virtual void backward_assign(const variable_t &x,                            \
                                const linear_expression_t &e,                   \
                                const DOM &invariant) override {}               \
@@ -368,6 +390,8 @@ public:
                                  const variable_t &x, const variable_t &y,     \
                                  const variable_t &z) override {}              \
   virtual void assume_bool(const variable_t &v, bool is_negated) override {}   \
+  virtual void select_bool(const variable_t &lhs, const variable_t &cond,      \
+			   const variable_t &b1, const variable_t &b2) override {} \
   virtual void backward_assign_bool_cst(const variable_t &lhs,                 \
                                         const linear_constraint_t &rhs,        \
                                         const DOM &invariant) override {}      \
@@ -407,7 +431,13 @@ public:
   virtual void ref_to_int(const variable_t &reg, const variable_t &ref,        \
                           const variable_t &int_var) override {}               \
   virtual void int_to_ref(const variable_t &int_var, const variable_t &reg,    \
-                          const variable_t &ref) override {}
+                          const variable_t &ref) override {}                   \
+  virtual void select_ref(const variable_t &lhs_ref, const variable_t &lhs_rgn,\
+			  const variable_t &cond,			       \
+			  const variable_or_constant_t &ref1,		       \
+			  const boost::optional<variable_t> &rgn1,	       \
+			  const variable_or_constant_t &ref2,		       \
+			  const boost::optional<variable_t> &rgn2) override {}
 
 #define ARRAY_OPERATIONS_NOT_IMPLEMENTED(DOM)                                  \
   virtual void array_init(                                                     \
@@ -448,6 +478,107 @@ public:
   virtual void backward_array_assign(const variable_t &lhs,                    \
                                      const variable_t &rhs,                    \
                                      const DOM &invariant) override {}
+
+#define DEFAULT_SELECT(DOM)						\
+  virtual void select(const variable_t &lhs, const linear_constraint_t &cond,  \
+		      const linear_expression_t &e1,  const linear_expression_t &e2) override { \
+  crab::CrabStats::count(domain_name() + ".count.select");		\
+  crab::ScopedCrabStats __st__(domain_name() + ".select");              \
+  if (!is_bottom()) {							\
+  DOM inv1(*this);	                                                \
+  inv1 += cond;								\
+  if (inv1.is_bottom()) {						\
+    assign(lhs, e2);							\
+    return;								\
+  }									\
+  DOM inv2(*this); 							\
+  inv2 += cond.negate();						\
+  if (inv2.is_bottom()) {						\
+    assign(lhs, e1);							\
+    return;								\
+  }									\
+  inv1.assign(lhs, e1);							\
+  inv2.assign(lhs, e2);							\
+  *this = inv1 | inv2;							\
+ }									\
+}
+
+#define DEFAULT_SELECT_REF(DOM)                                         \
+virtual void select_ref(const variable_t &lhs_ref, const variable_t &lhs_rgn, const variable_t &cond, \
+			const variable_or_constant_t &ref1,		\
+			const boost::optional<variable_t> &rgn1,	\
+			const variable_or_constant_t &ref2,		\
+			const boost::optional<variable_t> &rgn2) override { \
+  crab::CrabStats::count(domain_name() + ".count.select_ref");		\
+  crab::ScopedCrabStats __st__(domain_name() + ".select_ref");		\
+  if (!is_bottom()) {							\
+    auto eval_true_value = [&lhs_ref, &lhs_rgn, &ref1, &rgn1](DOM &out) {\
+			     if (ref1.is_reference_null()) {		\
+			       out -= lhs_ref;				\
+			       out.ref_assume(reference_constraint_t::mk_null(lhs_ref));\
+			     } else {					\
+			       assert(ref1.is_variable());		\
+			       assert(rgn1);				\
+			       linear_expression_t zero_offset(number_t(0)); \
+			       out.ref_gep(ref1.get_variable(), *rgn1, lhs_ref, lhs_rgn, zero_offset); \
+			     }						\
+			   };						\
+    auto eval_false_value = [&lhs_ref, &lhs_rgn, &ref2, &rgn2](DOM &out) { \
+			      if (ref2.is_reference_null()) {		\
+				out -= lhs_ref;				\
+				out.ref_assume(reference_constraint_t::mk_null(lhs_ref)); \
+			      } else {					\
+				assert(ref2.is_variable());		\
+				assert(rgn2);				\
+				linear_expression_t zero_offset(number_t(0)); \
+				out.ref_gep(ref2.get_variable(), *rgn2, lhs_ref, lhs_rgn, zero_offset); \
+			      }						\
+			    };						\
+    const bool negate = true;						\
+    DOM inv1(*this);							\
+    inv1.assume_bool(cond, !negate);					\
+    if (inv1.is_bottom()) {						\
+      eval_false_value(*this);						\
+      return;								\
+    }									\
+    DOM inv2(*this);							\
+    inv2.assume_bool(cond, negate);					\
+    if (inv2.is_bottom()) {						\
+      eval_true_value(*this);						\
+      return;								\
+    }									\
+    eval_true_value(inv1);						\
+    eval_false_value(inv2);						\
+    *this = inv1 | inv2;						\
+  }									\
+}
+
+#define DEFAULT_SELECT_BOOL(DOM)                                        \
+ virtual void select_bool(const variable_t &lhs, const variable_t &cond,\
+			  const variable_t &b1, const variable_t &b2) override { \
+   crab::CrabStats::count(domain_name() + ".count.select_bool");	\
+   crab::ScopedCrabStats __st__(domain_name() + ".select_bool");	\
+   if (!is_bottom()) {							\
+     const bool negate = true;						\
+     DOM inv1(*this);							\
+     inv1.assume_bool(cond, !negate);					\
+     if (inv1.is_bottom()) {						\
+       assign_bool_var(lhs, b2, !negate);				\
+       return;								\
+     }									\
+     DOM inv2(*this);							\
+     inv2.assume_bool(cond, negate);					\
+     if (inv2.is_bottom()) {						\
+       assign_bool_var(lhs, b1, !negate);				\
+       return;								\
+     }                                                                  \
+     inv1.assign_bool_var(lhs, b1, !negate);				\
+     inv2.assign_bool_var(lhs, b2, !negate);				\
+     *this = inv1 | inv2;						\
+   }									\
+ }
+  
+
 ///
-///==== END MACROS FOR EMPTY IMPLEMENTATIONS ====
+///==== END MACROS FOR EMPTY/DEFAULT IMPLEMENTATIONS ====
 ///
