@@ -2126,6 +2126,81 @@ user-defined assertion checker
 1  Number of total warning checks
 2  Number of total unreachable checks
 === End ./test-bin/checker ===
+=== Begin ./test-bin/constant_domain ===
+entry:
+  i = 0;
+  goto bb1;
+bb1:
+  goto bb1_t,bb1_f;
+bb1_t:
+  goto bb2;
+bb2:
+  havoc(nd);
+  inc = ite(-nd <= -1,1,1);
+  i = i+inc;
+  goto bb3,bb4;
+bb3:
+  assume(-i <= -1);
+  i = 0;
+  goto bb1;
+bb4:
+  assume(i <= 0);
+  goto bb1;
+bb1_f:
+  goto ret;
+ret:
+  assert(i = 0);
+
+
+Invariants using ConstantDomain
+Abstract trace: entry (bb1 bb1_t bb2 bb4 bb3)^{1} bb1_f ret
+user-defined assertion checker
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+entry:
+  region_init(region_0:region(int));
+  i := make_ref(region_0:region(int));
+  store_to_ref(region_0:region(int),i:ref,0:int32);
+  goto bb1;
+bb1:
+  goto bb1_t,bb1_f;
+bb1_t:
+  goto bb2;
+bb2:
+  havoc(nd);
+  inc = ite(-nd <= -1,1,1);
+  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  *i = *i+inc;
+  store_to_ref(region_0:region(int),i:ref,*i:int32);
+  goto bb3,bb4;
+bb3:
+  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  assume(-*i <= -1);
+  store_to_ref(region_0:region(int),i:ref,0:int32);
+  goto bb1;
+bb4:
+  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  assume(*i <= 0);
+  goto bb1;
+bb1_f:
+  goto ret;
+ret:
+  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  assert(*i = 0);
+
+
+Invariants using RegionDomain(ConstantDomain)
+Abstract trace: entry (bb1 bb1_t bb2 bb4 bb3)^{1} bb1_f ret
+user-defined assertion checker
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+=== End ./test-bin/constant_domain ===
 === Begin ./test-bin/dce ===
 CFG
 x0:
