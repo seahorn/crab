@@ -18,6 +18,7 @@
 #include <crab/domains/region_domain.hpp>
 #include <crab/domains/sparse_dbm.hpp>
 #include <crab/domains/split_dbm.hpp>
+#include <crab/domains/split_oct.hpp>
 #include <crab/domains/term_equiv.hpp>
 #include <crab/domains/wrapped_interval_domain.hpp>
 
@@ -40,12 +41,10 @@ using q_interval_t = interval<q_number>;
 /*===================================================================*/
 using z_interval_domain_t = interval_domain<z_number, varname_t>;
 using z_ric_domain_t = numerical_congruence_domain<z_interval_domain_t>;
-using z_SparseGraph =
-    DBM_impl::DefaultParams<z_number, DBM_impl::GraphRep::adapt_ss>;
-using z_dbm_domain_t = sparse_dbm_domain<z_number, varname_t, z_SparseGraph>;
-using z_SplitGraph =
-    DBM_impl::DefaultParams<z_number, DBM_impl::GraphRep::adapt_ss>;
-using z_sdbm_domain_t = split_dbm_domain<z_number, varname_t, z_SplitGraph>;
+using z_dbm_graph_t = DBM_impl::DefaultParams<z_number, DBM_impl::GraphRep::adapt_ss>;
+using z_dbm_domain_t = sparse_dbm_domain<z_number, varname_t, z_dbm_graph_t>;
+using z_sdbm_domain_t = split_dbm_domain<z_number, varname_t, z_dbm_graph_t>;
+using z_soct_domain_t = split_oct_domain<z_number, varname_t, z_dbm_graph_t>;  
 using z_boxes_domain_t = boxes_domain<z_number, varname_t>;
 using z_dis_interval_domain_t = dis_interval_domain<z_number, varname_t>;
 using z_box_apron_domain_t = apron_domain<z_number, varname_t, APRON_INT>;
@@ -120,8 +119,7 @@ using z_rgn_bool_int_params_t = TestRegionParams<
   flat_boolean_numerical_domain<
     interval_domain<z_number, typename var_allocator::varname_t>>>;
 using z_rgn_sdbm_params_t = TestRegionParams<
-  split_dbm_domain<z_number, typename var_allocator::varname_t,
-		   z_SplitGraph>>;
+  split_dbm_domain<z_number, typename var_allocator::varname_t, z_dbm_graph_t>>;
 using z_rgn_int_t = region_domain<z_rgn_int_params_t>;
 using z_rgn_bool_int_t = region_domain<z_rgn_bool_int_params_t>;
 using z_rgn_sdbm_t = region_domain<z_rgn_sdbm_params_t>;
