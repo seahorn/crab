@@ -9,6 +9,7 @@
 #include <crab/domains/array_smashing.hpp>
 #include <crab/domains/boxes.hpp>
 #include <crab/domains/combined_domains.hpp>
+#include <crab/domains/combined_congruences.hpp>
 #include <crab/domains/constant_domain.hpp>
 #include <crab/domains/dis_intervals.hpp>
 #include <crab/domains/elina_domains.hpp>
