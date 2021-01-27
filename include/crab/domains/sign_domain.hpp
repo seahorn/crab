@@ -674,7 +674,7 @@ private:
 private:
   separate_domain_t m_env;
 
-  sign_domain(separate_domain_t env) : m_env(env) {}
+  sign_domain(separate_domain_t &&env) : m_env(std::move(env)) {}
 
   void solve_constraints(const linear_constraint_system_t &csts) {
 
@@ -899,6 +899,14 @@ public:
     std::swap(*this, abs);
   }
 
+  sign_t get_sign(const variable_t &v) const {
+    return m_env[v];
+  }
+
+  void set_sign(const variable_t &v, sign_t s) {
+    m_env.set(v, s);
+  }
+  
   sign_domain() : m_env(separate_domain_t::top()) {}
 
   sign_domain(const sign_domain_t &e) : m_env(e.m_env) {

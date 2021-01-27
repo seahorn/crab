@@ -150,7 +150,7 @@ private:
 private:
   separate_domain_t m_env;
 
-  constant_domain(separate_domain_t env) : m_env(env) {}
+  constant_domain(separate_domain_t &&env) : m_env(std::move(env)) {}
 
   void solve_constraints(const linear_constraint_system_t &csts) {
     if (!is_bottom()) {
@@ -266,6 +266,14 @@ public:
     return *this;
   }
 
+  constant_t get_constant(const variable_t &v) const {
+    return m_env[v];
+  }
+
+  void set_constant(const variable_t &v, constant_t c) {
+    m_env.set(v, c);
+  }
+  
   bool is_bottom() const override { return m_env.is_bottom(); }
 
   bool is_top() const override { return m_env.is_top(); }

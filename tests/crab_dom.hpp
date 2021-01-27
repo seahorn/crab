@@ -19,6 +19,7 @@
 #include <crab/domains/powerset_domain.hpp>
 #include <crab/domains/region_domain.hpp>
 #include <crab/domains/sign_domain.hpp>
+#include <crab/domains/sign_constant_domain.hpp>
 #include <crab/domains/sparse_dbm.hpp>
 #include <crab/domains/split_dbm.hpp>
 #include <crab/domains/split_oct.hpp>
@@ -127,13 +128,16 @@ using z_rgn_sdbm_params_t = TestRegionParams<
 using z_rgn_constant_params_t = TestRegionParams<
   constant_domain<z_number, typename var_allocator::varname_t>>;
 using z_rgn_sign_params_t = TestRegionParams<
-  sign_domain<z_number, typename var_allocator::varname_t>>;  
+  sign_domain<z_number, typename var_allocator::varname_t>>;
+using z_rgn_sign_cst_params_t = TestRegionParams<
+  sign_constant_domain<z_number, typename var_allocator::varname_t>>;  
 using z_rgn_int_t = region_domain<z_rgn_int_params_t>;
 using z_rgn_bool_int_t = region_domain<z_rgn_bool_int_params_t>;
 using z_rgn_sdbm_t = region_domain<z_rgn_sdbm_params_t>;
 using z_rgn_aa_int_t = region_domain<z_rgn_aa_int_params_t>;
 using z_rgn_constant_t = region_domain<z_rgn_constant_params_t>;
-using z_rgn_sign_t = region_domain<z_rgn_sign_params_t>;  
+using z_rgn_sign_t = region_domain<z_rgn_sign_params_t>;
+using z_rgn_sign_constant_t = region_domain<z_rgn_sign_cst_params_t>;    
 /*===================================================================*/
 /// Numerical domains over real
 /*===================================================================*/

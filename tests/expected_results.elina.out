@@ -3221,6 +3221,70 @@ user-defined assertion checker
 0  Number of total unreachable checks
 
 === End ./test-bin/region-5 ===
+=== Begin ./test-bin/region-6 ===
+entry:
+  region_init(region_0:region(int));
+  region_init(region_1:region(int));
+  region_init(region_2:region(int));
+  z = 100;
+  i := make_ref(region_0:region(int));
+  x := make_ref(region_1:region(int));
+  y := make_ref(region_2:region(int));
+  assume(i != NULL_REF);
+  assume(x != NULL_REF);
+  assume(y != NULL_REF);
+  store_to_ref(region_0:region(int),i:ref,0:int32);
+  store_to_ref(region_1:region(int),x:ref,1:int32);
+  store_to_ref(region_2:region(int),y:ref,0:int32);
+  goto bb1;
+bb1:
+  goto bb1_t,bb1_f;
+bb1_t:
+  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  assume(*i <= 99);
+  goto bb2;
+bb2:
+  z = z+3;
+  *x:int32 := load_from_ref(region_1:region(int),x:ref);
+  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  *x = *x**y;
+  store_to_ref(region_1:region(int),x:ref,*x:int32);
+  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  *y = *y+1;
+  store_to_ref(region_2:region(int),y:ref,*y:int32);
+  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  *i = *i+1;
+  store_to_ref(region_0:region(int),i:ref,*i:int32);
+  z = z-3;
+  goto bb1;
+bb1_f:
+  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  assume(-*i <= -100);
+  goto bb3;
+bb3:
+  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  *x:int32 := load_from_ref(region_1:region(int),x:ref);
+  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  goto ret;
+ret:
+  assert(x != NULL_REF);
+  assert(y != NULL_REF);
+  assert(-*i <= 0);
+  assert(-*x <= -1);
+  assert(-*y <= 0);
+  assert(-*x+*y <= 0);
+  assert(z = 100);
+
+
+Invariants using RegionDomain(Product(SignDomain,ConstantDomain))
+Abstract trace: entry (bb1 bb1_t bb2)^{2} bb1_f bb3 ret
+user-defined assertion checker
+6  Number of total safe checks
+0  Number of total error checks
+1  Number of total warning checks
+0  Number of total unreachable checks
+
+=== End ./test-bin/region-6 ===
 === Begin ./test-bin/soct ===
 CHECKED. Both domains ElinaOctagon and SplitOctagons agree on block ret
 CHECKED. Both domains ElinaOctagon and SplitOctagons agree on block bb1_f
