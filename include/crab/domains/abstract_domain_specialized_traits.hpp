@@ -189,10 +189,10 @@ public:
       typename Domain::linear_constraint_system_t linear_constraint_system_t;
 
   static_assert(
-      std::is_same<Domain, abstract_domain<typename Domain::variable_t>>::value,
+      !std::is_same<Domain, abstract_domain<typename Domain::variable_t>>::value,
       "reduced_domain_traits not supported for generic domain");
   static_assert(
-      std::is_same<Domain,
+      !std::is_same<Domain,
                    abstract_domain_ref<typename Domain::variable_t>>::value,
       "reduced_domain_traits not supported for generic domain");
 
@@ -204,8 +204,8 @@ public:
       if (only_equalities && (!cst.is_equality())) {
         continue;
       }
-      if (std::find(cst.variables_begin(), cst.variables_end(), x) !=
-          cst.variables_end()) {
+      if (std::find(std::begin(cst.variables()), std::end(cst.variables()), x) !=
+          std::end(cst.variables())) {
         csts += cst;
       }
     }
