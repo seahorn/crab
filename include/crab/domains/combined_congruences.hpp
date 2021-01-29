@@ -6,6 +6,7 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
+#include <crab/domains/combined_domains.hpp>
 #include <crab/domains/congruences.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/support/stats.hpp>
