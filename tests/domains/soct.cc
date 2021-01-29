@@ -141,9 +141,9 @@ void run_and_compare(crab::cfg_impl::z_cfg_t* cfg,
       crab::outs() << inv2.domain_name() << ":" << inv2 << "\n";
       error = true;      
     }
-    if (!error) {
-      crab::outs() << "CHECKED. Both domains " << inv1.domain_name() << " and "
-		   << inv2.domain_name() << " agree on block " 
+    if (error) {
+      crab::outs() << "ERROR: Domains " << inv1.domain_name() << " and "
+		   << inv2.domain_name() << " disagree agree on block " 
 		   << bb.label () << "\n";
     }
     
