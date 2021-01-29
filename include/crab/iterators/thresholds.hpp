@@ -27,7 +27,7 @@ private:
   using bound_t = ikos::bound<Number>;
 
   std::vector<bound_t> m_thresholds;
-  unsigned int m_size;
+  size_t m_size;
 
   template <class B1, class B2> static B2 convert_bounds_impl(B1 b1) {
     B2 b2(0); // some initial value it doesn't matter which one
@@ -36,7 +36,7 @@ private:
   }
 
 public:
-  thresholds(int size = UINT_MAX) : m_size(size) {
+  thresholds(size_t size = UINT_MAX) : m_size(size) {
     m_thresholds.push_back(bound_t::minus_infinity());
     m_thresholds.push_back(0);
 // useful thresholds for wrapped domains
