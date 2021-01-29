@@ -1,5 +1,5 @@
-#include "../program_options.hpp"
 #include "../common.hpp"
+#include "../program_options.hpp"
 
 #include <crab/analysis/fwd_analyzer.hpp>
 
@@ -95,8 +95,9 @@ void run_and_compare(crab::cfg_impl::z_cfg_t* cfg,
 
   typedef crab::cfg::cfg_ref<crab::cfg_impl::z_cfg_t> cfg_ref_t;
 
+  
   // Run with Dom1
-  Dom1 inv1;        
+  Dom1 inv1;
   analyzer_1_t a1(*cfg, inv1,
 		  nullptr, nullptr,
 		  widening, narrowing, jump_set_size);
