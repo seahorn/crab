@@ -3185,7 +3185,7 @@ bb1_t:
 bb2:
   *x:int32 := load_from_ref(region_1:region(int),x:ref);
   *y:int32 := load_from_ref(region_2:region(int),y:ref);
-  *x = *x**y;
+  *x = *x+*y;
   store_to_ref(region_1:region(int),x:ref,*x:int32);
   *y:int32 := load_from_ref(region_2:region(int),y:ref);
   *y = *y+1;
@@ -3211,6 +3211,16 @@ ret:
   assert(-*y <= 0);
   assert(-*x+*y <= 0);
 
+
+Invariants using RegionDomain(SignDomain)
+entry={}
+bb1={i -> [-oo,-1] U [1,+oo]; region_0 -> [0,+oo]; x -> [-oo,-1] U [1,+oo]; region_1 -> [1,+oo]; y -> [-oo,-1] U [1,+oo]; region_2 -> [0,+oo]}
+bb1_f={i -> [-oo,-1] U [1,+oo]; region_0 -> [0,+oo]; x -> [-oo,-1] U [1,+oo]; region_1 -> [1,+oo]; y -> [-oo,-1] U [1,+oo]; region_2 -> [0,+oo]}
+bb3={i -> [-oo,-1] U [1,+oo]; region_0 -> [0,+oo]; x -> [-oo,-1] U [1,+oo]; region_1 -> [1,+oo]; y -> [-oo,-1] U [1,+oo]; region_2 -> [0,+oo]; *i -> [0,+oo]}
+ret={i -> [-oo,-1] U [1,+oo]; region_0 -> [0,+oo]; x -> [-oo,-1] U [1,+oo]; region_1 -> [1,+oo]; y -> [-oo,-1] U [1,+oo]; region_2 -> [0,+oo]; *i -> [0,+oo]; *x -> [1,+oo]; *y -> [0,+oo]}
+bb1_t={i -> [-oo,-1] U [1,+oo]; region_0 -> [0,+oo]; x -> [-oo,-1] U [1,+oo]; region_1 -> [1,+oo]; y -> [-oo,-1] U [1,+oo]; region_2 -> [0,+oo]}
+bb2={i -> [-oo,-1] U [1,+oo]; region_0 -> [0,+oo]; x -> [-oo,-1] U [1,+oo]; region_1 -> [1,+oo]; y -> [-oo,-1] U [1,+oo]; region_2 -> [0,+oo]; *i -> [0,+oo]}
+Abstract trace: entry (bb1 bb1_t bb2)^{2} bb1_f bb3 ret
 
 Invariants using RegionDomain(SignDomain)
 Abstract trace: entry (bb1 bb1_t bb2)^{2} bb1_f bb3 ret
@@ -3247,7 +3257,7 @@ bb2:
   z = z+3;
   *x:int32 := load_from_ref(region_1:region(int),x:ref);
   *y:int32 := load_from_ref(region_2:region(int),y:ref);
-  *x = *x**y;
+  *x = *x+*y;
   store_to_ref(region_1:region(int),x:ref,*x:int32);
   *y:int32 := load_from_ref(region_2:region(int),y:ref);
   *y = *y+1;
@@ -3277,7 +3287,7 @@ ret:
 
 
 Invariants using RegionDomain(Product(SignDomain,ConstantDomain))
-Abstract trace: entry (bb1 bb1_t bb2)^{2} bb1_f bb3 ret
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f bb3 ret
 user-defined assertion checker
 6  Number of total safe checks
 0  Number of total error checks

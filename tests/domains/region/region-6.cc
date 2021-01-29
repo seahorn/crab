@@ -31,7 +31,7 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
 
     while(*i <= 99) {
      z:=z+3;
-     (*x) *= (*y);
+     (*x) = (*x) +  (*y);
      *y++;
      *i++;
      z:=z-3;
@@ -42,7 +42,8 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
     assert(*i >= 0);   // EXPECTED OK
     assert(*x >= 1);   // EXPECTED OK 
     assert(*y >= 0);   // EXPECTED OK
-    assert(*x >= *y);  // EXPECTED OK but sign domain cannot prove it
+    assert(*x >= *y);  // EXPECTED FAIL: OK but sign domain cannot prove it
+    assert(z == 100);  // EXPECTED OK
    */
 
   // Define program variables
@@ -106,10 +107,10 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
   bb1_f.load_from_ref(deref_i, i, mem1);
   bb1_f.assume(deref_i >= 100);
   bb2.add(z, z, 3);
-  //// *x = *x * *y
+  //// *x = *x + *y
   bb2.load_from_ref(deref_x, x, mem2);
   bb2.load_from_ref(deref_y, y, mem3);
-  bb2.mul(deref_x, deref_x, deref_y);
+  bb2.add(deref_x, deref_x, deref_y);
   bb2.store_to_ref(x, mem2, deref_x);
   //// *y = *y + 1
   bb2.load_from_ref(deref_y, y, mem3);
