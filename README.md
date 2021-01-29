@@ -34,8 +34,8 @@ Crab has been designed to have two kind of users:
     experiment with new abstract domains or fixpoint algorithms.
 
 In spite of its simple design, Crab can scale with large real programs
-and CrabIR is rich enough to represent programs with loops, functions,
-and pointers. 
+and CrabIR is rich enough to represent entirely languages such
+as [LLVM](https://llvm.org/) bitcode.
 
 The available documentation can be found in
 our [wiki](https://github.com/seahorn/crab/wiki/Home).
@@ -75,7 +75,7 @@ To install Crab, type:
     cmake -DCMAKE_INSTALL_PREFIX=_INSTALL_DIR_ ../
     cmake --build . --target install 
 
-The Boxes/Apron/Elina domains require third-party libraries. To avoid
+The [Boxes](https://github.com/seahorn/ldd)/[Apron](https://github.com/antoinemine/apron)/[Elina](https://github.com/eth-sri/ELINA) domains require third-party libraries. To avoid
 the burden to users who are not interested in those domains, the
 installation of the libraries is optional.
 
