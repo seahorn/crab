@@ -47,7 +47,7 @@ clean:
 	rm -f domain analysis *.a *.o
 
 crab_install:
-	git clone https://github.com/seahorn/crab.git -b dev crab
+	git clone https://github.com/seahorn/crab.git crab
 	mkdir -p crab/build
 	cd crab/build \
 	    && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL)  \
