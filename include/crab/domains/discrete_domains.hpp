@@ -233,3 +233,211 @@ inline crab::crab_os &operator<<(crab::crab_os &o,
 }
 
 } // namespace ikos
+
+
+namespace crab {
+namespace domains {
+  
+//===================================================================//  
+//        The NOSA license does not apply to this code  
+//===================================================================//  
+
+/*
+ * Represent sets of pairs (Key,Value).
+ * 
+ * The pair must consist of a Key (must inherit from indexable class)
+ * and a Value that can be a generic abstract domain. 
+ * 
+ * Bottom means empty set rather than failure.
+ */ 
+template <typename Key, typename Value> class discrete_pair_domain {
+
+private:
+  using patricia_tree_t = ikos::patricia_tree<Key, Value>;
+  using unary_op_t = typename patricia_tree_t::unary_op_t;
+  using binary_op_t = typename patricia_tree_t::binary_op_t;
+  using partial_order_t = typename patricia_tree_t::partial_order_t;
+
+public:
+  using discrete_pair_domain_t = discrete_pair_domain<Key, Value>;
+  using iterator = typename patricia_tree_t::iterator;
+  using key_type = Key;
+  using value_type = Value;
+
+private:
+  bool m_is_top;
+  patricia_tree_t m_tree;
+
+  static patricia_tree_t apply_operation(binary_op_t &o,
+                                         const patricia_tree_t &t1,
+                                         const patricia_tree_t &t2,
+                                         bool &is_bottom) {
+    patricia_tree_t res(t1);
+    is_bottom = res.merge_with(t2, o);
+    return res;
+  }
+
+  discrete_pair_domain(patricia_tree_t t) : m_is_top(false), m_tree(t) {}
+
+  discrete_pair_domain(bool b) : m_is_top(b) {}
+
+  class join_op : public binary_op_t {
+    std::pair<bool, boost::optional<Value>> apply(Value x, Value y) {
+      Value z = x.operator|(y);
+      if (z.is_top()) {
+        return {false, boost::optional<Value>()};
+      } else {
+        return {false, boost::optional<Value>(z)};
+      }
+    }
+    bool default_is_absorbing() { return false; }
+  }; // class join_op
+
+  class meet_op : public binary_op_t {
+    std::pair<bool, boost::optional<Value>> apply(Value x, Value y) {
+      Value z = x.operator&(y);
+      if (z.is_bottom()) {
+        return {true, boost::optional<Value>()};
+      } else {
+        return {false, boost::optional<Value>(z)};
+      }
+    };
+    bool default_is_absorbing() { return true; }
+  }; // class meet_op
+
+  class domain_po : public partial_order_t {
+    bool leq(Value x, Value y) { return x.operator<=(y); }
+    bool default_is_top() { return false; }
+  }; // class domain_po
+
+public:
+  static discrete_pair_domain_t top() {
+    return discrete_pair_domain_t(true);
+  }
+
+  static discrete_pair_domain_t bottom() {
+    return discrete_pair_domain_t(false);
+  }
+  
+  discrete_pair_domain() : m_is_top(false), m_tree(patricia_tree_t()) {}
+
+
+  discrete_pair_domain(const discrete_pair_domain_t &o) = default;
+  discrete_pair_domain(discrete_pair_domain_t &&o) = default;
+  discrete_pair_domain_t &operator=(const discrete_pair_domain_t &o)  = default;
+  discrete_pair_domain_t &operator=(discrete_pair_domain_t &&o)  = default;
+  
+  iterator begin() const {
+    if (is_top()) {
+      CRAB_ERROR("discrete_pair_domain: trying to invoke iterator on top");
+    } else {
+      return m_tree.begin();
+    }
+  }
+
+  iterator end() const {
+    if (is_top()) {
+      CRAB_ERROR("discrete_pair_domain: trying to invoke iterator on top");
+    } else {
+      return m_tree.end();
+    }
+  }
+
+  bool is_top() const { return m_is_top; }
+
+  bool is_bottom() const { return (!is_top() && m_tree.empty()); }
+
+  bool operator<=(const discrete_pair_domain_t &o) const {
+    domain_po po;
+    return (o.is_top() || (!is_top() && (m_tree.leq(o.m_tree, po))));
+  }
+
+  discrete_pair_domain_t
+  operator|(const discrete_pair_domain_t &o) const {
+    if (is_top() || o.is_top()) {
+      return discrete_pair_domain_t::top();
+    } else {
+      join_op op;
+      bool is_bottom;
+      patricia_tree_t res = apply_operation(op, m_tree, o.m_tree, is_bottom);
+      return discrete_pair_domain_t(std::move(res));
+    }
+  }
+
+  discrete_pair_domain_t
+  operator&(const discrete_pair_domain_t &o) const {
+    if (is_top()) {
+      return o;
+    } else if (o.is_top()) {
+      return *this;
+    } else {
+      meet_op op;
+      bool is_bottom;
+      patricia_tree_t res = apply_operation(op, m_tree, o.m_tree, is_bottom);
+      if (is_bottom) {
+        return discrete_pair_domain_t::bottom();
+      } else {
+        return discrete_pair_domain_t(std::move(res));
+      }
+    }
+  }
+
+  void set(Key k, Value v) {
+    if (!is_top()) {
+      m_tree.insert(k, v);
+    }
+  }
+
+  discrete_pair_domain_t &operator-=(Key k) {
+    if (!is_top()) {
+      m_tree.remove(k);
+    }
+    return *this;
+  }
+
+  Value operator[](Key k) {
+    if (is_top())
+      return Value::top();
+    else {
+      boost::optional<Value> v = m_tree.lookup(k);
+      if (v) {
+        return *v;
+      } else {
+        return Value::bottom();
+      }
+    }
+  }
+
+  void write(crab::crab_os &o) const {
+    if (is_top()) {
+      o << "{...}";
+    }
+    if (m_tree.empty()) {
+      o << "{}";
+    } else {
+      o << "{";
+      for (typename patricia_tree_t::iterator it = m_tree.begin();
+           it != m_tree.end();) {
+        Key k = it->first;
+        k.write(o);
+        o << " -> ";
+        Value v = it->second;
+        v.write(o);
+        ++it;
+        if (it != m_tree.end()) {
+          o << "; ";
+        }
+      }
+      o << "}";
+    }
+  }
+}; // class discrete_pair_domain
+
+template <typename Key, typename Value>
+inline crab_os &operator<<(crab_os &o, const discrete_pair_domain<Key, Value> &d) {
+  d.write(o);
+  return o;
+}
+
+} //end namespace domains
+} //end namespace crab

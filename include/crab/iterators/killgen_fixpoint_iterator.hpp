@@ -8,7 +8,6 @@
 #include <crab/analysis/graphs/sccg.hpp>
 #include <crab/analysis/graphs/topo_order.hpp>
 #include <crab/cfg/cfg_bgl.hpp>
-#include <crab/domains/killgen_domain.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 

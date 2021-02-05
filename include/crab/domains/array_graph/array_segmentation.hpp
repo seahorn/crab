@@ -6,7 +6,7 @@
 */
 
 #include <crab/cfg/cfg.hpp>
-#include <crab/domains/killgen_domain.hpp>
+#include <crab/domains/discrete_domains.hpp>
 #include <crab/iterators/killgen_fixpoint_iterator.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -21,10 +21,10 @@ namespace analyzer {
 template <class CFG>
 class array_segment_ops
     : public crab::iterators::killgen_operations_api<
-          CFG, domains::flat_killgen_domain<typename CFG::variable_t>> {
+      CFG, ikos::discrete_domain<typename CFG::variable_t>> {
 
   using killgen_operations_api_t = crab::iterators::killgen_operations_api<
-      CFG, domains::flat_killgen_domain<typename CFG::variable_t>>;
+      CFG, ikos::discrete_domain<typename CFG::variable_t>>;
 
 public:
   using basic_block_label_t = typename CFG::basic_block_label_t;

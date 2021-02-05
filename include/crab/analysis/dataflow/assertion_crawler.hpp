@@ -1,9 +1,8 @@
 #pragma once
 
 #include <crab/analysis/graphs/cdg.hpp>
-//#include <crab/cfg/basic_block_traits.hpp>
 #include <crab/cfg/cfg.hpp>
-#include <crab/domains/killgen_domain.hpp>
+#include <crab/domains/discrete_domains.hpp>
 #include <crab/iterators/killgen_fixpoint_iterator.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -93,22 +92,17 @@ template <typename CFG> class assertion_crawler;
 template <class CFG>
 class assertion_crawler_operations
     : public killgen_operations_api<
-          CFG, separate_killgen_domain<
-                   assert_wrapper<CFG>,
-                   flat_killgen_domain<typename CFG::variable_t>>> {
-
+          CFG, discrete_pair_domain<assert_wrapper<CFG>,
+				    ikos::discrete_domain<typename CFG::variable_t>>> { 
   friend class assertion_crawler<CFG>;
 
 public:
   using assert_wrapper_t = assert_wrapper<CFG>;
-  using var_dom_t = flat_killgen_domain<typename CFG::variable_t>;
-  // -- key type: map an assertion to a set of variables
-  using separate_domain_t =
-      separate_killgen_domain<assert_wrapper_t, var_dom_t>;
-
+  using var_dom_t = ikos::discrete_domain<typename CFG::variable_t>;  
+  using discrete_pair_domain_t = discrete_pair_domain<assert_wrapper_t, var_dom_t>; 
 private:
   using killgen_operations_api_t =
-      killgen_operations_api<CFG, separate_domain_t>;
+      killgen_operations_api<CFG, discrete_pair_domain_t>;
   using basic_block_label_t = typename CFG::basic_block_label_t;
   using basic_block_t = typename CFG::basic_block_t;
   using V = typename CFG::varname_t;
@@ -155,12 +149,11 @@ private:
             bool_assign_var_t;
     using variable_t = typename CFG::variable_t;
 
-    // Helper that applies function F to each pair's value of the
-    // separate domain_t.
+    // Helper that applies function F to each pair of discrete_pair_domain.
     template <typename F>
-    struct apply_separate
-        : public std::unary_function<separate_domain_t, separate_domain_t> {
-      using this_type = apply_separate<F>;
+    struct apply_discrete_pair
+        : public std::unary_function<discrete_pair_domain_t, discrete_pair_domain_t> {
+      using this_type = apply_discrete_pair<F>;
       using function_type = std::binary_function<assert_wrapper_t, var_dom_t,
                                                  std::pair<var_dom_t, bool>>;
       static_assert(std::is_base_of<function_type, F>::value,
@@ -168,22 +161,23 @@ private:
       F f;
 
     public:
-      apply_separate(F _f) : f(_f) {}
-      apply_separate(const this_type &o) : f(o.f) {}
+      apply_discrete_pair(F _f) : f(_f) {}
+      apply_discrete_pair(const this_type &o) : f(o.f) {}
 
-      separate_domain_t
-      operator()(separate_domain_t inv) { // XXX: separate_domain_t cannot be
-                                          // modified in-place
-        using value_type = std::pair<typename separate_domain_t::key_type,
-                                     typename separate_domain_t::value_type>;
-
-        if (inv.is_bottom())
+      discrete_pair_domain_t operator()(discrete_pair_domain_t inv) {
+	// All of this is needed becase discrete_pair_domain_t cannot
+	// be modified in-place
+        using key_value_pair = std::pair<typename discrete_pair_domain_t::key_type,
+					 typename discrete_pair_domain_t::value_type>;
+        if (inv.is_bottom()) {
           return inv;
+	}
 
-        std::vector<value_type> kvs;
+        std::vector<key_value_pair> kvs;
         kvs.reserve(std::distance(inv.begin(), inv.end()));
-        for (auto kv : inv)
-          kvs.push_back(value_type(kv.first, kv.second));
+        for (auto kv : inv) {
+          kvs.push_back(key_value_pair(kv.first, kv.second));
+	}
 
         for (auto &kv : kvs) {
           auto p = f(kv.first, kv.second);
@@ -324,13 +318,13 @@ private:
       }
     };
 
-    using apply_add_data_t = apply_separate<add_data_deps>;
-    using apply_add_control_t = apply_separate<add_control_deps>;
-    using apply_remove_t = apply_separate<remove_deps>;
+    using apply_add_data_t = apply_discrete_pair<add_data_deps>;
+    using apply_add_control_t = apply_discrete_pair<add_control_deps>;
+    using apply_remove_t = apply_discrete_pair<remove_deps>;
 
     // dataflow solution: map blocks to pairs of assertion id and
     //                    set of variables.
-    separate_domain_t _inv;
+    discrete_pair_domain_t _inv;
     // map each assertion to a unique identifier
     assert_map_t &_assert_map;
     // control-dependence graph
@@ -340,11 +334,11 @@ private:
     const basic_block_t &_bb;
 
   public:
-    transfer_function(separate_domain_t inv, const cdg_t &g, assert_map_t &am,
+    transfer_function(discrete_pair_domain_t inv, const cdg_t &g, assert_map_t &am,
                       const basic_block_t &bb)
         : _inv(inv), _assert_map(am), _cdg(g), _bb(bb) {}
 
-    separate_domain_t inv() { return _inv; }
+    discrete_pair_domain_t inv() { return _inv; }
 
     void visit(bin_op_t &s) {
       CRAB_LOG("assertion-crawler-step", crab::outs()
@@ -426,7 +420,7 @@ private:
                                              << "\tAdded " << vdom << "\n";);
     }
 
-    void visit(unreach_t &) { _inv = separate_domain_t::bottom(); }
+    void visit(unreach_t &) { _inv = discrete_pair_domain_t::bottom(); }
 
     void visit(havoc_t &s) {
       CRAB_LOG("assertion-crawler-step", crab::outs()
@@ -496,17 +490,17 @@ public:
     crab::analyzer::graph_algo::control_dep_graph(this->m_cfg, _cdg);
   }
 
-  virtual separate_domain_t entry() override {
-    return separate_domain_t::bottom();
+  virtual discrete_pair_domain_t entry() override {
+    return discrete_pair_domain_t::bottom();
   }
 
-  virtual separate_domain_t merge(separate_domain_t d1,
-                                  separate_domain_t d2) override {
+  virtual discrete_pair_domain_t merge(discrete_pair_domain_t d1,
+                                  discrete_pair_domain_t d2) override {
     return d1 | d2;
   }
 
-  virtual separate_domain_t analyze(const basic_block_label_t &bb_id,
-                                    separate_domain_t out) override {
+  virtual discrete_pair_domain_t analyze(const basic_block_label_t &bb_id,
+                                    discrete_pair_domain_t out) override {
     auto &bb = this->m_cfg.get_node(bb_id);
     transfer_function vis(out, _cdg, _assert_map, bb);
     for (auto &s : boost::make_iterator_range(bb.rbegin(), bb.rend())) {
@@ -538,11 +532,11 @@ private:
 
 public:
   // map assertions to a set of variables
-  using separate_domain_t =
-      typename assertion_crawler_operations<CFG>::separate_domain_t;
+  using discrete_pair_domain_t =
+      typename assertion_crawler_operations<CFG>::discrete_pair_domain_t;
 
 private:
-  std::unordered_map<basic_block_label_t, separate_domain_t> m_map;
+  std::unordered_map<basic_block_label_t, discrete_pair_domain_t> m_map;
 
 public:
   assertion_crawler(CFG cfg) : fixpo_t(cfg) {}
@@ -561,7 +555,7 @@ public:
   }
 
   // return the dataflow facts that hold at the exit of block bb
-  const separate_domain_t &get_assertions(const basic_block_label_t &bb) {
+  const discrete_pair_domain_t &get_assertions(const basic_block_label_t &bb) {
     auto it = m_map.find(bb);
     if (it == m_map.end())
       CRAB_ERROR("Basic block ", bb, " not found");
@@ -571,7 +565,7 @@ public:
   // return the dataflow facts of the pre-state at each program point in bb
   void get_assertions(
       const basic_block_label_t &b,
-      std::map<typename CFG::statement_t *, separate_domain_t> &res) {
+      std::map<typename CFG::statement_t *, discrete_pair_domain_t> &res) {
     auto it = m_map.find(b);
     if (it != m_map.end()) {
       if (!it->second.is_bottom()) {
@@ -625,7 +619,7 @@ public:
     //   #if 1
     //   o << "\t" << kv.second << "\n";
     //   #else
-    //   std::map<typename CFG::statement_t*, separate_domain_t> pp_map;
+    //   std::map<typename CFG::statement_t*, discrete_pair_domain_t> pp_map;
     //   get_assertions(kv.first, pp_map);
     //   for (auto &kv: pp_map) {
     //     o << "\t" << *(kv.first) << " --> " << kv.second << "\n";

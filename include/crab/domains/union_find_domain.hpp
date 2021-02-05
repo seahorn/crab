@@ -1,6 +1,6 @@
 #pragma once
 
-#include <crab/domains/killgen_domain.hpp>
+#include <crab/domains/discrete_domains.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -69,7 +69,7 @@ public:
 
 private:
   using union_find_domain_t = union_find_domain<Variable, Domain>;
-  using variable_set_t = flat_killgen_domain<variable_t>;
+  using variable_set_t = ikos::discrete_domain<variable_t>;
   using parents_map_t = std::unordered_map<variable_t, variable_t>;
   using equivalence_class_t = equivalence_class<variable_t, Domain>;
   using equiv_class_vars_t = std::unordered_map<variable_t, variable_set_t>;
@@ -388,14 +388,14 @@ public:
       union_find_domain_t right(o);
 
       // Keep only common variables      
-      variable_set_t left_vars;
+      variable_set_t left_vars = variable_set_t::bottom();
       left.get_all_variables(left_vars);
       for (auto v: left_vars) {
 	if (!right.contains(v)) {
 	  left.forget(v);
 	}
       }
-      variable_set_t right_vars;      
+      variable_set_t right_vars = variable_set_t::bottom();      
       right.get_all_variables(right_vars);      
       for (auto v: right_vars) {
 	if (!left.contains(v)) {

@@ -3,7 +3,7 @@
 /* Liveness analysis */
 
 //#include <crab/cfg/basic_block_traits.hpp>
-#include <crab/domains/killgen_domain.hpp>
+#include <crab/domains/discrete_domains.hpp>
 #include <crab/iterators/killgen_fixpoint_iterator.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -16,7 +16,7 @@ namespace crab {
 namespace analyzer {
 
 template <typename V>
-using varset_domain = crab::domains::flat_killgen_domain<V>;
+using varset_domain = ikos::discrete_domain<V>;
 
 /**
  * Define the main operations for the liveness variable analysis:
@@ -224,7 +224,9 @@ public:
         m_dead_map.insert(std::make_pair(bb.label(), std::move(dead_set)));
         // update statistics
         m_total_live += live_set.size();
-        m_max_live = std::max(m_max_live, live_set.size());
+	if (live_set.size() > m_max_live) {
+	  m_max_live = live_set.size();
+	}
         m_total_blocks++;
       }
     }

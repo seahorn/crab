@@ -6,8 +6,8 @@
  **/
 
 #include <crab/analysis/dataflow/assertion_crawler.hpp>
-//#include <crab/cfg/basic_block_traits.hpp>
 #include <crab/cfg/cfg.hpp>
+#include <crab/domains/discrete_domains.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -25,7 +25,7 @@ namespace analyzer {
 template <class CFG> class assumption {
 
 public:
-  using var_dom_t = flat_killgen_domain<typename CFG::variable_t>;
+  using var_dom_t = ikos::discrete_domain<typename CFG::variable_t>;
   using statement_t = typename CFG::basic_block_t::statement_t;
 
 protected:
@@ -355,9 +355,9 @@ class assumption_dataflow_analysis : public assumption_analysis<CFG> {
   using typename assumption_analysis_t::assumption_ptr;
   using typename assumption_analysis_t::statement_t;
   using assertion_crawler_t = crab::analyzer::assertion_crawler<CFG>;
-  using separate_domain_t = typename assertion_crawler_t::separate_domain_t;
+  using discrete_pair_domain_t = typename assertion_crawler_t::discrete_pair_domain_t;
   using typename assumption_analysis_t::vector_assumption_ptr;
-  using pp_inv_map_t = std::map<statement_t *, separate_domain_t>;
+  using pp_inv_map_t = std::map<statement_t *, discrete_pair_domain_t>;
   using basic_block_t = typename CFG::basic_block_t;
 
 public:
