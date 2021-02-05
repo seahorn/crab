@@ -65,11 +65,14 @@ private:
   discrete_domain(ptset_t set) : m_is_top(false), m_set(set) {}
 
 public:
+  // Return an empty set
   static discrete_domain_t bottom() { return discrete_domain_t(false); }
+  // Return a set with all variables
   static discrete_domain_t top() { return discrete_domain_t(true); }
 
 public:
-  discrete_domain() : m_is_top(true) {}
+  // Default constructor creates an empty set rather than top
+  discrete_domain() : m_is_top(false) {}
 
   discrete_domain(const discrete_domain_t &other) = default;
   discrete_domain(discrete_domain_t &&other) = default;
