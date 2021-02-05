@@ -41,6 +41,7 @@
 #pragma once
 
 #include <crab/domains/patricia_trees.hpp>
+#include  <crab/domains/discrete_domains.hpp>
 #include <crab/support/debug.hpp>
 
 #include <boost/optional.hpp>
@@ -51,6 +52,7 @@
 
 namespace ikos {
 
+/* Environment from Key to Value with all lattice operations */ 
 template <typename Key, typename Value> class separate_domain {
 
 private:
@@ -452,3 +454,228 @@ public:
 }; // class separate_domain
 
 } // namespace ikos
+
+
+
+
+namespace crab {
+namespace domains {
+//===================================================================//  
+//        The NOSA license does not apply to this code  
+//===================================================================//  
+
+/* 
+ * Environment from Key to discrete_domain<Element>
+ *
+ * We cannot use separate_domain because if the value of a key-value
+ * pair is bottom then the whole environment becomes bottom. Here, if
+ * the value is bottom then it means that the value is simply the
+ * "empty set" so we want to allow entries whose values are
+ * bottom. But, similar to separate_domain, the whole environment can
+ * still be bottom meaning failure/undefined/unreachable.
+ */ 
+template <typename Key, typename Element> class separate_discrete_domain {
+
+private:
+  using discrete_domain_t = ikos::discrete_domain<Element>;
+  using patricia_tree_t = ikos::patricia_tree<Key, discrete_domain_t>;
+  using unary_op_t = typename patricia_tree_t::unary_op_t;
+  using binary_op_t = typename patricia_tree_t::binary_op_t;
+  using partial_order_t = typename patricia_tree_t::partial_order_t;
+
+public:
+  using key_type = Key;
+  using value_type = discrete_domain_t;    
+  using separate_discrete_domain_t = separate_discrete_domain<Key, Element>;
+  using iterator = typename patricia_tree_t::iterator;
+
+private:
+  bool m_is_bottom;
+  patricia_tree_t m_tree;
+
+  static patricia_tree_t apply_operation(binary_op_t &o,
+                                         const patricia_tree_t &t1,
+                                         const patricia_tree_t &t2) {
+    patricia_tree_t res(t1);
+    res.merge_with(t2, o);
+    return res;
+  }
+  /* begin patricia_tree API */
+  class join_op : public binary_op_t {
+    std::pair<bool, boost::optional<value_type>> apply(value_type x, value_type y) override {
+      value_type z = x.operator|(y);
+      if (z.is_top()) {
+        return {false, boost::optional<value_type>()};
+      } else {
+        return {false, boost::optional<value_type>(z)};
+      }
+    }
+    bool default_is_absorbing() override { return false; }
+  }; // class join_op
+
+  class meet_op : public binary_op_t {
+    std::pair<bool, boost::optional<value_type>> apply(value_type x,  value_type y) override {
+      value_type z = x.operator&(y);
+      if (z.is_bottom()) {
+        return {true, boost::optional<value_type>()};
+      } else {
+        return {false, boost::optional<value_type>(z)};
+      }
+    };
+    bool default_is_absorbing() override { return true; }
+  }; // class meet_op
+
+  class domain_po : public partial_order_t {
+    bool leq(value_type x, value_type y) { return x.operator<=(y); }
+    bool default_is_top() { return false; }
+  }; // class domain_po
+  /* end patricia_tree API */
+
+  
+  separate_discrete_domain(patricia_tree_t &&t)
+    : m_is_bottom(false), m_tree(std::move(t)) {}
+
+public:
+  
+  static separate_discrete_domain_t top() {
+    return separate_discrete_domain_t();
+  }
+
+  static separate_discrete_domain_t bottom() {
+    return separate_discrete_domain_t(true);
+  }
+
+  // Default constructor returns a top environment
+  separate_discrete_domain(bool is_bottom = false)
+    : m_is_bottom(is_bottom), m_tree(patricia_tree_t()) {}
+  
+  separate_discrete_domain(const separate_discrete_domain_t &o) = default;
+  separate_discrete_domain(separate_discrete_domain_t &&o) = default;
+  separate_discrete_domain_t &operator=(const separate_discrete_domain_t &o)  = default;
+  separate_discrete_domain_t &operator=(separate_discrete_domain_t &&o)  = default;
+  
+  iterator begin() const {
+    if (is_bottom()) {
+      CRAB_ERROR("Separate discrete domain: trying to invoke iterator on bottom");
+    } else {
+      return m_tree.begin();
+    }
+  }
+
+  iterator end() const {
+    if (is_bottom()) {
+      CRAB_ERROR("Separate discrete domain: trying to invoke iterator on bottom");
+    } else {
+      return m_tree.end();
+    }
+  }
+
+  bool is_bottom() const { return m_is_bottom; }
+
+  bool is_top() const {
+    return (!is_bottom()&& m_tree.size() == 0);
+  }
+
+  bool operator<=(const separate_discrete_domain_t &other) const {
+    if (is_bottom()) {
+      return true;
+    } else if (other.is_bottom()) {
+      return false;
+    } else {
+      domain_po po;
+      return m_tree.leq(other.m_tree, po);
+    }
+  }
+  
+  separate_discrete_domain_t
+  operator|(const separate_discrete_domain_t &o) const {
+    if (is_bottom() || o.is_top()) {
+      return o;
+    } else if (o.is_bottom() || is_top()) {
+      return *this;
+    } else {
+      join_op op;
+      patricia_tree_t res = apply_operation(op, m_tree, o.m_tree);
+      return separate_discrete_domain_t(std::move(res));
+    }
+  }
+
+  separate_discrete_domain_t
+  operator&(const separate_discrete_domain_t &o) const {
+    if (is_top() || o.is_bottom()) {
+      return o;
+    } else if (o.is_top() || is_bottom()) {
+      return *this;
+    } else {
+      meet_op op;
+      patricia_tree_t res = apply_operation(op, m_tree, o.m_tree);
+      return separate_discrete_domain_t(std::move(res));
+    }
+  }
+
+  void set(Key k, value_type v) {
+    // Note that we can store a key-value pair where the value is
+    // bottom because bottom means empty set.
+    if (!is_bottom()) {
+      if (v.is_top()) {
+	m_tree.remove(k);
+      } else {
+	m_tree.insert(k, v);
+      }
+    }
+  }
+
+  separate_discrete_domain_t &operator-=(Key k) {
+    if (!is_bottom()) {
+      m_tree.remove(k);
+    }
+    return *this;
+  }
+
+  value_type operator[](Key k) {
+    if (is_bottom()) {
+      CRAB_ERROR("separate_discrete_domain::operator[] is undefined on bottom");
+    } else if (is_top()) {
+      return value_type::top();
+    } else {
+      if (boost::optional<value_type> v = m_tree.lookup(k)) {
+        return *v;
+      } else {
+        return value_type::top();
+      }
+    }
+  }
+
+  void write(crab::crab_os &o) const {
+    if (is_top()) {
+      o << "{}";
+    } else if (is_bottom()) {
+      o << "_|_";
+    } else {
+      o << "{";
+      for (typename patricia_tree_t::iterator it = m_tree.begin();
+           it != m_tree.end();) {
+        Key k = it->first;
+        k.write(o);
+        o << " -> ";
+        value_type v = it->second;
+        v.write(o);
+        ++it;
+        if (it != m_tree.end()) {
+          o << "; ";
+        }
+      }
+      o << "}";
+    }
+  }
+}; // class separate_discrete_domain
+
+template <typename Key, typename Element>
+inline crab_os &operator<<(crab_os &o,
+                           const separate_discrete_domain<Key, Element> &env) {
+  env.write(o);
+  return o;
+}
+
+} //end namespace domains  
+} //end namespace crab
