@@ -1,7 +1,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
-#include <crab/domains/flat_boolean_domain.hpp>
+#include <crab/domains/boolean.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/union_find_domain.hpp>

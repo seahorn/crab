@@ -2,6 +2,7 @@ add_library(Crab ${CRAB_LIBS_TYPE}
   debug.cpp
   stats.cpp
   os.cpp
+  boolean.cpp
   ##numbers 
   bignums.cpp
   safeint.cpp
