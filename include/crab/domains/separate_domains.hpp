@@ -589,14 +589,24 @@ public:
   
   separate_discrete_domain_t
   operator|(const separate_discrete_domain_t &o) const {
+    CRAB_LOG("separate-domain",
+	     crab::outs() << "Join " << *this << " and " << o << "=\n";);      
+    
     if (is_bottom() || o.is_top()) {
+      CRAB_LOG("separate-domain",
+	       crab::outs() << "Res=" << o << "\n";);
       return o;
     } else if (o.is_bottom() || is_top()) {
+      CRAB_LOG("separate-domain",
+	       crab::outs() << "Res=" << *this << "\n";);      
       return *this;
     } else {
       join_op op;
       patricia_tree_t res = apply_operation(op, m_tree, o.m_tree);
-      return separate_discrete_domain_t(std::move(res));
+      auto out = separate_discrete_domain_t(std::move(res));
+      CRAB_LOG("separate-domain",
+	       crab::outs() << "Res=" << out << "\n";);
+      return out;
     }
   }
 
@@ -613,7 +623,7 @@ public:
     }
   }
 
-  void set(Key k, value_type v) {
+  void set(const Key &k, value_type v) {
     // Note that we can store a key-value pair where the value is
     // bottom because bottom means empty set.
     if (!is_bottom()) {
@@ -625,14 +635,14 @@ public:
     }
   }
 
-  separate_discrete_domain_t &operator-=(Key k) {
+  separate_discrete_domain_t &operator-=(const Key &k) {
     if (!is_bottom()) {
       m_tree.remove(k);
     }
     return *this;
   }
 
-  value_type operator[](Key k) {
+  value_type operator[](const Key &k) {
     if (is_bottom()) {
       CRAB_ERROR("separate_discrete_domain::operator[] is undefined on bottom");
     } else if (is_top()) {
@@ -646,6 +656,86 @@ public:
     }
   }
 
+  void project(const std::vector<Key> &keys) {
+    if (is_bottom() || is_top()) {
+      return;
+    }
+    const int factor = 60;   // between 0 and 100
+    const int small_env = 5; // size of a small environment
+    int num_total_keys = (int)m_tree.size();
+    int num_keys = (int)keys.size();
+    if (num_total_keys <= small_env ||
+        num_keys < num_total_keys * factor / 100) {
+      // project on less than factor% of keys: we copy
+      separate_discrete_domain_t env;
+      for (auto key : keys) {
+        env.set(key, operator[](key));
+      }
+      std::swap(*this, env);
+    } else {
+      // project on more or equal then factor% of keys: that
+      // might be too many copies so we remove instead.
+      std::vector<Key> sorted_keys(keys);
+      std::sort(sorted_keys.begin(), sorted_keys.end());
+      std::vector<Key> project_out_keys;
+      project_out_keys.reserve(num_total_keys);
+      for (auto it = m_tree.begin(); it != m_tree.end(); ++it) {
+        Key key = it->first;
+        if (!std::binary_search(sorted_keys.begin(), sorted_keys.end(), key)) {
+          project_out_keys.push_back(key);
+        }
+      }
+      for (auto const &key : project_out_keys) {
+        this->operator-=(key);
+      }
+    }
+  }
+
+  // Assume that from does not have duplicates.
+  void rename(const std::vector<Key> &from, const std::vector<Key> &to) {
+    if (is_top() || is_bottom()) {
+      // nothing to rename
+      return;
+    }
+    if (from.size() != to.size()) {
+      CRAB_ERROR(
+          "separate_discrete_domain::rename with input vectors of different sizes");
+    }
+
+    if (::crab::CrabSanityCheckFlag) {
+      std::set<Key> s1, s2;
+      s1.insert(from.begin(), from.end());
+      if (s1.size() != from.size()) {
+        CRAB_ERROR("separate_discrete_domain::rename expects no duplicates");
+      }
+      s2.insert(to.begin(), to.end());
+      if (s2.size() != to.size()) {
+        CRAB_ERROR("separate_discrete_domain::rename expects no duplicates");
+      }
+    }
+
+    for (unsigned i = 0, sz = from.size(); i < sz; ++i) {
+      Key k = from[i];
+      Key new_k = to[i];
+      if (k == new_k) { // nothing to rename
+        continue;
+      }
+      if (::crab::CrabSanityCheckFlag) {
+        if (m_tree.lookup(new_k)) {
+          CRAB_ERROR("separate_discrete_domain::rename assumes that  ",
+		     new_k, " does not exist in ", *this);
+        }
+      }
+      if (boost::optional<value_type> val_opt = m_tree.lookup(k)) {
+        if (!(*val_opt).is_top()) {
+          m_tree.insert(new_k, *val_opt);
+        }
+        m_tree.remove(k);
+      }
+    }
+  }
+
+  
   void write(crab::crab_os &o) const {
     if (is_top()) {
       o << "{}";
