@@ -21,9 +21,11 @@ program static analyses based on
 [Abstract Interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).
 
 Crab does not analyze directly a mainstream programming language such
-as C/C++ or Java but instead it analyzes its own intermediate
-representation (CrabIR). This allows building analyses for different
-programming languages assuming a translator to CrabIR is available.
+as C/C++ or Java but instead it analyzes its own CFG-based
+intermediate representation (CrabIR). This allows building analyses
+for different programming languages assuming a translator to CrabIR is
+available. In spite of its simple design, CrabIR is rich enough to
+represent languages such as [LLVM](https://llvm.org/) bitcode.
 
 Crab has been designed to have two kind of users:
 
@@ -32,10 +34,6 @@ Crab has been designed to have two kind of users:
 
 2.  Researchers on abstract interpretation who would like to
     experiment with new abstract domains or fixpoint algorithms.
-
-In spite of its simple design, Crab can scale with large real programs
-and CrabIR is rich enough to represent entirely languages such
-as [LLVM](https://llvm.org/) bitcode.
 
 The available documentation can be found in
 our [wiki](https://github.com/seahorn/crab/wiki/Home).
