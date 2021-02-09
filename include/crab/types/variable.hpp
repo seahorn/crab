@@ -56,10 +56,10 @@ class variable_type {
 public:
   variable_type(variable_type_kind kind, unsigned width = 0)
       : m_kind(kind), m_bitwidth(width) {
-    if (m_kind == INT_TYPE && m_bitwidth <= 1) {
+    if (m_kind == INT_TYPE && m_bitwidth <= 0) {
       CRAB_ERROR("Cannot create integer variable without bitwidth");
     }
-    if (m_kind == REG_INT_TYPE && m_bitwidth <= 1) {
+    if (m_kind == REG_INT_TYPE && m_bitwidth <= 0) {
       CRAB_ERROR("Cannot create integer region variable without bitwidth");
     }
 
