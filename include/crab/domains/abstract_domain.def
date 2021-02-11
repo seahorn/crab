@@ -183,7 +183,8 @@
                      const variable_t &rhs_reg) override {   		       \
     CRAB_ERROR(Msg);                                                           \
   }                                                                            \
-  void ref_make(const variable_t &ref, const variable_t &reg) override {       \
+  void ref_make(const variable_t &ref, const variable_t &reg,                  \
+                const allocation_site &as) override {                          \
     CRAB_ERROR(Msg);                                                           \
   }                                                                            \
   void ref_load(const variable_t &ref, const variable_t &reg,                  \
@@ -230,6 +231,13 @@
     const boost::optional<variable_t> &rgn2) override {			       \
     CRAB_ERROR(Msg);                                                           \
   }                                                                            \
+  boolean_value is_null_ref(const variable_t &ref) override {                  \
+    CRAB_ERROR(Msg);                                                           \
+  }        								       \
+  bool get_allocation_sites(const variable_t &ref,  			       \
+                    std::vector<allocation_site> &alloc_sites) override {      \
+    CRAB_ERROR(Msg);  		      		    	     		       \
+  }									       \
   linear_constraint_system_t to_linear_constraint_system() const override {    \
     CRAB_ERROR(Msg);                                                           \
   }                                                                            \

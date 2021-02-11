@@ -561,10 +561,11 @@ public:
     }
   }
 
-  virtual void ref_make(const variable_t &ref, const variable_t &reg) override {
+  virtual void ref_make(const variable_t &ref, const variable_t &reg,
+			const allocation_site &as) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
-        m_disjuncts[i].ref_make(ref, reg);
+        m_disjuncts[i].ref_make(ref, reg, as);
       }
     }
   }
@@ -665,6 +666,29 @@ public:
         m_disjuncts[i].select_ref(lhs_ref, lhs_rgn, cond, ref1, rgn1, ref2, rgn2);
       }
     }
+  }
+
+  boolean_value is_null_ref(const variable_t &ref) override {
+    boolean_value r = boolean_value::bottom();
+    if (!is_bottom()) {
+      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+	r = r |  m_disjuncts[i].is_null_ref(ref);
+      }
+    }
+    return r;
+  }
+  bool get_allocation_sites(const variable_t &ref,
+			    std::vector<allocation_site> &alloc_sites) override {
+    if (!is_bottom()) {
+      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+        if (!m_disjuncts[i].get_allocation_sites(ref, alloc_sites)) {
+	  alloc_sites.clear();
+	  return false;
+	}
+      }
+      return true;
+    }
+    return false;
   }
   
   // boolean operators

@@ -21,6 +21,7 @@
 #include <crab/support/stats.hpp>
 
 #include <boost/optional.hpp>
+#include <algorithm>
 
 namespace crab {
 namespace domains {
@@ -556,9 +557,10 @@ public:
     reduce();
   }
 
-  virtual void ref_make(const variable_t &ref, const variable_t &reg) override {
-    m_product.first().ref_make(ref, reg);
-    m_product.second().ref_make(ref, reg);
+  virtual void ref_make(const variable_t &ref, const variable_t &reg,
+			const allocation_site &as) override {
+    m_product.first().ref_make(ref, reg, as);
+    m_product.second().ref_make(ref, reg, as);
     reduce();
   }
 
@@ -636,6 +638,31 @@ public:
     m_product.first().select_ref(lhs_ref, lhs_rgn, cond, ref1, rgn1, ref2, rgn2);
     m_product.second().select_ref(lhs_ref, lhs_rgn, cond, ref1, rgn1, ref2, rgn2);
     reduce();
+  }
+
+  boolean_value is_null_ref(const variable_t &ref) override {
+    return m_product.first().is_null_ref(ref) & m_product.second().is_null_ref(ref);
+  }
+
+  bool get_allocation_sites(const variable_t &ref,
+			    std::vector<allocation_site> &out) override {
+    std::vector<allocation_site> s1, s2;
+    bool b1 = m_product.first().get_allocation_sites(ref, s1);
+    bool b2 = m_product.first().get_allocation_sites(ref, s2);
+    if (b1 && b2) {
+      std::sort(s1.begin(), s1.end());
+      std::sort(s2.begin(), s2.end());
+      std::set_intersection(s1.begin(), s1.end(), s2.begin(), s2.end(),
+			    std::back_inserter(out));
+      return true;
+    } else if (b1) {
+      out.assign(s1.begin(), s1.end());
+      return true;
+    } else if (b2) {
+      out.assign(s2.begin(), s2.end());
+      return true;
+    }
+    return false;
   }
   
   // boolean operators

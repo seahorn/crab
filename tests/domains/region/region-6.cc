@@ -58,6 +58,8 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
   z_var mem1(vfac["region_0"], crab::REG_INT_TYPE, 32);
   z_var mem2(vfac["region_1"], crab::REG_INT_TYPE, 32);
   z_var mem3(vfac["region_2"], crab::REG_INT_TYPE, 32);
+  // Create allocation sites
+  crab::allocation_site_man as_man;  
   // Create empty CFG
   z_cfg_t *cfg = new z_cfg_t("entry", "ret");
   // Adding CFG blocks
@@ -88,9 +90,9 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
   entry.region_init(mem3);
   entry.assign(z, 100);
   //// Create references
-  entry.make_ref(i, mem1);
-  entry.make_ref(x, mem2);
-  entry.make_ref(y, mem3);
+  entry.make_ref(i, mem1, as_man.mk_allocation_site());
+  entry.make_ref(x, mem2, as_man.mk_allocation_site());
+  entry.make_ref(y, mem3, as_man.mk_allocation_site());
   entry.assume_ref(z_ref_cst_t::mk_not_null(i));
   entry.assume_ref(z_ref_cst_t::mk_not_null(x));
   entry.assume_ref(z_ref_cst_t::mk_not_null(y));

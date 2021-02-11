@@ -120,7 +120,8 @@ private:
     virtual void region_init(const variable_t &reg) = 0;
     virtual void region_copy(const variable_t &lhs_reg,
                              const variable_t &rhs_reg) = 0;
-    virtual void ref_make(const variable_t &ref, const variable_t &reg) = 0;
+    virtual void ref_make(const variable_t &ref, const variable_t &reg,
+			  const allocation_site &as) = 0;
     virtual void ref_load(const variable_t &ref, const variable_t &reg,
                           const variable_t &res) = 0;
     virtual void ref_store(const variable_t &ref, const variable_t &reg,
@@ -149,7 +150,10 @@ private:
 			    const boost::optional<variable_t> &rgn1,
 			    const variable_or_constant_t &ref2,
 			    const boost::optional<variable_t> &rgn2) = 0;
-
+    virtual boolean_value is_null_ref(const variable_t &ref) = 0;    
+    virtual bool get_allocation_sites(const variable_t &ref,
+				      std::vector<allocation_site> &alloc_sites) = 0;
+    
     virtual void backward_apply(arith_operation_t op, const variable_t &x,
                                 const variable_t &y, const variable_t &z,
                                 const abstract_domain_concept &invariant) = 0;
@@ -392,8 +396,9 @@ private:
                      const variable_t &rhs_reg) override {
       m_inv.region_copy(lhs_reg, rhs_reg);
     }
-    void ref_make(const variable_t &ref, const variable_t &reg) override {
-      m_inv.ref_make(ref, reg);
+    void ref_make(const variable_t &ref, const variable_t &reg,
+		  const allocation_site &as) override {
+      m_inv.ref_make(ref, reg, as);
     }
     void ref_load(const variable_t &ref, const variable_t &reg,
                   const variable_t &res) override {
@@ -439,6 +444,14 @@ private:
 		    const boost::optional<variable_t> &rgn2) override {
       m_inv.select_ref(lhs_ref, lhs_rgn, cond, ref1, rgn1, ref2, rgn2);
     }
+    boolean_value is_null_ref(const variable_t &ref) override {
+      return m_inv.is_null_ref(ref);
+    }
+    bool get_allocation_sites(const variable_t &ref,
+			      std::vector<allocation_site> &alloc_sites)  override {
+      return m_inv.get_allocation_sites(ref, alloc_sites);
+    }
+    
     // unsafe: if the underlying domain in invariant is not Domain then it will
     // crash
     void backward_apply(arith_operation_t op, const variable_t &x,
@@ -748,8 +761,9 @@ public:
                    const variable_t &rhs_reg) override {
     m_concept->region_copy(lhs_reg, rhs_reg);
   }
-  void ref_make(const variable_t &ref, const variable_t &reg) override {
-    m_concept->ref_make(ref, reg);
+  void ref_make(const variable_t &ref, const variable_t &reg,
+		const allocation_site &as) override {
+    m_concept->ref_make(ref, reg, as);
   }
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {
@@ -795,6 +809,14 @@ public:
 		  const boost::optional<variable_t> &rgn2) override {
     m_concept->select_ref(lhs_ref, lhs_rgn, cond, ref1, rgn1, ref2, rgn2);
   }
+  boolean_value is_null_ref(const variable_t &ref) override {
+    return m_concept->is_null_ref(ref);
+  }
+  bool get_allocation_sites(const variable_t &ref,
+			    std::vector<allocation_site> &alloc_sites) override {
+    return m_concept->get_allocation_sites(ref, alloc_sites);
+  }
+    
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const abstract_domain &invariant) override {
@@ -1165,9 +1187,10 @@ public:
     norm().region_copy(lhs_reg, rhs_reg);
   }
 
-  void ref_make(const variable_t &ref, const variable_t &reg) override {
+  void ref_make(const variable_t &ref, const variable_t &reg,
+		const allocation_site &as) override {
     detach();
-    norm().ref_make(ref, reg);
+    norm().ref_make(ref, reg, as);
   }
 
   void ref_load(const variable_t &ref, const variable_t &reg,
@@ -1229,7 +1252,17 @@ public:
 		  const boost::optional<variable_t> &rgn2) override {
     detach();
     norm().select_ref(lhs_ref, lhs_rgn, cond, ref1, rgn1, ref2, rgn2);
-  } 
+  }
+  boolean_value is_null_ref(const variable_t &ref) override {
+    detach();
+    return norm().is_null_ref(ref);
+  }
+  bool get_allocation_sites(const variable_t &ref,
+			    std::vector<allocation_site> &alloc_sites) override {
+    detach();
+    return norm().get_allocation_sites(ref, alloc_sites);
+  }
+  
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const abstract_domain_ref &invariant) override {

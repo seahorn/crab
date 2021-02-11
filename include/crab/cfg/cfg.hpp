@@ -43,7 +43,8 @@
  * affect the contents of another array B). The semantics of arrays
  * reads and writes are similar to SMT arrays.
  *
- * TODO: semantics for references and regions
+ * The semantics for regions and references is more novel and it is
+ * described in the wiki (https://github.com/seahorn/crab/wiki).
  *
  * === Function calls ===
  *
@@ -97,6 +98,7 @@
 #include <crab/types/linear_constraints.hpp>
 #include <crab/types/reference_constraints.hpp>
 #include <crab/types/variable.hpp>
+#include <crab/types/allocation_sites.hpp>
 
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/iterator/transform_iterator.hpp>
@@ -254,7 +256,7 @@ inline crab_os &operator<<(crab_os &o, const debug_info &l) {
   l.write(o);
   return o;
 }
-
+  
 template <class BasicBlockLabel, class VariableName, class Number>
 class basic_block;
 
@@ -973,7 +975,7 @@ private:
 /*
  * References and Regions
  */
-
+  
 template <class BasicBlockLabel, class Number, class VariableName>
 class region_init_stmt
     : public statement<BasicBlockLabel, Number, VariableName> {
@@ -1065,9 +1067,11 @@ public:
   using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
 
-  make_ref_stmt(variable_t lhs, variable_t region, basic_block_t *parent,
+  make_ref_stmt(variable_t lhs, variable_t region,
+		allocation_site as, basic_block_t *parent,
                 debug_info dbg_info = debug_info())
-      : statement_t(REF_MAKE, parent, dbg_info), m_lhs(lhs), m_region(region) {
+      : statement_t(REF_MAKE, parent, dbg_info),
+	m_lhs(lhs), m_region(region), m_alloc_site(as) {
     this->m_live.add_def(m_lhs);
     this->m_live.add_use(m_region);
   }
@@ -1076,23 +1080,26 @@ public:
 
   const variable_t &region() const { return m_region; }
 
+  const allocation_site &alloc_site() const { return m_alloc_site;}
+  
   virtual void
   accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
     v->visit(*this);
   }
 
   virtual statement_t *clone(basic_block_t *parent) const {
-    return new this_type(m_lhs, m_region, parent, this->m_dbg_info);
+    return new this_type(m_lhs, m_region, m_alloc_site, parent, this->m_dbg_info);
   }
 
   virtual void write(crab_os &o) const {
     o << m_lhs << " := "
-      << "make_ref(" << m_region << ":" << m_region.get_type() << ")";
+      << "make_ref(" << m_region << ":" << m_region.get_type() << "," << m_alloc_site << ")";
   }
 
 private:
   variable_t m_lhs;
   variable_t m_region;
+  allocation_site m_alloc_site;
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
@@ -2864,8 +2871,8 @@ public:
     return insert(new region_copy_t(lhs, rhs, this));
   }
 
-  const statement_t *make_ref(variable_t lhs_ref, variable_t region) {
-    return insert(new make_ref_t(lhs_ref, region, this));
+  const statement_t *make_ref(variable_t lhs_ref, variable_t region, allocation_site as) {
+    return insert(new make_ref_t(lhs_ref, region, as, this));
   }
 
   const statement_t *load_from_ref(variable_t lhs, variable_t ref,

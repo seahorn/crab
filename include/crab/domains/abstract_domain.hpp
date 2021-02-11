@@ -1,19 +1,21 @@
 #pragma once
 
 #include <crab/domains/abstract_domain_operators.hpp>
+#include <crab/domains/boolean.hpp>
 #include <crab/iterators/thresholds.hpp>
 #include <crab/types/linear_constraints.hpp>
 #include <crab/types/reference_constraints.hpp>
 #include <crab/types/variable.hpp>
+#include <crab/types/allocation_sites.hpp>
 
 #include <vector>
 
 namespace crab {
-
 namespace domains {
 
 template <class Dom> struct abstract_domain_traits;
-
+template <class Number, class VariableName> class abstract_domain_results_api;
+  
 /**
  * All abstract domains must derive from the abstract_domain_api class
  * and expose publicly all its public typedef's.
@@ -38,7 +40,9 @@ template <class Dom> struct abstract_domain_traits;
  *   using varname_t = VariableName;
  * };
  **/
-template <class Dom> class abstract_domain_api {
+template <class Dom> class abstract_domain_api:
+  public abstract_domain_results_api<typename abstract_domain_traits<Dom>::number_t,
+				     typename abstract_domain_traits<Dom>::varname_t> {
 public:
   using number_t = typename abstract_domain_traits<Dom>::number_t;
   using varname_t = typename abstract_domain_traits<Dom>::varname_t;
@@ -172,8 +176,9 @@ public:
   // Make a copy of a region
   virtual void region_copy(const variable_t &lhs_reg,
                            const variable_t &rhs_reg) = 0;
-  // Create a new reference ref to region reg.
-  virtual void ref_make(const variable_t &ref, const variable_t &reg) = 0;
+  // Create a new reference ref associated with as within region reg 
+  virtual void ref_make(const variable_t &ref, const variable_t &reg,
+			const allocation_site &as) = 0;
   // Read the content of reference ref within reg. The content is
   // stored in res.
   virtual void ref_load(const variable_t &ref, const variable_t &reg,
@@ -340,6 +345,32 @@ public:
   }
 };
 
+/* 
+ * Extend abstract_domain_api to answer specialized queries which are
+ * not possible by abstract_domain_api methods such as operator[],
+ * to_linear_constraint_system and
+ * to_disjunctive_linear_constraint_system.
+ */
+template<class Number, class VariableName>  
+class abstract_domain_results_api {
+public:
+  using number_t = Number;
+  using variable_t = variable<Number, VariableName>;
+  
+  // Return a 3-valued boolean about whether the reference variable
+  // ref is null.
+  virtual boolean_value is_null_ref(const variable_t &ref) = 0;
+
+  // If return true then out contains all the *possible* allocation
+  // sites of the reference variable ref. If return false then nothing
+  // is known about the allocation sites so alloc_sites should be
+  // ignored.
+  virtual bool get_allocation_sites(const variable_t &ref,
+				    std::vector<allocation_site> &alloc_sites) = 0;
+};
+
+
+  
 } // end namespace domains
 } // end namespace crab
 
@@ -410,7 +441,8 @@ public:
   virtual void region_init(const variable_t &reg) override {}                  \
   virtual void region_copy(const variable_t &lhs_reg,                          \
                            const variable_t &rhs_reg) override {}              \
-  virtual void ref_make(const variable_t &ref, const variable_t &reg)          \
+  virtual void ref_make(const variable_t &ref, const variable_t &reg, 	       \
+                        const crab::allocation_site &as)		       \
       override {}                                                              \
   virtual void ref_load(const variable_t &ref, const variable_t &reg,          \
                         const variable_t &res) override {}                     \
@@ -437,7 +469,12 @@ public:
 			  const variable_or_constant_t &ref1,		       \
 			  const boost::optional<variable_t> &rgn1,	       \
 			  const variable_or_constant_t &ref2,		       \
-			  const boost::optional<variable_t> &rgn2) override {}
+			  const boost::optional<variable_t> &rgn2) override {} \
+  virtual crab::domains::boolean_value is_null_ref(const variable_t &ref) override  \
+  { return crab::domains::boolean_value::top();}			       \
+  virtual bool get_allocation_sites(const variable_t &ref,                     \
+    std::vector<crab::allocation_site> &out) override		               \
+  { return false; }							
 
 #define ARRAY_OPERATIONS_NOT_IMPLEMENTED(DOM)                                  \
   virtual void array_init(                                                     \

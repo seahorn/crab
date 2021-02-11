@@ -12,7 +12,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 using namespace crab::checker;
 
-z_cfg_t *prog(variable_factory_t &vfac) {
+z_cfg_t *prog(variable_factory_t &vfac, crab::allocation_site_man &as_man) {
   /*
     i := 0;
     x := 1;
@@ -68,7 +68,7 @@ z_cfg_t *prog(variable_factory_t &vfac) {
   entry.assign(i, 0);
   entry.assign(x, 1);
   entry.assign(y, 0);
-  entry.make_ref(p, mem);
+  entry.make_ref(p, mem, as_man.mk_allocation_site());
   entry.gep_ref(l, mem, p, mem, z_number(0));
   bb1_t.assume(i <= 99);
   bb1_f.assume(i >= 100);
@@ -77,7 +77,7 @@ z_cfg_t *prog(variable_factory_t &vfac) {
   // *p := i
   bb2.store_to_ref(p, mem, i);
   //  q := malloc(...)
-  bb2.make_ref(q, mem);
+  bb2.make_ref(q, mem, as_man.mk_allocation_site());
   //  p_next := p+4
   bb2.gep_ref(p_next, mem, p, mem, z_number(4));
   //  *p_next := q
@@ -135,7 +135,8 @@ int main(int argc, char **argv) {
   using assert_prop_num_checker_t = assert_property_checker<num_analyzer_t>;
 
   variable_factory_t vfac;
-  z_cfg_ref_t cfg_ref(*(prog(vfac)));
+  crab::allocation_site_man as_man;
+  z_cfg_ref_t cfg_ref(*(prog(vfac, as_man)));
 
   // Run numerical analysis
   z_sdbm_domain_t init;

@@ -35,7 +35,7 @@ using namespace crab::domain_impl;
 using namespace crab::cg;
 using namespace crab::cg_impl;
 
-z_cfg_t *foo(z_var x, z_var z, variable_factory_t &vfac) {
+z_cfg_t *foo(z_var x, z_var z, variable_factory_t &vfac, crab::allocation_site_man &as_man) {
   function_decl<z_number, varname_t> decl("foo", {x}, {z});
   z_cfg_t *cfg = new z_cfg_t("entry", "exit", decl);
   z_basic_block_t &entry = cfg->insert("entry");
@@ -44,7 +44,7 @@ z_cfg_t *foo(z_var x, z_var z, variable_factory_t &vfac) {
   z_var ref(vfac["ref"], crab::REF_TYPE, 32);
   z_var tmp(vfac["tmp"], crab::INT_TYPE, 32);    
   entry.region_init(z);
-  entry.make_ref(ref, z);
+  entry.make_ref(ref, z, as_man.mk_allocation_site());
   entry.assume(tmp <= x);
   entry.assume(tmp > 0);
   exit.store_to_ref(ref, z, tmp);
@@ -52,7 +52,7 @@ z_cfg_t *foo(z_var x, z_var z, variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *m(z_var x, z_var z, variable_factory_t &vfac) {
+z_cfg_t *m(z_var x, z_var z, variable_factory_t &vfac, crab::allocation_site_man &as_man) {
   function_decl<z_number, varname_t> decl("main", {}, {});
   z_cfg_t *cfg = new z_cfg_t("entry", "exit", decl);
   z_basic_block_t &entry = cfg->insert("entry");
@@ -77,12 +77,14 @@ int main(int argc, char **argv) {
 
   using inter_params_t = top_down_inter_analyzer_parameters<z_cg_ref_t>;
   variable_factory_t vfac;
+  crab::allocation_site_man as_man;
+  
   // Defining program variables
   z_var x(vfac["x"], crab::INT_TYPE, 32);
   z_var z(vfac["z"], crab::REG_INT_TYPE, 32);
   
-  z_cfg_t *t1 = foo(x, z, vfac);
-  z_cfg_t *t2 = m(x, z, vfac);
+  z_cfg_t *t1 = foo(x, z, vfac, as_man);
+  z_cfg_t *t2 = m(x, z, vfac, as_man);
 
   crab::outs() << *t1 << "\n" << *t2 << "\n";
 

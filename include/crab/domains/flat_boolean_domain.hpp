@@ -1328,8 +1328,9 @@ public:
                           const linear_expression_t &elem_size,
                           const linear_expression_t &i) override {
     _product.array_load(lhs, a, elem_size, i);
-    if (a.get_type().is_integer_array() || a.get_type().is_real_array())
+    if (lhs.get_type().is_integer() || lhs.get_type().is_real()) {
       _unchanged_vars -= variable_t(lhs);
+    }
   }
 
   virtual void array_store(const variable_t &a,
@@ -1409,12 +1410,16 @@ public:
     _product.region_copy(lhs_reg, rhs_reg);
   }
 
-  void ref_make(const variable_t &ref, const variable_t &reg) override {
-    _product.ref_make(ref, reg);
+  void ref_make(const variable_t &ref, const variable_t &reg,
+		const allocation_site &as) override {
+    _product.ref_make(ref, reg, as);
   }
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {
     _product.ref_load(ref, reg, res);
+    if (res.get_type().is_integer() || res.get_type().is_real()) {
+      _unchanged_vars -= variable_t(res);
+    }    
   }
   void ref_store(const variable_t &ref, const variable_t &reg,
                  const variable_or_constant_t &val) override {
@@ -1443,6 +1448,7 @@ public:
   void ref_to_int(const variable_t &reg, const variable_t &ref_var,
                   const variable_t &int_var) override {
     _product.ref_to_int(reg, ref_var, int_var);
+    _unchanged_vars -= variable_t(int_var);
   }
   void int_to_ref(const variable_t &int_var, const variable_t &reg,
                   const variable_t &ref_var) override {
@@ -1455,7 +1461,15 @@ public:
 		  const variable_or_constant_t &ref2,
 		  const boost::optional<variable_t> &rgn2) override {
     _product.select_ref(lhs_ref, lhs_rgn, cond, ref1, rgn1, ref2, rgn2);
-  }	
+  }
+  boolean_value is_null_ref(const variable_t &ref) override {
+    return _product.is_null_ref(ref);
+  }
+  bool get_allocation_sites(const variable_t &ref,
+			    std::vector<allocation_site> &out) override {
+    return _product.get_allocation_sites(ref, out);
+  }
+  
   void write(crab_os &o) const override { _product.write(o); }
 
   linear_constraint_system_t to_linear_constraint_system() const override {

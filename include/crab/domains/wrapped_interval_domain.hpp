@@ -3378,8 +3378,9 @@ public:
                    const variable_t &rhs_reg) override {
     _product.region_copy(lhs_reg, rhs_reg);
   }
-  void ref_make(const variable_t &ref, const variable_t &reg) override {
-    _product.ref_make(ref, reg);
+  void ref_make(const variable_t &ref, const variable_t &reg,
+		const allocation_site &as) override {
+    _product.ref_make(ref, reg, as);
   }
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {

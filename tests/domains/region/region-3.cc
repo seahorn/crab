@@ -54,6 +54,9 @@ int main() {
   z_var mem_field_f(vfac["region_field_f"], crab::REG_INT_TYPE, 32);
   z_var mem_field_s(vfac["region_field_s"], crab::REG_INT_TYPE, 32);  
   z_var mem_field_next(vfac["region_field_next"], crab::REG_REF_TYPE, 32);
+
+  // Create allocation sites
+  crab::allocation_site_man as_man;
   
   // Create empty CFG
   z_cfg_t *cfg = new z_cfg_t("entry", "exit");
@@ -97,7 +100,7 @@ int main() {
   // List aux = l
   bb4.gep_ref(ref1, mem_field_f, ref0, mem_field_f);
   // tmp = malloc(...)
-  bb5.make_ref(ref2, mem_field_f);
+  bb5.make_ref(ref2, mem_field_f, as_man.mk_allocation_site());
   
   bb5.assume_ref(z_ref_cst_t::mk_gt_null(ref2));
   /// tmp->f = i  
