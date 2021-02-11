@@ -510,7 +510,7 @@ private:
         return {false, boost::optional<value_type>(z)};
       }
     }
-    bool default_is_absorbing() override { return false; }
+    bool default_is_absorbing() override { return true; }    
   }; // class join_op
 
   class meet_op : public binary_op_t {
@@ -522,7 +522,7 @@ private:
         return {false, boost::optional<value_type>(z)};
       }
     };
-    bool default_is_absorbing() override { return true; }
+    bool default_is_absorbing() override { return false; }
   }; // class meet_op
 
   class domain_po : public partial_order_t {
@@ -577,9 +577,9 @@ public:
   }
 
   bool operator<=(const separate_discrete_domain_t &other) const {
-    if (is_bottom()) {
+    if (is_bottom() || other.is_top()) {
       return true;
-    } else if (other.is_bottom()) {
+    } else if (other.is_bottom() || is_top()) {
       return false;
     } else {
       domain_po po;
