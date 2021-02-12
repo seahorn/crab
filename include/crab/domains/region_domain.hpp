@@ -2205,6 +2205,20 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst");
 
     if (!is_bottom()) {
+      if (rhs.is_equality()) {
+	if (rhs.is_binary()) {
+	  allocation_sites inter =
+	    m_alloc_site_dom[rhs.lhs()] & m_alloc_site_dom[rhs.rhs()];
+	  if (inter.is_bottom()) {
+	    // if they do not have any common allocation site then
+	    // they cannot be the same address.
+	    auto false_cst =  base_linear_constraint_t::get_false();
+	    m_base_dom.assign_bool_cst(rename_var(lhs), false_cst);
+	    return;
+	  }
+	}
+      }
+      
       auto b_rhs = convert_ref_cst_to_linear_cst(rhs);
       m_base_dom.assign_bool_cst(rename_var(lhs), b_rhs);
     }
