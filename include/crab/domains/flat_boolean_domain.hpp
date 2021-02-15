@@ -1276,7 +1276,8 @@ public:
       } else if (b_src.is_false()) {
         _product.second().assign(dst, number_t(0));
       } else {
-        _product.second() -= dst;
+	_product.second().apply(op, dst, src);
+	
         // The flat boolean domain shouldn't know whether we try to
         // model integers faithfully or not (i.e., obeying
         // machine-arithmetic laws). This code should probably go to

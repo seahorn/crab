@@ -363,10 +363,17 @@ public:
   }
 
   // cast operations
-  void apply(crab::domains::int_conv_operation_t /*op*/, const variable_t &dst,
+  void apply(crab::domains::int_conv_operation_t op, const variable_t &dst,
              const variable_t &src) override {
     // ignore the widths
     assign(dst, src);
+
+    if ((op == crab::domains::OP_ZEXT || op == crab::domains::OP_SEXT) &&
+	src.get_type().is_bool()) {
+      interval_t dst_max(number_t(0), number_t(1));
+      _env.set(dst, _env[dst] & dst_max);
+    }
+    
   }
 
   // bitwise operations
