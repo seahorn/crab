@@ -1818,19 +1818,16 @@ public:
           CRAB_LOG("region", CRAB_WARN("lost track of dealloc status of ", rgn2,
                                        " in ", m_rgn_dealloc_dom));
         }
-
+	
         if (found1 && found2) {
           m_rgn_dealloc_dom.join(rgn1, rgn2);
-        } else {
-          if (found1) {
-            // forget about the whole equivalence class to play safe
-            m_rgn_dealloc_dom.remove_equiv_class(rgn1);
-          }
-          if (found2) {
-            // forget about the whole equivalence class to play safe.
-            m_rgn_dealloc_dom.remove_equiv_class(rgn2);
-          }
-        }
+        } else if (!found1 && found2) {
+	  //m_rgn_dealloc_dom.remove_equiv_class(rgn2);
+	} else if (found1 && !found2) {
+	  //m_rgn_dealloc_dom.remove_equiv_class(rgn1);	  
+	} else {
+	  // do nothing since rgn1 and rgn2 are already untracked.
+	}
       }
     }
 
