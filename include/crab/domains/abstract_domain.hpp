@@ -56,6 +56,7 @@ public:
   using variable_t = variable<number_t, varname_t>;
   using variable_or_constant_t = variable_or_constant<number_t, varname_t>;
   using variable_vector_t = std::vector<variable_t>;
+  using variable_or_constant_vector_t = std::vector<variable_or_constant_t>;
   using reference_constraint_t = reference_constraint<number_t, varname_t>;
   using interval_t = ikos::interval<number_t>;
 
@@ -324,11 +325,12 @@ public:
 
   // Function whose semantics is defined by the particular abstract
   // domain
-  virtual void intrinsic(std::string name, const variable_vector_t &inputs,
+  virtual void intrinsic(std::string name,
+			 const variable_or_constant_vector_t &inputs,
                          const variable_vector_t &outputs) = 0;
 
   virtual void backward_intrinsic(std::string name,
-                                  const variable_vector_t &inputs,
+                                  const variable_or_constant_vector_t &inputs,
                                   const variable_vector_t &outputs,
                                   const Dom &invariant) = 0;
 

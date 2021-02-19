@@ -38,6 +38,7 @@ public:
   using typename abstract_domain_t::variable_or_constant_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::variable_or_constant_vector_t;  
   using bool_t = boolean_value;
   using separate_domain_t = ikos::separate_domain<variable_t, boolean_value>;
   using iterator = typename separate_domain_t::iterator;
@@ -401,12 +402,14 @@ public:
   }
 
   /* begin intrinsics operations */
-  void intrinsic(std::string name, const variable_vector_t &inputs,
+  void intrinsic(std::string name,
+		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
-  void backward_intrinsic(std::string name, const variable_vector_t &inputs,
+  void backward_intrinsic(std::string name,
+			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const flat_boolean_domain_t &invariant) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
@@ -500,6 +503,7 @@ public:
   using typename abstract_domain_t::variable_or_constant_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::variable_or_constant_vector_t;  
   using bound_t = ikos::bound<number_t>;
 
 private:
@@ -1496,12 +1500,14 @@ public:
   }
 
   /* begin intrinsics operations */
-  void intrinsic(std::string name, const variable_vector_t &inputs,
+  void intrinsic(std::string name,
+		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     _product.intrinsic(name, inputs, outputs);
   }
 
-  void backward_intrinsic(std::string name, const variable_vector_t &inputs,
+  void backward_intrinsic(std::string name,
+			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const bool_num_domain_t &invariant) override {
     _product.backward_intrinsic(name, inputs, outputs, invariant._product);

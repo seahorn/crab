@@ -374,6 +374,7 @@ public:
   using typename abstract_domain_t::variable_or_constant_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::variable_or_constant_vector_t;  
   using number_t = typename Params::number_t;
   using varname_t = typename Params::varname_t;
 
@@ -382,6 +383,8 @@ private:
   using base_variable_vector_t =
       typename base_abstract_domain_t::variable_vector_t;
   using base_variable_t = typename base_abstract_domain_t::variable_t;
+  using base_variable_or_constant_t =
+    typename base_abstract_domain_t::variable_or_constant_t;
   using base_linear_expression_t =
       typename base_abstract_domain_t::linear_expression_t;
   using base_linear_constraint_t =
@@ -1438,7 +1441,7 @@ public:
 
     if (!rgn.get_type().is_unknown_region()) {
       // Assign a synthetic variable to rgn for modeling its content.
-      base_variable_t v = make_base_variable(m_alloc, rgn);
+      make_base_variable(m_alloc, rgn);
     }
     CRAB_LOG("region", crab::outs() << "After region_init(" << rgn
                                     << ")=" << *this << "\n";);
@@ -2549,7 +2552,8 @@ public:
   }
 
   /* begin intrinsics operations */
-  void intrinsic(std::string name, const variable_vector_t &inputs,
+  void intrinsic(std::string name,
+		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     //=================================================================//
     //       Special intrinsics supported by the region domain
@@ -2570,6 +2574,12 @@ public:
         CRAB_ERROR("Intrinsics ", name, " unexpected number of parameters");
       }
     };
+    auto error_if_not_variable = [&name](const variable_or_constant_t &vc) {
+      if (!vc.is_variable()) {
+	CRAB_ERROR("Intrinsics ", name, " expects only variables as inputs");
+      }
+    };      
+    
     auto error_if_not_bool = [&name](const variable_t &var) {
       if (!var.get_type().is_bool()) {
         CRAB_ERROR("Intrinsics ", name, " parameter ", var, " should be Bool");
@@ -2594,16 +2604,20 @@ public:
 
     if (Params::deallocation && name == "free") {
       error_if_not_arity(2, 0);
-      variable_t rgn = inputs[0];
-      variable_t ref = inputs[1];
+      error_if_not_variable(inputs[0]);
+      error_if_not_variable(inputs[1]);
+      variable_t rgn = inputs[0].get_variable();
+      variable_t ref = inputs[1].get_variable();
       error_if_not_rgn(rgn);
       error_if_not_ref(ref);
 
       ref_remove(ref, rgn);
     } else if (Params::deallocation && name == "is_unfreed_or_null") {
       error_if_not_arity(2, 1);
-      variable_t rgn = inputs[0];
-      variable_t ref = inputs[1];
+      error_if_not_variable(inputs[0]);
+      error_if_not_variable(inputs[1]);      
+      variable_t rgn = inputs[0].get_variable();
+      variable_t ref = inputs[1].get_variable();
       variable_t bv = outputs[0];
       error_if_not_rgn(rgn);
       error_if_not_ref(ref);
@@ -2629,8 +2643,10 @@ public:
       }
     } else if (Params::deallocation && name == "unfreed_or_null") {
       error_if_not_arity(2, 0);
-      variable_t rgn = inputs[0];
-      variable_t ref = inputs[1];
+      error_if_not_variable(inputs[0]);
+      error_if_not_variable(inputs[1]);
+      variable_t rgn = inputs[0].get_variable();
+      variable_t ref = inputs[1].get_variable();
       error_if_not_rgn(rgn);
       error_if_not_ref(ref);
 
@@ -2647,7 +2663,8 @@ public:
       }
     } else if (name == "nonnull") {
       error_if_not_arity(1, 0);
-      variable_t ref = inputs[0];
+      error_if_not_variable(inputs[0]);      
+      variable_t ref = inputs[0].get_variable();
       error_if_not_ref(ref);
 
       auto nonnull_cst = reference_constraint_t::mk_gt_null(ref);
@@ -2655,11 +2672,15 @@ public:
     } else {
       // pass the intrinsics to the base domain
       //=== base domain ===/
-      std::vector<base_variable_t> base_inputs, base_outputs;
+      std::vector<base_variable_or_constant_t> base_inputs;
+      std::vector<base_variable_t> base_outputs;
       base_inputs.reserve(inputs.size());
       base_outputs.reserve(outputs.size());
       for (unsigned i = 0, sz = inputs.size(); i < sz; ++i) {
-        base_inputs.push_back(rename_var(inputs[i]));
+        base_inputs.push_back(inputs[i].is_variable() ?
+	     base_variable_or_constant_t(rename_var(inputs[i].get_variable())) :
+	     base_variable_or_constant_t(inputs[i].get_constant(),
+					 inputs[i].get_type()));
       }
       for (unsigned i = 0, sz = outputs.size(); i < sz; ++i) {
         base_outputs.push_back(rename_var(outputs[i]));
@@ -2668,16 +2689,21 @@ public:
     }
   }
 
-  void backward_intrinsic(std::string name, const variable_vector_t &inputs,
+  void backward_intrinsic(std::string name,
+			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const region_domain_t &invariant) override {
     if (!is_bottom()) {
       //=== base domain ===/
-      std::vector<base_variable_t> base_inputs, base_outputs;
+      std::vector<base_variable_or_constant_t> base_inputs;
+      std::vector<base_variable_t> base_outputs;      
       base_inputs.reserve(inputs.size());
       base_outputs.reserve(outputs.size());
       for (unsigned i = 0, sz = inputs.size(); i < sz; ++i) {
-        base_inputs.push_back(rename_var(inputs[i]));
+        base_inputs.push_back(inputs[i].is_variable() ?
+	     base_variable_or_constant_t(rename_var(inputs[i].get_variable())):
+	     base_variable_or_constant_t(inputs[i].get_constant(),
+					 inputs[i].get_type()));
       }
       for (unsigned i = 0, sz = outputs.size(); i < sz; ++i) {
         base_outputs.push_back(rename_var(outputs[i]));

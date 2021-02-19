@@ -240,6 +240,7 @@ public:
   using typename abstract_domain_t::variable_or_constant_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::variable_or_constant_vector_t;  
   using number_t = Number;
   using varname_t = VariableName;
 
@@ -802,19 +803,21 @@ public:
   }
 
   /* begin intrinsics operations */
-  void intrinsic(std::string name, const variable_vector_t &inputs,
+  void intrinsic(std::string name,
+		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     m_product.first().intrinsic(name, inputs, outputs);
     m_product.second().intrinsic(name, inputs, outputs);
   }
 
-  void backward_intrinsic(std::string name, const variable_vector_t &inputs,
+  void backward_intrinsic(std::string name,
+			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const domain_product2_t &invariant) override {
     m_product.first().backward_intrinsic(name, inputs, outputs,
-                                              invariant.first());
+					 invariant.first());
     m_product.second().backward_intrinsic(name, inputs, outputs,
-                                               invariant.second());
+					  invariant.second());
   }
   /* end intrinsics operations */
 
@@ -875,6 +878,7 @@ public:
   using typename abstract_domain_t::variable_or_constant_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::variable_or_constant_vector_t;  
   using number_t = typename Domain1::number_t;
   using varname_t = typename Domain1::varname_t;
 
@@ -1280,17 +1284,19 @@ public:
   }
 
   /* begin intrinsics operations */
-  void intrinsic(std::string name, const variable_vector_t &inputs,
+  void intrinsic(std::string name,
+		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     m_product.intrinsic(name, inputs, outputs);
   }
 
   void backward_intrinsic(
-      std::string name, const variable_vector_t &inputs,
+      std::string name,
+      const variable_or_constant_vector_t &inputs,
       const variable_vector_t &outputs,
       const reduced_numerical_domain_product2_t &invariant) override {
     m_product.backward_intrinsic(name, inputs, outputs,
-                                      invariant.m_product);
+				 invariant.m_product);
   }
   /* end intrinsics operations */
 

@@ -1149,6 +1149,7 @@ public:
   using variable_t = typename NumDom::variable_t;
   using variable_or_constant_t = typename NumDom::variable_or_constant_t;
   using variable_vector_t = typename NumDom::variable_vector_t;
+  using variable_or_constant_vector_t = typename NumDom::variable_or_constant_vector_t;  
 
   using landmark_cst_t = landmark_cst<variable_t, number_t>;
   using landmark_var_t = landmark_var<variable_t, number_t>;
@@ -2106,12 +2107,14 @@ public:
   }
 
   /* begin intrinsics operations */
-  void intrinsic(std::string name, const variable_vector_t &inputs,
+  void intrinsic(std::string name,
+		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
-  void backward_intrinsic(std::string name, const variable_vector_t &inputs,
+  void backward_intrinsic(std::string name,
+			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const array_graph_domain_t &invariant) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());

@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Array smashing domain
  *
- * Assume all array accesses are aligned wrt to the size of the array
- * element (e.g., if the size of the array element is 4 bytes then all
- * array accesses must be multiple of 4). Note that this assumption
- * does not hold in general, so the client must ensure that.
+ * Assume all array accesses are aligned so the number of read bytes
+ * is always equal to the number of written bytes. Note that this
+ * assumption does not hold in general, so the client must ensure
+ * that.
  ******************************************************************************/
 
 #pragma once
@@ -41,6 +41,7 @@ public:
   using typename abstract_domain_t::variable_or_constant_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::variable_or_constant_vector_t;  
   using content_domain_t = NumDomain;
   using interval_t = ikos::interval<number_t>;
 
@@ -502,12 +503,14 @@ public:
   NumDomain get_content_domain() const { return _inv; }
 
   /* begin intrinsics operations */
-  void intrinsic(std::string name, const variable_vector_t &inputs,
+  void intrinsic(std::string name,
+		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     _inv.intrinsic(name, inputs, outputs);
   }
 
-  void backward_intrinsic(std::string name, const variable_vector_t &inputs,
+  void backward_intrinsic(std::string name,
+			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const array_smashing_t &invariant) override {
     _inv.backward_intrinsic(name, inputs, outputs, invariant._inv);

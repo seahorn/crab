@@ -735,6 +735,7 @@ public:
   using typename abstract_domain_t::variable_or_constant_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::variable_or_constant_vector_t;  
   using number_t = Number;
   using varname_t = VariableName;
   using typename abstract_domain_t::reference_constraint_t;
@@ -1133,12 +1134,14 @@ public:
   }
 
   /* begin intrinsics operations */
-  void intrinsic(std::string name, const variable_vector_t &inputs,
+  void intrinsic(std::string name,
+		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
-  void backward_intrinsic(std::string name, const variable_vector_t &inputs,
+  void backward_intrinsic(std::string name,
+			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const congruence_domain_t &invariant) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());

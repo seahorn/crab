@@ -276,6 +276,7 @@ public:
   using typename abstract_domain_t::variable_or_constant_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::variable_or_constant_vector_t;    
   using number_t = Number;
   using varname_t = VariableName;
   using constraint_kind_t = typename linear_constraint_t::kind_t;
@@ -3453,12 +3454,14 @@ public:
   DEFAULT_SELECT(split_oct_domain_t)
 
   /* begin intrinsics operations */
-  void intrinsic(std::string name, const variable_vector_t &inputs,
+  void intrinsic(std::string name,
+		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
-  void backward_intrinsic(std::string name, const variable_vector_t &inputs,
+  void backward_intrinsic(std::string name,
+			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const split_oct_domain_t &invariant) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());

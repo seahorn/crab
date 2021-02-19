@@ -322,6 +322,7 @@ public:
   using typename abstract_domain_t::variable_or_constant_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::variable_or_constant_vector_t;  
   using number_t = typename NumAbsDom::number_t;
   using varname_t = typename NumAbsDom::varname_t;
 
@@ -585,12 +586,14 @@ public:
   }
 
   /* begin intrinsics operations */
-  void intrinsic(std::string name, const variable_vector_t &inputs,
+  void intrinsic(std::string name,
+		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     m_product.intrinsic(name, inputs, outputs);
   }
 
-  void backward_intrinsic(std::string name, const variable_vector_t &inputs,
+  void backward_intrinsic(std::string name,
+			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const rnc_domain_t &invariant) override {
     m_product.backward_intrinsic(name, inputs, outputs, invariant.m_product);

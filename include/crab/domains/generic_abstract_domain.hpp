@@ -39,6 +39,7 @@ public:
   using variable_t = variable<number_t, varname_t>;
   using variable_or_constant_t = variable_or_constant<number_t, varname_t>;
   using variable_vector_t = std::vector<variable_t>;
+  using variable_or_constant_vector_t = std::vector<variable_or_constant_t>;
   using reference_constraint_t = reference_constraint<number_t, varname_t>;
   using interval_t = ikos::interval<number_t>;
 
@@ -213,10 +214,12 @@ private:
     virtual void forget(const variable_vector_t &variables) = 0;
     virtual void project(const variable_vector_t &variables) = 0;
     virtual void expand(const variable_t &var, const variable_t &new_var) = 0;
-    virtual void intrinsic(std::string name, const variable_vector_t &inputs,
+    virtual void intrinsic(std::string name,
+			   const variable_or_constant_vector_t &inputs,
                            const variable_vector_t &outputs) = 0;
     virtual void
-    backward_intrinsic(std::string name, const variable_vector_t &inputs,
+    backward_intrinsic(std::string name,
+		       const variable_or_constant_vector_t &inputs,
                        const variable_vector_t &outputs,
                        const abstract_domain_concept &invariant) = 0;
     virtual std::string domain_name() const = 0;
@@ -593,13 +596,15 @@ private:
     void expand(const variable_t &var, const variable_t &new_var) override {
       m_inv.expand(var, new_var);
     }
-    void intrinsic(std::string name, const variable_vector_t &inputs,
+    void intrinsic(std::string name,
+		   const variable_or_constant_vector_t &inputs,
                    const variable_vector_t &outputs) override {
       m_inv.intrinsic(name, inputs, outputs);
     }
     // unsafe: if the underlying domain in invariant is not Domain then it will
     // crash
-    void backward_intrinsic(std::string name, const variable_vector_t &inputs,
+    void backward_intrinsic(std::string name,
+			    const variable_or_constant_vector_t &inputs,
                             const variable_vector_t &outputs,
                             const abstract_domain_concept &invariant) override {
       m_inv.backward_intrinsic(
@@ -914,11 +919,13 @@ public:
   void expand(const variable_t &var, const variable_t &new_var) override {
     m_concept->expand(var, new_var);
   }
-  void intrinsic(std::string name, const variable_vector_t &inputs,
+  void intrinsic(std::string name,
+		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     m_concept->intrinsic(name, inputs, outputs);
   }
-  void backward_intrinsic(std::string name, const variable_vector_t &inputs,
+  void backward_intrinsic(std::string name,
+			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const abstract_domain &invariant) override {
     m_concept->backward_intrinsic(name, inputs, outputs, *invariant.m_concept);
@@ -949,6 +956,7 @@ public:
   using variable_t = variable<number_t, varname_t>;
   using variable_or_constant_t = variable_or_constant<number_t, varname_t>;
   using variable_vector_t = std::vector<variable_t>;
+  using variable_or_constant_vector_t = std::vector<variable_or_constant_t>;
   using reference_constraint_t = reference_constraint<number_t, varname_t>;
   using interval_t = ikos::interval<number_t>;
 
@@ -1407,12 +1415,14 @@ public:
     norm().expand(var, new_var);
   }
 
-  void intrinsic(std::string name, const variable_vector_t &inputs,
+  void intrinsic(std::string name,
+		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     detach();
     norm().intrinsic(name, inputs, outputs);
   }
-  void backward_intrinsic(std::string name, const variable_vector_t &inputs,
+  void backward_intrinsic(std::string name,
+			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const abstract_domain_ref &invariant) override {
     detach();

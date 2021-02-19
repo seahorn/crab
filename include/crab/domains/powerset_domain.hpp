@@ -43,6 +43,7 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_or_constant_vector_t;  
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
 
@@ -782,7 +783,8 @@ public:
 
   // Intrinsics
 
-  virtual void intrinsic(std::string name, const variable_vector_t &inputs,
+  virtual void intrinsic(std::string name,
+			 const variable_or_constant_vector_t &inputs,
                          const variable_vector_t &outputs) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
@@ -792,7 +794,7 @@ public:
   }
 
   virtual void backward_intrinsic(std::string name,
-                                  const variable_vector_t &inputs,
+                                  const variable_or_constant_vector_t &inputs,
                                   const variable_vector_t &outputs,
                                   const powerset_domain_t &invariant) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");

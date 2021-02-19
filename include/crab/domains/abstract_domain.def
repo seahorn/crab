@@ -8,6 +8,7 @@
   using typename abstract_domain_t::variable_t;                                \
   using typename abstract_domain_t::variable_or_constant_t;                    \
   using typename abstract_domain_t::variable_vector_t;                         \
+  using typename abstract_domain_t::variable_or_constant_vector_t;             \
   using typename abstract_domain_t::interval_t;                                \
   using number_t = N;                                                          \
   using varname_t = V;                                                         \
@@ -260,11 +261,11 @@
       override {                                                               \
     CRAB_ERROR(Msg);                                                           \
   }                                                                            \
-  void intrinsic(std::string name, const variable_vector_t &inputs,            \
+  void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,  \
                  const variable_vector_t &outputs) override {                  \
     CRAB_ERROR(Msg);                                                           \
   }                                                                            \
-  void backward_intrinsic(std::string name, const variable_vector_t &inputs,   \
+  void backward_intrinsic(std::string name, const variable_or_constant_vector_t &inputs, \
                           const variable_vector_t &outputs,                    \
                           const this_type &invariant) override {               \
     CRAB_ERROR(Msg);                                                           \

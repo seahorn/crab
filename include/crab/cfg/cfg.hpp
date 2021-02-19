@@ -1790,7 +1790,7 @@ public:
       o << (*m_lhs.begin()) << ":" << (*m_lhs.begin()).get_type() << " =";
     } else {
       o << "(";
-      for (const_iterator It = m_lhs.begin(), Et = m_lhs.end(); It != Et;) {
+      for (auto It = m_lhs.begin(), Et = m_lhs.end(); It != Et;) {
         o << (*It) << ":" << (*It).get_type();
         ++It;
         if (It != Et)
@@ -1799,7 +1799,7 @@ public:
       o << ")=";
     }
     o << " call " << m_func_name << "(";
-    for (const_iterator It = m_args.begin(), Et = m_args.end(); It != Et;) {
+    for (auto It = m_args.begin(), Et = m_args.end(); It != Et;) {
       o << *It << ":" << (*It).get_type();
       ++It;
       if (It != Et)
@@ -1812,9 +1812,6 @@ private:
   std::string m_func_name;
   std::vector<variable_t> m_lhs;
   std::vector<variable_t> m_args;
-
-  using iterator = typename std::vector<variable_t>::iterator;
-  using const_iterator = typename std::vector<variable_t>::const_iterator;
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
@@ -1883,25 +1880,33 @@ public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
   using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
+  using variable_or_constant_t = variable_or_constant<Number, VariableName>;
   using type_t = typename variable_t::type_t;
 
   intrinsic_stmt(std::string intrinsic_name,
-                 const std::vector<variable_t> &args, basic_block_t *parent)
+                 const std::vector<variable_or_constant_t> &args,
+		 basic_block_t *parent)
       : statement_t(CRAB_INTRINSIC, parent), m_intrinsic_name(intrinsic_name) {
 
     std::copy(args.begin(), args.end(), std::back_inserter(m_args));
     for (auto arg : m_args) {
-      this->m_live.add_use(arg);
+      if (arg.is_variable()) {
+	this->m_live.add_use(arg.get_variable());
+      }
     }
   }
 
-  intrinsic_stmt(std::string intrinsic_name, const std::vector<variable_t> &lhs,
-                 const std::vector<variable_t> &args, basic_block_t *parent)
+  intrinsic_stmt(std::string intrinsic_name,
+		 const std::vector<variable_t> &lhs,
+                 const std::vector<variable_or_constant_t> &args,
+		 basic_block_t *parent)
       : statement_t(CRAB_INTRINSIC, parent), m_intrinsic_name(intrinsic_name) {
 
     std::copy(args.begin(), args.end(), std::back_inserter(m_args));
     for (auto arg : m_args) {
-      this->m_live.add_use(arg);
+      if (arg.is_variable()) {
+	this->m_live.add_use(arg.get_variable());
+      }
     }
 
     std::copy(lhs.begin(), lhs.end(), std::back_inserter(m_lhs));
@@ -1909,12 +1914,12 @@ public:
       this->m_live.add_def(arg);
     }
   }
-
+  
   const std::vector<variable_t> &get_lhs() const { return m_lhs; }
 
   const std::string &get_intrinsic_name() const { return m_intrinsic_name; }
 
-  const std::vector<variable_t> &get_args() const { return m_args; }
+  const std::vector<variable_or_constant_t> &get_args() const { return m_args; }
 
   unsigned get_num_args() const { return m_args.size(); }
 
@@ -1948,7 +1953,7 @@ public:
       o << (*m_lhs.begin()) << " = ";
     } else {
       o << "(";
-      for (const_iterator It = m_lhs.begin(), Et = m_lhs.end(); It != Et;) {
+      for (auto It = m_lhs.begin(), Et = m_lhs.end(); It != Et;) {
         o << (*It);
         ++It;
         if (It != Et)
@@ -1960,7 +1965,7 @@ public:
     if (!m_args.empty()) {
       o << ",";
     }
-    for (const_iterator It = m_args.begin(), Et = m_args.end(); It != Et;) {
+    for (auto It = m_args.begin(), Et = m_args.end(); It != Et;) {
       o << *It << ":" << (*It).get_type();
       ++It;
       if (It != Et)
@@ -1972,10 +1977,7 @@ public:
 private:
   std::string m_intrinsic_name;
   std::vector<variable_t> m_lhs;
-  std::vector<variable_t> m_args;
-
-  using iterator = typename std::vector<variable_t>::iterator;
-  using const_iterator = typename std::vector<variable_t>::const_iterator;
+  std::vector<variable_or_constant_t> m_args;
 };
 
 /*
@@ -2823,10 +2825,10 @@ public:
   const statement_t *ret(const std::vector<variable_t> &ret_vals) {
     return insert(new return_t(ret_vals, this));
   }
-
+  
   const statement_t *intrinsic(std::string name,
                                const std::vector<variable_t> &lhs,
-                               const std::vector<variable_t> &args) {
+                               const std::vector<variable_or_constant_t> &args) {
     return insert(new intrinsic_t(name, lhs, args, this));
   }
 
@@ -4798,8 +4800,10 @@ private:
       for (const variable_t &v : s.get_lhs()) {
         check_varname(v);
       }
-      for (const variable_t &v : s.get_args()) {
-        check_varname(v);
+      for (const variable_or_constant_t &vc : s.get_args()) {
+	if (vc.is_variable()) {
+	  check_varname(vc.get_variable());
+	}
       }
     }
 
