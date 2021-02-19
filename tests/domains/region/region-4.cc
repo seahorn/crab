@@ -137,7 +137,7 @@ int main() {
   bb9.load_from_ref(ref6, ref7, mem_field_s);
   bb9.intrinsic("is_unfreed_or_null",{b2},{mem_field_deref_s, ref6});
   if (add_free) 
-    bb9.intrinsic("free",{}, {mem_field_deref_s, ref6});
+    bb9.remove_ref(mem_field_deref_s, ref6);
   bb9_assert.bool_assert(b2);
   // aux = aux->n;
   bb9_assert.gep_ref(ref8, mem_field_next, ref1, mem_field_f, 8);

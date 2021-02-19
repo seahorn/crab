@@ -1538,6 +1538,37 @@ public:
 	                            << as << ")=" << *this << "\n";);
   }
 
+  void ref_free(const variable_t &rgn, const variable_t &ref) override {
+    crab::CrabStats::count(domain_name() + ".count.ref_free");
+    crab::ScopedCrabStats __st__(domain_name() + ".ref_free");
+
+    if (is_bottom()) {
+      return;
+    }
+
+    assert(rgn.get_type().is_region());      
+    assert(ref.get_type().is_reference());
+
+    if (Params::allocation_sites) {
+      m_alloc_site_dom -= ref;
+    }
+    
+    // We conservatively mark the region's equivalence class as
+    // possibly deallocated
+    if (Params::deallocation) {
+      if (!m_rgn_dealloc_dom.contains(rgn)) {
+        CRAB_LOG("region", CRAB_WARN("lost track of dealloc status of ", rgn,
+                                     " in ", m_rgn_dealloc_dom));
+      } else {
+        m_rgn_dealloc_dom.set(rgn, boolean_value::top());
+      }
+    }
+    
+    CRAB_LOG("region", crab::outs() << "After ref_free(" << rgn << "," << ref
+                                    << ")=" << *this << "\n";);
+  }
+
+  
   // Read the content of reference ref within rgn. The content is
   // stored in res.
   void ref_load(const variable_t &ref, const variable_t &rgn,
@@ -2021,36 +2052,6 @@ public:
   // call the join
   DEFAULT_SELECT_REF(region_domain_t)
   
-  void ref_remove(const variable_t &ref, const variable_t &rgn) {
-    if (!Params::deallocation) {
-      return;
-    }
-
-    if (is_bottom()) {
-      return;
-    }
-    assert(ref.get_type().is_reference());
-    assert(rgn.get_type().is_region());
-
-    if (Params::allocation_sites) {
-      m_alloc_site_dom -= ref;
-    }
-    
-    // We conservatively mark the region's equivalence class as
-    // possibly deallocated
-    if (Params::deallocation) {
-      if (!m_rgn_dealloc_dom.contains(rgn)) {
-        CRAB_LOG("region", CRAB_WARN("lost track of dealloc status of ", rgn,
-                                     " in ", m_rgn_dealloc_dom));
-      } else {
-        m_rgn_dealloc_dom.set(rgn, boolean_value::top());
-      }
-    }
-
-    CRAB_LOG("region", crab::outs() << "After ref_remove(" << ref << "," << rgn
-                                    << ")=" << *this << "\n";);
-  }
-
   // arithmetic operations
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
@@ -2601,18 +2602,8 @@ public:
     if (is_bottom()) {
       return;
     }
-
-    if (Params::deallocation && name == "free") {
-      error_if_not_arity(2, 0);
-      error_if_not_variable(inputs[0]);
-      error_if_not_variable(inputs[1]);
-      variable_t rgn = inputs[0].get_variable();
-      variable_t ref = inputs[1].get_variable();
-      error_if_not_rgn(rgn);
-      error_if_not_ref(ref);
-
-      ref_remove(ref, rgn);
-    } else if (Params::deallocation && name == "is_unfreed_or_null") {
+    
+    if (Params::deallocation && name == "is_unfreed_or_null") {
       error_if_not_arity(2, 1);
       error_if_not_variable(inputs[0]);
       error_if_not_variable(inputs[1]);      

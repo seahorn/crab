@@ -123,6 +123,7 @@ private:
                              const variable_t &rhs_reg) = 0;
     virtual void ref_make(const variable_t &ref, const variable_t &reg,
 			  const allocation_site &as) = 0;
+    virtual void ref_free(const variable_t &reg, const variable_t &ref) = 0;
     virtual void ref_load(const variable_t &ref, const variable_t &reg,
                           const variable_t &res) = 0;
     virtual void ref_store(const variable_t &ref, const variable_t &reg,
@@ -402,6 +403,10 @@ private:
     void ref_make(const variable_t &ref, const variable_t &reg,
 		  const allocation_site &as) override {
       m_inv.ref_make(ref, reg, as);
+    }
+    void ref_free(const variable_t &reg, const variable_t &ref)
+      override {
+      m_inv.ref_free(reg, ref);
     }
     void ref_load(const variable_t &ref, const variable_t &reg,
                   const variable_t &res) override {
@@ -769,6 +774,10 @@ public:
   void ref_make(const variable_t &ref, const variable_t &reg,
 		const allocation_site &as) override {
     m_concept->ref_make(ref, reg, as);
+  }
+  void ref_free(const variable_t &reg, const variable_t &ref)
+    override {
+    m_concept->ref_free(reg, ref);
   }
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {
@@ -1199,6 +1208,11 @@ public:
 		const allocation_site &as) override {
     detach();
     norm().ref_make(ref, reg, as);
+  }
+  
+  void ref_free(const variable_t &reg, const variable_t &ref) override {
+    detach();
+    norm().ref_free(reg, ref);
   }
 
   void ref_load(const variable_t &ref, const variable_t &reg,

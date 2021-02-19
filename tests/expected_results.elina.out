@@ -3143,7 +3143,7 @@ bb9:
   (region_field_s:region(ref),ref7:ref) := gep_ref(region_field_f:region(int),ref1:ref + 4);
   ref6:ref := load_from_ref(region_field_s:region(ref),ref7:ref);
   b2 = crab_intrinsic(is_unfreed_or_null,region_field_deref_s:region(int),ref6:ref);
-  crab_intrinsic(free,region_field_deref_s:region(int),ref6:ref);
+  remove_ref(region_field_deref_s:region(int),ref6:ref);
   goto bb9_assert;
 bb9_assert:
   assert(b2);

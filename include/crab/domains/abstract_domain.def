@@ -188,6 +188,9 @@
                 const allocation_site &as) override {                          \
     CRAB_ERROR(Msg);                                                           \
   }                                                                            \
+  void ref_free(const variable_t &reg, const variable_t &ref) override {       \
+    CRAB_ERROR(Msg);                                                           \
+  }                                                                            \
   void ref_load(const variable_t &ref, const variable_t &reg,                  \
                 const variable_t &res) override {			       \
     CRAB_ERROR(Msg);                                                           \

@@ -571,6 +571,14 @@ public:
     }
   }
 
+  virtual void ref_free(const variable_t &reg, const variable_t &ref) override {
+    if (!is_bottom()) {
+      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+        m_disjuncts[i].ref_free(reg, ref);
+      }
+    }
+  }
+  
   virtual void ref_load(const variable_t &ref, const variable_t &reg,
                         const variable_t &res) override {
     if (!is_bottom()) {

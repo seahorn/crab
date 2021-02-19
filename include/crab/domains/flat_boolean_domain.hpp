@@ -1419,6 +1419,11 @@ public:
 		const allocation_site &as) override {
     _product.ref_make(ref, reg, as);
   }
+  void ref_free(const variable_t &reg, const variable_t &ref)
+    override {
+    _product.ref_free(reg, ref);
+  }
+  
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {
     _product.ref_load(ref, reg, res);

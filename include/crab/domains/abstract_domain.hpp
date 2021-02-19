@@ -180,6 +180,8 @@ public:
   // Create a new reference ref associated with as within region reg 
   virtual void ref_make(const variable_t &ref, const variable_t &reg,
 			const allocation_site &as) = 0;
+  // Remove a reference ref within region reg 
+  virtual void ref_free(const variable_t &reg, const variable_t &ref) = 0;
   // Read the content of reference ref within reg. The content is
   // stored in res.
   virtual void ref_load(const variable_t &ref, const variable_t &reg,
@@ -445,6 +447,8 @@ public:
                            const variable_t &rhs_reg) override {}              \
   virtual void ref_make(const variable_t &ref, const variable_t &reg, 	       \
                         const crab::allocation_site &as)		       \
+      override {}                                                              \
+  virtual void ref_free(const variable_t &reg, const variable_t &ref)	       \
       override {}                                                              \
   virtual void ref_load(const variable_t &ref, const variable_t &reg,          \
                         const variable_t &res) override {}                     \

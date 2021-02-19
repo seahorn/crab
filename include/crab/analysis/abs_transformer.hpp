@@ -88,6 +88,7 @@ public:
   using region_copy_t =
       crab::cfg::region_copy_stmt<bb_label_t, number_t, varname_t>;
   using make_ref_t = crab::cfg::make_ref_stmt<bb_label_t, number_t, varname_t>;
+  using remove_ref_t = crab::cfg::remove_ref_stmt<bb_label_t, number_t, varname_t>;  
   using load_from_ref_t =
       crab::cfg::load_from_ref_stmt<bb_label_t, number_t, varname_t>;
   using store_to_ref_t =
@@ -139,6 +140,7 @@ protected:
   virtual void exec(region_init_t &) {}
   virtual void exec(region_copy_t &) {}
   virtual void exec(make_ref_t &) {}
+  virtual void exec(remove_ref_t &) {}  
   virtual void exec(load_from_ref_t &) {}
   virtual void exec(store_to_ref_t &) {}
   virtual void exec(gep_ref_t &) {}
@@ -175,6 +177,7 @@ public: /* visitor api */
   void visit(region_init_t &s) { exec(s); }
   void visit(region_copy_t &s) { exec(s); }
   void visit(make_ref_t &s) { exec(s); }
+  void visit(remove_ref_t &s) { exec(s); }  
   void visit(load_from_ref_t &s) { exec(s); }
   void visit(store_to_ref_t &s) { exec(s); }
   void visit(gep_ref_t &s) { exec(s); }
@@ -340,6 +343,7 @@ public:
   using typename abs_transform_api_t::load_from_arr_ref_t;
   using typename abs_transform_api_t::load_from_ref_t;
   using typename abs_transform_api_t::make_ref_t;
+  using typename abs_transform_api_t::remove_ref_t;  
   using typename abs_transform_api_t::ref_to_int_t;
   using typename abs_transform_api_t::region_copy_t;
   using typename abs_transform_api_t::region_init_t;
@@ -669,6 +673,22 @@ public:
     }
   }
 
+  void exec(remove_ref_t &stmt) {
+    bool pre_bot = false;
+    if (::crab::CrabSanityCheckFlag) {
+      pre_bot = m_inv.is_bottom();
+    }
+
+    m_inv.ref_free(stmt.region(), stmt.ref());
+
+    if (::crab::CrabSanityCheckFlag) {
+      bool post_bot = m_inv.is_bottom();
+      if (!(pre_bot || !post_bot)) {
+        CRAB_ERROR("Invariant became bottom after ", stmt);
+      }
+    }
+  }
+  
   void exec(region_init_t &stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
@@ -941,6 +961,7 @@ public:
   using typename abs_transform_api_t::load_from_arr_ref_t;
   using typename abs_transform_api_t::load_from_ref_t;
   using typename abs_transform_api_t::make_ref_t;
+  using typename abs_transform_api_t::remove_ref_t;  
   using typename abs_transform_api_t::ref_to_int_t;
   using typename abs_transform_api_t::region_copy_t;
   using typename abs_transform_api_t::region_init_t;
@@ -1223,6 +1244,7 @@ public:
   void exec(region_init_t &stmt) {}
   void exec(region_copy_t &stmt) {}
   void exec(make_ref_t &stmt) {}
+  void exec(remove_ref_t &stmt) {}  
   void exec(load_from_ref_t &stmt) {}
   void exec(store_to_ref_t &stmt) {}
   void exec(gep_ref_t &stmt) {}

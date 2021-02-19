@@ -140,6 +140,7 @@ enum stmt_code {
   REF_TO_INT = 50,
   INT_TO_REF = 51,
   REGION_COPY = 52,
+  REF_REMOVE = 53,
   // functions calls
   CALLSITE = 60,
   RETURN = 61,
@@ -294,6 +295,7 @@ public:
   bool is_arr_write() const { return (m_stmt_code == ARR_STORE); }
   bool is_arr_assign() const { return (m_stmt_code == ARR_ASSIGN); }
   bool is_ref_make() const { return m_stmt_code == REF_MAKE; }
+  bool is_ref_remove() const { return m_stmt_code == REF_REMOVE;}
   bool is_ref_load() const { return m_stmt_code == REF_LOAD; }
   bool is_ref_store() const { return m_stmt_code == REF_STORE; }
   bool is_ref_gep() const { return m_stmt_code == REF_GEP; }
@@ -1059,7 +1061,7 @@ private:
 
 template <class BasicBlockLabel, class Number, class VariableName>
 class make_ref_stmt : public statement<BasicBlockLabel, Number, VariableName> {
-  // lhs := make_ref(region)
+  // lhs := make_ref(region, as)
   using this_type = make_ref_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -1102,6 +1104,49 @@ private:
   allocation_site m_alloc_site;
 };
 
+
+template <class BasicBlockLabel, class Number, class VariableName>
+class remove_ref_stmt : public statement<BasicBlockLabel, Number, VariableName> {
+  // remove_ref(region, ref)
+  using this_type = remove_ref_stmt<BasicBlockLabel, Number, VariableName>;
+
+public:
+  using statement_t = statement<BasicBlockLabel, Number, VariableName>;
+  using basic_block_t = typename statement_t::basic_block_t;
+  using variable_t = variable<Number, VariableName>;
+
+  remove_ref_stmt(variable_t region, variable_t ref,
+		  basic_block_t *parent,
+		  debug_info dbg_info = debug_info())
+    : statement_t(REF_REMOVE, parent, dbg_info),
+      m_region(region), m_ref(ref) {
+    this->m_live.add_use(m_region);    
+    this->m_live.add_use(m_ref);
+  }
+
+  const variable_t &region() const { return m_region; }
+
+  const variable_t &ref() const { return m_ref; }
+
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+    v->visit(*this);
+  }
+
+  virtual statement_t *clone(basic_block_t *parent) const {
+    return new this_type(m_region, m_ref, parent, this->m_dbg_info);
+  }
+
+  virtual void write(crab_os &o) const {
+    o << "remove_ref(" << m_region << ":" << m_region.get_type() << ","
+      << m_ref << ":" << m_ref.get_type() << ")";
+  }
+
+private:
+  variable_t m_region;  
+  variable_t m_ref;
+};
+  
 template <class BasicBlockLabel, class Number, class VariableName>
 class load_from_ref_stmt
     : public statement<BasicBlockLabel, Number, VariableName> {
@@ -2382,6 +2427,7 @@ public:
   using region_init_t = region_init_stmt<BasicBlockLabel, Number, VariableName>;
   using region_copy_t = region_copy_stmt<BasicBlockLabel, Number, VariableName>;
   using make_ref_t = make_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using remove_ref_t = remove_ref_stmt<BasicBlockLabel, Number, VariableName>;  
   using load_from_ref_t =
       load_from_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using store_to_ref_t =
@@ -2656,8 +2702,9 @@ public:
   // for gdb
   void dump() const { write(crab::errs()); }
 
-  /// To build statements
-
+  /**********************************************************************/
+  /*                  Begin BUILD CFG STATEMENTS                        */
+  /**********************************************************************/
   const statement_t *add(variable_t lhs, variable_t op1, variable_t op2) {
     return insert(new bin_op_t(lhs, BINOP_ADD, op1, op2, this));
   }
@@ -2877,6 +2924,10 @@ public:
     return insert(new make_ref_t(lhs_ref, region, as, this));
   }
 
+  const statement_t *remove_ref(variable_t region, variable_t ref) {
+    return insert(new remove_ref_t(region, ref, this));
+  }
+  
   const statement_t *load_from_ref(variable_t lhs, variable_t ref,
                                    variable_t region) {
     return insert(new load_from_ref_t(lhs, ref, region, this));
@@ -3000,6 +3051,9 @@ public:
   const statement_t *bool_xor(variable_t lhs, variable_t op1, variable_t op2) {
     return insert(new bool_bin_op_t(lhs, BINOP_BXOR, op1, op2, this));
   }
+  /**********************************************************************/
+  /*                  End BUILD CFG STATEMENTS                          */
+  /**********************************************************************/
 
   friend crab_os &operator<<(crab_os &o, const basic_block_t &b) {
     b.write(o);
@@ -3111,6 +3165,7 @@ struct statement_visitor {
   using arr_load_t = array_load_stmt<BasicBlockLabel, Number, VariableName>;
   using arr_assign_t = array_assign_stmt<BasicBlockLabel, Number, VariableName>;
   using make_ref_t = make_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using remove_ref_t = remove_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using region_init_t = region_init_stmt<BasicBlockLabel, Number, VariableName>;
   using region_copy_t = region_copy_stmt<BasicBlockLabel, Number, VariableName>;
   using load_from_ref_t =
@@ -3154,6 +3209,7 @@ struct statement_visitor {
   virtual void visit(region_init_t &) {}
   virtual void visit(region_copy_t &) {}
   virtual void visit(make_ref_t &) {}
+  virtual void visit(remove_ref_t &) {}  
   virtual void visit(load_from_ref_t &) {}
   virtual void visit(store_to_ref_t &) {}
   virtual void visit(gep_ref_t &) {}
@@ -4296,10 +4352,10 @@ private:
     using arr_load_t = typename statement_visitor<B, N, V>::arr_load_t;
     using arr_assign_t = typename statement_visitor<B, N, V>::arr_assign_t;
     using make_ref_t = typename statement_visitor<B, N, V>::make_ref_t;
+    using remove_ref_t = typename statement_visitor<B, N, V>::remove_ref_t;    
     using region_init_t = typename statement_visitor<B, N, V>::region_init_t;
     using region_copy_t = typename statement_visitor<B, N, V>::region_copy_t;
-    using load_from_ref_t =
-        typename statement_visitor<B, N, V>::load_from_ref_t;
+    using load_from_ref_t = typename statement_visitor<B, N, V>::load_from_ref_t;
     using store_to_ref_t = typename statement_visitor<B, N, V>::store_to_ref_t;
     using gep_ref_t = typename statement_visitor<B, N, V>::gep_ref_t;
     using load_from_arr_ref_t =
@@ -4399,6 +4455,15 @@ private:
       }
     }
 
+    // check variable is region
+    void check_region(const variable_t &v, statement_t &s) {
+      if (!v.get_type().is_region()) {
+        crab::crab_string_os os;
+        os << "(type checking) " << v << " is not a region variable in " << s;
+        CRAB_ERROR(os.str());
+      }
+    }
+    
     // check variable is a reference
     void check_ref(const variable_t &v, std::string msg, statement_t &s) {
       if (!v.get_type().is_reference()) {
@@ -4412,11 +4477,50 @@ private:
                    statement_t &s) {
       if (!v.get_type().is_reference()) {
         crab::crab_string_os os;
-        os << "(type checking) " << msg << " in " << s;
+        os << "(type checking) " << v << " is not a reference";
+	if (msg != "") {
+	  os << ". " << msg;
+	}
+	os << " in " << s;
         CRAB_ERROR(os.str());
       }
     }
 
+    void check_region_consistent_with_data(const variable_t &rgn,
+					   const variable_type &data_type,
+					   statement_t &s) {
+      if (!rgn.get_type().is_region()) {
+	return;
+      }
+      
+      if (rgn.get_type().is_unknown_region()) {
+	// anything is consistent with an unknown region
+	return;
+      } else if (rgn.get_type().is_bool_region() &&
+		 data_type.is_bool()) {
+	return;
+      } else if (rgn.get_type().is_reference_region() &&
+		 data_type.is_reference()) {
+	return;
+      } else if (rgn.get_type().is_integer_region() &&
+		 data_type.is_integer(rgn.get_type().
+					    get_integer_region_bitwidth())) {
+	return;
+      } else if (rgn.get_type().is_real_region() &&
+		 data_type.is_real()) {
+	return;
+      } else {
+	// TODO: other cases
+	return;
+      }
+      crab::crab_string_os os;
+      os << "(type checking) the type of " << rgn
+	 << " must be consistent with the type of data "
+	 << data_type << " in " << s;
+      CRAB_ERROR(os.str());
+    }
+
+    
     // check two variables have same types
     void check_same_type(const variable_t &v1, const variable_t &v2,
                          std::string msg, statement_t &s) {
@@ -4815,34 +4919,67 @@ private:
       }
     }
 
-    /** TODO: type checking of the following statements: **/
-    void visit(region_init_t &){};
-    void visit(region_copy_t &){};
-    void visit(make_ref_t &){};
-    void visit(load_from_ref_t &){};
-    void visit(store_to_ref_t &){};
-    void visit(gep_ref_t &){};
-    void visit(load_from_arr_ref_t &){};
-    void visit(store_to_arr_ref_t &){};
-    void visit(assume_ref_t &){};
-    void visit(assert_ref_t &){};
+    void visit(region_init_t &s){
+      check_region(s.region(), s);
+    };
+    void visit(region_copy_t &s){
+      check_region(s.lhs_region(), s);
+      check_region(s.rhs_region(), s);
+    };
+    void visit(make_ref_t &s){
+      check_region(s.region(), s);
+      check_ref(s.lhs(), "", s);
+    };
+    void visit(remove_ref_t &s){
+      check_region(s.region(), s);
+      check_ref(s.ref(), "", s);
+    };    
+    void visit(load_from_ref_t &s){
+      check_region(s.region(), s);
+      check_ref(s.ref(), "", s);
+      check_region_consistent_with_data(s.region(), s.lhs().get_type(), s);
+    };
+    void visit(store_to_ref_t &s){
+      check_region(s.region(), s);
+      check_ref(s.ref(), "", s);
+      check_region_consistent_with_data(s.region(), s.val().get_type(), s);      
+    };
+    void visit(gep_ref_t &s){
+      check_region(s.lhs_region(), s);
+      check_region(s.rhs_region(), s);
+      check_ref(s.lhs(), "", s);
+      check_ref(s.rhs(), "", s);      
+    };
+    void visit(load_from_arr_ref_t &s){
+      // TODO
+    };
+    void visit(store_to_arr_ref_t &s){
+      // TODO
+    };
+    void visit(assume_ref_t &s){}
+    void visit(assert_ref_t &s){}
     void visit(select_ref_t &s) {
       // TODO: check region operands
-
       check_ref(s.lhs_ref(), "lhs must be reference", s);
       check_bool(s.cond(), "condition must be boolean", s);
       check_ref(s.left_ref(), "first operand must be reference", s);
       check_ref(s.right_ref(), "second operand must be reference", s);
-
       check_varname(s.lhs_ref());
       if (s.left_ref().is_variable())
         check_varname(s.left_ref().get_variable());
       if (s.right_ref().is_variable())
         check_varname(s.right_ref().get_variable());
     };
-
-    void visit(int_to_ref_t &){};
-    void visit(ref_to_int_t &){};
+    void visit(int_to_ref_t &s){
+      check_region(s.region(), s);
+      check_ref(s.ref_var(), "", s);
+      check_num(s.int_var(), "first input must be a number", s);
+    };
+    void visit(ref_to_int_t &s){
+      check_region(s.region(), s);
+      check_ref(s.ref_var(), "", s);
+      check_num(s.int_var(), "first input must be a number", s);
+    };
 
   }; // end class type_checker_visitor
 };   // end class type_checker

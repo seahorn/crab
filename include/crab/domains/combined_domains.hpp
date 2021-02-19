@@ -565,6 +565,12 @@ public:
     reduce();
   }
 
+  virtual void ref_free(const variable_t &reg, const variable_t &ref) override {
+    m_product.first().ref_free(reg, ref);
+    m_product.second().ref_free(reg, ref);
+    reduce();
+  }
+  
   virtual void ref_load(const variable_t &ref, const variable_t &reg,
                         const variable_t &res) override {
     m_product.first().ref_load(ref, reg, res);
