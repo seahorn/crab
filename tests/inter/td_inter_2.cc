@@ -13,6 +13,21 @@ using namespace crab::domain_impl;
 using namespace crab::cg;
 using namespace crab::cg_impl;
 
+/*
+loop(x,y) {
+  if (x <= 100) {
+     (x',y') = loop(x+1,y+1)
+     return (x',y');
+  } else {
+     return (x,y);
+  }
+}
+
+main() {
+  (x,y) := loop(0,0);
+}
+ */
+
 z_cfg_t *f_loop(variable_factory_t &vfac) {
   // Defining program variables
   z_var x_in(vfac["x_in"], crab::INT_TYPE, 32);
@@ -78,7 +93,7 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  using inter_params_t = top_down_inter_analyzer_parameters<z_cg_ref_t>;
+  using inter_params_t = top_down_inter_analyzer_parameters<z_cg_t>;
 
   variable_factory_t vfac;
   z_cfg_t *t1 = f_loop(vfac);
@@ -90,10 +105,11 @@ int main(int argc, char **argv) {
 
   inter_params_t params;
   params.max_call_contexts = 5;
+  //params.analyze_recursive_functions = true;  
   z_dbm_domain_t init;
   z_cg_t cg(cfgs);
 
-  td_inter_run(&cg, init, params, false, true, false);
+  td_inter_run(cg, init, params, false, true, false);
 
   delete t1;
   delete t2;

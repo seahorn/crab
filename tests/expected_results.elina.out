@@ -1398,14 +1398,6 @@ w2:int32 declare main()
 exit={x2 -> [3, 3]; y2 -> [6, 6]; z2 -> [8, 8]; w2 -> [11, 11]}
 entry={x2 -> [3, 3]; y2 -> [6, 6]}
 =================================
-Summary foo(IN:{x:int32},OUT:{z:int32}) ==>
-{z-x<=3, x-z<=-3}
-Summary bar(IN:{a:int32},OUT:{y1:int32}) ==>
-{y1-a<=3, a-y1<=-3}
-Summary rec1(IN:{s:int32},OUT:{t:int32}) ==>
-{}
-Summary rec2(IN:{s1:int32},OUT:{t1:int32}) ==>
-{}
 === End ./test-bin/bu_inter ===
 === Begin ./test-bin/cfg ===
 CFG

@@ -10,6 +10,7 @@
 #include <crab/analysis/fwd_analyzer.hpp>
 #include <crab/analysis/graphs/sccg.hpp>
 #include <crab/analysis/graphs/topo_order.hpp>
+#include <crab/analysis/inter/inter_analyzer_api.hpp>
 #include <crab/cfg/cfg.hpp>   // hasher of function declarations
 #include <crab/cg/cg_bgl.hpp> // for sccg.hpp
 #include <crab/domains/generic_abstract_domain.hpp>
@@ -87,6 +88,10 @@ public:
       return it->second;
     else
       return m_top;
+  }
+  
+  void clear() {
+    m_call_table.clear();
   }
 };
 
@@ -288,6 +293,10 @@ public:
     return (it->second);
   }
 
+  void clear() {
+    m_sum_table.clear();
+  }
+  
   void write(crab_os &o) const {
     o << "--- Begin summary table: \n";
     for (auto const &p : m_sum_table) {
@@ -618,7 +627,8 @@ template <typename CallGraph,
           typename BU_Dom,
           // abstract domain used for the top-down phase
           typename TD_Dom>
-class bottom_up_inter_analyzer {
+class bottom_up_inter_analyzer:
+    public inter_analyzer_api<CallGraph, TD_Dom, BU_Dom> {
 
   using cg_node_t = typename CallGraph::node_t;
   using cg_edge_t = typename CallGraph::edge_t;
@@ -637,14 +647,16 @@ public:
 private:
   using summ_tbl_t = inter_analyzer_impl::summary_table<cfg_t, BU_Dom>;
   using call_tbl_t = inter_analyzer_impl::call_ctx_table<cfg_t, TD_Dom>;
-
+  using cg_ref_t = crab::cg::call_graph_ref<cg_t>;
+  
 public:
   using bu_abs_tr = inter_analyzer_impl::bu_summ_abs_transformer<summ_tbl_t>;
   using td_abs_tr =
       inter_analyzer_impl::td_summ_abs_transformer<summ_tbl_t, call_tbl_t>;
   using bu_analyzer = analyzer_internal_impl::fwd_analyzer<cfg_t, bu_abs_tr>;
   using td_analyzer = analyzer_internal_impl::fwd_analyzer<cfg_t, td_abs_tr>;
-  using summary_t = typename summ_tbl_t::summary_t;
+  using summary_t = typename inter_analyzer_api<CallGraph,TD_Dom,BU_Dom>::summary_t;
+  
   // for checkers
   using abs_dom_t = TD_Dom;
   using abs_tr_t = td_abs_tr;
@@ -653,7 +665,7 @@ private:
   using td_analyzer_ptr = std::unique_ptr<td_analyzer>;
   using invariant_map_t = std::unordered_map<std::size_t, td_analyzer_ptr>;
 
-  CallGraph m_cg;
+  CallGraph &m_cg;
   // These two used to call make_top() and make_bottom() since we
   // cannot assume that TD_Dom and BU_Dom have default constructors.
   TD_Dom m_td_top;
@@ -682,7 +694,7 @@ private:
   inline BU_Dom make_bu_top() const { return m_bu_top.make_top(); }
 
 public:
-  bottom_up_inter_analyzer(CallGraph cg,
+  bottom_up_inter_analyzer(CallGraph &cg,
                            // Top value
                            TD_Dom td_top,
                            // Top value
@@ -723,7 +735,7 @@ public:
    *   component. In general, the callgraph might have more than one
    *   entry point and an entry SCC can have multiple components.
    **/
-  void run(TD_Dom init) {
+  void run(TD_Dom init) override {
 
     CRAB_VERBOSE_IF(1, get_msg_stream()
                            << "Started inter-procedural analysis\n";);
@@ -775,7 +787,7 @@ public:
 
     // -- General case
     std::vector<cg_node_t> rev_order;
-    graph_algo::scc_graph<CallGraph> Scc_g(m_cg);
+    graph_algo::scc_graph<cg_ref_t> Scc_g(m_cg);
     graph_algo::rev_topo_sort(Scc_g, rev_order);
 
     CRAB_VERBOSE_IF(1, get_msg_stream() << "== Bottom-up phase ...\n";);
@@ -893,11 +905,11 @@ public:
   }
 
   //! return the analyzed call graph
-  CallGraph &get_call_graph() { return m_cg; }
+  CallGraph &get_call_graph() override { return m_cg; }
 
   //! Return the invariants that hold at the entry of b in cfg
   TD_Dom get_pre(const cfg_t &cfg,
-                 const typename cfg_t::basic_block_label_t &b) const {
+                 const typename cfg_t::basic_block_label_t &b) const override {
     assert(cfg.has_func_decl());
     auto fdecl = cfg.get_func_decl();
     auto const it = m_inv_map.find(crab::cfg::cfg_hasher<cfg_t>::hash(fdecl));
@@ -910,7 +922,7 @@ public:
 
   //! Return the invariants that hold at the exit of b in cfg
   TD_Dom get_post(const cfg_t &cfg,
-                  const typename cfg_t::basic_block_label_t &b) const {
+                  const typename cfg_t::basic_block_label_t &b) const override {
     assert(cfg.has_func_decl());
     auto fdecl = cfg.get_func_decl();
     auto const it = m_inv_map.find(crab::cfg::cfg_hasher<cfg_t>::hash(fdecl));
@@ -922,7 +934,7 @@ public:
   }
 
   // clear all the analysis' state
-  void clear() {
+  void clear() override {
     m_inv_map.clear();
     m_summ_tbl.clear();
     m_call_tbl.clear();
@@ -931,31 +943,27 @@ public:
     m_bu_top.set_to_top();
   }
 
-  //! Propagate inv through statements
+  summary_t get_summary(const cfg_t &cfg) const override {
+    // TODO: caching
+
+    // We convert from our internal representation of a summary to the
+    // summary representation exposed by inter_analysis_api
+    summary_t summary(cfg.get_func_decl());
+    auto fdecl = cfg.get_func_decl();
+    if (m_summ_tbl.has_summary(fdecl)) {
+      auto _summary =  m_summ_tbl.get(fdecl);
+      // The summary is context-insensitive. This means that the
+      // precondition is top.
+      summary.add(_summary.make_top(), _summary.get_sum());
+    }
+    return summary;
+  }
+  
+  // /*DEPRECATED*/ Propagate inv through statements: 
   abs_tr_t &get_abs_transformer() {
     assert(m_abs_tr);
     return *m_abs_tr;
-  }
-
-  //! Return true if there is a summary for a function
-  bool has_summary(const cfg_t &cfg) const {
-    assert(cfg.has_func_decl());
-    auto fdecl = cfg.get_func_decl();
-    return m_summ_tbl.has_summary(fdecl);
-  }
-
-  //! Return the summary for a function
-  summary_t get_summary(const cfg_t &cfg) const {
-    assert(has_summary(cfg));
-    assert(cfg.has_func_decl());
-
-    auto fdecl = cfg.get_func_decl();
-    if (m_summ_tbl.has_summary(fdecl)) {
-      return m_summ_tbl.get(fdecl);
-    } else {
-      CRAB_ERROR("Summary not found for ", cfg.has_func_decl());
-    }
-  }
+  } 
 };
 
 } // namespace analyzer

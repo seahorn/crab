@@ -12,6 +12,60 @@ using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 using namespace crab::cg;
+/*
+foo(x) {
+  y = x+1;
+  z = y+2;
+  return z;
+}
+
+rec1(s) {
+  r = s - 1;
+  t = rec2(r)
+  return t;
+}
+
+rec2(s) {
+  a = 10;
+  r = s - 1;
+  t = rec1(r)
+  assert(a >= 5);
+  return t;
+}
+
+bar(a) {
+   x = a;
+   w = 5;
+   y = foo(x);
+   assert(y>=6);
+   assert(y<=17);
+   return y;
+}
+
+main(){
+   x=3;
+   x3=4;
+   x4=5;
+   x5=6;
+   y = bar(x);
+   assert(y == 6);
+   u = rec1(y);
+   z = y +2;
+   y3 = bar(x);
+   assert(y3 == 6);
+   z3 = y3 +z;
+   w = foo(z3)
+   assert(w == 17);
+   y4 = bar(x3);
+   assert(y4 == 7);
+   y5 = bar(x4);
+   assert(y5 == 8);
+   y6 = bar(x5);
+   assert(y6 == 9);
+   res = w + y4 + y5 + y6 ;
+   assert(res ==41);
+}
+ */
 
 z_cfg_t *foo(variable_factory_t &vfac) {
   // Defining program variables
@@ -170,8 +224,7 @@ z_cfg_t *m(variable_factory_t &vfac) {
 }
 
 using callgraph_t = call_graph<z_cfg_ref_t>;
-using callgraph_ref_t = call_graph_ref<callgraph_t>;
-using inter_params_t = top_down_inter_analyzer_parameters<callgraph_ref_t>;
+using inter_params_t = top_down_inter_analyzer_parameters<callgraph_t>;
 
 int main(int argc, char **argv) {
   bool stats_enabled = false;
@@ -202,14 +255,14 @@ int main(int argc, char **argv) {
     // it should prove all assertions
     /////////////////////////////////////////
     inter_params_t params1;
-    td_inter_run(&cg, init, params1, true, false, false);
+    td_inter_run(cg, init, params1, true, false, false);
     /////////////////////////////////////////
     // it should prove all assertions (see above comments)
     /////////////////////////////////////////
     inter_params_t params2;
     params2.max_call_contexts = 3;
     params2.checker_verbosity = 1;
-    td_inter_run(&cg, init, params2, true, false, false);
+    td_inter_run(cg, init, params2, true, false, false);
   }
   {
     z_sdbm_domain_t init;
@@ -220,14 +273,14 @@ int main(int argc, char **argv) {
     // it should prove all assertions
     /////////////////////////////////////////
     inter_params_t params1;
-    td_inter_run(&cg, init, params1, true, false, false);
+    td_inter_run(cg, init, params1, true, false, false);
     /////////////////////////////////////////
     // it should prove all assertions (see above comments)
     /////////////////////////////////////////
     inter_params_t params2;
     params2.max_call_contexts = 3;
     params2.checker_verbosity = 1;
-    td_inter_run(&cg, init, params2, true, false, false);
+    td_inter_run(cg, init, params2, true, false, false);
   }
 #ifdef HAVE_APRON
   {
@@ -239,14 +292,14 @@ int main(int argc, char **argv) {
     // it should prove all assertions
     /////////////////////////////////////////
     inter_params_t params1;
-    td_inter_run(&cg, init, params1, true, false, false);
+    td_inter_run(cg, init, params1, true, false, false);
     /////////////////////////////////////////
     // it should prove all assertions (see above comments)
     /////////////////////////////////////////
     inter_params_t params2;
     params2.max_call_contexts = 3;
     params2.checker_verbosity = 1;
-    td_inter_run(&cg, init, params2, true, false, false);
+    td_inter_run(cg, init, params2, true, false, false);
   }
 #elif defined(HAVE_ELINA)
   {
@@ -258,14 +311,14 @@ int main(int argc, char **argv) {
     // it should prove all assertions
     /////////////////////////////////////////
     inter_params_t params1;
-    td_inter_run(&cg, init, params1, true, false, false);
+    td_inter_run(cg, init, params1, true, false, false);
     /////////////////////////////////////////
     // it should prove all assertions (see above comments)    
     /////////////////////////////////////////
     inter_params_t params2;
     params2.max_call_contexts = 3;
     params2.checker_verbosity = 1;
-    td_inter_run(&cg, init, params2, true, false, false);
+    td_inter_run(cg, init, params2, true, false, false);
   }
 #endif
 

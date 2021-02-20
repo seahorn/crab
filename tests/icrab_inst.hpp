@@ -6,12 +6,12 @@
 
 #define Z_BU_RUNNER(BUDOM, TDDOM)                                              \
   template void z_bu_inter_run_and_check<BUDOM, TDDOM>(                        \
-      crab::cg_impl::z_cg_t *, BUDOM, TDDOM, bool, unsigned, unsigned,         \
+      crab::cg_impl::z_cg_t &, BUDOM, TDDOM, bool, unsigned, unsigned,         \
       unsigned, bool);
 
 #define Z_TD_RUNNER(DOM)                                                       \
   template void z_td_inter_run_and_check<DOM>(                                 \
-      crab::cg_impl::z_cg_t *, DOM, td_inter_params_t, bool, bool, bool);
+      crab::cg_impl::z_cg_t &, DOM, td_inter_params_t, bool, bool, bool);
 
 #ifdef USE_GENERIC_WRAPPER
 Z_BU_RUNNER(crab::domain_impl::z_abs_domain_t,

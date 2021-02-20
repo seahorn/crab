@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  using inter_params_t = top_down_inter_analyzer_parameters<z_cg_ref_t>;
+  using inter_params_t = top_down_inter_analyzer_parameters<z_cg_t>;
   variable_factory_t vfac;
   // Defining program variables
   z_var x(vfac["x"], crab::INT_TYPE, 32);
@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
                << init.domain_name() << "\n";
   z_cg_t cg(cfgs);
   inter_params_t params;
-  td_inter_run(&cg, init, params, true, false, false);
+  td_inter_run(cg, init, params, true, false, false);
 
   delete t1;
   delete t2;

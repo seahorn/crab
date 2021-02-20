@@ -160,16 +160,15 @@ int main(int argc, char **argv) {
     z_dbm_domain_t bu_top;
     z_interval_domain_t td_top;
     bu_inter_run<z_dbm_domain_t, z_interval_domain_t>(
-        &*cg, bu_top, td_top, false, 2, 2, 20, stats_enabled);
+        *cg, bu_top, td_top, false, 2, 2, 20, stats_enabled);
   }
 
 #ifdef HAVE_APRON
-
   {
     z_oct_apron_domain_t bu_top;
     z_interval_domain_t td_top;
     bu_inter_run<z_oct_apron_domain_t, z_interval_domain_t>(
-        &*cg, bu_top, td_top, false, 2, 2, 20, stats_enabled);
+        *cg, bu_top, td_top, false, 2, 2, 20, stats_enabled);
   }
 #endif
 

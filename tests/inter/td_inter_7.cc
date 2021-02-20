@@ -76,8 +76,7 @@ z_cfg_t *_main(variable_factory_t &vfac) {
 }
 
 using callgraph_t = call_graph<z_cfg_ref_t>;
-using callgraph_ref_t = call_graph_ref<callgraph_t>;
-using inter_params_t = top_down_inter_analyzer_parameters<callgraph_ref_t>;
+using inter_params_t = top_down_inter_analyzer_parameters<callgraph_t>;
 
 int main(int argc, char **argv) {
   bool stats_enabled = false;
@@ -100,7 +99,7 @@ int main(int argc, char **argv) {
                  << init.domain_name() << "\n";
     inter_params_t params;
     params.analyze_recursive_functions = true;    
-    td_inter_run(&cg, init, params, true, true, false);
+    td_inter_run(cg, init, params, true, true, false);
   }
   
   
