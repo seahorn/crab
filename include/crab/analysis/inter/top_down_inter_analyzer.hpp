@@ -8,8 +8,8 @@
  * change. However, it might run out of stack on very deep call graphs
  * so special care must be taken.
  *
- * **Important TODO**: the analysis assumes call-by-value semantics
- * for input variables. However, it does **not** currently ensure it
+ * **Important**: the analysis assumes call-by-value semantics for
+ * input variables. However, it does **not** currently ensures it
  * which can produce incorrect results. The problematic situation
  * arises when an input variable is modified in the callee and while
  * propagating the callee's results with its continuation at the
@@ -604,6 +604,25 @@ public:
     }
   }
 
+  bool find_call_stack(const callgraph_node_t &node) const {
+    auto it = std::find(m_call_stack.begin(), m_call_stack.end(),
+			node);
+    return it!= m_call_stack.end();
+  }
+
+  void print_call_stack() const {
+    crab::outs() << "callstack depth=" << m_call_stack.size()
+		 << " content=[";
+    for(unsigned i=0, sz=m_call_stack.size(); i<sz;) {
+      crab::outs() << m_call_stack[i];
+      ++i;
+      if (i < sz) {
+	crab::outs() << ",";
+      }
+    }
+    crab::outs() << "]\n";
+  }
+  
   std::vector<callgraph_node_t> &get_call_stack() { return m_call_stack; }
 
   const liveness_map_t *get_live_map() const { return m_live_map; }
@@ -732,6 +751,8 @@ analyze_function(CallGraphNode cg_node,
                          << "++ Analyzing function  "
                          << cfg.get_func_decl().get_func_name() << "\n";);
 
+  CRAB_LOG("inter-callstack", ctx.print_call_stack());
+	   
   if (ctx.analyze_recursive_functions() &&
       ctx.get_widening_set().count(cg_node) > 0) {
     // ### Recursive function ###
@@ -744,6 +765,8 @@ analyze_function(CallGraphNode cg_node,
       func_fixpoint_map_entry<typename IntraCallSemAnalyzer::abs_dom_t>
           fixpoint_start(entry, exit);
       func_fixpoint_table.insert({cg_node, fixpoint_start});
+      // increment the counter only the first time
+      crab::CrabStats::count("Interprocedural.num_recursive_callsites");	  
     } else {
       entry = it->second.get_entry();
     }
@@ -1199,8 +1222,6 @@ private:
 
   /* Analysis of a callsite */
   void analyze_callee(const callsite_t &cs, cg_node_t callee_cg_node) {
-    CRAB_LOG("inter", crab::outs() << "[INTER] " << cs << "\n";);
-
     // 1. Get CFG from the callee
     cfg_t callee_cfg = callee_cg_node.get_cfg();
 
@@ -1247,12 +1268,14 @@ private:
     auto it = m_ctx.get_calling_context_table().find(callee_cfg);
     if (it != m_ctx.get_calling_context_table().end()) {
       auto &call_contexts = it->second;
+      CRAB_LOG("inter-subsume",
+	  crab::outs() << "[INTER] Subsumption check at " << cs << "\n";);      
       CRAB_LOG("inter-subsume", if (call_contexts.empty()) {
-        crab::outs() << "There is no call contexts stored for " << cs << "\n";
-      });
+	  crab::outs() << "[INTER] There is no call contexts stored.\n";
+	});
       for (unsigned i = 0, e = call_contexts.size(); i < e; ++i) {
         CRAB_LOG("inter-subsume",
-                 crab::outs() << "[INTER] Checking at " << cs << " if\n"
+                 crab::outs() << "Checking if\n"
                               << callee_entry << "\nis subsumed by summary "
                               << i << "\n";
                  call_contexts[i]->write(crab::outs()); crab::outs() << "\n";);
@@ -1266,9 +1289,7 @@ private:
             (!recursive_call_being_analyzed && m_ctx.exact_summary_reuse());
         if (call_contexts[i]->is_subsumed(callee_entry,
                                           use_exact_subsumption)) {
-          CRAB_LOG("inter-subsume",
-                   crab::outs() << "[INTER] Reusing call context at \"" << cs
-                                << "\" with entry=" << callee_entry << "\n";);
+          CRAB_LOG("inter-subsume", crab::outs() << "succeed!\n";);
           CRAB_VERBOSE_IF(1, get_msg_stream()
                                  << "++ Skip redundant analysis of function  "
                                  << cs.get_func_name() << "\n";);
@@ -1280,6 +1301,9 @@ private:
           CRAB_LOG("inter-subsume", crab::outs() << "failed!\n";);
         }
       }
+    } else {
+      CRAB_LOG("inter-subsume", 
+	       crab::outs() << "[INTER] There is no call contexts stored.\n";);
     }
     crab::CrabStats::stop(TimerInterCheckCache);
 
@@ -1297,7 +1321,7 @@ private:
       auto &func_fixpoint_table = m_ctx.get_func_fixpoint_table();
       auto it = func_fixpoint_table.find(callee_cg_node);
       if (it != func_fixpoint_table.end()) {
-        // ### Recursive function during fixpoint ###
+        // ### Precise analysis of recursive call ###
         // 4.a Replace recursive call with a pre-fixpoint.
         callee_exit = it->second.get_exit();
         abs_dom_t callee_init(callee_entry);
@@ -1308,132 +1332,189 @@ private:
                  << "[INTER] Replaced recursive call  \"" << cs
                  << "\" with pre-fixpoint=" << callee_exit << "\n"
                  << "Next analysis with entry=" << callee_entry << "\n");
+	assert(!callee_analysis);
       } else {
-        // 4.b Run intra analyzer
-        CRAB_LOG("inter", crab::outs() << "[INTER] Started \"";
-                 crab::outs()
-                 << cs << "\" with entry=" << callee_entry << "\n";);
+	if (/*!m_ctx.analyze_recursive_functions() &&*/ m_ctx.find_call_stack(callee_cg_node)) {
+	  // ### Imprecise analysis of recursive call ###
+	  // 4.b Replace recursive call with top.
+	  //
+	  // This is reachable also during checking phase. E.g. with
+	  // this code:
+	  //   foo { ... bar(); ... }
+	  //   bar { ... foo(); ... }
+	  // 
+	  // When the checker runs on bar we won't have a summary for
+	  // foo since its analysis is not completed yet.
+	  callee_exit.set_to_top();
+          crab::CrabStats::count("Interprocedural.num_recursive_callsites");
+	  CRAB_VERBOSE_IF(1, get_msg_stream()
+			  << "++ Skipped analysis of recursive callee \""
+			  << cs.get_func_name() << "\"\n";);
+	  assert(!callee_analysis);	  
+	} else {
+	  // ### Non-recursive call ###
+	  
+	  if (m_ctx.get_is_checking_phase()) {
+	    m_ctx.print_call_stack();
+	    CRAB_ERROR("in checking phase we should not analyze the callsite ", cs);
+	  }
+	  crab::CrabStats::count("Interprocedural.num_analyzed_callsites");
+	  
+	  // 4.c Run intra analyzer on the callee
+	  // 
+	  // The callee can be a recursive function but this call does
+	  // not produce a cycle yet so we can analyze it.
+	  
+	  abs_dom_t callee_init(callee_entry);
+	  this->set_abs_value(std::move(callee_init));
 
-        abs_dom_t callee_init(callee_entry);
-        this->set_abs_value(std::move(callee_init));
-        callee_analysis = top_down_inter_impl::analyze_function<
-            typename CallGraph::node_t, intra_analyzer_with_call_semantics_t>(
-            callee_cg_node, *this, 0);
+	  CRAB_LOG("inter", crab::outs() << "[INTER] Started \"";
+		   crab::outs()
+		   << cs << "\" with entry=" << callee_entry << "\n";);
 
-        // callee_analysis should be only null if the function is
-        // recursive and its fixpoint converges in one iteration which
-        // should only happen if the invariants are bottom.
-        if (callee_analysis && callee_cfg.has_exit()) {
-          callee_exit = callee_analysis->get_post(callee_cfg.exit());
-          CRAB_LOG("inter", crab::outs()
-                                << "[INTER] Finished \"" << cs
-                                << "\" with exit=" << callee_exit << "\n";);
+	  m_ctx.get_call_stack().push_back(callee_cg_node);
+	  callee_analysis = top_down_inter_impl::analyze_function<
+	    typename CallGraph::node_t, intra_analyzer_with_call_semantics_t>(
+		   callee_cg_node, *this, 0);
+	  m_ctx.get_call_stack().pop_back();
 
-        } else {
-          // if the callee has not exit is because it's a noreturn function.
-          callee_exit.set_to_bottom();
-          CRAB_LOG("inter", crab::outs()
-                                << "[INTER] Finished \"" << cs
-                                << "\" with exit=" << callee_exit
-                                << ": the callee has no exit block.\n";);
-        }
-
-        if (callee_analysis && recursive_call_being_analyzed) {
-          // After the analysis of the recursive function converges,
-          // we cannot store the summary with the initial abstract
-          // state before the fixpoint started. Instead, we need to
-          // update "callee_entry" by taking the invariant at the
-          // entry of the function after the fixpoint converged.
-          callee_entry = callee_analysis->get_pre(callee_cfg.entry());
-        }
-
-        CRAB_LOG("inter2", if (callee_analysis) {
-          callee_analysis->write(crab::outs());
-          crab::outs() << "\n";
-        });
-      }
-
-      // project callee_exit onto function input-output parameters
+	  // callee_analysis should be only null if the function is
+	  // recursive and its fixpoint converges in one iteration which
+	  // should only happen if the invariants are bottom.
+	  if (callee_analysis && callee_cfg.has_exit()) {
+	    callee_exit = callee_analysis->get_post(callee_cfg.exit());
+	    CRAB_LOG("inter", crab::outs()
+		     << "[INTER] Finished \"" << cs
+		     << "\" with exit=" << callee_exit << "\n";);
+	    
+	  } else {
+	    // if the callee has not exit is because it's a noreturn function.
+	    callee_exit.set_to_bottom();
+	    CRAB_LOG("inter", crab::outs()
+		     << "[INTER] Finished \"" << cs
+		     << "\" with exit=" << callee_exit
+		     << ": the callee has no exit block.\n";);
+	  }
+	  
+	  if (callee_analysis && recursive_call_being_analyzed) {
+	    // After the analysis of the recursive function converges,
+	    // We cannot store the summary with the initial abstract
+	    // state before the fixpoint started. Instead, we need to
+	    // update "callee_entry" by taking the invariant at the
+	    // entry of the function after the fixpoint converged.
+	    callee_entry = callee_analysis->get_pre(callee_cfg.entry());
+	  }
+	  
+	  CRAB_LOG("inter2", if (callee_analysis) {
+	      callee_analysis->write(crab::outs());
+	      crab::outs() << "\n";
+	    });
+	}
+      }  // end analysis of callee
+      
       callee_exit.project(callee_exit_vars);
 
-      if (callee_analysis // &&
-          // (!m_ctx.analyze_recursive_functions() ||
-          //  !m_ctx.included_nested_wto_component(callee_cg_node) ||
-          //  m_ctx.get_widening_set().count(callee_cg_node) > 0)
-	  ) {
+      auto has_been_stabilized = [this](const typename CallGraph::node_t &node) {
+	  if (!m_ctx.analyze_recursive_functions()) {
+	    return true;
+	  }
+	  
+	  // node is being currently processed.
+	  auto &func_fixpoint_table = m_ctx.get_func_fixpoint_table();
+	  if (func_fixpoint_table.find(node) != func_fixpoint_table.end()) {
+	    return false;
+	  }
 
-        /***
-         *** Either the callee is not in any nested WTO component or
-         *** the callee is a widening point and it has been already
-         *** stabilized. In those cases, we store summaries. Note that
-         *** the callee can be a widening point but being part of a
-         *** non-stabilized-yet WTO component. That's ok.
-	 ***
-	 *** JN: I think we can store summaries even for components
-	 ***     which haven't been stabilized.
-         ***/
-
-        // 5. Add the new calling context.
-        crab::CrabStats::resume(TimerInterStoreSum);
-        invariant_map_t pre_invariants, post_invariants;
-        calling_context_ptr cc(new calling_context_t(
+	  // If node is part of a WTO nesting then we need to check
+	  // that the head of the WTO nesting has been stabilized.
+	  boost::optional<typename global_context_t::wto_cg_nesting_t> nesting_opt;
+	  for (auto &kv: m_ctx.get_wto_cg_map()) {
+	    nesting_opt = kv.second->nesting(node);
+	    if (nesting_opt) {
+	      break;
+	    }
+	  }
+	  if (!nesting_opt) {
+	    return true;
+	  }
+	  
+	  for (auto it=(*nesting_opt).begin(), et=(*nesting_opt).end() ; it!=et; ++it) {
+	    if (func_fixpoint_table.find(*it) != func_fixpoint_table.end()) {
+	      return false;
+	    }
+	  }
+	  return true;
+      };
+      
+      if (callee_analysis && has_been_stabilized(callee_cg_node)) {
+	// 5. Add the new calling context.
+	crab::CrabStats::resume(TimerInterStoreSum);
+	invariant_map_t pre_invariants, post_invariants;
+	calling_context_ptr cc(new calling_context_t(
             fdecl, callee_entry, callee_exit,
             false /*ignore pre_invariants, post_invariants*/,
             std::move(pre_invariants), std::move(post_invariants)));
 
-        add_calling_context(callee_cfg, std::move(cc));
-        crab::CrabStats::stop(TimerInterStoreSum);
-        CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Stored summary for "
-                                            << fdecl.get_func_name() << "\n";);
+	add_calling_context(callee_cfg, std::move(cc));
+	crab::CrabStats::stop(TimerInterStoreSum);
+	CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Stored summary for "
+			<< fdecl.get_func_name() << "\n";);
 	CRAB_LOG("inter",
 		 crab::outs() << fdecl << "\n"
-		 << "=== Sumary input  ===\n" << callee_entry << "\n"
-		 << "=== Sumary output ===\n" << callee_exit << "\n"
+		 << "=== Preconditions  ===\n" << callee_entry << "\n"
+		 << "=== Postconditions ===\n" << callee_exit << "\n"
 		 << "=====================\n";);
       }
 
       if (callee_analysis &&
-          (!m_ctx.analyze_recursive_functions() ||
-           !m_ctx.included_nested_wto_component(callee_cg_node))) {
+	  !m_ctx.included_nested_wto_component(callee_cg_node)) {
+      
+	/***
+	 *** We delay running the checker until the outermost nested
+	 *** WTO component stabilizes.
+	 ***/
+      
+	// 6. Check assertions within the whole WTO component.
+	auto check = [this](cg_node_t node) {		       
+		       if (has_analyzer(node)) {
+			 // make sure that the analysis of the
+			 // function has been completed
+			 if (m_ctx.find_call_stack(node)){
+			   return;
+			 }
+			 CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Running checker on "
+					 << node.name() << "\n";);
+			 auto &analysis = get_analyzer(node);
+			 check_function(node, analysis, m_ctx);
+			 CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Finished checker on "
+					 << node.name() << "\n";);
+		       }
+		     };
+	
+	/// Run the checker on the callee
+	check(callee_cg_node);
+	
+	if (m_ctx.get_widening_set().count(callee_cg_node) > 0) {
+	  /// Run the checker recursively on all the callee's nested
+	  /// components.
+	  CRAB_VERBOSE_IF(1, get_msg_stream()
+			  << "++ Running RECURSIVELY the checker starting from "
+			  << callee_cg_node << " on all WTO nested components.\n";);
+	  m_ctx.apply_fn_to_nested_wto_component(callee_cg_node, check);
+	}
 
-        /***
-         *** We delay running the checker until the outermost nested
-         *** WTO component stabilizes.
-         ***/
-
-        // 6. Check assertions within the whole WTO component.
-        auto check = [this](cg_node_t node) {
-          if (has_analyzer(node)) {
-            CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Running checker on "
-                                                << node.name() << "\n";);
-            auto &analysis = get_analyzer(node);
-            check_function(node, analysis, m_ctx);
-          }
-        };
-
-        /// Run the checker on the callee
-        check(callee_cg_node);
-
-        if (m_ctx.get_widening_set().count(callee_cg_node) > 0) {
-          /// Run the checker recursively on all the callee's nested
-          /// components.
-          m_ctx.apply_fn_to_nested_wto_component(callee_cg_node, check);
-        }
+	/// Free the callee
+	// 
+	// If the callee is not part of any wto nested component we
+	// can free its memory.  Otherwise, we cannot.
+	// JN: I think if we store summaries for all nested components
+	// then we might free their analyses.
+	CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Free analysis of "
+			<< callee_cg_node.name() << "\n";);
+	callee_analysis->clear();
+	// TODO: free the analysis' states of all nested components.
       }
-
-      if (callee_analysis &&
-          !m_ctx.included_nested_wto_component(callee_cg_node)) {
-        // If the callee is not part of any wto nested component we can free its
-        // analysis. Otherwise, we cannot.
-
-        // JN: I think if we store summaries for all nested components
-        // then we might free their analyses.
-        CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Free analysis of "
-                                            << callee_cg_node.name() << "\n";);
-        callee_analysis->clear();
-        // TODO: free the analysis' states of all nested components.
-      }
-    }
+    } // end call_context_already_seen
 
     pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
@@ -1503,45 +1584,16 @@ public:
       analyze_callee(cs, callee);
       --m_depth;
     };
-
-    if (!m_ctx.analyze_recursive_functions()) {
-      auto &call_stack = m_ctx.get_call_stack();
-      auto it = std::find(call_stack.begin(), call_stack.end(), callee_cg_node);
-      if (it == call_stack.end()) {
-        call_stack.push_back(callee_cg_node);
-        analyze_callee_with_depth_check(callee_cg_node);
-        call_stack.pop_back();
-      } else {
-        // Break the cycle by ignoring the effect of the recursive call
-        cfg_t callee_cfg = callee_cg_node.get_cfg();
-        assert(callee_cfg.has_func_decl());
-        const fdecl_t &fdecl = callee_cfg.get_func_decl();
-        AbsDom caller_dom(this->get_abs_value());
-        if (!m_ctx.get_is_checking_phase()) {
-          crab::CrabStats::count("Interprocedural.num_recursive_callsites");
-        }
-        CRAB_VERBOSE_IF(1, get_msg_stream()
-                               << "++ Skipped analysis of recursive callee \""
-                               << cs.get_func_name() << "\"\n";);
-        AbsDom callee_exit = make_top();
-        std::vector<variable_t> callee_exit_vars;
-        get_fdecl_parameters(fdecl, callee_exit_vars);
-        AbsDom caller_cont_dom = get_caller_continuation(
-            cs, fdecl, caller_dom, callee_exit_vars, callee_exit);
-        CRAB_LOG("inter", crab::outs() << "[INTER] Continuation for \"" << cs
-                                       << "\"=" << caller_cont_dom << "\n";);
-        this->set_abs_value(std::move(caller_cont_dom));
-      }
+    
+    if (!m_ctx.analyze_recursive_functions() ||
+	m_ctx.get_widening_set().count(callee_cg_node) <= 0) {
+      analyze_callee_with_depth_check(callee_cg_node);
     } else {
-      // If we support precise analysis of recursive function then we
-      // just go inside the callee.
-      if (m_ctx.get_widening_set().count(callee_cg_node) <= 0) {
-        analyze_callee_with_depth_check(callee_cg_node);
-      } else {
-        // TODO: use m_depth to break unexpected infinite loops inside recursive
-        // functions
-        analyze_callee(cs, callee_cg_node);
-      }
+      // This is recursive call.
+      // 
+      // TODO: use m_depth to break unexpected infinite loops inside
+      // recursive functions
+      analyze_callee(cs, callee_cg_node);
     }
   }
 

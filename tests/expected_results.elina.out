@@ -3588,29 +3588,29 @@ exit:
 
 
 Running top-down inter-procedural analysis with SparseDBM
-17  Number of total safe checks
+16  Number of total safe checks
  0  Number of total error checks
  0  Number of total warning checks
  0  Number of total unreachable checks
-17  Number of total safe checks
+16  Number of total safe checks
  0  Number of total error checks
  0  Number of total warning checks
  0  Number of total unreachable checks
 Running top-down inter-procedural analysis with SplitDBM
-17  Number of total safe checks
+16  Number of total safe checks
  0  Number of total error checks
  0  Number of total warning checks
  0  Number of total unreachable checks
-17  Number of total safe checks
+16  Number of total safe checks
  0  Number of total error checks
  0  Number of total warning checks
  0  Number of total unreachable checks
 Running top-down inter-procedural analysis with ElinaOctagon
-17  Number of total safe checks
+16  Number of total safe checks
  0  Number of total error checks
  0  Number of total warning checks
  0  Number of total unreachable checks
-17  Number of total safe checks
+16  Number of total safe checks
  0  Number of total error checks
  0  Number of total warning checks
  0  Number of total unreachable checks
