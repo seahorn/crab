@@ -71,10 +71,10 @@ namespace top_down_inter_impl {
 
 /**
  *  This class represents the calling context of a function F. A
- *  calling context C consists of a summary (input-output pair of
- *  abstract states) that summarizes the analysis of F for a
- *  particular callsite. The calling context can also store optionally
- *  all the invariants inferred during the analysis of F.
+ *  calling context C consists of a summary (pair of pre/post
+ *  conditions) that summarizes the analysis of F for a particular
+ *  callsite. The calling context can also store optionally all the
+ *  invariants inferred during the analysis of F.
  *
  *  Whether we keep the invariants for all F's block is an analysis
  *  parameter. For some clients, this information might be useful
@@ -101,18 +101,19 @@ private:
 
   // -- the summary: this is an abstraction of the call context
 
-  // A summary is a pair (I,O) of abstract states. I's variables only
-  // contains the input parameters of the function. I is used to check
-  // if a summary can be reused. O's variables should contain both
-  // input and output parameters of a function. We also include the
-  // inputs in O's variables so that the underlying abstract domain
-  // can keep track of relationships between input and
-  // outputs. Therefore, O is the actual input-output relationship
-  // that summarizes the behavior of the function.
+  // A summary is a pair (pre, post) of abstract states. pre's
+  // variables only contains the input parameters of the function. pre
+  // is used to check if a summary can be reused. post's variables
+  // should contain both input and output parameters of a function. We
+  // also include the inputs in post's variables so that the
+  // underlying abstract domain can keep track of relationships
+  // between input and outputs. Therefore, post is the actual
+  // input-output relationship that summarizes the behavior of the
+  // function.
 
   const fdecl_t &m_fdecl;
-  abs_dom_t m_input;  // must be projected on m_fdecl inputs
-  abs_dom_t m_output; // must be projected on m_fdecl inputs and outputs
+  abs_dom_t m_pre_summary;  // must be projected on m_fdecl inputs
+  abs_dom_t m_post_summary; // must be projected on m_fdecl inputs and outputs
 
   // invariants that hold at the entry of each function's block
   invariant_map_t m_pre_invariants;
@@ -126,7 +127,9 @@ private:
   // context-sensitive invariants but very expensive.
   bool m_keep_invariants;
 
-  inline abs_dom_t make_bottom() const { return m_input.make_bottom(); }
+  inline abs_dom_t make_bottom() const {
+    return m_pre_summary.make_bottom();
+  }
 
   static invariant_map_t join(invariant_map_t &m1, invariant_map_t &m2) {
     invariant_map_t out;
@@ -143,25 +146,28 @@ private:
 
   // Private constructor used to join calling contexts while keeping
   // all invariants
-  calling_context(const fdecl_t &fdecl, abs_dom_t input, abs_dom_t output,
+  calling_context(const fdecl_t &fdecl,
+		  abs_dom_t pre_summary, abs_dom_t post_summary,
                   invariant_map_t &&pre_invariants,
                   invariant_map_t &&post_invariants)
-      : m_fdecl(fdecl), m_input(input), m_output(output),
+      : m_fdecl(fdecl), m_pre_summary(pre_summary), m_post_summary(post_summary),
         m_pre_invariants(std::move(pre_invariants)),
         m_post_invariants(std::move(post_invariants)), m_exact(false),
         m_keep_invariants(true) {}
 
   // Private constructor used to join calling contexts but without
   // keeping invariants
-  calling_context(const fdecl_t &fdecl, abs_dom_t input, abs_dom_t output)
-      : m_fdecl(fdecl), m_input(input), m_output(output), m_exact(false),
+  calling_context(const fdecl_t &fdecl, abs_dom_t pre_summary,
+		  abs_dom_t post_summary)
+      : m_fdecl(fdecl), m_pre_summary(pre_summary),
+	m_post_summary(post_summary), m_exact(false),
         m_keep_invariants(false) {}
 
 public:
-  calling_context(const fdecl_t &fdecl, abs_dom_t input, abs_dom_t output,
+  calling_context(const fdecl_t &fdecl, abs_dom_t pre_summary, abs_dom_t post_summary,
                   bool keep_invariants, invariant_map_t &&pre_invariants,
                   invariant_map_t &&post_invariants)
-      : m_fdecl(fdecl), m_input(input), m_output(output),
+      : m_fdecl(fdecl), m_pre_summary(pre_summary), m_post_summary(post_summary),
         m_pre_invariants(std::move(pre_invariants)),
         m_post_invariants(std::move(post_invariants)), m_exact(true),
         m_keep_invariants(keep_invariants) {
@@ -178,19 +184,17 @@ public:
 
   const fdecl_t &get_fdecl() const { return m_fdecl; }
 
-  // return I from the pair (I,O)
-  const abs_dom_t &get_input() const { return m_input; }
+  const abs_dom_t &get_pre_summary() const { return m_pre_summary; }
 
-  // return O from the pair (I,O)
-  const abs_dom_t &get_output() const { return m_output; }
+  const abs_dom_t &get_post_summary() const { return m_post_summary; }
 
-  // Check if d entails the summary input
+  // Check if d entails the summary precondition
   bool is_subsumed(const abs_dom_t &d, bool exact_check) const {
-    const abs_dom_t &input = get_input();
+    const abs_dom_t &pre_summary = get_pre_summary();
     if (m_exact && exact_check) {
-      return (d <= input && input <= d);
+      return (d <= pre_summary && pre_summary <= d);
     } else {
-      return (d <= input);
+      return (d <= pre_summary);
     }
   }
 
@@ -203,11 +207,13 @@ public:
 
     if (!m_keep_invariants) {
       return std::unique_ptr<calling_context_t>(new calling_context_t(
-          m_fdecl, m_input | other.get_input(), m_output | other.get_output()));
+          m_fdecl, m_pre_summary | other.get_pre_summary(),
+	  m_post_summary | other.get_post_summary()));
 
     } else {
       return std::unique_ptr<calling_context_t>(new calling_context_t(
-          m_fdecl, m_input | other.get_input(), m_output | other.get_output(),
+          m_fdecl, m_pre_summary | other.get_pre_summary(),
+	  m_post_summary | other.get_post_summary(),
           std::move(join(m_pre_invariants, other.m_pre_invariants)),
           std::move(join(m_post_invariants, other.m_post_invariants))));
     }
@@ -244,10 +250,11 @@ public:
   }
 
   void write(crab_os &o) const {
-    const abs_dom_t &input = get_input();
-    const abs_dom_t &output = get_output();
+    const abs_dom_t &pre_summary = get_pre_summary();
+    const abs_dom_t &post_summary = get_post_summary();
     o << "SUMMARY"
-      << "\n\tI=" << input << "\n\tO=" << output << "\n";
+      << "\n\tPrecondition=" << pre_summary
+      << "\n\tPostcondition=" << post_summary << "\n";
   }
 
   // for gdb debugging
@@ -333,17 +340,17 @@ public:
       // -- remove redundant contexts
       assert(!ccs.empty());
       calling_context_ptr_deque new_ccs;
-      const abs_dom_t &joined_input = ccs.front()->get_input();
-      const abs_dom_t &joined_output = ccs.front()->get_output();
+      const abs_dom_t &joined_pre_summary = ccs.front()->get_pre_summary();
+      const abs_dom_t &joined_post_summary = ccs.front()->get_post_summary();
       auto it = ccs.begin();
       // the first one is the joined calling context so we keep it.
       new_ccs.push_back(std::move(*it));
       ++it;
       for (auto et = ccs.end(); it != et; ++it) {
-        // discard any input-output pair that is subsumed by the joined
+        // discard any pre/post pair that is subsumed by the joined
         // calling context
-        if (!((*it)->get_input() <= joined_input &&
-              (*it)->get_output() <= joined_output)) {
+        if (!((*it)->get_pre_summary() <= joined_pre_summary &&
+              (*it)->get_post_summary() <= joined_post_summary)) {
           new_ccs.push_back(std::move(*it));
         }
       }
@@ -1294,7 +1301,7 @@ private:
                                  << "++ Skip redundant analysis of function  "
                                  << cs.get_func_name() << "\n";);
 
-          callee_exit = call_contexts[i]->get_output();
+          callee_exit = call_contexts[i]->get_post_summary();
           call_context_already_seen = true;
           break;
         } else {
@@ -1853,7 +1860,7 @@ public:
     if (it != m_ctx.get_calling_context_table().end()) {
       auto &ccs = it->second;
       for (auto &cc:  ccs) {
-	summary.add(cc->get_input(), cc->get_output());
+	summary.add(cc->get_pre_summary(), cc->get_post_summary());
       }
     }
     return summary;
