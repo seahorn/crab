@@ -2544,12 +2544,85 @@ public:
     CRAB_ERROR("region_domain::expand not implemented");
   }
 
+  // The code might be simpler and more efficient if m_var_map is a
+  // std::map.  However, this would slow down lookups.  The
+  // expectation is that this operation should not been called often
+  // since the region domain is usually at the root of the hierarchy
+  // of domains.
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
     crab::CrabStats::count(domain_name() + ".count.rename");
     crab::ScopedCrabStats __st__(domain_name() + ".rename");
 
-    CRAB_ERROR("region_domain::rename not implemented");
+    if (is_bottom() || is_top()) {
+      return;
+    }
+    
+    if (from.size() != to.size()) {
+      CRAB_ERROR(domain_name(), "::rename different lengths");
+    }
+
+    //
+    // rename m_var_map and m_rev_var_map
+    // 
+
+    std::vector<std::pair<variable_t, variable_t>> zipped_vars;
+    for (unsigned i=0,sz=from.size();i<sz;++i) {
+      zipped_vars.push_back({from[i],to[i]});
+    }
+
+    auto compare_zipped_pair =
+      [](const std::pair<variable_t, variable_t> &p1,
+	 const std::pair<variable_t, variable_t> &p2) {
+	return p1.first < p2.first;
+      };
+    
+
+    std::sort(zipped_vars.begin(), zipped_vars.end(), compare_zipped_pair);
+
+    // Needed because we cannot insert/delete while iterating over
+    // m_var_map
+    std::vector<variable_t> var_map_to_remove;
+    std::vector<std::pair<variable_t, base_variable_t>> var_map_to_insert;
+    
+    for (auto &kv: m_var_map) {
+      const variable_t &old_var = kv.first;
+      const base_variable_t &old_base_var = kv.second;
+
+      std::pair<variable_t,variable_t> p(old_var, old_var);
+      auto lower = std::lower_bound(zipped_vars.begin(), zipped_vars.end(), p,
+				    compare_zipped_pair);
+      
+      if (!(lower == zipped_vars.end() || old_var < (*lower).first)) {
+	// found
+	variable_t new_var = (*lower).second;
+	base_variable_t new_base_var = rename_var(new_var);
+	
+	var_map_to_remove.push_back(old_var);
+	var_map_to_insert.push_back({new_var, new_base_var});
+	
+	m_rev_var_map.erase(old_base_var);
+	m_rev_var_map.insert({new_base_var, new_var});
+      }
+    }
+
+    for (auto &v: var_map_to_remove) {
+      m_var_map.erase(v);
+    }
+    for (auto &p: var_map_to_insert) {
+      m_var_map.insert(p);
+    }
+
+
+    // Rename the rest 
+    m_rgn_counting_dom.rename(from, to);
+    m_rgn_init_dom.rename(from, to);
+    if (Params::allocation_sites) {
+      m_alloc_site_dom.rename(from, to);
+    }
+    if (Params::deallocation) {
+      m_rgn_dealloc_dom.rename(from, to);
+    }
   }
 
   /* begin intrinsics operations */
@@ -2559,8 +2632,6 @@ public:
     //=================================================================//
     //       Special intrinsics supported by the region domain
     //=================================================================//
-    // free(rgn, ref)
-    //       deallocate the memory object pointed by the reference
     // b := is_unfreed_or_null(rgn, ref)
     //       b is true if the reference does not point to a freed
     //       memory object or it is null.
