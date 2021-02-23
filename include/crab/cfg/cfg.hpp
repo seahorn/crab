@@ -98,7 +98,7 @@
 #include <crab/types/linear_constraints.hpp>
 #include <crab/types/reference_constraints.hpp>
 #include <crab/types/variable.hpp>
-#include <crab/types/allocation_sites.hpp>
+#include <crab/types/tag.hpp>
 
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/iterator/transform_iterator.hpp>
@@ -1070,7 +1070,7 @@ public:
   using variable_t = variable<Number, VariableName>;
 
   make_ref_stmt(variable_t lhs, variable_t region,
-		allocation_site as, basic_block_t *parent,
+		crab::tag as, basic_block_t *parent,
                 debug_info dbg_info = debug_info())
       : statement_t(REF_MAKE, parent, dbg_info),
 	m_lhs(lhs), m_region(region), m_alloc_site(as) {
@@ -1082,7 +1082,7 @@ public:
 
   const variable_t &region() const { return m_region; }
 
-  const allocation_site &alloc_site() const { return m_alloc_site;}
+  const crab::tag &alloc_site() const { return m_alloc_site;}
   
   virtual void
   accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
@@ -1101,7 +1101,7 @@ public:
 private:
   variable_t m_lhs;
   variable_t m_region;
-  allocation_site m_alloc_site;
+  crab::tag m_alloc_site;
 };
 
 
@@ -2920,7 +2920,7 @@ public:
     return insert(new region_copy_t(lhs, rhs, this));
   }
 
-  const statement_t *make_ref(variable_t lhs_ref, variable_t region, allocation_site as) {
+  const statement_t *make_ref(variable_t lhs_ref, variable_t region, crab::tag as) {
     return insert(new make_ref_t(lhs_ref, region, as, this));
   }
 

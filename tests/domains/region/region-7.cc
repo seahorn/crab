@@ -41,7 +41,7 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
   z_var m3(vfac["rgn_2"], crab::REG_REF_TYPE, 32);
   z_var m4(vfac["rgn_3"], crab::REG_REF_TYPE, 32);  
   // === Create allocation sites
-  crab::allocation_site_man as_man;  
+  crab::tag_manager as_man;  
   // Create empty CFG
   z_cfg_t *cfg = new z_cfg_t("entry", "ret");
   // Adding CFG blocks
@@ -73,10 +73,10 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
   entry.region_init(m4);  
   
   // Create references
-  entry.make_ref(f1, m1, as_man.mk_allocation_site());
-  entry.make_ref(f2, m2, as_man.mk_allocation_site());
-  entry.make_ref(f3, m3, as_man.mk_allocation_site());
-  entry.make_ref(f_ptr, m4, as_man.mk_allocation_site());
+  entry.make_ref(f1, m1, as_man.mk_tag());
+  entry.make_ref(f2, m2, as_man.mk_tag());
+  entry.make_ref(f3, m3, as_man.mk_tag());
+  entry.make_ref(f_ptr, m4, as_man.mk_tag());
   entry.havoc(orphan_ptr);
   entry.havoc(x);
   bb1.assume(x >= 0);

@@ -6,11 +6,14 @@
 #include <crab/types/linear_constraints.hpp>
 #include <crab/types/reference_constraints.hpp>
 #include <crab/types/variable.hpp>
-#include <crab/types/allocation_sites.hpp>
+#include <crab/types/tag.hpp>
 
 #include <vector>
 
 namespace crab {
+
+using allocation_site = crab::tag;
+  
 namespace domains {
 
 template <class Dom> struct abstract_domain_traits;

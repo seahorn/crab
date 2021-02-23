@@ -6,7 +6,7 @@
 #include <crab/config.h>
 #include <crab/support/debug.hpp>
 #include <crab/types/varname_factory.hpp>
-#include <crab/types/allocation_sites.hpp>
+#include <crab/types/tag.hpp>
 
 /** 
  * Here we define control flow graphs, call graphs, basic blocks,

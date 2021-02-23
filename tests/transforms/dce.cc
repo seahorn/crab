@@ -7,7 +7,7 @@ using namespace crab::analyzer;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-z_cfg_t *prog1(variable_factory_t &vfac, crab::allocation_site_man &as_man) {
+z_cfg_t *prog1(variable_factory_t &vfac, crab::tag_manager &as_man) {
   /*
     k := 2147483648
     o := 4;
@@ -59,7 +59,7 @@ z_cfg_t *prog1(variable_factory_t &vfac, crab::allocation_site_man &as_man) {
   // adding statements
   x0.assign(k, 2147483648);
   x0.assign(o, 4);
-  x0.make_ref(p, mem, as_man.mk_allocation_site());
+  x0.make_ref(p, mem, as_man.mk_tag());
   entry.assign(i, 0);
   bb1_t.assume(i <= 99);
   bb1_f.assume(i >= 100);
@@ -71,7 +71,7 @@ z_cfg_t *prog1(variable_factory_t &vfac, crab::allocation_site_man &as_man) {
   return cfg;
 }
 
-z_cfg_t *prog2(variable_factory_t &vfac, crab::allocation_site_man &as_man) {
+z_cfg_t *prog2(variable_factory_t &vfac, crab::tag_manager &as_man) {
   /*
     k := 2147483648
     o := 4;
@@ -126,7 +126,7 @@ z_cfg_t *prog2(variable_factory_t &vfac, crab::allocation_site_man &as_man) {
   // adding statements
   x0.assign(k, 2147483648);
   x0.assign(o, 4);
-  x0.make_ref(p, mem, as_man.mk_allocation_site());
+  x0.make_ref(p, mem, as_man.mk_tag());
   entry.assign(i, 0);
   bb1_t.assume(i <= 99);
   bb1_f.assume(i >= 100);
@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
   }
 
   variable_factory_t vfac;
-  crab::allocation_site_man as_man;
+  crab::tag_manager as_man;
   using z_cfg_ref_t = crab::cfg::cfg_ref<z_cfg_t>;
   using dce_t = crab::transforms::dead_code_elimination<z_cfg_ref_t>;
 

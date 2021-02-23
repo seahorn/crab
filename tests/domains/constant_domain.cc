@@ -7,7 +7,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 /* Example of how to build a CFG */
-z_cfg_t *prog1(variable_factory_t &vfac, crab::allocation_site_man &as_man) {
+z_cfg_t *prog1(variable_factory_t &vfac, crab::tag_manager &as_man) {
 
   /*
     i := 0;
@@ -55,7 +55,7 @@ z_cfg_t *prog1(variable_factory_t &vfac, crab::allocation_site_man &as_man) {
   return cfg;
 }
 
-z_cfg_t *prog2(variable_factory_t &vfac, crab::allocation_site_man &as_man) {
+z_cfg_t *prog2(variable_factory_t &vfac, crab::tag_manager &as_man) {
 
   /*
    *i := 0;
@@ -97,7 +97,7 @@ z_cfg_t *prog2(variable_factory_t &vfac, crab::allocation_site_man &as_man) {
   bb1_f >> ret;
   // adding statements  
   entry.region_init(mem1);
-  entry.make_ref(i, mem1, as_man.mk_allocation_site());
+  entry.make_ref(i, mem1, as_man.mk_tag());
   entry.store_to_ref(i, mem1, zero32);
   bb2.havoc(nd);
   bb2.select(inc, nd, 1, 1);
@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
 
   {
     variable_factory_t vfac;
-    crab::allocation_site_man as_man;
+    crab::tag_manager as_man;
     z_cfg_t *cfg = prog1(vfac, as_man);
     crab::outs() << *cfg << "\n";
   
@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
 
   {
     variable_factory_t vfac;
-    crab::allocation_site_man as_man;    
+    crab::tag_manager as_man;    
     z_cfg_t *cfg = prog2(vfac, as_man);
     crab::outs() << *cfg << "\n";
     z_rgn_constant_t init;  

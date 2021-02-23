@@ -10,7 +10,7 @@ add_library(Crab ${CRAB_LIBS_TYPE}
   ##variable factory
   varname_factory.cpp
   ##types
-  allocation_sites.cpp
+  tag.cpp
   )
 
 target_link_libraries(Crab ${GMP_LIB})

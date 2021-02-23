@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
   }
   
   variable_factory_t vfac;
-  crab::allocation_site_man as_man;
+  crab::tag_manager as_man;
   
   { // join
     z_var x(vfac["x"], crab::INT_TYPE, 32);
@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
     
     inv2 += (x >= z_number(5));
     inv2.region_init(rgn1);
-    inv2.ref_make(ref, rgn1, as_man.mk_allocation_site());
+    inv2.ref_make(ref, rgn1, as_man.mk_tag());
     inv2.ref_store(ref, rgn1, n34_32);
 
 
@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
     
     inv2 += (x >= z_number(5));
     inv2.region_init(rgn1);
-    inv2.ref_make(ref, rgn1, as_man.mk_allocation_site());
+    inv2.ref_make(ref, rgn1, as_man.mk_tag());
     inv2.ref_store(ref, rgn1, n34_32);
 
 
