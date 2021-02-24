@@ -114,6 +114,7 @@ struct TestRegionParams {
   enum { allocation_sites = 1};    
   enum { deallocation = 1};  
   enum { refine_uninitialized_regions = 1};
+  enum { tag_analysis = 1};
 };
 using z_rgn_aa_int_params_t = TestRegionParams<
   array_adaptive_domain<

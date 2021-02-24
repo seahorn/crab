@@ -37,9 +37,9 @@ class tag_manager {
 
 public:
   tag_manager();
-  // create an allocation site
+  // create a tag
   tag mk_tag();
-  // return the number of allocation sites
+  // return the number of tags
   std::size_t size() const;
 };
 
