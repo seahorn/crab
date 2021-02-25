@@ -112,10 +112,10 @@ public:
 
   discrete_domain_t operator&(const discrete_domain_t &other) const {
     if (is_bottom() || other.is_bottom()) {
-      return discrete_domain_t(false);
-    } else if (m_is_top) {
+      return discrete_domain_t::bottom();
+    } else if (is_top()) {
       return other;
-    } else if (other.m_is_top) {
+    } else if (other.is_top()) {
       return *this;
     } else {
       return discrete_domain_t(m_set & other.m_set);
@@ -411,8 +411,7 @@ public:
   void write(crab::crab_os &o) const {
     if (is_top()) {
       o << "{...}";
-    }
-    if (m_tree.empty()) {
+    } else if (is_bottom()) {
       o << "{}";
     } else {
       o << "{";
