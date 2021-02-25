@@ -231,7 +231,7 @@ public:
       return *this;
     } else {
       join_op o;
-      bool is_bottom;
+      bool is_bottom /*unused*/;
       patricia_tree_t res = apply_operation(o, this->_tree, e._tree, is_bottom);
       return separate_domain_t(std::move(res));
     }
@@ -261,7 +261,7 @@ public:
       return *this;
     } else {
       widening_op o;
-      bool is_bottom;
+      bool is_bottom /*unused*/;
       patricia_tree_t res = apply_operation(o, this->_tree, e._tree, is_bottom);
       return separate_domain_t(std::move(res));
     }
@@ -277,7 +277,7 @@ public:
       return *this;
     } else {
       widening_thresholds_op<Thresholds> o(ts);
-      bool is_bottom;
+      bool is_bottom /*unused*/;
       patricia_tree_t res = apply_operation(o, this->_tree, e._tree, is_bottom);
       return separate_domain_t(std::move(res));
     }
@@ -505,6 +505,8 @@ private:
     std::pair<bool, boost::optional<value_type>> apply(value_type x, value_type y) override {
       value_type z = x.operator|(y);
       if (z.is_top()) {
+	// special encoding for top: the patricia tree will not keep
+	// top values.
         return {false, boost::optional<value_type>()};
       } else {
         return {false, boost::optional<value_type>(z)};
@@ -516,11 +518,9 @@ private:
   class meet_op : public binary_op_t {
     std::pair<bool, boost::optional<value_type>> apply(value_type x,  value_type y) override {
       value_type z = x.operator&(y);
-      if (z.is_bottom()) {
-        return {true, boost::optional<value_type>()};
-      } else {
-        return {false, boost::optional<value_type>(z)};
-      }
+      // Returning this pair means that if z is bottom do not treat it
+      // special and just update the patricia tree with z.
+      return {false, boost::optional<value_type>(z)};
     };
     bool default_is_absorbing() override { return false; }
   }; // class meet_op
@@ -590,7 +590,7 @@ public:
   separate_discrete_domain_t
   operator|(const separate_discrete_domain_t &o) const {
     CRAB_LOG("separate-domain",
-	     crab::outs() << "Join " << *this << " and " << o << "=\n";);      
+	     crab::outs() << "Join " << *this << " and " << o << "=";);      
     
     if (is_bottom() || o.is_top()) {
       CRAB_LOG("separate-domain",
@@ -612,14 +612,26 @@ public:
 
   separate_discrete_domain_t
   operator&(const separate_discrete_domain_t &o) const {
+    CRAB_LOG("separate-domain",
+	     crab::outs() << "Meet " << *this << " and " << o << "=";);      
+    
     if (is_top() || o.is_bottom()) {
+      CRAB_LOG("separate-domain",
+	       crab::outs() << "Res=" << o << "\n";);
+      
       return o;
     } else if (o.is_top() || is_bottom()) {
+      CRAB_LOG("separate-domain",
+	       crab::outs() << "Res=" << *this << "\n";);
+      
       return *this;
     } else {
       meet_op op;
       patricia_tree_t res = apply_operation(op, m_tree, o.m_tree);
-      return separate_discrete_domain_t(std::move(res));
+      auto out = separate_discrete_domain_t(std::move(res));
+      CRAB_LOG("separate-domain",
+	       crab::outs() << "Res=" << out << "\n";);
+      return out;
     }
   }
 
