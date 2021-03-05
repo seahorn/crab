@@ -527,7 +527,7 @@ private:
 
   class domain_po : public partial_order_t {
     bool leq(value_type x, value_type y) { return x.operator<=(y); }
-    bool default_is_top() { return false; }
+    bool default_is_top() { return true; }
   }; // class domain_po
   /* end patricia_tree API */
 
