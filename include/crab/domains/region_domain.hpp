@@ -852,6 +852,7 @@ private:
       } else if (vty.is_real_array_region()) {
         ty = ARR_REAL_TYPE;
       } else {
+	assert(false);
         CRAB_ERROR(domain_name() + "::make_base_variable: unreachable");
       }
       base_variable_t bv(var_allocator.next(), ty, bitwidth);
@@ -2111,9 +2112,16 @@ public:
 
       if (ref_cst.is_equality()) {
 	if (ref_cst.is_binary()) {
-	  allocation_sites inter =
-	    m_alloc_site_dom[ref_cst.lhs()] & m_alloc_site_dom[ref_cst.rhs()];
-	  if (inter.is_bottom()) {
+	  auto lhs_as = m_alloc_site_dom[ref_cst.lhs()];
+	  auto rhs_as = m_alloc_site_dom[ref_cst.rhs()];
+	  allocation_sites inter = lhs_as & rhs_as;
+	  // FIXME: the lhs or rhs operands might have empty
+	  // allocation sites if the program environment is not
+	  // modeled precisely enough. In those cases, they might have
+	  // no allocation sites but we don't want to set the whole
+	  // abstract state to bottom.
+	  if (!lhs_as.is_bottom() && !rhs_as.is_bottom() &&
+	      inter.is_bottom()) {
 	    // if they do not have any common allocation site then
 	    // they cannot be the same address.
 	    // 
@@ -2957,56 +2965,54 @@ public:
       return;
     }
     
-    if (Params::deallocation && name == "is_unfreed_or_null") {
-      error_if_not_arity(2, 1);
-      error_if_not_variable(inputs[0]);
-      error_if_not_variable(inputs[1]);      
-      variable_t rgn = inputs[0].get_variable();
-      variable_t ref = inputs[1].get_variable();
-      variable_t bv = outputs[0];
-      error_if_not_rgn(rgn);
-      error_if_not_ref(ref);
-      error_if_not_bool(bv);
-
-
-      // the reference is definitely null
-      if (is_null_ref(ref).is_true()) {
-        set_bool_var_to_true(bv);
-      } else {
-        bool is_allocated = (m_rgn_dealloc_dom.contains(rgn) &&
-                             m_rgn_dealloc_dom[rgn].is_false());
-        /// the reference belongs to a memory region that doesn't have
-        /// any deallocated memory object.
-        if (is_allocated) {
-          set_bool_var_to_true(bv);
-        }
+    if (name == "is_unfreed_or_null") {
+      if (Params::deallocation) {
+	error_if_not_arity(2, 1);
+	error_if_not_variable(inputs[0]);
+	error_if_not_variable(inputs[1]);      
+	variable_t rgn = inputs[0].get_variable();
+	variable_t ref = inputs[1].get_variable();
+	variable_t bv = outputs[0];
+	error_if_not_rgn(rgn);
+	error_if_not_ref(ref);
+	error_if_not_bool(bv);
+	// the reference is definitely null
+	if (is_null_ref(ref).is_true()) {
+	  set_bool_var_to_true(bv);
+	} else {
+	  bool is_allocated = (m_rgn_dealloc_dom.contains(rgn) &&
+			       m_rgn_dealloc_dom[rgn].is_false());
+	  /// the reference belongs to a memory region that doesn't have
+	  /// any deallocated memory object.
+	  if (is_allocated) {
+	    set_bool_var_to_true(bv);
+	  }
+	}
       }
-    } else if (Params::deallocation && name == "unfreed_or_null") {
-      error_if_not_arity(2, 0);
-      error_if_not_variable(inputs[0]);
-      error_if_not_variable(inputs[1]);
-      variable_t rgn = inputs[0].get_variable();
-      variable_t ref = inputs[1].get_variable();
-      error_if_not_rgn(rgn);
-      error_if_not_ref(ref);
-
-      if (!is_null_ref(ref).is_true()) {
-        if (Params::deallocation) {
-          // We can only mark the region as "deallocated" if it doesn't
-          // have any reference yet. Even if it has only one we cannot
-          // tell whether it's the same ref than ref.
-          auto num_refs = m_rgn_counting_dom[rgn];
-          if (num_refs.is_zero()) {
-            m_rgn_dealloc_dom.set(rgn, boolean_value::get_false());
-          }
-        }
+    } else if (name == "unfreed_or_null") {
+      if (Params::deallocation) {
+	error_if_not_arity(2, 0);
+	error_if_not_variable(inputs[0]);
+	error_if_not_variable(inputs[1]);
+	variable_t rgn = inputs[0].get_variable();
+	variable_t ref = inputs[1].get_variable();
+	error_if_not_rgn(rgn);
+	error_if_not_ref(ref);
+	if (!is_null_ref(ref).is_true()) {
+	  // We can only mark the region as "deallocated" if it doesn't
+	  // have any reference yet. Even if it has only one we cannot
+	  // tell whether it's the same ref than ref.
+	  auto num_refs = m_rgn_counting_dom[rgn];
+	  if (num_refs.is_zero()) {
+	    m_rgn_dealloc_dom.set(rgn, boolean_value::get_false());
+	  }
+	}
       }
     } else if (name == "nonnull") {
       error_if_not_arity(1, 0);
       error_if_not_variable(inputs[0]);      
       variable_t ref = inputs[0].get_variable();
       error_if_not_ref(ref);
-
       auto nonnull_cst = reference_constraint_t::mk_gt_null(ref);
       ref_assume(nonnull_cst);
     } else if (name == "add_tag") {
