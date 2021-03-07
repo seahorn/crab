@@ -8,23 +8,17 @@
  * change. However, it might run out of stack on very deep call graphs
  * so special care must be taken.
  *
- * **Important**: the analysis assumes call-by-value semantics for
- * input variables. However, it does **not** currently ensures it
- * which can produce incorrect results. The problematic situation
- * arises when an input variable is modified in the callee and while
- * propagating the callee's results with its continuation at the
- * caller some inconsistent state (i.e., bottom) can be incorrectly
- * produced. To deal with this, the analysis assumes that the
- * front-end is in charge of modeling properly the call-by-value
- * semantics. This can be done by renaming the input parameters of the
- * function and then assign them to the old names before the old body
- * starts.
- *
- * foo(i1,...) {   foo(i1',...) {
- *                   // where := can be assign/expand/copy_region
- *                   i1 := i1';  
- *  BODY       ==>   BODY
- * }               }
+ * **Important**: the analysis assumes that the Crab CFG ensures that
+ * an input parameter has only one use and that use is the right-side
+ * operand of an assignment locate at the entry block of the
+ * function. That is, that the following transformation took place
+ * before the analysis starts:
+ * 
+ * foo(...,i1,...) {      foo(...,i1',...) {
+ *                          // where := can be assign/expand/copy_region
+ *                          i1 := i1';  
+ *   BODY          ==>      BODY
+ * }                      }
  */
 
 #include <crab/analysis/abs_transformer.hpp>
@@ -1058,8 +1052,14 @@ private:
       const variable_t &actual = cs.get_args()[i];
       if (!(formal == actual)) {
         CRAB_LOG("inter-restrict",
-                 errs() << "\t" << formal << " and " << actual << "\n";);
+                 errs() << "\t" << formal << ":" << formal.get_type()
+		        << " and " << actual << ":" << actual.get_type() << "\n";);
         inter_transformer_helpers<AbsDom>::unify(caller_dom, formal, actual);
+	if (::crab::CrabSanityCheckFlag) {	
+	  if (caller_dom.is_bottom()) {
+	    CRAB_ERROR("Obtained bottom after unification");
+	  }
+	}
       }
     }
     CRAB_LOG("inter-restrict", errs() << "Inv after formal/actual unification: "
@@ -1281,12 +1281,6 @@ private:
 	  crab::outs() << "[INTER] There is no call contexts stored.\n";
 	});
       for (unsigned i = 0, e = call_contexts.size(); i < e; ++i) {
-        CRAB_LOG("inter-subsume",
-                 crab::outs() << "Checking if\n"
-                              << callee_entry << "\nis subsumed by summary "
-                              << i << "\n";
-                 call_contexts[i]->write(crab::outs()); crab::outs() << "\n";);
-
         // If the call is recursive then we cannot use exact
         // subsumption. Otherwise, it's very likely that subsumption
         // never succeeds. Apart from not having reusing, it will
@@ -1294,6 +1288,18 @@ private:
         // that all function calls are always cached.
         const bool use_exact_subsumption =
             (!recursive_call_being_analyzed && m_ctx.exact_summary_reuse());
+
+        CRAB_LOG("inter-subsume",
+		 if (use_exact_subsumption) {
+		   crab::outs() << "Exact ";
+		 } else {
+		   crab::outs() << "Approximate ";		   
+		 }
+                 crab::outs() << "checking if\n"
+		              << callee_entry << "\nis subsumed by summary "
+		              << i << "\n";
+                 call_contexts[i]->write(crab::outs()); crab::outs() << "\n";);
+	
         if (call_contexts[i]->is_subsumed(callee_entry,
                                           use_exact_subsumption)) {
           CRAB_LOG("inter-subsume", crab::outs() << "succeed!\n";);
@@ -1332,8 +1338,9 @@ private:
         // 4.a Replace recursive call with a pre-fixpoint.
         callee_exit = it->second.get_exit();
         abs_dom_t callee_init(callee_entry);
-        it->second.set_entry(
-            std::move(callee_init)); // Super important for termination
+	callee_init |= it->second.get_entry();
+	// Super important for termination
+        it->second.set_entry(std::move(callee_init)); 
         CRAB_LOG("inter", callee_entry = it->second.get_entry();
                  crab::outs()
                  << "[INTER] Replaced recursive call  \"" << cs
@@ -1475,7 +1482,6 @@ private:
 
       if (callee_analysis &&
 	  !m_ctx.included_nested_wto_component(callee_cg_node)) {
-      
 	/***
 	 *** We delay running the checker until the outermost nested
 	 *** WTO component stabilizes.
