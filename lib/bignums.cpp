@@ -280,6 +280,7 @@ z_number z_number::operator<<(z_number x) const {
   } else {
     mpz_t mp_r;
     mpz_init(mp_r);
+    // left shift
     mpz_mul_2exp(mp_r, _n, mpz_get_ui(x._n));
     z_number res = from_mpz_t(mp_r);
     mpz_clear(mp_r);
@@ -293,6 +294,7 @@ z_number z_number::operator>>(z_number x) const {
   } else {
     mpz_t mp_r;
     mpz_init(mp_r);
+    // arithmetic right shift
     mpz_fdiv_q_2exp(mp_r, _n, mpz_get_ui(x._n));
     z_number res = from_mpz_t(mp_r);
     mpz_clear(mp_r);

@@ -56,8 +56,10 @@ public:
 
   z_number operator-() const;
 
+  // signed division
   z_number operator/(z_number x) const;
 
+  // signed remainder
   z_number operator%(z_number x) const;
 
   z_number &operator+=(z_number x);
@@ -90,14 +92,19 @@ public:
 
   bool operator>=(z_number x) const;
 
+  // bitwise-and
   z_number operator&(z_number x) const;
 
+  // bitwise-or
   z_number operator|(z_number x) const;
 
+  // bitwise-xor
   z_number operator^(z_number x) const;
 
+  // left shift
   z_number operator<<(z_number x) const;
 
+  // arithmetic right shift
   z_number operator>>(z_number x) const;
 
   z_number fill_ones() const;
