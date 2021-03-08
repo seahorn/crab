@@ -141,6 +141,28 @@ int main(int argc, char **argv) {
     run_and_check(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     delete cfg;
   }
-  
+
+#if 0  
+  {
+    using constant_t = crab::domains::constant<z_number>;
+    constant_t c1(z_number(5));
+    constant_t c2(z_number(10));
+    constant_t c3(z_number(-10));
+    constant_t one(z_number(1));    
+    constant_t two(z_number(2));
+    
+    crab::outs() << c1 << " + "  << c2 << "=" << c1.Add(c2) << "\n";
+    crab::outs() << c1 << " - "  << c2 << "=" << c1.Sub(c2) << "\n";
+    crab::outs() << c1 << " * "  << c2 << "=" << c1.Mul(c2) << "\n";
+    crab::outs() << c2 << " / "  << c1 << "=" << c2.SDiv(c1) << "\n";
+    crab::outs() << c1 << " rem " << c2 << "=" << c1.SRem(c2) << "\n";
+    crab::outs() << c1 << " | "  << c2 << "=" << c1.BitwiseOr(c2) << " (expected 15) \n";
+    crab::outs() << c1 << " & "  << c2 << "=" << c1.BitwiseAnd(c2) << " (expected 0)\n";
+    crab::outs() << c2 << " << "    << two << "=" << c2.BitwiseShl(two) << " (expected 40)\n";
+    crab::outs() << c3 << " >>_l "  << one << "=" << c3.BitwiseLShr(one) << " (expected top)\n";
+    crab::outs() << c3 << " >>_a "  << one << "=" << c3.BitwiseAShr(one) << " (expected -5)\n";        
+    
+  }
+#endif   
   return 0;
 }

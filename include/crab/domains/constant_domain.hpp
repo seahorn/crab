@@ -27,9 +27,8 @@ template <typename Number> class constant {
   boost::optional<Number> m_constant;
   bool m_is_bottom;
   using constant_t = constant<Number>;
-
+  constant(bool is_bottom) : m_constant(boost::none), m_is_bottom(is_bottom) {}  
 public:
-  constant(bool is_bottom) : m_constant(boost::none), m_is_bottom(is_bottom) {}
 
   constant(Number c) : m_constant(c), m_is_bottom(false) {}
 
@@ -37,6 +36,8 @@ public:
 
   static constant_t top() { return constant(false); }
 
+  static constant_t zero() { return constant(Number(0));}
+  
   bool is_bottom() const { return m_is_bottom; }
 
   bool is_top() const { return (!is_bottom() && !m_constant); }
@@ -48,6 +49,7 @@ public:
     return *m_constant;
   }
 
+  /** Begin Lattice Operations **/
   bool operator<=(const constant_t &o) const {
     if (is_bottom() || o.is_top()) {
       return true;
@@ -105,7 +107,75 @@ public:
   }
 
   constant_t operator&&(const constant_t &o) const { return *this & o; }
+  /** End  Lattice Operations **/
+  
 
+  /** Begin arithmetic operations **/
+  constant_t Add(const constant_t &o) const {
+    if (is_constant() && o.is_constant()) {
+      return constant_t(get_constant() + o.get_constant());
+    } else {
+      return constant_t::top();
+    }
+  }
+  constant_t Sub(const constant_t &o) const {
+    if (is_constant() && o.is_constant()) {
+      return constant_t(get_constant() - o.get_constant());
+    } else {
+      return constant_t::top();
+    }
+  }
+  constant_t Mul(const constant_t &o) const {
+    if (is_constant() && o.is_constant()) {
+      return constant_t(get_constant() * o.get_constant());
+    } else {
+      return constant_t::top();
+    }    
+  }
+  constant_t SDiv(const constant_t &o) const {
+    if (o.is_constant() && o.get_constant() == Number(0)) {
+      return constant_t::bottom();
+    }
+    if (is_constant() && o.is_constant()) {
+      return constant_t(get_constant() / o.get_constant());
+    } else {
+      return constant_t::top();
+    }    
+  }
+  constant_t SRem(const constant_t &o) const {
+    if (o.is_constant() && o.get_constant() == Number(0)) {
+      return constant_t::bottom();
+    }
+    if (is_constant() && o.is_constant()) {
+      return constant_t(get_constant() % o.get_constant());
+    } else {
+      return constant_t::top();
+    }    
+  }
+  constant_t UDiv(const constant_t &o) const {
+    if (o.is_constant() && o.get_constant() == Number(0)) {
+      return constant_t::bottom();
+    }
+    return constant_t::top();
+  }
+  constant_t URem(const constant_t &o) const {
+    if (o.is_constant() && o.get_constant() == Number(0)) {
+      return constant_t::bottom();
+    }
+    return constant_t::top();    
+  }
+  /** End arithmetic operations **/
+
+  /** Begin bitwise operations **/  
+  // These operations depend on the type of Number
+  constant_t BitwiseAnd(const constant_t &o) const;
+  constant_t BitwiseOr(const constant_t &o) const;
+  constant_t BitwiseXor(const constant_t &o) const;
+  constant_t BitwiseShl(const constant_t &o) const;
+  constant_t BitwiseLShr(const constant_t &o) const;
+  constant_t BitwiseAShr(const constant_t &o) const;
+  /** End bitwise operations **/
+  
   void write(crab::crab_os &o) const {
     if (is_bottom()) {
       o << "_|_";
@@ -121,7 +191,95 @@ public:
     c.write(o);
     return o;
   }
+  
 };
+
+namespace constant_details {
+using z_constant_t = constant<ikos::z_number>;
+using q_constant_t = constant<ikos::q_number>;
+} // end namespace constant_details
+
+template<> constant_details::z_constant_t
+inline constant_details::z_constant_t::BitwiseAnd(const constant_details::z_constant_t &o) const {
+  if (is_constant() && o.is_constant()) {
+    return constant_details::z_constant_t(get_constant() & o.get_constant());
+  } else {
+    return constant_details::z_constant_t::top();
+  } 
+}
+template<> constant_details::z_constant_t
+inline constant_details::z_constant_t::BitwiseOr(const constant_details::z_constant_t &o) const {
+  if (is_constant() && o.is_constant()) {
+    return constant_details::z_constant_t(get_constant() | o.get_constant());    
+  } else {
+    return constant_details::z_constant_t::top();
+  } 
+}
+template<> constant_details::z_constant_t
+inline constant_details::z_constant_t::BitwiseXor(const constant_details::z_constant_t &o) const {
+  if (is_constant() && o.is_constant()) {
+    return constant_details::z_constant_t(get_constant() ^ o.get_constant());        
+  } else {
+    return constant_details::z_constant_t::top();
+  } 
+}
+template<> constant_details::z_constant_t
+inline constant_details::z_constant_t::BitwiseShl(const constant_details::z_constant_t &o) const {
+  if (is_constant() && o.is_constant()) {
+    if (o.get_constant() >= ikos::z_number(0)) {	    
+      return constant_details::z_constant_t(get_constant() << o.get_constant());
+    }
+  } 
+  return constant_details::z_constant_t::top();
+}
+template<> constant_details::z_constant_t
+inline constant_details::z_constant_t::BitwiseLShr(const constant_details::z_constant_t &o) const {
+  if (is_constant() && o.is_constant()) {
+    // if get_contant() is non-negative then LShr = AShr.
+    if (get_constant() >= ikos::z_number(0)) {
+      if (o.get_constant() >= ikos::z_number(0)) {	        
+	return constant_details::z_constant_t(get_constant() >> o.get_constant());
+      }
+    }
+  } 
+  return constant_details::z_constant_t::top();
+}
+template<> constant_details::z_constant_t
+inline constant_details::z_constant_t::BitwiseAShr(const constant_details::z_constant_t &o) const {
+  if (is_constant() && o.is_constant()) {
+    if (o.get_constant() >= ikos::z_number(0)) {	        
+      return constant_details::z_constant_t(get_constant() >> o.get_constant());
+    }
+  }
+  return constant_details::z_constant_t::top();
+}
+
+  
+template<> constant_details::q_constant_t
+inline constant_details::q_constant_t::BitwiseAnd(const constant_details::q_constant_t &o) const {
+  return constant_details::q_constant_t::top();
+}
+template<> constant_details::q_constant_t
+inline constant_details::q_constant_t::BitwiseOr(const constant_details::q_constant_t &o) const {
+  return constant_details::q_constant_t::top();
+}
+template<> constant_details::q_constant_t
+inline constant_details::q_constant_t::BitwiseXor(const constant_details::q_constant_t &o) const {
+  return constant_details::q_constant_t::top();
+}
+template<> constant_details::q_constant_t
+inline constant_details::q_constant_t::BitwiseShl(const constant_details::q_constant_t &o) const {
+  return constant_details::q_constant_t::top();
+}
+template<> constant_details::q_constant_t
+inline constant_details::q_constant_t::BitwiseLShr(const constant_details::q_constant_t &o) const {
+  return constant_details::q_constant_t::top();
+}
+template<> constant_details::q_constant_t
+inline constant_details::q_constant_t::BitwiseAShr(const constant_details::q_constant_t &o) const {
+  return constant_details::q_constant_t::top();
+}
+  
 
 template <typename Number, typename VariableName>
 class constant_domain final : public crab::domains::abstract_domain_api<
@@ -153,73 +311,88 @@ private:
 
   constant_domain(separate_domain_t &&env) : m_env(std::move(env)) {}
 
-  void solve_constraints(const linear_constraint_system_t &csts) {
-    if (!is_bottom()) {
-      interval_domain_t idom;
-      for (auto const &c : csts) {
-        if (c.is_inequality() && c.is_unsigned()) {
-          // interval domain ignores these constraints
-          continue;
-        }
-        if (c.is_tautology()) {
-          continue;
-        }
-        if (c.is_contradiction()) {
-          set_to_bottom();
-          return;
-        }
-
-        for (auto v : c.variables()) {
-          // add v to the interval domain
-          idom.set(v, operator[](v));
-          // forget v from the constant domain
-          // operator-=(v);
-        }
+  constant_t eval(const linear_expression_t &expr) const {
+    assert(!is_bottom());
+    constant_t r(expr.constant());
+    for (auto const&kv : expr) {
+      constant_t c(kv.first);
+      r  = r.Add(c.Mul(m_env[kv.second]));
+      if (r.is_top()) {
+	break;
       }
-
-      // add csts to the interval domain
-      idom += csts;
-
-      // translate back form the interval domain to the constant domain
-      if (idom.is_bottom()) {
-        set_to_bottom();
-      } else {
-        for (auto kv : idom) {
-          set(kv.first, kv.second);
-        }
-      }
-    }
-  }
-
-  interval_t operator[](const linear_expression_t &expr) const {
-    if (is_bottom())
-      return interval_t::bottom();
-    interval_t r(expr.constant());
-    for (auto kv : expr) {
-      interval_t c(kv.first);
-      r += c * to_interval(m_env[kv.second]);
     }
     return r;
   }
-
-  constant_t to_constant(const interval_t &i) const {
-    if (i.is_bottom()) {
-      return constant_t::bottom();
-    } else if (boost::optional<number_t> c = i.singleton()) {
-      return constant_t(*c);
-    } else {
-      return constant_t::top();
+  
+  constant_t compute_residual(const linear_constraint_t &cst, const variable_t &pivot) const {
+    constant_t residual(cst.constant());
+    for (auto const&kv: cst) {
+      constant_t c(kv.first);
+      const variable_t &v = kv.second;
+      if (!(v == pivot)) {
+	residual = residual.Sub(c.Mul(m_env[v]));
+	if (residual.is_top()) {
+	  break;
+	}
+      }
+    }
+    return residual;
+  }
+  
+  void propagate(const linear_constraint_t &cst){
+    if (is_bottom()) {
+      return;
+    }
+    
+    if (cst.is_inequality() || cst.is_strict_inequality() || cst.is_disequation()) {
+      constant_t e = eval(cst.expression());
+      if (e.is_constant()) {
+	if (cst.is_inequality()) {
+	  if (!(e.get_constant() <= number_t(0))) {
+	    set_to_bottom();
+	    return;
+	  }
+	} else if (cst.is_disequation()) {
+	  if (!(e.get_constant() != number_t(0))) {
+	    set_to_bottom();
+	    return;
+	  }
+	} else if (cst.is_strict_inequality()) {
+	  if (!(e.get_constant() < number_t(0))) {
+	    set_to_bottom();
+	    return;
+	  }
+	} 
+      }
+    } else if (cst.is_equality()) {
+      for (auto kv : cst) {
+	number_t c = kv.first;
+	const variable_t &pivot = kv.second;
+	constant_t new_c = compute_residual(cst, pivot).SDiv(c);
+	if (!new_c.is_top()) {
+	  m_env.set(pivot, m_env[pivot] & new_c);
+	}
+      }
     }
   }
-
-  interval_t to_interval(const constant_t &c) const {
-    if (c.is_bottom()) {
-      return interval_t::bottom();
-    } else if (c.is_top()) {
-      return interval_t::top();
-    } else {
-      assert(c.is_constant());
-      return interval_t(c.get_constant());
+  
+  void solve_constraints(const linear_constraint_system_t &csts) {
+    for (auto const &c : csts) {
+      if (is_bottom()) {
+	return;
+      }
+      if (c.is_inequality() && c.is_unsigned()) {
+	// we don't handle unsigned constraints
+	continue;
+      }
+      if (c.is_tautology()) {
+	continue;
+      }
+      if (c.is_contradiction()) {
+	set_to_bottom();
+	return;
+      }
+      propagate(c);
     }
   }
 
@@ -326,12 +499,6 @@ public:
     return (m_env && o.m_env);
   }
 
-  void set(const variable_t &v, interval_t i) {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
-    m_env.set(v, to_constant(i));
-  }
-
   void operator-=(const variable_t &v) override {
     crab::CrabStats::count(domain_name() + ".count.forget");
     crab::ScopedCrabStats __st__(domain_name() + ".forget");
@@ -339,7 +506,15 @@ public:
   }
 
   interval_t operator[](const variable_t &v) override {
-    return to_interval(m_env[v]);
+    constant_t c = m_env[v];
+    if (c.is_bottom()) {
+      return interval_t::bottom();
+    } else if (c.is_top()) {
+      return interval_t::top();
+    } else {
+      assert(c.is_constant());
+      return interval_t(c.get_constant());
+    }
   }
 
   void operator+=(const linear_constraint_system_t &csts) override {
@@ -354,8 +529,7 @@ public:
     if (boost::optional<variable_t> v = e.get_variable()) {
       m_env.set(x, m_env[(*v)]);
     } else {
-      interval_t ie = operator[](e);
-      m_env.set(x, to_constant(ie));
+      m_env.set(x, eval(e));
     }
   }
 
@@ -364,73 +538,76 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    interval_t yi = to_interval(m_env[y]);
-    interval_t zi = to_interval(m_env[z]);
-    interval_t xi = interval_t::bottom();
-
-    switch (op) {
-    case crab::domains::OP_ADDITION:
-      xi = yi + zi;
-      break;
-    case crab::domains::OP_SUBTRACTION:
-      xi = yi - zi;
-      break;
-    case crab::domains::OP_MULTIPLICATION:
-      xi = yi * zi;
-      break;
-    case crab::domains::OP_SDIV:
-      xi = yi / zi;
-      break;
-    case crab::domains::OP_UDIV:
-      xi = yi.UDiv(zi);
-      break;
-    case crab::domains::OP_SREM:
-      xi = yi.SRem(zi);
-      break;
-    case crab::domains::OP_UREM:
-      xi = yi.URem(zi);
-      break;
-    default:
-      CRAB_ERROR("Operation ", op, " not supported");
+    if (!is_bottom()) {
+      constant_t yc = m_env[y];
+      constant_t zc = m_env[z];
+      constant_t xc = constant_t::top();
+      switch (op) {
+      case crab::domains::OP_ADDITION:
+	xc = yc.Add(zc);
+	break;
+      case crab::domains::OP_SUBTRACTION:
+	xc = yc.Sub(zc);
+	break;
+      case crab::domains::OP_MULTIPLICATION:
+	xc = yc.Mul(zc);
+	break;
+      case crab::domains::OP_SDIV:
+	xc = yc.SDiv(zc);      
+	break;
+      case crab::domains::OP_SREM:
+	xc = yc.SRem(zc);            
+	break;
+      case crab::domains::OP_UDIV:
+	xc = yc.UDiv(zc);      
+	break;
+      case crab::domains::OP_UREM:
+	xc = yc.URem(zc);            
+	break;
+      default:
+	CRAB_ERROR("Operation ", op, " not supported");
+      }
+      m_env.set(x, xc);
     }
-    m_env.set(x, to_constant(xi));
   }
-
+  
   void apply(crab::domains::arith_operation_t op, const variable_t &x,
              const variable_t &y, number_t k) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    interval_t yi = to_interval(m_env[y]);
-    interval_t zi(k);
-    interval_t xi = interval_t::bottom();
-
-    switch (op) {
-    case crab::domains::OP_ADDITION:
-      xi = yi + zi;
-      break;
-    case crab::domains::OP_SUBTRACTION:
-      xi = yi - zi;
-      break;
-    case crab::domains::OP_MULTIPLICATION:
-      xi = yi * zi;
-      break;
-    case crab::domains::OP_SDIV:
-      xi = yi / zi;
-      break;
-    case crab::domains::OP_UDIV:
-      xi = yi.UDiv(zi);
-      break;
-    case crab::domains::OP_SREM:
-      xi = yi.SRem(zi);
-      break;
-    case crab::domains::OP_UREM:
-      xi = yi.URem(zi);
-      break;
-    default:
-      CRAB_ERROR("Operation ", op, " not supported");
+    if (!is_bottom()) {
+      constant_t yc = m_env[y];
+      constant_t zc(k);
+      constant_t xc = constant_t::top();
+      switch (op) {
+      case crab::domains::OP_ADDITION:
+	xc = yc.Add(zc);
+	break;
+      case crab::domains::OP_SUBTRACTION:
+	xc = yc.Sub(zc);
+	break;
+      case crab::domains::OP_MULTIPLICATION:
+	xc = yc.Mul(zc);
+	break;
+      case crab::domains::OP_SDIV:
+	xc = yc.SDiv(zc);      
+	break;
+      case crab::domains::OP_SREM:
+	xc = yc.SRem(zc);            
+	break;
+      case crab::domains::OP_UDIV:
+	xc = yc.UDiv(zc);      
+	break;
+      case crab::domains::OP_UREM:
+	xc = yc.URem(zc);            
+	break;
+      default:
+	CRAB_ERROR("Operation ", op, " not supported");
+      }
+      m_env.set(x, xc);
     }
-    m_env.set(x, to_constant(xi));
+    
   }
 
   // intrinsics operations
@@ -484,39 +661,35 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    interval_t yi = to_interval(m_env[y]);
-    interval_t zi = to_interval(m_env[z]);
-    interval_t xi = interval_t::bottom();
-
-    switch (op) {
-    case crab::domains::OP_AND: {
-      xi = yi.And(zi);
-      break;
+    if (!is_bottom()) {
+      constant_t yc = m_env[y];
+      constant_t zc = m_env[z];
+      constant_t xc = constant_t::top();
+      switch (op) {
+      case crab::domains::OP_AND:
+	xc = yc.BitwiseAnd(zc);
+	break;
+      case crab::domains::OP_OR:
+	xc = yc.BitwiseOr(zc);
+	break;
+      case crab::domains::OP_XOR:
+	xc = yc.BitwiseXor(zc);
+	break;
+      case crab::domains::OP_SHL:
+	xc = yc.BitwiseShl(zc);      
+	break;
+      case crab::domains::OP_LSHR:
+	xc = yc.BitwiseLShr(zc);            
+	break;
+      case crab::domains::OP_ASHR: {
+	xc = yc.BitwiseAShr(zc);                  
+	break;
+      }
+      default:
+	CRAB_ERROR("Operation ", op, " not supported");
+      }
+      m_env.set(x, xc);
     }
-    case crab::domains::OP_OR: {
-      xi = yi.Or(zi);
-      break;
-    }
-    case crab::domains::OP_XOR: {
-      xi = yi.Xor(zi);
-      break;
-    }
-    case crab::domains::OP_SHL: {
-      xi = yi.Shl(zi);
-      break;
-    }
-    case crab::domains::OP_LSHR: {
-      xi = yi.LShr(zi);
-      break;
-    }
-    case crab::domains::OP_ASHR: {
-      xi = yi.AShr(zi);
-      break;
-    }
-    default:
-      CRAB_ERROR("unreachable");
-    }
-    m_env.set(x, to_constant(xi));
   }
 
   void apply(crab::domains::bitwise_operation_t op, const variable_t &x,
@@ -524,38 +697,36 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    interval_t yi = to_interval(m_env[y]);
-    interval_t zi(k);
-    interval_t xi = interval_t::bottom();
-    switch (op) {
-    case crab::domains::OP_AND: {
-      xi = yi.And(zi);
-      break;
+    if (!is_bottom()) {
+      constant_t yc = m_env[y];
+      constant_t zc(k);
+      constant_t xc = constant_t::top();
+      switch (op) {
+      case crab::domains::OP_AND:
+	xc = yc.BitwiseAnd(zc);
+	break;
+      case crab::domains::OP_OR:
+	xc = yc.BitwiseOr(zc);
+	break;
+      case crab::domains::OP_XOR:
+	xc = yc.BitwiseXor(zc);
+	break;
+      case crab::domains::OP_SHL:
+	xc = yc.BitwiseShl(zc);      
+	break;
+      case crab::domains::OP_LSHR:
+	xc = yc.BitwiseLShr(zc);            
+	break;
+      case crab::domains::OP_ASHR: {
+	xc = yc.BitwiseAShr(zc);                  
+	break;
+      }
+      default:
+	CRAB_ERROR("Operation ", op, " not supported");
+      }
+      m_env.set(x, xc);
     }
-    case crab::domains::OP_OR: {
-      xi = yi.Or(zi);
-      break;
-    }
-    case crab::domains::OP_XOR: {
-      xi = yi.Xor(zi);
-      break;
-    }
-    case crab::domains::OP_SHL: {
-      xi = yi.Shl(zi);
-      break;
-    }
-    case crab::domains::OP_LSHR: {
-      xi = yi.LShr(zi);
-      break;
-    }
-    case crab::domains::OP_ASHR: {
-      xi = yi.AShr(zi);
-      break;
-    }
-    default:
-      CRAB_ERROR("unreachable");
-    }
-    m_env.set(x, to_constant(xi));
+    
   }
 
   virtual void select(const variable_t &lhs, const linear_constraint_t &cond,
@@ -571,15 +742,13 @@ public:
         assign(lhs, e2);
         return;
       }
-
       constant_domain_t inv2(*this);
       inv2 += cond.negate();
       if (inv2.is_bottom()) {
         assign(lhs, e1);
         return;
       }
-
-      set(lhs, this->operator[](e1) | this->operator[](e2));
+      m_env.set(lhs, eval(e1) | eval(e2));
     }
   }
 

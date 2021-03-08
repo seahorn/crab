@@ -63,7 +63,7 @@ private:
     sign_t s = sign_dom.get_sign(v);
     if (s.equal_zero()) {
       constant_dom.set_constant(v,
-                                constant_dom.get_constant(v) & constant_t(0));
+                                constant_dom.get_constant(v) & constant_t::zero());
     }
     constant_t c = constant_dom.get_constant(v);
     if (!c.is_constant()) {
