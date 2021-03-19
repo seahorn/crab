@@ -3778,9 +3778,12 @@ private:
 
       // Merge with its parent if it's its only child.
       if (has_one_child(parent.label())) {
-        // move all statements from cur to parent
+        // fold cur into parent
         parent.copy_back(cur);
         visited.erase(curId);
+	if (has_exit() && exit() == curId) {
+	  set_exit(parent.label());
+	}
         remove(curId);
         parent >> child;
         merge_blocks_rec(child.label(), visited);
@@ -3837,7 +3840,10 @@ private:
           basic_block_t &next_next_bb = get_node(next_next_label);
           bb >> next_next_bb;
         }
-        remove(next_bb.label());
+	if (has_exit() && exit() == next_bb.label()) {
+	  set_exit(bb.label());
+	}
+	remove(next_bb.label());
       }
     }
   }
@@ -3866,7 +3872,7 @@ private:
   void remove_unreachable_blocks() {
     visited_t alive, dead;
     mark_alive_blocks(*this, alive);
-
+    
     for (auto const &bb : *this) {
       if (!(alive.count(bb.label()) > 0)) {
         dead.insert(bb.label());
@@ -3874,6 +3880,11 @@ private:
     }
 
     for (auto bb_id : dead) {
+      if (has_exit() && exit() == bb_id) {
+	// If the exit block is unreachable then we still keep it because any
+	// well-formed CFG should have an exit.
+	continue;
+      }
       remove(bb_id);
     }
   }
@@ -3884,16 +3895,23 @@ private:
       return;
 
     cfg_rev<cfg_ref<cfg_t>> rev_cfg(*this);
-    visited_t useful, useless;
+    visited_t useful;
+    std::vector<basic_block_label_t> useless;
     mark_alive_blocks(rev_cfg, useful);
+    
 
     for (auto const &bb : *this) {
       if (!(useful.count(bb.label()) > 0)) {
-        useless.insert(bb.label());
+        useless.push_back(bb.label());
       }
     }
 
     for (auto bb_id : useless) {
+      if (bb_id == entry()) {
+	// if the entry block cannot reach the exit then we still keep it 
+	// because any well-formed CFG must have an entry block.
+	continue;
+      }
       remove(bb_id);
     }
   }
