@@ -48,7 +48,6 @@ z_cfg_t *foo(z_var x, z_var z, variable_factory_t &vfac, crab::tag_manager &as_m
   entry.assume(tmp <= x);
   entry.assume(tmp > 0);
   exit.store_to_ref(ref, z, tmp);
-  exit.ret(z);
   return cfg;
 }
 

@@ -99,7 +99,8 @@ z_cfg_t *prog2(variable_factory_t &vfac, crab::tag_manager &as_man) {
   z_var q(vfac["q"], crab::REF_TYPE);
   z_var mem(vfac["region_0"], crab::REG_INT_TYPE, 32);    
   // entry and exit block
-  auto cfg = new z_cfg_t("x0", "ret");
+  typename z_cfg_t::fdecl_t fdecl("main", {}, {k});  
+  auto cfg = new z_cfg_t("x0", "ret", fdecl);
   // adding blocks
   z_basic_block_t &x0 = cfg->insert("x0");
   z_basic_block_t &x1 = cfg->insert("x1");
@@ -137,7 +138,6 @@ z_cfg_t *prog2(variable_factory_t &vfac, crab::tag_manager &as_man) {
   bb2.add(i, i, inc);
   ////////////////
   ret.load_from_ref(k, q, mem);
-  ret.ret(k);
   ////////////////
   return cfg;
 }

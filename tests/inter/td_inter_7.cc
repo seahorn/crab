@@ -50,7 +50,6 @@ z_cfg_t *foo(variable_factory_t &vfac) {
   rec.sub(n1, n, 1);
   rec.callsite("foo", {foo_ret}, {n1});
   rec.add(ret_val, foo_ret, 1); 
-  exit.ret(ret_val);
   return cfg;
 }
 

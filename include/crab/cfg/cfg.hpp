@@ -143,8 +143,7 @@ enum stmt_code {
   REF_REMOVE = 53,
   // functions calls
   CALLSITE = 60,
-  RETURN = 61,
-  CRAB_INTRINSIC = 62,
+  CRAB_INTRINSIC = 61,
   // integers/arrays/pointers/boolean
   HAVOC = 70,
   // boolean
@@ -315,7 +314,6 @@ public:
   bool is_bool_assert() const { return (m_stmt_code == BOOL_ASSERT); }
   bool is_bool_select() const { return (m_stmt_code == BOOL_SELECT); }
   bool is_callsite() const { return (m_stmt_code == CALLSITE); }
-  bool is_return() const { return (m_stmt_code == RETURN); }
   bool is_intrinsic() const { return (m_stmt_code == CRAB_INTRINSIC); }
 
   const live_t &get_live() const { return m_live; }
@@ -1859,61 +1857,6 @@ private:
   std::vector<variable_t> m_args;
 };
 
-template <class BasicBlockLabel, class Number, class VariableName>
-class return_stmt : public statement<BasicBlockLabel, Number, VariableName> {
-  using this_type = return_stmt<BasicBlockLabel, Number, VariableName>;
-
-public:
-  using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;
-  using variable_t = variable<Number, VariableName>;
-  using type_t = typename variable_t::type_t;
-
-  return_stmt(variable_t var, basic_block_t *parent)
-      : statement_t(RETURN, parent) {
-    m_ret.push_back(var);
-    this->m_live.add_use(var);
-  }
-
-  return_stmt(const std::vector<variable_t> &ret_vals, basic_block_t *parent)
-      : statement_t(RETURN, parent) {
-    std::copy(ret_vals.begin(), ret_vals.end(), std::back_inserter(m_ret));
-    for (auto r : m_ret) {
-      this->m_live.add_use(r);
-    }
-  }
-
-  const std::vector<variable_t> &get_ret_vals() const { return m_ret; }
-
-  virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
-    v->visit(*this);
-  }
-
-  virtual statement_t *clone(basic_block_t *parent) const {
-    return new this_type(m_ret, parent);
-  }
-
-  virtual void write(crab_os &o) const {
-    o << "return ";
-
-    if (m_ret.size() == 1) {
-      o << (*m_ret.begin());
-    } else if (m_ret.size() > 1) {
-      o << "(";
-      for (auto It = m_ret.begin(), Et = m_ret.end(); It != Et;) {
-        o << (*It);
-        ++It;
-        if (It != Et)
-          o << ",";
-      }
-      o << ")";
-    }
-  }
-
-private:
-  std::vector<variable_t> m_ret;
-};
 
 /* An intrinsic function is an "internal" function with semantics
    defined by the Crab domains */
@@ -2415,8 +2358,6 @@ public:
   using int_cast_t = int_cast_stmt<BasicBlockLabel, Number, VariableName>;
   // Functions
   using callsite_t = callsite_stmt<BasicBlockLabel, Number, VariableName>;
-  using return_t = return_stmt<BasicBlockLabel, Number, VariableName>;
-  // Intrinsics
   using intrinsic_t = intrinsic_stmt<BasicBlockLabel, Number, VariableName>;
   // Arrays
   using arr_init_t = array_init_stmt<BasicBlockLabel, Number, VariableName>;
@@ -2864,15 +2805,6 @@ public:
     return insert(new callsite_t(func, lhs, args, this));
   }
 
-  const statement_t *ret(variable_t var) {
-    std::vector<variable_t> ret_vals{var};
-    return insert(new return_t(ret_vals, this));
-  }
-
-  const statement_t *ret(const std::vector<variable_t> &ret_vals) {
-    return insert(new return_t(ret_vals, this));
-  }
-  
   const statement_t *intrinsic(std::string name,
                                const std::vector<variable_t> &lhs,
                                const std::vector<variable_or_constant_t> &args) {
@@ -3158,7 +3090,6 @@ struct statement_visitor {
   using havoc_t = havoc_stmt<BasicBlockLabel, Number, VariableName>;
   using unreach_t = unreachable_stmt<BasicBlockLabel, Number, VariableName>;
   using callsite_t = callsite_stmt<BasicBlockLabel, Number, VariableName>;
-  using return_t = return_stmt<BasicBlockLabel, Number, VariableName>;
   using intrinsic_t = intrinsic_stmt<BasicBlockLabel, Number, VariableName>;
   using arr_init_t = array_init_stmt<BasicBlockLabel, Number, VariableName>;
   using arr_store_t = array_store_stmt<BasicBlockLabel, Number, VariableName>;
@@ -3200,7 +3131,6 @@ struct statement_visitor {
   virtual void visit(unreach_t &){};
   virtual void visit(havoc_t &){};
   virtual void visit(callsite_t &){};
-  virtual void visit(return_t &){};
   virtual void visit(intrinsic_t &){};
   virtual void visit(arr_init_t &){};
   virtual void visit(arr_store_t &){};
@@ -3604,7 +3534,7 @@ public:
   }
 
   // --- End ikos fixpoint API
-
+  
   basic_block_t &insert(BasicBlockLabel bb_id) {
     auto it = m_blocks.find(bb_id);
     if (it != m_blocks.end())
@@ -3649,6 +3579,11 @@ public:
     delete bb;
   }
 
+  // Return a fresh basic block that is not part of the current CFG.
+  std::unique_ptr<basic_block_t> create_unlinked_block(BasicBlockLabel bb) {
+    return std::unique_ptr<basic_block_t>(new basic_block_t(bb));
+  }
+  
   // Return all variables (either used or defined) in the cfg.
   //
   // This operation is linear on the size of the cfg to still keep
@@ -4363,7 +4298,6 @@ private:
     using havoc_t = typename statement_visitor<B, N, V>::havoc_t;
     using unreach_t = typename statement_visitor<B, N, V>::unreach_t;
     using callsite_t = typename statement_visitor<B, N, V>::callsite_t;
-    using return_t = typename statement_visitor<B, N, V>::return_t;
     using intrinsic_t = typename statement_visitor<B, N, V>::intrinsic_t;
     using arr_init_t = typename statement_visitor<B, N, V>::arr_init_t;
     using arr_store_t = typename statement_visitor<B, N, V>::arr_store_t;
@@ -4926,14 +4860,6 @@ private:
 	if (vc.is_variable()) {
 	  check_varname(vc.get_variable());
 	}
-      }
-    }
-
-    void visit(return_t &s) {
-      // The type consistency with the callsite at the caller is
-      // done elsewhere.
-      for (const variable_t &v : s.get_ret_vals()) {
-        check_varname(v);
       }
     }
 

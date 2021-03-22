@@ -84,7 +84,6 @@ z_cfg_t *foo(variable_factory_t &vfac) {
   // adding statements
   entry.add(y, x, 1);
   exit.add(z, y, 2);
-  exit.ret(z);
   return cfg;
 }
 
@@ -105,7 +104,6 @@ z_cfg_t *rec1(variable_factory_t &vfac) {
   // adding statements
   entry.sub(r, s, 1);
   exit.callsite("rec2", {t}, {r});
-  exit.ret(t);
   return cfg;
 }
 
@@ -130,7 +128,6 @@ z_cfg_t *rec2(variable_factory_t &vfac) {
   exit.callsite("rec1", {t}, {r});
   // exit.callsite("foo", {t}, {t});
   exit.assertion(a >= 5);
-  exit.ret(t);
   return cfg;
 }
 
@@ -155,7 +152,6 @@ z_cfg_t *bar(variable_factory_t &vfac) {
   exit.assertion(y <= 17);
   entry.assign(x, a);
   entry.assign(w, 5);
-  exit.ret(y);
   return cfg;
 }
 
@@ -176,7 +172,7 @@ z_cfg_t *m(variable_factory_t &vfac) {
   z_var w(vfac["w2"], crab::INT_TYPE, 32);
   z_var res(vfac["res"], crab::INT_TYPE, 32);
 
-  function_decl<z_number, varname_t> decl("main", {}, {w});
+  function_decl<z_number, varname_t> decl("main", {}, {res});
 
   // entry and exit block
   z_cfg_t *cfg = new z_cfg_t("entry", "exit", decl);
@@ -219,7 +215,6 @@ z_cfg_t *m(variable_factory_t &vfac) {
   exit.add(res, res, y5);
   exit.add(res, res, y6);
   exit.assertion(res == 41);
-  exit.ret(res);
   return cfg;
 }
 

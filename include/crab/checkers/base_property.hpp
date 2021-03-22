@@ -197,8 +197,6 @@ public:
       crab::cfg::unreachable_stmt<basic_block_label_t, number_t, varname_t>;
   using callsite_t =
       crab::cfg::callsite_stmt<basic_block_label_t, number_t, varname_t>;
-  using return_t =
-      crab::cfg::return_stmt<basic_block_label_t, number_t, varname_t>;
   using intrinsic_t =
       crab::cfg::intrinsic_stmt<basic_block_label_t, number_t, varname_t>;
   using arr_init_t =
@@ -357,12 +355,6 @@ protected:
   }
 
   virtual void check(callsite_t &s) {
-    if (!this->m_abs_tr)
-      return;
-    s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
-  }
-
-  virtual void check(return_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
@@ -529,7 +521,6 @@ public:
   void visit(havoc_t &s) { check(s); }
   void visit(unreach_t &s) { check(s); }
   void visit(callsite_t &s) { check(s); }
-  void visit(return_t &s) { check(s); }
   void visit(intrinsic_t &s) { check(s); }
   void visit(arr_init_t &s) { check(s); }
   void visit(arr_assign_t &s) { check(s); }

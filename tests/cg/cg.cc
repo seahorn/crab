@@ -28,7 +28,7 @@ z_cfg_t *foo(variable_factory_t &vfac) {
   z_var w(vfac["w"], crab::INT_TYPE, 32);
   z_var z(vfac["z"], crab::INT_TYPE, 32);
 
-  function_decl<z_number, varname_t> decl("foo", {x}, {z});
+  function_decl<z_number, varname_t> decl("foo", {x}, {w});
   // entry and exit block
   z_cfg_t *cfg = new z_cfg_t("entry", "exit", decl);
   // adding blocks
@@ -40,7 +40,6 @@ z_cfg_t *foo(variable_factory_t &vfac) {
   entry.add(y, x, 1);
   exit.add(z, y, 2);
   exit.callsite("barz", {w}, {z});
-  exit.ret(w);
   return cfg;
 }
 
@@ -61,7 +60,6 @@ z_cfg_t *bar(variable_factory_t &vfac) {
   // adding statements
   exit.callsite("foo", {y}, {x});
   entry.assign(x, a);
-  exit.ret(y);
   return cfg;
 }
 
@@ -82,7 +80,6 @@ z_cfg_t *barz(variable_factory_t &vfac) {
   // adding statements
   exit.callsite("bar", {y}, {x});
   entry.assign(x, a);
-  exit.ret(y);
   return cfg;
 }
 

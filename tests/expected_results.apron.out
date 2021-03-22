@@ -1731,7 +1731,6 @@ entry:
   goto exit;
 exit:
   z = y+2;
-  return z;
 
 
 y1:int32 declare bar(a:int32)
@@ -1741,7 +1740,6 @@ entry:
   goto exit;
 exit:
   y1:int32 = call foo(x1:int32);
-  return y1;
 
 
 t:int32 declare rec1(s:int32)
@@ -1750,7 +1748,6 @@ entry:
   goto exit;
 exit:
   t:int32 = call rec2(r:int32);
-  return t;
 
 
 t1:int32 declare rec2(s1:int32)
@@ -1759,7 +1756,6 @@ entry:
   goto exit;
 exit:
   t1:int32 = call rec1(r1:int32);
-  return t1;
 
 
 w2:int32 declare main()
@@ -1771,7 +1767,6 @@ entry:
 exit:
   z2 = y2+2;
   w2:int32 = call foo(z2:int32);
-  return w2;
 
 
 Running summary domain=SparseDBM and forward domain=Intervals
@@ -1950,14 +1945,13 @@ Control-dependence graph
 {x7;x8;}  control-dependent on x6
 === End ./test-bin/cfg ===
 === Begin ./test-bin/cg ===
-z:int32 declare foo(x:int32)
+w:int32 declare foo(x:int32)
 entry:
   y = x+1;
   goto exit;
 exit:
   z = y+2;
   w:int32 = call barz(z:int32);
-  return w;
 
 
 y:int32 declare bar(a:int32)
@@ -1966,7 +1960,6 @@ entry:
   goto exit;
 exit:
   y:int32 = call foo(x:int32);
-  return y;
 
 
 void declare main()
@@ -2281,6 +2274,7 @@ ret:
 
 
 CFG
+k:int32 declare main()
 x0:
   k = 2147483648;
   o = 4;
@@ -2312,10 +2306,10 @@ bb1_f:
   goto ret;
 ret:
   k:int32 := load_from_ref(region_0:region(int),q:ref);
-  return k;
 
 
 After Dead Code Elimination
+k:int32 declare main()
 x0:
   o = 4;
   p := make_ref(region_0:region(int),as_1);
@@ -2345,10 +2339,10 @@ bb1_f:
   goto ret;
 ret:
   k:int32 := load_from_ref(region_0:region(int),q:ref);
-  return k;
 
 
 Cloned CFG
+k:int32 declare main()
 x0:
   k = 2147483648;
   o = 4;
@@ -2380,7 +2374,6 @@ bb1_f:
   goto ret;
 ret:
   k:int32 := load_from_ref(region_0:region(int),q:ref);
-  return k;
 
 
 === End ./test-bin/dce ===
@@ -3710,7 +3703,6 @@ entry:
   goto exit;
 exit:
   z = y+2;
-  return z;
 
 
 y1:int32 declare bar(a:int32)
@@ -3722,7 +3714,6 @@ exit:
   y1:int32 = call foo(x1:int32);
   assert(-y1 <= -6);
   assert(y1 <= 17);
-  return y1;
 
 
 t:int32 declare rec1(s:int32)
@@ -3731,7 +3722,6 @@ entry:
   goto exit;
 exit:
   t:int32 = call rec2(r:int32);
-  return t;
 
 
 t1:int32 declare rec2(s1:int32)
@@ -3742,10 +3732,9 @@ entry:
 exit:
   t1:int32 = call rec1(r1:int32);
   assert(-a <= -5);
-  return t1;
 
 
-w2:int32 declare main()
+res:int32 declare main()
 entry:
   x2 = 3;
   x3 = 4;
@@ -3772,7 +3761,6 @@ exit:
   res = res+y5;
   res = res+y6;
   assert(res = 41);
-  return res;
 
 
 Running top-down inter-procedural analysis with SparseDBM
@@ -3814,7 +3802,6 @@ rec_case:
   (x_out:int32,y_out:int32)= call loop(x_next:int32,y_next:int32);
   goto exit;
 exit:
-  return (x_out,y_out);
 
 base_case:
   assume(-x_in <= -101);
@@ -3829,7 +3816,6 @@ entry:
   (x_res:int32,y_res:int32)= call loop(x:int32,y:int32);
   goto exit;
 exit:
-  return (x_res,y_res);
 
 
 (x_out:int32,y_out:int32) declare loop(x_in:int32,y_in:int32)
@@ -3849,7 +3835,6 @@ entry:
   goto exit;
 exit:
   z = x;
-  return z;
 
 
 void declare main()
@@ -3881,7 +3866,6 @@ entry:
   goto exit;
 exit:
   store_to_ref(z:region(int),ref:ref,tmp:int32);
-  return z;
 
 
 void declare main()
@@ -3912,7 +3896,6 @@ entry:
   goto exit;
 exit:
   store_to_ref(b:region(int),ref:ref,tmp:int32);
-  return b;
 
 
 void declare main()
@@ -3942,7 +3925,6 @@ base:
   res = n;
   goto exit;
 exit:
-  return res;
 
 rec:
   assume(-n <= -1);
@@ -3974,7 +3956,6 @@ base:
   res = n;
   goto exit;
 exit:
-  return res;
 
 rec:
   assume(-n <= -1);
@@ -4020,7 +4001,6 @@ base:
   res = n;
   goto exit;
 exit:
-  return res;
 
 rec:
   assume(-n <= -1);

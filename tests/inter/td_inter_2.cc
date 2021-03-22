@@ -58,7 +58,6 @@ z_cfg_t *f_loop(variable_factory_t &vfac) {
   base_case.assume(x_in >= 101);
   base_case.assign(x_out, x_in);
   base_case.assign(y_out, y_in);
-  exit.ret({x_out, y_out});
   return cfg;
 }
 
@@ -83,7 +82,6 @@ z_cfg_t *m(variable_factory_t &vfac) {
   entry.assign(y, 0);
 
   entry.callsite("loop", {x_res, y_res}, {x, y});
-  exit.ret({x_res, y_res});
   return cfg;
 }
 

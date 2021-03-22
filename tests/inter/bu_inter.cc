@@ -28,7 +28,6 @@ z_cfg_t *foo(variable_factory_t &vfac) {
   // adding statements
   entry.add(y, x, 1);
   exit.add(z, y, 2);
-  exit.ret(z);
   return cfg;
 }
 
@@ -49,7 +48,6 @@ z_cfg_t *rec1(variable_factory_t &vfac) {
   // adding statements
   entry.sub(r, s, 1);
   exit.callsite("rec2", {t}, {r});
-  exit.ret(t);
   return cfg;
 }
 
@@ -71,7 +69,6 @@ z_cfg_t *rec2(variable_factory_t &vfac) {
   entry.sub(r, s, 1);
   exit.callsite("rec1", {t}, {r});
   // exit.callsite ("foo", {t}, {t});
-  exit.ret(t);
   return cfg;
 }
 
@@ -94,7 +91,6 @@ z_cfg_t *bar(variable_factory_t &vfac) {
   exit.callsite("foo", {y}, {x});
   entry.assign(x, a);
   entry.assign(w, 5);
-  exit.ret(y);
   return cfg;
 }
 
@@ -123,7 +119,6 @@ z_cfg_t *m(variable_factory_t &vfac) {
   /////
   exit.add(z, y, 2);
   exit.callsite("foo", {w}, {z});
-  exit.ret(w);
   return cfg;
 }
 

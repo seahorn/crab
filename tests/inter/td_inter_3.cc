@@ -41,7 +41,6 @@ z_cfg_t *foo(z_var x, z_var y, z_var z) {
   z_basic_block_t &exit = cfg->insert("exit");
   entry >> exit;
   exit.assign(z, x);
-  exit.ret(z);
   return cfg;
 }
 

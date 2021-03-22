@@ -70,7 +70,6 @@ public:
   using int_cast_t = crab::cfg::int_cast_stmt<bb_label_t, number_t, varname_t>;
 
   using callsite_t = crab::cfg::callsite_stmt<bb_label_t, number_t, varname_t>;
-  using return_t = crab::cfg::return_stmt<bb_label_t, number_t, varname_t>;
   using intrinsic_t =
       crab::cfg::intrinsic_stmt<bb_label_t, number_t, varname_t>;
 
@@ -131,7 +130,6 @@ protected:
   virtual void exec(assert_t &) {}
   virtual void exec(int_cast_t &) {}
   virtual void exec(callsite_t &) {}
-  virtual void exec(return_t &) {}
   virtual void exec(intrinsic_t &) {}
   virtual void exec(arr_init_t &) {}
   virtual void exec(arr_store_t &) {}
@@ -168,7 +166,6 @@ public: /* visitor api */
   void visit(assert_t &s) { exec(s); }
   void visit(int_cast_t &s) { exec(s); }
   void visit(callsite_t &s) { exec(s); }
-  void visit(return_t &s) { exec(s); }
   void visit(intrinsic_t &s) { exec(s); }
   void visit(arr_init_t &s) { exec(s); }
   void visit(arr_store_t &s) { exec(s); }
@@ -347,7 +344,6 @@ public:
   using typename abs_transform_api_t::ref_to_int_t;
   using typename abs_transform_api_t::region_copy_t;
   using typename abs_transform_api_t::region_init_t;
-  using typename abs_transform_api_t::return_t;
   using typename abs_transform_api_t::select_ref_t;
   using typename abs_transform_api_t::select_t;
   using typename abs_transform_api_t::store_to_arr_ref_t;
@@ -877,7 +873,6 @@ public:
     }
   }
 
-  virtual void exec(return_t &ret) {}
 };
 
 ///////////////////////////////////////
@@ -965,7 +960,6 @@ public:
   using typename abs_transform_api_t::ref_to_int_t;
   using typename abs_transform_api_t::region_copy_t;
   using typename abs_transform_api_t::region_init_t;
-  using typename abs_transform_api_t::return_t;
   using typename abs_transform_api_t::select_ref_t;
   using typename abs_transform_api_t::select_t;
   using typename abs_transform_api_t::store_to_arr_ref_t;
@@ -1263,7 +1257,6 @@ public:
       m_pre -= vt;
     }
   }
-  virtual void exec(return_t &stmt) {}
 
   void exec(intrinsic_t &cs) {
     abs_dom_t invariant = get_forward_invariant(&cs);
