@@ -21,6 +21,7 @@ template <typename CFG> class dead_code_elimination : public transform<CFG> {
   using variable_t = typename CFG::variable_t;
   using statement_t = typename CFG::statement_t;
   using basic_block_t = typename CFG::basic_block_t;
+  using live_t = typename statement_t::live_t;
   using bb_reverse_iterator_t = typename CFG::basic_block_t::reverse_iterator;
   using cfg_iterator_t = typename CFG::iterator;
   using liveness_t = typename analyzer::liveness_analysis<CFG>;
@@ -28,6 +29,36 @@ template <typename CFG> class dead_code_elimination : public transform<CFG> {
 
   int m_max_iterations;
 
+  bool keep_conservatively(const statement_t &s) const {
+    if (s.is_callsite()) {
+      // If s is a callsite then the callee can still have
+      // side-effects (assertions).
+      //
+      // TODO: use the assertion crawler analysis to remove the callee
+      // if it doesn't have any assertion.
+      return true;
+    } else if (s.is_arr_init() || s.is_arr_write()) {
+      return true;
+    } else if (s.is_ref_store() || s.is_ref_arr_store() ||
+	       s.is_region_init() ||
+	       s.is_ref_remove()) {
+      return true;
+    } else if (s.is_assert() || s.is_ref_assert() || s.is_bool_assert()) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  bool included_defs(const live_t &live, const varset_domain_t &vars) const {
+    for (auto it=live.defs_begin(), et=live.defs_end(); it!=et; ++it) {
+      if (!(varset_domain_t(*it) <= vars)) {
+	return false;
+      }
+    }
+    return true;
+  }
+  
 public:
   dead_code_elimination(int max_iterations = 10)
       : transform<CFG>(), m_max_iterations(max_iterations) {}
@@ -48,31 +79,15 @@ public:
         for (bb_reverse_iterator_t s_it = bb.rbegin(), s_et = bb.rend();
              s_it != s_et; ++s_it) {
           statement_t &s = *s_it;
-          auto const &s_live_vars = s.get_live();
-
-          // if DEF(s) = {d} and d \not\in out_live then remove s
-          if (!s.is_callsite()) {
-            // XXX: if s is a callsite the callee can still have
-            // side-effects (assertions).
-            //
-            // TODO: use the assertion crawler analysis to remove the
-            // callee if it doesn't have any assertion.
-            if (s_live_vars.num_defs() == 1) {
-              const variable_t &def = *(s_live_vars.defs_begin());
-              if (!def.get_type().is_array()) {
-                // XXX: An array variable contain actually multiple
-                // definitions so we conservatively skip it.
-                if (!(varset_domain_t(def) <= out_live)) {
-                  // mark s to be removed
-                  change = true;
-                  apply_dce = true;
-                  to_remove.push_back(&s);
-                  CRAB_LOG("dce", crab::outs() << "DEAD: " << s << "\n";);
-                }
-              }
-            }
+          auto const& s_live_vars = s.get_live();
+          // if DEF(s) \not\subseteq out_live then remove s
+          if (!keep_conservatively(s) && !(included_defs(s_live_vars, out_live))) {
+	    // mark s to be removed
+	    change = true;
+	    apply_dce = true;
+	    to_remove.push_back(&s);
+	    CRAB_LOG("dce", crab::outs() << "DEAD: " << s << "\n";);
           }
-
           // update out_live for the next statement:
           //   out_live = (out_live \ DEFS(s)) U USES(s)
           for (auto it = s_live_vars.defs_begin(), et = s_live_vars.defs_end();
