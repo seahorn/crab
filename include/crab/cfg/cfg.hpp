@@ -289,6 +289,7 @@ public:
   bool is_assert() const { return (m_stmt_code == ASSERT); }
   bool is_int_cast() const { return (m_stmt_code == INT_CAST); }
   bool is_havoc() const { return m_stmt_code == HAVOC; }
+  bool is_unreachable() const { return m_stmt_code == UNREACH; }
   bool is_arr_init() const { return (m_stmt_code == ARR_INIT); }
   bool is_arr_read() const { return (m_stmt_code == ARR_LOAD); }
   bool is_arr_write() const { return (m_stmt_code == ARR_STORE); }
