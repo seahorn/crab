@@ -37,9 +37,8 @@ private:
       crab::iterators::killgen_operations_api<CFG, varset_domain_t>;
   using binding_t = std::pair<varset_domain_t, varset_domain_t>;
   using liveness_map_t = std::unordered_map<basic_block_label_t, binding_t>;
-
+  
   liveness_map_t m_liveness_map;
-
 public:
   liveness_analysis_operations(CFG cfg) : parent_type(cfg) {}
 
@@ -63,8 +62,13 @@ public:
   virtual void init_fixpoint() {
     for (auto &b :
          boost::make_iterator_range(this->m_cfg.begin(), this->m_cfg.end())) {
+      bool is_unreachable_block = false;
       varset_domain_t kill, gen;
       for (auto &s : boost::make_iterator_range(b.rbegin(), b.rend())) {
+	if (s.is_unreachable()) {
+	  is_unreachable_block = true;
+	  break;
+	} 
         auto const &live = s.get_live();
         for (auto d :
              boost::make_iterator_range(live.defs_begin(), live.defs_end())) {
@@ -75,17 +79,23 @@ public:
              boost::make_iterator_range(live.uses_begin(), live.uses_end())) {
           gen += u;
         }
+      } // end for
+      if (!is_unreachable_block) {
+	m_liveness_map.insert(std::make_pair(b.label(), binding_t(kill, gen)));
       }
-      m_liveness_map.insert(std::make_pair(b.label(), binding_t(kill, gen)));
-    }
+    } // end for
   }
 
   virtual varset_domain_t analyze(const basic_block_label_t &bb_id,
                                   varset_domain_t in) {
     auto it = m_liveness_map.find(bb_id);
-    assert(it != m_liveness_map.end());
-    in -= it->second.first;
-    in += it->second.second;
+    if (it != m_liveness_map.end()) {
+      in -= it->second.first;
+      in += it->second.second;
+    } else {
+      // bb_id is unreachable
+      in = varset_domain_t::bottom(); // empty set (i.e., no live variables)
+    } 
     return in;
   }
 
@@ -129,7 +139,7 @@ public:
                                    : boost::make_iterator_range(
                                        this->out_begin(), this->out_end())) {
       crab::outs() << basic_block_traits<basic_block_t>::to_string(p.first)
-                   << " live variables=" << p.second << "\n";
+                   << " OUT live variables=" << p.second << "\n";
       ;
     });
 
