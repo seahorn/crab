@@ -1,10 +1,18 @@
 /*******************************************************************************
  * Array smashing domain
  *
- * Assume all array accesses are aligned so the number of read bytes
- * is always equal to the number of written bytes. Note that this
- * assumption does not hold in general, so the client must ensure
- * that.
+ * Word-level assumption: for any array load, it assumes that the
+ * number of read bytes is equal to the number of bytes written during
+ * the last array write. If this assumption is too strong then use the
+ * array_adaptive domain.
+ *
+ * For efficiency reasons, the domain does not generate a ghost
+ * variable for the summarized variable (i.e., the variable that
+ * represents the smashed array). This means that array variables are
+ * passed to the bool/numerical domain. In particular, the smashing
+ * domain passes an array variable to the base domain in the following
+ * operations: assign_bool_cst, assign_bool_var, assign, and expand
+ * for the modeling of array operations.
  ******************************************************************************/
 
 #pragma once
@@ -20,16 +28,16 @@ namespace domains {
 
 // Abstract domain to reason about summarized variables. All
 // array elements are `smashed` into a single variable.
-template <typename NumDomain>
+template <typename BaseNumDomain>
 class array_smashing final
-    : public abstract_domain_api<array_smashing<NumDomain>> {
+    : public abstract_domain_api<array_smashing<BaseNumDomain>> {
 
 public:
-  using number_t = typename NumDomain::number_t;
-  using varname_t = typename NumDomain::varname_t;
+  using number_t = typename BaseNumDomain::number_t;
+  using varname_t = typename BaseNumDomain::varname_t;
 
 private:
-  using array_smashing_t = array_smashing<NumDomain>;
+  using array_smashing_t = array_smashing<BaseNumDomain>;
   using abstract_domain_t = abstract_domain_api<array_smashing_t>;
 
 public:
@@ -42,7 +50,7 @@ public:
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using typename abstract_domain_t::variable_or_constant_vector_t;  
-  using content_domain_t = NumDomain;
+  using base_dom_t = BaseNumDomain;
   using interval_t = ikos::interval<number_t>;
 
 private:
@@ -55,11 +63,11 @@ private:
   // to_disjunctive_linear_constraint_system. These methods
   // convert the internal representation to linear constraints
   // which should not contain array variables.
-  NumDomain _inv;
+  base_dom_t m_base_dom;
 
-  array_smashing(NumDomain &&inv) : _inv(std::move(inv)) {}
+  array_smashing(base_dom_t &&base_dom) : m_base_dom(std::move(base_dom)) {}
 
-  void do_strong_update(NumDomain &dom, const variable_t &a,
+  void do_strong_update(base_dom_t &dom, const variable_t &a,
                         const linear_expression_t &rhs) {
     auto ty = a.get_type();
     if (ty.is_bool_array()) {
@@ -80,15 +88,15 @@ private:
   }
 
   void do_strong_update(const variable_t &a, const linear_expression_t &rhs) {
-    do_strong_update(_inv, a, rhs);
+    do_strong_update(m_base_dom, a, rhs);
   }
 
   // We perform the strong update on a copy of *this. Then, we join
   // the copy of *this with *this.
   void do_weak_update(const variable_t &a, const linear_expression_t &rhs) {
-    NumDomain other(_inv);
+    base_dom_t other(m_base_dom);
     do_strong_update(other, a, rhs);
-    _inv |= other;
+    m_base_dom |= other;
   }
 
   // The internal representation contains variables of array
@@ -111,121 +119,121 @@ private:
   }
 
 public:
-  array_smashing() { _inv.set_to_top(); }
+  array_smashing() { m_base_dom.set_to_top(); }
 
   array_smashing make_top() const override {
-    NumDomain inv;
-    array_smashing out(inv.make_top());
+    base_dom_t base_dom;
+    array_smashing out(base_dom.make_top());
     return out;
   }
 
   array_smashing make_bottom() const override {
-    NumDomain inv;
-    array_smashing out(inv.make_bottom());
+    base_dom_t base_dom;
+    array_smashing out(base_dom.make_bottom());
     return out;
   }
 
   void set_to_top() override {
-    NumDomain inv;
-    array_smashing abs(inv.make_top());
+    base_dom_t base_dom;
+    array_smashing abs(base_dom.make_top());
     std::swap(*this, abs);
   }
 
   void set_to_bottom() override {
-    NumDomain inv;
-    array_smashing abs(inv.make_bottom());
+    base_dom_t base_dom;
+    array_smashing abs(base_dom.make_bottom());
     std::swap(*this, abs);
   }
 
-  array_smashing(const array_smashing_t &other) : _inv(other._inv) {
+  array_smashing(const array_smashing_t &other) : m_base_dom(other.m_base_dom) {
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
   }
 
   array_smashing(const array_smashing_t &&other)
-      : _inv(std::move(other._inv)) {}
+      : m_base_dom(std::move(other.m_base_dom)) {}
 
   array_smashing_t &operator=(const array_smashing_t &other) {
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
     if (this != &other) {
-      _inv = other._inv;
+      m_base_dom = other.m_base_dom;
     }
     return *this;
   }
 
   array_smashing_t &operator=(const array_smashing_t &&other) {
     if (this != &other) {
-      _inv = std::move(other._inv);
+      m_base_dom = std::move(other.m_base_dom);
     }
     return *this;
   }
 
-  bool is_bottom() const override { return (_inv.is_bottom()); }
+  bool is_bottom() const override { return (m_base_dom.is_bottom()); }
 
-  bool is_top() const override { return (_inv.is_top()); }
+  bool is_top() const override { return (m_base_dom.is_top()); }
 
   bool operator<=(const array_smashing_t &other) const override {
-    return (_inv <= other._inv);
+    return (m_base_dom <= other.m_base_dom);
   }
 
   void operator|=(const array_smashing_t &other) override {
-    _inv |= other._inv;
+    m_base_dom |= other.m_base_dom;
   }
 
   array_smashing_t operator|(const array_smashing_t &other) const override {
-    return array_smashing_t(_inv | other._inv);
+    return array_smashing_t(m_base_dom | other.m_base_dom);
   }
 
   array_smashing_t operator&(const array_smashing_t &other) const override {
-    return array_smashing_t(_inv & other._inv);
+    return array_smashing_t(m_base_dom & other.m_base_dom);
   }
 
   array_smashing_t operator||(const array_smashing_t &other) const override {
-    return array_smashing_t(_inv || other._inv);
+    return array_smashing_t(m_base_dom || other.m_base_dom);
   }
 
   array_smashing_t widening_thresholds(
       const array_smashing_t &other,
       const iterators::thresholds<number_t> &ts) const override {
-    return array_smashing_t(_inv.widening_thresholds(other._inv, ts));
+    return array_smashing_t(m_base_dom.widening_thresholds(other.m_base_dom, ts));
   }
 
   array_smashing_t operator&&(const array_smashing_t &other) const override {
-    return array_smashing_t(_inv && other._inv);
+    return array_smashing_t(m_base_dom && other.m_base_dom);
   }
 
   virtual interval_t operator[](const variable_t &v) override {
-    return _inv[v];
+    return m_base_dom[v];
   }
 
   void forget(const variable_vector_t &variables) override {
-    _inv.forget(variables);
+    m_base_dom.forget(variables);
   }
 
   void project(const variable_vector_t &variables) override {
-    _inv.project(variables);
+    m_base_dom.project(variables);
   }
 
   void expand(const variable_t &var, const variable_t &new_var) override {
     if (var.get_type() != new_var.get_type()) {
       CRAB_ERROR(domain_name(), "::expand must preserve the same type");
     }
-    _inv.expand(var, new_var);
+    m_base_dom.expand(var, new_var);
   }
 
-  void normalize() override { _inv.normalize(); }
+  void normalize() override { m_base_dom.normalize(); }
 
-  void minimize() override { _inv.minimize(); }
+  void minimize() override { m_base_dom.minimize(); }
 
   void operator+=(const linear_constraint_system_t &csts) override {
-    _inv += csts;
+    m_base_dom += csts;
   }
 
-  void operator-=(const variable_t &var) override { _inv -= var; }
+  void operator-=(const variable_t &var) override { m_base_dom -= var; }
 
   void assign(const variable_t &x, const linear_expression_t &e) override {
-    _inv.assign(x, e);
+    m_base_dom.assign(x, e);
 
     CRAB_LOG("smashing", crab::outs()
                              << "apply " << x << " := " << e << *this << "\n";);
@@ -233,7 +241,7 @@ public:
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t z) override {
-    _inv.apply(op, x, y, z);
+    m_base_dom.apply(op, x, y, z);
 
     CRAB_LOG("smashing", crab::outs() << "apply " << x << " := " << y << " "
                                       << op << " " << z << *this << "\n";);
@@ -241,7 +249,7 @@ public:
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    _inv.apply(op, x, y, z);
+    m_base_dom.apply(op, x, y, z);
 
     CRAB_LOG("smashing", crab::outs() << "apply " << x << " := " << y << " "
                                       << op << " " << z << *this << "\n";);
@@ -249,34 +257,34 @@ public:
 
   void select(const variable_t &lhs, const linear_constraint_t &cond,
 	      const linear_expression_t &e1,  const linear_expression_t &e2) override {
-    _inv.select(lhs, cond, e1, e2);
+    m_base_dom.select(lhs, cond, e1, e2);
   }
   
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const array_smashing_t &inv) override {
-    _inv.backward_assign(x, e, inv._inv);
+    m_base_dom.backward_assign(x, e, inv.m_base_dom);
   }
 
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, number_t z,
                       const array_smashing_t &inv) override {
-    _inv.backward_apply(op, x, y, z, inv._inv);
+    m_base_dom.backward_apply(op, x, y, z, inv.m_base_dom);
   }
 
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const array_smashing_t &inv) override {
-    _inv.backward_apply(op, x, y, z, inv._inv);
+    m_base_dom.backward_apply(op, x, y, z, inv.m_base_dom);
   }
 
   void apply(int_conv_operation_t op, const variable_t &dst,
              const variable_t &src) override {
-    _inv.apply(op, dst, src);
+    m_base_dom.apply(op, dst, src);
   }
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    _inv.apply(op, x, y, z);
+    m_base_dom.apply(op, x, y, z);
 
     CRAB_LOG("smashing", crab::outs() << "apply " << x << " := " << y << " "
                                       << op << " " << z << *this << "\n";);
@@ -284,7 +292,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    _inv.apply(op, x, y, k);
+    m_base_dom.apply(op, x, y, k);
 
     CRAB_LOG("smashing", crab::outs() << "apply " << x << " := " << y << " "
                                       << op << " " << k << *this << "\n";);
@@ -293,59 +301,59 @@ public:
   // boolean operators
   virtual void assign_bool_cst(const variable_t &lhs,
                                const linear_constraint_t &rhs) override {
-    _inv.assign_bool_cst(lhs, rhs);
+    m_base_dom.assign_bool_cst(lhs, rhs);
   }
 
   virtual void assign_bool_ref_cst(const variable_t &lhs,
                                    const reference_constraint_t &rhs) override {
-    _inv.assign_bool_ref_cst(lhs, rhs);
+    m_base_dom.assign_bool_ref_cst(lhs, rhs);
   }
 
   virtual void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                bool is_not_rhs) override {
-    _inv.assign_bool_var(lhs, rhs, is_not_rhs);
+    m_base_dom.assign_bool_var(lhs, rhs, is_not_rhs);
   }
 
   virtual void apply_binary_bool(bool_operation_t op, const variable_t &x,
                                  const variable_t &y,
                                  const variable_t &z) override {
-    _inv.apply_binary_bool(op, x, y, z);
+    m_base_dom.apply_binary_bool(op, x, y, z);
   }
 
   virtual void assume_bool(const variable_t &v, bool is_negated) override {
-    _inv.assume_bool(v, is_negated);
+    m_base_dom.assume_bool(v, is_negated);
   }
 
   virtual void select_bool(const variable_t &lhs, const variable_t &cond,
 			   const variable_t &b1, const variable_t &b2) override {
-    _inv.select_bool(lhs, cond, b1, b2);
+    m_base_dom.select_bool(lhs, cond, b1, b2);
   }
   
   // backward boolean operators
   virtual void backward_assign_bool_cst(const variable_t &lhs,
                                         const linear_constraint_t &rhs,
                                         const array_smashing_t &inv) override {
-    _inv.backward_assign_bool_cst(lhs, rhs, inv._inv);
+    m_base_dom.backward_assign_bool_cst(lhs, rhs, inv.m_base_dom);
   }
 
   virtual void
   backward_assign_bool_ref_cst(const variable_t &lhs,
                                const reference_constraint_t &rhs,
                                const array_smashing_t &inv) override {
-    _inv.backward_assign_bool_ref_cst(lhs, rhs, inv._inv);
+    m_base_dom.backward_assign_bool_ref_cst(lhs, rhs, inv.m_base_dom);
   }
 
   virtual void backward_assign_bool_var(const variable_t &lhs,
                                         const variable_t &rhs, bool is_not_rhs,
                                         const array_smashing_t &inv) override {
-    _inv.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv._inv);
+    m_base_dom.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv.m_base_dom);
   }
 
   virtual void
   backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
                              const variable_t &y, const variable_t &z,
                              const array_smashing_t &inv) override {
-    _inv.backward_apply_binary_bool(op, x, y, z, inv._inv);
+    m_base_dom.backward_apply_binary_bool(op, x, y, z, inv.m_base_dom);
   }
 
   // array_operators_api
@@ -360,15 +368,15 @@ public:
     if (ty.is_bool_array()) {
       if (val.is_constant()) {
         if (val.constant() >= number_t(1)) {
-          _inv.assign_bool_cst(a, linear_constraint_t::get_true());
+          m_base_dom.assign_bool_cst(a, linear_constraint_t::get_true());
         } else {
-          _inv.assign_bool_cst(a, linear_constraint_t::get_false());
+          m_base_dom.assign_bool_cst(a, linear_constraint_t::get_false());
         }
       } else if (auto var = val.get_variable()) {
-        _inv.assign_bool_var(a, (*var), false);
+        m_base_dom.assign_bool_var(a, (*var), false);
       }
     } else if (ty.is_integer_array() || ty.is_real_array()) {
-      _inv.assign(a, val);
+      m_base_dom.assign(a, val);
     }
     CRAB_LOG("smashing", crab::outs() << "forall i:: " << a << "[i]==" << val
                                       << " -- " << *this << "\n";);
@@ -381,18 +389,18 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".load");
 
     // We need to be careful when assigning a summarized variable a
-    // into a non-summarized variable lhs. Simply _inv.assign(lhs,a)
+    // into a non-summarized variable lhs. Simply m_base_dom.assign(lhs,a)
     // is not sound.
     auto &vfac = const_cast<varname_t *>(&(a.name()))->get_var_factory();
     variable_t a_prime(vfac.get());
-    _inv.expand(a, a_prime);
+    m_base_dom.expand(a, a_prime);
     auto ty = a.get_type();
     if (ty.is_bool_array()) {
-      _inv.assign_bool_var(lhs, a_prime, false);
+      m_base_dom.assign_bool_var(lhs, a_prime, false);
     } else if (ty.is_integer_array() || ty.is_real_array()) {
-      _inv.assign(lhs, a_prime);
+      m_base_dom.assign(lhs, a_prime);
     }
-    _inv -= a_prime;
+    m_base_dom -= a_prime;
 
     CRAB_LOG("smashing", crab::outs() << lhs << ":=" << a << "[" << i
                                       << "]  -- " << *this << "\n";);
@@ -432,9 +440,9 @@ public:
                             const variable_t &rhs) override {
     auto ty = lhs.get_type();
     if (ty.is_bool_array()) {
-      _inv.assign_bool_var(lhs, rhs, false);
+      m_base_dom.assign_bool_var(lhs, rhs, false);
     } else if (ty.is_integer_array() || ty.is_real_array()) {
-      _inv.assign(lhs, rhs);
+      m_base_dom.assign(lhs, rhs);
     }
   }
 
@@ -481,14 +489,14 @@ public:
 
   linear_constraint_system_t to_linear_constraint_system() const override {
     return filter_noninteger_vars(
-        std::move(_inv.to_linear_constraint_system()));
+        std::move(m_base_dom.to_linear_constraint_system()));
   }
 
   disjunctive_linear_constraint_system_t
   to_disjunctive_linear_constraint_system() const override {
     disjunctive_linear_constraint_system_t res;
 
-    auto disj_csts = _inv.to_disjunctive_linear_constraint_system();
+    auto disj_csts = m_base_dom.to_disjunctive_linear_constraint_system();
     for (auto &csts : disj_csts) {
       auto filtered_csts = filter_noninteger_vars(std::move(csts));
       if (!filtered_csts.is_true()) {
@@ -498,22 +506,22 @@ public:
     return res;
   }
 
-  NumDomain &get_content_domain() { return _inv; }
-
-  NumDomain get_content_domain() const { return _inv; }
+  /* Deprecated: do not use them */
+  base_dom_t &get_content_domain() { return m_base_dom; }
+  const base_dom_t &get_content_domain() const { return m_base_dom; }
 
   /* begin intrinsics operations */
   void intrinsic(std::string name,
 		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    _inv.intrinsic(name, inputs, outputs);
+    m_base_dom.intrinsic(name, inputs, outputs);
   }
 
   void backward_intrinsic(std::string name,
 			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const array_smashing_t &invariant) override {
-    _inv.backward_intrinsic(name, inputs, outputs, invariant._inv);
+    m_base_dom.backward_intrinsic(name, inputs, outputs, invariant.m_base_dom);
   }
   /* end intrinsics operations */
 
@@ -527,13 +535,13 @@ public:
         CRAB_ERROR(domain_name(), "::rename must preserve the same type");
       }
     }
-    _inv.rename(from, to);
+    m_base_dom.rename(from, to);
   }
 
-  void write(crab_os &o) const override { o << _inv; }
+  void write(crab_os &o) const override { o << m_base_dom; }
 
   std::string domain_name() const override {
-    std::string name("ArraySmashing(" + _inv.domain_name() + ")");
+    std::string name("ArraySmashing(" + m_base_dom.domain_name() + ")");
     return name;
   }
 
