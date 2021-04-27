@@ -1,6 +1,10 @@
 /*******************************************************************************
  * Array expansion domain
  *
+ * DEPRECATED: use array_adaptive instead.  This domain assumes a
+ * global variable map so it cannot use with an inter-procedural
+ * analysis.
+ * 
  * For a given array, map sequences of consecutive bytes to cells
  * consisting of a triple <offset, size, var> where:
  *
