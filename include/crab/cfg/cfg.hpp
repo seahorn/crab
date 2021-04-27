@@ -18,23 +18,27 @@
  * - integers,
  * - reals,
  * - references,
- * - array of booleans,
- * - array of integers,
- * - array of reals,
- * - regions of booleans,
- * - regions of integers,
- * - regions of reals, and
+ * - array of booleans/integers/reals,
+ * - regions of booleans/integers/reals
  * - regions of references.
+ * - regions of arrays of booleans/integers/reals
  *
  * Crab CFG supports the modeling of:
  *
  *   - arithmetic operations over integers or reals,
  *   - boolean operations,
- *   - C-like pointers,
- *   - uni-dimensional arrays of booleans, integers or pointers
- *     (useful for C-like arrays and heap abstractions),
+ *   - C-like pointers (through regions and references),
+ *   - uni-dimensional arrays of booleans, integers or reals
+ *     (useful for C-like arrays and heap abstractions).
  *   - and functions declarations and callsites
  *
+ * Since the CFG is strongly typed, it provides several methods to
+ * convert betwen types:
+ * 
+ *   - between integers and booleans
+ *   - between integers and references
+ *   - between integers with different bitwidths
+ * 
  * === Semantics ===
  *
  * The semantics of boolean and numerical is similar to a language
