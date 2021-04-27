@@ -11,6 +11,9 @@
  * the property w holds for the array segment [i,j). A weight is an
  * arbitrary lattice that can relate multiple array variables as well
  * as array with scalar variables.
+ *
+ * This domain has the same word-level assumption that the
+ * array_smashing domain.
  ******************************************************************************/
 
 /**
