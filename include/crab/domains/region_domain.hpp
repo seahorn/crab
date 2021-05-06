@@ -2110,27 +2110,28 @@ public:
         return;
       }
 
-      if (ref_cst.is_equality()) {
-	if (ref_cst.is_binary()) {
+      if (Params::allocation_sites) {
+	if (ref_cst.is_equality() && ref_cst.is_binary()) {
 	  auto lhs_as = m_alloc_site_dom[ref_cst.lhs()];
 	  auto rhs_as = m_alloc_site_dom[ref_cst.rhs()];
-	  allocation_sites inter = lhs_as & rhs_as;
-	  // FIXME: the lhs or rhs operands might have empty
-	  // allocation sites if the program environment is not
-	  // modeled precisely enough. In those cases, they might have
-	  // no allocation sites but we don't want to set the whole
-	  // abstract state to bottom.
-	  if (!lhs_as.is_bottom() && !rhs_as.is_bottom() &&
-	      inter.is_bottom()) {
-	    // if they do not have any common allocation site then
-	    // they cannot be the same address.
-	    // 
-	    // However, if ref_cst is a disequality we cannot say
-	    // anything by looking only at allocation sites. Even if
-	    // both references point to singletons they can still be
-	    // different.
-	    set_to_bottom();
-	    return;
+	  // **Important note about soundness**: if the program
+	  // environment is not modeled precisely enough we can
+	  // conclude *incorrectly* that p == q is definitely not
+	  // true. At least here, we skip the cases where either p or
+	  // q does not have at least one allocation site.
+	  if (!lhs_as.is_bottom() && !rhs_as.is_bottom()) {	  
+	    allocation_sites inter = lhs_as & rhs_as;	    
+	    if (inter.is_bottom()) {
+	      // if they do not have any common allocation site then
+	      // they cannot be the same address.
+	      // 
+	      // However, if ref_cst is a disequality we cannot say
+	      // anything by looking only at allocation sites. Even if
+	      // both references point to singletons they can still be
+	      // different.
+	      set_to_bottom();
+	      return;
+	    }
 	  }
 	}
       }
@@ -2403,16 +2404,21 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst");
 
     if (!is_bottom()) {
-      if (rhs.is_equality()) {
-	if (rhs.is_binary()) {
-	  allocation_sites inter =
-	    m_alloc_site_dom[rhs.lhs()] & m_alloc_site_dom[rhs.rhs()];
-	  if (inter.is_bottom()) {
-	    // if they do not have any common allocation site then
-	    // they cannot be the same address.
-	    auto false_cst =  base_linear_constraint_t::get_false();
-	    m_base_dom.assign_bool_cst(rename_var(lhs), false_cst);
-	    return;
+
+      if (Params::allocation_sites) {
+	if (rhs.is_equality() && rhs.is_binary()) {
+	  auto op1_as = m_alloc_site_dom[rhs.lhs()];
+	  auto op2_as = m_alloc_site_dom[rhs.rhs()];
+	  // -- See note about soundness in ref_asume.
+	  if (!op1_as.is_bottom() && !op2_as.is_bottom()) {	  
+	    allocation_sites inter = op1_as & op2_as;
+	    if (inter.is_bottom()) {
+	      // if they do not have any common allocation site then
+	      // they cannot be the same address.
+	      auto false_cst =  base_linear_constraint_t::get_false();
+	      m_base_dom.assign_bool_cst(rename_var(lhs), false_cst);
+	      return;
+	    }
 	  }
 	}
       }
