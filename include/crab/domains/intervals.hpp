@@ -366,6 +366,10 @@ public:
   }
 
   // cast operations
+
+  // This operation shouldn't be called from other abstract domains
+  // with _foreign_ types (i.e., a non-numerical type such as regions,
+  // references, or arrays).
   void apply(crab::domains::int_conv_operation_t op, const variable_t &dst,
              const variable_t &src) override {
     // ignore the widths

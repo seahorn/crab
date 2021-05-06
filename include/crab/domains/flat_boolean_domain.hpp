@@ -898,7 +898,8 @@ public:
       if (std::any_of(
               cst.expression().variables_begin(),
               cst.expression().variables_end(),
-              [](const variable_t &v) { return v.get_type().is_bool(); })) {
+              [](const variable_t &v) {
+		return foreign_types::numerical_domains::is_bool(v.get_type()); })) {
         all_non_boolean = false;
         break;
       }
@@ -919,7 +920,7 @@ public:
         if (cst.is_equality() && std::all_of(cst.expression().variables_begin(),
                                              cst.expression().variables_end(),
                                              [](const variable_t &v) {
-                                               return v.get_type().is_bool();
+                                               return foreign_types::numerical_domains::is_bool(v.get_type());
                                              })) {
           // boolean component
           const linear_expression_t &exp = cst.expression();
@@ -1238,6 +1239,9 @@ public:
 
   // cast_operators_api
 
+  // This operation shouldn't be called from other abstract domains
+  // with _foreign_ types (i.e., a non-numerical type such as regions,
+  // references, or arrays).
   void apply(int_conv_operation_t op, const variable_t &dst,
              const variable_t &src) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
@@ -1333,9 +1337,9 @@ public:
                           const linear_expression_t &elem_size,
                           const linear_expression_t &i) override {
     _product.array_load(lhs, a, elem_size, i);
-    if (lhs.get_type().is_integer() || lhs.get_type().is_real()) {
-      _unchanged_vars -= variable_t(lhs);
-    }
+    //if (lhs.get_type().is_integer() || lhs.get_type().is_real()) {
+    _unchanged_vars -= variable_t(lhs);
+    //}
   }
 
   virtual void array_store(const variable_t &a,
@@ -1377,9 +1381,9 @@ public:
                       const linear_expression_t &i,
                       const bool_num_domain_t &invariant) override {
     _product.backward_array_load(lhs, a, elem_size, i, invariant._product);
-    if (a.get_type().is_integer_array() || a.get_type().is_real_array()) {
-      _unchanged_vars -= variable_t(lhs);
-    }
+    //if (a.get_type().is_integer_array() || a.get_type().is_real_array()) {
+    _unchanged_vars -= variable_t(lhs);
+    //}
   }
 
   virtual void backward_array_store(
@@ -1427,9 +1431,9 @@ public:
   void ref_load(const variable_t &ref, const variable_t &reg,
                 const variable_t &res) override {
     _product.ref_load(ref, reg, res);
-    if (res.get_type().is_integer() || res.get_type().is_real()) {
-      _unchanged_vars -= variable_t(res);
-    }    
+    //if (res.get_type().is_integer() || res.get_type().is_real()) {
+    _unchanged_vars -= variable_t(res);
+    //}    
   }
   void ref_store(const variable_t &ref, const variable_t &reg,
                  const variable_or_constant_t &val) override {

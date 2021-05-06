@@ -401,7 +401,8 @@ private:
     if (c.is_null()) {
       auto &vfac = const_cast<varname_t *>(&(array.name()))->get_var_factory();
       std::string vname = mk_scalar_name(array, o, size);
-      variable_type_kind vtype_kind = get_array_element_type(array.get_type());
+      variable_type_kind vtype_kind =
+	get_array_element_type(foreign_types::array_domains::lower(array.get_type()));
       // create a new scalar variable for representing the contents
       // of bytes array[o,o+1,..., o+size-1]
       ikos::index_t vindex = get_index(array, o, size);
@@ -767,12 +768,14 @@ private:
   // Helper that assign rhs to lhs by switching to the version with
   // the right type.
   void do_assign(variable_t lhs, variable_t rhs) {
-    if (lhs.get_type() != rhs.get_type()) {
+    if (foreign_types::array_domains::lower(lhs.get_type()) !=
+	foreign_types::array_domains::lower(rhs.get_type())) {
       CRAB_ERROR("array_expansion assignment ", lhs, ":=", rhs,
-                 " with different types ", lhs.get_type(), " and ",
-                 rhs.get_type());
+                 " with different types ",
+		 foreign_types::array_domains::lower(lhs.get_type()), " and ",
+                 foreign_types::array_domains::lower(rhs.get_type()));
     }
-    auto lhs_ty = lhs.get_type();
+    auto lhs_ty = foreign_types::array_domains::lower(lhs.get_type());
     if (lhs_ty.is_bool()) {
       _inv.assign_bool_var(lhs, rhs, false);
     } else if (lhs_ty.is_integer() || lhs_ty.is_real()) {
@@ -798,7 +801,7 @@ private:
       CRAB_ERROR("array_expansion cell without scalar");
     }
     variable_t lhs = lhs_c.get_scalar();
-    auto lhs_ty = lhs.get_type();
+    auto lhs_ty = foreign_types::array_domains::lower(lhs.get_type());
     if (lhs_ty.is_bool()) {
       if (v.is_constant()) {
         if (v.constant() >= number_t(1)) {
@@ -821,11 +824,12 @@ private:
   // version with the right type.
   void do_backward_assign(variable_t lhs, variable_t rhs,
                           const content_domain_t &dom) {
-    if (lhs.get_type() != rhs.get_type()) {
+    if (foreign_types::array_domains::lower(lhs.get_type()) !=
+	foreign_types::array_domains::lower(rhs.get_type())) {
       CRAB_ERROR("array_expansion backward assignment with different types");
     }
 
-    auto lhs_ty = lhs.get_type();
+    auto lhs_ty = foreign_types::array_domains::lower(lhs.get_type());
     if (lhs_ty.is_bool()) {
       _inv.backward_assign_bool_var(lhs, rhs, false, dom);
     } else if (lhs_ty.is_integer() || lhs_ty.is_real()) {
@@ -853,7 +857,7 @@ private:
       CRAB_ERROR("array_expansion cell without scalar");
     }
     variable_t lhs = lhs_c.get_scalar();
-    auto lhs_ty = lhs.get_type();
+    auto lhs_ty = foreign_types::array_domains::lower(lhs.get_type());
     if (lhs_ty.is_bool()) {
       if (v.is_constant()) {
         if (v.constant() >= number_t(1)) {
@@ -1001,7 +1005,7 @@ public:
     _inv.forget(variables);
 
     for (variable_t v : variables) {
-      if (v.get_type().is_array()) {
+      if (foreign_types::array_domains::lower(v.get_type()).is_array()) {
         remove_array_map(v);
       }
     }
@@ -1035,7 +1039,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.forget");
     crab::ScopedCrabStats __st__(domain_name() + ".forget");
 
-    if (var.get_type().is_array()) {
+    if (foreign_types::array_domains::lower(var.get_type()).is_array()) {
       remove_array_map(var);
     } else {
       _inv -= var;

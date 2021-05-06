@@ -147,8 +147,15 @@ int main(int argc, char **argv) {
 
   z_cfg_t *p1 = cfg1(vfac);
   crab::outs() << *p1 << "\n";
-  z_rgn_bool_int_t init;
-  run_and_check(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
+  {
+    z_rgn_bool_int_t init;
+    run_and_check(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
+  }
+  {
+    z_fast_rgn_bool_int_t init;
+    run_and_check(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
+  }
+  
   delete p1;
 
   return 0;

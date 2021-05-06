@@ -1513,6 +1513,9 @@ public:
     return this->_env[v];
   }
 
+  // This operation shouldn't be called from other abstract domains
+  // with _foreign_ types (i.e., a non-numerical type such as regions,
+  // references, or arrays).        
   void assign(const variable_t &x, const linear_expression_t &e) override {
     crab::CrabStats::count(domain_name() + ".count.assign");
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
@@ -1567,6 +1570,9 @@ public:
                                          << z << "=" << _env[x] << "\n");
   }
 
+  // This operation shouldn't be called from other abstract domains
+  // with _foreign_ types (i.e., a non-numerical type such as regions,
+  // references, or arrays).        
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
@@ -1610,6 +1616,9 @@ public:
 
   // cast operations
 
+  // This operation shouldn't be called from other abstract domains
+  // with _foreign_ types (i.e., a non-numerical type such as regions,
+  // references, or arrays).        
   void apply(int_conv_operation_t op, const variable_t &dst,
              const variable_t &src) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
@@ -1696,6 +1705,9 @@ public:
     this->_env.set(x, xi);
   }
 
+  // This operation shouldn't be called from other abstract domains
+  // with _foreign_ types (i.e., a non-numerical type such as regions,
+  // references, or arrays).        
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
@@ -2822,6 +2834,9 @@ private:
   bool may_overflow_residuals(const linear_constraint_t &cst,
                               number_t coef_pivot, const variable_t &pivot,
                               signedness_t signedness) {
+    // This operation shouldn't be called from other abstract domains
+    // with _foreign_ types (i.e., a non-numerical type such as regions,
+    // references, or arrays).          
     bitwidth_t b =
         (pivot.get_type().is_integer() ? pivot.get_type().get_integer_bitwidth()
                                        : 0);

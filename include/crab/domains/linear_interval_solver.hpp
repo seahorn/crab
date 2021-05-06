@@ -133,6 +133,9 @@ private:
   static unsigned get_bitwidth(const variable_t &v) {
     if (v.get_type().is_integer()) {
       return v.get_type().get_integer_bitwidth();
+    } else if (v.get_type().is_reference()) {
+      // HACK to deal with foreign types
+      return 32;
     } else {
       return 0;
     }

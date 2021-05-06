@@ -454,6 +454,52 @@ public:
 } // end namespace domains
 } // end namespace crab
 
+
+
+// JN: maybe move this somewhere else.
+namespace crab {
+namespace domains {  
+namespace foreign_types {   
+namespace array_domains {
+  inline variable_type lower(const variable_type &ty) {
+    // An array domain does not understand regions or references
+    if (ty.is_reference()) {
+      return variable_type(INT_TYPE, 32);
+    } else if (ty.is_region()) {
+      if (ty.is_unknown_region()) {
+	return variable_type(UNK_TYPE);
+      } else if (ty.is_bool_region()) {
+	return variable_type(BOOL_TYPE);
+      } else if (ty.is_integer_region()) {
+	return variable_type(INT_TYPE, ty.get_integer_region_bitwidth());
+      } else if (ty.is_real_region()) {
+	return variable_type(REAL_TYPE);
+      } else if (ty.is_reference_region()) {
+	return variable_type(INT_TYPE, 32);
+      } else if (ty.is_bool_array_region()) {
+	return variable_type(ARR_BOOL_TYPE);
+      } else if (ty.is_int_array_region()) {
+	return variable_type(ARR_INT_TYPE);
+      } else if (ty.is_real_array_region()) {
+	return variable_type(ARR_REAL_TYPE);
+      }
+    }
+    return ty;
+  }
+} // end array_domains
+  
+namespace numerical_domains {
+  // A numerical domain sees any of these types as simply a boolean.
+  inline bool is_bool(const variable_type &ty) {
+    return (ty.is_bool() || ty.is_bool_array() ||
+	    ty.is_bool_region() || ty.is_bool_array_region());
+  }
+} // end numerical_domains
+} // end foreign_types  
+} // end domains
+} // end crab
+
+
 ///
 ///==== BEGIN MACROS FOR EMPTY/DEFAULT IMPLEMENTATIONS ====
 ///

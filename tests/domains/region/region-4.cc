@@ -158,20 +158,38 @@ int main(int argc, char **argv) {
   {
     z_cfg_t *p1 = cfg1(vfac, false);
     crab::outs() << *p1 << "\n";
-    z_rgn_bool_int_t init;
-    run_and_check(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
-    //run(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
-    // EXPECTED TO PROVE ASSERTION
+    {
+      z_rgn_bool_int_t init;
+      run_and_check(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
+      //run(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
+      // EXPECTED TO PROVE ASSERTION
+    }
+    {
+      z_fast_rgn_bool_int_t init;
+      run_and_check(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
+      //run(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
+      // EXPECTED TO PROVE ASSERTION
+    }
+    
     delete p1;
   }
 
   {
     z_cfg_t *p1 = cfg1(vfac, true);
     crab::outs() << *p1 << "\n";
-    z_rgn_bool_int_t init;
-    run_and_check(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
-    //run(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
-    // NOT EXPECTED TO PROVE ASSERTION
+    {
+      z_rgn_bool_int_t init;
+      run_and_check(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
+      //run(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
+      // NOT EXPECTED TO PROVE ASSERTION
+    }
+    {
+      z_fast_rgn_bool_int_t init;
+      run_and_check(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
+      //run(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
+      // NOT EXPECTED TO PROVE ASSERTION
+    }
+    
     delete p1;
   }
   

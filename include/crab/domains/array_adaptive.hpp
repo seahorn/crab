@@ -917,6 +917,7 @@ public:
   /* Top is called when a key is not found in a patricia tree */
   static offset_map_t top() { return offset_map_t(); }
 };
+  
 } // end namespace array_adaptive_impl
 
 template <typename NumDomain, class Params = array_adaptive_impl::DefaultParams>
@@ -1623,7 +1624,8 @@ private:
       // assign a scalar variable to the cell
       auto &vfac = const_cast<varname_t *>(&(a.name()))->get_var_factory();
       std::string vname = mk_scalar_name(a.name(), o, sz);
-      variable_type_kind vtype_kind = get_array_element_type(a.get_type());
+      variable_type_kind vtype_kind =
+	get_array_element_type(foreign_types::array_domains::lower(a.get_type()));
       variable_t scalar_var(vfac.get(vname), vtype_kind,
                             (vtype_kind == BOOL_TYPE
                                  ? 1
@@ -1635,14 +1637,14 @@ private:
 
   using variable_opt_t = boost::optional<variable_t>;
   variable_opt_t get_scalar(const variable_t &array_v, const cell_t &c) {
-    if (!array_v.get_type().is_array()) {
+    if (!foreign_types::array_domains::lower(array_v.get_type()).is_array()) {
       CRAB_ERROR("array_adaptive::get_scalar only if array variable");
     }
     return m_cell_varmap.find(array_v, c);
   }
 
   static variable_t mk_smashed_variable(const variable_t &v) {
-    if (!v.get_type().is_array()) {
+    if (!foreign_types::array_domains::lower(v.get_type()).is_array()) {
       CRAB_ERROR(
           "array_adaptive::mk_smashed_variable only takes array variables");
     }
@@ -1650,12 +1652,12 @@ private:
     auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
     crab::crab_string_os os;
     os << "smashed(" << v << ")";
-    return variable_t(vfac.get(os.str()), v.get_type());
+    return variable_t(vfac.get(os.str()), foreign_types::array_domains::lower(v.get_type()));
   }
 
   static variable_t get_smashed_variable(const variable_t &a,
                                          smashed_varmap_t &svm) {
-    if (!a.get_type().is_array()) {
+    if (!foreign_types::array_domains::lower(a.get_type()).is_array()) {
       CRAB_ERROR(
           "array_adaptive::get_smashed_variable only takes array variables");
     }
@@ -1681,7 +1683,7 @@ private:
   }
 
   void forget_array(const variable_t &v) {
-    if (!v.get_type().is_array()) {
+    if (!foreign_types::array_domains::lower(v.get_type()).is_array()) {
       CRAB_ERROR("cannot call forget_array on a non-array variable");
     }
 
@@ -1723,7 +1725,7 @@ private:
   void kill_cells(const variable_t &a, const std::vector<cell_t> &cells,
                   offset_map_t &offset_map) {
 
-    assert(a.get_type().is_array());
+    assert(foreign_types::array_domains::lower(a.get_type()).is_array());
 
     if (!cells.empty()) {
       // Forget the scalars from the numerical domain
@@ -1754,11 +1756,12 @@ private:
   // Helper that assign rhs to lhs by switching to the version with
   // the right type.
   void do_assign(const variable_t &lhs, const variable_t &rhs) {
-    if (lhs.get_type() != rhs.get_type()) {
+    if (foreign_types::array_domains::lower(lhs.get_type()) !=
+	foreign_types::array_domains::lower(rhs.get_type())) {
       CRAB_ERROR("array_adaptive assignment ", lhs, ":=", rhs,
                  " with different types");
     }
-    auto lhs_ty = lhs.get_type();
+    auto lhs_ty = foreign_types::array_domains::lower(lhs.get_type());
     if (lhs_ty.is_bool()) {
       m_inv.assign_bool_var(lhs, rhs, false);
     } else if (lhs_ty.is_integer() || lhs_ty.is_real()) {
@@ -1771,7 +1774,7 @@ private:
 
   // helper to assign an array store's value
   void do_assign(const variable_t &lhs, const linear_expression_t &v) {
-    auto lhs_ty = lhs.get_type();
+    auto lhs_ty = foreign_types::array_domains::lower(lhs.get_type());
     if (lhs_ty.is_bool()) {
       if (v.is_constant()) {
         if (v.constant() >= number_t(1)) {
@@ -1794,10 +1797,11 @@ private:
   // version with the right type.
   void do_backward_assign(const variable_t &lhs, const variable_t &rhs,
                           const base_domain_t &dom) {
-    if (lhs.get_type() != rhs.get_type()) {
+    if (foreign_types::array_domains::lower(lhs.get_type()) !=
+	foreign_types::array_domains::lower(rhs.get_type())) {
       CRAB_ERROR("array_adaptive backward assignment with different types");
     }
-    auto lhs_ty = lhs.get_type();
+    auto lhs_ty = foreign_types::array_domains::lower(lhs.get_type());
     if (lhs_ty.is_bool()) {
       m_inv.backward_assign_bool_var(lhs, rhs, false, dom);
     } else if (lhs_ty.is_integer() || lhs_ty.is_real()) {
@@ -1811,7 +1815,7 @@ private:
   // helper to assign backward a cell into a variable
   void do_backward_assign(const variable_t &lhs, const variable_t &a,
                           const cell_t &rhs_c, const base_domain_t &dom) {
-    if (!a.get_type().is_array()) {
+    if (!foreign_types::array_domains::lower(a.get_type()).is_array()) {
       CRAB_ERROR("array_adaptive assignment 1st argument must be array type");
     }
     variable_opt_t rhs_v_opt = get_scalar(a, rhs_c);
@@ -1829,7 +1833,7 @@ private:
   void do_backward_assign(const variable_t &a, const cell_t &lhs_c,
                           const linear_expression_t &v,
                           const base_domain_t &dom) {
-    if (!a.get_type().is_array()) {
+    if (!foreign_types::array_domains::lower(a.get_type()).is_array()) {
       CRAB_ERROR("array_adaptive assignment 1st argument must be array type");
     }
     variable_opt_t lhs_v_opt = get_scalar(a, lhs_c);
@@ -1841,7 +1845,7 @@ private:
       return;
     }
     variable_t lhs = *lhs_v_opt;
-    auto lhs_ty = lhs.get_type();
+    auto lhs_ty = foreign_types::array_domains::lower(lhs.get_type());
     if (lhs_ty.is_bool()) {
       if (v.is_constant()) {
         if (v.constant() >= number_t(1)) {
@@ -1876,7 +1880,8 @@ private:
       if (std::all_of(
               cst.expression().variables_begin(),
               cst.expression().variables_end(), [](const variable_t &v) {
-                return v.get_type().is_integer() || v.get_type().is_bool();
+	       return foreign_types::array_domains::lower(v.get_type()).is_integer() ||
+		      foreign_types::array_domains::lower(v.get_type()).is_bool();
               })) {
         res += cst;
       }
@@ -1914,8 +1919,10 @@ private:
         variable_t &v2 = it->second;
         if (v1 != v2) {
           assert(v1.name().str() == v2.name().str());
-          assert(v1.get_type() == v2.get_type());
-          variable_t outv(vfac.get(v1.name().str()), v1.get_type());
+          assert(foreign_types::array_domains::lower(v1.get_type()) ==
+		 foreign_types::array_domains::lower(v2.get_type()));
+          variable_t outv(vfac.get(v1.name().str()),
+			  foreign_types::array_domains::lower(v1.get_type()));
           old_vars_left.push_back(v1);
           old_vars_right.push_back(v2);
           new_vars.push_back(outv);
@@ -1944,8 +1951,10 @@ private:
         if (boost::optional<variable_t> v2 = right_cvm.find(array_var, c)) {
           if (v1 != *v2) {
             assert(v1.name().str() == (*v2).name().str());
-            assert(v1.get_type() == (*v2).get_type());
-            variable_t outv(vfac.get(v1.name().str()), v1.get_type());
+            assert(foreign_types::array_domains::lower(v1.get_type()) ==
+		   foreign_types::array_domains::lower((*v2).get_type()));
+            variable_t outv(vfac.get(v1.name().str()),
+			    foreign_types::array_domains::lower(v1.get_type()));
             old_vars_left.push_back(v1);
             old_vars_right.push_back(*v2);
             new_vars.push_back(outv);
@@ -1983,8 +1992,10 @@ private:
         if (v1 != v2) {
           // same key but different scalar -> create a fresh common scalar
           assert(v1.name().str() == v2.name().str());
-          assert(v1.get_type() == v2.get_type());
-          variable_t outv(vfac.get(v1.name().str()), v1.get_type());
+          assert(foreign_types::array_domains::lower(v1.get_type()) ==
+		 foreign_types::array_domains::lower(v2.get_type()));
+          variable_t outv(vfac.get(v1.name().str()),
+			  foreign_types::array_domains::lower(v1.get_type()));
           old_vars_left.push_back(v1);
           old_vars_right.push_back(v2);
           new_vars.push_back(outv);
@@ -2023,8 +2034,10 @@ private:
           if (v1 != *v2) {
             // same key but different scalar -> create a fresh common scalar
             assert(v1.name().str() == (*v2).name().str());
-            assert(v1.get_type() == (*v2).get_type());
-            variable_t outv(vfac.get(v1.name().str()), v1.get_type());
+            assert(foreign_types::array_domains::lower(v1.get_type()) ==
+		   foreign_types::array_domains::lower((*v2).get_type()));
+            variable_t outv(vfac.get(v1.name().str()),
+			    foreign_types::array_domains::lower(v1.get_type()));
             old_vars_left.push_back(v1);
             old_vars_right.push_back(*v2);
             new_vars.push_back(outv);
@@ -2160,10 +2173,10 @@ public:
         if (it != other.m_smashed_varmap.end()) {
           const variable_t &v2 = it->second;
           assert(v1.name().str() == v2.name().str());
-          assert(v1.get_type() == v2.get_type());
+          assert(foreign_types::array_domains::lower(v1.get_type()) == foreign_types::array_domains::lower(v2.get_type()));
           // same name and type but different variable id
           if (v1 != v2) {
-            variable_t outv(vfac.get(v1.name().str()), v1.get_type());
+            variable_t outv(vfac.get(v1.name().str()), foreign_types::array_domains::lower(v1.get_type()));
             old_vars_left.push_back(v1);
             old_vars_right.push_back(v2);
             new_vars.push_back(outv);
@@ -2187,10 +2200,12 @@ public:
           if (boost::optional<variable_t> v2 =
                   other.m_cell_varmap.find(array_var, c)) {
             assert(v1.name().str() == (*v2).name().str());
-            assert(v1.get_type() == (*v2).get_type());
+            assert(foreign_types::array_domains::lower(v1.get_type()) ==
+		   foreign_types::array_domains::lower((*v2).get_type()));
             // same name and type but different variable id
             if (v1 != (*v2)) {
-              variable_t outv(vfac.get(v1.name().str()), v1.get_type());
+              variable_t outv(vfac.get(v1.name().str()),
+			      foreign_types::array_domains::lower(v1.get_type()));
               old_vars_left.push_back(v1);
               old_vars_right.push_back(*v2);
               new_vars.push_back(outv);
@@ -2467,7 +2482,7 @@ public:
     variable_vector_t scalar_variables;
     scalar_variables.reserve(variables.size());
     for (variable_t v : variables) {
-      if (v.get_type().is_array()) {
+      if (foreign_types::array_domains::lower(v.get_type()).is_array()) {
         CRAB_LOG("array-adaptive",
                  crab::outs() << "Forget array variable " << v << "\n";);
         forget_array(v);
@@ -2494,7 +2509,7 @@ public:
     variable_vector_t keep_vars;
     std::set<variable_t> keep_arrays;
     for (variable_t v : variables) {
-      if (v.get_type().is_array()) {
+      if (foreign_types::array_domains::lower(v.get_type()).is_array()) {
         keep_arrays.insert(v);
       } else {
         keep_vars.push_back(v);
@@ -2535,7 +2550,7 @@ public:
   void minimize() override { m_inv.minimize(); }
 
   virtual interval_t operator[](const variable_t &v) override {
-    if (!v.get_type().is_array()) {
+    if (!foreign_types::array_domains::lower(v.get_type()).is_array()) {
       return m_inv[v];
     } else {
       return interval_t::top();
@@ -2548,12 +2563,13 @@ public:
                  const variable_vector_t &outputs) override {
     if ((std::all_of(inputs.begin(), inputs.end(),
                      [](const variable_or_constant_t &v) {
-                       return v.get_type().is_integer() ||
-                              v.get_type().is_bool();
+                       return foreign_types::array_domains::lower(v.get_type()).is_integer() ||
+			      foreign_types::array_domains::lower(v.get_type()).is_bool();
                      })) &&
         (std::all_of(outputs.begin(), outputs.end(),
 		     [](const variable_t &v) {
-          return v.get_type().is_integer() || v.get_type().is_bool();
+		       return foreign_types::array_domains::lower(v.get_type()).is_integer() ||
+			      foreign_types::array_domains::lower(v.get_type()).is_bool();
         }))) {
       m_inv.intrinsic(name, inputs, outputs);
     } else {
@@ -2587,7 +2603,7 @@ public:
       return;
     }
 
-    if (var.get_type().is_array()) {
+    if (foreign_types::array_domains::lower(var.get_type()).is_array()) {
       forget_array(var);
     } else {
       m_inv -= var;
@@ -2851,7 +2867,7 @@ public:
             // (summarized) variable
             auto &vfac =
                 const_cast<varname_t *>(&(a.name()))->get_var_factory();
-            variable_t fresh_var(vfac.get(), a.get_type());
+            variable_t fresh_var(vfac.get(), foreign_types::array_domains::lower(a.get_type()));
             bool found_cell_without_scalar = false;
             for (unsigned k = 0, num_cells = cells.size(); k < num_cells; ++k) {
               const cell_t &c = cells[k];
@@ -3417,11 +3433,12 @@ public:
       return;
     }
 
-    if (v.get_type() != new_v.get_type()) {
+    if (foreign_types::array_domains::lower(v.get_type()) !=
+	foreign_types::array_domains::lower(new_v.get_type())) {
       CRAB_ERROR(domain_name(), "::expand must preserve same type");
     }
 
-    if (v.get_type().is_array()) {
+    if (foreign_types::array_domains::lower(v.get_type()).is_array()) {
       CRAB_WARN(domain_name(), "::expand not implemented for array variable");
     } else {
       m_inv.expand(v, new_v);
@@ -3446,10 +3463,11 @@ public:
     for (unsigned i = 0, sz = from.size(); i < sz; ++i) {
       variable_t old_v = from[i];
       variable_t new_v = to[i];
-      if (old_v.get_type() != new_v.get_type()) {
+      if (foreign_types::array_domains::lower(old_v.get_type()) !=
+	  foreign_types::array_domains::lower(new_v.get_type())) {
         CRAB_ERROR(domain_name(), "::rename must preserve same type");
       }
-      if (new_v.get_type().is_array()) {
+      if (foreign_types::array_domains::lower(new_v.get_type()).is_array()) {
         array_from.push_back(old_v);
         array_to.push_back(new_v);
       } else {

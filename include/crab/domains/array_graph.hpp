@@ -1758,7 +1758,8 @@ private:
 
     Content w; // top
     array_graph_impl::propagate_between_weight_and_scalar(
-        _scalar, val, arr.get_type(), w, arr);
+        _scalar, val,
+	foreign_types::array_domains::lower(arr.get_type()), w, arr);
     _g.update_edge(lm_src, w, lm_dst);
   }
 
@@ -2406,14 +2407,15 @@ public:
 
     Content w = array_edge(norm_idx);
 
-    if (a.get_type().is_integer_array() || a.get_type().is_real_array()) {
+    if (foreign_types::array_domains::lower(a.get_type()).is_integer_array() ||
+	foreign_types::array_domains::lower(a.get_type()).is_real_array()) {
       // Only non-relational numerical invariants are
       // propagated from the graph domain to the expressions domain.
       _expressions.set(lhs, w[a]);
     }
 
-    array_graph_impl::propagate_between_weight_and_scalar(w, a, a.get_type(),
-                                                          _scalar, lhs);
+    array_graph_impl::propagate_between_weight_and_scalar
+      (w, a, foreign_types::array_domains::lower(a.get_type()),_scalar, lhs);
 
     // if normalize_offset created a landmark we remove it here to
     // keep smaller array graph
@@ -2446,8 +2448,8 @@ public:
     }
 
     Content w; // top
-    array_graph_impl::propagate_between_weight_and_scalar(_scalar, val,
-                                                          a.get_type(), w, a);
+    array_graph_impl::propagate_between_weight_and_scalar
+      (_scalar, val, foreign_types::array_domains::lower(a.get_type()), w, a);
 
     interval_t i_elem_size = to_interval(elem_size);
     boost::optional<number_t> n_elem_size = i_elem_size.singleton();

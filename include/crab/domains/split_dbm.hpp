@@ -2234,6 +2234,9 @@ public:
     // ignore the widths.
     assign(dst, src);
 
+  // This operation shouldn't be called from other abstract domains
+  // with _foreign_ types (i.e., a non-numerical type such as regions,
+  // references, or arrays).    
     if ((op == crab::domains::OP_ZEXT || op == crab::domains::OP_SEXT) &&
 	src.get_type().is_bool()) {
       interval_t dst_max(number_t(0), number_t(1));

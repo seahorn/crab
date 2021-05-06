@@ -18,6 +18,7 @@
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/powerset_domain.hpp>
 #include <crab/domains/region_domain.hpp>
+#include <crab/domains/region_without_ghost_domain.hpp>
 #include <crab/domains/sign_domain.hpp>
 #include <crab/domains/sign_constant_domain.hpp>
 #include <crab/domains/sparse_dbm.hpp>
@@ -139,7 +140,13 @@ using z_rgn_sdbm_t = region_domain<z_rgn_sdbm_params_t>;
 using z_rgn_aa_int_t = region_domain<z_rgn_aa_int_params_t>;
 using z_rgn_constant_t = region_domain<z_rgn_constant_params_t>;
 using z_rgn_sign_t = region_domain<z_rgn_sign_params_t>;
-using z_rgn_sign_constant_t = region_domain<z_rgn_sign_cst_params_t>;    
+using z_rgn_sign_constant_t = region_domain<z_rgn_sign_cst_params_t>;
+using z_fast_rgn_int_t = region_without_ghost_domain<z_interval_domain_t>;
+//// fast region domain
+using z_fast_rgn_sdbm_t = region_without_ghost_domain<z_sdbm_domain_t>;
+using z_fast_rgn_sign_constant_t =
+  region_without_ghost_domain<sign_constant_domain<z_number, varname_t>>;
+using z_fast_rgn_bool_int_t = region_without_ghost_domain<z_bool_num_domain_t>;    
 /*===================================================================*/
 /// Numerical domains over real
 /*===================================================================*/

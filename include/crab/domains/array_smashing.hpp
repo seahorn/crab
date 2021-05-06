@@ -69,7 +69,7 @@ private:
 
   void do_strong_update(base_dom_t &dom, const variable_t &a,
                         const linear_expression_t &rhs) {
-    auto ty = a.get_type();
+    auto ty = foreign_types::array_domains::lower(a.get_type());
     if (ty.is_bool_array()) {
       if (rhs.is_constant()) {
         if (rhs.constant() >= number_t(1)) {
@@ -110,7 +110,8 @@ private:
       if (std::all_of(
               cst.expression().variables_begin(),
               cst.expression().variables_end(), [](const variable_t &v) {
-                return v.get_type().is_integer() || v.get_type().is_bool();
+			     return v.get_type().is_integer() ||
+			            v.get_type().is_bool();
               })) {
         res += cst;
       }
@@ -216,7 +217,8 @@ public:
   }
 
   void expand(const variable_t &var, const variable_t &new_var) override {
-    if (var.get_type() != new_var.get_type()) {
+    if (foreign_types::array_domains::lower(var.get_type()) !=
+	foreign_types::array_domains::lower(new_var.get_type())) {
       CRAB_ERROR(domain_name(), "::expand must preserve the same type");
     }
     m_base_dom.expand(var, new_var);
@@ -364,7 +366,7 @@ public:
                           const linear_expression_t & /*lb_idx*/,
                           const linear_expression_t & /*ub_idx*/,
                           const linear_expression_t &val) override {
-    auto ty = a.get_type();
+    auto ty = foreign_types::array_domains::lower(a.get_type());
     if (ty.is_bool_array()) {
       if (val.is_constant()) {
         if (val.constant() >= number_t(1)) {
@@ -394,7 +396,7 @@ public:
     auto &vfac = const_cast<varname_t *>(&(a.name()))->get_var_factory();
     variable_t a_prime(vfac.get());
     m_base_dom.expand(a, a_prime);
-    auto ty = a.get_type();
+    auto ty = foreign_types::array_domains::lower(a.get_type());
     if (ty.is_bool_array()) {
       m_base_dom.assign_bool_var(lhs, a_prime, false);
     } else if (ty.is_integer_array() || ty.is_real_array()) {
@@ -438,7 +440,7 @@ public:
 
   virtual void array_assign(const variable_t &lhs,
                             const variable_t &rhs) override {
-    auto ty = lhs.get_type();
+    auto ty = foreign_types::array_domains::lower(lhs.get_type());
     if (ty.is_bool_array()) {
       m_base_dom.assign_bool_var(lhs, rhs, false);
     } else if (ty.is_integer_array() || ty.is_real_array()) {
@@ -531,7 +533,8 @@ public:
       CRAB_ERROR(domain_name(), "::rename expects vectors same sizes");
     }
     for (unsigned i = 0, sz = from.size(); i < sz; ++i) {
-      if (from[i].get_type() != to[i].get_type()) {
+      if (foreign_types::array_domains::lower(from[i].get_type()) !=
+	  foreign_types::array_domains::lower(to[i].get_type())) {
         CRAB_ERROR(domain_name(), "::rename must preserve the same type");
       }
     }
