@@ -2,12 +2,18 @@
    widening operator with rationals */
 
 #include "../common.hpp"
+#include "../program_options.hpp"
 using namespace std;
 using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 int main(int argc, char **argv) {
+
+  bool stats_enabled = false;
+  if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
+    return 0;
+  }
 
 #ifdef HAVE_LDD
   variable_factory_t vfac;

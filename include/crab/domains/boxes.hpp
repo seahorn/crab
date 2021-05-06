@@ -20,6 +20,7 @@ class DefaultParams {
 public:
   enum { ldd_size = 3000 };
   enum { convexify_threshold = -1 };
+  enum { dynamic_reordering = 0 };
 };
 } // end namespace boxes_impl
 } // end namespace domains
@@ -94,8 +95,8 @@ public:
   using typename abstract_domain_t::variable_or_constant_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  using typename abstract_domain_t::variable_or_constant_vector_t;  
-
+  using typename abstract_domain_t::variable_or_constant_vector_t;
+  
 private:
   using kind_t = typename linear_constraint_t::kind_t;
 
@@ -119,7 +120,9 @@ private:
       CRAB_LOG("boxes", crab::outs() << "Created a ldd of size "
                                      << Params::ldd_size << "\n";);
       s_ldd_man = Ldd_Init(cudd, theory);
-      // Cudd_AutodynEnable(cudd, CUDD_REORDER_GROUP_SIFT);
+      if (Params::dynamic_reordering) {
+	Cudd_AutodynEnable(cudd, CUDD_REORDER_GROUP_SIFT);
+      }
       Ldd_SanityCheck(get_ldd_man());
     }
     return s_ldd_man;
@@ -136,7 +139,7 @@ private:
     if (it != s_var_map.left.end()) {
       return it->second;
     } else {
-      // XXX: reserved dim 0 for SPECIAL variable
+      // Reserved dim 0 for SPECIAL use (as a temporary var)
       unsigned int id = s_var_map.size() + 1;
       if (id >= Params::ldd_size) {
         CRAB_ERROR("The Ldd size of ", Params::ldd_size, " needs to be larger");
@@ -164,17 +167,20 @@ private:
     return lddPtr(get_ldd_man(), Ldd_TermMinmaxApprox(get_ldd_man(), &*ldd));
   }
 
-  // pre: ldd is not either true or false
-  void project(LddNodePtr &ldd, variable_t v) const {
+  LddNodePtr project(variable_t v) const {
+    crab::CrabStats::count(domain_name() + ".count.project");
+    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    
     std::vector<int> qvars;
     // num_of_vars is shared by all ldd's
     qvars.reserve(num_of_vars() - 1);
-    for (auto p : s_var_map.left)
-      if (!(p.first == v))
+    for (auto p : s_var_map.left) {
+      if (!(p.first == v)) {
         qvars.push_back(get_var_dim(p.first));
-
-    ldd = lddPtr(get_ldd_man(), Ldd_MvExistAbstract(get_ldd_man(), &*ldd,
-                                                    &qvars[0], qvars.size()));
+      }
+    }
+    return lddPtr(get_ldd_man(), Ldd_MvExistAbstract(get_ldd_man(), &*m_ldd,
+						     &qvars[0], qvars.size()));
   }
 
   LddNodePtr join(LddNodePtr v1, LddNodePtr v2) const {
@@ -199,19 +205,15 @@ private:
   }
 
   void copy_term(variable_t v, boost::optional<variable_t> x) {
-    if (is_top() || is_bottom())
+    if (is_top() || is_bottom()) {
       return;
+    }
 
     this->operator-=(v); // remove v before assigning new term
 
     linterm_t lhs = term_from_var(v);
-    linterm_t rhs;
-
-    if (x)
-      rhs = term_from_var(*x);
-    else
-      rhs = term_from_special_var();
-
+    linterm_t rhs = (x ? term_from_var(*x) : term_from_special_var());
+    
     m_ldd =
         lddPtr(get_ldd_man(), Ldd_TermCopy(get_ldd_man(), &(*m_ldd), lhs, rhs));
     Ldd_GetTheory(get_ldd_man())->destroy_term(lhs);
@@ -227,7 +229,8 @@ private:
                      Ldd_ExistsAbstract(get_ldd_man(), &*m_ldd, dim));
     }
   }
-
+ 
+  
   /**
    **  All the expressiveness about numerical operations with boxes
    **  is limited to:
@@ -235,7 +238,7 @@ private:
    **     where a is a constant, k an interval and x variable
    **  Each numerical operation is reduced to this form.
    */
-  void apply_ldd(variable_t v, variable_t x, number_t a, interval_t k) {
+  void apply_ldd(const variable_t &v, const variable_t &x, number_t a, interval_t k) {
     if (is_top() || is_bottom())
       return;
 
@@ -264,7 +267,7 @@ private:
   }
 
   /* Special case of apply_ldd : v := [lb,ub] */
-  LddNodePtr apply_interval(variable_t v, interval_t ival) {
+  LddNodePtr apply_interval(const variable_t &v, interval_t ival) {
     assert(!is_bottom());
 
     constant_t kmin = NULL, kmax = NULL;
@@ -409,7 +412,9 @@ private:
     m_ldd = lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*m_ldd, &*n));
   }
 
-  // Extract interval constraints from linear expression exp
+  // Extract interval constraints from linear expression exp. This
+  // operation uses operator[] which loses precision. It should be
+  // only used with non-unit expressions.
   void unitcsts_of_exp(const linear_expression_t &exp,
                        std::vector<std::pair<variable_t, number_t>> &lbs,
                        std::vector<std::pair<variable_t, number_t>> &ubs) {
@@ -693,52 +698,52 @@ private:
     return;
   }
 
-  inline LddNodePtr mk_true(boost::optional<variable_t> x) {
-    if (x) {
-      // x == 1
-      LddNodePtr r =
-          make_unit_constraint(number_t(1), variable_t(*x),
-                               linear_constraint_t::EQUALITY, number_t(1));
-      return r;
-    } else {
-      LddNodePtr r = make_unit_constraint(
-          number_t(1), linear_constraint_t::EQUALITY, number_t(1));
-      return r;
-    }
-  }
-
   inline LddNodePtr mk_false(boost::optional<variable_t> x) {
-
-    if (x) {
-      // x == 0
-      LddNodePtr r =
-          make_unit_constraint(number_t(1), variable_t(*x),
-                               linear_constraint_t::EQUALITY, number_t(0));
-      return r;
-    } else {
-      LddNodePtr r = make_unit_constraint(
-          number_t(1), linear_constraint_t::EQUALITY, number_t(0));
-      return r;
-    }
+    return (x ? make_unit_constraint(number_t(1), variable_t(*x),
+				     linear_constraint_t::EQUALITY, number_t(0)):
+	    make_unit_constraint(number_t(1), 
+				 linear_constraint_t::EQUALITY, number_t(0)));
   }
 
-  // return Ite(y>=1 Op z>=1, x>= 1, x <= 0)
+  inline linear_constraint_t mk_false_cst(const variable_t &x) {
+    return linear_constraint_t(x == 0);
+  }
+
+  // Important: Crab follows LLVM semantics where TRUE is 1. Note that
+  // in C, TRUE is any value different from 0. Following LLVM
+  // semantics avoids many disjunctions in the boolean operations.
+  inline LddNodePtr mk_true(boost::optional<variable_t> x) {
+    return (x ? make_unit_constraint(number_t(1), variable_t(*x),
+				     linear_constraint_t::EQUALITY, number_t(1)):
+	        make_unit_constraint(number_t(1),
+				     linear_constraint_t::EQUALITY, number_t(1)));
+    // return (x ? make_unit_constraint(number_t(1), variable_t(*x),
+    // 				     linear_constraint_t::DISEQUATION, number_t(0)):
+    // 	        make_unit_constraint(number_t(1),
+    // 				     linear_constraint_t::DISEQUATION, number_t(0)));
+  }
+
+  inline linear_constraint_t mk_true_cst(const variable_t &x) {
+    return linear_constraint_t(x == 1);
+    //return linear_constraint_t(x != 0);
+  }
+  
+
+  // Return a node of the form ITE(y Op z, x=TRUE, x=FALSE)
   LddNodePtr gen_binary_bool(bool_operation_t op, boost::optional<variable_t> x,
-                             variable_t y, variable_t z) {
+                             const variable_t &y, const variable_t &z) {
     switch (op) {
     case OP_BAND: {
       LddNodePtr c = lddPtr(get_ldd_man(),
                             Ldd_And(get_ldd_man(), &*mk_true(y), &*mk_true(z)));
       return lddPtr(get_ldd_man(),
                     Ldd_Ite(get_ldd_man(), &*c, &*mk_true(x), &*mk_false(x)));
-      break;
     }
     case OP_BOR: {
       LddNodePtr c = lddPtr(get_ldd_man(),
                             Ldd_Or(get_ldd_man(), &*mk_true(y), &*mk_true(z)));
       return lddPtr(get_ldd_man(),
                     Ldd_Ite(get_ldd_man(), &*c, &*mk_true(x), &*mk_false(x)));
-      break;
     }
     case OP_BXOR: {
       LddNodePtr c = lddPtr(get_ldd_man(),
@@ -746,13 +751,12 @@ private:
       return lddPtr(get_ldd_man(),
                     Ldd_Ite(get_ldd_man(), &*c, &*mk_true(x), &*mk_false(x)));
 
-      break;
     }
     default:
       CRAB_ERROR("Unknown boolean operator");
     }
   }
-
+  
   variable_t getVarName(int v) const {
     auto it = s_var_map.right.find(v);
     if (it != s_var_map.right.end())
@@ -761,7 +765,7 @@ private:
       CRAB_ERROR("Index ", v, " cannot be mapped back to a variable name");
     }
   }
-
+  
 public:
   static void clear_global_state() { s_var_map.clear(); }
 
@@ -865,20 +869,7 @@ public:
     LddNodePtr v = join(m_ldd, other.m_ldd);
     LddNodePtr w =
         lddPtr(get_ldd_man(), Ldd_BoxWiden2(get_ldd_man(), &*m_ldd, &*v));
-
-#if 0
-          /** Trick from ufo (needed for SV-COMP ssh programs):
-	      ensure that 'w' is only the fronteer of the computation.
-              Not sure whether this is still a widening though 
-          */
-          w = lddPtr(get_ldd_man(), 
-                      Ldd_And(get_ldd_man(), &*w, Ldd_Not(&*m_ldd)));
-          /** ensure the output is at least as big as newV */
-          w = lddPtr(get_ldd_man(), Ldd_Or(get_ldd_man(), &*w, &*other.m_ldd));
-#endif
-
     boxes_domain_t res(w);
-
     CRAB_LOG("boxes", crab::outs() << "Performed widening \n"
                                    << "**" << *this << "\n"
                                    << "** " << other << "\n"
@@ -1011,12 +1002,10 @@ public:
       return;
     }
 
-    // Handle precisely unit constraints
     linear_expression_t exp = cst.expression();
     unsigned int size = exp.size();
-    if (size == 0) {
-      return; // this should not happen
-    } else if (size == 1) {
+    if (size == 1) {
+      // Handle precisely unit constraints
       auto it = exp.begin();
       number_t cx = it->first;
       if (cx == number_t(1) || cx == number_t(-1)) {
@@ -1096,20 +1085,20 @@ public:
   }
 
   void operator+=(const linear_constraint_system_t &csts) override {
-    if (is_bottom())
-      return;
-    for (auto cst : csts)
-      operator+=(cst);
+    if (!is_bottom()) {
+      for (auto cst : csts) {
+	operator+=(cst);
+      }
+    }
   }
 
   void set(const variable_t &v, interval_t ival) {
     crab::CrabStats::count(domain_name() + ".count.assign");
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
 
-    if (is_bottom())
-      return;
-
-    m_ldd = apply_interval(v, ival);
+    if (!is_bottom()) {
+      m_ldd = apply_interval(v, ival);
+    }
   }
 
   virtual interval_t operator[](const variable_t &v) override {
@@ -1121,8 +1110,7 @@ public:
     if (is_top())
       return interval_t::top();
 
-    LddNodePtr ldd(m_ldd);
-    project(ldd, v);
+    LddNodePtr ldd = project(v);
     interval_domain_t intv = to_intervals(ldd);
     interval_t i = intv[v];
     CRAB_LOG("boxes-project", crab::outs() << "Before projecting on " << v
@@ -1136,8 +1124,9 @@ public:
     crab::CrabStats::count(domain_name() + ".count.assign");
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
 
-    if (is_bottom())
+    if (is_bottom()) {
       return;
+    }
 
     if (e.is_constant()) {
       // Handle precisely if e is constant
@@ -1152,6 +1141,7 @@ public:
       auto it = e.begin();
       apply_ldd(x, it->second, it->first, e.constant());
     } else {
+      crab::ScopedCrabStats __st__(domain_name() + ".assign.converting_to_intervals");
       // Lose precision in the general case
       // XXX: we can probably do a bit better here
       m_ldd = apply_interval(x, eval_interval(e));
@@ -1172,6 +1162,8 @@ public:
     }
 
     if (op >= OP_ADDITION && op <= OP_SUBTRACTION /*OP_MULTIPLICATION*/) {
+      // FIXME: we skip multiplication because it seems imprecise.  It
+      // produces imprecise lower bounds in unittests-boxes.
       switch (op) {
       case OP_ADDITION:
         apply_ldd(x, y, 1, k);
@@ -1185,7 +1177,6 @@ public:
       default:
         CRAB_ERROR("Unexpected operator ", op);
       }
-
       CRAB_LOG("boxes", crab::outs() << "--- " << x << " := " << y << " " << op
                                      << " " << k << "\n"
                                      << *this << "\n";);
@@ -1430,69 +1421,70 @@ public:
   ////////
   void assign_bool_cst(const variable_t &lhs,
                        const linear_constraint_t &cst) override {
-    if (!m_bool_reasoning)
+    if (!m_bool_reasoning) {
       return;
-
+    }
+    
     crab::CrabStats::count(domain_name() + ".count.assign_bool_cst");
     crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst");
 
-    if (is_bottom())
+    auto is_interval_cst = [](const linear_constraint_t &c) {
+    	   return (c.expression().size() == 1 &&
+    		   (c.expression().begin()->first == number_t(1) ||
+    		    c.expression().begin()->first == number_t(-1))); };
+    
+    if (is_bottom()) {
       return;
+    } 
 
+    // Important to forget first lhs
+    this->operator-=(lhs);
+    
     if (cst.is_tautology()) {
-      // this->operator-=(lhs);
-      // m_ldd = lddPtr(get_ldd_man(),
-      // 		    Ldd_And(get_ldd_man(), &*m_ldd, &*mk_true(lhs)));
-
-      assign(lhs, number_t(1));
+      this->operator+=(mk_true_cst(lhs));
     } else if (cst.is_contradiction()) {
-      // this->operator-=(lhs);
-      // m_ldd = lddPtr(get_ldd_man(),
-      // 		    Ldd_And(get_ldd_man(), &*m_ldd, &*mk_false(lhs)));
-
-      assign(lhs, number_t(0));
+      this->operator+=(mk_false_cst(lhs));
     } else {
 
-      // XXX: we do nothing with unsigned linear inequalities
-      // TODO: we can express these constraints with more disjunctions.
-      if (cst.is_inequality() && cst.is_unsigned()) {
-        CRAB_WARN("unsigned inequality skipped in boxes domain");
-        this->operator-=(lhs);
-        return;
-      }
-
-      linear_expression_t exp = cst.expression();
-      unsigned int size = exp.size();
-      if (size == 0)
-        return; // this should not happen
-      else if (size == 1) {
-        auto it = exp.begin();
-        number_t cx = it->first;
-        if (cx == 1 || cx == -1) {
-          // XXX: lhs should not appear in cst so we can remove lhs
-          // without losing precision
-          this->operator-=(lhs);
-
-          number_t k = -exp.constant();
-          variable_t vx = it->second;
-          // m_ldd &= ite (cst, lhs >= 1, lhs <= 0);
-          LddNodePtr ldd_cst = make_unit_constraint(cx, vx, cst.kind(), k);
-          LddNodePtr ldd_rhs =
-              lddPtr(get_ldd_man(), Ldd_Ite(get_ldd_man(), &*(ldd_cst),
-                                            &*mk_true(lhs), &*mk_false(lhs)));
-          m_ldd =
-              lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*m_ldd, &*ldd_rhs));
-        } else {
-          CRAB_LOG("boxes", crab::outs()
-                                << "non-unit coefficients not implemented\n";);
+      if (is_interval_cst(cst)) {
+	crab::CrabStats::count(domain_name() + ".count.assign_bool_cst.interval");
+	crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst.interval");
+      	/// Interval constraint
+      	if (cst.is_inequality() && cst.is_unsigned()) {
+      	  CRAB_WARN("unsigned inequality skipped in boxes domain");
+      	  return;
+     	}
+      	linear_expression_t exp = cst.expression();
+        number_t cx = exp.begin()->first;
+      	variable_t vx = exp.begin()->second;
+      	number_t k = -exp.constant();
+      	// m_ldd &= ite (cst, lhs = TRUE, lhs = FALSE);
+      	LddNodePtr ldd_cst = make_unit_constraint(cx, vx, cst.kind(), k);
+      	LddNodePtr ldd_rhs = lddPtr(get_ldd_man(), Ldd_Ite(get_ldd_man(), &*(ldd_cst),
+      							   &*mk_true(lhs), &*mk_false(lhs)));
+      	m_ldd = lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*m_ldd, &*ldd_rhs));
+      } else {
+      	/// Non-interval constraint
+	crab::CrabStats::count(domain_name() + ".count.assign_bool_cst.non-interval");
+	crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst.non-interval");
+	// Note that we could project away irrelevant variables before
+	// performing the join but this would lose precision.
+        boxes_domain_t tt(*this);
+        boxes_domain_t ff(*this);
+        tt += cst;
+        tt += mk_true_cst(lhs);
+        ff += cst.negate();
+        ff += mk_false_cst(lhs);
+        if (::crab::CrabSanityCheckFlag) {
+          if (tt.is_bottom() && ff.is_bottom()) {
+            CRAB_ERROR("Something went wrong in assign_bool_cst ", lhs,
+                       " := ", cst, " with ", *this);
+          }
         }
-      } else if (size >= 2) {
-        CRAB_LOG(
-            "boxes",
-            crab::outs()
-                << "non-unary constraints for boolean ops not implemented\n";);
+        *this = (tt | ff);
       }
     }
+      
     CRAB_LOG("boxes", crab::outs() << lhs << ":= "
                                    << "(" << cst << ")\n"
                                    << *this << "\n");
@@ -1512,14 +1504,36 @@ public:
                        bool is_not_y) override {
     if (!m_bool_reasoning)
       return;
-
+    
     crab::CrabStats::count(domain_name() + ".count.assign_bool_var");
     crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_var");
 
-    if (is_not_y)
-      apply_ldd(x, y, number_t(-1), number_t(1));
-    else
-      copy_term(x, y);
+    if (is_bottom()) {
+      return;
+    }
+    
+    if (is_not_y) {
+      // forget left-hand side
+      operator-=(x);
+
+      if (x == y) {
+	// TODO
+	CRAB_WARN("boxes skipped ", x, " not(", y, ")");	
+	return;
+      }
+      
+      // Note that we could project away irrelevant variables before
+      // performing the join but this would lose precision.
+      boxes_domain_t inv1(*this);
+      boxes_domain_t inv2(*this);
+      inv1 += mk_true_cst(y);
+      inv1 += mk_false_cst(x);
+      inv2 += mk_false_cst(y);
+      inv2 += mk_true_cst(x);
+      *this = (inv1 | inv2);
+    } else {
+      apply_ldd(x, y, number_t(1), number_t(0));      
+    }
 
     CRAB_LOG("boxes", crab::outs() << x << ":=";
              if (is_not_y) crab::outs() << "not(" << y << ")";
@@ -1536,6 +1550,10 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply_bin_bool");
     crab::ScopedCrabStats __st__(domain_name() + ".apply_bin_bool");
 
+    if (is_bottom()) {
+      return;
+    }
+    
     // XXX: if *lhs is null then it represents the SPECIAL
     // variable $0.
     boost::optional<variable_t> lhs;
@@ -1547,8 +1565,23 @@ public:
       this->operator-=(x);
     }
 
-    m_ldd = lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*m_ldd,
-                                          &*gen_binary_bool(op, lhs, y, z)));
+    auto add_assumptions = [&y,&z, this]() {
+			     // the Ldd does not know that y and z can
+			     // only be either 0 or 1.  The Ite term
+			     // needs to negate the values of x and
+			     // y. So this negation can add a
+			     // disjunction to express != 0 or != 1.
+			     this->operator+=(y >= 0);
+			     this->operator+=(y <= 1);
+			     this->operator+=(z >= 0);
+			     this->operator+=(z <= 1);
+			   };
+
+
+    m_ldd = lddPtr(get_ldd_man(),
+		   Ldd_And(get_ldd_man(), &*m_ldd,
+			   &*gen_binary_bool(op, lhs, y, z)));
+    add_assumptions();
 
     if ((x == y) || (x == z)) {
       // XXX: if we are here we added ite(y op z, $0 >= 1, $0 <= 0);
@@ -1568,6 +1601,10 @@ public:
     crab::CrabStats::count(domain_name() + ".count.assume_bool");
     crab::ScopedCrabStats __st__(domain_name() + ".assume_bool");
 
+    if (is_bottom()) {
+      return;
+    }
+    
     m_ldd = lddPtr(get_ldd_man(),
                    Ldd_And(get_ldd_man(), &*m_ldd,
                            ((is_negated) ? &*mk_false(x) : &*mk_true(x))));
@@ -1588,8 +1625,9 @@ public:
   void backward_assign_bool_cst(const variable_t &lhs,
                                 const linear_constraint_t &rhs,
                                 const boxes_domain_t &inv) override {
-    if (is_bottom())
+    if (is_bottom()) {
       return;
+    }
 
     this->operator-=(lhs);
     CRAB_WARN("boxes backward boolean assignment not implemented");
@@ -1598,8 +1636,9 @@ public:
   void backward_assign_bool_ref_cst(const variable_t &lhs,
                                     const reference_constraint_t &rhs,
                                     const boxes_domain_t &inv) override {
-    if (is_bottom())
+    if (is_bottom()) {
       return;
+    }
 
     this->operator-=(lhs);
     CRAB_WARN("boxes backward boolean assignment of reference constraints not "
@@ -1609,8 +1648,9 @@ public:
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                 bool is_not_rhs,
                                 const boxes_domain_t &inv) override {
-    if (is_bottom())
+    if (is_bottom()) {
       return;
+    }
 
     this->operator-=(lhs);
     CRAB_WARN("boxes backward boolean assignment not implemented");
@@ -1619,8 +1659,9 @@ public:
   void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
                                   const variable_t &y, const variable_t &z,
                                   const boxes_domain_t &inv) override {
-    if (is_bottom())
+    if (is_bottom()) {
       return;
+    }
 
     this->operator-=(x);
     CRAB_WARN("boxes backward boolean apply not implemented");
@@ -1700,7 +1741,11 @@ public:
     } else if (is_bottom()) {
       o << "_|_";
     } else {
+#if 0
+      auto r = to_linear_constraint_system();
+#else      
       auto r = to_disjunctive_linear_constraint_system();
+#endif
       o << r;
     }
   }
