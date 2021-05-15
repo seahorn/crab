@@ -69,7 +69,7 @@ z_cfg_t *__main(variable_factory_t &vfac, crab::tag_manager &as_man) {
   z_var ref(vfac["ref"], crab::REF_TYPE, 32);
   z_var lhs(vfac["lhs"], crab::INT_TYPE, 32);    
   exit.load_from_ref(lhs, ref, z);
-  exit.assertion(z_lin_t(x) >= z_lin_t(lhs));
+  exit.assertion(z_lin_exp_t(x) >= z_lin_exp_t(lhs));
   exit.assertion(lhs > 0);  
   return cfg;
 }

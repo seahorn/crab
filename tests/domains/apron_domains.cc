@@ -375,7 +375,7 @@ int main(int argc, char **argv) {
     z_pk_apron_domain_t inv1;
     inv1.assign(vfac ["x"], 5);
     z_lin_cst_sys_t csts;
-    csts +=(z_lin_t(vfac ["x"]) == z_lin_t(vfac ["y"]));
+    csts +=(z_lin_exp_t(vfac ["x"]) == z_lin_exp_t(vfac ["y"]));
     inv1 += csts;
     z_pk_apron_domain_t inv2(inv1);
     crab::outs() << "Before expand x into z:" << inv1 << "\n";
@@ -410,24 +410,24 @@ int main(int argc, char **argv) {
 
     {
       z_lin_cst_sys_t csts;
-      csts += (z_lin_t(k) <= 100);
-      csts += (- z_lin_t(i) + z_lin_t(k) <= 0);
-      csts += (z_lin_t(i) + z_lin_t(k)  <= 200);
-      csts += (-z_lin_t(k) <= 0);
-      csts += (-z_lin_t(i) - z_lin_t(k)  <= 0);
-      csts += (z_lin_t(i) - z_lin_t(k)  <= 0);
-      csts += (z_lin_t(i) <= 100);
-      csts += (-z_lin_t(i) <= 0);
+      csts += (z_lin_exp_t(k) <= 100);
+      csts += (- z_lin_exp_t(i) + z_lin_exp_t(k) <= 0);
+      csts += (z_lin_exp_t(i) + z_lin_exp_t(k)  <= 200);
+      csts += (-z_lin_exp_t(k) <= 0);
+      csts += (-z_lin_exp_t(i) - z_lin_exp_t(k)  <= 0);
+      csts += (z_lin_exp_t(i) - z_lin_exp_t(k)  <= 0);
+      csts += (z_lin_exp_t(i) <= 100);
+      csts += (-z_lin_exp_t(i) <= 0);
       inv1 += csts;
     }
 
     {
       z_lin_cst_sys_t csts;
-      csts += (-z_lin_t(i) + z_lin_t(k)  <= 0);
-      csts += (-z_lin_t(k) <= 0);
-      csts += (-z_lin_t(i) - z_lin_t(k)  <= 0);
-      csts += (z_lin_t(i) - z_lin_t(k)  <= 0);
-      csts += (-z_lin_t(i) <= 0);
+      csts += (-z_lin_exp_t(i) + z_lin_exp_t(k)  <= 0);
+      csts += (-z_lin_exp_t(k) <= 0);
+      csts += (-z_lin_exp_t(i) - z_lin_exp_t(k)  <= 0);
+      csts += (z_lin_exp_t(i) - z_lin_exp_t(k)  <= 0);
+      csts += (-z_lin_exp_t(i) <= 0);
       inv2 += csts;
     }
 

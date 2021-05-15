@@ -43,7 +43,7 @@ using z_cfg_rev_t = cfg::cfg_rev<z_cfg_ref_t>;
 using z_basic_block_t = z_cfg_t::basic_block_t;
 using z_var = variable<ikos::z_number, varname_t>;
 using z_var_or_cst_t = variable_or_constant<ikos::z_number, varname_t>;
-using z_lin_t = ikos::linear_expression<ikos::z_number, varname_t>;
+using z_lin_exp_t = ikos::linear_expression<ikos::z_number, varname_t>;
 using z_lin_cst_t = ikos::linear_constraint<ikos::z_number, varname_t>;
 using z_ref_cst_t = reference_constraint<ikos::z_number, varname_t>;
   

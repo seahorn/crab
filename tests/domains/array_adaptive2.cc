@@ -451,8 +451,8 @@ z_cfg_t *prog7(variable_factory_t &vfac) {
   entry.array_load(tmp2, m2, y, 4);
   entry.array_load(tmp3, m3, z, 4);
 
-  ret.assertion(z_lin_t(tmp1) < tmp2);
-  ret.assertion(z_lin_t(tmp2) < tmp3);
+  ret.assertion(z_lin_exp_t(tmp1) < tmp2);
+  ret.assertion(z_lin_exp_t(tmp2) < tmp3);
   return cfg;
 }
 
@@ -492,8 +492,8 @@ z_cfg_t *prog8(variable_factory_t &vfac) {
   entry.array_load(tmp2, m2, y, 4);
   entry.array_load(tmp3, m3, z, 4);
 
-  ret.assertion(z_lin_t(tmp1) < tmp2);
-  ret.assertion(z_lin_t(tmp2) < tmp3);
+  ret.assertion(z_lin_exp_t(tmp1) < tmp2);
+  ret.assertion(z_lin_exp_t(tmp2) < tmp3);
   return cfg;
 }
 
@@ -525,7 +525,7 @@ z_cfg_t *prog9(variable_factory_t &vfac) {
   entry.array_load(tmp1, m1, x, 4);
   entry.array_load(tmp2, m1, y, 4);
 
-  ret.assertion(z_lin_t(tmp1) == z_lin_t(tmp2));
+  ret.assertion(z_lin_exp_t(tmp1) == z_lin_exp_t(tmp2));
   return cfg;
 }
 
@@ -556,7 +556,7 @@ z_cfg_t *prog10(variable_factory_t &vfac) {
   bb3.array_store(m1, i, 50, 4);
   bb3.array_load(x, m1, 2, 4);
   // should be warning
-  bb3.assertion(z_lin_t(x) == 42);
+  bb3.assertion(z_lin_exp_t(x) == 42);
 
   return cfg;
 }
@@ -594,8 +594,8 @@ z_cfg_t *prog11(variable_factory_t &vfac) {
   bb3.array_load(x, m1, 2, 4);
   bb3.array_load(y, m1, 6, 4);
   // should be ok
-  bb3.assertion(z_lin_t(x) == 42);
-  bb3.assertion(z_lin_t(y) == 50);
+  bb3.assertion(z_lin_exp_t(x) == 42);
+  bb3.assertion(z_lin_exp_t(y) == 50);
 
   return cfg;
 }
@@ -619,16 +619,16 @@ z_cfg_t *prog12(variable_factory_t &vfac) {
   bb0.array_load(x, m1, 0, 4);
   bb0.array_load(y, m1, 4, 4);
   // should be ok
-  bb0.assertion(z_lin_t(x) == 42);
-  bb0.assertion(z_lin_t(y) == 50);
+  bb0.assertion(z_lin_exp_t(x) == 42);
+  bb0.assertion(z_lin_exp_t(y) == 50);
   bb0.assign(i, 0);
   bb0.assign(j, 8);
   bb0.array_init(m1, i, j, 666, 4);
   bb0.array_load(x, m1, 0, 4);
   bb0.array_load(y, m1, 4, 4);
   // should be ok
-  bb0.assertion(z_lin_t(x) == 666);
-  bb0.assertion(z_lin_t(y) == 666);
+  bb0.assertion(z_lin_exp_t(x) == 666);
+  bb0.assertion(z_lin_exp_t(y) == 666);
   bb0.assign(i, 2);
   bb0.assign(j, 8);
   // this array initialization should be ignored
@@ -637,8 +637,8 @@ z_cfg_t *prog12(variable_factory_t &vfac) {
   bb0.array_load(x, m1, 0, 4);
   bb0.array_load(y, m1, 4, 4);
   // should be warnings
-  bb0.assertion(z_lin_t(y) == 666);
-  bb0.assertion(z_lin_t(x) == 666);
+  bb0.assertion(z_lin_exp_t(y) == 666);
+  bb0.assertion(z_lin_exp_t(x) == 666);
   return cfg;
 }
 
@@ -668,15 +668,15 @@ z_cfg_t *prog13(variable_factory_t &vfac) {
 
   // should be ok
   bb0.array_load(x, m1, 0, 4);
-  bb0.assertion(z_lin_t(x) == 42);
+  bb0.assertion(z_lin_exp_t(x) == 42);
   bb0.array_load(x, m1, 4, 4);
-  bb0.assertion(z_lin_t(x) == 0);
+  bb0.assertion(z_lin_exp_t(x) == 0);
   bb0.array_load(x, m1, 8, 4);
-  bb0.assertion(z_lin_t(x) == 0);
+  bb0.assertion(z_lin_exp_t(x) == 0);
   bb0.array_load(x, m1, 12, 4);
-  bb0.assertion(z_lin_t(x) == 0);
+  bb0.assertion(z_lin_exp_t(x) == 0);
   bb0.array_load(x, m1, 16, 4);
-  bb0.assertion(z_lin_t(x) == 50);
+  bb0.assertion(z_lin_exp_t(x) == 50);
 
   return cfg;
 }
