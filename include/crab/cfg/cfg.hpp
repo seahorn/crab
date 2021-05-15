@@ -2960,7 +2960,7 @@ public:
     return insert(new bool_assign_var_t(lhs, rhs, is_not_rhs, this));
   }
 
-  const statement_t *bool_assign_not(variable_t lhs, variable_t rhs) {
+  const statement_t *bool_not_assign(variable_t lhs, variable_t rhs) {
     return insert(new bool_assign_var_t(lhs, rhs, true, this));
   }
   
