@@ -121,6 +121,8 @@ private:
     virtual void region_init(const variable_t &reg) = 0;
     virtual void region_copy(const variable_t &lhs_reg,
                              const variable_t &rhs_reg) = 0;
+    virtual void region_cast(const variable_t &src_reg,
+                             const variable_t &dst_reg) = 0;
     virtual void ref_make(const variable_t &ref, const variable_t &reg,
 			  const allocation_site &as) = 0;
     virtual void ref_free(const variable_t &reg, const variable_t &ref) = 0;
@@ -400,6 +402,10 @@ private:
                      const variable_t &rhs_reg) override {
       m_inv.region_copy(lhs_reg, rhs_reg);
     }
+    void region_cast(const variable_t &src_reg,
+                     const variable_t &dst_reg) override {
+      m_inv.region_cast(src_reg, dst_reg);
+    }    
     void ref_make(const variable_t &ref, const variable_t &reg,
 		  const allocation_site &as) override {
       m_inv.ref_make(ref, reg, as);
@@ -770,6 +776,10 @@ public:
   void region_copy(const variable_t &lhs_reg,
                    const variable_t &rhs_reg) override {
     m_concept->region_copy(lhs_reg, rhs_reg);
+  }
+  void region_cast(const variable_t &src_reg,
+                   const variable_t &dst_reg) override {
+    m_concept->region_cast(src_reg, dst_reg);
   }
   void ref_make(const variable_t &ref, const variable_t &reg,
 		const allocation_site &as) override {
@@ -1204,6 +1214,12 @@ public:
     norm().region_copy(lhs_reg, rhs_reg);
   }
 
+  void region_cast(const variable_t &src_reg,
+                   const variable_t &dst_reg) override {
+    detach();
+    norm().region_cast(src_reg, dst_reg);
+  }
+  
   void ref_make(const variable_t &ref, const variable_t &reg,
 		const allocation_site &as) override {
     detach();

@@ -558,6 +558,13 @@ public:
     reduce();
   }
 
+  virtual void region_cast(const variable_t &src_reg,
+                           const variable_t &dst_reg) override {
+    m_product.first().region_cast(src_reg, dst_reg);
+    m_product.second().region_cast(src_reg, dst_reg);
+    reduce();
+  }
+  
   virtual void ref_make(const variable_t &ref, const variable_t &reg,
 			const allocation_site &as) override {
     m_product.first().ref_make(ref, reg, as);

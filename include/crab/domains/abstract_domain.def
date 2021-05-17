@@ -181,7 +181,11 @@
   }                                                                            \
   void region_init(const variable_t &reg) override { CRAB_ERROR(Msg); }        \
   void region_copy(const variable_t &lhs_reg,                                  \
-                     const variable_t &rhs_reg) override {   		       \
+                   const variable_t &rhs_reg) override {   		       \
+    CRAB_ERROR(Msg);                                                           \
+  }                                                                            \
+  void region_cast(const variable_t &src,                                      \
+                   const variable_t &dst) override {   		               \
     CRAB_ERROR(Msg);                                                           \
   }                                                                            \
   void ref_make(const variable_t &ref, const variable_t &reg,                  \

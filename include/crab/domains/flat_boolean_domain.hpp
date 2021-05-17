@@ -1415,6 +1415,11 @@ public:
     _product.region_copy(lhs_reg, rhs_reg);
   }
 
+  void region_cast(const variable_t &src_reg,
+                   const variable_t &dst_reg) override {
+    _product.region_cast(src_reg, dst_reg);
+  }
+  
   void ref_make(const variable_t &ref, const variable_t &reg,
 		const allocation_site &as) override {
     _product.ref_make(ref, reg, as);

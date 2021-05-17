@@ -144,7 +144,8 @@ enum stmt_code {
   REF_TO_INT = 50,
   INT_TO_REF = 51,
   REGION_COPY = 52,
-  REF_REMOVE = 53,
+  REGION_CAST = 53,  
+  REF_REMOVE = 54,
   // functions calls
   CALLSITE = 60,
   CRAB_INTRINSIC = 61,
@@ -312,6 +313,7 @@ public:
   bool is_int_to_ref() const { return (m_stmt_code == INT_TO_REF); }
   bool is_region_init() const { return (m_stmt_code == REGION_INIT); }
   bool is_region_copy() const { return (m_stmt_code == REGION_COPY); }
+  bool is_region_cast() const { return (m_stmt_code == REGION_CAST); }  
   bool is_bool_bin_op() const { return (m_stmt_code == BOOL_BIN_OP); }
   bool is_bool_assign_cst() const { return (m_stmt_code == BOOL_ASSIGN_CST); }
   bool is_bool_assign_var() const { return (m_stmt_code == BOOL_ASSIGN_VAR); }
@@ -1062,6 +1064,54 @@ private:
   variable_t m_rhs_region;
 };
 
+
+template <class BasicBlockLabel, class Number, class VariableName>
+class region_cast_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
+  using this_type = region_cast_stmt<BasicBlockLabel, Number, VariableName>;
+
+public:
+  using statement_t = statement<BasicBlockLabel, Number, VariableName>;
+  using basic_block_t = typename statement_t::basic_block_t;
+  using variable_t = variable<Number, VariableName>;
+  using type_t = typename variable_t::type_t;
+
+  region_cast_stmt(variable_t src_region, variable_t dst_region,
+                   basic_block_t *parent)
+      : statement_t(REGION_CAST, parent),
+	m_src_region(src_region),
+        m_dst_region(dst_region) {
+    this->m_live.add_use(m_src_region);    
+    this->m_live.add_def(m_dst_region);
+  }
+
+  const variable_t &src() const { return m_src_region; }
+
+  const variable_t &dst() const { return m_dst_region; }
+
+  type_t src_type() const { return m_src_region.get_type(); }
+  type_t dst_type() const { return m_dst_region.get_type(); }  
+
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+    v->visit(*this);
+  }
+
+  virtual statement_t *clone(basic_block_t *parent) const {
+    return new this_type(m_src_region, m_dst_region, parent);
+  }
+
+  virtual void write(crab_os &o) const {
+    o << "region_cast "
+      << src() << ":" << src_type() << " to "
+      << dst() << ":" << dst_type();
+  }
+
+private:
+  variable_t m_src_region;
+  variable_t m_dst_region;
+};
+  
 template <class BasicBlockLabel, class Number, class VariableName>
 class make_ref_stmt : public statement<BasicBlockLabel, Number, VariableName> {
   // lhs := make_ref(region, as)
@@ -2372,6 +2422,7 @@ public:
   // Regions and references
   using region_init_t = region_init_stmt<BasicBlockLabel, Number, VariableName>;
   using region_copy_t = region_copy_stmt<BasicBlockLabel, Number, VariableName>;
+  using region_cast_t = region_cast_stmt<BasicBlockLabel, Number, VariableName>;  
   using make_ref_t = make_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using remove_ref_t = remove_ref_stmt<BasicBlockLabel, Number, VariableName>;  
   using load_from_ref_t =
@@ -2857,6 +2908,10 @@ public:
     return insert(new region_copy_t(lhs, rhs, this));
   }
 
+  const statement_t *region_cast(variable_t src, variable_t dst) {
+    return insert(new region_cast_t(src, dst, this));
+  }
+  
   const statement_t *make_ref(variable_t lhs_ref, variable_t region, crab::tag as) {
     return insert(new make_ref_t(lhs_ref, region, as, this));
   }
@@ -3108,6 +3163,7 @@ struct statement_visitor {
   using remove_ref_t = remove_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using region_init_t = region_init_stmt<BasicBlockLabel, Number, VariableName>;
   using region_copy_t = region_copy_stmt<BasicBlockLabel, Number, VariableName>;
+  using region_cast_t = region_cast_stmt<BasicBlockLabel, Number, VariableName>;  
   using load_from_ref_t =
       load_from_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using store_to_ref_t =
@@ -3147,6 +3203,7 @@ struct statement_visitor {
   virtual void visit(arr_assign_t &){};
   virtual void visit(region_init_t &) {}
   virtual void visit(region_copy_t &) {}
+  virtual void visit(region_cast_t &) {}  
   virtual void visit(make_ref_t &) {}
   virtual void visit(remove_ref_t &) {}  
   virtual void visit(load_from_ref_t &) {}
@@ -4316,6 +4373,7 @@ private:
     using remove_ref_t = typename statement_visitor<B, N, V>::remove_ref_t;    
     using region_init_t = typename statement_visitor<B, N, V>::region_init_t;
     using region_copy_t = typename statement_visitor<B, N, V>::region_copy_t;
+    using region_cast_t = typename statement_visitor<B, N, V>::region_cast_t;    
     using load_from_ref_t = typename statement_visitor<B, N, V>::load_from_ref_t;
     using store_to_ref_t = typename statement_visitor<B, N, V>::store_to_ref_t;
     using gep_ref_t = typename statement_visitor<B, N, V>::gep_ref_t;
@@ -4874,41 +4932,47 @@ private:
 
     void visit(region_init_t &s){
       check_region(s.region(), s);
-    };
+    }
     void visit(region_copy_t &s){
       check_region(s.lhs_region(), s);
       check_region(s.rhs_region(), s);
-    };
+      check_same_type(s.lhs_region(), s.rhs_region(),
+      		      "region_copy must have same types", s);
+    }
+    void visit(region_cast_t &s){
+      check_region(s.src(), s);
+      check_region(s.dst(), s);
+    }
     void visit(make_ref_t &s){
       check_region(s.region(), s);
       check_ref(s.lhs(), "", s);
-    };
+    }
     void visit(remove_ref_t &s){
       check_region(s.region(), s);
       check_ref(s.ref(), "", s);
-    };    
+    }
     void visit(load_from_ref_t &s){
       check_region(s.region(), s);
       check_ref(s.ref(), "", s);
       check_region_consistent_with_data(s.region(), s.lhs().get_type(), s);
-    };
+    }
     void visit(store_to_ref_t &s){
       check_region(s.region(), s);
       check_ref(s.ref(), "", s);
       check_region_consistent_with_data(s.region(), s.val().get_type(), s);      
-    };
+    }
     void visit(gep_ref_t &s){
       check_region(s.lhs_region(), s);
       check_region(s.rhs_region(), s);
       check_ref(s.lhs(), "", s);
       check_ref(s.rhs(), "", s);      
-    };
+    }
     void visit(load_from_arr_ref_t &s){
       // TODO
-    };
+    }
     void visit(store_to_arr_ref_t &s){
       // TODO
-    };
+    }
     void visit(assume_ref_t &s){}
     void visit(assert_ref_t &s){}
     void visit(select_ref_t &s) {
@@ -4922,17 +4986,17 @@ private:
         check_varname(s.left_ref().get_variable());
       if (s.right_ref().is_variable())
         check_varname(s.right_ref().get_variable());
-    };
+    }
     void visit(int_to_ref_t &s){
       check_region(s.region(), s);
       check_ref(s.ref_var(), "", s);
       check_num(s.int_var(), "first input must be a number", s);
-    };
+    }
     void visit(ref_to_int_t &s){
       check_region(s.region(), s);
       check_ref(s.ref_var(), "", s);
       check_num(s.int_var(), "first input must be a number", s);
-    };
+    }
 
   }; // end class type_checker_visitor
 };   // end class type_checker

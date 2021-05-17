@@ -248,11 +248,14 @@ public:
   virtual void array_assign(const variable_t &a, const variable_t &b) = 0;
 
   /***************** Regions and reference operations *****************/
-  // Initialize region. If reg already exists then error.
+  // Initialize a region 
   virtual void region_init(const variable_t &reg) = 0;
   // Make a copy of a region
   virtual void region_copy(const variable_t &lhs_reg,
                            const variable_t &rhs_reg) = 0;
+  // Cast between regions of different types
+  virtual void region_cast(const variable_t &src_reg,
+                           const variable_t &dst_reg) = 0;
   // Create a new reference ref associated with as within region reg 
   virtual void ref_make(const variable_t &ref, const variable_t &reg,
 			const allocation_site &as) = 0;
@@ -521,6 +524,8 @@ public:
   virtual void region_init(const variable_t &reg) override {}                  \
   virtual void region_copy(const variable_t &lhs_reg,                          \
                            const variable_t &rhs_reg) override {}              \
+  virtual void region_cast(const variable_t &src_reg,                          \
+                           const variable_t &dst_reg) override {}              \
   virtual void ref_make(const variable_t &ref, const variable_t &reg, 	       \
                         const crab::allocation_site &as)		       \
       override {}                                                              \

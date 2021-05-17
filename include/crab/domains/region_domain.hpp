@@ -1543,6 +1543,10 @@ public:
                  " must have a region type");
     }
 
+    if (lhs_rgn.get_type() != rhs_rgn.get_type()) {
+      CRAB_ERROR(domain_name() + "::region_copy operands must have same types");
+    }
+    
     m_rgn_counting_dom.set(lhs_rgn, m_rgn_counting_dom[rhs_rgn]);
     m_rgn_init_dom.set(lhs_rgn, m_rgn_init_dom[rhs_rgn]);
     if (Params::allocation_sites) {
@@ -1554,38 +1558,78 @@ public:
     if (Params::tag_analysis) {
       m_tag_env.set(lhs_rgn, m_tag_env[rhs_rgn]);
     }
+
+    if (lhs_rgn.get_type().is_unknown_region()) {
+      return;
+    }
     
-    if (lhs_rgn.get_type().is_unknown_region() ||
-        rhs_rgn.get_type().is_unknown_region()) {
+    const base_variable_t &base_lhs = rename_var(lhs_rgn);
+    const base_variable_t &base_rhs = rename_var(rhs_rgn);
+    auto num_refs = m_rgn_counting_dom[rhs_rgn];
+    if (num_refs.is_zero() || num_refs.is_one()) {
+      // the rhs region is a singleton then we use assign 
+      auto ty = lhs_rgn.get_type();
+      if (ty.is_bool_region()) {
+	m_base_dom.assign_bool_var(base_lhs, base_rhs, false);
+      } else if (ty.is_integer_region() || ty.is_real_region() ||
+		 ty.is_reference_region()) {
+	m_base_dom.assign(base_lhs, base_rhs);
+      } else if (ty.is_bool_array_region() ||
+		 ty.is_int_array_region() ||
+		 ty.is_real_array_region()) {
+	m_base_dom.array_assign(base_lhs, base_rhs);
+      } else {
+	CRAB_ERROR(domain_name() + "::region_copy with unexpected region type");
+      }
+    } else {
+      // the rhs region might not be a singleton so we use expand.
+      m_base_dom.forget({base_lhs});
+      m_base_dom.expand(base_rhs, base_lhs);
+    }
+  }
+
+
+  void region_cast(const variable_t &src_rgn,
+		   const variable_t &dst_rgn) override {
+                   
+    crab::CrabStats::count(domain_name() + ".count.region_cast");
+    crab::ScopedCrabStats __st__(domain_name() + ".region_cast");
+
+    if (is_bottom()) {
       return;
     }
 
-    if (lhs_rgn.get_type() != rhs_rgn.get_type()) {
-      CRAB_ERROR(domain_name() + "::region_copy ", lhs_rgn, ":=", rhs_rgn,
-                 " with different types");
+    if (!dst_rgn.get_type().is_region()) {
+      CRAB_ERROR(domain_name() + "::region_cast ", dst_rgn,
+                 " must have a region type");
+    }
+    if (!src_rgn.get_type().is_region()) {
+      CRAB_ERROR(domain_name() + "::region_cast ", src_rgn,
+                 " must have a region type");
     }
 
-    const base_variable_t &base_lhs = rename_var(lhs_rgn);
-    const base_variable_t &base_rhs = rename_var(rhs_rgn);
-    m_base_dom.forget({base_lhs});
-    m_base_dom.expand(base_rhs, base_lhs);
+    m_rgn_counting_dom.set(dst_rgn, m_rgn_counting_dom[src_rgn]);
+    m_rgn_init_dom.set(dst_rgn, m_rgn_init_dom[src_rgn]);
+    if (Params::allocation_sites) {
+      m_alloc_site_dom.set(dst_rgn, m_alloc_site_dom[src_rgn]);
+    }
+    if (Params::deallocation) {
+      m_rgn_dealloc_dom.add(src_rgn, dst_rgn);
+    }
+    if (Params::tag_analysis) {
+      m_tag_env.set(dst_rgn, m_tag_env[src_rgn]);
+    }
+    
+    if (dst_rgn.get_type() == src_rgn.get_type()) {
+      // nothing to do
+      return;
+    }
 
-    // auto ty = lhs_rgn.get_type();
-    // if (ty.is_bool_region()) {
-    //   m_base_dom.assign_bool_var(base_lhs, base_rhs, false);
-    // } else if (ty.is_integer_region() || ty.is_real_region() ||
-    // ty.is_reference_region()) {
-    //   m_base_dom.assign(base_lhs, base_rhs);
-    // } else if (ty.is_bool_array_region() ||
-    // 	       ty.is_int_array_region() ||
-    // 	       ty.is_real_array_region()) {
-    //   m_base_dom.array_assign(base_lhs, base_rhs);
-    // } else {
-    //   CRAB_ERROR(domain_name() + "::region_copy with unexpected region
-    //   type");
-    // }
+    CRAB_LOG("region",
+	     CRAB_WARN("TODO region_cast ", src_rgn, ":", src_rgn.get_type(), " to ",
+		       dst_rgn, ":", dst_rgn.get_type(), " in base domain"););    
   }
-
+  
   // Create a new reference ref to region rgn.
   void ref_make(const variable_t &ref, const variable_t &rgn,
 		const allocation_site &as) override {

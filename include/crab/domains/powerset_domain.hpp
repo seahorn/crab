@@ -562,6 +562,15 @@ public:
     }
   }
 
+  virtual void region_cast(const variable_t &src_reg,
+                           const variable_t &dst_reg) override {
+    if (!is_bottom()) {
+      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+        m_disjuncts[i].region_cast(src_reg, dst_reg);
+      }
+    }
+  }
+  
   virtual void ref_make(const variable_t &ref, const variable_t &reg,
 			const allocation_site &as) override {
     if (!is_bottom()) {
