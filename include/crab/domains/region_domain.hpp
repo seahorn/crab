@@ -1549,8 +1549,7 @@ public:
       m_alloc_site_dom.set(lhs_rgn, m_alloc_site_dom[rhs_rgn]);
     }
     if (Params::deallocation) {
-      m_rgn_dealloc_dom.forget(lhs_rgn);
-      m_rgn_dealloc_dom.expand(rhs_rgn, lhs_rgn);
+      m_rgn_dealloc_dom.add(rhs_rgn, lhs_rgn);
     }
     if (Params::tag_analysis) {
       m_tag_env.set(lhs_rgn, m_tag_env[rhs_rgn]);
