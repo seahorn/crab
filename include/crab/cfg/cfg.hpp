@@ -1850,25 +1850,41 @@ public:
     }
   }
 
+  const std::string &get_func_name() const { return m_func_name; }
+  
   const std::vector<variable_t> &get_lhs() const { return m_lhs; }
 
-  const std::string &get_func_name() const { return m_func_name; }
+  unsigned get_num_lhs() const { return m_lhs.size(); }
+
+  const variable_t &get_lhs_name(unsigned idx) const {
+    if (idx >= m_lhs.size()) {
+      CRAB_ERROR("Out-of-bound access to call site parameter");
+    }
+    return m_lhs[idx];
+  }
+
+  type_t get_lhs_type(unsigned idx) const {
+    if (idx >= m_lhs.size()) {
+      CRAB_ERROR("Out-of-bound access to call site parameter");
+    }
+    return m_lhs[idx].get_type();
+  }
 
   const std::vector<variable_t> &get_args() const { return m_args; }
 
   unsigned get_num_args() const { return m_args.size(); }
 
   const variable_t &get_arg_name(unsigned idx) const {
-    if (idx >= m_args.size())
+    if (idx >= m_args.size()) {
       CRAB_ERROR("Out-of-bound access to call site parameter");
-
+    }
     return m_args[idx];
   }
 
   type_t get_arg_type(unsigned idx) const {
-    if (idx >= m_args.size())
+    if (idx >= m_args.size()) {
       CRAB_ERROR("Out-of-bound access to call site parameter");
-
+    }
     return m_args[idx].get_type();
   }
 
@@ -3298,7 +3314,7 @@ public:
     m_outputs = std::move(o.m_outputs);
     return *this;
   }
-
+  
   bool operator==(const this_type &o) const {
     if (m_func_name != o.m_func_name) {
       return false;
@@ -4285,40 +4301,165 @@ public:
   void simplify() {}
 };
 
-// Helper class
-template <typename CFG> struct cfg_hasher {
+// Wrapper to allow compare callsites and function declarations. This
+// class can be avoided, if a callsite keeps a pointer to the callee's
+// CFG function and function declarations keep a pointer to its
+// CFG. That would require to build CFGs in two phases.  For now, we
+// have this wrapper that it's less efficient but hopefully it's not a
+// big bottleneck.
+template<typename CFG>  
+class callsite_or_fdecl {
+public:
   using callsite_t = typename CFG::basic_block_t::callsite_t;
   using fdecl_t = typename CFG::fdecl_t;
+private:
+  const callsite_t *m_cs;
+  const fdecl_t *m_fdecl;
 
+  static bool match_callee_and_function(const callsite_t &cs, const fdecl_t &fdecl) {
+    if (cs.get_func_name() != fdecl.get_func_name() ||
+	cs.get_num_args() != fdecl.get_num_inputs() ||
+	cs.get_num_lhs() != fdecl.get_num_outputs()) {
+      return false;
+    }
+    for (unsigned i=0, args=fdecl.get_num_inputs(); i<args;++i) {
+      if (cs.get_arg_type(i) != fdecl.get_input_type(i)) {
+	return false;
+      }
+    }
+    for (unsigned i=0, args=fdecl.get_num_outputs(); i<args;++i) {
+      if (cs.get_lhs_type(i) != fdecl.get_output_type(i)) {
+	return false;
+      }
+    }
+    return true;
+  }
+
+  static bool match_callees(const callsite_t &cs1, const callsite_t &cs2) {
+    if (cs1.get_func_name() != cs2.get_func_name() ||
+	cs1.get_num_args() != cs2.get_num_args() ||
+	cs1.get_num_lhs() != cs2.get_num_lhs()) {
+      return false;
+    }
+    for (unsigned i=0, args=cs1.get_num_args(); i<args;++i) {
+      if (cs1.get_arg_type(i) != cs2.get_arg_type(i)) {
+	return false;
+      }
+    }
+    for (unsigned i=0, args=cs1.get_num_lhs(); i<args;++i) {
+      if (cs1.get_lhs_type(i) != cs2.get_lhs_type(i)) {
+	return false;
+      }
+    }
+    return true;
+  }
+
+  static bool match_functions(const fdecl_t &fd1, const fdecl_t &fd2) {
+    if (fd1.get_func_name() != fd2.get_func_name() ||
+	fd1.get_num_inputs() != fd2.get_num_inputs() ||
+	fd1.get_num_outputs() != fd2.get_num_outputs()) {
+      return false;
+    }
+    for (unsigned i=0, args=fd1.get_num_inputs(); i<args;++i) {
+      if (fd1.get_input_type(i) != fd2.get_input_type(i)) {
+	return false;
+      }
+    }
+    for (unsigned i=0, args=fd1.get_num_outputs(); i<args;++i) {
+      if (fd1.get_output_type(i) != fd2.get_output_type(i)) {
+	return false;
+      }
+    }
+    return true;
+  }
+  
   static size_t combine(size_t seed, size_t hash_val) {
     // Similar to boost::hash_combine
     seed ^= hash_val + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     return seed;
   }
 
-  static size_t hash(callsite_t cs) {
+  static size_t compute_hash(const callsite_t &cs) {
     size_t res = boost::hash_value(cs.get_func_name());
-    for (unsigned i = 0; i < cs.get_num_args(); i++) {
+    for (unsigned i=0, args=cs.get_num_args(); i < args; ++i) {
       combine(res, cs.get_arg_type(i).hash());
     }
-    for (auto vt : cs.get_lhs()) {
-      combine(res, vt.get_type().hash());
+    for (unsigned i=0, args=cs.get_num_lhs(); i < args; ++i) {
+      combine(res, cs.get_lhs_type(i).hash());
     }
     return res;
   }
 
-  static size_t hash(fdecl_t d) {
+  static size_t compute_hash(const fdecl_t &d) {
     size_t res = boost::hash_value(d.get_func_name());
-    for (unsigned i = 0; i < d.get_num_inputs(); i++) {
+    for (unsigned i=0, args=d.get_num_inputs(); i < args; ++i) {
       combine(res, d.get_input_type(i).hash());
     }
-    for (unsigned i = 0; i < d.get_num_outputs(); i++) {
+    for (unsigned i=0, args=d.get_num_outputs(); i < args; ++i) {
       combine(res, d.get_output_type(i).hash());
     }
     return res;
   }
+  
+  public:
+  callsite_or_fdecl(const callsite_t &cs): m_cs(&cs), m_fdecl(nullptr) {}
+  callsite_or_fdecl(const fdecl_t &fdecl): m_cs(nullptr), m_fdecl(&fdecl) {}
+  callsite_or_fdecl(const callsite_or_fdecl &o) = default;
+  callsite_or_fdecl(callsite_or_fdecl &&o) = default;
+  callsite_or_fdecl& operator=(const callsite_or_fdecl &o) = default;
+  callsite_or_fdecl& operator=(callsite_or_fdecl &&o) = default;
+
+  // non-standard equality: two callsites or function declarations are
+  // equal if they refer to the same function. For callsites, we mean
+  // the called function.
+  bool operator==(const callsite_or_fdecl &o) const {
+    if (m_cs && o.m_cs) {
+      // return true iff the two callsites call the same function
+      return match_callees(*m_cs, *o.m_cs);
+    } else if (m_fdecl && o.m_fdecl) {
+      // return true iff the two function declarations refer to the
+      // same function.
+      return match_functions(*m_fdecl, *o.m_fdecl);
+    } else if (m_cs && o.m_fdecl) {
+      // return true iff the called function is the same than the one
+      // referred by the function declaration
+      return match_callee_and_function(*m_cs, *(o.m_fdecl));
+    } else {
+      // as above
+      assert(m_fdecl && o.m_cs);
+      return match_callee_and_function(*(o.m_cs), *m_fdecl);
+    } 
+  }
+
+  size_t hash() const {
+    return (m_cs ? compute_hash(*m_cs): compute_hash(*m_fdecl));
+  }
 };
 
+namespace callsite_or_fdecl_details {
+template<class CFG>
+struct hasher {
+  size_t operator()(const callsite_or_fdecl<CFG> &o) const {
+    return o.hash();
+  }
+};
+template<class CFG>  
+struct compare {
+  bool operator()(const callsite_or_fdecl<CFG> &o1,
+		  const callsite_or_fdecl<CFG> &o2) const {
+    return o1 == o2;
+  }
+};
+} // end namespace callsite_or_fdecl_details
+
+// Specialized unordered map when the key if callsite_or_fdecl.
+template<class CFG, class Value>  
+using callsite_or_fdecl_map =
+  std::unordered_map<callsite_or_fdecl<CFG>, Value,
+		     callsite_or_fdecl_details::hasher<CFG>,
+		     callsite_or_fdecl_details::compare<CFG>>;
+  
+  
 template <class CFG> class type_checker {
 public:
   type_checker(CFG cfg) : m_cfg(cfg) {}
@@ -5053,7 +5194,8 @@ template <class B, class V, class N> struct hash<crab::cfg::cfg<B, V, N>> {
     if (!_cfg.has_func_decl()) {
       CRAB_ERROR("cannot hash a cfg because function declaration is missing");
     }
-    return crab::cfg::cfg_hasher<cfg_t>::hash(_cfg.get_func_decl());
+    crab::cfg::callsite_or_fdecl<cfg_t> sig(_cfg.get_func_decl());
+    return sig.hash();
   }
 };
 
@@ -5063,7 +5205,8 @@ template <class CFG> struct hash<crab::cfg::cfg_ref<CFG>> {
     if (!_cfg.has_func_decl()) {
       CRAB_ERROR("cannot hash a cfg because function declaration is missing");
     }
-    return crab::cfg::cfg_hasher<cfg_ref_t>::hash(_cfg.get_func_decl());
+    crab::cfg::callsite_or_fdecl<cfg_ref_t> sig(_cfg.get_func_decl());
+    return sig.hash();
   }
 };
 
@@ -5073,7 +5216,8 @@ template <class CFGRef> struct hash<crab::cfg::cfg_rev<CFGRef>> {
     if (!_cfg.has_func_decl()) {
       CRAB_ERROR("cannot hash a cfg because function declaration is missing");
     }
-    return crab::cfg::cfg_hasher<cfg_rev_t>::hash(_cfg.get_func_decl());
+    crab::cfg::callsite_or_fdecl<cfg_rev_t> sig(_cfg.get_func_decl());
+    return sig.hash();
   }
 };
 } // end namespace std
