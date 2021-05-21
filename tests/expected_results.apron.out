@@ -1999,11 +1999,11 @@ Weak topological ordering=main (bar foo barz)
 === End ./test-bin/cg ===
 === Begin ./test-bin/checker ===
 
-Assertion Crawler Analysis 
-entry={"assert(-x <= -200)" -> {x; y}; "assert(-x+y <= 0)" -> {x; y}; "assert(-i <= -200)" -> {i}; "assert(i = 100)" -> {i}}
+Assertion Crawler Analysis
+entry={"assert(-x <= -200)" -> {}; "assert(-x+y <= 0)" -> {}; "assert(-i <= -200)" -> {}; "assert(i = 100)" -> {}}
 bb1={"assert(-x <= -200)" -> {x; y}; "assert(-x+y <= 0)" -> {x; y}; "assert(-i <= -200)" -> {i}; "assert(i = 100)" -> {i}}
 bb1_f={"assert(-x <= -200)" -> {x; y}; "assert(-x+y <= 0)" -> {x; y}; "assert(-i <= -200)" -> {i}; "assert(i = 100)" -> {i}}
-ret={}
+ret={"assert(-x <= -200)" -> {x; y}; "assert(-x+y <= 0)" -> {x; y}; "assert(-i <= -200)" -> {i}; "assert(i = 100)" -> {i}}
 bb1_t={"assert(-x <= -200)" -> {x; y}; "assert(-x+y <= 0)" -> {x; y}; "assert(-i <= -200)" -> {i}; "assert(i = 100)" -> {i}}
 bb2={"assert(-x <= -200)" -> {x; y}; "assert(-x+y <= 0)" -> {x; y}; "assert(-i <= -200)" -> {i}; "assert(i = 100)" -> {i}}
 
