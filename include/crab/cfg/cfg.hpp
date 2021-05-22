@@ -109,7 +109,6 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/variant.hpp>
 
-#include <functional> // for wrapper_reference
 #include <unordered_map>
 #include <unordered_set>
 
@@ -3934,8 +3933,8 @@ private:
   }
 };
 
-// A lightweight object that wraps a reference to a CFG into a
-// copyable, assignable object.
+// A lightweight object that wraps a pointer a CFG into a copyable,
+// assignable object.
 template <class CFG> class cfg_ref {
 public:
   // CFG's typedefs
@@ -3964,122 +3963,107 @@ public:
   using const_var_iterator = typename CFG::const_var_iterator;
 
 private:
-  boost::optional<std::reference_wrapper<CFG>> _ref;
+  CFG* m_ref;
 
 public:
-  // --- hook needed by crab::cg::CallGraph<CFG>::CgNode
-  cfg_ref() {}
-
-  cfg_ref(CFG &cfg) : _ref(std::reference_wrapper<CFG>(cfg)) {}
-
+  // default constructor needed by crab::cg::CallGraph<CFG>::CgNode
+  cfg_ref(): m_ref(nullptr) {}
+  
+  cfg_ref(CFG &cfg) : m_ref(&cfg) {}
+  
+  cfg_ref(const cfg_ref<CFG> &o) = default;
+  cfg_ref(cfg_ref<CFG> &&o) = default;
+  cfg_ref<CFG> &operator=(const cfg_ref<CFG> &o) = default;
+  cfg_ref<CFG> &operator=(cfg_ref<CFG> &&o) = default;
+  
   const CFG &get() const {
-    assert(_ref);
-    return *_ref;
+    assert(m_ref);
+    return *m_ref;
   }
 
   CFG &get() {
-    assert(_ref);
-    return *_ref;
+    assert(m_ref);
+    return *m_ref;
   }
 
   const basic_block_label_t &entry() const {
-    assert(_ref);
-    return (*_ref).get().entry();
+    return get().entry();
   }
 
   const_succ_range next_nodes(basic_block_label_t bb) const {
-    assert(_ref);
-    return (*_ref).get().next_nodes(bb);
+    return get().next_nodes(bb);
   }
 
   const_pred_range prev_nodes(basic_block_label_t bb) const {
-    assert(_ref);
-    return (*_ref).get().prev_nodes(bb);
+    return get().prev_nodes(bb);
   }
 
   succ_range next_nodes(basic_block_label_t bb) {
-    assert(_ref);
-    return (*_ref).get().next_nodes(bb);
+    return get().next_nodes(bb);
   }
 
   pred_range prev_nodes(basic_block_label_t bb) {
-    assert(_ref);
-    return (*_ref).get().prev_nodes(bb);
+    return get().prev_nodes(bb);
   }
 
   basic_block_t &get_node(basic_block_label_t bb) {
-    assert(_ref);
-    return (*_ref).get().get_node(bb);
+    return get().get_node(bb);
   }
 
   const basic_block_t &get_node(basic_block_label_t bb) const {
-    assert(_ref);
-    return (*_ref).get().get_node(bb);
+    return get().get_node(bb);
   }
 
   size_t size() const {
-    assert(_ref);
-    return (*_ref).get().size();
+    return get().size();
   }
 
   iterator begin() {
-    assert(_ref);
-    return (*_ref).get().begin();
+    return get().begin();
   }
 
   iterator end() {
-    assert(_ref);
-    return (*_ref).get().end();
+    return get().end();
   }
 
   const_iterator begin() const {
-    assert(_ref);
-    return (*_ref).get().begin();
+    return get().begin();
   }
 
   const_iterator end() const {
-    assert(_ref);
-    return (*_ref).get().end();
+    return get().end();
   }
 
   label_iterator label_begin() {
-    assert(_ref);
-    return (*_ref).get().label_begin();
+    return get().label_begin();
   }
 
   label_iterator label_end() {
-    assert(_ref);
-    return (*_ref).get().label_end();
+    return get().label_end();
   }
 
   const_label_iterator label_begin() const {
-    assert(_ref);
-    return (*_ref).get().label_begin();
+    return get().label_begin();
   }
 
   const_label_iterator label_end() const {
-    assert(_ref);
-    return (*_ref).get().label_end();
+    return get().label_end();
   }
 
   bool has_func_decl() const {
-    assert(_ref);
-    return (*_ref).get().has_func_decl();
+    return get().has_func_decl();
   }
 
   const fdecl_t &get_func_decl() const {
-    assert(_ref);
-    return (*_ref).get().get_func_decl();
+    return get().get_func_decl();
   }
 
   bool has_exit() const {
-    assert(_ref);
-    return (*_ref).get().has_exit();
+    return get().has_exit();
   }
 
   const basic_block_label_t &exit() const {
-    assert(_ref);
-    return (*_ref).get().exit();
+    return get().exit();
   }
 
   friend crab_os &operator<<(crab_os &o, const cfg_ref<CFG> &cfg) {
@@ -4089,21 +4073,12 @@ public:
 
   // for gdb
   void dump() const {
-    assert(_ref);
-    (*_ref).get().dump();
+    get().dump();
   }
 
   void simplify() {
-    assert(_ref);
-    (*_ref).get().simplify();
+    get().simplify();
   }
-
-  // #include <boost/fusion/functional/invocation/invoke.hpp>
-  // template< class... ArgTypes >
-  // typename std::result_of<CFG&(ArgTypes&&...)>::type
-  // operator() ( ArgTypes&&... args ) const {
-  //   return boost::fusion::invoke(get(), std::forward<ArgTypes>(args)...);
-  // }
 };
 
 // Viewing a CFG with all edges and block statements
