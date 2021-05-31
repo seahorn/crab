@@ -678,6 +678,27 @@ public:
     }
     return false;
   }
+
+  bool get_tags(const variable_t &rgn, const variable_t &ref,
+		std::vector<uint64_t> &out) override {
+    std::vector<uint64_t> s1, s2;
+    bool b1 = m_product.first().get_tags(rgn, ref, s1);
+    bool b2 = m_product.first().get_tags(rgn, ref, s2);
+    if (b1 && b2) {
+      std::sort(s1.begin(), s1.end());
+      std::sort(s2.begin(), s2.end());
+      std::set_intersection(s1.begin(), s1.end(), s2.begin(), s2.end(),
+			    std::back_inserter(out));
+      return true;
+    } else if (b1) {
+      out.assign(s1.begin(), s1.end());
+      return true;
+    } else if (b2) {
+      out.assign(s2.begin(), s2.end());
+      return true;
+    }
+    return false;
+  }
   
   // boolean operators
   virtual void assign_bool_cst(const variable_t &lhs,

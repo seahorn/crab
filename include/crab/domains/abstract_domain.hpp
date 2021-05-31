@@ -446,10 +446,16 @@ public:
 
   // If return true then out contains all the *possible* allocation
   // sites of the reference variable ref. If return false then nothing
-  // is known about the allocation sites so alloc_sites should be
-  // ignored.
+  // is known about its allocation sites.
   virtual bool get_allocation_sites(const variable_t &ref,
-				    std::vector<allocation_site> &alloc_sites) = 0;
+				    std::vector<allocation_site> &out) = 0;
+
+  // If return true then out contains all the *possible* tags
+  // associated with the reference variable ref within region rgn. If
+  // return false then nothing is known about its tags.
+  virtual bool get_tags(const variable_t &rgn, const variable_t &ref,
+			std::vector<uint64_t> &out) = 0;
+  
 };
 
 
@@ -561,8 +567,11 @@ public:
   { return crab::domains::boolean_value::top();}			       \
   virtual bool get_allocation_sites(const variable_t &ref,                     \
     std::vector<crab::allocation_site> &out) override		               \
+  { return false; }							       \
+  virtual bool get_tags(const variable_t &rng, const variable_t &ref,	       \
+    std::vector<uint64_t> &out) override		                       \
   { return false; }							
-
+  
 #define ARRAY_OPERATIONS_NOT_IMPLEMENTED(DOM)                                  \
   virtual void array_init(                                                     \
       const variable_t &a, const linear_expression_t &elem_size,               \

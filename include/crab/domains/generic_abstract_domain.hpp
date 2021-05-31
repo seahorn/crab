@@ -157,6 +157,8 @@ private:
     virtual boolean_value is_null_ref(const variable_t &ref) = 0;    
     virtual bool get_allocation_sites(const variable_t &ref,
 				      std::vector<allocation_site> &alloc_sites) = 0;
+    virtual bool get_tags(const variable_t &rgn, const variable_t &ref,
+			  std::vector<uint64_t> &tags) = 0;
     
     virtual void backward_apply(arith_operation_t op, const variable_t &x,
                                 const variable_t &y, const variable_t &z,
@@ -465,7 +467,11 @@ private:
 			      std::vector<allocation_site> &alloc_sites)  override {
       return m_inv.get_allocation_sites(ref, alloc_sites);
     }
-    
+    bool get_tags(const variable_t &rgn, const variable_t &ref,
+		  std::vector<uint64_t> &tags) override {
+      return m_inv.get_tags(rgn, ref, tags);
+    }
+        
     // unsafe: if the underlying domain in invariant is not Domain then it will
     // crash
     void backward_apply(arith_operation_t op, const variable_t &x,
@@ -840,7 +846,11 @@ public:
 			    std::vector<allocation_site> &alloc_sites) override {
     return m_concept->get_allocation_sites(ref, alloc_sites);
   }
-    
+  bool get_tags(const variable_t &rgn, const variable_t &ref,
+		std::vector<uint64_t> &tags) override {
+    return m_concept->get_tags(rgn, ref, tags);
+  }
+  
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const abstract_domain &invariant) override {
@@ -1299,6 +1309,11 @@ public:
 			    std::vector<allocation_site> &alloc_sites) override {
     detach();
     return norm().get_allocation_sites(ref, alloc_sites);
+  }
+  bool get_tags(const variable_t &rgn, const variable_t &ref,
+		std::vector<uint64_t> &tags) override {
+    detach();
+    return norm().get_tags(rgn, ref, tags);
   }
   
   void backward_apply(arith_operation_t op, const variable_t &x,

@@ -700,7 +700,19 @@ public:
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
         if (!m_disjuncts[i].get_allocation_sites(ref, alloc_sites)) {
-	  alloc_sites.clear();
+	  return false;
+	}
+      }
+      return true;
+    }
+    return false;
+  }
+
+  bool get_tags(const variable_t &rgn, const variable_t &ref,
+		std::vector<uint64_t> &tags) override {
+    if (!is_bottom()) {
+      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+        if (!m_disjuncts[i].get_tags(rgn, ref, tags)) {
 	  return false;
 	}
       }

@@ -459,14 +459,11 @@ private:
   // Whether some data might have been written to any address within
   // the region.
   rgn_bool_env_t m_rgn_init_dom;
-  // Map each reference to its set of possible allocation sites.
-  // 
-  // It also maps each region variable to the union of all
-  // possible allocation sites from all possible references stored in
-  // that region. Note that we don't keep track of which allocation
-  // sites allocated the memory where the region lives. This is a
-  // different question. We are only interested in references. Regions
-  // need to be tracked because references are stored in regions.
+  // Map each reference to its set of possible allocation sites. It
+  // also maps each region variable to the union of all possible
+  // allocation sites from all possible references stored in that
+  // region. Regions need to be tracked because references are stored
+  // in regions.
   alloc_site_env_t m_alloc_site_dom;
   // Keep track of whether some memory within a region has been
   // deallocated.
@@ -1958,7 +1955,8 @@ public:
       if (Params::allocation_sites) {
 	if (val.get_type().is_reference()) {
 	  if (val.is_variable()) {
-	    m_alloc_site_dom.set(rgn, m_alloc_site_dom[rgn] | m_alloc_site_dom[val.get_variable()]);
+	    m_alloc_site_dom.set(rgn, m_alloc_site_dom[rgn] |
+				 m_alloc_site_dom[val.get_variable()]);
 	  }
 	}
       }
@@ -3179,14 +3177,45 @@ public:
 
   virtual bool get_allocation_sites(const variable_t &ref,
 				    std::vector<allocation_site> &alloc_sites) override {
-    allocation_sites out = m_alloc_site_dom[ref];
-    
-    if (out.is_top() || out.is_bottom()) {
-      alloc_sites.clear();
+
+    if (!Params::allocation_sites || !ref.get_type().is_reference()) {
       return false;
     }
-    for (auto it = out.begin(), et = out.end(); it!=et; ++it) {
-      alloc_sites.push_back(*it);
+    
+    allocation_sites out = m_alloc_site_dom[ref];
+    
+    if (out.is_top()) {
+      return false;
+    }
+    
+    if (!out.is_bottom()) {
+      for (auto it = out.begin(), et = out.end(); it!=et; ++it) {
+	alloc_sites.push_back(*it);
+      }
+    }
+    return true;
+  }
+
+  virtual bool get_tags(const variable_t &rgn,
+			const variable_t &ref /*unused*/,
+			std::vector<uint64_t> &tags) override {
+
+    
+    if (!Params::tag_analysis ||
+	(!ref.get_type().is_reference() || !rgn.get_type().is_region())) {
+      return false;
+    }
+
+    tag_set tag_set = m_tag_env[rgn];    
+    
+    if (tag_set.is_top()) {
+      return false;
+    }
+    
+    if (!tag_set.is_bottom()) {
+      for (auto it = tag_set.begin(), et = tag_set.end(); it!=et; ++it) {
+	tags.push_back((*it).index());
+      }
     }
     return true;
   }

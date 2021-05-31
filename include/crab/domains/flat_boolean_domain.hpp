@@ -1484,6 +1484,10 @@ public:
 			    std::vector<allocation_site> &out) override {
     return _product.get_allocation_sites(ref, out);
   }
+  bool get_tags(const variable_t &rgn, const variable_t &ref,
+		std::vector<uint64_t> &out) override {
+    return _product.get_tags(rgn, ref, out);
+  }
   
   void write(crab_os &o) const override { _product.write(o); }
 
