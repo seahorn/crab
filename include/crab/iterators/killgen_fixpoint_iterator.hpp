@@ -163,7 +163,13 @@ public:
       run_bwd_fixpo(order, iterations);
     }
 
-    CRAB_LOG(m_analysis.name(), crab::outs() << "fixpoint ordering={";
+    CRAB_LOG(m_analysis.name(),
+	     crab::outs() << m_analysis.name();
+	     if (m_cfg.has_func_decl()) {
+	       crab::outs() << " for " << m_cfg.get_func_decl();
+	     }
+	     crab::outs() << "\n";
+	     crab::outs() << "fixpoint ordering={";
              bool first = true; for (auto &v
                                      : order) {
                if (!first)
