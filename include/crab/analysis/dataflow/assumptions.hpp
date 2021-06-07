@@ -355,9 +355,9 @@ class assumption_dataflow_analysis : public assumption_analysis<CFG> {
   using typename assumption_analysis_t::assumption_ptr;
   using typename assumption_analysis_t::statement_t;
   using assertion_crawler_t = crab::analyzer::assertion_crawler<CFG>;
-  using discrete_pair_domain_t = typename assertion_crawler_t::discrete_pair_domain_t;
+  using assert_map_domain_t = typename assertion_crawler_t::assert_map_domain_t;
   using typename assumption_analysis_t::vector_assumption_ptr;
-  using pp_inv_map_t = std::map<statement_t *, discrete_pair_domain_t>;
+  using pp_inv_map_t = std::map<statement_t *, assert_map_domain_t>;
   using basic_block_t = typename CFG::basic_block_t;
 
 public:
@@ -367,7 +367,8 @@ public:
 
   virtual void exec() {
     typename assertion_crawler_t::assert_map_t assert_map;
-    assertion_crawler_t assert_crawler(this->m_cfg, assert_map);
+    typename assertion_crawler_t::summary_map_t summaries;
+    assertion_crawler_t assert_crawler(this->m_cfg, assert_map, summaries);
     assert_crawler.exec();
 
     for (auto &bb :

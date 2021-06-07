@@ -146,8 +146,8 @@ template <typename CFG> class call_graph {
           m_from(from) {}
 
     void visit(callsite_t &cs) {
-      auto it_from = m_vertex_map.find(m_from);
-      auto it_to = m_vertex_map.find(cs);
+      auto it_from = m_vertex_map.find(&m_from);
+      auto it_to = m_vertex_map.find(&cs);
 
       CRAB_LOG("cg", crab::outs() << "Visiting call site " << cs << "\n";);
 
@@ -241,7 +241,7 @@ private:
 
       auto const &decl = cfg.get_func_decl();
       vertex_descriptor_t v = add_vertex(*m_cg);
-      m_vertex_map.insert({callsite_or_fdecl_t(decl), v});
+      m_vertex_map.insert({callsite_or_fdecl_t(&decl), v});
       node_t f(cfg, m_id++);
       m_node_vertex_id_map.insert({f, v});
       (*m_cg)[v].func = f;

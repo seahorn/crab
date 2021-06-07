@@ -73,15 +73,15 @@ public:
   operator=(const call_ctx_table<CFG, AbsDomain> &o) = delete;
 
   void insert(const callsite_t &cs, AbsDomain inv) {
-    insert_helper(cs, inv);
+    insert_helper(&cs, inv);
   }
 
   void insert(const fdecl_t &d, AbsDomain inv) {
-    insert_helper(d, inv);
+    insert_helper(&d, inv);
   }
 
   AbsDomain get_call_ctx(const fdecl_t &d) const {
-    auto it = m_call_table.find(d);
+    auto it = m_call_table.find(&d);
     if (it != m_call_table.end()) {
       return it->second;
     } else { 
@@ -265,30 +265,29 @@ public:
     std::vector<variable_t> ins(inputs.begin(), inputs.end());
     std::vector<variable_t> outs(outputs.begin(), outputs.end());
     summary_t sum_tuple(d, sum, ins, outs);
-    m_sum_table.insert(std::make_pair(callsite_or_fdecl_t(d),
-                                      std::move(sum_tuple)));
+    m_sum_table.insert({callsite_or_fdecl_t(&d),std::move(sum_tuple)});
   }
 
   // return true if there is a summary
   bool has_summary(const callsite_t &cs) const {
-    auto it = m_sum_table.find(cs);
+    auto it = m_sum_table.find(&cs);
     return (it != m_sum_table.end());
   }
 
   bool has_summary(const fdecl_t &d) const {
-    auto it = m_sum_table.find(d);
+    auto it = m_sum_table.find(&d);
     return (it != m_sum_table.end());
   }
 
   // get the summary
   summary_t get(const callsite_t &cs) const {
-    auto it = m_sum_table.find(cs);
+    auto it = m_sum_table.find(&cs);
     assert(it != m_sum_table.end());
     return (it->second);
   }
 
   summary_t get(const fdecl_t &d) const {
-    auto it = m_sum_table.find(d);
+    auto it = m_sum_table.find(&d);
     assert(it != m_sum_table.end());
     return (it->second);
   }
@@ -779,7 +778,7 @@ public:
                                           m_descending_iters, m_jump_set_size));
 
         a->run_forward();
-        m_inv_map.insert(std::make_pair(callsite_or_fdecl_t(fdecl), std::move(a)));
+        m_inv_map.insert({callsite_or_fdecl_t(&fdecl), std::move(a)});
       }
       return;
     }
@@ -895,7 +894,7 @@ public:
                                           get_live(cfg), m_widening_delay,
                                           m_descending_iters, m_jump_set_size));
         a->run_forward();
-        m_inv_map.insert(std::make_pair(callsite_or_fdecl_t(fdecl), std::move(a))); 
+        m_inv_map.insert({callsite_or_fdecl_t(&fdecl), std::move(a)}); 
       }
     }
     CRAB_VERBOSE_IF(1, get_msg_stream()
@@ -910,7 +909,7 @@ public:
                  const typename cfg_t::basic_block_label_t &b) const override {
     assert(cfg.has_func_decl());
     auto const &fdecl = cfg.get_func_decl();
-    auto const it = m_inv_map.find(fdecl);
+    auto const it = m_inv_map.find(&fdecl);
     if (it != m_inv_map.end()) {
       return it->second->get_pre(b);
     } else {
@@ -923,7 +922,7 @@ public:
                   const typename cfg_t::basic_block_label_t &b) const override {
     assert(cfg.has_func_decl());
     auto const &fdecl = cfg.get_func_decl();
-    auto const it = m_inv_map.find(fdecl);
+    auto const it = m_inv_map.find(&fdecl);
     if (it != m_inv_map.end()) {
       return it->second->get_post(b);
     } else {

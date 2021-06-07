@@ -161,7 +161,8 @@ enum stmt_code {
   INT_CAST = 90
 };
 
-template <typename Number, typename VariableName> class live {
+template <typename Number, typename VariableName>
+class live {
 public:
   using variable_t = variable<Number, VariableName>;
 
@@ -2374,7 +2375,8 @@ private:
   variable_t m_var; // pre: boolean type
 };
 
-template <class BasicBlockLabel, class VariableName, class Number> class cfg;
+template <class BasicBlockLabel, class VariableName, class Number>
+class cfg;
 
 template <class BasicBlockLabel, class VariableName, class Number>
 class basic_block {
@@ -3074,7 +3076,8 @@ public:
 
 // Viewing a BasicBlock with all statements reversed. Useful for
 // backward analysis.
-template <class BasicBlock> class basic_block_rev {
+template <class BasicBlock>
+class basic_block_rev {
 public:
   using number_t = typename BasicBlock::number_t;
   using varname_t = typename BasicBlock::varname_t;
@@ -3253,7 +3256,8 @@ struct statement_visitor {
   virtual ~statement_visitor() {}
 };
 
-template <class Number, class VariableName> class function_decl {
+template <class Number, class VariableName>
+class function_decl {
 public:
   using variable_t = variable<Number, VariableName>;
   using type_t = typename variable_t::type_t;
@@ -3420,7 +3424,8 @@ public:
 template <class Any> class cfg_rev;
 template <class Any> class cfg_ref;
 
-template <class BasicBlockLabel, class VariableName, class Number> class cfg {
+template <class BasicBlockLabel, class VariableName, class Number>
+class cfg {
 public:
   using number_t = Number;
   using basic_block_label_t = BasicBlockLabel;
@@ -3935,7 +3940,8 @@ private:
 
 // A lightweight object that wraps a pointer a CFG into a copyable,
 // assignable object.
-template <class CFG> class cfg_ref {
+template <class CFG>
+class cfg_ref {
 public:
   // CFG's typedefs
   using basic_block_label_t = typename CFG::basic_block_label_t;
@@ -4377,8 +4383,8 @@ private:
   }
   
   public:
-  callsite_or_fdecl(const callsite_t &cs): m_cs(&cs), m_fdecl(nullptr) {}
-  callsite_or_fdecl(const fdecl_t &fdecl): m_cs(nullptr), m_fdecl(&fdecl) {}
+  callsite_or_fdecl(const callsite_t *cs): m_cs(cs), m_fdecl(nullptr) {}
+  callsite_or_fdecl(const fdecl_t *fdecl): m_cs(nullptr), m_fdecl(fdecl) {}
   callsite_or_fdecl(const callsite_or_fdecl &o) = default;
   callsite_or_fdecl(callsite_or_fdecl &&o) = default;
   callsite_or_fdecl& operator=(const callsite_or_fdecl &o) = default;
@@ -4408,6 +4414,14 @@ private:
 
   size_t hash() const {
     return (m_cs ? compute_hash(*m_cs): compute_hash(*m_fdecl));
+  }
+
+  void write(crab_os &o) const {
+    if (m_cs) {
+      m_cs->write(o);
+    } else {
+      m_fdecl->write(o);
+    }
   }
 };
 
@@ -5180,7 +5194,7 @@ template <class CFG> struct hash<crab::cfg::cfg_ref<CFG>> {
     if (!_cfg.has_func_decl()) {
       CRAB_ERROR("cannot hash a cfg because function declaration is missing");
     }
-    crab::cfg::callsite_or_fdecl<cfg_ref_t> sig(_cfg.get_func_decl());
+    crab::cfg::callsite_or_fdecl<cfg_ref_t> sig(&(_cfg.get_func_decl()));
     return sig.hash();
   }
 };
@@ -5191,7 +5205,7 @@ template <class CFGRef> struct hash<crab::cfg::cfg_rev<CFGRef>> {
     if (!_cfg.has_func_decl()) {
       CRAB_ERROR("cannot hash a cfg because function declaration is missing");
     }
-    crab::cfg::callsite_or_fdecl<cfg_rev_t> sig(_cfg.get_func_decl());
+    crab::cfg::callsite_or_fdecl<cfg_rev_t> sig(&(_cfg.get_func_decl()));
     return sig.hash();
   }
 };
