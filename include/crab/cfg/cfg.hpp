@@ -632,10 +632,10 @@ public:
   virtual void write(crab_os &o) const {
     o << "assert(" << m_cst << ")";
     if (this->m_dbg_info.has_debug()) {
-      o << "   /* Property check at "
+      o << "   /* loc("
         << "file=" << this->m_dbg_info.m_file << " "
         << "line=" << this->m_dbg_info.m_line << " "
-        << "col=" << this->m_dbg_info.m_col << "*/";
+        << "col=" << this->m_dbg_info.m_col << ") */";
     }
   }
 
@@ -1616,10 +1616,10 @@ public:
   virtual void write(crab_os &o) const {
     o << "assert(" << m_cst << ")";
     if (this->m_dbg_info.has_debug()) {
-      o << "   /* Property check at "
+      o << "   /* loc("
         << "file=" << this->m_dbg_info.m_file << " "
         << "line=" << this->m_dbg_info.m_line << " "
-        << "col=" << this->m_dbg_info.m_col << "*/";
+        << "col=" << this->m_dbg_info.m_col << ") */";
     }
   }
 
@@ -2364,10 +2364,10 @@ public:
   virtual void write(crab_os &o) const {
     o << "assert(" << m_var << ")";
     if (this->m_dbg_info.has_debug()) {
-      o << "   /* Property check at "
+      o << "   /* loc("
         << "file=" << this->m_dbg_info.m_file << " "
         << "line=" << this->m_dbg_info.m_line << " "
-        << "col=" << this->m_dbg_info.m_col << "*/";
+        << "col=" << this->m_dbg_info.m_col << ") */";
     }
   }
 
