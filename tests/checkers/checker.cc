@@ -152,8 +152,9 @@ int main(int argc, char **argv) {
   // To test the assertion crawler analysis
   using assertion_crawler_t = crab::analyzer::assertion_crawler<z_cfg_ref_t>;
   typename assertion_crawler_t::assert_map_t assert_map;
+  typename assertion_crawler_t::summary_map_t summaries;
   
-  assertion_crawler_t assert_crawler(*p, assert_map);
+  assertion_crawler_t assert_crawler(*p, assert_map, summaries);
   assert_crawler.exec();
   crab::outs() << "\n";
   assert_crawler.write(crab::outs());

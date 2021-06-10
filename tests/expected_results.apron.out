@@ -1999,7 +1999,7 @@ Weak topological ordering=main (bar foo barz)
 === End ./test-bin/cg ===
 === Begin ./test-bin/checker ===
 
-Assertion Crawler Analysis
+Assertion Crawler Analysis 
 entry={"assert(-x <= -200)" -> {}; "assert(-x+y <= 0)" -> {}; "assert(-i <= -200)" -> {}; "assert(i = 100)" -> {}}
 bb1={"assert(-x <= -200)" -> {x; y}; "assert(-x+y <= 0)" -> {x; y}; "assert(-i <= -200)" -> {i}; "assert(i = 100)" -> {i}}
 bb1_f={"assert(-x <= -200)" -> {x; y}; "assert(-x+y <= 0)" -> {x; y}; "assert(-i <= -200)" -> {i}; "assert(i = 100)" -> {i}}
@@ -2178,6 +2178,88 @@ user-defined assertion checker
 0  Number of total unreachable checks
 
 === End ./test-bin/constant_domain ===
+=== Begin ./test-bin/crawler-1 ===
+void declare main()
+exit:
+  (x1:int32,x2:int32)= call foo(y1:int32,y2:int32,y3:int32,y4:int32);
+  assert(-x1 <= -100);
+  assert(-x2 <= -200);
+
+
+(o1:int32,o2:int32) declare foo(i1:int32,i2:int32,i3:int32,i4:int32)
+entry:
+
+Summary table:
+	(o1:int32,o2:int32) declare foo(i1:int32,i2:int32,i3:int32,i4:int32) -> Inputs:{i1,i2,i3,i4} Outputs:{o1,o2} ({},{o1 -> {i1; i2}; o2 -> {i3; i4}})
+
+Assertion Crawler Analysis for main
+exit={"assert(-x2 <= -200)" -> {y3; y4}; "assert(-x1 <= -100)" -> {y1; y2}}
+
+=== End ./test-bin/crawler-1 ===
+=== Begin ./test-bin/crawler-2 ===
+void declare main()
+entry:
+  i = 0;
+  x = 1;
+  y = 0;
+  z = 3;
+  w = 3;
+  goto bb1;
+bb1:
+  goto bb1_t,bb1_f;
+bb1_t:
+  assume(i <= 99);
+  goto bb2;
+bb2:
+  (x:int32,y:int32)= call bar(x:int32,y:int32,z:int32,w:int32);
+  i = i+1;
+  goto bb1;
+bb1_f:
+  assume(-i <= -100);
+  goto exit;
+exit:
+  assume(x-y <= 0);
+  assert(-w <= 0);
+  assert(-x+y <= 0);
+  assert(-i <= 0);
+  goto ret;
+ret:
+
+
+(o1:int32,o2:int32) declare foo(i1:int32,i2:int32,i3:int32,i4:int32)
+entry:
+  tmp1 = i1+i2;
+  tmp2 = i3+i4;
+  goto exit;
+exit:
+  o1 = tmp1;
+  o2 = tmp2;
+
+
+(o1:int32,o2:int32) declare bar(i1:int32,i2:int32,i3:int32,i4:int32)
+entry:
+  (o1:int32,o2:int32)= call foo(i1:int32,i2:int32,i3:int32,i4:int32);
+  goto exit;
+exit:
+  assert(-o1 <= 0);
+  assert(-o2 <= 0);
+
+
+Assertion Crawler Analysis for main
+entry={"assert(-o2 <= 0)" -> {}; "assert(-o1 <= 0)" -> {}; "assert(-i <= 0)" -> {}; "assert(-x+y <= 0)" -> {}; "assert(-w <= 0)" -> {}}
+bb1={"assert(-o2 <= 0)" -> {z; w}; "assert(-o1 <= 0)" -> {x; y; z; w}; "assert(-i <= 0)" -> {i}; "assert(-x+y <= 0)" -> {x; y; z; w}; "assert(-w <= 0)" -> {w}}
+bb1_f={"assert(-i <= 0)" -> {i}; "assert(-x+y <= 0)" -> {x; y}; "assert(-w <= 0)" -> {w}}
+exit={"assert(-i <= 0)" -> {i}; "assert(-x+y <= 0)" -> {x; y}; "assert(-w <= 0)" -> {w}}
+ret={}
+bb1_t={"assert(-o2 <= 0)" -> {z; w}; "assert(-o1 <= 0)" -> {x; y; z; w}; "assert(-i <= 0)" -> {}; "assert(-x+y <= 0)" -> {x; y; z; w}; "assert(-w <= 0)" -> {}}
+bb2={"assert(-o2 <= 0)" -> {z; w}; "assert(-o1 <= 0)" -> {x; y; z; w}; "assert(-i <= 0)" -> {}; "assert(-x+y <= 0)" -> {x; y; z; w}; "assert(-w <= 0)" -> {}}
+Assertion Crawler Analysis for bar
+entry={"assert(-o2 <= 0)" -> {i3; i4}; "assert(-o1 <= 0)" -> {i1; i2}}
+exit={"assert(-o2 <= 0)" -> {o2}; "assert(-o1 <= 0)" -> {o1}}
+Assertion Crawler Analysis for foo
+entry={}
+exit={}
+=== End ./test-bin/crawler-2 ===
 === Begin ./test-bin/dce ===
 CFG
 x0:

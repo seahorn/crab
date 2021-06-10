@@ -42,7 +42,7 @@ function (AddTestDir dirName)
   endforeach(testSrc)
 endfunction ()  
 
-
+AddTestDir(assertion_crawler)
 AddTestDir(domains)
 AddTestDir(domains/wrapint)
 AddTestDir(domains/region)
