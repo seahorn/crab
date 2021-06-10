@@ -18,9 +18,11 @@ RUN echo "Build type set to: $BUILD_TYPE" && \
      # Install deps.
     apt-get update && \
     apt-get install -yqq software-properties-common && \
+    add-apt-repository -y ppa:mhier/libboost-latest && \     
     apt-get update && \
     apt-get install -yqq cmake cmake-data g++-5 \
                          ninja-build libstdc++5 \
+			 libboost1.68-dev \
                          libgmp-dev libmpfr-dev \
 			 lcov ggcov 
 
@@ -37,14 +39,7 @@ RUN echo '#!/bin/sh' > switch.sh && \
     export BT=$(cat /tmp/dockerutils/dt_out.txt) && \
     export UB=$(lsb_release --a 2>&1 | cut -f2 | tail -n 1) && \
     echo "$UB"_"$BT" > /tmp/dockerutils/prefix.txt && \
-    cat /tmp/dockerutils/prefix.txt && \
-    mkdir -p /deps
-
-WORKDIR /deps
-RUN export PREFIX=$(cat /tmp/dockerutils/prefix.txt) && \
-    export DEPS_BASE=$(echo https://github.com/seahorn/seahorn-ext-deps/releases/download/crab/"$PREFIX") && \
-    curl -sSOL "$DEPS_BASE"_boost_1_68.tar.gz && \
-    tar -xf "$PREFIX"_boost_1_68.tar.gz 
+    cat /tmp/dockerutils/prefix.txt 
 
 ARG BRANCH=master
 RUN cd / && rm -rf /crab && \
@@ -56,7 +51,6 @@ ARG BUILD_TYPE
 # Build configuration.
 RUN cmake -GNinja \
           -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-          -DBOOST_ROOT=/deps/boost \
           -DCMAKE_INSTALL_PREFIX=run \
           -DCMAKE_CXX_COMPILER=g++-5 \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
