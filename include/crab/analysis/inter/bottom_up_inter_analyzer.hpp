@@ -265,7 +265,7 @@ public:
     std::vector<variable_t> ins(inputs.begin(), inputs.end());
     std::vector<variable_t> outs(outputs.begin(), outputs.end());
     summary_t sum_tuple(d, sum, ins, outs);
-    m_sum_table.insert({callsite_or_fdecl_t(&d),std::move(sum_tuple)});
+    m_sum_table.insert(std::make_pair(callsite_or_fdecl_t(&d),std::move(sum_tuple)));
   }
 
   // return true if there is a summary
@@ -778,7 +778,7 @@ public:
                                           m_descending_iters, m_jump_set_size));
 
         a->run_forward();
-        m_inv_map.insert({callsite_or_fdecl_t(&fdecl), std::move(a)});
+        m_inv_map.insert(std::make_pair(callsite_or_fdecl_t(&fdecl), std::move(a)));
       }
       return;
     }
@@ -894,7 +894,7 @@ public:
                                           get_live(cfg), m_widening_delay,
                                           m_descending_iters, m_jump_set_size));
         a->run_forward();
-        m_inv_map.insert({callsite_or_fdecl_t(&fdecl), std::move(a)}); 
+        m_inv_map.insert(std::make_pair(callsite_or_fdecl_t(&fdecl), std::move(a))); 
       }
     }
     CRAB_VERBOSE_IF(1, get_msg_stream()

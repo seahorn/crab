@@ -1135,7 +1135,7 @@ public:
 		     summary_t summary(fdecl.get_inputs(), fdecl.get_outputs(), results);
 		     auto it = m_summaries.find(&fdecl);
 		     if (it == m_summaries.end()) {
-		       m_summaries.insert({&fdecl, std::move(summary)});		       
+		       m_summaries.insert(std::make_pair(&fdecl, std::move(summary)));		       
 		     } else {
 		       it->second = std::move(summary);
 		     }
@@ -1182,7 +1182,7 @@ public:
 	    cfg_t cfg = scc_mems[i].get_cfg();
 	    std::unique_ptr<assertion_crawler_t> current = analyze(cfg);
 	    if (iter == 0) {
-	      m_inter_results.insert({cfg, std::move(current)});
+	      m_inter_results.insert(std::make_pair(cfg, std::move(current)));
 	      change = true;
 	    } else {
 	      auto it = m_inter_results.find(cfg);
@@ -1202,7 +1202,7 @@ public:
 	for (auto m : scc_mems) {
 	  cfg_t cfg = m.get_cfg();
 	  std::unique_ptr<assertion_crawler_t> intra_analysis = analyze(cfg);
-	  m_inter_results.insert({cfg, std::move(intra_analysis)});
+	  m_inter_results.insert(std::make_pair(cfg, std::move(intra_analysis)));
 	}
       } 
     }
