@@ -2,6 +2,8 @@
 #include "../program_options.hpp"
 #include <crab/analysis/dataflow/assertion_crawler.hpp>
 
+#include <boost/range/iterator_range.hpp>
+
 using namespace std;
 using namespace crab::cfg;
 using namespace crab::cg;
@@ -165,8 +167,39 @@ int main(int argc, char **argv) {
   using crawler_t = crab::analyzer::inter_assertion_crawler<callgraph_t>;
   crawler_t crawler(cg);
   crawler.run();
-  crawler.write(crab::outs());
+
+  auto print_results = [&crawler](z_cfg_t &cfg) {
+    // Print results in DFS to enforce a fixed order
+    std::set<crab::cfg_impl::basic_block_label_t> visited;
+    std::vector<crab::cfg_impl::basic_block_label_t> worklist;
+    worklist.push_back(cfg.entry());
+    visited.insert(cfg.entry());
+    while (!worklist.empty()) {
+      auto cur_label = worklist.back();
+      worklist.pop_back();
+      auto results = crawler.get_results(cfg, cur_label);
+      crab::outs() << crab::basic_block_traits<crab::cfg_impl::z_basic_block_t>::to_string(cur_label)
+		   << "=" << results << "\n";
+      auto const &cur_node = cfg.get_node(cur_label);
+      for (auto const& kid_label :
+         boost::make_iterator_range(cur_node.next_blocks())) {
+	if (visited.insert(kid_label).second) {
+	  worklist.push_back(kid_label);
+	}
+      }
+    }};
+
+  crab::outs() << "Assertion Crawler Analysis for main\n";
+  print_results(*p1);
+  crab::outs() << "Assertion Crawler Analysis for bar\n";  
+  print_results(*p3);
+  crab::outs() << "Assertion Crawler Analysis for foo\n";    
+  print_results(*p2);
+  
+  //crawler.write(crab::outs());
 
   delete p1;
+  delete p2;
+  delete p3;
   return 0;
 }
