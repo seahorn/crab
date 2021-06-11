@@ -1629,6 +1629,7 @@ public:
   
   // Create a new reference ref to region rgn.
   void ref_make(const variable_t &ref, const variable_t &rgn,
+		const variable_or_constant_t &size /*unused*/,
 		const allocation_site &as) override {
     crab::CrabStats::count(domain_name() + ".count.ref_make");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_make");
@@ -1656,7 +1657,7 @@ public:
     rename_var(ref);
 
     CRAB_LOG("region", crab::outs() << "After ref_make(" << ref << "," << rgn << ","
-	                            << as << ")=" << *this << "\n";);
+	                            << size << "," << as << ")=" << *this << "\n";);
   }
 
   void ref_free(const variable_t &rgn, const variable_t &ref) override {

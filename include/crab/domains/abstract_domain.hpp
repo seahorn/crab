@@ -258,6 +258,9 @@ public:
                            const variable_t &dst_reg) = 0;
   // Create a new reference ref associated with as within region reg 
   virtual void ref_make(const variable_t &ref, const variable_t &reg,
+			/* size of the allocation in bytes */
+			const variable_or_constant_t &size,
+			/* identifier for the allocation site */
 			const allocation_site &as) = 0;
   // Remove a reference ref within region reg 
   virtual void ref_free(const variable_t &reg, const variable_t &ref) = 0;
@@ -533,6 +536,7 @@ public:
   virtual void region_cast(const variable_t &src_reg,                          \
                            const variable_t &dst_reg) override {}              \
   virtual void ref_make(const variable_t &ref, const variable_t &reg, 	       \
+			const variable_or_constant_t &size,                    \
                         const crab::allocation_site &as)		       \
       override {}                                                              \
   virtual void ref_free(const variable_t &reg, const variable_t &ref)	       \

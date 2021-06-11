@@ -45,9 +45,10 @@ z_cfg_t *foo(variable_factory_t &vfac, crab::tag_manager &as_man) {
   z_cfg_t *cfg = new z_cfg_t("entry", "exit", decl);
   z_basic_block_t &entry = cfg->insert("entry");
   z_basic_block_t &exit = cfg->insert("exit");
+  z_var_or_cst_t size4(z_number(4), crab::variable_type(crab::INT_TYPE, 32));      
   entry >> exit;
   entry.region_init(b);
-  entry.make_ref(ref, b, as_man.mk_tag());
+  entry.make_ref(ref, b, size4, as_man.mk_tag());
   entry.assume(tmp <= a);
   entry.assume(tmp > 0);
   exit.store_to_ref(ref, b, tmp);

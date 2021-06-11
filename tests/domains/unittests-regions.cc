@@ -14,6 +14,7 @@ int main(int argc, char **argv) {
   
   variable_factory_t vfac;
   crab::tag_manager as_man;
+  z_var_or_cst_t size4(z_number(4), crab::variable_type(crab::INT_TYPE, 32));
   
   { // join
     z_var x(vfac["x"], crab::INT_TYPE, 32);
@@ -29,7 +30,7 @@ int main(int argc, char **argv) {
     
     inv2 += (x >= z_number(5));
     inv2.region_init(rgn1);
-    inv2.ref_make(ref, rgn1, as_man.mk_tag());
+    inv2.ref_make(ref, rgn1, size4, as_man.mk_tag());
     inv2.ref_store(ref, rgn1, n34_32);
 
 
@@ -52,7 +53,7 @@ int main(int argc, char **argv) {
     
     inv2 += (x >= z_number(5));
     inv2.region_init(rgn1);
-    inv2.ref_make(ref, rgn1, as_man.mk_tag());
+    inv2.ref_make(ref, rgn1, size4, as_man.mk_tag());
     inv2.ref_store(ref, rgn1, n34_32);
 
 

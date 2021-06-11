@@ -124,6 +124,7 @@ private:
     virtual void region_cast(const variable_t &src_reg,
                              const variable_t &dst_reg) = 0;
     virtual void ref_make(const variable_t &ref, const variable_t &reg,
+			  const variable_or_constant_t &size,
 			  const allocation_site &as) = 0;
     virtual void ref_free(const variable_t &reg, const variable_t &ref) = 0;
     virtual void ref_load(const variable_t &ref, const variable_t &reg,
@@ -409,8 +410,9 @@ private:
       m_inv.region_cast(src_reg, dst_reg);
     }    
     void ref_make(const variable_t &ref, const variable_t &reg,
+		  const variable_or_constant_t &size,
 		  const allocation_site &as) override {
-      m_inv.ref_make(ref, reg, as);
+      m_inv.ref_make(ref, reg, size, as);
     }
     void ref_free(const variable_t &reg, const variable_t &ref)
       override {
@@ -788,8 +790,9 @@ public:
     m_concept->region_cast(src_reg, dst_reg);
   }
   void ref_make(const variable_t &ref, const variable_t &reg,
+		const variable_or_constant_t &size,
 		const allocation_site &as) override {
-    m_concept->ref_make(ref, reg, as);
+    m_concept->ref_make(ref, reg, size, as);
   }
   void ref_free(const variable_t &reg, const variable_t &ref)
     override {
@@ -1231,9 +1234,10 @@ public:
   }
   
   void ref_make(const variable_t &ref, const variable_t &reg,
+		const variable_or_constant_t &size,
 		const allocation_site &as) override {
     detach();
-    norm().ref_make(ref, reg, as);
+    norm().ref_make(ref, reg, size, as);
   }
   
   void ref_free(const variable_t &reg, const variable_t &ref) override {

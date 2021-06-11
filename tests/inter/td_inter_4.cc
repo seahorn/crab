@@ -44,7 +44,8 @@ z_cfg_t *foo(z_var x, z_var z, variable_factory_t &vfac, crab::tag_manager &as_m
   z_var ref(vfac["ref"], crab::REF_TYPE, 32);
   z_var tmp(vfac["tmp"], crab::INT_TYPE, 32);    
   entry.region_init(z);
-  entry.make_ref(ref, z, as_man.mk_tag());
+  z_var_or_cst_t size4(z_number(4), crab::variable_type(crab::INT_TYPE, 32));    
+  entry.make_ref(ref, z, size4, as_man.mk_tag());
   entry.assume(tmp <= x);
   entry.assume(tmp > 0);
   exit.store_to_ref(ref, z, tmp);

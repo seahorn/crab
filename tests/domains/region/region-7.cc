@@ -71,12 +71,14 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
   entry.region_init(m2);
   entry.region_init(m3);
   entry.region_init(m4);  
+
+  z_var_or_cst_t size8(z_number(8), crab::variable_type(crab::INT_TYPE, 32));
   
   // Create references
-  entry.make_ref(f1, m1, as_man.mk_tag());
-  entry.make_ref(f2, m2, as_man.mk_tag());
-  entry.make_ref(f3, m3, as_man.mk_tag());
-  entry.make_ref(f_ptr, m4, as_man.mk_tag());
+  entry.make_ref(f1, m1, size8, as_man.mk_tag());
+  entry.make_ref(f2, m2, size8, as_man.mk_tag());
+  entry.make_ref(f3, m3, size8, as_man.mk_tag());
+  entry.make_ref(f_ptr, m4, size8, as_man.mk_tag());
   entry.havoc(orphan_ptr);
   entry.havoc(x);
   bb1.assume(x >= 0);

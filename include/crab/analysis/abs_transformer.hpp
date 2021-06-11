@@ -664,7 +664,7 @@ public:
       pre_bot = m_inv.is_bottom();
     }
 
-    m_inv.ref_make(stmt.lhs(), stmt.region(), stmt.alloc_site());
+    m_inv.ref_make(stmt.lhs(), stmt.region(), stmt.size(), stmt.alloc_site());
 
     if (::crab::CrabSanityCheckFlag) {
       bool post_bot = m_inv.is_bottom();

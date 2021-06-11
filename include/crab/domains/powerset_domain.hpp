@@ -572,10 +572,11 @@ public:
   }
   
   virtual void ref_make(const variable_t &ref, const variable_t &reg,
+			const variable_or_constant_t &size,
 			const allocation_site &as) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
-        m_disjuncts[i].ref_make(ref, reg, as);
+        m_disjuncts[i].ref_make(ref, reg, size, as);
       }
     }
   }

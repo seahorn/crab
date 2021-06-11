@@ -3390,8 +3390,9 @@ public:
     _product.region_cast(src_reg, dst_reg);
   }
   void ref_make(const variable_t &ref, const variable_t &reg,
+		const variable_or_constant_t &size,
 		const allocation_site &as) override {
-    _product.ref_make(ref, reg, as);
+    _product.ref_make(ref, reg, size, as);
   }
   void ref_free(const variable_t &reg, const variable_t &ref) override {
     _product.ref_free(reg, ref);

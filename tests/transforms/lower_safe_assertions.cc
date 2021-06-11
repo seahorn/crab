@@ -45,6 +45,7 @@ z_cfg_t *prog(variable_factory_t &vfac, crab::tag_manager &as_man) {
   z_var q(vfac["q"], crab::REF_TYPE);
   // create an  memory region
   z_var mem(vfac["region_0"], crab::REG_INT_TYPE, 32);
+  z_var_or_cst_t size8(z_number(8), crab::variable_type(crab::INT_TYPE, 32));
   
   // entry and exit block
   z_cfg_t *cfg = new z_cfg_t("entry", "ret");
@@ -68,7 +69,7 @@ z_cfg_t *prog(variable_factory_t &vfac, crab::tag_manager &as_man) {
   entry.assign(i, 0);
   entry.assign(x, 1);
   entry.assign(y, 0);
-  entry.make_ref(p, mem, as_man.mk_tag());
+  entry.make_ref(p, mem, size8, as_man.mk_tag());
   entry.gep_ref(l, mem, p, mem, z_number(0));
   bb1_t.assume(i <= 99);
   bb1_f.assume(i >= 100);
@@ -77,7 +78,7 @@ z_cfg_t *prog(variable_factory_t &vfac, crab::tag_manager &as_man) {
   // *p := i
   bb2.store_to_ref(p, mem, i);
   //  q := malloc(...)
-  bb2.make_ref(q, mem, as_man.mk_tag());
+  bb2.make_ref(q, mem, size8, as_man.mk_tag());
   //  p_next := p+4
   bb2.gep_ref(p_next, mem, p, mem, z_number(4));
   //  *p_next := q

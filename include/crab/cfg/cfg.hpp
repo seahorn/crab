@@ -1121,12 +1121,14 @@ public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
   using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
-
+  using variable_or_constant_t = variable_or_constant<Number, VariableName>;
+  
   make_ref_stmt(variable_t lhs, variable_t region,
+		variable_or_constant_t size,
 		crab::tag as, basic_block_t *parent,
                 debug_info dbg_info = debug_info())
       : statement_t(REF_MAKE, parent, dbg_info),
-	m_lhs(lhs), m_region(region), m_alloc_site(as) {
+	m_lhs(lhs), m_region(region), m_size(size), m_alloc_site(as) {
     this->m_live.add_def(m_lhs);
     this->m_live.add_use(m_region);
   }
@@ -1136,6 +1138,8 @@ public:
   const variable_t &region() const { return m_region; }
 
   const crab::tag &alloc_site() const { return m_alloc_site;}
+
+  const variable_or_constant_t &size() const { return m_size;}
   
   virtual void
   accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
@@ -1143,17 +1147,20 @@ public:
   }
 
   virtual statement_t *clone(basic_block_t *parent) const {
-    return new this_type(m_lhs, m_region, m_alloc_site, parent, this->m_dbg_info);
+    return new this_type(m_lhs, m_region, m_size, m_alloc_site, parent, this->m_dbg_info);
   }
 
   virtual void write(crab_os &o) const {
     o << m_lhs << " := "
-      << "make_ref(" << m_region << ":" << m_region.get_type() << "," << m_alloc_site << ")";
+      << "make_ref(" << m_region << ":" << m_region.get_type() << ","
+      << m_size << ","
+      << m_alloc_site << ")";
   }
 
 private:
   variable_t m_lhs;
   variable_t m_region;
+  variable_or_constant_t m_size;
   crab::tag m_alloc_site;
 };
 
@@ -2929,8 +2936,9 @@ public:
     return insert(new region_cast_t(src, dst, this));
   }
   
-  const statement_t *make_ref(variable_t lhs_ref, variable_t region, crab::tag as) {
-    return insert(new make_ref_t(lhs_ref, region, as, this));
+  const statement_t *make_ref(variable_t lhs_ref, variable_t region,
+			      variable_or_constant_t size, crab::tag as) {
+    return insert(new make_ref_t(lhs_ref, region, size, as, this));
   }
 
   const statement_t *remove_ref(variable_t region, variable_t ref) {

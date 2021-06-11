@@ -566,9 +566,10 @@ public:
   }
   
   virtual void ref_make(const variable_t &ref, const variable_t &reg,
+			const variable_or_constant_t &size,
 			const allocation_site &as) override {
-    m_product.first().ref_make(ref, reg, as);
-    m_product.second().ref_make(ref, reg, as);
+    m_product.first().ref_make(ref, reg, size, as);
+    m_product.second().ref_make(ref, reg, size, as);
     reduce();
   }
 
