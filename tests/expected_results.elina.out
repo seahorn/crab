@@ -1833,8 +1833,8 @@ bb1={"assert(-o2 <= 0)" -> {z; w}; "assert(-o1 <= 0)" -> {x; y; z; w}; "assert(-
 bb1_f={"assert(-i <= 0)" -> {i}; "assert(-x+y <= 0)" -> {x; y}; "assert(-w <= 0)" -> {w}}
 exit={"assert(-i <= 0)" -> {i}; "assert(-x+y <= 0)" -> {x; y}; "assert(-w <= 0)" -> {w}}
 ret={}
-bb1_t={"assert(-o2 <= 0)" -> {z; w}; "assert(-o1 <= 0)" -> {x; y; z; w}; "assert(-i <= 0)" -> {}; "assert(-x+y <= 0)" -> {x; y; z; w}; "assert(-w <= 0)" -> {}}
-bb2={"assert(-o2 <= 0)" -> {z; w}; "assert(-o1 <= 0)" -> {x; y; z; w}; "assert(-i <= 0)" -> {}; "assert(-x+y <= 0)" -> {x; y; z; w}; "assert(-w <= 0)" -> {}}
+bb1_t={"assert(-o2 <= 0)" -> {z; w}; "assert(-o1 <= 0)" -> {x; y; z; w}; "assert(-i <= 0)" -> {i}; "assert(-x+y <= 0)" -> {x; y; z; w}; "assert(-w <= 0)" -> {w}}
+bb2={"assert(-o2 <= 0)" -> {z; w}; "assert(-o1 <= 0)" -> {x; y; z; w}; "assert(-i <= 0)" -> {i}; "assert(-x+y <= 0)" -> {x; y; z; w}; "assert(-w <= 0)" -> {w}}
 Assertion Crawler Analysis for bar
 entry={"assert(-o2 <= 0)" -> {i3; i4}; "assert(-o1 <= 0)" -> {i1; i2}}
 exit={"assert(-o2 <= 0)" -> {o2}; "assert(-o1 <= 0)" -> {o1}}
