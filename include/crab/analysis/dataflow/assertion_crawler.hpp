@@ -695,7 +695,10 @@ public:
 				   for (auto it=var_dom.begin(), et=var_dom.end(); it!=et; ++it) {
 				     variable_t v = *it;
 				     var_dom_t inputs(sdd[v]);
-				     if (inputs.is_top()) {
+				     if (inputs.is_bottom()) {
+				       // the callee doesn't know
+				       // about v so we just propagate
+				       // it as it's.
 				       var_dom_t vs(v);
 				       res += vs; // not in sdd
 				     } else {
