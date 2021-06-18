@@ -233,7 +233,7 @@ public:
     m_post_clear_done = false;
   }
 
-  CFG get_cfg() const { return this->_cfg; }
+  CFG get_cfg() const { return this->m_cfg; }
 
   abs_tr_t &get_abs_transformer() { return *m_abs_tr; }
 
