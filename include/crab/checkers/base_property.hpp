@@ -121,13 +121,13 @@ public:
       o << "\nCheck database content:\n";
       unsigned MaxFileLen = 0;
       for (auto const &kv : m_db) {
-        MaxFileLen = std::max(MaxFileLen, (unsigned)kv.first.m_file.size());
+        MaxFileLen = std::max(MaxFileLen, (unsigned)kv.first.get_file().size());
       }
       for (auto const &kv : m_db) {
-        o << kv.first.m_file
-          << std::string((int)MaxFileLen - kv.first.m_file.size(), ' ')
-          << std::string(2, ' ') << " line " << kv.first.m_line << " col "
-          << kv.first.m_col << ":\n"
+        o << kv.first.get_file()
+          << std::string((int)MaxFileLen - kv.first.get_file().size(), ' ')
+          << std::string(2, ' ') << " line " << kv.first.get_line() << " col "
+          << kv.first.get_column() << ":\n"
           << "\t";
         auto const &checks = kv.second;
         for (unsigned i = 0, num_checks = checks.size(); i < num_checks;) {

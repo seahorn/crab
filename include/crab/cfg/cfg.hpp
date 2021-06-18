@@ -108,7 +108,7 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/variant.hpp>
-
+#include <boost/optional.hpp>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -212,18 +212,24 @@ public:
   }
 };
 
-struct debug_info {
-
+class debug_info {
+private:
   std::string m_file;
   int m_line;
   int m_col;
-
-  debug_info() : m_file(""), m_line(-1), m_col(-1) {}
-
-  debug_info(std::string file, unsigned line, unsigned col)
-      : m_file(file), m_line(line), m_col(col) {}
+  int64_t m_id; 
+public:
+  debug_info()
+    : m_file(""), m_line(-1), m_col(-1), m_id(-1) {}
+  debug_info(std::string file, unsigned line, unsigned col, int64_t num_id)
+    : m_file(file), m_line(line), m_col(col), m_id(num_id) {}
 
   bool operator<(const debug_info &other) const {
+    // if (m_id < other.m_id) {
+    //   return true;
+    // } else if (m_id > other.m_id) {
+    //   return false;
+    // }
     if (m_file < other.m_file) {
       return true;
     } else if (m_file > other.m_file) {
@@ -238,7 +244,9 @@ struct debug_info {
   }
 
   bool operator==(const debug_info &other) const {
-    return (m_file == other.m_file && m_line == other.m_line &&
+    return (//m_id == other.m_id &&
+	    m_file == other.m_file &&
+	    m_line == other.m_line &&
             m_col == other.m_col);
   }
 
@@ -249,11 +257,14 @@ struct debug_info {
   std::string get_file() const { return m_file; }
   int get_line() const { return m_line; }
   int get_column() const { return m_col; }
-
+  int64_t get_id() const { return m_id; }
+  
   void write(crab_os &o) const {
-    o << "File  : " << m_file << "\n"
-      << "Line  : " << m_line << "\n"
-      << "Column: " << m_col << "\n";
+    o << "loc("
+      << "file=" << m_file << " "
+      << "line=" << m_line << " "
+      << "col=" << m_col << ") "
+      << "id=" << m_id;
   }
 };
 
@@ -632,10 +643,7 @@ public:
   virtual void write(crab_os &o) const {
     o << "assert(" << m_cst << ")";
     if (this->m_dbg_info.has_debug()) {
-      o << "   /* loc("
-        << "file=" << this->m_dbg_info.m_file << " "
-        << "line=" << this->m_dbg_info.m_line << " "
-        << "col=" << this->m_dbg_info.m_col << ") */";
+      o << "   /* " << this->m_dbg_info <<  " */";
     }
   }
 
@@ -1623,10 +1631,7 @@ public:
   virtual void write(crab_os &o) const {
     o << "assert(" << m_cst << ")";
     if (this->m_dbg_info.has_debug()) {
-      o << "   /* loc("
-        << "file=" << this->m_dbg_info.m_file << " "
-        << "line=" << this->m_dbg_info.m_line << " "
-        << "col=" << this->m_dbg_info.m_col << ") */";
+      o << "   /* " << this->m_dbg_info <<  " */";      
     }
   }
 
@@ -2371,10 +2376,7 @@ public:
   virtual void write(crab_os &o) const {
     o << "assert(" << m_var << ")";
     if (this->m_dbg_info.has_debug()) {
-      o << "   /* loc("
-        << "file=" << this->m_dbg_info.m_file << " "
-        << "line=" << this->m_dbg_info.m_line << " "
-        << "col=" << this->m_dbg_info.m_col << ") */";
+      o << "   /* " << this->m_dbg_info <<  " */";
     }
   }
 
