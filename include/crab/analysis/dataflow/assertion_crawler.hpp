@@ -1107,17 +1107,20 @@ private:
 public:
   inter_assertion_crawler(cg_t &cg, bool only_data = false, bool ignore_region_offset = false)
     : m_cg(cg), m_opt_only_data(only_data), m_opt_ignore_region_offset(ignore_region_offset) {
-    CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
-    crab::CrabStats::resume("CallGraph type checking");
-    cg.type_check();
-    crab::CrabStats::stop("CallGraph type checking");
-    CRAB_VERBOSE_IF(1, get_msg_stream() << "OK\n";);
   }
 
   inter_assertion_crawler(const this_type &other) = delete;
   this_type &operator=(const this_type &other) = delete;
   
-  void run() {
+  void run(bool do_type_checking = true) {
+    if (do_type_checking) {
+      CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
+      crab::CrabStats::resume("CallGraph type checking");
+      m_cg.type_check();
+      crab::CrabStats::stop("CallGraph type checking");
+      CRAB_VERBOSE_IF(1, get_msg_stream() << "OK\n";);
+    }
+    
     CRAB_VERBOSE_IF(1, get_msg_stream()
                            << "Started inter-procedural assertion crawler analysis\n";);
     CRAB_LOG("assertion-crawler", m_cg.write(crab::outs()); crab::outs() << "\n");
