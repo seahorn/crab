@@ -1001,7 +1001,7 @@ public:
   }
 
   // return the dataflow facts that hold at the entry of the block bb
-  assert_map_domain_t get_results(const basic_block_label_t &bb) {
+  assert_map_domain_t get_results(const basic_block_label_t &bb) const {
     auto it = m_results.find(bb);
     if (it == m_results.end()) {
       return assert_map_domain_t::top();
@@ -1013,7 +1013,7 @@ public:
   // return the dataflow facts of the pre-state at each program point in bb
   void get_results(
       const basic_block_label_t &b,
-      std::map<typename CFG::statement_t *, assert_map_domain_t> &res) {
+      std::map<typename CFG::statement_t *, assert_map_domain_t> &res) const {
     auto it = m_results.find(b);
     if (it != m_results.end()) {
       if (!it->second.get_first().is_bottom()) {
@@ -1215,7 +1215,7 @@ public:
   }
 
   // Return the dataflow facts that hold at the entry of the basic block b in cfg.
-  assert_map_domain_t get_results(const cfg_t &cfg, const basic_block_label_t &bb) {
+  assert_map_domain_t get_results(const cfg_t &cfg, const basic_block_label_t &bb) const {
     auto it = m_inter_results.find(cfg);
     if (it != m_inter_results.end()) {
       return it->second->get_results(bb);
