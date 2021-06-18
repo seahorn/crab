@@ -253,6 +253,14 @@ private:
     }
   }
 
+  void initialize_invariant_tables() {
+    for (auto it = _cfg.label_begin(), et = _cfg.label_end(); it != et; ++it) {
+      auto const &label = *it;
+      this->_pre.emplace(label, _init_inv.make_bottom());
+      this->_post.emplace(label, _init_inv.make_bottom());
+    }
+  }
+  
 public:
   interleaved_fwd_fixpoint_iterator(CFG cfg, AbstractValue init,
                                     const wto_t *wto,
@@ -267,11 +275,7 @@ public:
         _enable_processor(enable_processor) {
 
     initialize_thresholds(jump_set_size);
-    for (auto it = _cfg.label_begin(), et = _cfg.label_end(); it != et; ++it) {
-      auto const &label = *it;
-      this->_pre.emplace(label, _init_inv.make_bottom());
-      this->_post.emplace(label, _init_inv.make_bottom());
-    }
+    initialize_invariant_tables();
   }
 
   virtual ~interleaved_fwd_fixpoint_iterator() {}
