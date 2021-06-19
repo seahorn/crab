@@ -473,14 +473,30 @@ public:
     const cdg_t &m_cdg;
     // summaries from other functions
     summary_map_t &m_summaries;
+
+    // if non-empty then consider only assertions if they are in this set.
+    const std::set<int64_t> m_opt_relevant_assertions;
     bool m_opt_ignore_region_offset;
     
     inline void process_assertion(statement_t &s) {
       assert(s.is_assert() || s.is_ref_assert() || s.is_bool_assert());
+
+      // Skip the assertion if we are not interested
+      if (!m_opt_relevant_assertions.empty()) {
+	auto const& dbg_info = s.get_debug_info();
+	if (m_opt_relevant_assertions.count(dbg_info.get_id()) <= 0) {
+	  CRAB_LOG("assertion-crawler-step-assertion",
+		   crab::outs() << "Skipping " << s << " because user is not interested\n";);
+	  return;
+	}
+      }
       
       auto it = m_assert_map.find(&s);
-      if (it != m_assert_map.end())
+      if (it != m_assert_map.end()) {
+	  CRAB_LOG("assertion-crawler-step-assertion",
+		   crab::outs() << "Skipping " << s << " because already processed\n";);
         return;
+      }
 
       var_dom_t vdom = var_dom_t::bottom();
       auto const &l = s.get_live();
@@ -492,6 +508,9 @@ public:
       assert_wrapper_t val(id, &s);
       m_assert_map.insert(typename assert_map_t::value_type(&s, val));
       m_sol.get_first().set(val, vdom);
+      
+      CRAB_LOG("assertion-crawler-step-assertion",
+	       crab::outs() << "Added " << s << "\n";);
       CRAB_LOG("assertion-crawler-step", crab::outs()
                                              << "*** " << s << "\n"
                                              << "\tAdded " << vdom << "\n";);
@@ -604,8 +623,16 @@ public:
 		      const cdg_t &g,
 		      assert_map_t &assert_map,
 		      summary_map_t &summaries,
+		      // if non-empty then only consider assertions if
+		      // they are in this set. To refer to an
+		      // assertion, we assume that the statement has
+		      // debug information and we use the numerical
+		      // value returned by get_id().
+		      const std::set<int64_t> &relevant_assertions,
 		      bool ignore_region_offset)
-      : m_sol(init), m_assert_map(assert_map), m_cdg(g), m_summaries(summaries),
+      : m_sol(init),	
+	m_assert_map(assert_map), m_cdg(g), m_summaries(summaries),
+	m_opt_relevant_assertions(relevant_assertions),
 	m_opt_ignore_region_offset(ignore_region_offset) {}
 
     assertion_crawler_domain_t get_solution() const {
@@ -861,6 +888,8 @@ private:
   summary_map_t &m_summaries;
   cdg_t m_cdg; // control dependencies
 
+  // If non-empty then consider an assertion only if it's in this set
+  const std::set<int64_t> &m_opt_relevant_assertions;
   // only data-dependencies (no control)  
   bool m_opt_only_data; 
   // ignore dependencies from references used to access regionsa  
@@ -869,10 +898,12 @@ private:
 public:
   assertion_crawler_operations
   (CFG cfg, assert_map_t &assert_map, summary_map_t &summaries,
+   const std::set<int64_t> &relevant_assertions,
    bool only_data, bool ignore_region_offset)
     : killgen_operations_api_t(cfg),
       m_assert_map(assert_map),
       m_summaries(summaries),
+      m_opt_relevant_assertions(relevant_assertions),
       m_opt_only_data(only_data),
       m_opt_ignore_region_offset(ignore_region_offset) {}
 
@@ -910,6 +941,7 @@ public:
 					     assertion_crawler_domain_t out) override {
     auto &bb = this->m_cfg.get_node(bb_id);
     transfer_function vis(out, m_cdg, m_assert_map, m_summaries,
+			  m_opt_relevant_assertions,
 			  m_opt_ignore_region_offset);
     for (auto &s : boost::make_iterator_range(bb.rbegin(), bb.rend())) {
       s.accept(&vis);
@@ -967,9 +999,10 @@ public:
   using results_map_t = std::unordered_map<basic_block_label_t, assertion_crawler_domain_t>;
 private:
 
-  results_map_t m_results;  
+  results_map_t m_results;
+  std::set<int64_t> m_relevant_assertions;  
   assertion_crawler_op_t m_assert_crawler_op;
-
+  
   // used by inter_assertion_crawler
   assertion_crawler_domain_t &lookup_results(const basic_block_label_t &bb) {
     auto it = m_results.find(bb);
@@ -983,10 +1016,14 @@ private:
   
 public:
   assertion_crawler(CFG cfg, assert_map_t &assert_map, summary_map_t &summaries,
+		    std::set<int64_t> relevant_assertions = std::set<int64_t>(),
 		    bool only_data = false,
 		    bool ignore_region_offset = false) 
     : fixpo_t(cfg, m_assert_crawler_op),
-      m_assert_crawler_op(cfg, assert_map, summaries, only_data, ignore_region_offset) {
+      m_relevant_assertions(relevant_assertions),
+      m_assert_crawler_op(cfg, assert_map, summaries,
+			  m_relevant_assertions, only_data, ignore_region_offset) {
+			  
   }
 
   assertion_crawler(const assertion_crawler<CFG> &o) = delete;
@@ -1023,6 +1060,7 @@ public:
 	   m_assert_crawler_op.m_cdg,
 	   m_assert_crawler_op.m_assert_map,
 	   m_assert_crawler_op.m_summaries,
+	   m_assert_crawler_op.m_opt_relevant_assertions,	   
 	   m_assert_crawler_op.m_opt_ignore_region_offset);
         for (auto &s : boost::make_iterator_range(bb.rbegin(), bb.rend())) {
           s.accept(&vis);
@@ -1101,12 +1139,23 @@ private:
   assert_map_t m_assert_map; // to assign id's to assert statements
   summary_map_t m_summaries; // summaries
   inter_results_map_t m_inter_results; // the results of the analysis
+
+  // If the set is not-empty then only consider assertions if they are
+  // in this set.
+  std::set<int64_t> m_opt_relevant_assertions;
   bool m_opt_only_data; // whether consider only data dependencies
   // ignore dependencies from references used to access regions
   bool m_opt_ignore_region_offset;
 public:
-  inter_assertion_crawler(cg_t &cg, bool only_data = false, bool ignore_region_offset = false)
-    : m_cg(cg), m_opt_only_data(only_data), m_opt_ignore_region_offset(ignore_region_offset) {
+  inter_assertion_crawler(cg_t &cg,
+			  // User-definable options of the inter-procedural analysis
+			  std::set<int64_t> relevant_assertions = std::set<int64_t>(),
+			  bool only_data = false,
+			  bool ignore_region_offset = false)
+    : m_cg(cg),
+      m_opt_relevant_assertions(relevant_assertions),
+      m_opt_only_data(only_data),
+      m_opt_ignore_region_offset(ignore_region_offset) {
   }
 
   inter_assertion_crawler(const this_type &other) = delete;
@@ -1134,7 +1183,9 @@ public:
 		     // --- Run the intra-procedural analysis to compute summaries.
 		     std::unique_ptr<assertion_crawler_t> intra_analysis
 		       (new assertion_crawler_t(cfg, m_assert_map, m_summaries,
-						m_opt_only_data, m_opt_ignore_region_offset));
+						m_opt_relevant_assertions,
+						m_opt_only_data,
+						m_opt_ignore_region_offset));
 		     intra_analysis->exec();
 		     // --- Store the cfg's summary 
 		     assertion_crawler_domain_t &results = intra_analysis->lookup_results(cfg.entry());

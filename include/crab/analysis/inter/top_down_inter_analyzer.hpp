@@ -23,10 +23,12 @@
 
 #include <crab/analysis/abs_transformer.hpp>
 #include <crab/analysis/dataflow/liveness.hpp>
+#include <crab/analysis/dataflow/assertion_crawler.hpp>
 #include <crab/analysis/fwd_analyzer.hpp>
 #include <crab/analysis/inter/inter_analyzer_api.hpp>
 #include <crab/analysis/inter/inter_params.hpp>
 #include <crab/cg/cg_bgl.hpp> // for wto of callgraphs
+
 #include <crab/iterators/wto.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -408,6 +410,7 @@ public:
   using liveness_map_t =
       std::unordered_map<cfg_t, const live_and_dead_analysis<cfg_t> *>;
   using wto_cfg_t = ikos::wto<cfg_t>;
+  using assertion_crawler_analysis_t = inter_assertion_crawler<CallGraph>;
   // map cfgs to their WTO's
   using wto_cfg_map_t = std::unordered_map<cfg_t, const wto_cfg_t *>;
   using wto_cg_t = ikos::wto<crab::cg::call_graph_ref<CallGraph>>;
@@ -439,6 +442,8 @@ private:
   const liveness_map_t *m_live_map;
   // -- wto for each function
   const wto_cfg_map_t *m_wto_cfg_map; // to avoid recomputing wto of cfgs
+  // -- assertion crawler
+  const assertion_crawler_analysis_t *m_assertion_crawler;
   // -- context-insensitive invariants (for external queries)
   //    populated only if keep_invariants is enabled.
   global_invariant_map_t m_pre_invariants;
@@ -471,7 +476,9 @@ private:
   unsigned int m_widening_delay;
   unsigned int m_descending_iters;
   unsigned int m_thresholds_size;
-
+  // -- debug assertions (used for debugging)
+  std::set<int64_t> m_debug_assertions;
+  
   void join_with(global_invariant_map_t &global_table, cfg_t cfg,
                  invariant_map_t &other) {
     assert(m_keep_invariants);
@@ -549,13 +556,17 @@ private:
 
 public:
   global_context(const liveness_map_t *live_map,
-                 const wto_cfg_map_t *wto_cfg_map, bool enable_checker,
+                 const wto_cfg_map_t *wto_cfg_map,
+		 const assertion_crawler_analysis_t *assertion_crawler,
+		 bool enable_checker,
                  unsigned checker_verbosity, bool keep_cc_invariants,
                  bool keep_invariants, unsigned int max_call_contexts,
                  bool analyze_recursive_functions, bool exact_summary_reuse,
                  bool only_main_as_entry, unsigned int widening_delay,
-                 unsigned int descending_iters, unsigned int thresholds_size)
+                 unsigned int descending_iters, unsigned int thresholds_size,
+		 std::set<int64_t> debug_assertions)
       : m_live_map(live_map), m_wto_cfg_map(wto_cfg_map),
+	m_assertion_crawler(assertion_crawler),
         m_cs_policy(
             new default_context_sensitivity_policy_t(max_call_contexts)),
         m_enable_checker(enable_checker),
@@ -567,7 +578,8 @@ public:
         m_exact_summary_reuse(exact_summary_reuse),
         m_only_main_as_entry(only_main_as_entry),
         m_widening_delay(widening_delay), m_descending_iters(descending_iters),
-        m_thresholds_size(thresholds_size) {}
+        m_thresholds_size(thresholds_size),
+	m_debug_assertions(debug_assertions) {}
 
   global_context(const this_type &o) = delete;
 
@@ -583,6 +595,14 @@ public:
 
   const wto_cg_map_t &get_wto_cg_map() const { return m_wto_cg_map; }
 
+  void set_assertion_crawler(const assertion_crawler_analysis_t *aca) {
+    m_assertion_crawler = aca;
+  }
+  
+  const assertion_crawler_analysis_t *get_assertion_crawler() const {
+    return m_assertion_crawler;
+  }  
+  
   // Return true if the node is not part of any nested wto component
   bool included_nested_wto_component(callgraph_node_t node) const {
     if (auto nesting_opt = get_wto_nesting(node)) {
@@ -629,7 +649,7 @@ public:
   const liveness_map_t *get_live_map() const { return m_live_map; }
 
   const wto_cfg_map_t *get_wto_cfg_map() const { return m_wto_cfg_map; }
-
+  
   context_sensitivity_policy_t &get_context_sensitivity_policy() {
     return *m_cs_policy;
   }
@@ -676,6 +696,10 @@ public:
 
   unsigned int get_thresholds_size() const { return m_thresholds_size; }
 
+  const std::set<int64_t>& get_debug_assertions() const {
+    return m_debug_assertions;
+  }
+  
   // context-insensitive invariants for each function (if
   // m_keep_invariants enabled)
 
@@ -740,6 +764,8 @@ analyze_function(CallGraphNode cg_node,
                  unsigned iteration) {
   crab::ScopedCrabStats __st__(TimerInterAnalyzeFunc);
   using cfg_t = typename CallGraphNode::cfg_t;
+  using variable_t = typename cfg_t::variable_t;
+  using basic_block_label_t = typename cfg_t::basic_block_label_t;    
   using abs_dom_t = typename IntraCallSemAnalyzer::abs_dom_t;
 
   auto &ctx = abs_tr.get_context();
@@ -803,7 +829,7 @@ analyze_function(CallGraphNode cg_node,
     /// -- 2. Create intra analyzer (with inter-procedural semantics for
     /// call/return)
     std::unique_ptr<IntraCallSemAnalyzer> new_analyzer(new IntraCallSemAnalyzer(
-        cfg, wto, &abs_tr, live, ctx.get_widening_delay(),
+	cfg, wto, &abs_tr, live, ctx.get_widening_delay(),
         ctx.get_descending_iters(), ctx.get_thresholds_size()));
     analyzer = &(abs_tr.add_analyzer(cg_node, std::move(new_analyzer)));
   }
@@ -813,7 +839,65 @@ analyze_function(CallGraphNode cg_node,
   abs_dom_t old_entry(entry);
 
   /// -- 3. Run the analyzer
-  analyzer->run_forward();
+  // This function takes a basic block and returns a set of
+  // variables of interest.  This set will be used by the fixpoint
+  // to print debugging information related to these variables.
+  std::function<std::set<variable_t>(const basic_block_label_t&)>
+    debug_variables_fn = [&ctx,&cfg](const basic_block_label_t &b) {
+       auto const& rel_asserts = ctx.get_debug_assertions();
+       auto const *aca = ctx.get_assertion_crawler();
+       
+       CRAB_LOG("debug-assertions",	    
+		crab::outs() << "Debug assertions={";
+		for(auto id: rel_asserts) {
+		  crab::outs() << id << ";";
+		}
+		crab::outs() << "}\n";);
+		
+       if (rel_asserts.empty() || !aca) {
+	 CRAB_LOG("debug-assertions",
+		  if (!aca) {
+		    crab::outs() << "Warning: the assertion crawler analysis was not run!\n";
+		  });
+	 return std::set<variable_t>();
+       }
+
+       auto assert_map_dom = aca->get_results(cfg, b);
+       if (!assert_map_dom.is_top()) {
+	 CRAB_LOG("debug-assertions",
+		  crab::outs() << "Map from assertions to variables:" << assert_map_dom << "\n";);
+	 for (auto it=assert_map_dom.begin(), et=assert_map_dom.end(); it!=et; ++it) {
+	   auto assert_wrapper = (*it).first;
+	   if (rel_asserts.count(assert_wrapper.get().get_debug_info().get_id()) > 0) {
+	     auto vardom = (*it).second;
+	     std::set<variable_t> res(vardom.begin(), vardom.end());
+	     CRAB_LOG("debug-assertions",
+		      crab::outs() << "Debug variables {";
+		      for (auto const &v : res) {
+			crab::outs() << v << ";";
+		      }
+		      crab::outs() << " } at "
+		      << cfg.get_func_decl().get_func_name() << "##" << b
+		      << "\n";);
+	     return res;
+	   } else {
+	     CRAB_LOG("debug-assertions",
+		      crab::outs() << "The assertion crawler analysis kept track of assertion ID "
+		      << assert_wrapper.get().get_debug_info().get_id()
+		      << " but this assertion is not the one we want to debug\n";);
+	   } 
+	 }
+       } else {
+	 CRAB_LOG("debug-assertions",
+		  crab::outs() << "Nothing known by the assertion crawler analysis at " <<
+		  cfg.get_func_decl().get_func_name() << "##" << b << "\n";);
+       }
+       
+       return std::set<variable_t>();
+  };
+  
+  const bool do_debugging = !ctx.get_debug_assertions().empty();
+  analyzer->run_forward(do_debugging ? &debug_variables_fn : nullptr);
 
   // ### Recursive function ###
   // Re-analyze the function until fixpoint
@@ -1631,6 +1715,7 @@ public:
     return *(it->second);
   }
 };
+
 } // end namespace top_down_inter_impl
 } // end namespace analyzer
 } // end namespace crab
@@ -1681,7 +1766,9 @@ private:
       typename global_context_t::calling_context_collection_t;
   using global_invariant_map_t =
       typename global_context_t::global_invariant_map_t;
-
+  using assertion_crawler_analysis_t =
+    typename global_context_t::assertion_crawler_analysis_t;
+  
   // detect widening points in the call graph
   using wto_cg_t = typename global_context_t::wto_cg_t;
   struct widening_set_builder : public wto_cg_t::wto_component_visitor_t {
@@ -1727,12 +1814,13 @@ public:
   top_down_inter_analyzer(CallGraph &cg, abs_dom_t init,
                           const params_t &params = params_t())
       : m_cg(cg),
-        m_ctx(params.live_map, params.wto_map, params.run_checker,
+        m_ctx(params.live_map, params.wto_map, nullptr, params.run_checker,
               params.checker_verbosity, params.keep_cc_invariants,
               params.keep_invariants, params.max_call_contexts,
               params.analyze_recursive_functions, params.exact_summary_reuse,
               params.only_main_as_entry, params.widening_delay,
-              params.descending_iters, params.thresholds_size),
+              params.descending_iters, params.thresholds_size,
+	      params.debug_assertions),
         m_abs_tr(new td_inter_abs_tr_t(m_cg, m_ctx, std::move(init))) {
     crab::CrabStats::start(TimerCallGraphTC);
     crab::CrabStats::start(TimerInter);
@@ -1762,6 +1850,18 @@ public:
   void run(abs_dom_t init) override {
     crab::ScopedCrabStats __st__(TimerInter);
 
+    assertion_crawler_analysis_t ac_analysis(m_cg, m_ctx.get_debug_assertions(), true, true);
+    m_ctx.set_assertion_crawler(&ac_analysis);
+    if (!m_ctx.get_debug_assertions().empty()) {
+      CRAB_VERBOSE_IF(1, get_msg_stream()
+		      << "Running assertion crawler analysis  ... \n";);
+      ac_analysis.run(true /*ignore type checking*/);
+      CRAB_VERBOSE_IF(1, get_msg_stream() << "Done.\n";);
+      CRAB_LOG("debug-assertions",
+	       ac_analysis.write(crab::outs());
+	       crab::outs() << "\n";);
+    }
+    
     CRAB_VERBOSE_IF(
         1, get_msg_stream()
                << "Computing weak topological ordering of the callgraph ... \n";);

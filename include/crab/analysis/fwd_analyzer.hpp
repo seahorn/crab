@@ -168,7 +168,8 @@ private:
         for (unsigned i = 0; i < fdecl.get_num_outputs(); i++)
           m_formals += fdecl.get_output_name(i);
       }
-    }    
+    }
+    
   }
   
 public:
@@ -183,6 +184,7 @@ public:
                          false /*disable processor*/),
         m_abs_tr(abs_tr), m_live(live_and_dead_symbols),
         m_pre_clear_done(false), m_post_clear_done(false) {
+    
     init_fwd_analyzer();
   }
 
@@ -191,13 +193,28 @@ public:
   fwd_analyzer &operator=(const fwd_analyzer &o) = delete;
 
   //! Trigger the fixpoint computation
-  void run_forward() { this->run(m_abs_tr->get_abs_value()); }
+  void run_forward() {
+    this->run(m_abs_tr->get_abs_value());
+  }
 
   void run_forward(const basic_block_label_t &entry,
                    const assumption_map_t &assumptions) {
     this->run(entry, m_abs_tr->get_abs_value(), assumptions);
   }
 
+  void run_forward(const basic_block_label_t &entry,
+		   const assumption_map_t &assumptions,
+		   std::function<std::set<variable_t>(const basic_block_label_t&)>
+		   *debug_variables) {
+    this->run(entry, m_abs_tr->get_abs_value(), assumptions, debug_variables);
+  }
+
+  void run_forward(std::function<std::set<variable_t>(const basic_block_label_t&)>
+		   *debug_variables) {
+    assumption_map_t no_assumptions;
+    this->run(get_cfg().entry(), m_abs_tr->get_abs_value(), no_assumptions, debug_variables);
+  }
+  
   //! Return the invariants that hold at the entry of b
   inline abs_dom_t operator[](const basic_block_label_t &b) const {
     return get_pre(b);
@@ -280,6 +297,7 @@ public:
   using liveness_t = live_and_dead_analysis<CFG>;
   using cfg_t = CFG;
   using basic_block_label_t = typename CFG::basic_block_label_t;
+  using variable_t = typename CFG::variable_t;
   using varname_t = typename CFG::varname_t;
   using number_t = typename CFG::number_t;
   using stmt_t = typename CFG::statement_t;
@@ -325,10 +343,12 @@ public:
   // get_abs_transformer().set_abs_value(...)  and change the return
   // reference.
   void run(const basic_block_label_t &entry,
-           const assumption_map_t &assumptions) {
-    m_analyzer.run_forward(entry, assumptions);
+           const assumption_map_t &assumptions,
+	   std::function<std::set<variable_t>(const basic_block_label_t&)>
+	   *debug_variables = nullptr) {
+    m_analyzer.run_forward(entry, assumptions, debug_variables);
   }
-
+  
   iterator pre_begin() { return m_analyzer.pre_begin(); }
   iterator pre_end() { return m_analyzer.pre_end(); }
   const_iterator pre_begin() const { return m_analyzer.pre_begin(); }

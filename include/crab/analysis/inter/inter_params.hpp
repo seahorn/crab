@@ -50,6 +50,8 @@ struct inter_analyzer_parameters {
   bool analyze_recursive_functions;
   // reuse summaries without losing precision
   bool exact_summary_reuse;
+  // debug origin of warnings
+  std::set<int64_t> debug_assertions;
   // -- End parameters for top-down analysis -- //
   
 };

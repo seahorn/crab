@@ -52,6 +52,7 @@
 #include <crab/support/stats.hpp>
 
 #include <unordered_map>
+#include <set>
 
 namespace ikos {
 
@@ -82,6 +83,7 @@ class interleaved_fwd_fixpoint_iterator
 public:
   using basic_block_t = typename CFG::basic_block_t;
   using basic_block_label_t = typename CFG::basic_block_label_t;
+  using variable_t = typename basic_block_t::variable_t;
   using wto_t = wto<CFG>;
   using assumption_map_t =
       std::unordered_map<basic_block_label_t, AbstractValue>;
@@ -278,7 +280,7 @@ public:
     initialize_invariant_tables();
   }
 
-  virtual ~interleaved_fwd_fixpoint_iterator() {}
+  virtual ~interleaved_fwd_fixpoint_iterator() = default;
 
   CFG get_cfg() const { return m_cfg; }
 
@@ -329,6 +331,13 @@ public:
 
   void run(basic_block_label_t entry, AbstractValue init,
            const assumption_map_t &assumptions) {
+    run(entry, init, assumptions, nullptr);
+  }
+  
+  void run(basic_block_label_t entry, AbstractValue init,
+           const assumption_map_t &assumptions,
+	   std::function<std::set<variable_t>(const basic_block_label_t&)>*
+	   debug_variables) {
     crab::ScopedCrabStats __st__("Fixpo");
 
     m_init_inv = std::move(init);
@@ -338,7 +347,7 @@ public:
                << crab::basic_block_traits<basic_block_t>::to_string(entry)
                << " with initial value=" << m_init_inv << "\n";);
     set_pre(entry, m_init_inv);
-    wto_iterator_t iterator(this, entry, m_init_inv, &assumptions);
+    wto_iterator_t iterator(this, entry, m_init_inv, &assumptions, debug_variables);
     m_wto.accept(&iterator);
     if (m_enable_processor) {
       wto_processor_t processor(this);
@@ -376,6 +385,7 @@ public:
   using wto_t = wto<CFG>;
   using basic_block_t = typename CFG::basic_block_t;
   using basic_block_label_t = typename CFG::basic_block_label_t;
+  using variable_t = typename CFG::variable_t;
   using wto_nesting_t = typename wto_t::wto_nesting_t;
   using assumption_map_t = typename interleaved_iterator_t::assumption_map_t;
 
@@ -387,6 +397,8 @@ private:
   // AbstractValue has a default constructor.
   AbstractValue m_init_inv;
   const assumption_map_t *m_assumptions;
+  // for debugging messages (it can be null)
+  std::function<std::set<variable_t>(const basic_block_label_t&)> *m_debug_variables;
   // Used to skip the analysis until m_entry is found
   bool m_skip;
 
@@ -421,11 +433,42 @@ private:
         auto &n = m_iterator->m_cfg.get_node(node);
         crab::outs() << " size=" << n.size() << "\n";);
 
+    // -- Begin debugging the origin of warnings    
+    std::set<variable_t> rel_vars;
+    AbstractValue before_inv = make_top(); 
+    if (m_debug_variables) {
+      rel_vars = (*m_debug_variables)(node);
+      if (!rel_vars.empty()) {
+	before_inv = inv; 
+      }
+    }
+    // -- End debugging the origin of warnings    
+    
     CRAB_VERBOSE_IF(4, crab::outs() << "PRE Invariants:\n" << inv << "\n");
     inv = m_iterator->analyze(node, std::move(inv));
     CRAB_VERBOSE_IF(3, crab::outs() << "POST Invariants:\n" << inv << "\n");
     crab::CrabStats::stop("Fixpo.analyze_block");
 
+    // -- Begin debugging the origin of warnings
+    if (!rel_vars.empty()) {
+      if (!inv.is_bottom()) {
+	AbstractValue after_inv(inv);
+	std::vector<variable_t> projected_variables(rel_vars.begin(), rel_vars.end());
+	before_inv.project(projected_variables);
+	after_inv.project(projected_variables);
+	if (!(before_inv <= after_inv && after_inv <= before_inv)) {
+	  crab::outs() << "[DEBUG] basic block ";
+	  if (m_iterator->m_cfg.has_func_decl()) {
+	    crab::outs() << m_iterator->m_cfg.get_func_decl() << "#";
+	  }
+	  crab::outs() << node << ":\n";
+	  crab::outs() << "Invariants at the start: " << before_inv << "\n";
+	  crab::outs() << "Invariants at the end  : " << after_inv << "\n";	
+	}
+      }
+    }
+    // -- End debugging the origin of warnings
+    
     m_iterator->set_post(node, std::move(inv));
   }
 
@@ -464,13 +507,20 @@ private:
 public:
   wto_iterator(interleaved_iterator_t *iterator, AbstractValue init)
       : m_iterator(iterator), m_entry(m_iterator->get_cfg().entry()),
-        m_init_inv(std::move(init)), m_assumptions(nullptr), m_skip(true) {}
+        m_init_inv(std::move(init)), m_assumptions(nullptr),
+	m_debug_variables(nullptr), m_skip(true) {}
 
   wto_iterator(interleaved_iterator_t *iterator, basic_block_label_t entry,
                AbstractValue init, const assumption_map_t *assumptions)
       : m_iterator(iterator), m_entry(entry), m_init_inv(std::move(init)),
-        m_assumptions(assumptions), m_skip(true) {}
+        m_assumptions(assumptions), m_debug_variables(nullptr), m_skip(true) {}
 
+  wto_iterator(interleaved_iterator_t *iterator, basic_block_label_t entry,
+               AbstractValue init, const assumption_map_t *assumptions,
+	       std::function<std::set<variable_t>(const basic_block_label_t&)> *debug_variables)
+      : m_iterator(iterator), m_entry(entry), m_init_inv(std::move(init)),
+        m_assumptions(assumptions), m_debug_variables(debug_variables), m_skip(true) {}
+  
   void visit(wto_vertex_t &vertex) {
     basic_block_label_t node = vertex.node();
 
