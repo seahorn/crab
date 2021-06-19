@@ -11,6 +11,7 @@
 #include <crab/analysis/graphs/sccg.hpp>
 #include <crab/analysis/graphs/topo_order.hpp>
 #include <crab/analysis/inter/inter_analyzer_api.hpp>
+#include <crab/analysis/inter/inter_params.hpp>
 #include <crab/cfg/cfg.hpp>   // callsite_or_fdecl wrapper
 #include <crab/cg/cg_bgl.hpp> // for sccg.hpp
 #include <crab/domains/generic_abstract_domain.hpp>
@@ -642,7 +643,8 @@ public:
   using variable_t = typename cfg_t::variable_t;
   using liveness_t = live_and_dead_analysis<cfg_t>;
   using liveness_map_t = std::unordered_map<cfg_t, const liveness_t *>;
-
+  using params_t = inter_analyzer_parameters<CallGraph>;
+  
 private:
   using summ_tbl_t = inter_analyzer_impl::summary_table<cfg_t, BU_Dom>;
   using call_tbl_t = inter_analyzer_impl::call_ctx_table<cfg_t, TD_Dom>;
@@ -697,14 +699,11 @@ public:
                            // Top value
                            TD_Dom td_top,
                            // Top value
-                           BU_Dom bu_top, const liveness_map_t *live,
-                           // fixpoint parameters
-                           unsigned int widening_delay = 1,
-                           unsigned int descending_iters = UINT_MAX,
-                           size_t jump_set_size = 0)
-      : m_cg(cg), m_td_top(td_top), m_bu_top(bu_top), m_live(live),
-        m_call_tbl(make_td_top()), m_widening_delay(widening_delay),
-        m_descending_iters(descending_iters), m_jump_set_size(jump_set_size),
+                           BU_Dom bu_top,
+			   const params_t &params = params_t())
+      : m_cg(cg), m_td_top(td_top), m_bu_top(bu_top), m_live(params.live_map),
+        m_call_tbl(make_td_top()), m_widening_delay(params.widening_delay),
+        m_descending_iters(params.descending_iters), m_jump_set_size(params.thresholds_size),
         m_abs_tr(new abs_tr_t(make_td_top(), &m_summ_tbl, &m_call_tbl)) {
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
     crab::CrabStats::resume("CallGraph type checking");

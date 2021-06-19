@@ -25,7 +25,7 @@
 #include <crab/analysis/dataflow/liveness.hpp>
 #include <crab/analysis/fwd_analyzer.hpp>
 #include <crab/analysis/inter/inter_analyzer_api.hpp>
-#include <crab/analysis/inter/top_down_inter_params.hpp>
+#include <crab/analysis/inter/inter_params.hpp>
 #include <crab/cg/cg_bgl.hpp> // for wto of callgraphs
 #include <crab/iterators/wto.hpp>
 #include <crab/support/debug.hpp>
@@ -1656,7 +1656,7 @@ public:
   using liveness_map_t = std::unordered_map<cfg_t, const liveness_t *>;
   using wto_t = ikos::wto<cfg_t>;
   using wto_map_t = std::unordered_map<cfg_t, const wto_t *>;
-  using params_t = top_down_inter_analyzer_parameters<CallGraph>;
+  using params_t = inter_analyzer_parameters<CallGraph>;
   using checks_db_t = checker::checks_db;
   using summary_t = typename inter_analyzer_api<CallGraph,AbsDom,AbsDom>::summary_t;
   

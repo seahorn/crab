@@ -9,8 +9,7 @@
 template <typename CG, typename BUDom, typename TDDom,
           typename InterFwdAnalyzer>
 void inter_run_impl(CG &cg, BUDom bu_top, TDDom td_top, bool /*run_liveness*/,
-                    unsigned widening, unsigned narrowing,
-                    unsigned jump_set_size, bool enable_stats) {
+                    const params_t &params, bool enable_stats) {
 
   using basic_block_t = typename CG::cfg_t::basic_block_t;
   
@@ -18,8 +17,7 @@ void inter_run_impl(CG &cg, BUDom bu_top, TDDom td_top, bool /*run_liveness*/,
                << "summary domain=" << bu_top.domain_name()
                << " and forward domain=" << td_top.domain_name() << "\n";
 
-  InterFwdAnalyzer a(cg, td_top, bu_top, nullptr /*live*/, widening,
-                     narrowing, jump_set_size);
+  InterFwdAnalyzer a(cg, td_top, bu_top, params);
   a.run(td_top);
 
   // Print invariants
@@ -53,7 +51,7 @@ void inter_run_impl(CG &cg, BUDom bu_top, TDDom td_top, bool /*run_liveness*/,
 
 template <typename Dom, typename InterAnalyzer>
 void td_inter_run_impl(crab::cg_impl::z_cg_t &cg, Dom init,
-                       td_inter_params_t params, bool print_checks,
+		       const params_t &params, bool print_checks,
                        bool print_invariants, bool enable_stats) {
 
   InterAnalyzer analyzer(cg, init, params);
@@ -110,19 +108,17 @@ void td_inter_run_impl(crab::cg_impl::z_cg_t &cg, Dom init,
 template <typename BUDom, typename TDDom>
 void z_bu_inter_run_and_check(crab::cg_impl::z_cg_t &cg, BUDom bu_top,
                               TDDom td_top, bool run_liveness,
-                              unsigned widening, unsigned narrowing,
-                              unsigned jump_set_size, bool enable_stats) {
+                              const params_t &params, bool enable_stats) {
   using namespace crab::analyzer;
   using inter_analyzer_t =
       bottom_up_inter_analyzer<crab::cg_impl::z_cg_t, BUDom, TDDom>;
   inter_run_impl<crab::cg_impl::z_cg_t, BUDom, TDDom, inter_analyzer_t>(
-      cg, bu_top, td_top, run_liveness, widening, narrowing, jump_set_size,
-      enable_stats);
+      cg, bu_top, td_top, run_liveness, params, enable_stats);
 }
 
 template <typename Dom>
 void z_td_inter_run_and_check(crab::cg_impl::z_cg_t &cg, Dom init,
-                              td_inter_params_t params, bool print_checks,
+                              const params_t &params, bool print_checks,
                               bool print_invariants, bool enable_stats) {
 
   using namespace crab::analyzer;

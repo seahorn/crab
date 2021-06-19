@@ -2,6 +2,7 @@
 #include "../program_options.hpp"
 
 #include <crab/analysis/graphs/sccg_bgl.hpp>
+#include <crab/analysis/inter/inter_params.hpp>
 #include <crab/cg/cg_bgl.hpp>
 
 using namespace std;
@@ -148,14 +149,18 @@ int main(int argc, char **argv) {
   cfgs.push_back(*t5);
 
   using callgraph_t = call_graph<z_cfg_ref_t>;
-
+  using inter_params_t = inter_analyzer_parameters<callgraph_t>;
+  
   std::unique_ptr<callgraph_t> cg(new callgraph_t(cfgs));
-
+  inter_params_t params;
+  params.widening_delay = 2;
+  params.descending_iters = 2;
+  params.thresholds_size = 20;
   {
     z_dbm_domain_t bu_top;
     z_interval_domain_t td_top;
     bu_inter_run<z_dbm_domain_t, z_interval_domain_t>(
-        *cg, bu_top, td_top, false, 2, 2, 20, stats_enabled);
+        *cg, bu_top, td_top, false, params, stats_enabled);
   }
 
 #ifdef HAVE_APRON
@@ -163,7 +168,7 @@ int main(int argc, char **argv) {
     z_oct_apron_domain_t bu_top;
     z_interval_domain_t td_top;
     bu_inter_run<z_oct_apron_domain_t, z_interval_domain_t>(
-        *cg, bu_top, td_top, false, 2, 2, 20, stats_enabled);
+        *cg, bu_top, td_top, false, params, stats_enabled);
   }
 #endif
 

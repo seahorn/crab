@@ -1,49 +1,40 @@
 #pragma once
 #include "./crab_lang.hpp"
 
-#include <crab/analysis/inter/top_down_inter_params.hpp>
+#include <crab/analysis/inter/inter_params.hpp>
+
+using params_t = crab::analyzer::inter_analyzer_parameters<crab::cg_impl::z_cg_t>;
 
 // To run abstract domains defined over integers
 template <typename BUDom, typename TDDom>
 extern void z_bu_inter_run_and_check(crab::cg_impl::z_cg_t &cg, BUDom bu_top,
                                      TDDom td_top, bool run_liveness,
-                                     unsigned widening, unsigned narrowing,
-                                     unsigned jump_set_size, bool enable_stats);
+				     const params_t &params, bool enable_stats);
 
 // To run abstract domains defined over integers
-using td_inter_params_t = crab::analyzer::top_down_inter_analyzer_parameters<
-    crab::cg_impl::z_cg_t>;
 
 template <typename Dom>
 extern void z_td_inter_run_and_check(crab::cg_impl::z_cg_t &cg, Dom init,
-                                     td_inter_params_t params,
+                                     const params_t &params,
                                      bool print_checks, bool print_invariants,
                                      bool enable_stats);
 
 // To run abstract domains defined over integers
 template <typename BUDom, typename TDDom>
 void bu_inter_run(crab::cg_impl::z_cg_t &cg, BUDom bu_top, TDDom td_top,
-                  bool run_liveness, unsigned widening, unsigned narrowing,
-                  unsigned jump_set_size, bool enable_stats) {
+                  bool run_liveness, const params_t &params, bool enable_stats) {
 #ifdef USE_GENERIC_WRAPPER
   using namespace crab::domain_impl;
   z_abs_domain_t bu_top_wrapper(bu_top);
   z_abs_domain_t td_top_wrapper(td_top);
-  z_bu_inter_run_and_check(cg, bu_top_wrapper, td_top_wrapper, run_liveness,
-                           widening, narrowing, jump_set_size, enable_stats);
-
+  z_bu_inter_run_and_check(cg, bu_top_wrapper, td_top_wrapper, run_liveness, params, enable_stats);
 #else
-  z_bu_inter_run_and_check(cg, bu_top, td_top, run_liveness, widening,
-                           narrowing, jump_set_size, enable_stats);
+  z_bu_inter_run_and_check(cg, bu_top, td_top, run_liveness, params, enable_stats);
 #endif
 }
 
-// To run abstract domains defined over integers
-using td_inter_params_t = crab::analyzer::top_down_inter_analyzer_parameters<
-    crab::cg_impl::z_cg_t>;
-
 template <typename Dom>
-void td_inter_run(crab::cg_impl::z_cg_t &cg, Dom init, td_inter_params_t params,
+void td_inter_run(crab::cg_impl::z_cg_t &cg, Dom init, const params_t &params,
                   bool print_checks, bool print_invariants, bool enable_stats) {
 #ifdef USE_GENERIC_WRAPPER
   using namespace crab::domain_impl;
