@@ -1194,10 +1194,39 @@ public:
   void select_bool(const variable_t &lhs, const variable_t &cond,
 		   const variable_t &b1, const variable_t &b2) override {
 
+    auto is_definitely_false = [this](const variable_t &cond) {
+	  bool_domain_t inv(_product.first());
+	  inv.assume_bool(cond, false /*not negated*/);
+	  return inv.is_bottom();
+    };
+    auto is_definitely_true = [this](const variable_t &cond) {
+	  bool_domain_t inv(_product.first());
+	  inv.assume_bool(cond, false /*negated*/);
+	  return inv.is_bottom();
+    };
+
+    
     if (!is_bottom()) {
       _product.select_bool(lhs, cond, b1, b2);
-      // Maybe a bit too imprecise
-      _var_to_csts -= lhs;
+
+      boolean_value b1_val = _product.first().get_bool(b1);
+      boolean_value b2_val = _product.first().get_bool(b2);
+      
+      if (b1_val.is_false()) {
+	_var_to_csts.set(lhs, _var_to_csts[b2]);
+      }  else if (b2_val.is_false()) {
+	_var_to_csts.set(lhs, _var_to_csts[b1]);
+      } else if (b1_val.is_true() && b2_val.is_top() && is_definitely_false(cond)) {
+	// select(lhs, cond, true, b2)
+	// lhs iff b2 but only if cond is definitely false
+	_var_to_csts.set(lhs, _var_to_csts[b2]);	  
+      } else if (b2_val.is_true() && b1_val.is_top() && is_definitely_true(cond)) {
+	// select(lhs, cond, b1, true)
+	// lhs iff b1 but only if cond is definitely true
+	_var_to_csts.set(lhs, _var_to_csts[b1]);	  
+      } else {
+	_var_to_csts -= lhs;
+      }
     }
   }
 
