@@ -223,13 +223,15 @@ public:
     : m_file(""), m_line(-1), m_col(-1), m_id(-1) {}
   debug_info(std::string file, unsigned line, unsigned col, int64_t num_id)
     : m_file(file), m_line(line), m_col(col), m_id(num_id) {}
-
+  debug_info(int64_t num_id)
+    : m_file(""), m_line(-1), m_col(-1), m_id(num_id) {}
+  
   bool operator<(const debug_info &other) const {
-    // if (m_id < other.m_id) {
-    //   return true;
-    // } else if (m_id > other.m_id) {
-    //   return false;
-    // }
+    if (m_id < other.m_id) {
+      return true;
+    } else if (m_id > other.m_id) {
+      return false;
+    }
     if (m_file < other.m_file) {
       return true;
     } else if (m_file > other.m_file) {
@@ -244,14 +246,15 @@ public:
   }
 
   bool operator==(const debug_info &other) const {
-    return (//m_id == other.m_id &&
+    return (m_id == other.m_id &&
 	    m_file == other.m_file &&
 	    m_line == other.m_line &&
             m_col == other.m_col);
   }
 
   bool has_debug() const {
-    return ((m_file != "") && (m_line >= 0) && (m_col >= 0));
+    return ((m_id >= 0) ||
+	    (m_file != "") && (m_line >= 0) && (m_col >= 0));
   }
 
   std::string get_file() const { return m_file; }
@@ -261,7 +264,13 @@ public:
   
   void write(crab_os &o) const {
     o << "loc("
-      << "file=" << m_file << " "
+      << "file=";
+    if (m_file == "") {
+      o << "none";
+    } else {
+      o << m_file;
+    }
+    o << " "
       << "line=" << m_line << " "
       << "col=" << m_col << ") "
       << "id=" << m_id;
