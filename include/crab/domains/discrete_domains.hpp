@@ -186,6 +186,35 @@ public:
     return r;
   }
 
+  bool contain(Element e) {
+    if (is_bottom()) {
+      return false;
+    } else if (is_top()) {
+      return true;
+    } else {
+      return m_set[e];
+    }
+  }
+  
+  void rename(const std::vector<Element> &from, const std::vector<Element> &to) {
+    if (is_top() || is_bottom()) {
+      return;
+    }
+    if (from.size() != to.size()) {
+      CRAB_ERROR("discrete_domain::rename with input vectors of different sizes");
+    }
+
+    for(unsigned i=0, sz=from.size(); i<sz; ++i) {
+      if (from[i] == to[i]) {
+	continue;
+      }
+      if (contain(from[i])) {
+	this->operator-=(from[i]);
+	this->operator+=(to[i]);
+      }
+    }
+  }
+  
   std::size_t size() const {
     if (m_is_top) {
       assert(false);
@@ -407,7 +436,7 @@ public:
       }
     }
   }
-
+  
   void write(crab::crab_os &o) const {
     if (is_top()) {
       o << "{...}";

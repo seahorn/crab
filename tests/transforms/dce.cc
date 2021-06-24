@@ -30,7 +30,9 @@ z_cfg_t *prog1(variable_factory_t &vfac, crab::tag_manager &as_man) {
   z_var o(vfac["o"], crab::INT_TYPE, 32);
   z_var p(vfac["p"], crab::REF_TYPE);
   z_var q(vfac["q"], crab::REF_TYPE);
-  z_var mem(vfac["region_0"], crab::REG_INT_TYPE, 32);  
+  z_var mem(vfac["region_0"], crab::REG_INT_TYPE, 32);
+  z_var_or_cst_t size400(z_number(400), crab::variable_type(crab::INT_TYPE, 32));
+  
   // entry and exit block
   auto cfg = new z_cfg_t("x0", "ret");
   // adding blocks
@@ -59,7 +61,7 @@ z_cfg_t *prog1(variable_factory_t &vfac, crab::tag_manager &as_man) {
   // adding statements
   x0.assign(k, 2147483648);
   x0.assign(o, 4);
-  x0.make_ref(p, mem, as_man.mk_tag());
+  x0.make_ref(p, mem, size400, as_man.mk_tag());
   entry.assign(i, 0);
   bb1_t.assume(i <= 99);
   bb1_f.assume(i >= 100);
@@ -97,7 +99,8 @@ z_cfg_t *prog2(variable_factory_t &vfac, crab::tag_manager &as_man) {
   z_var o(vfac["o"], crab::INT_TYPE, 32);
   z_var p(vfac["p"], crab::REF_TYPE);
   z_var q(vfac["q"], crab::REF_TYPE);
-  z_var mem(vfac["region_0"], crab::REG_INT_TYPE, 32);    
+  z_var mem(vfac["region_0"], crab::REG_INT_TYPE, 32);
+  z_var_or_cst_t size400(z_number(400), crab::variable_type(crab::INT_TYPE, 32));  
   // entry and exit block
   typename z_cfg_t::fdecl_t fdecl("main", {}, {k});  
   auto cfg = new z_cfg_t("x0", "ret", fdecl);
@@ -127,7 +130,7 @@ z_cfg_t *prog2(variable_factory_t &vfac, crab::tag_manager &as_man) {
   // adding statements
   x0.assign(k, 2147483648);
   x0.assign(o, 4);
-  x0.make_ref(p, mem, as_man.mk_tag());
+  x0.make_ref(p, mem, size400, as_man.mk_tag());
   entry.assign(i, 0);
   bb1_t.assume(i <= 99);
   bb1_f.assume(i >= 100);

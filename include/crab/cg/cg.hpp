@@ -117,12 +117,12 @@ template <typename CFG> class call_graph {
   using basic_block_label_t = typename CFG::basic_block_label_t;
   using stmt_visitor_t =
       crab::cfg::statement_visitor<basic_block_label_t, number_t, varname_t>;
-
-  using vertex_map_t = std::unordered_map<std::size_t, vertex_descriptor_t>;
+  using callsite_or_fdecl_t = crab::cfg::callsite_or_fdecl<CFG>;
+  using vertex_map_t = crab::cfg::callsite_or_fdecl_map<CFG, vertex_descriptor_t>;
   using callee_map_t =
       std::unordered_map<const typename stmt_visitor_t::callsite_t *,
                          cg_node<CFG>>;
-  using node_vertex_id_map_t =
+  using node_vertex_id_map_t = 
       std::unordered_map<cg_node<CFG>, vertex_descriptor_t>;
 
   struct mk_edge_vis : public stmt_visitor_t {
@@ -134,21 +134,20 @@ template <typename CFG> class call_graph {
     using select_t = typename stmt_visitor_t::select_t;
     using callsite_t = typename stmt_visitor_t::callsite_t;
     using fdecl_t = typename CFG::fdecl_t;
-
+    
     cg_t &m_cg;
     vertex_map_t &m_vertex_map;
     callee_map_t &m_callee_map;
-    std::size_t m_from;
+    const fdecl_t &m_from;
 
     mk_edge_vis(cg_t &cg, vertex_map_t &vertex_map, callee_map_t &callee_map,
                 const fdecl_t &from)
         : m_cg(cg), m_vertex_map(vertex_map), m_callee_map(callee_map),
-          m_from(crab::cfg::cfg_hasher<CFG>::hash(from)) {}
+          m_from(from) {}
 
     void visit(callsite_t &cs) {
-      size_t to = crab::cfg::cfg_hasher<CFG>::hash(cs);
-      auto it_from = m_vertex_map.find(m_from);
-      auto it_to = m_vertex_map.find(to);
+      auto it_from = m_vertex_map.find(&m_from);
+      auto it_to = m_vertex_map.find(&cs);
 
       CRAB_LOG("cg", crab::outs() << "Visiting call site " << cs << "\n";);
 
@@ -240,10 +239,9 @@ private:
         CRAB_ERROR("Could not compute call graph: function info is missing.");
       }
 
-      auto decl = cfg.get_func_decl();
-      size_t k = crab::cfg::cfg_hasher<CFG>::hash(decl);
+      auto const &decl = cfg.get_func_decl();
       vertex_descriptor_t v = add_vertex(*m_cg);
-      m_vertex_map.insert({k, v});
+      m_vertex_map.insert({callsite_or_fdecl_t(&decl), v});
       node_t f(cfg, m_id++);
       m_node_vertex_id_map.insert({f, v});
       (*m_cg)[v].func = f;
@@ -255,7 +253,7 @@ private:
     // --- add edges in the call graph
     for (auto cfg : boost::make_iterator_range(I, E)) {
       assert(cfg.has_func_decl());
-      auto decl = cfg.get_func_decl();
+      auto const &decl = cfg.get_func_decl();
       for (auto const &bb :
            boost::make_iterator_range(cfg.begin(), cfg.end())) {
         mk_edge_vis vis(*m_cg, m_vertex_map, m_callee_map, decl);

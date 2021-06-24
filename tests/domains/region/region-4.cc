@@ -96,7 +96,9 @@ int main() {
   bb9_assert.add_succ(bb6_loop);  
 
   z_var_or_cst_t n30000_32(z_number(30000), crab::variable_type(crab::INT_TYPE, 32));
-
+  z_var_or_cst_t size4(z_number(4), crab::variable_type(crab::INT_TYPE, 32));  
+  z_var_or_cst_t size16(z_number(16), crab::variable_type(crab::INT_TYPE, 32));
+  
   entry.region_init(mem_field_next);
   entry.region_init(mem_field_s);
   entry.region_init(mem_field_deref_s);  
@@ -112,14 +114,14 @@ int main() {
   // List aux = l
   bb4.gep_ref(ref1, mem_field_f, ref0, mem_field_f);
   // tmp = malloc(...)
-  bb5.make_ref(ref2, mem_field_f, as_man.mk_tag());
+  bb5.make_ref(ref2, mem_field_f, size16, as_man.mk_tag());
   bb5.assume_ref(z_ref_cst_t::mk_gt_null(ref2));
   /// tmp->f = i  
   bb5.gep_ref(ref3, mem_field_f, ref2, mem_field_f);
   bb5.store_to_ref(ref3, mem_field_f, i0);
   // tmp->s = xmalloc(...)
   bb5.gep_ref(ref5, mem_field_s, ref2, mem_field_f, 4);
-  bb5.make_ref(ref10, mem_field_deref_s, as_man.mk_tag()); 
+  bb5.make_ref(ref10, mem_field_deref_s, size4, as_man.mk_tag()); 
   bb5.assume_ref(z_ref_cst_t::mk_gt_null(ref10));
   bb5.store_to_ref(ref5, mem_field_s, ref10);
   // tmp->n = l

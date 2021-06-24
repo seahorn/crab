@@ -11,7 +11,8 @@
 #include <crab/analysis/graphs/sccg.hpp>
 #include <crab/analysis/graphs/topo_order.hpp>
 #include <crab/analysis/inter/inter_analyzer_api.hpp>
-#include <crab/cfg/cfg.hpp>   // hasher of function declarations
+#include <crab/analysis/inter/inter_params.hpp>
+#include <crab/cfg/cfg.hpp>   // callsite_or_fdecl wrapper
 #include <crab/cg/cg_bgl.hpp> // for sccg.hpp
 #include <crab/domains/generic_abstract_domain.hpp>
 #include <crab/support/debug.hpp>
@@ -42,27 +43,25 @@ public:
   using basic_block_t = typename CFG::basic_block_t;
   using callsite_t = typename basic_block_t::callsite_t;
   using fdecl_t = typename CFG::fdecl_t;
+  using callsite_or_fdecl_t = crab::cfg::callsite_or_fdecl<CFG>;
   using varname_t = typename CFG::varname_t;
   using variable_t = typename CFG::variable_t;
   using abs_domain_t = AbsDomain;
 
 private:
-  // a function declaration and callsite are considered equal if
-  // they correspond to the same function.
-  using call_table_t = std::unordered_map<std::size_t, abs_domain_t>;
-
+  using call_table_t = crab::cfg::callsite_or_fdecl_map<CFG, abs_domain_t>;
   call_table_t m_call_table;
   AbsDomain m_top;
 
   // XXX: assume context-insensitive analysis so it will merge all
   // calling contexts using abstract domain's join keeping a
   // single calling context per function.
-  void insert_helper(std::size_t func_key, AbsDomain inv) {
-    auto it = m_call_table.find(func_key);
+  void insert_helper(callsite_or_fdecl_t key, AbsDomain inv) {
+    auto it = m_call_table.find(key);
     if (it != m_call_table.end()) {
       it->second = it->second | inv;
     } else {
-      m_call_table.insert(std::make_pair(func_key, inv));
+      m_call_table.insert(std::make_pair(key, inv));
     }
   }
 
@@ -75,19 +74,20 @@ public:
   operator=(const call_ctx_table<CFG, AbsDomain> &o) = delete;
 
   void insert(const callsite_t &cs, AbsDomain inv) {
-    insert_helper(crab::cfg::cfg_hasher<CFG>::hash(cs), inv);
+    insert_helper(&cs, inv);
   }
 
   void insert(const fdecl_t &d, AbsDomain inv) {
-    insert_helper(crab::cfg::cfg_hasher<CFG>::hash(d), inv);
+    insert_helper(&d, inv);
   }
 
   AbsDomain get_call_ctx(const fdecl_t &d) const {
-    auto it = m_call_table.find(crab::cfg::cfg_hasher<CFG>::hash(d));
-    if (it != m_call_table.end())
+    auto it = m_call_table.find(&d);
+    if (it != m_call_table.end()) {
       return it->second;
-    else
+    } else { 
       return m_top;
+    }
   }
   
   void clear() {
@@ -243,11 +243,12 @@ public:
   using basic_block_t = typename CFG::basic_block_t;
   using callsite_t = typename basic_block_t::callsite_t;
   using fdecl_t = typename CFG::fdecl_t;
+  using callsite_or_fdecl_t = crab::cfg::callsite_or_fdecl<CFG>;  
   using abs_domain_t = AbsDomain;
   using variable_t = typename CFG::variable_t;
 
 private:
-  using summary_table_t = std::unordered_map<std::size_t, summary_t>;
+  using summary_table_t = crab::cfg::callsite_or_fdecl_map<CFG, summary_t>;
   summary_table_t m_sum_table;
 
 public:
@@ -265,30 +266,29 @@ public:
     std::vector<variable_t> ins(inputs.begin(), inputs.end());
     std::vector<variable_t> outs(outputs.begin(), outputs.end());
     summary_t sum_tuple(d, sum, ins, outs);
-    m_sum_table.insert(std::make_pair(crab::cfg::cfg_hasher<CFG>::hash(d),
-                                      std::move(sum_tuple)));
+    m_sum_table.insert(std::make_pair(callsite_or_fdecl_t(&d),std::move(sum_tuple)));
   }
 
   // return true if there is a summary
   bool has_summary(const callsite_t &cs) const {
-    auto it = m_sum_table.find(crab::cfg::cfg_hasher<CFG>::hash(cs));
+    auto it = m_sum_table.find(&cs);
     return (it != m_sum_table.end());
   }
 
   bool has_summary(const fdecl_t &d) const {
-    auto it = m_sum_table.find(crab::cfg::cfg_hasher<CFG>::hash(d));
+    auto it = m_sum_table.find(&d);
     return (it != m_sum_table.end());
   }
 
   // get the summary
   summary_t get(const callsite_t &cs) const {
-    auto it = m_sum_table.find(crab::cfg::cfg_hasher<CFG>::hash(cs));
+    auto it = m_sum_table.find(&cs);
     assert(it != m_sum_table.end());
     return (it->second);
   }
 
   summary_t get(const fdecl_t &d) const {
-    auto it = m_sum_table.find(crab::cfg::cfg_hasher<CFG>::hash(d));
+    auto it = m_sum_table.find(&d);
     assert(it != m_sum_table.end());
     return (it->second);
   }
@@ -298,12 +298,12 @@ public:
   }
   
   void write(crab_os &o) const {
-    o << "--- Begin summary table: \n";
+    o << "--- Begin summary table ---\n";
     for (auto const &p : m_sum_table) {
-      p.second->write(o);
+      p.second.write(o);
       o << "\n";
     }
-    o << "--- End summary table\n";
+    o << "--- End summary table ---\n";
   }
 
   friend crab_os &operator<<(crab_os &o,
@@ -643,12 +643,13 @@ public:
   using variable_t = typename cfg_t::variable_t;
   using liveness_t = live_and_dead_analysis<cfg_t>;
   using liveness_map_t = std::unordered_map<cfg_t, const liveness_t *>;
-
+  using params_t = inter_analyzer_parameters<CallGraph>;
+  
 private:
   using summ_tbl_t = inter_analyzer_impl::summary_table<cfg_t, BU_Dom>;
   using call_tbl_t = inter_analyzer_impl::call_ctx_table<cfg_t, TD_Dom>;
   using cg_ref_t = crab::cg::call_graph_ref<cg_t>;
-  
+  using callsite_or_fdecl_t = crab::cfg::callsite_or_fdecl<cfg_t>;  
 public:
   using bu_abs_tr = inter_analyzer_impl::bu_summ_abs_transformer<summ_tbl_t>;
   using td_abs_tr =
@@ -663,7 +664,7 @@ public:
 
 private:
   using td_analyzer_ptr = std::unique_ptr<td_analyzer>;
-  using invariant_map_t = std::unordered_map<std::size_t, td_analyzer_ptr>;
+  using invariant_map_t = crab::cfg::callsite_or_fdecl_map<cfg_t, td_analyzer_ptr>;
 
   CallGraph &m_cg;
   // These two used to call make_top() and make_bottom() since we
@@ -698,14 +699,11 @@ public:
                            // Top value
                            TD_Dom td_top,
                            // Top value
-                           BU_Dom bu_top, const liveness_map_t *live,
-                           // fixpoint parameters
-                           unsigned int widening_delay = 1,
-                           unsigned int descending_iters = UINT_MAX,
-                           size_t jump_set_size = 0)
-      : m_cg(cg), m_td_top(td_top), m_bu_top(bu_top), m_live(live),
-        m_call_tbl(make_td_top()), m_widening_delay(widening_delay),
-        m_descending_iters(descending_iters), m_jump_set_size(jump_set_size),
+                           BU_Dom bu_top,
+			   const params_t &params = params_t())
+      : m_cg(cg), m_td_top(td_top), m_bu_top(bu_top), m_live(params.live_map),
+        m_call_tbl(make_td_top()), m_widening_delay(params.widening_delay),
+        m_descending_iters(params.descending_iters), m_jump_set_size(params.thresholds_size),
         m_abs_tr(new abs_tr_t(make_td_top(), &m_summ_tbl, &m_call_tbl)) {
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
     crab::CrabStats::resume("CallGraph type checking");
@@ -779,8 +777,7 @@ public:
                                           m_descending_iters, m_jump_set_size));
 
         a->run_forward();
-        m_inv_map.insert(std::make_pair(
-            crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), std::move(a)));
+        m_inv_map.insert(std::make_pair(callsite_or_fdecl_t(&fdecl), std::move(a)));
       }
       return;
     }
@@ -896,8 +893,7 @@ public:
                                           get_live(cfg), m_widening_delay,
                                           m_descending_iters, m_jump_set_size));
         a->run_forward();
-        m_inv_map.insert(std::make_pair(
-            crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), std::move(a)));
+        m_inv_map.insert(std::make_pair(callsite_or_fdecl_t(&fdecl), std::move(a))); 
       }
     }
     CRAB_VERBOSE_IF(1, get_msg_stream()
@@ -911,8 +907,8 @@ public:
   TD_Dom get_pre(const cfg_t &cfg,
                  const typename cfg_t::basic_block_label_t &b) const override {
     assert(cfg.has_func_decl());
-    auto fdecl = cfg.get_func_decl();
-    auto const it = m_inv_map.find(crab::cfg::cfg_hasher<cfg_t>::hash(fdecl));
+    auto const &fdecl = cfg.get_func_decl();
+    auto const it = m_inv_map.find(&fdecl);
     if (it != m_inv_map.end()) {
       return it->second->get_pre(b);
     } else {
@@ -924,8 +920,8 @@ public:
   TD_Dom get_post(const cfg_t &cfg,
                   const typename cfg_t::basic_block_label_t &b) const override {
     assert(cfg.has_func_decl());
-    auto fdecl = cfg.get_func_decl();
-    auto const it = m_inv_map.find(crab::cfg::cfg_hasher<cfg_t>::hash(fdecl));
+    auto const &fdecl = cfg.get_func_decl();
+    auto const it = m_inv_map.find(&fdecl);
     if (it != m_inv_map.end()) {
       return it->second->get_post(b);
     } else {
@@ -949,7 +945,7 @@ public:
     // We convert from our internal representation of a summary to the
     // summary representation exposed by inter_analysis_api
     summary_t summary(cfg.get_func_decl());
-    auto fdecl = cfg.get_func_decl();
+    auto const& fdecl = cfg.get_func_decl();
     if (m_summ_tbl.has_summary(fdecl)) {
       auto _summary =  m_summ_tbl.get(fdecl);
       // The summary is context-insensitive. This means that the

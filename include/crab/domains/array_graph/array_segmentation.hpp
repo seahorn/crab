@@ -84,39 +84,39 @@ private:
     }
 
   public:
-    array_segment_domain_t _indexes;
+    array_segment_domain_t m_indexes;
 
-    array_segment_visitor(array_segment_domain_t inv) : _indexes(inv) {}
+    array_segment_visitor(array_segment_domain_t inv) : m_indexes(inv) {}
 
     void visit(bin_op_t &s) {
-      if (!(_indexes & s.lhs()).is_bottom()) {
-        _indexes += get_variables(s.left());
-        _indexes += get_variables(s.right());
+      if (!(m_indexes & s.lhs()).is_bottom()) {
+        m_indexes += get_variables(s.left());
+        m_indexes += get_variables(s.right());
       }
     }
 
     void visit(assign_t &s) {
-      if (!(_indexes & s.lhs()).is_bottom()) {
-        _indexes += get_variables(s.rhs());
+      if (!(m_indexes & s.lhs()).is_bottom()) {
+        m_indexes += get_variables(s.rhs());
       }
     }
 
     void visit(assume_t &s) {
       auto vars = get_variables(s.constraint());
-      if (!(_indexes & vars).is_bottom())
-        _indexes += vars;
+      if (!(m_indexes & vars).is_bottom())
+        m_indexes += vars;
     }
 
     void visit(arr_init_t &s) {
-      _indexes += get_variables(s.lb_index());
-      _indexes += get_variables(s.ub_index());
+      m_indexes += get_variables(s.lb_index());
+      m_indexes += get_variables(s.ub_index());
     }
 
-    void visit(arr_load_t &s) { _indexes += get_variables(s.index()); }
+    void visit(arr_load_t &s) { m_indexes += get_variables(s.index()); }
 
     void visit(arr_store_t &s) {
-      _indexes += get_variables(s.lb_index());
-      _indexes += get_variables(s.ub_index());
+      m_indexes += get_variables(s.lb_index());
+      m_indexes += get_variables(s.ub_index());
     }
 
     void visit(unreach_t &) {}
@@ -153,11 +153,11 @@ public:
     for (auto &s : bb) {
       s.accept(&vis);
     }
-    return vis._indexes;
+    return vis.m_indexes;
   }
 };
 
-template <class CFG>
+template<class CFG>
 class array_segmentation : public crab::iterators::killgen_fixpoint_iterator<
                                CFG, array_segment_ops<CFG>> {
 public:
@@ -174,13 +174,15 @@ private:
   using segment_map_t =
       boost::unordered_map<basic_block_label_t, array_segment_domain_t>;
 
-  segment_map_t _segment_map;
-
+  segment_map_t m_segment_map;
+  array_segment_ops_t m_array_segment_ops;
+  
 public:
-  array_segmentation(CFG cfg) : killgen_fixpoint_iterator_t(cfg) {}
+  array_segmentation(CFG cfg)
+    : killgen_fixpoint_iterator_t(cfg, m_array_segment_ops),
+      m_array_segment_ops(cfg) {}
 
   array_segmentation(const array_segmentation<CFG> &o) = delete;
-
   array_segmentation<CFG> &operator=(const array_segmentation<CFG> &o) = delete;
 
   void exec() {
@@ -194,14 +196,14 @@ public:
          boost::make_iterator_range(this->in_begin(), this->in_end())) {
       CRAB_LOG("array-segment", crab::outs()
                                     << p.first << ":" << p.second << "\n";);
-      _segment_map.insert(std::make_pair(p.first, p.second));
+      m_segment_map.insert(std::make_pair(p.first, p.second));
     }
     this->release_memory();
   }
 
   array_segment_domain_t get_variables(const basic_block_label_t &bb) const {
-    auto it = _segment_map.find(bb);
-    if (it == _segment_map.end())
+    auto it = m_segment_map.find(bb);
+    if (it == m_segment_map.end())
       return array_segment_domain_t();
     else
       return it->second;
@@ -245,24 +247,24 @@ public:
   using constant_set_t = std::vector<number_t>;
 
 private:
-  ArraySegmentDom _dom;
-  constant_set_t _csts;
+  ArraySegmentDom m_dom;
+  constant_set_t m_csts;
 
 public:
-  array_constant_segment_visitor(ArraySegmentDom dom) : _dom(dom) {}
+  array_constant_segment_visitor(ArraySegmentDom dom) : m_dom(dom) {}
 
-  constant_set_t get_constants() { return _csts; }
+  constant_set_t get_constants() { return m_csts; }
 
   /// XXX: we focus for now only on assignments
   void visit(assign_t &s) {
-    if (!(_dom & s.lhs()).is_bottom()) {
+    if (!(m_dom & s.lhs()).is_bottom()) {
       if (s.rhs().is_constant() && s.rhs().constant() >= 0 &&
-          std::find(_csts.begin(), _csts.end(), s.rhs().constant()) ==
-              _csts.end()) {
-        _csts.push_back(s.rhs().constant());
+          std::find(m_csts.begin(), m_csts.end(), s.rhs().constant()) ==
+              m_csts.end()) {
+        m_csts.push_back(s.rhs().constant());
         // for decrementing loops we need to include the upper bound index i and
         // i+1
-        _csts.push_back(s.rhs().constant() + 1);
+        m_csts.push_back(s.rhs().constant() + 1);
       }
     }
   }

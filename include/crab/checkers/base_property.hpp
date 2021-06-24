@@ -121,13 +121,13 @@ public:
       o << "\nCheck database content:\n";
       unsigned MaxFileLen = 0;
       for (auto const &kv : m_db) {
-        MaxFileLen = std::max(MaxFileLen, (unsigned)kv.first.m_file.size());
+        MaxFileLen = std::max(MaxFileLen, (unsigned)kv.first.get_file().size());
       }
       for (auto const &kv : m_db) {
-        o << kv.first.m_file
-          << std::string((int)MaxFileLen - kv.first.m_file.size(), ' ')
-          << std::string(2, ' ') << " line " << kv.first.m_line << " col "
-          << kv.first.m_col << ":\n"
+        o << kv.first.get_file()
+          << std::string((int)MaxFileLen - kv.first.get_file().size(), ' ')
+          << std::string(2, ' ') << " line " << kv.first.get_line() << " col "
+          << kv.first.get_column() << ":\n"
           << "\t";
         auto const &checks = kv.second;
         for (unsigned i = 0, num_checks = checks.size(); i < num_checks;) {
@@ -211,6 +211,8 @@ public:
       crab::cfg::region_init_stmt<basic_block_label_t, number_t, varname_t>;
   using region_copy_t =
       crab::cfg::region_copy_stmt<basic_block_label_t, number_t, varname_t>;
+  using region_cast_t =
+      crab::cfg::region_cast_stmt<basic_block_label_t, number_t, varname_t>;
   using make_ref_t =
       crab::cfg::make_ref_stmt<basic_block_label_t, number_t, varname_t>;
   using remove_ref_t =
@@ -402,6 +404,12 @@ protected:
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
+  virtual void check(region_cast_t &s) {
+    if (!this->m_abs_tr)
+      return;
+    s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
+  }
+  
   virtual void check(make_ref_t &s) {
     if (!this->m_abs_tr)
       return;
@@ -528,6 +536,7 @@ public:
   void visit(arr_load_t &s) { check(s); }
   void visit(region_init_t &s) { check(s); }
   void visit(region_copy_t &s) { check(s); }
+  void visit(region_cast_t &s) { check(s); }  
   void visit(make_ref_t &s) { check(s); }
   void visit(remove_ref_t &s) { check(s); }  
   void visit(load_from_ref_t &s) { check(s); }

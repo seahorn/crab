@@ -2,7 +2,7 @@
 #include "../program_options.hpp"
 
 #include <crab/analysis/graphs/sccg_bgl.hpp>
-#include <crab/analysis/inter/top_down_inter_params.hpp>
+#include <crab/analysis/inter/inter_params.hpp>
 #include <crab/cg/cg_bgl.hpp>
 
 
@@ -80,7 +80,7 @@ z_cfg_t *_main(variable_factory_t &vfac) {
 }
 
 using callgraph_t = call_graph<z_cfg_ref_t>;
-using inter_params_t = top_down_inter_analyzer_parameters<callgraph_t>;
+using inter_params_t = inter_analyzer_parameters<callgraph_t>;
 
 int main(int argc, char **argv) {
   bool stats_enabled = false;

@@ -116,18 +116,7 @@ private:
     clear_post_and_always_top_after();
   }
 
-public:
-  fwd_analyzer(CFG cfg, const wto_t *wto, abs_tr_t *abs_tr,
-               // live can be nullptr if no live info is available
-               const liveness_t *live_and_dead_symbols,
-               // fixpoint parameters
-               unsigned int widening_delay, unsigned int descending_iters,
-               size_t jump_set_size)
-      : fixpo_iterator_t(cfg, abs_tr->get_abs_value(), wto, widening_delay,
-                         descending_iters, jump_set_size,
-                         false /*disable processor*/),
-        m_abs_tr(abs_tr), m_live(live_and_dead_symbols),
-        m_pre_clear_done(false), m_post_clear_done(false) {
+  void init_fwd_analyzer() {
     assert(m_abs_tr);
     CRAB_VERBOSE_IF(1, crab::outs() << "CFG with " << get_cfg().size()
                                     << " basic blocks\n";);
@@ -145,7 +134,7 @@ public:
         crab::CrabStats::resume("Live symbols sanity check");
         CRAB_VERBOSE_IF(1, get_msg_stream()
                                << "Live symbols sanity check ... ";);
-        liveness_analysis<CFG> live_symbols(cfg, false /* keep IN sets*/);
+        liveness_analysis<CFG> live_symbols(get_cfg(), false /* keep IN sets*/);
         live_symbols.exec();
         if (auto const *entry_ls = live_symbols.get_in(get_cfg().entry())) {
           auto const &fdecl = get_cfg().get_func_decl();
@@ -179,7 +168,22 @@ public:
         for (unsigned i = 0; i < fdecl.get_num_outputs(); i++)
           m_formals += fdecl.get_output_name(i);
       }
-    }
+    }    
+  }
+  
+public:
+  fwd_analyzer(CFG cfg, const wto_t *wto, abs_tr_t *abs_tr,
+               // live can be nullptr if no live info is available
+               const liveness_t *live_and_dead_symbols,
+               // fixpoint parameters
+               unsigned int widening_delay, unsigned int descending_iters,
+               size_t jump_set_size)
+      : fixpo_iterator_t(cfg, abs_tr->get_abs_value(), wto, widening_delay,
+                         descending_iters, jump_set_size,
+                         false /*disable processor*/),
+        m_abs_tr(abs_tr), m_live(live_and_dead_symbols),
+        m_pre_clear_done(false), m_post_clear_done(false) {
+    init_fwd_analyzer();
   }
 
   fwd_analyzer(const fwd_analyzer &o) = delete;
@@ -229,7 +233,7 @@ public:
     m_post_clear_done = false;
   }
 
-  CFG get_cfg() const { return this->_cfg; }
+  CFG get_cfg() const { return this->m_cfg; }
 
   abs_tr_t &get_abs_transformer() { return *m_abs_tr; }
 

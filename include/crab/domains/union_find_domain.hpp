@@ -499,7 +499,8 @@ public:
     return *this & o;
   }
 
-  void expand(const variable_t &x, const variable_t &y) {
+  // Add y into the equivalence class of x
+  void add(const variable_t &x, const variable_t &y) {
     if (is_bottom() || is_top()) {
       return;
     }

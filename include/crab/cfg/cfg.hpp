@@ -108,8 +108,7 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/variant.hpp>
-
-#include <functional> // for wrapper_reference
+#include <boost/optional.hpp>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -144,7 +143,8 @@ enum stmt_code {
   REF_TO_INT = 50,
   INT_TO_REF = 51,
   REGION_COPY = 52,
-  REF_REMOVE = 53,
+  REGION_CAST = 53,  
+  REF_REMOVE = 54,
   // functions calls
   CALLSITE = 60,
   CRAB_INTRINSIC = 61,
@@ -161,7 +161,8 @@ enum stmt_code {
   INT_CAST = 90
 };
 
-template <typename Number, typename VariableName> class live {
+template <typename Number, typename VariableName>
+class live {
 public:
   using variable_t = variable<Number, VariableName>;
 
@@ -211,18 +212,24 @@ public:
   }
 };
 
-struct debug_info {
-
+class debug_info {
+private:
   std::string m_file;
   int m_line;
   int m_col;
-
-  debug_info() : m_file(""), m_line(-1), m_col(-1) {}
-
-  debug_info(std::string file, unsigned line, unsigned col)
-      : m_file(file), m_line(line), m_col(col) {}
+  int64_t m_id; 
+public:
+  debug_info()
+    : m_file(""), m_line(-1), m_col(-1), m_id(-1) {}
+  debug_info(std::string file, unsigned line, unsigned col, int64_t num_id)
+    : m_file(file), m_line(line), m_col(col), m_id(num_id) {}
 
   bool operator<(const debug_info &other) const {
+    // if (m_id < other.m_id) {
+    //   return true;
+    // } else if (m_id > other.m_id) {
+    //   return false;
+    // }
     if (m_file < other.m_file) {
       return true;
     } else if (m_file > other.m_file) {
@@ -237,7 +244,9 @@ struct debug_info {
   }
 
   bool operator==(const debug_info &other) const {
-    return (m_file == other.m_file && m_line == other.m_line &&
+    return (//m_id == other.m_id &&
+	    m_file == other.m_file &&
+	    m_line == other.m_line &&
             m_col == other.m_col);
   }
 
@@ -248,11 +257,14 @@ struct debug_info {
   std::string get_file() const { return m_file; }
   int get_line() const { return m_line; }
   int get_column() const { return m_col; }
-
+  int64_t get_id() const { return m_id; }
+  
   void write(crab_os &o) const {
-    o << "File  : " << m_file << "\n"
-      << "Line  : " << m_line << "\n"
-      << "Column: " << m_col << "\n";
+    o << "loc("
+      << "file=" << m_file << " "
+      << "line=" << m_line << " "
+      << "col=" << m_col << ") "
+      << "id=" << m_id;
   }
 };
 
@@ -312,6 +324,7 @@ public:
   bool is_int_to_ref() const { return (m_stmt_code == INT_TO_REF); }
   bool is_region_init() const { return (m_stmt_code == REGION_INIT); }
   bool is_region_copy() const { return (m_stmt_code == REGION_COPY); }
+  bool is_region_cast() const { return (m_stmt_code == REGION_CAST); }  
   bool is_bool_bin_op() const { return (m_stmt_code == BOOL_BIN_OP); }
   bool is_bool_assign_cst() const { return (m_stmt_code == BOOL_ASSIGN_CST); }
   bool is_bool_assign_var() const { return (m_stmt_code == BOOL_ASSIGN_VAR); }
@@ -630,10 +643,7 @@ public:
   virtual void write(crab_os &o) const {
     o << "assert(" << m_cst << ")";
     if (this->m_dbg_info.has_debug()) {
-      o << "   /* Property check at "
-        << "file=" << this->m_dbg_info.m_file << " "
-        << "line=" << this->m_dbg_info.m_line << " "
-        << "col=" << this->m_dbg_info.m_col << "*/";
+      o << "   /* " << this->m_dbg_info <<  " */";
     }
   }
 
@@ -1062,6 +1072,54 @@ private:
   variable_t m_rhs_region;
 };
 
+
+template <class BasicBlockLabel, class Number, class VariableName>
+class region_cast_stmt
+    : public statement<BasicBlockLabel, Number, VariableName> {
+  using this_type = region_cast_stmt<BasicBlockLabel, Number, VariableName>;
+
+public:
+  using statement_t = statement<BasicBlockLabel, Number, VariableName>;
+  using basic_block_t = typename statement_t::basic_block_t;
+  using variable_t = variable<Number, VariableName>;
+  using type_t = typename variable_t::type_t;
+
+  region_cast_stmt(variable_t src_region, variable_t dst_region,
+                   basic_block_t *parent)
+      : statement_t(REGION_CAST, parent),
+	m_src_region(src_region),
+        m_dst_region(dst_region) {
+    this->m_live.add_use(m_src_region);    
+    this->m_live.add_def(m_dst_region);
+  }
+
+  const variable_t &src() const { return m_src_region; }
+
+  const variable_t &dst() const { return m_dst_region; }
+
+  type_t src_type() const { return m_src_region.get_type(); }
+  type_t dst_type() const { return m_dst_region.get_type(); }  
+
+  virtual void
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+    v->visit(*this);
+  }
+
+  virtual statement_t *clone(basic_block_t *parent) const {
+    return new this_type(m_src_region, m_dst_region, parent);
+  }
+
+  virtual void write(crab_os &o) const {
+    o << "region_cast "
+      << src() << ":" << src_type() << " to "
+      << dst() << ":" << dst_type();
+  }
+
+private:
+  variable_t m_src_region;
+  variable_t m_dst_region;
+};
+  
 template <class BasicBlockLabel, class Number, class VariableName>
 class make_ref_stmt : public statement<BasicBlockLabel, Number, VariableName> {
   // lhs := make_ref(region, as)
@@ -1071,12 +1129,14 @@ public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
   using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
-
+  using variable_or_constant_t = variable_or_constant<Number, VariableName>;
+  
   make_ref_stmt(variable_t lhs, variable_t region,
+		variable_or_constant_t size,
 		crab::tag as, basic_block_t *parent,
                 debug_info dbg_info = debug_info())
       : statement_t(REF_MAKE, parent, dbg_info),
-	m_lhs(lhs), m_region(region), m_alloc_site(as) {
+	m_lhs(lhs), m_region(region), m_size(size), m_alloc_site(as) {
     this->m_live.add_def(m_lhs);
     this->m_live.add_use(m_region);
   }
@@ -1086,6 +1146,8 @@ public:
   const variable_t &region() const { return m_region; }
 
   const crab::tag &alloc_site() const { return m_alloc_site;}
+
+  const variable_or_constant_t &size() const { return m_size;}
   
   virtual void
   accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
@@ -1093,17 +1155,20 @@ public:
   }
 
   virtual statement_t *clone(basic_block_t *parent) const {
-    return new this_type(m_lhs, m_region, m_alloc_site, parent, this->m_dbg_info);
+    return new this_type(m_lhs, m_region, m_size, m_alloc_site, parent, this->m_dbg_info);
   }
 
   virtual void write(crab_os &o) const {
     o << m_lhs << " := "
-      << "make_ref(" << m_region << ":" << m_region.get_type() << "," << m_alloc_site << ")";
+      << "make_ref(" << m_region << ":" << m_region.get_type() << ","
+      << m_size << ","
+      << m_alloc_site << ")";
   }
 
 private:
   variable_t m_lhs;
   variable_t m_region;
+  variable_or_constant_t m_size;
   crab::tag m_alloc_site;
 };
 
@@ -1566,10 +1631,7 @@ public:
   virtual void write(crab_os &o) const {
     o << "assert(" << m_cst << ")";
     if (this->m_dbg_info.has_debug()) {
-      o << "   /* Property check at "
-        << "file=" << this->m_dbg_info.m_file << " "
-        << "line=" << this->m_dbg_info.m_line << " "
-        << "col=" << this->m_dbg_info.m_col << "*/";
+      o << "   /* " << this->m_dbg_info <<  " */";      
     }
   }
 
@@ -1800,25 +1862,41 @@ public:
     }
   }
 
+  const std::string &get_func_name() const { return m_func_name; }
+  
   const std::vector<variable_t> &get_lhs() const { return m_lhs; }
 
-  const std::string &get_func_name() const { return m_func_name; }
+  unsigned get_num_lhs() const { return m_lhs.size(); }
+
+  const variable_t &get_lhs_name(unsigned idx) const {
+    if (idx >= m_lhs.size()) {
+      CRAB_ERROR("Out-of-bound access to call site parameter");
+    }
+    return m_lhs[idx];
+  }
+
+  type_t get_lhs_type(unsigned idx) const {
+    if (idx >= m_lhs.size()) {
+      CRAB_ERROR("Out-of-bound access to call site parameter");
+    }
+    return m_lhs[idx].get_type();
+  }
 
   const std::vector<variable_t> &get_args() const { return m_args; }
 
   unsigned get_num_args() const { return m_args.size(); }
 
   const variable_t &get_arg_name(unsigned idx) const {
-    if (idx >= m_args.size())
+    if (idx >= m_args.size()) {
       CRAB_ERROR("Out-of-bound access to call site parameter");
-
+    }
     return m_args[idx];
   }
 
   type_t get_arg_type(unsigned idx) const {
-    if (idx >= m_args.size())
+    if (idx >= m_args.size()) {
       CRAB_ERROR("Out-of-bound access to call site parameter");
-
+    }
     return m_args[idx].get_type();
   }
 
@@ -2298,10 +2376,7 @@ public:
   virtual void write(crab_os &o) const {
     o << "assert(" << m_var << ")";
     if (this->m_dbg_info.has_debug()) {
-      o << "   /* Property check at "
-        << "file=" << this->m_dbg_info.m_file << " "
-        << "line=" << this->m_dbg_info.m_line << " "
-        << "col=" << this->m_dbg_info.m_col << "*/";
+      o << "   /* " << this->m_dbg_info <<  " */";
     }
   }
 
@@ -2309,7 +2384,8 @@ private:
   variable_t m_var; // pre: boolean type
 };
 
-template <class BasicBlockLabel, class VariableName, class Number> class cfg;
+template <class BasicBlockLabel, class VariableName, class Number>
+class cfg;
 
 template <class BasicBlockLabel, class VariableName, class Number>
 class basic_block {
@@ -2372,6 +2448,7 @@ public:
   // Regions and references
   using region_init_t = region_init_stmt<BasicBlockLabel, Number, VariableName>;
   using region_copy_t = region_copy_stmt<BasicBlockLabel, Number, VariableName>;
+  using region_cast_t = region_cast_stmt<BasicBlockLabel, Number, VariableName>;  
   using make_ref_t = make_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using remove_ref_t = remove_ref_stmt<BasicBlockLabel, Number, VariableName>;  
   using load_from_ref_t =
@@ -2857,8 +2934,13 @@ public:
     return insert(new region_copy_t(lhs, rhs, this));
   }
 
-  const statement_t *make_ref(variable_t lhs_ref, variable_t region, crab::tag as) {
-    return insert(new make_ref_t(lhs_ref, region, as, this));
+  const statement_t *region_cast(variable_t src, variable_t dst) {
+    return insert(new region_cast_t(src, dst, this));
+  }
+  
+  const statement_t *make_ref(variable_t lhs_ref, variable_t region,
+			      variable_or_constant_t size, crab::tag as) {
+    return insert(new make_ref_t(lhs_ref, region, size, as, this));
   }
 
   const statement_t *remove_ref(variable_t region, variable_t ref) {
@@ -2960,6 +3042,10 @@ public:
     return insert(new bool_assign_var_t(lhs, rhs, is_not_rhs, this));
   }
 
+  const statement_t *bool_not_assign(variable_t lhs, variable_t rhs) {
+    return insert(new bool_assign_var_t(lhs, rhs, true, this));
+  }
+  
   const statement_t *bool_assume(variable_t c) {
     return insert(new bool_assume_t(c, false, this));
   }
@@ -3000,7 +3086,8 @@ public:
 
 // Viewing a BasicBlock with all statements reversed. Useful for
 // backward analysis.
-template <class BasicBlock> class basic_block_rev {
+template <class BasicBlock>
+class basic_block_rev {
 public:
   using number_t = typename BasicBlock::number_t;
   using varname_t = typename BasicBlock::varname_t;
@@ -3104,6 +3191,7 @@ struct statement_visitor {
   using remove_ref_t = remove_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using region_init_t = region_init_stmt<BasicBlockLabel, Number, VariableName>;
   using region_copy_t = region_copy_stmt<BasicBlockLabel, Number, VariableName>;
+  using region_cast_t = region_cast_stmt<BasicBlockLabel, Number, VariableName>;  
   using load_from_ref_t =
       load_from_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using store_to_ref_t =
@@ -3143,6 +3231,7 @@ struct statement_visitor {
   virtual void visit(arr_assign_t &){};
   virtual void visit(region_init_t &) {}
   virtual void visit(region_copy_t &) {}
+  virtual void visit(region_cast_t &) {}  
   virtual void visit(make_ref_t &) {}
   virtual void visit(remove_ref_t &) {}  
   virtual void visit(load_from_ref_t &) {}
@@ -3177,7 +3266,8 @@ struct statement_visitor {
   virtual ~statement_visitor() {}
 };
 
-template <class Number, class VariableName> class function_decl {
+template <class Number, class VariableName>
+class function_decl {
 public:
   using variable_t = variable<Number, VariableName>;
   using type_t = typename variable_t::type_t;
@@ -3237,7 +3327,7 @@ public:
     m_outputs = std::move(o.m_outputs);
     return *this;
   }
-
+  
   bool operator==(const this_type &o) const {
     if (m_func_name != o.m_func_name) {
       return false;
@@ -3344,7 +3434,8 @@ public:
 template <class Any> class cfg_rev;
 template <class Any> class cfg_ref;
 
-template <class BasicBlockLabel, class VariableName, class Number> class cfg {
+template <class BasicBlockLabel, class VariableName, class Number>
+class cfg {
 public:
   using number_t = Number;
   using basic_block_label_t = BasicBlockLabel;
@@ -3857,9 +3948,10 @@ private:
   }
 };
 
-// A lightweight object that wraps a reference to a CFG into a
-// copyable, assignable object.
-template <class CFG> class cfg_ref {
+// A lightweight object that wraps a pointer a CFG into a copyable,
+// assignable object.
+template <class CFG>
+class cfg_ref {
 public:
   // CFG's typedefs
   using basic_block_label_t = typename CFG::basic_block_label_t;
@@ -3887,122 +3979,107 @@ public:
   using const_var_iterator = typename CFG::const_var_iterator;
 
 private:
-  boost::optional<std::reference_wrapper<CFG>> _ref;
+  CFG* m_ref;
 
 public:
-  // --- hook needed by crab::cg::CallGraph<CFG>::CgNode
-  cfg_ref() {}
-
-  cfg_ref(CFG &cfg) : _ref(std::reference_wrapper<CFG>(cfg)) {}
-
+  // default constructor needed by crab::cg::CallGraph<CFG>::CgNode
+  cfg_ref(): m_ref(nullptr) {}
+  
+  cfg_ref(CFG &cfg) : m_ref(&cfg) {}
+  
+  cfg_ref(const cfg_ref<CFG> &o) = default;
+  cfg_ref(cfg_ref<CFG> &&o) = default;
+  cfg_ref<CFG> &operator=(const cfg_ref<CFG> &o) = default;
+  cfg_ref<CFG> &operator=(cfg_ref<CFG> &&o) = default;
+  
   const CFG &get() const {
-    assert(_ref);
-    return *_ref;
+    assert(m_ref);
+    return *m_ref;
   }
 
   CFG &get() {
-    assert(_ref);
-    return *_ref;
+    assert(m_ref);
+    return *m_ref;
   }
 
   const basic_block_label_t &entry() const {
-    assert(_ref);
-    return (*_ref).get().entry();
+    return get().entry();
   }
 
   const_succ_range next_nodes(basic_block_label_t bb) const {
-    assert(_ref);
-    return (*_ref).get().next_nodes(bb);
+    return get().next_nodes(bb);
   }
 
   const_pred_range prev_nodes(basic_block_label_t bb) const {
-    assert(_ref);
-    return (*_ref).get().prev_nodes(bb);
+    return get().prev_nodes(bb);
   }
 
   succ_range next_nodes(basic_block_label_t bb) {
-    assert(_ref);
-    return (*_ref).get().next_nodes(bb);
+    return get().next_nodes(bb);
   }
 
   pred_range prev_nodes(basic_block_label_t bb) {
-    assert(_ref);
-    return (*_ref).get().prev_nodes(bb);
+    return get().prev_nodes(bb);
   }
 
   basic_block_t &get_node(basic_block_label_t bb) {
-    assert(_ref);
-    return (*_ref).get().get_node(bb);
+    return get().get_node(bb);
   }
 
   const basic_block_t &get_node(basic_block_label_t bb) const {
-    assert(_ref);
-    return (*_ref).get().get_node(bb);
+    return get().get_node(bb);
   }
 
   size_t size() const {
-    assert(_ref);
-    return (*_ref).get().size();
+    return get().size();
   }
 
   iterator begin() {
-    assert(_ref);
-    return (*_ref).get().begin();
+    return get().begin();
   }
 
   iterator end() {
-    assert(_ref);
-    return (*_ref).get().end();
+    return get().end();
   }
 
   const_iterator begin() const {
-    assert(_ref);
-    return (*_ref).get().begin();
+    return get().begin();
   }
 
   const_iterator end() const {
-    assert(_ref);
-    return (*_ref).get().end();
+    return get().end();
   }
 
   label_iterator label_begin() {
-    assert(_ref);
-    return (*_ref).get().label_begin();
+    return get().label_begin();
   }
 
   label_iterator label_end() {
-    assert(_ref);
-    return (*_ref).get().label_end();
+    return get().label_end();
   }
 
   const_label_iterator label_begin() const {
-    assert(_ref);
-    return (*_ref).get().label_begin();
+    return get().label_begin();
   }
 
   const_label_iterator label_end() const {
-    assert(_ref);
-    return (*_ref).get().label_end();
+    return get().label_end();
   }
 
   bool has_func_decl() const {
-    assert(_ref);
-    return (*_ref).get().has_func_decl();
+    return get().has_func_decl();
   }
 
   const fdecl_t &get_func_decl() const {
-    assert(_ref);
-    return (*_ref).get().get_func_decl();
+    return get().get_func_decl();
   }
 
   bool has_exit() const {
-    assert(_ref);
-    return (*_ref).get().has_exit();
+    return get().has_exit();
   }
 
   const basic_block_label_t &exit() const {
-    assert(_ref);
-    return (*_ref).get().exit();
+    return get().exit();
   }
 
   friend crab_os &operator<<(crab_os &o, const cfg_ref<CFG> &cfg) {
@@ -4012,21 +4089,12 @@ public:
 
   // for gdb
   void dump() const {
-    assert(_ref);
-    (*_ref).get().dump();
+    get().dump();
   }
 
   void simplify() {
-    assert(_ref);
-    (*_ref).get().simplify();
+    get().simplify();
   }
-
-  // #include <boost/fusion/functional/invocation/invoke.hpp>
-  // template< class... ArgTypes >
-  // typename std::result_of<CFG&(ArgTypes&&...)>::type
-  // operator() ( ArgTypes&&... args ) const {
-  //   return boost::fusion::invoke(get(), std::forward<ArgTypes>(args)...);
-  // }
 };
 
 // Viewing a CFG with all edges and block statements
@@ -4224,40 +4292,173 @@ public:
   void simplify() {}
 };
 
-// Helper class
-template <typename CFG> struct cfg_hasher {
+// Wrapper to allow compare callsites and function declarations. This
+// class can be avoided, if a callsite keeps a pointer to the callee's
+// CFG function and function declarations keep a pointer to its
+// CFG. That would require to build CFGs in two phases.  For now, we
+// have this wrapper that it's less efficient but hopefully it's not a
+// big bottleneck.
+template<typename CFG>  
+class callsite_or_fdecl {
+public:
   using callsite_t = typename CFG::basic_block_t::callsite_t;
   using fdecl_t = typename CFG::fdecl_t;
+private:
+  const callsite_t *m_cs;
+  const fdecl_t *m_fdecl;
 
+  static bool match_callee_and_function(const callsite_t &cs, const fdecl_t &fdecl) {
+    if (cs.get_func_name() != fdecl.get_func_name() ||
+	cs.get_num_args() != fdecl.get_num_inputs() ||
+	cs.get_num_lhs() != fdecl.get_num_outputs()) {
+      return false;
+    }
+    for (unsigned i=0, args=fdecl.get_num_inputs(); i<args;++i) {
+      if (cs.get_arg_type(i) != fdecl.get_input_type(i)) {
+	return false;
+      }
+    }
+    for (unsigned i=0, args=fdecl.get_num_outputs(); i<args;++i) {
+      if (cs.get_lhs_type(i) != fdecl.get_output_type(i)) {
+	return false;
+      }
+    }
+    return true;
+  }
+
+  static bool match_callees(const callsite_t &cs1, const callsite_t &cs2) {
+    if (cs1.get_func_name() != cs2.get_func_name() ||
+	cs1.get_num_args() != cs2.get_num_args() ||
+	cs1.get_num_lhs() != cs2.get_num_lhs()) {
+      return false;
+    }
+    for (unsigned i=0, args=cs1.get_num_args(); i<args;++i) {
+      if (cs1.get_arg_type(i) != cs2.get_arg_type(i)) {
+	return false;
+      }
+    }
+    for (unsigned i=0, args=cs1.get_num_lhs(); i<args;++i) {
+      if (cs1.get_lhs_type(i) != cs2.get_lhs_type(i)) {
+	return false;
+      }
+    }
+    return true;
+  }
+
+  static bool match_functions(const fdecl_t &fd1, const fdecl_t &fd2) {
+    if (fd1.get_func_name() != fd2.get_func_name() ||
+	fd1.get_num_inputs() != fd2.get_num_inputs() ||
+	fd1.get_num_outputs() != fd2.get_num_outputs()) {
+      return false;
+    }
+    for (unsigned i=0, args=fd1.get_num_inputs(); i<args;++i) {
+      if (fd1.get_input_type(i) != fd2.get_input_type(i)) {
+	return false;
+      }
+    }
+    for (unsigned i=0, args=fd1.get_num_outputs(); i<args;++i) {
+      if (fd1.get_output_type(i) != fd2.get_output_type(i)) {
+	return false;
+      }
+    }
+    return true;
+  }
+  
   static size_t combine(size_t seed, size_t hash_val) {
     // Similar to boost::hash_combine
     seed ^= hash_val + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     return seed;
   }
 
-  static size_t hash(callsite_t cs) {
+  static size_t compute_hash(const callsite_t &cs) {
     size_t res = boost::hash_value(cs.get_func_name());
-    for (unsigned i = 0; i < cs.get_num_args(); i++) {
+    for (unsigned i=0, args=cs.get_num_args(); i < args; ++i) {
       combine(res, cs.get_arg_type(i).hash());
     }
-    for (auto vt : cs.get_lhs()) {
-      combine(res, vt.get_type().hash());
+    for (unsigned i=0, args=cs.get_num_lhs(); i < args; ++i) {
+      combine(res, cs.get_lhs_type(i).hash());
     }
     return res;
   }
 
-  static size_t hash(fdecl_t d) {
+  static size_t compute_hash(const fdecl_t &d) {
     size_t res = boost::hash_value(d.get_func_name());
-    for (unsigned i = 0; i < d.get_num_inputs(); i++) {
+    for (unsigned i=0, args=d.get_num_inputs(); i < args; ++i) {
       combine(res, d.get_input_type(i).hash());
     }
-    for (unsigned i = 0; i < d.get_num_outputs(); i++) {
+    for (unsigned i=0, args=d.get_num_outputs(); i < args; ++i) {
       combine(res, d.get_output_type(i).hash());
     }
     return res;
   }
+  
+  public:
+  callsite_or_fdecl(const callsite_t *cs): m_cs(cs), m_fdecl(nullptr) {}
+  callsite_or_fdecl(const fdecl_t *fdecl): m_cs(nullptr), m_fdecl(fdecl) {}
+  callsite_or_fdecl(const callsite_or_fdecl &o) = default;
+  callsite_or_fdecl(callsite_or_fdecl &&o) = default;
+  callsite_or_fdecl& operator=(const callsite_or_fdecl &o) = default;
+  callsite_or_fdecl& operator=(callsite_or_fdecl &&o) = default;
+
+  // non-standard equality: two callsites or function declarations are
+  // equal if they refer to the same function. For callsites, we mean
+  // the called function.
+  bool operator==(const callsite_or_fdecl &o) const {
+    if (m_cs && o.m_cs) {
+      // return true iff the two callsites call the same function
+      return match_callees(*m_cs, *o.m_cs);
+    } else if (m_fdecl && o.m_fdecl) {
+      // return true iff the two function declarations refer to the
+      // same function.
+      return match_functions(*m_fdecl, *o.m_fdecl);
+    } else if (m_cs && o.m_fdecl) {
+      // return true iff the called function is the same than the one
+      // referred by the function declaration
+      return match_callee_and_function(*m_cs, *(o.m_fdecl));
+    } else {
+      // as above
+      assert(m_fdecl && o.m_cs);
+      return match_callee_and_function(*(o.m_cs), *m_fdecl);
+    } 
+  }
+
+  size_t hash() const {
+    return (m_cs ? compute_hash(*m_cs): compute_hash(*m_fdecl));
+  }
+
+  void write(crab_os &o) const {
+    if (m_cs) {
+      m_cs->write(o);
+    } else {
+      m_fdecl->write(o);
+    }
+  }
 };
 
+namespace callsite_or_fdecl_details {
+template<class CFG>
+struct hasher {
+  size_t operator()(const callsite_or_fdecl<CFG> &o) const {
+    return o.hash();
+  }
+};
+template<class CFG>  
+struct compare {
+  bool operator()(const callsite_or_fdecl<CFG> &o1,
+		  const callsite_or_fdecl<CFG> &o2) const {
+    return o1 == o2;
+  }
+};
+} // end namespace callsite_or_fdecl_details
+
+// Specialized unordered map when the key if callsite_or_fdecl.
+template<class CFG, class Value>  
+using callsite_or_fdecl_map =
+  std::unordered_map<callsite_or_fdecl<CFG>, Value,
+		     callsite_or_fdecl_details::hasher<CFG>,
+		     callsite_or_fdecl_details::compare<CFG>>;
+  
+  
 template <class CFG> class type_checker {
 public:
   type_checker(CFG cfg) : m_cfg(cfg) {}
@@ -4312,6 +4513,7 @@ private:
     using remove_ref_t = typename statement_visitor<B, N, V>::remove_ref_t;    
     using region_init_t = typename statement_visitor<B, N, V>::region_init_t;
     using region_copy_t = typename statement_visitor<B, N, V>::region_copy_t;
+    using region_cast_t = typename statement_visitor<B, N, V>::region_cast_t;    
     using load_from_ref_t = typename statement_visitor<B, N, V>::load_from_ref_t;
     using store_to_ref_t = typename statement_visitor<B, N, V>::store_to_ref_t;
     using gep_ref_t = typename statement_visitor<B, N, V>::gep_ref_t;
@@ -4870,41 +5072,47 @@ private:
 
     void visit(region_init_t &s){
       check_region(s.region(), s);
-    };
+    }
     void visit(region_copy_t &s){
       check_region(s.lhs_region(), s);
       check_region(s.rhs_region(), s);
-    };
+      check_same_type(s.lhs_region(), s.rhs_region(),
+      		      "region_copy must have same types", s);
+    }
+    void visit(region_cast_t &s){
+      check_region(s.src(), s);
+      check_region(s.dst(), s);
+    }
     void visit(make_ref_t &s){
       check_region(s.region(), s);
       check_ref(s.lhs(), "", s);
-    };
+    }
     void visit(remove_ref_t &s){
       check_region(s.region(), s);
       check_ref(s.ref(), "", s);
-    };    
+    }
     void visit(load_from_ref_t &s){
       check_region(s.region(), s);
       check_ref(s.ref(), "", s);
       check_region_consistent_with_data(s.region(), s.lhs().get_type(), s);
-    };
+    }
     void visit(store_to_ref_t &s){
       check_region(s.region(), s);
       check_ref(s.ref(), "", s);
       check_region_consistent_with_data(s.region(), s.val().get_type(), s);      
-    };
+    }
     void visit(gep_ref_t &s){
       check_region(s.lhs_region(), s);
       check_region(s.rhs_region(), s);
       check_ref(s.lhs(), "", s);
       check_ref(s.rhs(), "", s);      
-    };
+    }
     void visit(load_from_arr_ref_t &s){
       // TODO
-    };
+    }
     void visit(store_to_arr_ref_t &s){
       // TODO
-    };
+    }
     void visit(assume_ref_t &s){}
     void visit(assert_ref_t &s){}
     void visit(select_ref_t &s) {
@@ -4918,17 +5126,17 @@ private:
         check_varname(s.left_ref().get_variable());
       if (s.right_ref().is_variable())
         check_varname(s.right_ref().get_variable());
-    };
+    }
     void visit(int_to_ref_t &s){
       check_region(s.region(), s);
       check_ref(s.ref_var(), "", s);
       check_num(s.int_var(), "first input must be a number", s);
-    };
+    }
     void visit(ref_to_int_t &s){
       check_region(s.region(), s);
       check_ref(s.ref_var(), "", s);
       check_num(s.int_var(), "first input must be a number", s);
-    };
+    }
 
   }; // end class type_checker_visitor
 };   // end class type_checker
@@ -4985,7 +5193,8 @@ template <class B, class V, class N> struct hash<crab::cfg::cfg<B, V, N>> {
     if (!_cfg.has_func_decl()) {
       CRAB_ERROR("cannot hash a cfg because function declaration is missing");
     }
-    return crab::cfg::cfg_hasher<cfg_t>::hash(_cfg.get_func_decl());
+    crab::cfg::callsite_or_fdecl<cfg_t> sig(_cfg.get_func_decl());
+    return sig.hash();
   }
 };
 
@@ -4995,7 +5204,8 @@ template <class CFG> struct hash<crab::cfg::cfg_ref<CFG>> {
     if (!_cfg.has_func_decl()) {
       CRAB_ERROR("cannot hash a cfg because function declaration is missing");
     }
-    return crab::cfg::cfg_hasher<cfg_ref_t>::hash(_cfg.get_func_decl());
+    crab::cfg::callsite_or_fdecl<cfg_ref_t> sig(&(_cfg.get_func_decl()));
+    return sig.hash();
   }
 };
 
@@ -5005,7 +5215,8 @@ template <class CFGRef> struct hash<crab::cfg::cfg_rev<CFGRef>> {
     if (!_cfg.has_func_decl()) {
       CRAB_ERROR("cannot hash a cfg because function declaration is missing");
     }
-    return crab::cfg::cfg_hasher<cfg_rev_t>::hash(_cfg.get_func_decl());
+    crab::cfg::callsite_or_fdecl<cfg_rev_t> sig(&(_cfg.get_func_decl()));
+    return sig.hash();
   }
 };
 } // end namespace std

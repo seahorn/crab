@@ -562,11 +562,21 @@ public:
     }
   }
 
+  virtual void region_cast(const variable_t &src_reg,
+                           const variable_t &dst_reg) override {
+    if (!is_bottom()) {
+      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+        m_disjuncts[i].region_cast(src_reg, dst_reg);
+      }
+    }
+  }
+  
   virtual void ref_make(const variable_t &ref, const variable_t &reg,
+			const variable_or_constant_t &size,
 			const allocation_site &as) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
-        m_disjuncts[i].ref_make(ref, reg, as);
+        m_disjuncts[i].ref_make(ref, reg, size, as);
       }
     }
   }
@@ -691,7 +701,19 @@ public:
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
         if (!m_disjuncts[i].get_allocation_sites(ref, alloc_sites)) {
-	  alloc_sites.clear();
+	  return false;
+	}
+      }
+      return true;
+    }
+    return false;
+  }
+
+  bool get_tags(const variable_t &rgn, const variable_t &ref,
+		std::vector<uint64_t> &tags) override {
+    if (!is_bottom()) {
+      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+        if (!m_disjuncts[i].get_tags(rgn, ref, tags)) {
 	  return false;
 	}
       }

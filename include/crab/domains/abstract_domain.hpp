@@ -248,13 +248,19 @@ public:
   virtual void array_assign(const variable_t &a, const variable_t &b) = 0;
 
   /***************** Regions and reference operations *****************/
-  // Initialize region. If reg already exists then error.
+  // Initialize a region 
   virtual void region_init(const variable_t &reg) = 0;
   // Make a copy of a region
   virtual void region_copy(const variable_t &lhs_reg,
                            const variable_t &rhs_reg) = 0;
+  // Cast between regions of different types
+  virtual void region_cast(const variable_t &src_reg,
+                           const variable_t &dst_reg) = 0;
   // Create a new reference ref associated with as within region reg 
   virtual void ref_make(const variable_t &ref, const variable_t &reg,
+			/* size of the allocation in bytes */
+			const variable_or_constant_t &size,
+			/* identifier for the allocation site */
 			const allocation_site &as) = 0;
   // Remove a reference ref within region reg 
   virtual void ref_free(const variable_t &reg, const variable_t &ref) = 0;
@@ -443,10 +449,16 @@ public:
 
   // If return true then out contains all the *possible* allocation
   // sites of the reference variable ref. If return false then nothing
-  // is known about the allocation sites so alloc_sites should be
-  // ignored.
+  // is known about its allocation sites.
   virtual bool get_allocation_sites(const variable_t &ref,
-				    std::vector<allocation_site> &alloc_sites) = 0;
+				    std::vector<allocation_site> &out) = 0;
+
+  // If return true then out contains all the *possible* tags
+  // associated with the reference variable ref within region rgn. If
+  // return false then nothing is known about its tags.
+  virtual bool get_tags(const variable_t &rgn, const variable_t &ref,
+			std::vector<uint64_t> &out) = 0;
+  
 };
 
 
@@ -567,7 +579,10 @@ namespace numerical_domains {
   virtual void region_init(const variable_t &reg) override {}                  \
   virtual void region_copy(const variable_t &lhs_reg,                          \
                            const variable_t &rhs_reg) override {}              \
+  virtual void region_cast(const variable_t &src_reg,                          \
+                           const variable_t &dst_reg) override {}              \
   virtual void ref_make(const variable_t &ref, const variable_t &reg, 	       \
+			const variable_or_constant_t &size,                    \
                         const crab::allocation_site &as)		       \
       override {}                                                              \
   virtual void ref_free(const variable_t &reg, const variable_t &ref)	       \
@@ -602,8 +617,11 @@ namespace numerical_domains {
   { return crab::domains::boolean_value::top();}			       \
   virtual bool get_allocation_sites(const variable_t &ref,                     \
     std::vector<crab::allocation_site> &out) override		               \
+  { return false; }							       \
+  virtual bool get_tags(const variable_t &rng, const variable_t &ref,	       \
+    std::vector<uint64_t> &out) override		                       \
   { return false; }							
-
+  
 #define ARRAY_OPERATIONS_NOT_IMPLEMENTED(DOM)                                  \
   virtual void array_init(                                                     \
       const variable_t &a, const linear_expression_t &elem_size,               \

@@ -65,7 +65,9 @@ protected:
   inv_map_t m_out_map;
 
 private:
-  AnalysisOps m_analysis;
+   // to be constructed by the client so that m_analysis can have
+   // arbitrary internal state.
+  AnalysisOps &m_analysis;
 
   /**
    * run_bwd_fixpo(G) is in theory equivalent to
@@ -136,7 +138,11 @@ private:
   }
 
 public:
-  killgen_fixpoint_iterator(CFG cfg) : m_cfg(cfg), m_analysis(m_cfg) {}
+  killgen_fixpoint_iterator(CFG cfg, AnalysisOps &analysis)
+    : m_cfg(cfg), m_analysis(analysis) {
+    // don't do anything with m_analysis in the contructor except
+    // storing the reference.
+  }
 
   void release_memory() {
     m_in_map.clear();
@@ -157,7 +163,13 @@ public:
       run_bwd_fixpo(order, iterations);
     }
 
-    CRAB_LOG(m_analysis.name(), crab::outs() << "fixpoint ordering={";
+    CRAB_LOG(m_analysis.name(),
+	     crab::outs() << m_analysis.name();
+	     if (m_cfg.has_func_decl()) {
+	       crab::outs() << " for " << m_cfg.get_func_decl();
+	     }
+	     crab::outs() << "\n";
+	     crab::outs() << "fixpoint ordering={";
              bool first = true; for (auto &v
                                      : order) {
                if (!first)

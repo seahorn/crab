@@ -1195,10 +1195,39 @@ public:
   void select_bool(const variable_t &lhs, const variable_t &cond,
 		   const variable_t &b1, const variable_t &b2) override {
 
+    auto is_definitely_false = [this](const variable_t &cond) {
+	  bool_domain_t inv(_product.first());
+	  inv.assume_bool(cond, false /*not negated*/);
+	  return inv.is_bottom();
+    };
+    auto is_definitely_true = [this](const variable_t &cond) {
+	  bool_domain_t inv(_product.first());
+	  inv.assume_bool(cond, false /*negated*/);
+	  return inv.is_bottom();
+    };
+
+    
     if (!is_bottom()) {
       _product.select_bool(lhs, cond, b1, b2);
-      // Maybe a bit too imprecise
-      _var_to_csts -= lhs;
+
+      boolean_value b1_val = _product.first().get_bool(b1);
+      boolean_value b2_val = _product.first().get_bool(b2);
+      
+      if (b1_val.is_false()) {
+	_var_to_csts.set(lhs, _var_to_csts[b2]);
+      }  else if (b2_val.is_false()) {
+	_var_to_csts.set(lhs, _var_to_csts[b1]);
+      } else if (b1_val.is_true() && b2_val.is_top() && is_definitely_false(cond)) {
+	// select(lhs, cond, true, b2)
+	// lhs iff b2 but only if cond is definitely false
+	_var_to_csts.set(lhs, _var_to_csts[b2]);	  
+      } else if (b2_val.is_true() && b1_val.is_top() && is_definitely_true(cond)) {
+	// select(lhs, cond, b1, true)
+	// lhs iff b1 but only if cond is definitely true
+	_var_to_csts.set(lhs, _var_to_csts[b1]);	  
+      } else {
+	_var_to_csts -= lhs;
+      }
     }
   }
 
@@ -1419,9 +1448,15 @@ public:
     _product.region_copy(lhs_reg, rhs_reg);
   }
 
+  void region_cast(const variable_t &src_reg,
+                   const variable_t &dst_reg) override {
+    _product.region_cast(src_reg, dst_reg);
+  }
+  
   void ref_make(const variable_t &ref, const variable_t &reg,
+		const variable_or_constant_t &size,
 		const allocation_site &as) override {
-    _product.ref_make(ref, reg, as);
+    _product.ref_make(ref, reg, size, as);
   }
   void ref_free(const variable_t &reg, const variable_t &ref)
     override {
@@ -1482,6 +1517,10 @@ public:
   bool get_allocation_sites(const variable_t &ref,
 			    std::vector<allocation_site> &out) override {
     return _product.get_allocation_sites(ref, out);
+  }
+  bool get_tags(const variable_t &rgn, const variable_t &ref,
+		std::vector<uint64_t> &out) override {
+    return _product.get_tags(rgn, ref, out);
   }
   
   void write(crab_os &o) const override { _product.write(o); }

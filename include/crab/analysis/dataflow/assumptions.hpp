@@ -131,17 +131,14 @@ public:
 
 public:
   using statement_t = typename CFG::statement_t;
-  using assert_t =
-      crab::cfg::assert_stmt<typename CFG::basic_block_label_t,
-                             typename CFG::number_t, typename CFG::varname_t>;
   using assumption_t = assumption<CFG>;
   using assumption_ptr = std::shared_ptr<assumption_t>;
   using vector_assumption_ptr = std::vector<assumption_ptr>;
 
 protected:
-  // map an assert statement to its unjustified assumptions
+  // map an assert statement (assert, ref_assert, and bool_assert) to its unjustified assumptions
   using assumption_map_t =
-      std::unordered_map<const assert_t *, vector_assumption_ptr>;
+      std::unordered_map<const statement_t *, vector_assumption_ptr>;
   // map an arbitrary statement to the assumptions originated in that statement
   using assumption_origin_map_t =
       std::unordered_map<const statement_t *, vector_assumption_ptr>;
@@ -174,7 +171,7 @@ protected:
   }
 
 protected:
-  void insert_assumption(const assert_t *a, assumption_ptr as) {
+  void insert_assumption(const statement_t *a, assumption_ptr as) {
     auto it = m_assumption_map.find(a);
     if (it != m_assumption_map.end()) {
       it->second.push_back(as);
@@ -215,7 +212,7 @@ public:
   }
 
   // return the unjustified assumptions for assertion s
-  void get_assumptions(const assert_t *s, std::vector<assumption_ptr> &out) {
+  void get_assumptions(const statement_t *s, std::vector<assumption_ptr> &out) {
     auto it = m_assumption_map.find(s);
     if (it != m_assumption_map.end()) {
       std::copy(it->second.begin(), it->second.end(), std::back_inserter(out));
@@ -244,13 +241,13 @@ public:
 
   void write(crab::crab_os &o) const {
     // We order the assertions so that we always print them in the same order.
-    std::vector<const assert_t *> assertions;
+    std::vector<const statement_t *> assertions;
     assertions.reserve(m_assumption_map.size());
     for (auto &kv : m_assumption_map) {
       assertions.push_back(kv.first);
     }
     std::sort(assertions.begin(), assertions.end(),
-              [](const assert_t *a1, const assert_t *a2) {
+              [](const statement_t *a1, const statement_t *a2) {
                 crab_string_os oss1, oss2;
                 oss1 << *a1;
                 oss2 << *a2;
@@ -258,7 +255,7 @@ public:
               });
 
     o << "******* UNJUSTIFIED ASSUMPTION ANALYSIS ********\n";
-    for (const assert_t *assertion : assertions) {
+    for (const statement_t *assertion : assertions) {
       o << *assertion << " with unjustified assumptions:\n";
       auto it = m_assumption_map.find(assertion);
       assert(it != m_assumption_map.end());
@@ -298,15 +295,14 @@ template <class CFG>
 class assumption_naive_analysis : public assumption_analysis<CFG> {
 
   using assumption_analysis_t = assumption_analysis<CFG>;
-  using typename assumption_analysis_t::assert_t;
-  using typename assumption_analysis_t::assumption_ptr;
   using typename assumption_analysis_t::statement_t;
+  using typename assumption_analysis_t::assumption_ptr;
   using typename assumption_analysis_t::vector_assumption_ptr;
   using bb_label_t = typename CFG::basic_block_label_t;
   using label_set_t = std::unordered_set<bb_label_t>;
   using bb_t = typename CFG::basic_block_t;
 
-  void backward_reachable(const bb_label_t &r, const assert_t *a,
+  void backward_reachable(const bb_label_t &r, const statement_t *a,
                           label_set_t &visited) {
     auto ret = visited.insert(r);
     if (!ret.second)
@@ -314,9 +310,10 @@ class assumption_naive_analysis : public assumption_analysis<CFG> {
 
     bb_t &bb = this->m_cfg.get_node(r);
     for (auto &s : boost::make_iterator_range(bb.begin(), bb.end())) {
-      if (static_cast<const assert_t *>(&s) == a)
+      if (&s == a) {
         break;
-
+      }
+      
       if (assumption_analysis_t::can_overflow(s)) {
         assumption_ptr assume = this->new_assumption(&s);
         assumption_analysis_t::insert_assumption(a, assume);
@@ -338,10 +335,13 @@ public:
          boost::make_iterator_range(this->m_cfg.begin(), this->m_cfg.end())) {
       for (auto &s : boost::make_iterator_range(bb.begin(), bb.end())) {
         if (s.is_assert()) {
-          auto a = static_cast<const assert_t *>(&s);
           label_set_t visited;
-          backward_reachable(bb.label(), a, visited);
-        }
+          backward_reachable(bb.label(), &s, visited);
+        } else if (s.is_ref_assert()) {
+	  // TODO
+	} else if (s.is_bool_assert()) {
+	  // TODO
+	}
       }
     }
   }
@@ -355,9 +355,9 @@ class assumption_dataflow_analysis : public assumption_analysis<CFG> {
   using typename assumption_analysis_t::assumption_ptr;
   using typename assumption_analysis_t::statement_t;
   using assertion_crawler_t = crab::analyzer::assertion_crawler<CFG>;
-  using discrete_pair_domain_t = typename assertion_crawler_t::discrete_pair_domain_t;
+  using assert_map_domain_t = typename assertion_crawler_t::assert_map_domain_t;
   using typename assumption_analysis_t::vector_assumption_ptr;
-  using pp_inv_map_t = std::map<statement_t *, discrete_pair_domain_t>;
+  using pp_inv_map_t = std::map<statement_t *, assert_map_domain_t>;
   using basic_block_t = typename CFG::basic_block_t;
 
 public:
@@ -366,7 +366,9 @@ public:
   virtual ~assumption_dataflow_analysis() {}
 
   virtual void exec() {
-    assertion_crawler_t assert_crawler(this->m_cfg);
+    typename assertion_crawler_t::assert_map_t assert_map;
+    typename assertion_crawler_t::summary_map_t summaries;
+    assertion_crawler_t assert_crawler(this->m_cfg, assert_map, summaries);
     assert_crawler.exec();
 
     for (auto &bb :
@@ -384,7 +386,7 @@ public:
       if (!op_can_overflow)
         continue;
 
-      auto bb_out = assert_crawler.get_assertions(bb.label());
+      auto bb_out = assert_crawler.get_results(bb.label());
 
       if (bb_out.is_bottom())
         continue;
@@ -398,7 +400,7 @@ public:
 
       // get dataflow information at the pre-state at each program point
       pp_inv_map_t pp_in_map;
-      assert_crawler.get_assertions(bb.label(), pp_in_map);
+      assert_crawler.get_results(bb.label(), pp_in_map);
 
       for (auto &s : boost::make_iterator_range(bb.begin(), bb.end())) {
         if (!assumption_analysis_t::can_overflow(s))
@@ -417,7 +419,7 @@ public:
         for (auto kv : boost::make_iterator_range(in.begin(), in.end())) {
           auto vars = kv.second;
           if (!(vars & assume->get_vars()).is_bottom())
-            assumption_analysis_t::insert_assumption(kv.first.get(), assume);
+            assumption_analysis_t::insert_assumption(&(kv.first.get()), assume);
         }
       }
     }

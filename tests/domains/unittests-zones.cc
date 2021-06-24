@@ -36,10 +36,10 @@ int main(int argc, char **argv) {
     z_dbm_domain_t dbm;
     dbm += (x >= z_number(0));
     dbm += (x <= z_number(10));
-    dbm += (z_lin_t(x) == z_lin_t(y));
-    dbm += (z_lin_t(y) == z_lin_t(z));
+    dbm += (z_lin_exp_t(x) == z_lin_exp_t(y));
+    dbm += (z_lin_exp_t(y) == z_lin_exp_t(z));
     crab::outs() << "Before x != 0: " << dbm << "\n";
-    dbm += (z_lin_t(x) != z_number(0));
+    dbm += (z_lin_exp_t(x) != z_number(0));
     crab::outs() << "After x != 0: " << dbm << "\n";
   }
 
@@ -52,11 +52,11 @@ int main(int argc, char **argv) {
     z_dbm_domain_t dbm;
     dbm += (x >= z_number(0));
     dbm += (x <= z_number(10));
-    dbm += (z_lin_t(x) == z_lin_t(y));
-    dbm += (z_lin_t(u) == z_lin_t(v));
-    dbm += (z_lin_t(y) == z_lin_t(z));
+    dbm += (z_lin_exp_t(x) == z_lin_exp_t(y));
+    dbm += (z_lin_exp_t(u) == z_lin_exp_t(v));
+    dbm += (z_lin_exp_t(y) == z_lin_exp_t(z));
     crab::outs() << "Before x != 10: " << dbm << "\n";
-    dbm += (z_lin_t(x) != z_number(10));
+    dbm += (z_lin_exp_t(x) != z_number(10));
     crab::outs() << "After x != 10: " << dbm << "\n";
   }
 
@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
     z_var y(vfac["y"], crab::INT_TYPE, 32);
     z_var z(vfac["z"], crab::INT_TYPE, 32);
     z_dbm_domain_t dbm1;
-    dbm1 += (x == z_lin_t(y));
+    dbm1 += (x == z_lin_exp_t(y));
     dbm1 += (x == z_number(1));
     crab::outs() << "DBM1=" << dbm1 << "\n";
     z_dbm_domain_t dbm2;
@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
     z_var x(vfac["x"], crab::INT_TYPE, 32);
     z_var y(vfac["y"], crab::INT_TYPE, 32);
 
-    z_lin_cst_t cst(z_lin_t(x) == z_lin_t(y));
+    z_lin_cst_t cst(z_lin_exp_t(x) == z_lin_exp_t(y));
     
     ss_dbm ss_inv_1, ss_inv_2, ss_inv_3, ss_inv_4;
     ss_inv_1.assign(x, 5);

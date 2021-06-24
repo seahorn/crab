@@ -1582,10 +1582,10 @@ Weak topological ordering=main (bar foo barz)
 === Begin ./test-bin/checker ===
 
 Assertion Crawler Analysis 
-entry={"assert(-x <= -200)" -> {x; y}; "assert(-x+y <= 0)" -> {x; y}; "assert(-i <= -200)" -> {i}; "assert(i = 100)" -> {i}}
+entry={"assert(-x <= -200)" -> {}; "assert(-x+y <= 0)" -> {}; "assert(-i <= -200)" -> {}; "assert(i = 100)" -> {}}
 bb1={"assert(-x <= -200)" -> {x; y}; "assert(-x+y <= 0)" -> {x; y}; "assert(-i <= -200)" -> {i}; "assert(i = 100)" -> {i}}
 bb1_f={"assert(-x <= -200)" -> {x; y}; "assert(-x+y <= 0)" -> {x; y}; "assert(-i <= -200)" -> {i}; "assert(i = 100)" -> {i}}
-ret={}
+ret={"assert(-x <= -200)" -> {x; y}; "assert(-x+y <= 0)" -> {x; y}; "assert(-i <= -200)" -> {i}; "assert(i = 100)" -> {i}}
 bb1_t={"assert(-x <= -200)" -> {x; y}; "assert(-x+y <= 0)" -> {x; y}; "assert(-i <= -200)" -> {i}; "assert(i = 100)" -> {i}}
 bb2={"assert(-x <= -200)" -> {x; y}; "assert(-x+y <= 0)" -> {x; y}; "assert(-i <= -200)" -> {i}; "assert(i = 100)" -> {i}}
 
@@ -1721,7 +1721,7 @@ user-defined assertion checker
 
 entry:
   region_init(region_0:region(int));
-  i := make_ref(region_0:region(int),as_0);
+  i := make_ref(region_0:region(int),4,as_0);
   store_to_ref(region_0:region(int),i:ref,0:int32);
   goto bb1;
 bb1:
@@ -1760,12 +1760,94 @@ user-defined assertion checker
 0  Number of total unreachable checks
 
 === End ./test-bin/constant_domain ===
+=== Begin ./test-bin/crawler-1 ===
+void declare main()
+exit:
+  (x1:int32,x2:int32)= call foo(y1:int32,y2:int32,y3:int32,y4:int32);
+  assert(-x1 <= -100);
+  assert(-x2 <= -200);
+
+
+(o1:int32,o2:int32) declare foo(i1:int32,i2:int32,i3:int32,i4:int32)
+entry:
+
+Summary table:
+	(o1:int32,o2:int32) declare foo(i1:int32,i2:int32,i3:int32,i4:int32) -> Inputs:{i1,i2,i3,i4} Outputs:{o1,o2} ({},{o1 -> {i1; i2}; o2 -> {i3; i4}})
+
+Assertion Crawler Analysis for main
+exit={"assert(-x2 <= -200)" -> {y3; y4}; "assert(-x1 <= -100)" -> {y1; y2}}
+
+=== End ./test-bin/crawler-1 ===
+=== Begin ./test-bin/crawler-2 ===
+void declare main()
+entry:
+  i = 0;
+  x = 1;
+  y = 0;
+  z = 3;
+  w = 3;
+  goto bb1;
+bb1:
+  goto bb1_t,bb1_f;
+bb1_t:
+  assume(i <= 99);
+  goto bb2;
+bb2:
+  (x:int32,y:int32)= call bar(x:int32,y:int32,z:int32,w:int32);
+  i = i+1;
+  goto bb1;
+bb1_f:
+  assume(-i <= -100);
+  goto exit;
+exit:
+  assume(x-y <= 0);
+  assert(-w <= 0);
+  assert(-x+y <= 0);
+  assert(-i <= 0);
+  goto ret;
+ret:
+
+
+(o1:int32,o2:int32) declare foo(i1:int32,i2:int32,i3:int32,i4:int32)
+entry:
+  tmp1 = i1+i2;
+  tmp2 = i3+i4;
+  goto exit;
+exit:
+  o1 = tmp1;
+  o2 = tmp2;
+
+
+(o1:int32,o2:int32) declare bar(i1:int32,i2:int32,i3:int32,i4:int32)
+entry:
+  (o1:int32,o2:int32)= call foo(i1:int32,i2:int32,i3:int32,i4:int32);
+  goto exit;
+exit:
+  assert(-o1 <= 0);
+  assert(-o2 <= 0);
+
+
+Assertion Crawler Analysis for main
+entry={"assert(-o2 <= 0)" -> {}; "assert(-o1 <= 0)" -> {}; "assert(-i <= 0)" -> {}; "assert(-x+y <= 0)" -> {}; "assert(-w <= 0)" -> {}}
+bb1={"assert(-o2 <= 0)" -> {z; w}; "assert(-o1 <= 0)" -> {x; y; z; w}; "assert(-i <= 0)" -> {i}; "assert(-x+y <= 0)" -> {x; y; z; w}; "assert(-w <= 0)" -> {w}}
+bb1_f={"assert(-i <= 0)" -> {i}; "assert(-x+y <= 0)" -> {x; y}; "assert(-w <= 0)" -> {w}}
+exit={"assert(-i <= 0)" -> {i}; "assert(-x+y <= 0)" -> {x; y}; "assert(-w <= 0)" -> {w}}
+ret={}
+bb1_t={"assert(-o2 <= 0)" -> {z; w}; "assert(-o1 <= 0)" -> {x; y; z; w}; "assert(-i <= 0)" -> {i}; "assert(-x+y <= 0)" -> {x; y; z; w}; "assert(-w <= 0)" -> {w}}
+bb2={"assert(-o2 <= 0)" -> {z; w}; "assert(-o1 <= 0)" -> {x; y; z; w}; "assert(-i <= 0)" -> {i}; "assert(-x+y <= 0)" -> {x; y; z; w}; "assert(-w <= 0)" -> {w}}
+Assertion Crawler Analysis for bar
+entry={"assert(-o2 <= 0)" -> {i3; i4}; "assert(-o1 <= 0)" -> {i1; i2}}
+exit={"assert(-o2 <= 0)" -> {o2}; "assert(-o1 <= 0)" -> {o1}}
+Assertion Crawler Analysis for foo
+entry={}
+exit={}
+=== End ./test-bin/crawler-2 ===
 === Begin ./test-bin/dce ===
 CFG
 x0:
   k = 2147483648;
   o = 4;
-  p := make_ref(region_0:region(int),as_0);
+  p := make_ref(region_0:region(int),400,as_0);
   goto x1;
 x1:
   goto x2;
@@ -1826,7 +1908,7 @@ Cloned CFG
 x0:
   k = 2147483648;
   o = 4;
-  p := make_ref(region_0:region(int),as_0);
+  p := make_ref(region_0:region(int),400,as_0);
   goto x1;
 x1:
   goto x2;
@@ -1860,7 +1942,7 @@ k:int32 declare main()
 x0:
   k = 2147483648;
   o = 4;
-  p := make_ref(region_0:region(int),as_1);
+  p := make_ref(region_0:region(int),400,as_1);
   goto x1;
 x1:
   goto x2;
@@ -1894,7 +1976,7 @@ After Dead Code Elimination
 k:int32 declare main()
 x0:
   o = 4;
-  p := make_ref(region_0:region(int),as_1);
+  p := make_ref(region_0:region(int),400,as_1);
   goto x1;
 x1:
   goto x2;
@@ -1928,7 +2010,7 @@ k:int32 declare main()
 x0:
   k = 2147483648;
   o = 4;
-  p := make_ref(region_0:region(int),as_1);
+  p := make_ref(region_0:region(int),400,as_1);
   goto x1;
 x1:
   goto x2;
@@ -2567,7 +2649,7 @@ entry:
   i = 0;
   x = 1;
   y = 0;
-  p := make_ref(region_0:region(int),as_0);
+  p := make_ref(region_0:region(int),8,as_0);
   (region_0:region(int),l:ref) := gep_ref(region_0:region(int),p:ref);
   goto bb1;
 bb1:
@@ -2579,7 +2661,7 @@ bb2:
   x = x+y;
   y = y+1;
   store_to_ref(region_0:region(int),p:ref,i:int32);
-  q := make_ref(region_0:region(int),as_1);
+  q := make_ref(region_0:region(int),8,as_1);
   (region_0:region(int),p_next:ref) := gep_ref(region_0:region(int),p:ref + 4);
   store_to_ref(region_0:region(int),p_next:ref,q:ref);
   (region_0:region(int),p:ref) := gep_ref(region_0:region(int),p_next:ref);
@@ -2601,7 +2683,7 @@ entry:
   i = 0;
   x = 1;
   y = 0;
-  p := make_ref(region_0:region(int),as_0);
+  p := make_ref(region_0:region(int),8,as_0);
   (region_0:region(int),l:ref) := gep_ref(region_0:region(int),p:ref);
   goto bb1;
 bb1:
@@ -2613,7 +2695,7 @@ bb2:
   x = x+y;
   y = y+1;
   store_to_ref(region_0:region(int),p:ref,i:int32);
-  q := make_ref(region_0:region(int),as_1);
+  q := make_ref(region_0:region(int),8,as_1);
   (region_0:region(int),p_next:ref) := gep_ref(region_0:region(int),p:ref + 4);
   store_to_ref(region_0:region(int),p_next:ref,q:ref);
   (region_0:region(int),p:ref) := gep_ref(region_0:region(int),p_next:ref);
@@ -2861,9 +2943,9 @@ entry:
   region_init(region_0:region(int));
   region_init(region_1:region(int));
   region_init(region_2:region(int));
-  i := make_ref(region_0:region(int),as_0);
-  x := make_ref(region_1:region(int),as_1);
-  y := make_ref(region_2:region(int),as_2);
+  i := make_ref(region_0:region(int),4,as_0);
+  x := make_ref(region_1:region(int),4,as_1);
+  y := make_ref(region_2:region(int),4,as_2);
   store_to_ref(region_0:region(int),i:ref,0:int32);
   store_to_ref(region_1:region(int),x:ref,1:int32);
   store_to_ref(region_2:region(int),y:ref,0:int32);
@@ -2912,9 +2994,9 @@ entry:
   region_init(region_0:region(int));
   region_init(region_1:region(int));
   region_init(region_2:region(int));
-  i := make_ref(region_0:region(int),as_0);
-  x := make_ref(region_1:region(int),as_1);
-  y := make_ref(region_2:region(int),as_2);
+  i := make_ref(region_0:region(int),4,as_0);
+  x := make_ref(region_1:region(int),4,as_1);
+  y := make_ref(region_2:region(int),4,as_2);
   assume(i > NULL_REF);
   assume(x > NULL_REF);
   assume(y > NULL_REF);
@@ -2975,7 +3057,7 @@ bb3:
   assume(i0 <= 9999);
   goto bb5;
 bb5:
-  ref2 := make_ref(region_field_f:region(int),as_0);
+  ref2 := make_ref(region_field_f:region(int),16,as_0);
   assume(ref2 > NULL_REF);
   (region_field_f:region(int),ref3:ref) := gep_ref(region_field_f:region(int),ref2:ref);
   store_to_ref(region_field_f:region(int),ref3:ref,i0:int32);
@@ -3036,12 +3118,12 @@ bb3:
   assume(i0 <= 9999);
   goto bb5;
 bb5:
-  ref2 := make_ref(region_field_f:region(int),as_0);
+  ref2 := make_ref(region_field_f:region(int),16,as_0);
   assume(ref2 > NULL_REF);
   (region_field_f:region(int),ref3:ref) := gep_ref(region_field_f:region(int),ref2:ref);
   store_to_ref(region_field_f:region(int),ref3:ref,i0:int32);
   (region_field_s:region(ref),ref5:ref) := gep_ref(region_field_f:region(int),ref2:ref + 4);
-  ref10 := make_ref(region_field_deref_s:region(int),as_1);
+  ref10 := make_ref(region_field_deref_s:region(int),4,as_1);
   assume(ref10 > NULL_REF);
   store_to_ref(region_field_s:region(ref),ref5:ref,ref10:ref);
   (region_field_next:region(ref),ref4:ref) := gep_ref(region_field_f:region(int),ref2:ref + 8);
@@ -3097,12 +3179,12 @@ bb3:
   assume(i0 <= 9999);
   goto bb5;
 bb5:
-  ref2 := make_ref(region_field_f:region(int),as_0);
+  ref2 := make_ref(region_field_f:region(int),16,as_0);
   assume(ref2 > NULL_REF);
   (region_field_f:region(int),ref3:ref) := gep_ref(region_field_f:region(int),ref2:ref);
   store_to_ref(region_field_f:region(int),ref3:ref,i0:int32);
   (region_field_s:region(ref),ref5:ref) := gep_ref(region_field_f:region(int),ref2:ref + 4);
-  ref10 := make_ref(region_field_deref_s:region(int),as_1);
+  ref10 := make_ref(region_field_deref_s:region(int),4,as_1);
   assume(ref10 > NULL_REF);
   store_to_ref(region_field_s:region(ref),ref5:ref,ref10:ref);
   (region_field_next:region(ref),ref4:ref) := gep_ref(region_field_f:region(int),ref2:ref + 8);
@@ -3151,9 +3233,9 @@ entry:
   region_init(region_0:region(int));
   region_init(region_1:region(int));
   region_init(region_2:region(int));
-  i := make_ref(region_0:region(int),as_0);
-  x := make_ref(region_1:region(int),as_1);
-  y := make_ref(region_2:region(int),as_2);
+  i := make_ref(region_0:region(int),4,as_0);
+  x := make_ref(region_1:region(int),4,as_1);
+  y := make_ref(region_2:region(int),4,as_2);
   assume(i != NULL_REF);
   assume(x != NULL_REF);
   assume(y != NULL_REF);
@@ -3212,9 +3294,9 @@ entry:
   region_init(region_1:region(int));
   region_init(region_2:region(int));
   z = 100;
-  i := make_ref(region_0:region(int),as_0);
-  x := make_ref(region_1:region(int),as_1);
-  y := make_ref(region_2:region(int),as_2);
+  i := make_ref(region_0:region(int),4,as_0);
+  x := make_ref(region_1:region(int),4,as_1);
+  y := make_ref(region_2:region(int),4,as_2);
   assume(i != NULL_REF);
   assume(x != NULL_REF);
   assume(y != NULL_REF);
@@ -3276,10 +3358,10 @@ entry:
   region_init(rgn_1:region(ref));
   region_init(rgn_2:region(ref));
   region_init(rgn_3:region(ref));
-  fun1 := make_ref(rgn_0:region(ref),as_0);
-  fun2 := make_ref(rgn_1:region(ref),as_1);
-  fun3 := make_ref(rgn_2:region(ref),as_2);
-  fun_ptr := make_ref(rgn_3:region(ref),as_3);
+  fun1 := make_ref(rgn_0:region(ref),8,as_0);
+  fun2 := make_ref(rgn_1:region(ref),8,as_1);
+  fun3 := make_ref(rgn_2:region(ref),8,as_2);
+  fun_ptr := make_ref(rgn_3:region(ref),8,as_3);
   havoc(orphan_ptr);
   havoc(x);
   goto bb1;
@@ -3315,9 +3397,9 @@ entry:
   region_init(region_0:region(int));
   region_init(region_1:region(int));
   region_init(region_2:region(int));
-  i := make_ref(region_0:region(int),as_0);
-  x := make_ref(region_1:region(int),as_1);
-  y := make_ref(region_2:region(int),as_2);
+  i := make_ref(region_0:region(int),4,as_0);
+  x := make_ref(region_1:region(int),4,as_1);
+  y := make_ref(region_2:region(int),4,as_2);
   crab_intrinsic(add_tag,region_0:region(int),i:ref,1:int32);
   crab_intrinsic(add_tag,region_1:region(int),x:ref,2:int32);
   crab_intrinsic(add_tag,region_2:region(int),y:ref,3:int32);
@@ -3735,7 +3817,7 @@ Running top-down inter-procedural analysis with SplitDBM
 z:region(int) declare foo(x:int32)
 entry:
   region_init(z:region(int));
-  ref := make_ref(z:region(int),as_0);
+  ref := make_ref(z:region(int),4,as_0);
   assume(-x+tmp <= 0);
   assume(-tmp < 0);
   goto exit;
@@ -3765,7 +3847,7 @@ Running top-down inter-procedural analysis with RegionDomain(SplitDBM)
 b:region(int) declare foo(a:int32)
 entry:
   region_init(b:region(int));
-  ref := make_ref(b:region(int),as_0);
+  ref := make_ref(b:region(int),4,as_0);
   assume(-a+tmp <= 0);
   assume(-tmp < 0);
   goto exit;

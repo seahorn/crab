@@ -67,16 +67,17 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
 
   z_var_or_cst_t zero32(z_number(0), crab::variable_type(crab::INT_TYPE, 32));
   z_var_or_cst_t one32(z_number(1), crab::variable_type(crab::INT_TYPE, 32));  
-  
+  z_var_or_cst_t size4(z_number(4), crab::variable_type(crab::INT_TYPE, 32));
+ 
   // Intialization of memory regions
   entry.region_init(mem1);
   entry.region_init(mem2);
   entry.region_init(mem3);
 
   //// Create references
-  entry.make_ref(i, mem1, as_man.mk_tag());
-  entry.make_ref(x, mem2, as_man.mk_tag());
-  entry.make_ref(y, mem3, as_man.mk_tag());
+  entry.make_ref(i, mem1, size4, as_man.mk_tag());
+  entry.make_ref(x, mem2, size4, as_man.mk_tag());
+  entry.make_ref(y, mem3, size4, as_man.mk_tag());
   #if 0
   // Disequalities too hard
   entry.assume_ref(z_ref_cst_t::mk_not_null(i));

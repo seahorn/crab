@@ -126,11 +126,13 @@ public:
       typename liveness_analysis_operations_t::varset_domain_t varset_domain_t;
 
 private:
+  liveness_analysis_operations_t m_liveness_op;  
   bool m_release_in;
-
+  
 public:
   liveness_analysis(CFG cfg, bool release_in = true)
-      : killgen_fixpoint_iterator_t(cfg), m_release_in(release_in) {}
+    : killgen_fixpoint_iterator_t(cfg, m_liveness_op),
+      m_liveness_op(cfg), m_release_in(release_in) {}
 
   void exec() {
     this->run();

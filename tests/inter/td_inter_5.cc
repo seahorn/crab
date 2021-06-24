@@ -2,7 +2,7 @@
 #include "../program_options.hpp"
 
 #include <crab/analysis/graphs/sccg_bgl.hpp>
-#include <crab/analysis/inter/top_down_inter_params.hpp>
+#include <crab/analysis/inter/inter_params.hpp>
 #include <crab/cg/cg_bgl.hpp>
 
 /*
@@ -45,9 +45,10 @@ z_cfg_t *foo(variable_factory_t &vfac, crab::tag_manager &as_man) {
   z_cfg_t *cfg = new z_cfg_t("entry", "exit", decl);
   z_basic_block_t &entry = cfg->insert("entry");
   z_basic_block_t &exit = cfg->insert("exit");
+  z_var_or_cst_t size4(z_number(4), crab::variable_type(crab::INT_TYPE, 32));      
   entry >> exit;
   entry.region_init(b);
-  entry.make_ref(ref, b, as_man.mk_tag());
+  entry.make_ref(ref, b, size4, as_man.mk_tag());
   entry.assume(tmp <= a);
   entry.assume(tmp > 0);
   exit.store_to_ref(ref, b, tmp);
@@ -69,7 +70,7 @@ z_cfg_t *__main(variable_factory_t &vfac, crab::tag_manager &as_man) {
   z_var ref(vfac["ref"], crab::REF_TYPE, 32);
   z_var lhs(vfac["lhs"], crab::INT_TYPE, 32);    
   exit.load_from_ref(lhs, ref, z);
-  exit.assertion(z_lin_t(x) >= z_lin_t(lhs));
+  exit.assertion(z_lin_exp_t(x) >= z_lin_exp_t(lhs));
   exit.assertion(lhs > 0);  
   return cfg;
 }
@@ -80,7 +81,7 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  using inter_params_t = top_down_inter_analyzer_parameters<z_cg_t>;
+  using inter_params_t = inter_analyzer_parameters<z_cg_t>;
   variable_factory_t vfac;
   crab::tag_manager as_man;
   // Defining program variables

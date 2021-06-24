@@ -73,7 +73,9 @@ z_cfg_t *prog2(variable_factory_t &vfac, crab::tag_manager &as_man) {
   z_var mem1(vfac["region_0"], crab::REG_INT_TYPE, 32);
   z_var nd(vfac["nd"], crab::INT_TYPE, 32);
   z_var inc(vfac["inc"], crab::INT_TYPE, 32);
-  z_var_or_cst_t zero32(z_number(0), crab::variable_type(crab::INT_TYPE, 32));  
+  z_var_or_cst_t zero32(z_number(0), crab::variable_type(crab::INT_TYPE, 32));
+  z_var_or_cst_t size4(z_number(4), crab::variable_type(crab::INT_TYPE, 32));  
+
   // entry and exit block
   auto cfg = new z_cfg_t("entry", "ret");
   // adding blocks
@@ -95,9 +97,10 @@ z_cfg_t *prog2(variable_factory_t &vfac, crab::tag_manager &as_man) {
   bb3 >> bb1;
   bb4 >> bb1;  
   bb1_f >> ret;
+
   // adding statements  
   entry.region_init(mem1);
-  entry.make_ref(i, mem1, as_man.mk_tag());
+  entry.make_ref(i, mem1, size4, as_man.mk_tag());
   entry.store_to_ref(i, mem1, zero32);
   bb2.havoc(nd);
   bb2.select(inc, nd, 1, 1);

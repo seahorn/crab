@@ -558,10 +558,18 @@ public:
     reduce();
   }
 
+  virtual void region_cast(const variable_t &src_reg,
+                           const variable_t &dst_reg) override {
+    m_product.first().region_cast(src_reg, dst_reg);
+    m_product.second().region_cast(src_reg, dst_reg);
+    reduce();
+  }
+  
   virtual void ref_make(const variable_t &ref, const variable_t &reg,
+			const variable_or_constant_t &size,
 			const allocation_site &as) override {
-    m_product.first().ref_make(ref, reg, as);
-    m_product.second().ref_make(ref, reg, as);
+    m_product.first().ref_make(ref, reg, size, as);
+    m_product.second().ref_make(ref, reg, size, as);
     reduce();
   }
 
@@ -656,6 +664,27 @@ public:
     std::vector<allocation_site> s1, s2;
     bool b1 = m_product.first().get_allocation_sites(ref, s1);
     bool b2 = m_product.first().get_allocation_sites(ref, s2);
+    if (b1 && b2) {
+      std::sort(s1.begin(), s1.end());
+      std::sort(s2.begin(), s2.end());
+      std::set_intersection(s1.begin(), s1.end(), s2.begin(), s2.end(),
+			    std::back_inserter(out));
+      return true;
+    } else if (b1) {
+      out.assign(s1.begin(), s1.end());
+      return true;
+    } else if (b2) {
+      out.assign(s2.begin(), s2.end());
+      return true;
+    }
+    return false;
+  }
+
+  bool get_tags(const variable_t &rgn, const variable_t &ref,
+		std::vector<uint64_t> &out) override {
+    std::vector<uint64_t> s1, s2;
+    bool b1 = m_product.first().get_tags(rgn, ref, s1);
+    bool b2 = m_product.first().get_tags(rgn, ref, s2);
     if (b1 && b2) {
       std::sort(s1.begin(), s1.end());
       std::sort(s2.begin(), s2.end());

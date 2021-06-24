@@ -181,10 +181,15 @@
   }                                                                            \
   void region_init(const variable_t &reg) override { CRAB_ERROR(Msg); }        \
   void region_copy(const variable_t &lhs_reg,                                  \
-                     const variable_t &rhs_reg) override {   		       \
+                   const variable_t &rhs_reg) override {   		       \
+    CRAB_ERROR(Msg);                                                           \
+  }                                                                            \
+  void region_cast(const variable_t &src,                                      \
+                   const variable_t &dst) override {   		               \
     CRAB_ERROR(Msg);                                                           \
   }                                                                            \
   void ref_make(const variable_t &ref, const variable_t &reg,                  \
+                const variable_or_constant_t &size,                            \
                 const allocation_site &as) override {                          \
     CRAB_ERROR(Msg);                                                           \
   }                                                                            \
@@ -241,7 +246,11 @@
   bool get_allocation_sites(const variable_t &ref,  			       \
                     std::vector<allocation_site> &alloc_sites) override {      \
     CRAB_ERROR(Msg);  		      		    	     		       \
-  }									       \
+  }                                                                            \
+  bool get_tags(const variable_t &rng, const variable_t &ref,	               \
+    std::vector<uint64_t> &out) override {		                       \
+    CRAB_ERROR(Msg);                                                           \
+  }                                                                            \
   linear_constraint_system_t to_linear_constraint_system() const override {    \
     CRAB_ERROR(Msg);                                                           \
   }                                                                            \

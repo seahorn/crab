@@ -150,9 +150,15 @@ int main(int argc, char **argv) {
   z_cfg_t *p = get_cfg(vfac);
 
   // To test the assertion crawler analysis
-  crab::analyzer::assertion_crawler<z_cfg_ref_t> assert_crawler(*p);
+  using assertion_crawler_t = crab::analyzer::assertion_crawler<z_cfg_ref_t>;
+  typename assertion_crawler_t::assert_map_t assert_map;
+  typename assertion_crawler_t::summary_map_t summaries;
+  
+  assertion_crawler_t assert_crawler(*p, assert_map, summaries);
   assert_crawler.exec();
-  crab::outs() << "\n" << assert_crawler << "\n";
+  crab::outs() << "\n";
+  assert_crawler.write(crab::outs());
+  crab::outs() << "\n";
 
   // To test the assumption analyses
   crab::analyzer::assumption_naive_analysis<z_cfg_ref_t>

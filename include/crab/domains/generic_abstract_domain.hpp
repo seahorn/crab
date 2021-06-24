@@ -121,7 +121,10 @@ private:
     virtual void region_init(const variable_t &reg) = 0;
     virtual void region_copy(const variable_t &lhs_reg,
                              const variable_t &rhs_reg) = 0;
+    virtual void region_cast(const variable_t &src_reg,
+                             const variable_t &dst_reg) = 0;
     virtual void ref_make(const variable_t &ref, const variable_t &reg,
+			  const variable_or_constant_t &size,
 			  const allocation_site &as) = 0;
     virtual void ref_free(const variable_t &reg, const variable_t &ref) = 0;
     virtual void ref_load(const variable_t &ref, const variable_t &reg,
@@ -155,6 +158,8 @@ private:
     virtual boolean_value is_null_ref(const variable_t &ref) = 0;    
     virtual bool get_allocation_sites(const variable_t &ref,
 				      std::vector<allocation_site> &alloc_sites) = 0;
+    virtual bool get_tags(const variable_t &rgn, const variable_t &ref,
+			  std::vector<uint64_t> &tags) = 0;
     
     virtual void backward_apply(arith_operation_t op, const variable_t &x,
                                 const variable_t &y, const variable_t &z,
@@ -400,9 +405,14 @@ private:
                      const variable_t &rhs_reg) override {
       m_inv.region_copy(lhs_reg, rhs_reg);
     }
+    void region_cast(const variable_t &src_reg,
+                     const variable_t &dst_reg) override {
+      m_inv.region_cast(src_reg, dst_reg);
+    }    
     void ref_make(const variable_t &ref, const variable_t &reg,
+		  const variable_or_constant_t &size,
 		  const allocation_site &as) override {
-      m_inv.ref_make(ref, reg, as);
+      m_inv.ref_make(ref, reg, size, as);
     }
     void ref_free(const variable_t &reg, const variable_t &ref)
       override {
@@ -459,7 +469,11 @@ private:
 			      std::vector<allocation_site> &alloc_sites)  override {
       return m_inv.get_allocation_sites(ref, alloc_sites);
     }
-    
+    bool get_tags(const variable_t &rgn, const variable_t &ref,
+		  std::vector<uint64_t> &tags) override {
+      return m_inv.get_tags(rgn, ref, tags);
+    }
+        
     // unsafe: if the underlying domain in invariant is not Domain then it will
     // crash
     void backward_apply(arith_operation_t op, const variable_t &x,
@@ -771,9 +785,14 @@ public:
                    const variable_t &rhs_reg) override {
     m_concept->region_copy(lhs_reg, rhs_reg);
   }
+  void region_cast(const variable_t &src_reg,
+                   const variable_t &dst_reg) override {
+    m_concept->region_cast(src_reg, dst_reg);
+  }
   void ref_make(const variable_t &ref, const variable_t &reg,
+		const variable_or_constant_t &size,
 		const allocation_site &as) override {
-    m_concept->ref_make(ref, reg, as);
+    m_concept->ref_make(ref, reg, size, as);
   }
   void ref_free(const variable_t &reg, const variable_t &ref)
     override {
@@ -830,7 +849,11 @@ public:
 			    std::vector<allocation_site> &alloc_sites) override {
     return m_concept->get_allocation_sites(ref, alloc_sites);
   }
-    
+  bool get_tags(const variable_t &rgn, const variable_t &ref,
+		std::vector<uint64_t> &tags) override {
+    return m_concept->get_tags(rgn, ref, tags);
+  }
+  
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const abstract_domain &invariant) override {
@@ -1204,10 +1227,17 @@ public:
     norm().region_copy(lhs_reg, rhs_reg);
   }
 
+  void region_cast(const variable_t &src_reg,
+                   const variable_t &dst_reg) override {
+    detach();
+    norm().region_cast(src_reg, dst_reg);
+  }
+  
   void ref_make(const variable_t &ref, const variable_t &reg,
+		const variable_or_constant_t &size,
 		const allocation_site &as) override {
     detach();
-    norm().ref_make(ref, reg, as);
+    norm().ref_make(ref, reg, size, as);
   }
   
   void ref_free(const variable_t &reg, const variable_t &ref) override {
@@ -1283,6 +1313,11 @@ public:
 			    std::vector<allocation_site> &alloc_sites) override {
     detach();
     return norm().get_allocation_sites(ref, alloc_sites);
+  }
+  bool get_tags(const variable_t &rgn, const variable_t &ref,
+		std::vector<uint64_t> &tags) override {
+    detach();
+    return norm().get_tags(rgn, ref, tags);
   }
   
   void backward_apply(arith_operation_t op, const variable_t &x,
