@@ -794,8 +794,7 @@ public:
       m_alloc_site_dom.set(lhs_rgn, m_alloc_site_dom[rhs_rgn]);
     }
     if (Params::deallocation) {
-      m_rgn_dealloc_dom.forget(lhs_rgn);
-      m_rgn_dealloc_dom.expand(rhs_rgn, lhs_rgn);
+      m_rgn_dealloc_dom.add(rhs_rgn, lhs_rgn);      
     }
     if (Params::tag_analysis) {
       m_tag_env.set(lhs_rgn, m_tag_env[rhs_rgn]);
@@ -815,8 +814,51 @@ public:
     m_base_dom.expand(rhs_rgn, lhs_rgn);
   }
 
+
+  void region_cast(const variable_t &src_rgn,
+		   const variable_t &dst_rgn) override {
+                   
+    crab::CrabStats::count(domain_name() + ".count.region_cast");
+    crab::ScopedCrabStats __st__(domain_name() + ".region_cast");
+
+    if (is_bottom()) {
+      return;
+    }
+
+    if (!dst_rgn.get_type().is_region()) {
+      CRAB_ERROR(domain_name() + "::region_cast ", dst_rgn,
+                 " must have a region type");
+    }
+    if (!src_rgn.get_type().is_region()) {
+      CRAB_ERROR(domain_name() + "::region_cast ", src_rgn,
+                 " must have a region type");
+    }
+
+    m_rgn_counting_dom.set(dst_rgn, m_rgn_counting_dom[src_rgn]);
+    m_rgn_init_dom.set(dst_rgn, m_rgn_init_dom[src_rgn]);
+    if (Params::allocation_sites) {
+      m_alloc_site_dom.set(dst_rgn, m_alloc_site_dom[src_rgn]);
+    }
+    if (Params::deallocation) {
+      m_rgn_dealloc_dom.add(src_rgn, dst_rgn);
+    }
+    if (Params::tag_analysis) {
+      m_tag_env.set(dst_rgn, m_tag_env[src_rgn]);
+    }
+    
+    if (dst_rgn.get_type() == src_rgn.get_type()) {
+      // nothing to do
+      return;
+    }
+
+    CRAB_LOG("region",
+	     CRAB_WARN("TODO region_cast ", src_rgn, ":", src_rgn.get_type(), " to ",
+		       dst_rgn, ":", dst_rgn.get_type(), " in base domain"););    
+  }
+  
   // Create a new reference ref to region rgn.
   void ref_make(const variable_t &ref, const variable_t &rgn,
+		const variable_or_constant_t &size /*unused*/,
 		const allocation_site &as) override {
     crab::CrabStats::count(domain_name() + ".count.ref_make");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_make");
@@ -2165,6 +2207,28 @@ public:
     }
     return true;
   }
+
+  virtual bool get_tags(const variable_t &rgn,
+			const variable_t &ref /*unused*/,
+			std::vector<uint64_t> &tags) override {
+    if (!Params::tag_analysis ||
+	(!ref.get_type().is_reference() || !rgn.get_type().is_region())) {
+      return false;
+    }
+
+    tag_set tag_set = m_tag_env[rgn];    
+    
+    if (tag_set.is_top()) {
+      return false;
+    }
+    
+    if (!tag_set.is_bottom()) {
+      for (auto it = tag_set.begin(), et = tag_set.end(); it!=et; ++it) {
+	tags.push_back((*it).index());
+      }
+    }
+    return true;
+  }
   
   /* End abstract_domain_results_api */
   
@@ -2211,9 +2275,9 @@ public:
 	       if (Params::tag_analysis) {
 		 o << "," << "Tags=" << m_tag_env;		 
 	       }
-	       o << ")\n";);
-      
-      o << m_base_dom;
+	       o << "," << "BaseDom=" << m_base_dom << ")\n";);
+
+      o << "(RgnCounter=" << m_rgn_counting_dom << ",BaseDom=" << m_base_dom << ")";
     }
   }
 }; // class region_without_ghost_domain
