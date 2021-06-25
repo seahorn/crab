@@ -254,7 +254,7 @@ public:
 
   bool has_debug() const {
     return ((m_id >= 0) ||
-	    (m_file != "") && (m_line >= 0) && (m_col >= 0));
+	    ((m_file != "") && (m_line >= 0) && (m_col >= 0)));
   }
 
   std::string get_file() const { return m_file; }
