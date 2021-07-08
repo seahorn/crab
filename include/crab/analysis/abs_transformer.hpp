@@ -410,6 +410,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);
   }
 
   void exec(select_t &stmt) {
@@ -426,6 +427,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(assign_t &stmt) {
@@ -442,13 +444,18 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  void exec(assume_t &stmt) { m_inv.operator+=(stmt.constraint()); }
+  void exec(assume_t &stmt) {
+    m_inv.operator+=(stmt.constraint());
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
+  }
 
   void exec(assert_t &stmt) {
-    if (m_ignore_assert)
+    if (m_ignore_assert) {
       return;
+    }
 
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
@@ -466,6 +473,7 @@ public:
         }
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(int_cast_t &stmt) {
@@ -485,6 +493,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(bool_assign_cst_t &stmt) {
@@ -505,6 +514,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(bool_assign_var_t &stmt) {
@@ -520,6 +530,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(bool_bin_op_t &stmt) {
@@ -540,10 +551,12 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(bool_assume_t &stmt) {
     m_inv.assume_bool(stmt.cond(), stmt.is_negated());
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(bool_select_t &stmt) {
@@ -560,13 +573,16 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(bool_assert_t &stmt) {
-    if (m_ignore_assert)
+    if (m_ignore_assert) {
       return;
+    }
 
     m_inv.assume_bool(stmt.cond(), false);
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(havoc_t &stmt) {
@@ -583,9 +599,13 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  void exec(unreach_t &stmt) { m_inv.set_to_bottom(); }
+  void exec(unreach_t &stmt) {
+    m_inv.set_to_bottom();
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
+  }
 
   void exec(arr_init_t &stmt) {
     bool pre_bot = false;
@@ -602,6 +622,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(arr_store_t &stmt) {
@@ -624,6 +645,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(arr_load_t &stmt) {
@@ -640,6 +662,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(arr_assign_t &stmt) {
@@ -656,6 +679,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(make_ref_t &stmt) {
@@ -672,6 +696,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(remove_ref_t &stmt) {
@@ -688,6 +713,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
   
   void exec(region_init_t &stmt) {
@@ -704,6 +730,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(region_copy_t &stmt) {
@@ -720,6 +747,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(region_cast_t &stmt) {
@@ -736,6 +764,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
   
   void exec(load_from_ref_t &stmt) {
@@ -752,6 +781,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(store_to_ref_t &stmt) {
@@ -768,6 +798,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(gep_ref_t &stmt) {
@@ -785,6 +816,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(load_from_arr_ref_t &stmt) {
@@ -802,6 +834,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(store_to_arr_ref_t &stmt) {
@@ -823,14 +856,20 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  void exec(assume_ref_t &stmt) { m_inv.ref_assume(stmt.constraint()); }
+  void exec(assume_ref_t &stmt) {
+    m_inv.ref_assume(stmt.constraint());
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
+  }
 
   void exec(assert_ref_t &stmt) {
-    if (m_ignore_assert)
+    if (m_ignore_assert) {
       return;
+    }
     m_inv.ref_assume(stmt.constraint());
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(select_ref_t &stmt) {
@@ -850,6 +889,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(int_to_ref_t &stmt) {
@@ -866,6 +906,7 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(ref_to_int_t &stmt) {
@@ -882,16 +923,19 @@ public:
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
   void exec(intrinsic_t &cs) {
     m_inv.intrinsic(cs.get_intrinsic_name(), cs.get_args(), cs.get_lhs());
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << cs << " :" << m_inv <<"\n";);    
   }
 
   virtual void exec(callsite_t &cs) {
     for (const variable_t &vt : cs.get_lhs()) {
       m_inv.operator-=(vt); // havoc
     }
+    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << cs << " :" << m_inv <<"\n";);    
   }
 
 };
