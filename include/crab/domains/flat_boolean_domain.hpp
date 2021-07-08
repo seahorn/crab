@@ -246,24 +246,27 @@ public:
   void select_bool(const variable_t &lhs, const variable_t &cond,
 		   const variable_t &b1, const variable_t &b2) override {
     if (!is_bottom()) {
-      const bool negate = true;
-
-      flat_boolean_domain_t inv1(*this);
-      inv1.assume_bool(cond, !negate);
-      if (inv1.is_bottom()) {
-	_env.set(lhs, _env[b2]);
-	return;
+      if (b1 == b2) {
+	assign_bool_var(lhs, b1, false);
+      } else {
+	const bool negate = true;
+	flat_boolean_domain_t inv1(*this);
+	inv1.assume_bool(cond, !negate);
+	if (inv1.is_bottom()) {
+	  _env.set(lhs, _env[b2]);
+	  return;
+	}
+	
+	
+	flat_boolean_domain_t inv2(*this);
+	inv2.assume_bool(cond, negate);
+	if (inv2.is_bottom()) {
+	  _env.set(lhs, _env[b1]);
+	  return;
+	}
+	
+	_env.set(lhs, _env[b1] | _env[b2]);
       }
-      
-      
-      flat_boolean_domain_t inv2(*this);
-      inv2.assume_bool(cond, negate);
-      if (inv2.is_bottom()) {
-	_env.set(lhs, _env[b1]);
-	return;
-      }
-      
-      _env.set(lhs, _env[b1] | _env[b2]);
     }
   }
   
@@ -715,8 +718,12 @@ private:
     }
   };
 
+  // Reduced product of flat boolean domain and a numerical domain.
   domain_product2_t _product;
+  // Map from boolean variables to set of constraints such that if the
+  // variable is evaluated to true then all the constraints hold.
   var_lincons_map_t _var_to_csts;
+  // Which variable has been unchanged since its last update
   invariance_domain _unchanged_vars;
 
   flat_boolean_numerical_domain(domain_product2_t &&product,
@@ -1207,25 +1214,29 @@ public:
 
     
     if (!is_bottom()) {
-      _product.select_bool(lhs, cond, b1, b2);
-
-      boolean_value b1_val = _product.first().get_bool(b1);
-      boolean_value b2_val = _product.first().get_bool(b2);
-      
-      if (b1_val.is_false()) {
-	_var_to_csts.set(lhs, _var_to_csts[b2]);
-      }  else if (b2_val.is_false()) {
-	_var_to_csts.set(lhs, _var_to_csts[b1]);
-      } else if (b1_val.is_true() && b2_val.is_top() && is_definitely_false(cond)) {
-	// select(lhs, cond, true, b2)
-	// lhs iff b2 but only if cond is definitely false
-	_var_to_csts.set(lhs, _var_to_csts[b2]);	  
-      } else if (b2_val.is_true() && b1_val.is_top() && is_definitely_true(cond)) {
-	// select(lhs, cond, b1, true)
-	// lhs iff b1 but only if cond is definitely true
-	_var_to_csts.set(lhs, _var_to_csts[b1]);	  
+      if (b1 == b2) {
+	assign_bool_var(lhs, b1, false);
       } else {
-	_var_to_csts -= lhs;
+	_product.select_bool(lhs, cond, b1, b2);
+	
+	boolean_value b1_val = _product.first().get_bool(b1);
+	boolean_value b2_val = _product.first().get_bool(b2);
+	
+	if (b1_val.is_false()) {
+	  _var_to_csts.set(lhs, _var_to_csts[b2]);
+	}  else if (b2_val.is_false()) {
+	  _var_to_csts.set(lhs, _var_to_csts[b1] & _var_to_csts[cond]);
+	} else if (b1_val.is_true() && b2_val.is_top() && is_definitely_false(cond)) {
+	  // select(lhs, cond, true, b2)
+	  // lhs iff b2 but only if cond is definitely false
+	  _var_to_csts.set(lhs, _var_to_csts[b2]);	  
+	} else if (b2_val.is_true() && b1_val.is_top() && is_definitely_true(cond)) {
+	  // select(lhs, cond, b1, true)
+	  // lhs iff b1 but only if cond is definitely true
+	  _var_to_csts.set(lhs, _var_to_csts[b1]);	  
+	} else {
+	  _var_to_csts -= lhs;
+	}
       }
     }
   }
