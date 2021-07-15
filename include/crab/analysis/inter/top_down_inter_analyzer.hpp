@@ -429,11 +429,12 @@ private:
    * separate WTO for each call graph entry.
    */
 
-  // -- widening points of the callgraph (extracted from the entries' WTOs)
+  // -- widening points of the callgraph (extracted from *all* entries' WTOs)
   std::set<callgraph_node_t> m_widening_set;
   // -- map each callgraph entry to its WTO
   wto_cg_map_t m_wto_cg_map;
   // -- to break cycles if no precise support for recursive functions
+  // invariant: !m_call_stack.empty() &&  m_call_stack[0] is the current entry node.
   std::vector<callgraph_node_t> m_call_stack;
   // -- liveness symbols for each function
   const liveness_map_t *m_live_map;
@@ -495,16 +496,29 @@ private:
       global_table.insert(std::make_pair(cfg, std::move(invariants)));
     }
   }
-
+  
+  // Return the head of all WTO nested components of node. The result
+  // is ordered. The last head belong to the innermost WTO nested
+  // component and the first one is the outermost.
   boost::optional<wto_cg_nesting_t>
-  get_wto_nesting(callgraph_node_t node) const {
-    // traverse all callgraph entries and search for nesting in each entry's wto
-    for (auto &kv : get_wto_cg_map()) {
-      if (auto nesting_opt = kv.second->nesting(node)) {
-        return nesting_opt;
-      }
+  get_all_wto_nested_heads(callgraph_node_t node) const {
+    const callgraph_node_t &entry = get_current_entry();
+    auto it = m_wto_cg_map.find(entry);
+    if (it != m_wto_cg_map.end()) {
+      boost::optional<wto_cg_nesting_t> res = it->second->nesting(node);
+      CRAB_LOG("inter-callgraph-wto",
+	       crab::outs() << "NESTING(" << node  << ")=";
+	       if (res) {
+		 crab::outs() << *res;
+	       } else {
+		 crab::outs() << "[]";
+	       }
+	       crab::outs() << "\n";);
+      return res;
+    } else {
+      CRAB_ERROR("Not callgraph wto found for entry ",
+		 entry.get_cfg().get_func_decl().get_func_name());
     }
-    return boost::optional<wto_cg_nesting_t>();
   }
 
   // Apply fn for all nested components of root.
@@ -579,13 +593,19 @@ public:
     return m_widening_set;
   }
 
+  // Return the current entry node of the analysis
+  const callgraph_node_t& get_current_entry() const {
+    assert(!m_call_stack.empty());
+    return m_call_stack[0];
+  }
+  
   wto_cg_map_t &get_wto_cg_map() { return m_wto_cg_map; }
 
   const wto_cg_map_t &get_wto_cg_map() const { return m_wto_cg_map; }
 
-  // Return true if the node is not part of any nested wto component
+  // Return true if the node is part of a non-empty wto nesting
   bool included_nested_wto_component(callgraph_node_t node) const {
-    if (auto nesting_opt = get_wto_nesting(node)) {
+    if (auto nesting_opt = get_all_wto_nested_heads(node)) {
       auto nesting = *nesting_opt;
       return nesting.begin() != nesting.end();
     }
@@ -597,12 +617,7 @@ public:
   apply_fn_to_nested_wto_component(callgraph_node_t root,
                                    std::function<void(callgraph_node_t)> fn) {
     apply_fn_to_nested_wto_component_visitor vis(root, fn);
-    // FIXME: we should start directly from cg_node instead of
-    // visiting entirely all callgraph's wto's (one per entry).
-    // For that we need to precompute the WTO nested component per node
-    for (auto &kv : get_wto_cg_map()) {
-      kv.second->accept(&vis);
-    }
+    m_wto_cg_map[get_current_entry()]->accept(&vis);
   }
 
   bool find_call_stack(const callgraph_node_t &node) const {
@@ -1325,10 +1340,10 @@ private:
         crab::CrabStats::count("Interprocedural.num_reused_callsites");
       }
     } else {
-      if (m_ctx.get_is_checking_phase()) {
-        CRAB_ERROR("in checking phase we should not analyze the callsite ", cs);
-      }
-      crab::CrabStats::count("Interprocedural.num_analyzed_callsites");
+      // if (m_ctx.get_is_checking_phase()) {
+      //   CRAB_ERROR("in checking phase we should not analyze the callsite ", cs);
+      // }
+      // crab::CrabStats::count("Interprocedural.num_analyzed_callsites");
 
       intra_analyzer_with_call_semantics_t *callee_analysis = nullptr;
       auto &func_fixpoint_table = m_ctx.get_func_fixpoint_table();
@@ -1348,7 +1363,7 @@ private:
                  << "Next analysis with entry=" << callee_entry << "\n");
 	assert(!callee_analysis);
       } else {
-	if (/*!m_ctx.analyze_recursive_functions() &&*/ m_ctx.find_call_stack(callee_cg_node)) {
+	if (m_ctx.find_call_stack(callee_cg_node)) {
 	  // ### Imprecise analysis of recursive call ###
 	  // 4.b Replace recursive call with top.
 	  //
@@ -1428,11 +1443,12 @@ private:
       
       callee_exit.project(callee_exit_vars);
 
+
+      // Check if the fixpoint of node has been stabilized.
       auto has_been_stabilized = [this](const typename CallGraph::node_t &node) {
 	  if (!m_ctx.analyze_recursive_functions()) {
 	    return true;
 	  }
-	  
 	  // node is being currently processed.
 	  auto &func_fixpoint_table = m_ctx.get_func_fixpoint_table();
 	  if (func_fixpoint_table.find(node) != func_fixpoint_table.end()) {
@@ -1440,26 +1456,18 @@ private:
 	  }
 
 	  // If node is part of a WTO nesting then we need to check
-	  // that the head of the WTO nesting has been stabilized.
-	  boost::optional<typename global_context_t::wto_cg_nesting_t> nesting_opt;
-	  for (auto &kv: m_ctx.get_wto_cg_map()) {
-	    nesting_opt = kv.second->nesting(node);
-	    if (nesting_opt) {
-	      break;
-	    }
-	  }
-	  if (!nesting_opt) {
-	    return true;
-	  }
-	  
-	  for (auto it=(*nesting_opt).begin(), et=(*nesting_opt).end() ; it!=et; ++it) {
-	    if (func_fixpoint_table.find(*it) != func_fixpoint_table.end()) {
-	      return false;
+	  // all the nesting's elements have been stabilized.
+	  if (boost::optional<typename global_context_t::wto_cg_nesting_t> nesting_opt =
+	      m_ctx.get_wto_cg_map()[m_ctx.get_current_entry()]->nesting(node)) {
+	    for (auto it=(*nesting_opt).begin(), et=(*nesting_opt).end() ; it!=et; ++it) {
+	      if (func_fixpoint_table.find(*it) != func_fixpoint_table.end()) {
+		return false;
+	      }
 	    }
 	  }
 	  return true;
       };
-      
+
       if (callee_analysis && has_been_stabilized(callee_cg_node)) {
 	// 5. Add the new calling context.
 	crab::CrabStats::resume(TimerInterStoreSum);
@@ -1480,11 +1488,10 @@ private:
 		 << "=====================\n";);
       }
 
-      if (callee_analysis &&
-	  !m_ctx.included_nested_wto_component(callee_cg_node)) {
+      if (callee_analysis && !m_ctx.included_nested_wto_component(callee_cg_node)) {
 	/***
-	 *** We delay running the checker until the outermost nested
-	 *** WTO component stabilizes.
+	 *** We delay running the checker until the node does not
+	 *** belong to any nested WTO component.
 	 ***/
       
 	// 6. Check assertions within the whole WTO component.
