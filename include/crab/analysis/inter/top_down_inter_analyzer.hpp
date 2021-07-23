@@ -242,7 +242,7 @@ public:
       }
     }
   }
-
+  
   void write(crab_os &o) const {
     const abs_dom_t &pre_summary = get_pre_summary();
     const abs_dom_t &post_summary = get_post_summary();
@@ -1524,15 +1524,15 @@ private:
 	}
 
 	/// Free the callee
-	// 
-	// If the callee is not part of any wto nested component we
-	// can free its memory.  Otherwise, we cannot.
-	// JN: I think if we store summaries for all nested components
-	// then we might free their analyses.
-	CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Free analysis of "
-			<< callee_cg_node.name() << "\n";);
-	callee_analysis->clear();
-	// TODO: free the analysis' states of all nested components.
+	
+	// We should be able to free the analysis of the callee if it
+	// is not part of any wto nested component.
+	
+	// CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Free analysis of "
+	//		  << callee_cg_node.name() << "\n";);
+
+	// FIXME(07/23/21): free the analysis causes problems with curl program.
+	// callee_analysis->clear();
       }
     } // end call_context_already_seen
 
