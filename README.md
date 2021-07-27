@@ -65,13 +65,27 @@ In linux, you can install requirements typing the commands:
     sudo apt-get install libgmp-dev
     sudo apt-get install libmpfr-dev	
 
-# Compiling from sources and installation #
+# Building from sources and installation #
 
 To install Crab, type:
 
 	mkdir build && cd build
     cmake -DCMAKE_INSTALL_PREFIX=_INSTALL_DIR_ ../
     cmake --build . --target install 
+
+The `tests` directory contains many examples of how to build programs
+written in CrabIR and compute invariants using different analyses and
+abstract domains. To compile these tests type:
+
+	mkdir build && cd build
+    cmake -DCMAKE_INSTALL_PREFIX=_INSTALL_DIR_ -DCRAB_ENABLE_TESTS=ON ../	
+    cmake --build . --target install 	
+
+and then, for instance, to run `test1`:
+
+    build/test-bin/test1
+    
+## Building from sources with third-party abstract domain libraries ##
 
 The [Boxes](https://github.com/seahorn/ldd)/[Apron](https://github.com/antoinemine/apron)/[Elina](https://github.com/eth-sri/ELINA) domains require third-party libraries. To avoid
 the burden to users who are not interested in those domains, the
@@ -96,19 +110,6 @@ For instance, to install Crab with Boxes and Apron, type:
 	cmake --build . --target apron && cmake ..	
     cmake --build . --target install 	
 
-The `tests` directory contains many examples of how to build programs
-written in CrabIR and compute invariants using different analyses and
-abstract domains. To compile these tests type:
-
-	mkdir build && cd build
-    cmake -DCMAKE_INSTALL_PREFIX=_INSTALL_DIR_ -DCRAB_USE_LDD=ON -DCRAB_USE_APRON=ON -DCRAB_ENABLE_TESTS=ON ../
-	cmake --build . --target ldd && cmake ..
-	cmake --build . --target apron && cmake ..	
-    cmake --build . --target install 	
-
-and then, for instance, to run `test1`:
-
-    build/test-bin/test1
 
 # Using Crab in other C++ projects #
 
