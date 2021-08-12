@@ -896,7 +896,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.add_constraint");
     crab::ScopedCrabStats __st__(domain_name() + ".add_constraint");
 
-    if (csts.is_true() || csts.is_false()) {
+    if (csts.is_true()) {
       return;
     }
 
