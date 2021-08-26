@@ -510,117 +510,28 @@ public:
   using bound_t = ikos::bound<number_t>;
 
 private:
-  // This lattice is the dual of a discrete lattice where
-  // elements are linear constraints.
-  class lin_cst_set_domain {
+  
 
-    using lincons_domain_t = ikos::discrete_domain<linear_constraint_t>;
-    lincons_domain_t m_lincons_set;
-
-  public:
-    using iterator = typename lincons_domain_t::iterator;
-
-    lin_cst_set_domain(lincons_domain_t s) : m_lincons_set(s) {}
-    lin_cst_set_domain()
-        : m_lincons_set(lincons_domain_t::bottom()) /*top by default*/ {}
-    lin_cst_set_domain(const lin_cst_set_domain &other)
-        : m_lincons_set(other.m_lincons_set) {}
-
-    static lin_cst_set_domain bottom() { return lincons_domain_t::top(); }
-    static lin_cst_set_domain top() { return lincons_domain_t::bottom(); }
-
-    bool is_top() const { return m_lincons_set.is_bottom(); }
-    bool is_bottom() const { return m_lincons_set.is_top(); }
-
-    bool operator<=(const lin_cst_set_domain &other) const {
-      if (other.is_top() || is_bottom())
-        return true;
-      else
-        return other.m_lincons_set <= m_lincons_set;
-    }
-
-    bool operator==(const lin_cst_set_domain &other) const {
-      return (*this <= other && other <= *this);
-    }
-
-    void operator|=(const lin_cst_set_domain &other) {
-      m_lincons_set = m_lincons_set & other.m_lincons_set;
-    }
-
-    lin_cst_set_domain operator|(const lin_cst_set_domain &other) const {
-      return lin_cst_set_domain(m_lincons_set & other.m_lincons_set);
-    }
-
-    lin_cst_set_domain operator&(const lin_cst_set_domain &other) const {
-      return lin_cst_set_domain(m_lincons_set | other.m_lincons_set);
-    }
-
-    lin_cst_set_domain operator||(const lin_cst_set_domain &other) const {
-      return this->operator|(other);
-    }
-
-    lin_cst_set_domain operator&&(const lin_cst_set_domain &other) const {
-      return this->operator&(other);
-    }
-
-    lin_cst_set_domain &operator+=(const linear_constraint_t &c) {
-      m_lincons_set += c;
-      return *this;
-    }
-    lin_cst_set_domain &operator-=(const linear_constraint_t &c) {
-      m_lincons_set -= c;
-      return *this;
-    }
-
-    std::size_t size() { return m_lincons_set.size(); }
-    iterator begin() { return m_lincons_set.begin(); }
-    iterator end() { return m_lincons_set.end(); }
-    void write(crab::crab_os &o) {
-      if (is_bottom())
-        o << "_|_";
-      else if (is_top())
-        o << "top";
-      else
-        m_lincons_set.write(o);
-    }
-
-    friend crab::crab_os &operator<<(crab::crab_os &o,
-                                     lin_cst_set_domain &dom) {
-      dom.write(o);
-      return o;
-    }
-  };
-
-  using domain_product2_t =
-      domain_product2<number_t, varname_t, bool_domain_t, NumDom>;
-
-  // For performing reduction from the boolean domain to the
-  // numerical one.
-  // Map bool variables to sets of constraints such that if the
-  // bool variable is true then the conjunction of the constraints
-  // must be satisfiable.
-  using var_lincons_map_t =
-      ikos::separate_domain<variable_t, lin_cst_set_domain>;
-  /** we need to keep track which constraints still hold at the
-      time the reduction from boolean variables to numerical ones
-      is done. For instance,
-      a := x > y;
-      // unchanged = {x,y}
-      if (*)
-        x := 0;
-        // unchanged = {y}
-      else
-        // unchanged = {x,y}
-
-      // unchanged = {y}
-      assume(a);
-      // we cannot say here that x>y holds since x might have been modified
-  **/
-
-  // Simple wrapper for performing a must-forward dataflow
-  // analysis that keeps track whether a variable has been
-  // modified from any path since the variable was defined up to
-  // the current location.
+  // invariant_domain is an abstract domain used to perform a
+  // must-forward dataflow analysis that keeps track whether a
+  // variable has been modified from any path since the variable was
+  // defined up to the current location.
+  // 
+  // We need to keep track which constraints still hold at the time
+  // the reduction from boolean variables to numerical ones is
+  // done. For instance,
+  //   
+  //  a := x > y;
+  //  // unchanged = {x,y}
+  //  if (*) {
+  //    x := 0;
+  //    // unchanged = {y}
+  //  } else {
+  //    // unchanged = {x,y}
+  //  }
+  //  // unchanged = {y}
+  //  assume(a);
+  //  // we cannot say a implies x>y since x might have been modified
   class invariance_domain {
 
   public:
@@ -718,8 +629,27 @@ private:
     }
   };
 
+
+  using domain_product2_t =
+      domain_product2<number_t, varname_t, bool_domain_t, NumDom>;
+  // var_lincons_map_t is an abstract domain used to map bool
+  // variables to sets of constraints such that if the bool variable
+  // is true then the conjunction of the constraints must be
+  // satisfiable.
+  struct linear_constraint_compare {
+    bool operator()(const linear_constraint_t &c1, const linear_constraint_t &c2) const {
+      return c1.lexicographical_compare(c2);
+    }
+  };
+  using lincst_domain_t = dual_set_domain<linear_constraint_t, linear_constraint_compare>;
+  using var_lincons_map_t = ikos::separate_domain<variable_t, lincst_domain_t>;
+
   // Reduced product of flat boolean domain and a numerical domain.
   domain_product2_t m_product;
+  /** 
+   * These two domains used to perform reduction from the boolean
+   * domain to the numerical one.
+   **/
   // Map from boolean variables to set of constraints such that if the
   // variable is evaluated to true then all the constraints hold.
   var_lincons_map_t m_var_to_csts;
@@ -1040,7 +970,7 @@ public:
 #endif
       }
     }
-    m_var_to_csts.set(x, lin_cst_set_domain(cst));
+    m_var_to_csts.set(x, lincst_domain_t(cst));
     // We assume all variables in cst are unchanged unless the
     // opposite is proven
     for (auto const &v : cst.variables()) {
@@ -1083,7 +1013,7 @@ public:
       auto csts = m_var_to_csts[y];
       if (csts.size() == 1) {
         auto cst = *(csts.begin());
-        m_var_to_csts.set(x, lin_cst_set_domain(cst.negate()));
+        m_var_to_csts.set(x, lincst_domain_t(cst.negate()));
         return;
       }
       // we do not negate multiple conjunctions because it would
