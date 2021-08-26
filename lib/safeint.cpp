@@ -7,15 +7,15 @@
 
 namespace crab {
 
-int64_t safe_i64::get_max() const {
+int64_t safe_i64::get_max() {
   return std::numeric_limits<int64_t>::max();
 }
 
-int64_t safe_i64::get_min() const {
+int64_t safe_i64::get_min() {
   return std::numeric_limits<int64_t>::min();
 }
 
-int safe_i64::checked_add(int64_t a, int64_t b, int64_t *rp) const {
+int safe_i64::checked_add(int64_t a, int64_t b, int64_t *rp) {
 #if 1
   wideint_t lr = (wideint_t)a + (wideint_t)b;
   *rp = lr;
@@ -34,19 +34,19 @@ int safe_i64::checked_add(int64_t a, int64_t b, int64_t *rp) const {
 #endif
 }
 
-int safe_i64::checked_sub(int64_t a, int64_t b, int64_t *rp) const {
+int safe_i64::checked_sub(int64_t a, int64_t b, int64_t *rp) {
   wideint_t lr = (wideint_t)a - (wideint_t)b;
   *rp = lr;
   return lr > get_max() || lr < get_min();
 }
 
-int safe_i64::checked_mul(int64_t a, int64_t b, int64_t *rp) const {
+int safe_i64::checked_mul(int64_t a, int64_t b, int64_t *rp) {
   wideint_t lr = (wideint_t)a * (wideint_t)b;
   *rp = lr;
   return lr > get_max() || lr < get_min();
 }
 
-int safe_i64::checked_div(int64_t a, int64_t b, int64_t *rp) const {
+int safe_i64::checked_div(int64_t a, int64_t b, int64_t *rp) {
   wideint_t lr = (wideint_t)a / (wideint_t)b;
   *rp = lr;
   return lr > get_max() || lr < get_min();

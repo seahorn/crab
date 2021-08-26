@@ -5,7 +5,12 @@
  **/
 
 #include <crab/numbers/bignums.hpp>
+#include <limits>
 #include <cstdint>
+
+#ifndef __GNUC__
+#include <boost/multiprecision/cpp_int.hpp>
+#endif
 
 namespace crab {
 
@@ -14,18 +19,22 @@ class safe_i64 {
   // Current implementation is based on
   // https://blog.regehr.org/archives/1139 using wider integers.
 
+#ifdef __GNUC__  
   // TODO/FIXME: the current code compiles assuming the type __int128
   // exists. Both clang and gcc supports __int128 if the targeted
   // architecture is x86/64, but it wont' work with 32 bits.
   using wideint_t = __int128;
+#else
+    using wideint_t = boost::multiprecision::int128_t;
+#endif
 
-  inline int64_t get_max() const;
-  inline int64_t get_min() const;
+  static int64_t get_max();
+  static int64_t get_min();
 
-  int checked_add(int64_t a, int64_t b, int64_t *rp) const;
-  int checked_sub(int64_t a, int64_t b, int64_t *rp) const;
-  int checked_mul(int64_t a, int64_t b, int64_t *rp) const;
-  int checked_div(int64_t a, int64_t b, int64_t *rp) const;
+  static int checked_add(int64_t a, int64_t b, int64_t *rp);
+  static int checked_sub(int64_t a, int64_t b, int64_t *rp);
+  static int checked_mul(int64_t a, int64_t b, int64_t *rp);
+  static int checked_div(int64_t a, int64_t b, int64_t *rp);
 
 public:
   safe_i64();
