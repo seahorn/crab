@@ -203,7 +203,28 @@ public:
       }
     }
   }
-
+  
+  bool lexicographical_compare(const linear_expression_t &o) const {
+    if (!(constant() < o.constant())) {
+      return false;
+    }
+    
+    auto comp = [](const typename map_t::value_type &p1, const typename map_t::value_type &p2) {
+		  return p1.first < p2.first && p1.second < p2.second;
+		};
+    // code from
+    // https://en.cppreference.com/w/cpp/algorithm/lexicographical_compare
+    auto first1 = _map->begin();
+    auto last1 = _map->end();
+    auto first2 = o._map->begin();
+    auto last2 = o._map->end();
+    for ( ; (first1 != last1) && (first2 != last2); ++first1, (void) ++first2 ) {
+      if (comp(*first1, *first2)) return true;
+      if (comp(*first2, *first1)) return false;
+    }
+    return (first1 == last1) && (first2 != last2);    
+  }
+  
   bool is_constant() const { return (this->_map->size() == 0); }
 
   Number constant() const { return this->_cst; }
@@ -558,7 +579,7 @@ operator-(crab::variable<Number, VariableName> x,
 }
 
 template <typename Number, typename VariableName>
-class linear_constraint : public crab::indexable {
+class linear_constraint {
 
 public:
   using number_t = Number;
@@ -708,11 +729,10 @@ public:
     return res;
   }
 
-  virtual index_t index() const override {
-    // XXX: to store linear constraints in patricia trees
-    // Ufff, the indexes may not be unique. Check that patricia
-    // trees are ok with that.
-    return (index_t)hash();
+  bool lexicographical_compare(const linear_constraint_t &o) const {
+    return ((_kind < o._kind) &&
+	    (_signedness < o._signedness) &&
+	    _expr.lexicographical_compare(o._expr));
   }
 
   Number operator[](const variable_t &x) const {
@@ -731,7 +751,7 @@ public:
     return linear_constraint_t(e, this->_kind, is_signed());
   }
 
-  virtual void write(crab::crab_os &o) const override {
+  void write(crab::crab_os &o) const {
     if (this->is_contradiction()) {
       o << "false";
     } else if (this->is_tautology()) {
