@@ -2165,15 +2165,14 @@ public:
 	    allocation_sites inter = lhs_as & rhs_as;	    
 	    if (inter.is_bottom()) {
 	      // if they do not have any common allocation site then
-	      // they cannot be the same address.
-	      // 
-	      // However, if ref_cst is a disequality we cannot say
-	      // anything by looking only at allocation sites. Even if
-	      // both references point to singletons they can still be
-	      // different.
+	      // they cannot be the same address.	      
 	      set_to_bottom();
 	      return;
 	    }
+	    // If ref_cst is a disequality we cannot make the state
+	    // bottom by looking only at allocation sites. Even if
+	    // both references point to the same allocation site they
+	    // can still be different.
 	  }
 	}
       }
@@ -2448,7 +2447,7 @@ public:
     if (!is_bottom()) {
 
       if (Params::allocation_sites) {
-	if (rhs.is_equality() && rhs.is_binary()) {
+	if ((rhs.is_equality() || rhs.is_disequality()) && rhs.is_binary()) {
 	  auto op1_as = m_alloc_site_dom[rhs.lhs()];
 	  auto op2_as = m_alloc_site_dom[rhs.rhs()];
 	  // -- See note about soundness in ref_asume.
@@ -2457,8 +2456,14 @@ public:
 	    if (inter.is_bottom()) {
 	      // if they do not have any common allocation site then
 	      // they cannot be the same address.
-	      auto false_cst =  base_linear_constraint_t::get_false();
-	      m_base_dom.assign_bool_cst(rename_var(lhs), false_cst);
+	      if (rhs.is_equality()) {
+		auto false_cst =  base_linear_constraint_t::get_false();
+		m_base_dom.assign_bool_cst(rename_var(lhs), false_cst);
+	      } else {
+		assert(rhs.is_disequality());
+		auto true_cst =  base_linear_constraint_t::get_true();
+		m_base_dom.assign_bool_cst(rename_var(lhs), true_cst);
+	      }
 	      return;
 	    }
 	  }
