@@ -1121,9 +1121,15 @@ public:
 	// -- definitely false
 	m_product.first().set_bool(x, boolean_value::get_false());
       } else {
-	Dom inv2(m_product.second());
-	inv2 += cst.negate();
-	if (inv2.is_bottom()) {
+	// The call to entail is equivalent to:
+	//   Dom inv2(m_product.second());
+	//   inv2 += cst.negate();
+	//   if (inv2.is_bottom()) { ...}
+	// 
+	// However, entail splits equalities into inequalities to
+	// avoid disequalities after negation.
+	if (crab::domains::checker_domain_traits<Dom>::
+	    entail(m_product.second(), cst)) {
 	  // -- definitely true
 	  m_product.first().set_bool(x, boolean_value::get_true());
 	} else {
@@ -1144,8 +1150,8 @@ public:
                           << "\t" << x << " := (" << cst << ")\n"
                           << "\t" << x << " := " << bx << "\n"
                           << "\tunchanged vars=" << m_unchanged_vars << "\n"
-                          << "\tlinear constraints for reduction=" << m_var_to_lincsts
-                          << "\n";);
+	                  << "\tlinear constraints for reduction=" << m_var_to_lincsts << "\n"
+                          << "\tINV=" << m_product << "\n";);
   }
 
   void assign_bool_ref_cst(const variable_t &x,
@@ -1266,10 +1272,10 @@ public:
     m_product.assume_bool(x, is_negated);
 
     CRAB_LOG("flat-boolean",
-             crab::outs() << "*** Reduction boolean --> numerical\n"
+             crab::outs() << "*** Reduction boolean --> non-boolean\n"
                           << "\tassume" << (is_negated ? "(not " : "(") << x
                           << ")\n"
-                          << "\tINV=" << m_product.second() << "\n"
+                          << "\tINV=" << m_product << "\n"
                           << "\tunchanged vars=" << m_unchanged_vars << "\n"
 	                  << "\tlinear constraints for reduction=" << m_var_to_lincsts << "\n"
                           << "\tref constraints for reduction=" << m_var_to_refcsts	     
