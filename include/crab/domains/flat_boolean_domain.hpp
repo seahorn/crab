@@ -471,10 +471,6 @@ struct abstract_domain_traits<flat_boolean_domain<Number, VariableName>> {
 // The reduction happens in two situations:
 //    (1) when bvar := linear_constraint from numerical (non-boolean) to boolean
 //    (2) when assume_bool(bvar) from boolean to numerical (non-boolean)
-// Similarly, we handle reference constraints:
-// when bvar := reference_constraint from references to boolean
-//      assume_ref(bvar)
-// 
 // The step (2) is quite weak.
 //
 // For instance, code like this won't trigger any propagation so
@@ -489,6 +485,28 @@ struct abstract_domain_traits<flat_boolean_domain<Number, VariableName>> {
 //   havoc(x);
 //   b1 = (x >= 0);
 //   assume_bool(b1);
+//
+// Also, boolean binary operations are mostly ignored during the
+// reduction. For instance, the code below won't trigger any reduction
+// from booleans to numerical constraints.
+//
+//   b1 := (x>=0);
+//   b2 := (y>=0);
+//   b3 := b1 or b2;
+//   assume(b3); // we will miss that either x or y is non-negative.
+// 
+// The reduction code also supports reference constraints:
+//     bvar := reference_constraint 
+//     ref_assume(bvar)
+//
+// However, note that if the flat_boolean_numerical_domain is part of
+// the base domain used by the region_domain then the following
+// abstract operations will never be called:
+// 
+// - assign_bool_ref_cst: because region domain map reference
+//   variables to numerical ones.
+// - all region/reference operations 
+//
 //
 template <typename Dom>
 class flat_boolean_numerical_domain final
@@ -1092,27 +1110,33 @@ public:
     m_product.assign_bool_cst(x, cst);
 
     /** Reduction from the non-boolean domain to the flat boolean domain **/
-    Dom inv1(m_product.second());
-    inv1 += cst;
-    if (inv1.is_bottom()) {
-      // -- definitely false
-      m_product.first().set_bool(x, boolean_value::get_false());
+    if (cst.is_tautology()) {
+      m_product.first().set_bool(x, boolean_value::get_true());
+    } else if (cst.is_contradiction()) {
+      m_product.first().set_bool(x, boolean_value::get_false());	
     } else {
-      Dom inv2(m_product.second());
-      inv2 += cst.negate();
-      if (inv2.is_bottom()) {
-        // -- definitely true
-        m_product.first().set_bool(x, boolean_value::get_true());
+      Dom inv1(m_product.second());
+      inv1 += cst;
+      if (inv1.is_bottom()) {
+	// -- definitely false
+	m_product.first().set_bool(x, boolean_value::get_false());
       } else {
-        // -- inconclusive
-        m_product.first().set_bool(x, boolean_value::top());
+	Dom inv2(m_product.second());
+	inv2 += cst.negate();
+	if (inv2.is_bottom()) {
+	  // -- definitely true
+	  m_product.first().set_bool(x, boolean_value::get_true());
+	} else {
+	  // -- inconclusive
+	  m_product.first().set_bool(x, boolean_value::top());
+	}
       }
-    }
-    m_var_to_lincsts.set(x, lincst_domain_t(cst));
-    // We assume all variables in cst are unchanged unless the
-    // opposite is proven
-    for (auto const &v : cst.variables()) {
-      m_unchanged_vars += v;
+      m_var_to_lincsts.set(x, lincst_domain_t(cst));
+      // We assume all variables in cst are unchanged unless the
+      // opposite is proven
+      for (auto const &v : cst.variables()) {
+	m_unchanged_vars += v;
+      }
     }
 
     CRAB_LOG("flat-boolean", auto bx = m_product.first().get_bool(x);
@@ -1136,28 +1160,33 @@ public:
     m_product.assign_bool_ref_cst(x, cst);
 
     /** Reduction from the non-boolean domain to the flat boolean domain **/
-    
-    Dom inv1(m_product.second());
-    inv1.ref_assume(cst);
-    if (inv1.is_bottom()) {
-      // -- definitely false
-      m_product.first().set_bool(x, boolean_value::get_false());
+    if (cst.is_tautology()) {
+      m_product.first().set_bool(x, boolean_value::get_true());
+    } else if (cst.is_contradiction()) {
+      m_product.first().set_bool(x, boolean_value::get_false());	
     } else {
-      Dom inv2(m_product.second());
-      inv2.ref_assume(cst.negate());
-      if (inv2.is_bottom()) {
-        // -- definitely true
-        m_product.first().set_bool(x, boolean_value::get_true());
-      } else {
-        // -- inconclusive
-        m_product.first().set_bool(x, boolean_value::top());
+      Dom inv1(m_product.second());
+      inv1.ref_assume(cst);
+      if (inv1.is_bottom()) {
+	// -- definitely false
+	m_product.first().set_bool(x, boolean_value::get_false());
+    } else {
+	Dom inv2(m_product.second());
+	inv2.ref_assume(cst.negate());
+	if (inv2.is_bottom()) {
+	  // -- definitely true
+	  m_product.first().set_bool(x, boolean_value::get_true());
+	} else {
+	  // -- inconclusive
+	  m_product.first().set_bool(x, boolean_value::top());
+	}
       }
-    }
-    m_var_to_refcsts.set(x, refcst_domain_t(cst));
-    // We assume all variables in cst are unchanged unless the
-    // opposite is proven
-    for (auto const &v : cst.variables()) {
-      m_unchanged_vars += v;
+      m_var_to_refcsts.set(x, refcst_domain_t(cst));
+      // We assume all variables in cst are unchanged unless the
+      // opposite is proven
+      for (auto const &v : cst.variables()) {
+	m_unchanged_vars += v;
+      }
     }
 
     CRAB_LOG("flat-boolean", auto bx = m_product.first().get_bool(x);
@@ -1185,7 +1214,7 @@ public:
 
     CRAB_LOG("flat-boolean",
              crab::outs() << "\tunchanged vars=" << m_unchanged_vars << "\n"
-                          << "\tlinear constraints for reduction=" << m_var_to_lincsts
+	                  << "\tlinear constraints for reduction=" << m_var_to_lincsts << "\n"
                           << "\treference constraints for reduction=" << m_var_to_refcsts	     
                           << "\n";);
   }
@@ -1242,7 +1271,7 @@ public:
                           << ")\n"
                           << "\tINV=" << m_product.second() << "\n"
                           << "\tunchanged vars=" << m_unchanged_vars << "\n"
-                          << "\tlinear constraints for reduction=" << m_var_to_lincsts
+	                  << "\tlinear constraints for reduction=" << m_var_to_lincsts << "\n"
                           << "\tref constraints for reduction=" << m_var_to_refcsts	     
                           << "\n";);
 
