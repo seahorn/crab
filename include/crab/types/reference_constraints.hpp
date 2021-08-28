@@ -299,6 +299,13 @@ public:
                                   REF_GEQ);
   }
 
+  bool lexicographical_compare(const reference_constraint_t &o) const {
+    return (m_kind < o.m_kind  &&
+	    m_offset < o.m_offset &&
+	    m_lhs < o.m_lhs &&
+	    m_rhs < o.m_rhs);
+  }
+  
   void write(crab_os &o) const {
     if (is_contradiction()) {
       o << "false";

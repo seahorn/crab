@@ -271,6 +271,309 @@ namespace domains {
 //        The NOSA license does not apply to this code  
 //===================================================================//  
 
+
+/**
+ * This domain is semantically equivalent to discrete_domain but it
+ * uses std::set instead of patricia tries as underlying
+ * datastructure. Because of this, this domain is slower than
+ * discrete_domain so the only reason to use it is when Element is not
+ * a subclass of indexable.
+**/
+
+template <class Element, class Compare>
+class set_domain {
+private:
+  using set_t = std::set<Element, Compare>;
+
+public:
+  using set_domain_t = set_domain<Element, Compare>;
+  using iterator = typename set_t::const_iterator;
+
+private:
+  bool m_is_top;
+  set_t m_set;
+
+private:
+  set_domain(bool is_top) : m_is_top(is_top) {}
+  set_domain(set_t set) : m_is_top(false), m_set(set) {}
+
+public:
+  // Default constructor creates an empty set rather than top
+  set_domain() : m_is_top(false) {}
+  set_domain(Element s) : m_is_top(false) {
+    m_set.insert(s);
+  }  
+  set_domain(const set_domain_t &other) = default;
+  set_domain(set_domain_t &&other) = default;
+  set_domain_t &operator=(const set_domain_t &other) = default;
+  set_domain_t &operator=(set_domain_t &&other) = default;  
+
+  // Return an empty set
+  static set_domain_t bottom() { return set_domain_t(false); }
+  // Return a set with all variables
+  static set_domain_t top() { return set_domain_t(true); }
+  
+  bool is_top() const { return m_is_top; }
+  bool is_bottom() const { return (!m_is_top && m_set.empty()); }
+
+  bool operator<=(const set_domain_t &other) const {
+    return other.m_is_top ||
+      (!m_is_top && std::includes(m_set.begin(), m_set.end(),
+				  other.m_set.begin(), other.m_set.end(),
+				  [](const Element &e1, const Element &e2) {
+				    Compare cmp;
+				    return cmp(e1,e2);
+				  }));
+  }
+
+  bool operator==(const set_domain_t &other) const {
+    return (m_is_top && other.m_is_top) || (m_set == other.m_set);
+  }
+
+  void operator|=(const set_domain_t &other) {
+    if (is_top()) {
+      return;
+    } else if (other.is_top()) {
+      *this = other;
+    } else {
+      m_set.insert(other.begin(), other.end());
+    }
+  }
+
+  set_domain_t operator|(const set_domain_t &other) const {
+    if (is_top() || other.is_top()) {
+      return set_domain_t::top();
+    } else {
+      set_domain_t res(*this);
+      res.m_set.insert(other.begin(), other.end());
+      return res;
+    }
+  }
+
+  set_domain_t operator&(const set_domain_t &other) const {
+    if (is_bottom() || other.is_bottom()) {
+      return set_domain_t::bottom();
+    } else if (is_top()) {
+      return other;
+    } else if (other.is_top()) {
+      return *this;
+    } else {
+      set_t s;
+      std::set_intersection(m_set.begin(), m_set.end(),
+			    other.m_set.begin(), other.m_set.end(),
+			    std::inserter(s, s.end()),
+			    [](const Element &e1, const Element &e2) {
+			      Compare cmp;
+			      return cmp(e1,e2);
+			    });
+      return set_domain_t(s);
+    }
+  }
+
+  set_domain_t operator||(const set_domain_t &other) const {
+    return operator|(other);
+  }
+
+  set_domain_t operator&&(const set_domain_t &other) const {
+    return operator&(other);
+  }
+
+  set_domain_t &operator+=(Element s) {
+    if (!is_top()) {
+      m_set.insert(s);
+    }
+    return *this;
+  }
+
+  set_domain_t operator+(Element s) {
+    set_domain_t r(*this);
+    r.operator+=(s);
+    return r;
+  }
+
+  set_domain_t &operator-=(Element s) {
+    if (!is_top()) {
+      m_set.erase(s);
+    }
+    return *this;
+  }
+
+  set_domain_t operator-(Element s) {
+    set_domain_t r(*this);
+    r.operator-=(s);
+    return r;
+  }
+
+  bool contain(Element e) {
+    if (is_bottom()) {
+      return false;
+    } else if (is_top()) {
+      return true;
+    } else {
+      return m_set.count(e) > 0;
+    }
+  }
+  
+  void rename(const std::vector<Element> &from, const std::vector<Element> &to) {
+    if (is_top() || is_bottom()) {
+      return;
+    }
+    if (from.size() != to.size()) {
+      CRAB_ERROR("set domain::rename with input vectors of different sizes");
+    }
+
+    for(unsigned i=0, sz=from.size(); i<sz; ++i) {
+      if (from[i] == to[i]) {
+	continue;
+      }
+      if (contain(from[i])) {
+	this->operator-=(from[i]);
+	this->operator+=(to[i]);
+      }
+    }
+  }
+  
+  std::size_t size() const {
+    if (is_top()) {
+      assert(false);
+      CRAB_ERROR("Size for set domain TOP is undefined");
+    } else {
+      return m_set.size();
+    }
+  }
+
+  iterator begin() const {
+    if (is_top()) {
+      assert(false);      
+      CRAB_ERROR("Iterator for set domain TOP is undefined");
+    } else {
+      return m_set.begin();
+    }
+  }
+
+  iterator end() const {
+    if (is_top()) {
+      assert(false);      
+      CRAB_ERROR("Iterator for set domain TOP is undefined");
+    } else {
+      return m_set.end();
+    }
+  }
+
+  void write(crab::crab_os &o) const {
+    if (is_top()) {
+      o << "{...}";
+    } else if (is_bottom()) {
+      o << "{}";
+    } else {
+      for (auto it = m_set.begin(), et = m_set.end(); it!=et; ) {
+	o << *it;
+	++it;
+	if (it != et) {
+	  o << ",";
+	}
+      }
+    }
+  }
+
+}; // class set_domain
+
+template<class Element, class Compare>
+inline crab::crab_os &operator<<(crab::crab_os &o,
+                                 const set_domain<Element,Compare> &d) {
+  d.write(o);
+  return o;
+}
+
+// Dual of set_domain: the larger is the set, the more precise is the
+// domain.
+template<class Element, class Compare>
+class dual_set_domain {
+  using dual_set_domain_t = dual_set_domain<Element, Compare>;
+  using set_domain_t = set_domain<Element, Compare>;
+  
+  
+  set_domain_t m_set;
+    
+public:
+  using iterator = typename set_domain_t::iterator;
+
+  dual_set_domain(set_domain_t s)
+    : m_set(s) {}
+  dual_set_domain()
+    : m_set(set_domain_t::bottom()) /*top by default*/ {}
+  dual_set_domain(const dual_set_domain_t &other)
+    : m_set(other.m_set) {}
+
+  static dual_set_domain_t bottom() { return set_domain_t::top(); }
+  static dual_set_domain_t top() { return set_domain_t::bottom(); }
+  bool is_top() const { return m_set.is_bottom(); }
+  bool is_bottom() const { return m_set.is_top(); }
+
+  bool operator<=(const dual_set_domain_t &other) const {
+    if (other.is_top() || is_bottom()) {
+      return true;
+    } else {
+      return other.m_set <= m_set;
+    }
+  }
+
+  bool operator==(const dual_set_domain_t &other) const {
+    return (*this <= other && other <= *this);
+  }
+
+  void operator|=(const dual_set_domain_t &other) {
+    m_set = m_set & other.m_set;
+  }
+
+  dual_set_domain_t operator|(const dual_set_domain_t &other) const {
+    return dual_set_domain_t(m_set & other.m_set);
+  }
+
+  dual_set_domain_t operator&(const dual_set_domain_t &other) const {
+    return dual_set_domain_t(m_set | other.m_set);
+  }
+
+  dual_set_domain_t operator||(const dual_set_domain_t &other) const {
+    return this->operator|(other);
+  }
+
+  dual_set_domain_t operator&&(const dual_set_domain_t &other) const {
+    return this->operator&(other);
+  }
+
+  dual_set_domain_t &operator+=(const Element &c) {
+    m_set += c;
+    return *this;
+  }
+  dual_set_domain_t &operator-=(const Element &c) {
+    m_set -= c;
+    return *this;
+  }
+
+  std::size_t size() { return m_set.size(); }
+
+  iterator begin() const  { return m_set.begin(); }
+  iterator end() const { return m_set.end(); }
+  
+  void write(crab::crab_os &o) {
+    if (is_bottom()) {
+      o << "_|_";
+    } else if (is_top()) {
+      o << "top";
+    } else {
+      m_set.write(o);
+    }
+  }
+
+  friend crab::crab_os &operator<<(crab::crab_os &o,
+				   dual_set_domain_t &dom) {
+    dom.write(o);
+    return o;
+  }
+}; // end dual_set_domain
+
+
 /*
  * Represent sets of pairs (Key,Value).
  * 

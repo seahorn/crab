@@ -55,6 +55,9 @@ public:
   using variable_t = variable<Num, VName>;
   using Alloc = crab::var_factory_impl::str_var_alloc_col;
   using domain_t = Abs;
+
+  static_assert(std::is_same<typename Abs::varname_t, Alloc::varname_t>::value,
+		"Base abstract domain must use str_var_alloc_col as varname factory");
 };
 } // namespace term
 
