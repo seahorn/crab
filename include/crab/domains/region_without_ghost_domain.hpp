@@ -1623,16 +1623,22 @@ public:
     if (!is_bottom()) {
 
       if (Params::allocation_sites) {      
-	if (rhs.is_equality()) {
+	if (rhs.is_equality() || rhs.is_disequality()) {
 	  if (rhs.is_binary()) {
 	    allocation_sites inter =
 	      m_alloc_site_dom[rhs.lhs()] & m_alloc_site_dom[rhs.rhs()];
 	    if (inter.is_bottom()) {
 	      // if they do not have any common allocation site then
 	      // they cannot be the same address.
-	    auto false_cst =  linear_constraint_t::get_false();
-	    m_base_dom.assign_bool_cst(lhs, false_cst);
-	    return;
+	      if (rhs.is_equality()) {
+		auto false_cst =  linear_constraint_t::get_false();
+		m_base_dom.assign_bool_cst(lhs, false_cst);
+	      } else {
+		assert(rhs.is_disequality());
+		auto true_cst =  linear_constraint_t::get_true();
+		m_base_dom.assign_bool_cst(lhs, true_cst);
+	      }
+	      return;
 	    }
 	  }
 	}
