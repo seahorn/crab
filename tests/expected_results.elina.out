@@ -4952,6 +4952,21 @@ result={-y <= 0; y <= 80; -z <= 0; z <= 20; -x <= -4; x <= 4}
 === Begin ./test-bin/unittests-linear-constraints ===
 Before normalize constraints {x <= 8; -y <= -5; y <= 6; -x <= -8; -v <= -9888; z = 10; w <= 0; v <= 9888}
 After normalize constraints {x = 8; v = 9888; -y <= -5; y <= 6; z = 10; w <= 0}
+After adding x <= 8: {x <= 8}
+After adding y >= 5: {x <= 8,-y <= -5}
+After adding y <= 6: {x <= 8,y <= 6,-y <= -5}
+After adding x >= 8: {x <= 8,y <= 6,-y <= -5,-x <= -8}
+After adding x <= 8: {x <= 8,y <= 6,-y <= -5,-x <= -8}
+--------------
+Checking if {x <= 8,y <= 6,-y <= -5,-x <= -8} <= {x <= 8,-y <= -5}=0
+Checking if {x <= 8,-y <= -5} <= {x <= 8,y <= 6,-y <= -5,-x <= -8}=1
+--------------
+{x <= 8,y <= 6,-y <= -5,-x <= -8} & {x <= 8,-y <= -5}={x <= 8,-y <= -5}
+--------------
+{x <= 8,y <= 6,-y <= -5,-x <= -8} | {x <= 8,-z <= -4,-y <= -5}={x <= 8,y <= 6,-z <= -4,-y <= -5,-x <= -8}
+--------------
+{x <= 8,y <= 6,-y <= -5,-x <= -8} | {...}={...}
+--------------
 === End ./test-bin/unittests-linear-constraints ===
 === Begin ./test-bin/unittests-regions ===
 Join of
