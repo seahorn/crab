@@ -205,13 +205,15 @@ public:
   }
   
   bool lexicographical_compare(const linear_expression_t &o) const {
-    if (!(constant() < o.constant())) {
+    if (constant() < o.constant()) {
+      return true;
+    } else if (constant() > o.constant()) {
       return false;
     }
-    
+		 
     auto comp = [](const typename map_t::value_type &p1, const typename map_t::value_type &p2) {
-		  return p1.first < p2.first && p1.second < p2.second;
-		};
+	 return (p1.first < p2.first || (p1.first == p2.first && p1.second < p2.second));
+    };
     // code from
     // https://en.cppreference.com/w/cpp/algorithm/lexicographical_compare
     auto first1 = _map->begin();
@@ -730,9 +732,19 @@ public:
   }
 
   bool lexicographical_compare(const linear_constraint_t &o) const {
-    return ((_kind < o._kind) &&
-	    (_signedness < o._signedness) &&
-	    _expr.lexicographical_compare(o._expr));
+    if (_kind < o._kind) {
+      return true;
+    } else if (_kind > o._kind) {
+      return false;
+    } else if (_signedness < o._signedness) {
+      return true;
+    } else if (_signedness > o._signedness) {
+      return false;
+    } else {
+      assert(_kind == o._kind);
+      assert(_signedness == o._signedness);
+      return _expr.lexicographical_compare(o._expr); 
+    }
   }
 
   Number operator[](const variable_t &x) const {
