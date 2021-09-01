@@ -318,8 +318,8 @@ public:
 
   bool operator<=(const set_domain_t &other) const {
     return other.m_is_top ||
-      (!m_is_top && std::includes(m_set.begin(), m_set.end(),
-				  other.m_set.begin(), other.m_set.end(),
+      (!m_is_top && std::includes(other.m_set.begin(), other.m_set.end(),
+				  m_set.begin(), m_set.end(),
 				  [](const Element &e1, const Element &e2) {
 				    Compare cmp;
 				    return cmp(e1,e2);
@@ -466,6 +466,7 @@ public:
     } else if (is_bottom()) {
       o << "{}";
     } else {
+      o << "{";
       for (auto it = m_set.begin(), et = m_set.end(); it!=et; ) {
 	o << *it;
 	++it;
@@ -473,6 +474,7 @@ public:
 	  o << ",";
 	}
       }
+      o << "}";
     }
   }
 
