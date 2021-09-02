@@ -2963,6 +2963,12 @@ public:
     // 
     // nonnull(ref)
     //       ensures that the reference is not null
+    //
+    // ---Array bounds analysis----
+    //
+    // b := is_dereferenceable(rgn, ref, sz)
+    //       b is true if the memory pointed by [ref, ref+sz] is
+    //       dereferenceable
     // 
     // ---Tag analysis---
     /// 
@@ -3104,6 +3110,14 @@ public:
 	  operator-=(bv);			  
 	} 
       }
+    } else if (name == "is_dereferenceable") {
+      error_if_not_arity(3, 1);      
+      // Ignore this intrinsics for now.
+      // 
+      // TODO: if we want to reason about this intrinsics we need to
+      // keep track of the sizes of the allocation sites.
+      variable_t v = outputs[0];
+      operator-=(v);
     } else {
       // pass the intrinsics to the base domain
       //=== base domain ===/
@@ -3112,12 +3126,22 @@ public:
       base_inputs.reserve(inputs.size());
       base_outputs.reserve(outputs.size());
       for (unsigned i = 0, sz = inputs.size(); i < sz; ++i) {
+	if (inputs[i].get_type().is_unknown_region()) {
+	  // rename_var does not support unknown regions so we bail
+	  // out. The base domain shouldn't care about regions anyway.
+	  return;
+	}
         base_inputs.push_back(inputs[i].is_variable() ?
 	     base_variable_or_constant_t(rename_var(inputs[i].get_variable())) :
 	     base_variable_or_constant_t(inputs[i].get_constant(),
 					 inputs[i].get_type()));
       }
       for (unsigned i = 0, sz = outputs.size(); i < sz; ++i) {
+	if (outputs[i].get_type().is_unknown_region()) {
+	  // rename_var does not support unknown regions so we bail
+	  // out. The base domain shouldn't care about regions anyway.
+	  return;
+	}	
         base_outputs.push_back(rename_var(outputs[i]));
       }
       m_base_dom.intrinsic(name, base_inputs, base_outputs);
