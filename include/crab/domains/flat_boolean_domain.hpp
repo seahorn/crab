@@ -959,44 +959,44 @@ public:
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
     m_product.apply(op, x, y, z);
-    m_unchanged_vars -= variable_t(x);
+    m_unchanged_vars -= x;
   }
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
     m_product.apply(op, x, y, k);
-    m_unchanged_vars -= variable_t(x);
+    m_unchanged_vars -= x;
   }
 
   void assign(const variable_t &x, const linear_expression_t &e) override {
     m_product.assign(x, e);
-    m_unchanged_vars -= variable_t(x);
+    m_unchanged_vars -= x;
   }
 
   void select(const variable_t &lhs, const linear_constraint_t &cond,
 	      const linear_expression_t &e1,  const linear_expression_t &e2) override {
     m_product.select(lhs, cond, e1, e2);
-    m_unchanged_vars -= variable_t(lhs);
+    m_unchanged_vars -= lhs;
     
   }  
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const bool_num_domain_t &invariant) override {
     m_product.backward_assign(x, e, invariant.m_product);
-    m_unchanged_vars -= variable_t(x);
+    m_unchanged_vars -= x;
   }
 
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, number_t z,
                       const bool_num_domain_t &invariant) override {
     m_product.backward_apply(op, x, y, z, invariant.m_product);
-    m_unchanged_vars -= variable_t(x);
+    m_unchanged_vars -= x;
   }
 
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const bool_num_domain_t &invariant) override {
     m_product.backward_apply(op, x, y, z, invariant.m_product);
-    m_unchanged_vars -= variable_t(x);
+    m_unchanged_vars -= x;
   }
 
   void operator+=(const linear_constraint_system_t &csts) override {
@@ -1070,7 +1070,7 @@ public:
   void set(const variable_t &x, interval_t intv) {
     // domain_product2 does not define set method
     m_product.second().set(x, intv); // only on the numerical domain
-    m_unchanged_vars -= variable_t(x);
+    m_unchanged_vars -= x;
   }
 
   interval_t operator[](const variable_t &v) override {
@@ -1093,7 +1093,7 @@ public:
     m_product -= v;
     m_var_to_lincsts -= v;
     m_var_to_refcsts -= v;    
-    m_unchanged_vars -= variable_t(v);
+    m_unchanged_vars -= v;
   }
 
   // boolean_operators
@@ -1401,10 +1401,10 @@ public:
         //   m_product.second() += linear_constraint_t(variable_t(dst) <= 1);
         //}
       }
-      m_unchanged_vars -= variable_t(dst);
+      m_unchanged_vars -= dst;
     } else {
       m_product.apply(op, dst, src);
-      m_unchanged_vars -= variable_t(dst);
+      m_unchanged_vars -= dst;
     }
 
     CRAB_LOG("flat-boolean", crab::outs() << *this << "\n");
@@ -1415,13 +1415,13 @@ public:
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
     m_product.apply(op, x, y, z);
-    m_unchanged_vars -= variable_t(x);
+    m_unchanged_vars -= x;
   }
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
     m_product.apply(op, x, y, k);
-    m_unchanged_vars -= variable_t(x);
+    m_unchanged_vars -= x;
   }
 
   // array_operators_api
@@ -1439,7 +1439,7 @@ public:
                           const linear_expression_t &i) override {
     m_product.array_load(lhs, a, elem_size, i);
     if (lhs.get_type().is_integer() || lhs.get_type().is_real()) {
-      m_unchanged_vars -= variable_t(lhs);
+      m_unchanged_vars -= lhs;
     }
   }
 
@@ -1483,7 +1483,7 @@ public:
                       const bool_num_domain_t &invariant) override {
     m_product.backward_array_load(lhs, a, elem_size, i, invariant.m_product);
     if (a.get_type().is_integer_array() || a.get_type().is_real_array()) {
-      m_unchanged_vars -= variable_t(lhs);
+      m_unchanged_vars -= lhs;
     }
   }
 
@@ -1539,7 +1539,7 @@ public:
                 const variable_t &res) override {
     m_product.ref_load(ref, reg, res);
     if (res.get_type().is_integer() || res.get_type().is_real()) {
-      m_unchanged_vars -= variable_t(res);
+      m_unchanged_vars -= res;
     }    
   }
   void ref_store(const variable_t &ref, const variable_t &reg,
@@ -1569,7 +1569,7 @@ public:
   void ref_to_int(const variable_t &reg, const variable_t &ref_var,
                   const variable_t &int_var) override {
     m_product.ref_to_int(reg, ref_var, int_var);
-    m_unchanged_vars -= variable_t(int_var);
+    m_unchanged_vars -= int_var;
   }
   void int_to_ref(const variable_t &int_var, const variable_t &reg,
                   const variable_t &ref_var) override {
@@ -1696,8 +1696,8 @@ public:
     m_product.expand(x, new_x);
     m_var_to_lincsts.set(new_x, m_var_to_lincsts[x]);
     m_var_to_refcsts.set(new_x, m_var_to_refcsts[x]);    
-    if (m_unchanged_vars[variable_t(x)]) {
-      m_unchanged_vars += variable_t(new_x);
+    if (m_unchanged_vars[x]) {
+      m_unchanged_vars += new_x;
     }
   }
 }; // class flat_boolean_numerical_domain
