@@ -515,9 +515,10 @@ protected:
   void add_univar_disequation(const variable_t &x, number_t n) {
     bool overflow;
     interval_t i = get_interval(x);
+    interval_t ni(n); 
     interval_t new_i =
         ikos::linear_interval_solver_impl::trim_interval<interval_t>(
-            i, interval_t(n));
+            i, ni);
     if (new_i.is_bottom()) {
       set_to_bottom();
     } else if (!new_i.is_top() && (new_i <= i)) {
