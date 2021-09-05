@@ -785,7 +785,7 @@ private:
   // Return true if cond evaluates definitely to true
   bool eval_true(const variable_t &cond) const {
     bool_domain_t inv(m_product.first());
-    inv.assume_bool(cond, false /*negated*/);
+    inv.assume_bool(cond, true /*negated*/);
     return inv.is_bottom();
   }
   
@@ -793,24 +793,14 @@ private:
   void reduction_select_bool(BoolToCstEnv &env,
 			     const variable_t &lhs, const variable_t &cond,
 			     const variable_t &b1, const variable_t &b2) {
-    boolean_value b1_val = m_product.first().get_bool(b1);
-    boolean_value b2_val = m_product.first().get_bool(b2);
-    
-    if (b1_val.is_false()) {
-      env.set(lhs, env[b2]);
-    }  else if (b2_val.is_false()) {
-      env.set(lhs, env[b1] & env[cond]);
-    } else if (b1_val.is_true() && b2_val.is_top() && eval_false(cond)) {
-      // select(lhs, cond, true, b2)
-      // lhs iff b2 but only if cond is definitely false
-      env.set(lhs, env[b2]);	  
-    } else if (b2_val.is_true() && b1_val.is_top() && eval_true(cond)) {
-      // select(lhs, cond, b1, true)
-      // lhs iff b1 but only if cond is definitely true
-      env.set(lhs, env[b1]);	  
+
+    if (eval_true(cond)) {
+      env.set(lhs, env[b1]); // lhs:= select(cond, b1, b2) --> lhs := b1
+    } else if (eval_false(cond)) {
+      env.set(lhs, env[b2]); // lhs:= select(cond, b1, b2) --> lhs := b2
     } else {
       env -= lhs;
-    }
+    } 
   }
   
   /** End helpers to update m_var_to_lincsts and m_var_to_refcsts **/
@@ -1281,11 +1271,15 @@ public:
                           << "\tref constraints for reduction=" << m_var_to_refcsts	     
                           << "\n";);
 
+    if (is_bottom()) {
+      return; 
+    }
+    
     reduction_assume_bool(m_var_to_lincsts, x, is_negated);
     reduction_assume_bool(m_var_to_refcsts, x, is_negated);    
 
     CRAB_LOG("flat-boolean",
-             crab::outs() << "After reduction=" << m_product.second() << "\n";);
+             crab::outs() << "\tAfter reduction=" << m_product << "\n";);
   }
 
   void select_bool(const variable_t &lhs, const variable_t &cond,
@@ -1298,6 +1292,7 @@ public:
 	assign_bool_var(lhs, b1, false);
       } else {
 	m_product.select_bool(lhs, cond, b1, b2);
+	
 	reduction_select_bool(m_var_to_lincsts, lhs, cond, b1, b2);
 	reduction_select_bool(m_var_to_refcsts, lhs, cond, b1, b2);
       }
