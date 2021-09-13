@@ -193,10 +193,20 @@ public:
 
   bool elem(key_t k) const {
     if (sparse) {
-      // NOTE: This can (often will) read beyond the bounds of sparse.
-      // This is totally okay. But valgrind will complain, and
-      // compiling with AddressSanitizer will probably break.
+      if (k >= sparse_ub) {
+	return false;
+      }
       int idx = sparse[k];
+      // WARNING: Valgrind will complain about uninitialized memory
+      // being accessed. AddressSanitizer does not care about
+      // uninitialized memory but MemorySanitizer might also
+      // complain. This code is not portable. We are triggering
+      // undefined behavior (dense[idx].key might be uninitialized)
+      // and relying on the fact that compilers such as gcc and Clang
+      // will not optimized code.
+      // 
+      // A possible solution is to allocate sparse with calloc and
+      // hoping that the OS does lazily the initialization.
       return (idx < sz) && dense[idx].key == k;
     } else {
       for (key_t ke : keys()) {
@@ -209,8 +219,11 @@ public:
 
   bool lookup(key_t k, val_t *v_out) const {
     if (sparse) {
-      // SEE ABOVE WARNING
+      if (k >= sparse_ub) {
+	return false;
+      }      
       int idx = sparse[k];
+      // SEE ABOVE WARNING      
       if (idx < sz && dense[idx].key == k) {
         (*v_out) = dense[idx].val;
         return true;
@@ -232,8 +245,10 @@ public:
     --sz;
     elt_t repl = dense[sz];
     if (sparse) {
+      if (k >= sparse_ub) {
+	return;
+      }
       int idx = sparse[k];
-
       dense[idx] = repl;
       sparse[repl.key] = idx;
     } else {

@@ -865,7 +865,7 @@ namespace linear_interval_solver_impl {
 using z_interval = interval<z_number>;
 using q_interval = interval<q_number>;
 
-template <> inline z_interval trim_interval(z_interval i, z_interval j) {
+template <> inline z_interval trim_interval(const z_interval &i, const z_interval &j) {
   if (boost::optional<z_number> c = j.singleton()) {
     if (i.lb() == *c) {
       return z_interval(*c + 1, i.ub());
@@ -877,28 +877,28 @@ template <> inline z_interval trim_interval(z_interval i, z_interval j) {
   return i;
 }
 
-template <> inline q_interval trim_interval(q_interval i, q_interval /* j */) {
+template <> inline q_interval trim_interval(const q_interval &i, const q_interval &/* j */) {
   // No refinement possible for disequations over rational numbers
   return i;
 }
 
 template <>
-inline z_interval lower_half_line(z_interval i, bool /*is_signed*/) {
+inline z_interval lower_half_line(const z_interval &i, bool /*is_signed*/) {
   return i.lower_half_line();
 }
 
 template <>
-inline q_interval lower_half_line(q_interval i, bool /*is_signed*/) {
+inline q_interval lower_half_line(const q_interval &i, bool /*is_signed*/) {
   return i.lower_half_line();
 }
 
 template <>
-inline z_interval upper_half_line(z_interval i, bool /*is_signed*/) {
+inline z_interval upper_half_line(const z_interval &i, bool /*is_signed*/) {
   return i.upper_half_line();
 }
 
 template <>
-inline q_interval upper_half_line(q_interval i, bool /*is_signed*/) {
+inline q_interval upper_half_line(const q_interval &i, bool /*is_signed*/) {
   return i.upper_half_line();
 }
 } // namespace linear_interval_solver_impl

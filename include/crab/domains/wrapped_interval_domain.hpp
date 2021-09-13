@@ -1219,8 +1219,8 @@ inline q_wrapped_interval_t mk_interval(q_number c,
 }
 
 template <>
-inline z_wrapped_interval_t trim_interval(z_wrapped_interval_t i,
-                                          z_wrapped_interval_t j) {
+inline z_wrapped_interval_t trim_interval(const z_wrapped_interval_t &i,
+                                          const z_wrapped_interval_t &j) {
   if (i.is_bottom())
     return i;
   // XXX: TODO: gamma(top()) \ gamma(j) can be expressed in a
@@ -1253,32 +1253,32 @@ inline z_wrapped_interval_t trim_interval(z_wrapped_interval_t i,
 }
 
 template <>
-inline q_wrapped_interval_t trim_interval(q_wrapped_interval_t i,
-                                          q_wrapped_interval_t j) {
+inline q_wrapped_interval_t trim_interval(const q_wrapped_interval_t &i,
+                                          const q_wrapped_interval_t &j) {
   // No refinement possible for disequations over rational numbers
   return i;
 }
 
 template <>
-inline z_wrapped_interval_t lower_half_line(z_wrapped_interval_t i,
+inline z_wrapped_interval_t lower_half_line(const z_wrapped_interval_t &i,
                                             bool is_signed) {
   return i.lower_half_line(is_signed);
 }
 
 template <>
-inline q_wrapped_interval_t lower_half_line(q_wrapped_interval_t i,
+inline q_wrapped_interval_t lower_half_line(const q_wrapped_interval_t &i,
                                             bool is_signed) {
   return i.lower_half_line(is_signed);
 }
 
 template <>
-inline z_wrapped_interval_t upper_half_line(z_wrapped_interval_t i,
+inline z_wrapped_interval_t upper_half_line(const z_wrapped_interval_t &i,
                                             bool is_signed) {
   return i.upper_half_line(is_signed);
 }
 
 template <>
-inline q_wrapped_interval_t upper_half_line(q_wrapped_interval_t i,
+inline q_wrapped_interval_t upper_half_line(const q_wrapped_interval_t &i,
                                             bool is_signed) {
   return i.upper_half_line(is_signed);
 }

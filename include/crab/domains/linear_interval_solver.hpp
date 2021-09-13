@@ -63,7 +63,7 @@ namespace ikos {
 namespace linear_interval_solver_impl {
 // gamma(i) \ gamma(j)
 template <typename Interval>
-inline Interval trim_interval(Interval i, Interval j);
+inline Interval trim_interval(const Interval &i, const Interval &j);
 
 template <typename Interval, typename Number>
 inline Interval mk_interval(Number n,
@@ -73,10 +73,10 @@ inline Interval mk_interval(Number n,
 }
 
 template <typename Interval>
-Interval lower_half_line(Interval i, bool is_signed);
+Interval lower_half_line(const Interval &i, bool is_signed);
 
 template <typename Interval>
-Interval upper_half_line(Interval i, bool is_signed);
+Interval upper_half_line(const Interval &i, bool is_signed);
 } // namespace linear_interval_solver_impl
 
 template <typename Number, typename VariableName, typename IntervalCollection>
@@ -279,9 +279,9 @@ public:
                                  linear_constraint_t::kind_t::INEQUALITY);
           linear_constraint_t c2(cst.expression(),
                                  linear_constraint_t::kind_t::DISEQUATION);
-          m_cst_table.push_back(c1);
-          m_cst_table.push_back(c2);
-          cst_size = c1.size() + c2.size();
+          cst_size = c1.size() + c2.size();	  
+          m_cst_table.emplace_back(std::move(c1));
+          m_cst_table.emplace_back(std::move(c2));
         } else {
           m_cst_table.push_back(cst);
         }

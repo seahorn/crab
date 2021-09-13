@@ -1420,9 +1420,10 @@ private:
   bool add_univar_disequation(const variable_t &x, number_t n) {
     bool overflow;
     interval_t i = get_interval(x);
+    interval_t ni(n);
     interval_t new_i =
         ikos::linear_interval_solver_impl::trim_interval<interval_t>(
-            i, interval_t(n));
+            i, ni);
     CRAB_LOG("octagon", crab::outs()
                             << "Adding disequation: " << x << "!=" << n << "\n"
                             << new_i << "\n");

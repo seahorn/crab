@@ -630,9 +630,10 @@ private:
   void inequalities_from_disequation(const variable_t &x, number_t n,
                                      linear_constraint_system_t &out) {
     interval_t i = this->operator[](x);
+    interval_t ni(n);
     interval_t new_i =
         ikos::linear_interval_solver_impl::trim_interval<interval_t>(
-            i, interval_t(n));
+            i, ni);
     if (new_i.is_bottom()) {
       out += linear_constraint_t::get_false();
     } else if (!new_i.is_top() && (new_i <= i)) {

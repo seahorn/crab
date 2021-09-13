@@ -988,7 +988,7 @@ using dis_z_interval_t = crab::domains::dis_interval<z_number>;
 using dis_q_interval_t = crab::domains::dis_interval<q_number>;
 
 template <>
-inline dis_z_interval_t trim_interval(dis_z_interval_t x, dis_z_interval_t y) {
+inline dis_z_interval_t trim_interval(const dis_z_interval_t &x, const dis_z_interval_t &y) {
   if (x.is_bottom())
     return x;
 
@@ -1023,32 +1023,32 @@ inline dis_z_interval_t trim_interval(dis_z_interval_t x, dis_z_interval_t y) {
 }
 
 template <>
-inline dis_q_interval_t trim_interval(dis_q_interval_t i,
-                                      dis_q_interval_t /* j */) {
+inline dis_q_interval_t trim_interval(const dis_q_interval_t &i,
+                                      const dis_q_interval_t &/* j */) {
   // No refinement possible for disequations over rational numbers
   return i;
 }
 
 template <>
-inline dis_z_interval_t lower_half_line(dis_z_interval_t i,
+inline dis_z_interval_t lower_half_line(const dis_z_interval_t &i,
                                         bool /*is_signed*/) {
   return i.lower_half_line();
 }
 
 template <>
-inline dis_q_interval_t lower_half_line(dis_q_interval_t i,
+inline dis_q_interval_t lower_half_line(const dis_q_interval_t &i,
                                         bool /*is_signed*/) {
   return i.lower_half_line();
 }
 
 template <>
-inline dis_z_interval_t upper_half_line(dis_z_interval_t i,
+inline dis_z_interval_t upper_half_line(const dis_z_interval_t &i,
                                         bool /*is_signed*/) {
   return i.upper_half_line();
 }
 
 template <>
-inline dis_q_interval_t upper_half_line(dis_q_interval_t i,
+inline dis_q_interval_t upper_half_line(const dis_q_interval_t &i,
                                         bool /*is_signed*/) {
   return i.upper_half_line();
 }
