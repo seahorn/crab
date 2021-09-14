@@ -975,6 +975,30 @@ private:
     }
     m_tag_env.set(x, tags);
   }
+
+  static void ERROR_IF_NOT_REGION(const variable_t& v, unsigned line) {
+    if (!v.get_type().is_region()) {
+      CRAB_ERROR(v, ":", v.get_type(), " is not a region at line ", line);
+    }
+  }
+
+  static void ERROR_IF_ARRAY_REGION(const variable_t& v, unsigned line) {
+    if (v.get_type().is_array_region()) {
+      CRAB_ERROR(v, ":", v.get_type(), " cannot contain an array at line ", line);
+    }
+  }
+  
+  static void ERROR_IF_NOT_REF(const variable_t& v, unsigned line) {
+    if (!v.get_type().is_reference()) {
+      CRAB_ERROR(v, ":", v.get_type(), " is not a reference at line ", line);
+    }
+  }
+
+  static void ERROR_IF_NOT_INT(const variable_t& v, unsigned line) {
+    if (!v.get_type().is_integer()) {
+      CRAB_ERROR(v, ":", v.get_type(), " is not an integer at line ", line);
+    }
+  }
   
 public:
   region_domain_t make_top() const override { return region_domain_t(true); }
@@ -1419,6 +1443,8 @@ public:
     crab::CrabStats::count(domain_name() + ".count.region_init");
     crab::ScopedCrabStats __st__(domain_name() + ".region_init");
 
+    ERROR_IF_NOT_REGION(rgn, __LINE__);
+    
     if (is_bottom()) {
       return;
     }
@@ -1460,23 +1486,17 @@ public:
     crab::CrabStats::count(domain_name() + ".count.region_copy");
     crab::ScopedCrabStats __st__(domain_name() + ".region_copy");
 
+    ERROR_IF_NOT_REGION(lhs_rgn, __LINE__);
+    ERROR_IF_NOT_REGION(rhs_rgn, __LINE__);
+    if (lhs_rgn.get_type() != rhs_rgn.get_type()) {
+      CRAB_ERROR(domain_name() + "::region_copy ", lhs_rgn, ":=", rhs_rgn,
+                 " with different types");
+    }
+    
     if (is_bottom()) {
       return;
     }
 
-    if (!lhs_rgn.get_type().is_region()) {
-      CRAB_ERROR(domain_name() + "::region_copy ", lhs_rgn,
-                 " must have a region type");
-    }
-    if (!rhs_rgn.get_type().is_region()) {
-      CRAB_ERROR(domain_name() + "::region_copy ", rhs_rgn,
-                 " must have a region type");
-    }
-
-    if (lhs_rgn.get_type() != rhs_rgn.get_type()) {
-      CRAB_ERROR(domain_name() + "::region_copy operands must have same types");
-    }
-    
     m_rgn_counting_dom.set(lhs_rgn, m_rgn_counting_dom[rhs_rgn]);
     m_rgn_init_dom.set(lhs_rgn, m_rgn_init_dom[rhs_rgn]);
     if (Params::allocation_sites) {
@@ -1509,21 +1529,17 @@ public:
 
   void region_cast(const variable_t &src_rgn,
 		   const variable_t &dst_rgn) override {
+    // A region_cast is used to cast unknown regions to typed regions,
+    // or viceversa.
                    
     crab::CrabStats::count(domain_name() + ".count.region_cast");
     crab::ScopedCrabStats __st__(domain_name() + ".region_cast");
 
+    ERROR_IF_NOT_REGION(src_rgn, __LINE__);
+    ERROR_IF_NOT_REGION(dst_rgn, __LINE__);
+    
     if (is_bottom()) {
       return;
-    }
-
-    if (!dst_rgn.get_type().is_region()) {
-      CRAB_ERROR(domain_name() + "::region_cast ", dst_rgn,
-                 " must have a region type");
-    }
-    if (!src_rgn.get_type().is_region()) {
-      CRAB_ERROR(domain_name() + "::region_cast ", src_rgn,
-                 " must have a region type");
     }
 
     m_rgn_counting_dom.set(dst_rgn, m_rgn_counting_dom[src_rgn]);
@@ -1537,11 +1553,9 @@ public:
     if (Params::tag_analysis) {
       m_tag_env.set(dst_rgn, m_tag_env[src_rgn]);
     }
-    
-    if (dst_rgn.get_type() == src_rgn.get_type()) {
-      // nothing to do
-      return;
-    }
+
+    // Since we currently don't model unknown regions we bail out
+    // here.
 
     CRAB_LOG("region",
 	     CRAB_WARN("TODO region_cast ", src_rgn, ":", src_rgn.get_type(), " to ",
@@ -1555,13 +1569,10 @@ public:
     crab::CrabStats::count(domain_name() + ".count.ref_make");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_make");
 
+    ERROR_IF_NOT_REGION(rgn, __LINE__);
+    ERROR_IF_NOT_REF(ref, __LINE__);
+    
     if (is_bottom()) {
-      return;
-    }
-
-    if (!ref.get_type().is_reference()) {
-      CRAB_LOG("region", CRAB_WARN("region_domain::ref_make: ", ref,
-                                   " must be a reference"););
       return;
     }
 
@@ -1590,12 +1601,12 @@ public:
     crab::CrabStats::count(domain_name() + ".count.ref_free");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_free");
 
+    ERROR_IF_NOT_REGION(rgn, __LINE__);
+    ERROR_IF_NOT_REF(ref, __LINE__);
+    
     if (is_bottom()) {
       return;
     }
-
-    assert(rgn.get_type().is_region());      
-    assert(ref.get_type().is_reference());
 
     if (Params::allocation_sites) {
       m_alloc_site_dom -= ref;
@@ -1623,10 +1634,34 @@ public:
     crab::CrabStats::count(domain_name() + ".count.ref_load");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_load");
 
+    ERROR_IF_NOT_REGION(rgn, __LINE__);
+    ERROR_IF_ARRAY_REGION(rgn, __LINE__);    
+    ERROR_IF_NOT_REF(ref, __LINE__);
+    if ((rgn.get_type().is_bool_region() && !res.get_type().is_bool()) ||
+	(rgn.get_type().is_integer_region() &&
+	 !res.get_type().is_integer()) ||
+	(rgn.get_type().is_real_region() && !res.get_type().is_real()) ||
+	(rgn.get_type().is_reference_region() &&
+           !res.get_type().is_reference())) {
+      CRAB_ERROR(domain_name(), "::ref_load: type of lhs ", res, " (",
+		 res.get_type(), ") is not compatible with region ", rgn,
+		 " (", rgn.get_type(), ")");
+    }
+    
     if (is_bottom()) {
       return;
     }
 
+    const ghost_variables_t &gvars_res = get_or_insert_gvars(res);
+
+    if (is_null_ref(ref).is_true()) {
+      CRAB_LOG("region-load",
+               CRAB_WARN("region_domain::ref_load: reference ", ref, " is null."););
+      // set_to_bottom();
+      gvars_res.forget(m_base_dom);
+      return;
+    }
+    
     if (Params::allocation_sites) {
       if (res.get_type().is_reference()) {
 	m_alloc_site_dom.set(res, m_alloc_site_dom[rgn]);
@@ -1637,50 +1672,8 @@ public:
       m_tag_env.set(res, m_tag_env[rgn]);
     }
     
-    const ghost_variables_t &gvars_res = get_or_insert_gvars(res);
-    // Non-scalar regions should be handled by ref_load_from_array
-    if (!rgn.get_type().is_scalar_region()) {
-      CRAB_LOG("region-load", CRAB_WARN("region_domain::ref_load: ", rgn,
-                                        " must be a scalar region"););
-      gvars_res.forget(m_base_dom);
-      return;
-    } else {
-      if ((rgn.get_type().is_bool_region() && !res.get_type().is_bool()) ||
-          (rgn.get_type().is_integer_region() &&
-           !res.get_type().is_integer()) ||
-          (rgn.get_type().is_real_region() && !res.get_type().is_real()) ||
-          (rgn.get_type().is_reference_region() &&
-           !res.get_type().is_reference())) {
-        CRAB_ERROR(domain_name(), "::ref_load: type of lhs ", res, " (",
-                   res.get_type(), ") is not compatible with region ", rgn,
-                   " (", rgn.get_type(), ")");
-      }
-    }
-
-    if (!ref.get_type().is_reference()) {
-      // This shouldn't happen
-      CRAB_LOG("region-load", CRAB_WARN("region_domain::ref_load: ", ref,
-                                        " must be a reference"););
-      gvars_res.forget(m_base_dom);
-      return;
-    }
-
-    if (is_null_ref(ref).is_true()) {
-      CRAB_LOG("region-load",
-               CRAB_WARN("region_domain::ref_load: reference ", ref, " is null."
-                         //, " Set to bottom ..."
-               ););
-      // set_to_bottom();
-      gvars_res.forget(m_base_dom);
-      return;
-    }
-
-    //======================================//
-    // Decide whether weak or strong read
-    //======================================//
     
     if (rgn.get_type().is_unknown_region()) {
-      // TODO: handle unknown regions by casting always to an integer. 
       CRAB_LOG(
           "region-load",
           CRAB_WARN("region_domain::ref_load: skip unknown region ", rgn););
@@ -1690,6 +1683,7 @@ public:
     
     auto num_refs = m_rgn_counting_dom[rgn];
     if (num_refs.is_zero() || num_refs.is_one()) {
+      // strong read
       CRAB_LOG("region-load", crab::outs() << "Reading from singleton\n";);
       if (auto region_gvars_opt = get_gvars(rgn)) {
         gvars_res.assign(m_base_dom, *region_gvars_opt);
@@ -1697,7 +1691,7 @@ public:
         gvars_res.forget(m_base_dom);
       }
     } else {
-
+      // weak read
       CRAB_LOG("region-load", crab::outs() << "Reading from non-singleton\n";);
       if (auto region_gvars_opt = get_gvars(rgn)) {
 	ghost_variables_t fresh_region_gvars = ghost_variables_t::create(m_alloc, rgn.get_type());
@@ -1713,13 +1707,26 @@ public:
                                          << ")=" << *this << "\n";);
   }
 
-  // Write the content of val to the address pointed by ref in region
-  // rgn.
+  // Write the content of val to the address pointed by ref in rgn.
   void ref_store(const variable_t &ref, const variable_t &rgn,
                  const variable_or_constant_t &val) override {
     crab::CrabStats::count(domain_name() + ".count.ref_store");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_store");
 
+    ERROR_IF_NOT_REGION(rgn, __LINE__);
+    ERROR_IF_ARRAY_REGION(rgn, __LINE__);    
+    ERROR_IF_NOT_REF(ref, __LINE__);
+    if ((rgn.get_type().is_bool_region() && !val.get_type().is_bool()) ||
+	(rgn.get_type().is_integer_region() &&
+	 !val.get_type().is_integer()) ||
+	(rgn.get_type().is_real_region() && !val.get_type().is_real()) ||
+	(rgn.get_type().is_reference_region() &&
+	 !val.get_type().is_reference())) {
+      CRAB_ERROR(domain_name(), "::ref_store: type of value ", val, " (",
+		 val.get_type(), ") is not compatible with region ", rgn,
+		 " (", rgn.get_type(), ")");
+    }
+    
     if (is_bottom()) {
       return;
     }
@@ -1735,47 +1742,15 @@ public:
     // We conservatively mark the region as may-initialized
     m_rgn_init_dom.set(rgn, boolean_value::top());
 
-    // Non-scalar regions should be handled by ref_store_to_array
-    if (!rgn.get_type().is_scalar_region()) {
-      CRAB_LOG("region-store", CRAB_WARN("region_domain::ref_store: ", rgn,
-                                         " must be a scalar region"););
-      forget_region_if_tracked(rgn);
-      return;
-    } else {
-      if ((rgn.get_type().is_bool_region() && !val.get_type().is_bool()) ||
-          (rgn.get_type().is_integer_region() &&
-           !val.get_type().is_integer()) ||
-          (rgn.get_type().is_real_region() && !val.get_type().is_real()) ||
-          (rgn.get_type().is_reference_region() &&
-           !val.get_type().is_reference())) {
-        CRAB_ERROR(domain_name(), "::ref_store: type of value ", val, " (",
-                   val.get_type(), ") is not compatible with region ", rgn,
-                   " (", rgn.get_type(), ")");
-      }
-    }
-
-    if (!ref.get_type().is_reference()) {
-      // This shouldn't happen
-      CRAB_LOG("region-store", CRAB_WARN("region_domain::ref_store: ", ref,
-                                         " must be a reference"););
-      forget_region_if_tracked(rgn);      
-      return;
-    }
-
     if (is_null_ref(ref).is_true()) {
       CRAB_LOG("region-store",
                CRAB_WARN("region_domain::ref_store: reference ", ref,
-                         " is null. " //, " Set to bottom ..."
-               ););
+                         " is null. " ););
       // set_to_bottom();
       forget_region_if_tracked(rgn);      
       return;
     }
 
-    //======================================//
-    // Decide whether weak or strong write
-    //======================================//
-        
     auto ref_store = [&val, this](base_abstract_domain_t &base_dom,
 				  const variable_t &rgn_var) {
       ghost_variables_t rgn_gvars = get_or_insert_gvars(rgn_var);
@@ -1841,10 +1816,8 @@ public:
       if (!rgn.get_type().is_unknown_region()) {
 	ref_store(m_base_dom, rgn);
       } else {
-	// TODO: handle unknown regions by casting to integers
-	CRAB_LOG(
-          "region-store",
-          CRAB_WARN("region_domain::ref_store: skip unknown region ", rgn););
+	CRAB_LOG("region-store",
+		 CRAB_WARN("region_domain::ref_store: skip unknown region ", rgn););
       } 
       
       if (Params::allocation_sites) {
@@ -1874,10 +1847,8 @@ public:
 	ref_store(tmp, rgn);
 	m_base_dom |= tmp;
       } else {
-	// TODO: handle unknown regions by casting to integers
-	CRAB_LOG( 
-          "region-store",
-          CRAB_WARN("region_domain::ref_store: skip unknown region ", rgn););
+	CRAB_LOG("region-store", 
+		 CRAB_WARN("region_domain::ref_store: skip unknown region ", rgn););
       }
       
       if (Params::allocation_sites) {
@@ -1908,6 +1879,11 @@ public:
     crab::CrabStats::count(domain_name() + ".count.ref_gep");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_gep");
 
+    ERROR_IF_NOT_REGION(rgn1, __LINE__);
+    ERROR_IF_NOT_REGION(rgn2, __LINE__);
+    ERROR_IF_NOT_REF(ref1, __LINE__);
+    ERROR_IF_NOT_REF(ref2, __LINE__);
+    
     auto eval = [this](const linear_expression_t &e) {
       interval_t r = e.constant();
       for (auto p : e) {
@@ -2130,9 +2106,9 @@ public:
     crab::CrabStats::count(domain_name() + ".count.ref_to_int");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_to_int");
 
-    assert(ref_var.get_type().is_reference());
-    assert(int_var.get_type().is_integer());
-
+    ERROR_IF_NOT_REF(ref_var, __LINE__);
+    ERROR_IF_NOT_INT(int_var, __LINE__);
+    
     if (!is_bottom()) {
       ghost_variables_t src_gvars = get_or_insert_gvars(ref_var);
       ghost_variables_t dst_gvars = get_or_insert_gvars(int_var);
@@ -2149,9 +2125,9 @@ public:
     crab::CrabStats::count(domain_name() + ".count.int_to_ref");
     crab::ScopedCrabStats __st__(domain_name() + ".int_to_ref");
 
-    assert(ref_var.get_type().is_reference());
-    assert(int_var.get_type().is_integer());
-
+    ERROR_IF_NOT_REF(ref_var, __LINE__);
+    ERROR_IF_NOT_INT(int_var, __LINE__);
+    
     if (!is_bottom()) {
       ghost_variables_t src_gvars = get_or_insert_gvars(int_var);
       ghost_variables_t dst_gvars = get_or_insert_gvars(ref_var);
