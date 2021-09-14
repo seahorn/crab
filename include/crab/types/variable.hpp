@@ -68,6 +68,28 @@ public:
     }
   }
 
+  static variable_type mk_region(const variable_type &ty) {
+    if (ty.is_bool()) {
+      return variable_type(variable_type_kind::REG_BOOL_TYPE);
+    } else if (ty.is_integer()) {
+      return variable_type(variable_type_kind::REG_INT_TYPE, ty.get_integer_bitwidth());
+    } else if (ty.is_real()) {
+      return variable_type(variable_type_kind::REG_REAL_TYPE);
+    } else if (ty.is_reference()) {
+      return variable_type(variable_type_kind::REG_REF_TYPE);      
+    } else if (ty.is_bool_array()) {
+      return variable_type(variable_type_kind::REG_ARR_BOOL_TYPE);      
+    } else if (ty.is_real_array()) {
+      return variable_type(variable_type_kind::REG_ARR_REAL_TYPE);            
+    } else if (ty.is_integer_array()) {
+      return variable_type(variable_type_kind::REG_ARR_INT_TYPE);                  
+    } else if (!ty.is_typed()) {
+      return variable_type(variable_type_kind::REG_UNKNOWN_TYPE);
+    } else {
+      CRAB_ERROR("unexpected type for variable_type::mk_region");
+    }
+  }
+  
   variable_type(const variable_type &o) = default;
   variable_type(variable_type &&o) = default;
   variable_type &operator=(const variable_type &o) = default;
@@ -139,6 +161,29 @@ public:
            is_real_array_region();
   }
 
+  variable_type get_region_content_type() const {
+    assert(is_region());
+    if (is_bool_region()) {
+      return variable_type(variable_type_kind::BOOL_TYPE);
+    } else if (is_integer_region()) {
+      return variable_type(variable_type_kind::INT_TYPE, get_integer_region_bitwidth());
+    } else if (is_real_region()) {
+      return variable_type(variable_type_kind::REAL_TYPE);
+    } else if (is_reference_region()) {
+      return variable_type(variable_type_kind::REF_TYPE);
+    } else if (is_int_array_region()) {
+      return variable_type(variable_type_kind::ARR_INT_TYPE);
+    } else if (is_real_array_region()) {
+      return variable_type(variable_type_kind::ARR_REAL_TYPE);      
+    } else if (is_bool_array_region()) {
+      return variable_type(variable_type_kind::ARR_BOOL_TYPE);            
+    } else if (is_unknown_region()) {
+      return variable_type(variable_type_kind::UNK_TYPE);            
+    } else {
+      CRAB_ERROR("unexpected region type in get_region_content_type");
+    }
+  }
+  
   void write(crab_os &o) const {
     switch (m_kind) {
     case BOOL_TYPE:
