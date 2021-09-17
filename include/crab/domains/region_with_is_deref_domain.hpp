@@ -316,6 +316,51 @@ private:
     bool has_offset_and_size() const {
       return (bool)m_object_offset_size;
     }
+
+    // address: 1, offset: 2, size: 3
+    using ghost_var_id = unsigned;
+
+    // Add ghost variables in the reverse map. A reverse map (rev_map)
+    // maps ghost variables to CrabIR variables.
+    void update_rev_varmap(std::unordered_map<base_variable_t, std::pair<variable_t, ghost_var_id>> &rev_map,
+			   variable_t v) const {
+      rev_map.insert({m_var, {v,1}});
+      if (m_object_offset_size) {
+      	rev_map.insert({(*m_object_offset_size).get_offset(), {v,2}});
+      	rev_map.insert({(*m_object_offset_size).get_size(), {v,3}});	
+      }
+    }
+
+    // Remove ghost variables from the reverse map. A reverse map
+    // (rev_map) maps ghost variables to CrabIR variables.
+    void remove_rev_varmap(std::unordered_map<base_variable_t, std::pair<variable_t, ghost_var_id>> &rev_map) {
+      rev_map.erase(m_var);
+      if (m_object_offset_size) {
+	rev_map.erase((*m_object_offset_size).get_offset());
+	rev_map.erase((*m_object_offset_size).get_size());
+      }
+    }
+
+    // Assign a string name to each ghost variable
+    static void mk_renaming_map(const std::unordered_map<base_variable_t, std::pair<variable_t, ghost_var_id>> &rev_map,
+				std::unordered_map<std::string, std::string> &out_str_map) {
+      for (auto &kv : rev_map) {
+	base_variable_t bv = kv.first;
+	variable_t v = kv.second.first;
+	ghost_var_id ghost_id = kv.second.second;
+	if (v.get_type().is_reference()) {
+	  if (ghost_id == 1) {
+	    out_str_map[bv.name().str()] = v.name().str() + ".address";
+	  } else if (ghost_id == 2) {
+	    out_str_map[bv.name().str()] = v.name().str() + ".offset";
+	  } else if (ghost_id == 3) {
+	    out_str_map[bv.name().str()] = v.name().str() + ".size";	  
+	  }
+	} else {
+	  out_str_map[bv.name().str()] = v.name().str();
+	}
+      }
+    }
     
     object_offset_size_t get_offset_and_size() const {
       if (!m_object_offset_size) {
@@ -323,7 +368,7 @@ private:
       }
       return *m_object_offset_size;
     }
-    
+
     void write(crab_os &o) const {
       if (!m_object_offset_size) {
 	o << m_var;
@@ -351,8 +396,9 @@ private:
   using var_map_t = std::unordered_map<variable_t, ghost_variables_t>;
   // Reverse map used only for pretty printing: a CrabIR variable has
   // associated a set of ghost variables. This reverse map maps back
-  // to the `var` ghost variable.
-  using rev_var_map_t = std::unordered_map<base_variable_t, variable_t>;
+  // each ghost variable to its CrabIR variable.
+  using ghost_var_id = unsigned;
+  using rev_var_map_t = std::unordered_map<base_variable_t, std::pair<variable_t, ghost_var_id>>;
   // Map each reference or region variable to a set of allocation sites
   using alloc_site_env_t = separate_discrete_domain<variable_t, allocation_site>;
   using allocation_sites = typename alloc_site_env_t::value_type;
@@ -570,7 +616,7 @@ private:
 	it->second.add(right_vars);
 	out_gvars.add(out_vars);
         out_var_map.insert({v, out_gvars});
-        out_rev_var_map.insert({out_gvars.get_var(), v});
+	out_gvars.update_rev_varmap(out_rev_var_map, v);
       }
     }
 
@@ -642,7 +688,7 @@ private:
 	it->second.add(right_vars);
 	out_gvars.add(out_vars);
 	out_var_map.insert({v, out_gvars});
-        out_rev_var_map.insert({out_gvars.get_var(), v});
+	out_gvars.update_rev_varmap(out_rev_var_map, v);
       }
     }
 
@@ -723,14 +769,14 @@ private:
 	it->second.add(right_vars);
 	out_gvars.add(out_vars);
         out_var_map.insert({v, out_gvars});
-        out_rev_var_map.insert({out_gvars.get_var(), v});
+	out_gvars.update_rev_varmap(out_rev_var_map, v);
       } else {
         // only on left
 	ghost_variables_t out_gvars(ghost_variables_t::create(out_alloc, v.get_type()));	
         kv.second.add(only_left_vars);
         out_gvars.add(only_left_out_vars);
         out_var_map.insert({kv.first, out_gvars});
-        out_rev_var_map.insert({out_gvars.get_var(), kv.first});
+	out_gvars.update_rev_varmap(out_rev_var_map, kv.first);
       }
     }
 
@@ -744,8 +790,9 @@ private:
 	kv.second.add(only_right_vars);
 	out_gvars.add(only_right_out_vars);
         out_var_map.insert({kv.first, out_gvars});
-        out_rev_var_map.insert({out_gvars.get_var(), kv.first});
+	out_gvars.update_rev_varmap(out_rev_var_map, kv.first);
       }
+      
     }
 
     // append only_left_vars and left_vars
@@ -799,7 +846,7 @@ private:
       auto gvars = ghost_variables_t::create(alloc, v.get_type());
       auto res = varmap.insert({v, gvars});
       if (res.second) {
-        rev_varmap.insert({gvars.get_var(), v});
+	gvars.update_rev_varmap(rev_varmap, v);
       }
       return res.first->second;
     }
@@ -859,19 +906,26 @@ private:
     }
   }
 
-  // used only for pretty-printing and to_linear_constraint_system()
+  // used only for to_linear_constraint_system()
   boost::optional<variable_t> rev_rename_var(const base_variable_t &v,
                                              bool ignore_references) const {
     auto it = m_rev_var_map.find(v);
     if (it != m_rev_var_map.end()) {
-      if (!ignore_references || !it->second.get_type().is_reference()) {
-        return it->second;
+      variable_t v = it->second.first;
+      ghost_var_id ghost_id = it->second.second;
+      if (!ignore_references || !v.get_type().is_reference()) {
+	if (ghost_id == 1) { // we only get the first ghost variable
+			     // which represents the address of the
+			     // reference. Skipping other ghost
+			     // variables such as offsets and sizes.
+	  return v;
+	}
       }
     }
     return boost::none;
   }
   
-  // used only for pretty-printing and to_linear_constraint_system()
+  // used only for to_linear_constraint_system()
   boost::optional<linear_expression_t>
   rev_rename_linear_expr(const base_linear_expression_t &e,
                          bool ignore_references) const {
@@ -889,7 +943,7 @@ private:
     return out;
   }
 
-  // used only for pretty-printing and to_linear_constraint_system()
+  // used only for to_linear_constraint_system()
   boost::optional<linear_constraint_t>
   rev_rename_linear_cst(const base_linear_constraint_t &cst,
                         bool ignore_references) const {
@@ -1432,7 +1486,7 @@ public:
       auto it = m_var_map.find(v);
       if (it != m_var_map.end()) {
 	it->second.forget(m_base_dom);
-        m_rev_var_map.erase(it->second.get_var());
+	it->second.remove_rev_varmap(m_rev_var_map);
         m_var_map.erase(it);
       }
     }
@@ -2746,7 +2800,7 @@ public:
       auto it = m_var_map.find(v);
       if (it != m_var_map.end()) {
         it->second.add(base_vars);
-        m_rev_var_map.erase(it->second.get_var());
+	it->second.remove_rev_varmap(m_rev_var_map);
         m_var_map.erase(it);
       }
     }
@@ -2783,7 +2837,7 @@ public:
       if (!std::binary_search(sorted_variables.begin(), sorted_variables.end(),
                               kv.first)) {
         var_map_to_remove.push_back(kv.first);
-        m_rev_var_map.erase(kv.second.get_var());
+	kv.second.remove_rev_varmap(m_rev_var_map);
       }
     }
     for (auto &v : var_map_to_remove) {
@@ -2859,7 +2913,7 @@ public:
     
     for (auto &kv: m_var_map) {
       variable_t old_var = kv.first;
-      base_variable_t  old_base_var = kv.second.get_var();
+      ghost_variables_t old_gvars = kv.second;
 
       std::pair<variable_t,variable_t> p(old_var, old_var);
       auto lower = std::lower_bound(zipped_vars.begin(), zipped_vars.end(), p,
@@ -2873,8 +2927,8 @@ public:
 	var_map_to_remove.push_back(old_var);
 	var_map_to_insert.push_back({new_var, new_base_gvars});
 				       
-	m_rev_var_map.erase(old_base_var);
-	m_rev_var_map.insert({new_base_gvars.get_var(), new_var});
+	old_gvars.remove_rev_varmap(m_rev_var_map);
+	new_base_gvars.update_rev_varmap(m_rev_var_map, new_var);
       }
     }
 
@@ -3081,11 +3135,10 @@ public:
 	if (boost::optional<ghost_variables_t> ref_gvars = get_gvars(ref)) {
 	  
 	  if ((*ref_gvars).has_offset_and_size()) {
-	    CRAB_LOG("region-domain-is-deref",
-		     crab::outs() << "\t" << "Found ghost variables for " << ref << "\n"
-		     << "\toffset=" << (*ref_gvars).get_offset_and_size().get_offset() << "\n"
-		     << "\tsize=" << (*ref_gvars).get_offset_and_size().get_size() << "\n";);
-	    
+	    // CRAB_LOG("region-domain-is-deref",
+	    // 	     crab::outs() << "\t" << "Found ghost variables for " << ref << "\n"
+	    // 	     << "\toffset=" << (*ref_gvars).get_offset_and_size().get_offset() << "\n"
+	    // 	     << "\tsize=" << (*ref_gvars).get_offset_and_size().get_size() << "\n";);
 	    if ((*ref_gvars).get_offset_and_size().
 		is_deref(m_base_dom,rename_variable_or_constant(inputs[2]))) {
 	      set_bool_var_to_true(bv);
@@ -3293,9 +3346,8 @@ public:
           } o << "},"
               << "BaseDom=" << m_base_dom << ")\n";);
       std::unordered_map<std::string, std::string> renaming_map;
-      for (auto &kv : m_rev_var_map) {
-        renaming_map[kv.first.name().str()] = kv.second.name().str();
-      }
+      // Assigns a string name to each ghost variable
+      ghost_variables_t::mk_renaming_map(m_rev_var_map, renaming_map);
       m_alloc.add_renaming_map(renaming_map);
       o << m_base_dom;
       m_alloc.clear_renaming_map();
