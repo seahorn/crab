@@ -5,6 +5,7 @@
 #include <crab/domains/interval.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/small_range.hpp>
+#include <crab/domains/types.hpp>
 #include <crab/domains/union_find_domain.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -19,8 +20,14 @@
 ////////////////////////////////////////////////////////////////////////
 // Abstract domain for regions and references.
 // 
-// This version allows to reason about the is_dereferenceable
-// intrinsics.
+// This version improves region_domain.hpp in two ways:
+// 
+// - it allows to reason about the is_dereferenceable intrinsics.
+//
+// - it can also be more precise with unknown regions by performing
+//   type inference during the analysis. The type of an unknown region
+//   can be narrowed to a more precise type by inspecting the region
+//   writes.
 ////////////////////////////////////////////////////////////////////////
 
 namespace crab {
@@ -101,6 +108,7 @@ private:
 	  CRAB_ERROR("ghost offset and size variables must be integers");
 	}
       }
+
     public:
       base_variable_t get_offset() const {
 	return m_offset;
@@ -121,10 +129,10 @@ private:
       
       void assign(base_abstract_domain_t &dom, const object_offset_size_t &rhs) const {
 	if (m_offset.get_type() != rhs.m_offset.get_type()) {
-	  CRAB_ERROR("Type inconsistency while assign ghost variables");
+	  CRAB_ERROR("Type inconsistency while assign ghost object_offset_size variables");
 	}
 	if (m_size.get_type() != rhs.m_size.get_type()) {
-	  CRAB_ERROR("Type inconsistency while assign ghost variables");
+	  CRAB_ERROR("Type inconsistency while assign ghost object_offset_size variables");
 	}
 	
 	dom.assign(m_offset,rhs.m_offset);
@@ -134,10 +142,10 @@ private:
       void assign(base_abstract_domain_t &dom, const object_offset_size_t &rhs,
 		  const base_linear_expression_t &offset) const {
 	if (m_offset.get_type() != rhs.m_offset.get_type()) {
-	  CRAB_ERROR("Type inconsistency while assign ghost variables");
+	  CRAB_ERROR("Type inconsistency while assign ghost object_offset_size variables");
 	}
 	if (m_size.get_type() != rhs.m_size.get_type()) {
-	  CRAB_ERROR("Type inconsistency while assign ghost variables");
+	  CRAB_ERROR("Type inconsistency while assign ghost object_offset_size variables");
 	}
 	
 	dom.assign(m_offset, rhs.m_offset + offset);
@@ -157,10 +165,10 @@ private:
       
       void expand(base_abstract_domain_t &dom, const object_offset_size_t &rhs) const {
 	if (m_offset.get_type() != rhs.m_offset.get_type()) {
-	  CRAB_ERROR("Type inconsistency while assign ghost variables");
+	  CRAB_ERROR("Type inconsistency while expand ghost object_offset_size variables");
 	}
 	if (m_size.get_type() != rhs.m_size.get_type()) {
-	  CRAB_ERROR("Type inconsistency while assign ghost variables");
+	  CRAB_ERROR("Type inconsistency while expand ghost object_offset_size variables");
 	}
 
 	dom.expand(m_offset, rhs.m_offset);
@@ -183,13 +191,14 @@ private:
     // - if the variable is a region of type reference then `m_var`
     //   represents its content and its type is an integer.
     base_variable_t m_var;
-    
     // if the variable is a reference or a region of references then
     // m_object_offset_size.first is the `offset`, the distance between its
     // address and the base address of the memory object to which
     // address belongs to, and m_object_offset_size.second is the `size` of the
     // memory object.
     boost::optional<object_offset_size_t> m_object_offset_size;
+    // The CrabIR type of the variable which is being shadowed
+    variable_type m_vty;
     
     void check_types() {
       if (m_var.get_type().is_region() || m_var.get_type().is_reference()) {
@@ -206,13 +215,14 @@ private:
       }
     }
     
-    ghost_variables_t(base_variable_t v)
-      : m_var(v), m_object_offset_size(boost::none) {
+    ghost_variables_t(base_variable_t bv, variable_type vty)
+      : m_var(bv), m_object_offset_size(boost::none), m_vty(vty) {
       check_types();
     }
     
-    ghost_variables_t(base_variable_t v, base_variable_t offset, base_variable_t size)
-      : m_var(v), m_object_offset_size(object_offset_size_t(offset, size)) {
+    ghost_variables_t(base_variable_t bv, base_variable_t offset, base_variable_t size,
+		      variable_type vty)
+      : m_var(bv), m_object_offset_size(object_offset_size_t(offset, size)), m_vty(vty) {
       check_types();
     }    
 
@@ -253,17 +263,67 @@ private:
 	return bv;
       }
     }
-    
+
   public:
-    static ghost_variables_t create(base_varname_allocator_t &alloc, const variable_type &vty) {
+    static ghost_variables_t create(base_varname_allocator_t &alloc, const variable_type &vty,
+				    unsigned line) {
+      if (vty.is_unknown_region()) {
+	CRAB_ERROR("create should not be called at line ", line, " with a type ", vty);
+      }
+      
       if (Params::is_dereferenceable &&
 	  (vty.is_reference() || vty.is_reference_region())) {
 	return ghost_variables_t(make_base_variable(alloc, vty),
 				 make_base_variable(alloc, vty),
-				 make_base_variable(alloc, vty));
+				 make_base_variable(alloc, vty),
+				 vty);
       } else {
-	return ghost_variables_t(make_base_variable(alloc, vty));
+	return ghost_variables_t(make_base_variable(alloc, vty), vty);
       }
+    }
+
+    // Create a fresh set of ghost variables from x
+    static ghost_variables_t create(base_varname_allocator_t &alloc,
+				    const ghost_variables_t &x) {
+      if (x.has_offset_and_size()) {
+	object_offset_size_t offset_size = x.get_offset_and_size();
+	return ghost_variables_t(make_base_variable(alloc, x.get_var().get_type()),
+				 make_base_variable(alloc, offset_size.get_offset().get_type()),
+				 make_base_variable(alloc, offset_size.get_size().get_type()),
+				 x.m_vty);
+      } else {
+	return ghost_variables_t(make_base_variable(alloc, x.get_var().get_type()),
+				 x.m_vty);
+      }
+    }
+
+    // Return true if the types of the ghost variables are
+    // syntactically equal.
+    bool same_type(const ghost_variables_t &o) const {
+      // Check that the types of CrabIR variables are consistent
+      if (!(m_vty.is_region() && o.m_vty.is_unknown_region() ||
+	    m_vty.is_unknown_region() && o.m_vty.is_region() ||
+	    m_vty == o.m_vty)) {
+	return false;
+      }
+
+      // Check that the types of the ghost variables are syntactically
+      // equal.
+      if (get_var().get_type() != o.get_var().get_type()) {
+	return false;
+      }
+
+      bool x_has_offset_and_size = has_offset_and_size();
+      bool y_has_offset_and_size = o.has_offset_and_size();
+      
+      if (x_has_offset_and_size && y_has_offset_and_size) {
+	object_offset_size_t x_offset_size = get_offset_and_size();
+	object_offset_size_t y_offset_size = o.get_offset_and_size();
+	return (x_offset_size.get_offset().get_type() == y_offset_size.get_offset().get_type() &&
+		x_offset_size.get_size().get_type() == y_offset_size.get_size().get_type());
+      }
+
+      return (!x_has_offset_and_size && !y_has_offset_and_size);
     }
     
     // Store all ghost variables into a vector
@@ -278,7 +338,8 @@ private:
     // Abstract domain operations
     void assign(base_abstract_domain_t &dom, const ghost_variables_t &rhs) const {
       if (m_var.get_type() != rhs.m_var.get_type()) {
-	CRAB_ERROR("Type inconsistency in ghost variables");
+	CRAB_ERROR("Type inconsistency while assign in ghost variables ",
+		   m_var.get_type(), " and " , rhs.m_var.get_type());
       }
       
       if (m_var.get_type().is_bool()) {
@@ -294,7 +355,8 @@ private:
 
     void expand(base_abstract_domain_t &dom, const ghost_variables_t &new_gvars) const {
       if (m_var.get_type() != new_gvars.m_var.get_type()) {
-	CRAB_ERROR("Type inconsistency in ghost variables");
+	CRAB_ERROR("Type inconsistency while expand in ghost variables ",
+		   m_var.get_type(), " and ", new_gvars.m_var.get_type());
       }
       dom.expand(m_var, new_gvars.m_var);
       if (m_object_offset_size && new_gvars.m_object_offset_size) {
@@ -343,12 +405,15 @@ private:
 
     // Assign a string name to each ghost variable
     static void mk_renaming_map(const std::unordered_map<base_variable_t, std::pair<variable_t, ghost_var_id>> &rev_map,
+				std::function<variable_type(const variable_t &)> get_type_fn,
 				std::unordered_map<std::string, std::string> &out_str_map) {
       for (auto &kv : rev_map) {
 	base_variable_t bv = kv.first;
 	variable_t v = kv.second.first;
 	ghost_var_id ghost_id = kv.second.second;
-	if (v.get_type().is_reference()) {
+
+	variable_type vty = get_type_fn(v);
+	if (vty.is_reference() || vty.is_reference_region())  {
 	  if (ghost_id == 1) {
 	    out_str_map[bv.name().str()] = v.name().str() + ".address";
 	  } else if (ghost_id == 2) {
@@ -384,24 +449,7 @@ private:
       return o;
     }
   }; /* end class ghost_variables_t */
-  
-  /**------------- Begin type definitions -------------------**/
-  
-  // Environment domains: map regions to finite domain
-  using rgn_counting_env_t = ikos::separate_domain<variable_t, small_range>;
-  using rgn_bool_env_t = ikos::separate_domain<variable_t, boolean_value>;
-  // Union-find where equivalence classes are attached to boolean values
-  using rgn_dealloc_t = union_find_domain<variable_t, boolean_value>;
-  // Map from variable to its ghost variables
-  using var_map_t = std::unordered_map<variable_t, ghost_variables_t>;
-  // Reverse map used only for pretty printing: a CrabIR variable has
-  // associated a set of ghost variables. This reverse map maps back
-  // each ghost variable to its CrabIR variable.
-  using ghost_var_id = unsigned;
-  using rev_var_map_t = std::unordered_map<base_variable_t, std::pair<variable_t, ghost_var_id>>;
-  // Map each reference or region variable to a set of allocation sites
-  using alloc_site_env_t = separate_discrete_domain<variable_t, allocation_site>;
-  using allocation_sites = typename alloc_site_env_t::value_type;
+
   // A simple class for tags (i.e., numerical identifiers). We don't
   // use crab::tag because we want to have the flexibility of creating
   // tags without a tag manager.
@@ -423,7 +471,26 @@ private:
       as.write(o);
       return o;
     }
-  };
+  }; /* end class tag_t */
+  
+  /**------------- Begin type definitions -------------------**/
+  
+  // Environment domains: map regions to finite domain
+  using rgn_counting_env_t = ikos::separate_domain<variable_t, small_range>;
+  using rgn_bool_env_t = ikos::separate_domain<variable_t, boolean_value>;
+  using rgn_type_env_t = ikos::separate_domain<variable_t, type_value>;  
+  // Union-find where equivalence classes are attached to boolean values
+  using rgn_dealloc_t = union_find_domain<variable_t, boolean_value>;
+  // Map from variable to its ghost variables
+  using var_map_t = std::unordered_map<variable_t, ghost_variables_t>;
+  // Reverse map used only for pretty printing: a CrabIR variable has
+  // associated a set of ghost variables. This reverse map maps back
+  // each ghost variable to its CrabIR variable.
+  using ghost_var_id = unsigned;
+  using rev_var_map_t = std::unordered_map<base_variable_t, std::pair<variable_t, ghost_var_id>>;
+  // Map each reference or region variable to a set of allocation sites
+  using alloc_site_env_t = separate_discrete_domain<variable_t, allocation_site>;
+  using allocation_sites = typename alloc_site_env_t::value_type;
   // Map variables to sets of tags
   using tag_env_t = separate_discrete_domain<variable_t, tag_t>;
   using tag_set = typename tag_env_t::value_type;
@@ -435,11 +502,11 @@ private:
   base_varname_allocator_t m_alloc;
   // Map a variable_t to its ghost variables:
   var_map_t m_var_map;
-  // Reverse map
+  // Reverse map from ghost variables to variable_t
   rev_var_map_t m_rev_var_map;
-  // The base abstract domain: all the heavy lifting is done here.
-  // m_base_dom does not have any variable of region or reference
-  // type.
+  // The base abstract domain (over ghost variables): all the heavy
+  // lifting is done here.  m_base_dom does not have any variable of
+  // region or reference type.
   base_abstract_domain_t m_base_dom;
   /** End base domain **/
   
@@ -450,6 +517,9 @@ private:
   // Whether some data might have been written to any address within
   // the region.
   rgn_bool_env_t m_rgn_init_dom;
+  // For each unknown region we keep track of the (dynamic) type of
+  // its last written value.
+  rgn_type_env_t m_rgn_type_dom;  
   // Map each reference to its set of possible allocation sites. It
   // also maps each region variable to the union of all possible
   // allocation sites from all possible references stored in that
@@ -487,7 +557,8 @@ private:
   region_with_is_deref_domain(base_varname_allocator_t &&alloc, var_map_t &&var_map,
 		  rev_var_map_t &&rev_var_map,
 		  rgn_counting_env_t &&rgn_counting_dom,
-		  rgn_bool_env_t &&rgn_init_dom, 
+		  rgn_bool_env_t &&rgn_init_dom,
+		  rgn_type_env_t &&rgn_type_dom,			      
 		  base_abstract_domain_t &&base_dom,
 		  alloc_site_env_t &&alloc_site_dom,
 		  rgn_dealloc_t &&rgn_dealloc_dom,
@@ -497,6 +568,7 @@ private:
 	m_base_dom(std::move(base_dom)),	
         m_rgn_counting_dom(std::move(rgn_counting_dom)),
         m_rgn_init_dom(std::move(rgn_init_dom)),
+	m_rgn_type_dom(std::move(rgn_type_dom)),	
 	m_alloc_site_dom(std::move(alloc_site_dom)),
         m_rgn_dealloc_dom(std::move(rgn_dealloc_dom)),
 	m_tag_env(std::move(tag_env)) {}
@@ -561,8 +633,11 @@ private:
     for (unsigned i = 0, sz = left_regions.size(); i < sz; ++i) {
       ghost_variables_t new_left_gvars =
 	get_or_insert_gvars(left_regions[i], left_varmap, left_rev_varmap, left_alloc);
+      // FIXME/TODO[if skip_unknown_regions = 0]: must pass the
+      // dynamic type instead of left_regions[i].get_type(), otherwise
+      // it will crash.
       ghost_variables_t new_right_gvars =
-	ghost_variables_t::create(right_alloc, left_regions[i].get_type());
+	ghost_variables_t::create(right_alloc, left_regions[i].get_type(), __LINE__);
       
       new_left_gvars.add(new_left_vars);
       new_right_gvars.add(new_right_vars);
@@ -590,6 +665,7 @@ private:
     rgn_counting_env_t out_rgn_counting_dom(m_rgn_counting_dom |
                                             right.m_rgn_counting_dom);
     rgn_bool_env_t out_rgn_init_dom(m_rgn_init_dom | right.m_rgn_init_dom);
+    rgn_type_env_t out_rgn_type_dom(m_rgn_type_dom | right.m_rgn_type_dom);    
     alloc_site_env_t out_alloc_site_dom(m_alloc_site_dom |
 					right.m_alloc_site_dom);
     rgn_dealloc_t out_rgn_dealloc_dom(m_rgn_dealloc_dom |
@@ -611,7 +687,14 @@ private:
       const variable_t &v = kv.first;
       auto it = right.m_var_map.find(v);
       if (it != right.m_var_map.end()) {
-	ghost_variables_t out_gvars(ghost_variables_t::create(out_alloc, v.get_type()));	
+	// if we ignore unknown regions, types are the same by construction
+	if (!Params::skip_unknown_regions &&
+	    !kv.second.same_type(it->second)) {
+	  crab::CrabStats::count(domain_name() +
+				 ".count.join.skipped.inconsistent_dynamic_type"); 
+	  continue;
+	}
+	ghost_variables_t out_gvars(ghost_variables_t::create(out_alloc, kv.second));	
 	kv.second.add(left_vars);
 	it->second.add(right_vars);
 	out_gvars.add(out_vars);
@@ -619,7 +702,6 @@ private:
 	out_gvars.update_rev_varmap(out_rev_var_map, v);
       }
     }
-
     // See comments in do_join_or_widening
     m_base_dom.project(left_vars);
     m_base_dom.rename(left_vars, out_vars);
@@ -631,6 +713,7 @@ private:
     std::swap(m_alloc, out_alloc);
     std::swap(m_rgn_counting_dom, out_rgn_counting_dom);
     std::swap(m_rgn_init_dom, out_rgn_init_dom);
+    std::swap(m_rgn_type_dom, out_rgn_type_dom);    
     std::swap(m_alloc_site_dom, out_alloc_site_dom);
     std::swap(m_rgn_dealloc_dom, out_rgn_dealloc_dom);
     std::swap(m_var_map, out_var_map);
@@ -653,6 +736,9 @@ private:
     // variables).  The domain is finite
     rgn_bool_env_t out_rgn_init_dom(left.m_rgn_init_dom | right.m_rgn_init_dom);
 
+    // The domain is finite
+    rgn_type_env_t out_rgn_type_dom(left.m_rgn_type_dom | right.m_rgn_type_dom);
+    
     // alloc_site_dom does not require common renaming (i.e., no ghost
     // variables).  The domain is finite
     alloc_site_env_t out_alloc_site_dom(left.m_alloc_site_dom | right.m_alloc_site_dom);
@@ -683,7 +769,14 @@ private:
       const variable_t &v = kv.first;
       auto it = right.m_var_map.find(v);
       if (it != right.m_var_map.end()) {
-	ghost_variables_t out_gvars(ghost_variables_t::create(out_alloc, v.get_type()));
+	// if we ignore unknown regions, types are the same by construction
+	if (!Params::skip_unknown_regions &&
+	    !kv.second.same_type(it->second)) {
+	  crab::CrabStats::count(domain_name() +
+				 ".count.join_or_widen.skipped.inconsistent_dynamic_type"); 
+	  continue;
+	}
+	ghost_variables_t out_gvars(ghost_variables_t::create(out_alloc, kv.second));
 	kv.second.add(left_vars);
 	it->second.add(right_vars);
 	out_gvars.add(out_vars);
@@ -710,8 +803,8 @@ private:
     region_domain_t res(
         std::move(out_alloc), std::move(out_var_map),
         std::move(out_rev_var_map), std::move(out_rgn_counting_dom),
-        std::move(out_rgn_init_dom), std::move(out_base_dom),
-	std::move(out_alloc_site_dom), 
+        std::move(out_rgn_init_dom), std::move(out_rgn_type_dom),
+	std::move(out_base_dom), std::move(out_alloc_site_dom), 
 	std::move(out_rgn_dealloc_dom), std::move(out_tag_env));
     return res;
   }
@@ -725,15 +818,16 @@ private:
     rgn_counting_env_t out_rgn_counting_dom(left.m_rgn_counting_dom &
                                             right.m_rgn_counting_dom);
     rgn_bool_env_t out_rgn_init_dom(left.m_rgn_init_dom & right.m_rgn_init_dom);
+    rgn_type_env_t out_rgn_type_dom(left.m_rgn_type_dom & right.m_rgn_type_dom);
     alloc_site_env_t out_alloc_site_dom(left.m_alloc_site_dom &
 					right.m_alloc_site_dom);
-    
     rgn_dealloc_t out_rgn_dealloc_dom(left.m_rgn_dealloc_dom &
                                       right.m_rgn_dealloc_dom);
     tag_env_t out_tag_env(left.m_tag_env & right.m_tag_env);
     
     // This shouldn't happen but just in case ...
     if (out_rgn_counting_dom.is_bottom() || out_rgn_init_dom.is_bottom() ||
+	out_rgn_type_dom.is_bottom() || 
         out_rgn_dealloc_dom.is_bottom() || out_alloc_site_dom.is_bottom()) {
       return make_bottom();
     }
@@ -763,8 +857,15 @@ private:
       const variable_t &v = kv.first;
       auto it = right.m_var_map.find(v);
       if (it != right.m_var_map.end()) {
+	// if we ignore unknown regions, types are the same by construction
+	if (!Params::skip_unknown_regions &&
+	    !kv.second.same_type(it->second)) {
+	  crab::CrabStats::count(domain_name() +
+				 ".count.meet_or_narrowing.skipped.inconsistent_dynamic_type"); 
+	  continue;
+	}
         // common renaming
-	ghost_variables_t out_gvars(ghost_variables_t::create(out_alloc, v.get_type()));
+	ghost_variables_t out_gvars(ghost_variables_t::create(out_alloc, kv.second));
 	kv.second.add(left_vars);
 	it->second.add(right_vars);
 	out_gvars.add(out_vars);
@@ -772,7 +873,7 @@ private:
 	out_gvars.update_rev_varmap(out_rev_var_map, v);
       } else {
         // only on left
-	ghost_variables_t out_gvars(ghost_variables_t::create(out_alloc, v.get_type()));	
+	ghost_variables_t out_gvars(ghost_variables_t::create(out_alloc, kv.second));	
         kv.second.add(only_left_vars);
         out_gvars.add(only_left_out_vars);
         out_var_map.insert({kv.first, out_gvars});
@@ -786,7 +887,7 @@ private:
       auto it = left.m_var_map.find(v);
       if (it == left.m_var_map.end()) {
         // only on right
-	ghost_variables_t out_gvars(ghost_variables_t::create(out_alloc, v.get_type()));
+	ghost_variables_t out_gvars(ghost_variables_t::create(out_alloc, kv.second));
 	kv.second.add(only_right_vars);
 	out_gvars.add(only_right_out_vars);
         out_var_map.insert({kv.first, out_gvars});
@@ -820,12 +921,61 @@ private:
     region_domain_t res(
         std::move(out_alloc), std::move(out_var_map),
         std::move(out_rev_var_map), std::move(out_rgn_counting_dom),
-        std::move(out_rgn_init_dom), std::move(out_base_dom),
-	std::move(out_alloc_site_dom), 
+        std::move(out_rgn_init_dom), std::move(out_rgn_type_dom),
+	std::move(out_base_dom), std::move(out_alloc_site_dom), 
 	std::move(out_rgn_dealloc_dom), std::move(out_tag_env));
     return res;
   }
 
+  void ref_store(base_abstract_domain_t &base_dom,
+		 const variable_t &rgn_var,
+		 const variable_or_constant_t &val) {
+    assert(is_tracked_region(rgn_var));
+    ghost_variables_t rgn_gvars = get_or_insert_gvars(rgn_var);
+        
+    // At this point region of references has been translated to region of
+    // integers. val can be any scalar including a reference.
+    if (val.get_type().is_bool()) {
+      if (val.is_constant()) {
+	base_dom.assign_bool_cst(rgn_gvars.get_var(),
+				 (val.is_bool_true() ? base_linear_constraint_t::get_true()
+                                  : base_linear_constraint_t::get_false()));
+      } else {
+	base_dom.assign_bool_var(rgn_gvars.get_var(),
+				 get_or_insert_gvars(val.get_variable()).get_var(),
+				 false);
+      }
+    } else if (val.get_type().is_integer() || val.get_type().is_real() ||
+	       val.get_type().is_reference()) {
+      
+      if (val.is_constant()) {
+	base_dom.assign(rgn_gvars.get_var(), val.get_constant());
+	  
+	if (val.get_type().is_reference()) {
+	  if (rgn_gvars.has_offset_and_size()) {
+	    // Storing NULL	      
+	    assert(val.get_constant() == number_t(0));
+	    rgn_gvars.get_offset_and_size().forget(base_dom);
+	  }
+	}
+      } else {
+	  ghost_variables_t val_gvars = get_or_insert_gvars(val.get_variable());	  
+          base_dom.assign(rgn_gvars.get_var(),
+			  val_gvars.get_var());
+	  
+	  if (val.get_type().is_reference()) {
+	    if (rgn_gvars.has_offset_and_size() && val_gvars.has_offset_and_size()) {
+	      rgn_gvars.get_offset_and_size().assign(base_dom, val_gvars.get_offset_and_size());
+	    } else if (rgn_gvars.has_offset_and_size()) {
+	      rgn_gvars.get_offset_and_size().forget(base_dom);
+	    }
+	  }
+      }
+    } else {
+      CRAB_ERROR(domain_name(), "::ref_store: unsupported type ", val.get_type());
+    }
+  }
+  
   /*
    * To rename variables (variable_t) to ghost variables
    * (base_variable_t) so that they can be used in the base abstract
@@ -837,13 +987,14 @@ private:
   }
 
   const ghost_variables_t &get_or_insert_gvars(const variable_t &v, var_map_t &varmap,
-				      rev_var_map_t &rev_varmap,
-				      base_varname_allocator_t &alloc) const {
+					       rev_var_map_t &rev_varmap,
+					       base_varname_allocator_t &alloc) const {
     auto it = varmap.find(v);
     if (it != varmap.end()) {
       return it->second;
     } else {
-      auto gvars = ghost_variables_t::create(alloc, v.get_type());
+      variable_type vty = get_dynamic_type_or_fail(v); 
+      auto gvars = ghost_variables_t::create(alloc, vty, __LINE__);
       auto res = varmap.insert({v, gvars});
       if (res.second) {
 	gvars.update_rev_varmap(rev_varmap, v);
@@ -1030,6 +1181,62 @@ private:
     m_tag_env.set(x, tags);
   }
 
+  bool is_tracked_region(const variable_t &v) const {
+    auto ty = v.get_type();
+    if (!ty.is_region()) {
+      return false;
+    }
+    if (!ty.is_unknown_region()) {
+      return true;
+    }
+    return (Params::skip_unknown_regions ? false: has_dynamic_type(v));
+  }
+
+  static bool is_tracked_unknown_region(const variable_t &v) {
+    return (!Params::skip_unknown_regions && v.get_type().is_unknown_region());
+  }
+
+  // if the variable has a static type (different from unknown region)
+  // then returns true.  If the static type is an unknown region then
+  // the actual variable's type must be inferred dynamically (as part
+  // of the abstract domain). In this case, it will return true if the
+  // type inference done by the abstract domain succeeds (type is
+  // inferred different from unknown region).
+  bool has_dynamic_type(const variable_t &v) const {
+    if (!v.get_type().is_unknown_region()) {
+      return true;
+    }
+
+    if (Params::skip_unknown_regions) {
+      return false;
+    } else  {
+      type_value dyn_ty = m_rgn_type_dom[v];
+      if (dyn_ty.is_top() || dyn_ty.is_bottom()) {
+	return false;
+      }
+      return (!dyn_ty.get().is_unknown_region());
+    }
+  }
+
+  // if has_dynamic_type(v) returns true then it returns the type,
+  // otherwise it will fail.
+  variable_type get_dynamic_type_or_fail(const variable_t &v) const {
+    assert(has_dynamic_type(v));
+    
+    if (!v.get_type().is_unknown_region()) {
+      return v.get_type();
+    }
+    
+    type_value dyn_ty = m_rgn_type_dom[v];
+    if (dyn_ty.is_top() || dyn_ty.is_bottom()) {
+      CRAB_ERROR("get_dynamic_type_or_fail cannot be called on top or bottom");
+    }
+    if (dyn_ty.get().is_unknown_region()) {
+      CRAB_ERROR("get_dynamic_type_or_fail should not return unknown region");
+    }
+    return dyn_ty.get();
+  }
+
   static void ERROR_IF_NOT_REGION(const variable_t& v, unsigned line) {
     if (!v.get_type().is_region()) {
       CRAB_ERROR(v, ":", v.get_type(), " is not a region at line ", line);
@@ -1079,6 +1286,7 @@ public:
 	m_base_dom(o.m_base_dom),	
         m_rgn_counting_dom(o.m_rgn_counting_dom),
         m_rgn_init_dom(o.m_rgn_init_dom),
+	m_rgn_type_dom(o.m_rgn_type_dom),
 	m_alloc_site_dom(o.m_alloc_site_dom),
         m_rgn_dealloc_dom(o.m_rgn_dealloc_dom),
 	m_tag_env(o.m_tag_env) {
@@ -1092,6 +1300,7 @@ public:
 	m_base_dom(std::move(o.m_base_dom)),	
         m_rgn_counting_dom(std::move(o.m_rgn_counting_dom)),
         m_rgn_init_dom(std::move(o.m_rgn_init_dom)),
+	m_rgn_type_dom(std::move(o.m_rgn_type_dom)),	
 	m_alloc_site_dom(std::move(o.m_alloc_site_dom)),
         m_rgn_dealloc_dom(std::move(o.m_rgn_dealloc_dom)),
 	m_tag_env(std::move(o.m_tag_env)) {}
@@ -1107,6 +1316,7 @@ public:
       m_base_dom = o.m_base_dom;      
       m_rgn_counting_dom = o.m_rgn_counting_dom;
       m_rgn_init_dom = o.m_rgn_init_dom;
+      m_rgn_type_dom = o.m_rgn_type_dom;
       m_alloc_site_dom = o.m_alloc_site_dom;
       m_rgn_dealloc_dom = o.m_rgn_dealloc_dom;
       m_tag_env = o.m_tag_env;
@@ -1123,6 +1333,7 @@ public:
       m_base_dom = std::move(o.m_base_dom);      
       m_rgn_counting_dom = std::move(o.m_rgn_counting_dom);
       m_rgn_init_dom = std::move(o.m_rgn_init_dom);
+      m_rgn_type_dom = std::move(o.m_rgn_type_dom);
       m_alloc_site_dom = std::move(o.m_alloc_site_dom);
       m_rgn_dealloc_dom = std::move(o.m_rgn_dealloc_dom);
       m_tag_env = std::move(o.m_tag_env);
@@ -1170,23 +1381,28 @@ public:
       return false;
     }
 
+    if (!(m_rgn_type_dom <= o.m_rgn_type_dom)) {
+      CRAB_LOG("region-leq", crab::outs() << "Result5=0\n";);
+      return false;
+    }
+ 
     if (Params::allocation_sites) {
       if (!(m_alloc_site_dom <= o.m_alloc_site_dom)) {
-        CRAB_LOG("region-leq", crab::outs() << "Result5=0\n";);
+        CRAB_LOG("region-leq", crab::outs() << "Result6=0\n";);
         return false;
       }
     }
 
     if (Params::deallocation) {
       if (!(m_rgn_dealloc_dom <= o.m_rgn_dealloc_dom)) {
-        CRAB_LOG("region-leq", crab::outs() << "Result6=0\n";);
+        CRAB_LOG("region-leq", crab::outs() << "Result7=0\n";);
         return false;
       }
     }
 
     if (Params::tag_analysis) {
       if (!(m_tag_env <= o.m_tag_env)) {
-        CRAB_LOG("region-leq", crab::outs() << "Result7=0\n";);
+        CRAB_LOG("region-leq", crab::outs() << "Result8=0\n";);
         return false;
       }
     }
@@ -1206,13 +1422,20 @@ public:
       const variable_t &v = kv.first;
       auto it = o.m_var_map.find(v);
       if (it != o.m_var_map.end()) {
-	ghost_variables_t out_gvars(ghost_variables_t::create(out_alloc, v.get_type()));
+	// if we ignore unknown regions, types are the same by construction
+	if (!Params::skip_unknown_regions &&
+	    !kv.second.same_type(it->second)) {
+	  CRAB_ERROR(domain_name(),"::operator<= ",
+		     " dynamic type of ", v,
+		     " must be the same in both left and right operands");
+	 
+	} 
+	ghost_variables_t out_gvars(ghost_variables_t::create(out_alloc, kv.second));
         kv.second.add(left_vars);
         it->second.add(right_vars);
         out_gvars.add(out_vars);
       }
     }
-
     left_dom.forget(out_vars);
     left_dom.rename(left_vars, out_vars);
     right_dom.forget(out_vars);
@@ -1223,7 +1446,7 @@ public:
                                << left_dom << "\n\t" << right_dom << "\n";);
 
     bool res = left_dom <= right_dom;
-    CRAB_LOG("region-leq", crab::outs() << "Result8=" << res << "\n";);
+    CRAB_LOG("region-leq", crab::outs() << "Result9=" << res << "\n";);
     return res;
   }
 
@@ -1469,7 +1692,10 @@ public:
     if (!is_bottom()) {
       if (v.get_type().is_region()) {
         m_rgn_counting_dom -= v;
-        m_rgn_init_dom -= v;	
+        m_rgn_init_dom -= v;
+	if (is_tracked_unknown_region(v)) {
+	  m_rgn_type_dom -= v;
+	}	
         if (Params::deallocation) {
           m_rgn_dealloc_dom.forget(v);
         }
@@ -1515,6 +1741,10 @@ public:
     // No stores in the region
     m_rgn_init_dom.set(rgn, boolean_value::get_false());
 
+    if (is_tracked_unknown_region(rgn)) {
+      m_rgn_type_dom.set(rgn, rgn.get_type());
+    }     
+
     if (Params::deallocation) {
       // No deallocated objects in the region
       m_rgn_dealloc_dom.set(rgn, boolean_value::get_false());
@@ -1527,12 +1757,18 @@ public:
       // Region does not contain any tag
       m_tag_env.set(rgn, tag_env_t::value_type::bottom());
     }
-    if (!rgn.get_type().is_unknown_region()) {
-      // Assign ghost variables to rgn for modeling its content.
-      ghost_variables_t::create(m_alloc, rgn.get_type());
-    }
-    CRAB_LOG("region", crab::outs() << "After region_init(" << rgn
-                                    << ")=" << *this << "\n";);
+
+    if (!(rgn.get_type().is_unknown_region())) {
+      // Assign ghost variables to rgn for modeling its content
+      ghost_variables_t::create(m_alloc, rgn.get_type(), __LINE__);
+      crab::CrabStats::count(domain_name() + ".count.region_init.typed_regions");       
+    } else {
+      // We cannot assign ghost variables if the region is unknown
+      crab::CrabStats::count(domain_name() + ".count.region_init.unknown_regions");
+    }    
+    CRAB_LOG("region",
+	     crab::outs() << "After region_init(" << rgn << ":" << rgn.get_type()
+	     << ")=" << *this << "\n";);
   }
 
   void region_copy(const variable_t &lhs_rgn,
@@ -1553,6 +1789,9 @@ public:
 
     m_rgn_counting_dom.set(lhs_rgn, m_rgn_counting_dom[rhs_rgn]);
     m_rgn_init_dom.set(lhs_rgn, m_rgn_init_dom[rhs_rgn]);
+    if (is_tracked_unknown_region(lhs_rgn)) {
+      m_rgn_type_dom.set(lhs_rgn, m_rgn_type_dom[rhs_rgn]);
+    }    
     if (Params::allocation_sites) {
       m_alloc_site_dom.set(lhs_rgn, m_alloc_site_dom[rhs_rgn]);
     }
@@ -1563,10 +1802,10 @@ public:
       m_tag_env.set(lhs_rgn, m_tag_env[rhs_rgn]);
     }
 
-    if (lhs_rgn.get_type().is_unknown_region()) {
+    if (!is_tracked_region(rhs_rgn)) {
       return;
     }
-    
+
     const ghost_variables_t &base_lhs = get_or_insert_gvars(lhs_rgn);
     const ghost_variables_t &base_rhs = get_or_insert_gvars(rhs_rgn);
     auto num_refs = m_rgn_counting_dom[rhs_rgn];
@@ -1578,6 +1817,10 @@ public:
       base_lhs.forget(m_base_dom);
       base_rhs.expand(m_base_dom, base_lhs);
     }
+    CRAB_LOG("region",
+	     crab::outs() << "After region_copy(" << lhs_rgn << ":" << lhs_rgn.get_type()
+	     << "," << rhs_rgn << ":" << rhs_rgn.get_type()
+	     << ")=" << *this << "\n";);
   }
 
 
@@ -1608,12 +1851,63 @@ public:
       m_tag_env.set(dst_rgn, m_tag_env[src_rgn]);
     }
 
-    // Since we currently don't model unknown regions we bail out
-    // here.
+    
+    auto assign_regions = [this](const variable_t &x, const variable_t &y, const variable_type &ty) {
+      assert(ty.is_region());
+      assert(!ty.is_unknown_region());
+
+      if (!is_tracked_region(x) || !is_tracked_region(y))  {
+	crab::CrabStats::count(domain_name() + ".count.region_cast.skipped"); 
+	return;
+      }
+      
+      ghost_variables_t x_gvars = get_or_insert_gvars(x);
+      ghost_variables_t y_gvars = get_or_insert_gvars(y);      
+
+      if (ty.is_reference_region()) {
+	// reference modeled as integer
+	m_base_dom.assign(x_gvars.get_var(), y_gvars.get_var());
+	if (x_gvars.has_offset_and_size() && y_gvars.has_offset_and_size()) {
+	  x_gvars.get_offset_and_size().assign(m_base_dom, y_gvars.get_offset_and_size());
+	}	
+      } else if (ty.is_bool_region()) {
+        m_base_dom.assign_bool_var(x_gvars.get_var(), y_gvars.get_var(), false);
+      } else if (ty.is_integer_region() || ty.is_real_region()){
+        m_base_dom.assign(x_gvars.get_var(), y_gvars.get_var());
+      } else if (ty.is_array_region()) {
+	m_base_dom.array_assign(x_gvars.get_var(), y_gvars.get_var());
+      }
+      
+    };
+ 
+    bool unknown_dst = is_tracked_unknown_region(dst_rgn);
+    bool unknown_src = is_tracked_unknown_region(src_rgn);
+    
+    if (!unknown_src && unknown_dst) {
+      m_rgn_type_dom.set(dst_rgn, src_rgn.get_type());
+      assign_regions(dst_rgn, src_rgn, src_rgn.get_type());
+    } else if (unknown_src && !unknown_dst) {
+      type_value src_type = m_rgn_type_dom[src_rgn];
+      if (type_value(dst_rgn.get_type()) <= src_type) {
+	assign_regions(dst_rgn, src_rgn, dst_rgn.get_type());
+      } else {
+	crab::CrabStats::count(domain_name() +
+			       ".count.region_cast.skipped.inconsistent_dynamic_type"); 
+      }
+    } else {
+      // We can be here either (1) both regions are typed, or (2)
+      // Params::skip_unknown_regions = 1. 
+      ///
+      // We shouldn't use region_cast if both regions are typed so we
+      // do nothing although we should print a warning or something.
+      crab::CrabStats::count(domain_name() + ".count.region_cast.skipped"); 
+    }
 
     CRAB_LOG("region",
-	     CRAB_WARN("TODO region_cast ", src_rgn, ":", src_rgn.get_type(), " to ",
-		       dst_rgn, ":", dst_rgn.get_type(), " in base domain"););    
+	     crab::outs() << "After region_cast(" << src_rgn << ":" << src_rgn.get_type()
+	     << "," << dst_rgn << ":" << dst_rgn.get_type()
+	     << ")=" << *this << "\n";);
+ 
   }
   
   // Create a new reference ref to region rgn.
@@ -1647,8 +1941,10 @@ public:
       ref_gvars.get_offset_and_size().init(m_base_dom, rename_variable_or_constant(size));
     }
     
-    CRAB_LOG("region", crab::outs() << "After ref_make(" << ref << "," << rgn << ","
-	                            << size << "," << as << ")=" << *this << "\n";);
+    CRAB_LOG("region",
+	     crab::outs() << "After ref_make(" << ref << "," << rgn << ":" << rgn.get_type()
+	     << ","
+	     << size << "," << as << ")=" << *this << "\n";);
   }
 
   void ref_free(const variable_t &rgn, const variable_t &ref) override {
@@ -1712,6 +2008,7 @@ public:
       CRAB_LOG("region-load",
                CRAB_WARN("region_domain::ref_load: reference ", ref, " is null."););
       // set_to_bottom();
+      crab::CrabStats::count(domain_name() + ".count.ref_load.skipped.null_reference");              
       gvars_res.forget(m_base_dom);
       return;
     }
@@ -1726,15 +2023,44 @@ public:
       m_tag_env.set(res, m_tag_env[rgn]);
     }
     
-    
-    if (rgn.get_type().is_unknown_region()) {
-      CRAB_LOG(
-          "region-load",
-          CRAB_WARN("region_domain::ref_load: skip unknown region ", rgn););
+
+    if (!is_tracked_region(rgn)) {
+      CRAB_LOG("region-load",
+	       CRAB_WARN("region_domain::ref_load: skip unknown region ", rgn););
+      crab::CrabStats::count(domain_name() + ".count.ref_load.skipped.untracked_region");      
       gvars_res.forget(m_base_dom);
       return;
     }
     
+    if (is_tracked_unknown_region(rgn)) {
+      type_value rgn_ty = m_rgn_type_dom[rgn];
+      if (rgn_ty.is_bottom()) {
+	// this shouldn't happen because it can only happen if
+	// m_rgn_type_dom is bottom and this is already checked.
+	CRAB_ERROR(domain_name(), "::ref_load: the dynamic type of region ",
+		   rgn, " is bottom");
+      }
+      
+      if (rgn_ty.is_top()) {
+	gvars_res.forget(m_base_dom);
+	crab::CrabStats::count(domain_name() + ".count.ref_load.skipped.dynamic_type_is_top"); 	    
+	return;
+      } 
+
+      variable_type rgn_content_ty = rgn_ty.get().get_region_content_type();      
+      if (res.get_type() != rgn_content_ty) {
+	CRAB_LOG("region-load",
+		 CRAB_WARN("region_domain::ref_load: skip unknown region ", rgn,
+			   " because the region has the dynamic type ", rgn_ty,
+			   " which is not compatible with the type of the lhs ", res.get_type()););
+	
+	crab::CrabStats::count(domain_name() +
+			       ".count.ref_load.skipped.inconsistent_dynamic_type");
+	gvars_res.forget(m_base_dom);	
+	return;
+      }
+    }
+ 
     auto num_refs = m_rgn_counting_dom[rgn];
     if (num_refs.is_zero() || num_refs.is_one()) {
       // strong read
@@ -1748,7 +2074,9 @@ public:
       // weak read
       CRAB_LOG("region-load", crab::outs() << "Reading from non-singleton\n";);
       if (auto region_gvars_opt = get_gvars(rgn)) {
-	ghost_variables_t fresh_region_gvars = ghost_variables_t::create(m_alloc, rgn.get_type());
+	variable_type rgn_ty = get_dynamic_type_or_fail(rgn);
+	ghost_variables_t fresh_region_gvars =
+	  ghost_variables_t::create(m_alloc, (*region_gvars_opt));
         (*region_gvars_opt).expand(m_base_dom, fresh_region_gvars);
         gvars_res.assign(m_base_dom, fresh_region_gvars);
       } else {
@@ -1757,8 +2085,9 @@ public:
     }
 
     CRAB_LOG("region-load", crab::outs() << "After " << res << ":="
-                                         << "ref_load(" << ref << "," << rgn
-                                         << ")=" << *this << "\n";);
+	     << "ref_load(" << rgn << ":" << rgn.get_type() << ","
+	     << ref << ":" << ref.get_type()
+	     << ")=" << *this << "\n";);
   }
 
   // Write the content of val to the address pointed by ref in rgn.
@@ -1785,73 +2114,110 @@ public:
       return;
     }
 
-    auto forget_region_if_tracked = [this](const variable_t &v) {
-      if (v.get_type().is_region() && !v.get_type().is_unknown_region()) {
-	ghost_variables_t gvars = get_or_insert_gvars(v);
-	gvars.forget(m_base_dom);
-      }
+    // forget the ghost variables in the base domain
+    auto forget_region = [this](const variable_t &rgn) {
+	if (boost::optional<ghost_variables_t> gvars = get_gvars(rgn)) {
+	  (*gvars).forget(m_base_dom);
+	}
     };
-				    
-    bool is_uninitialized_rgn = m_rgn_init_dom[rgn].is_false();
-    // We conservatively mark the region as may-initialized
-    m_rgn_init_dom.set(rgn, boolean_value::top());
-
+    
     if (is_null_ref(ref).is_true()) {
       CRAB_LOG("region-store",
                CRAB_WARN("region_domain::ref_store: reference ", ref,
                          " is null. " ););
       // set_to_bottom();
-      forget_region_if_tracked(rgn);      
+      crab::CrabStats::count(domain_name() + ".count.ref_store.skipped.null_reference");        
+      forget_region(rgn);      
       return;
     }
 
-    auto ref_store = [&val, this](base_abstract_domain_t &base_dom,
-				  const variable_t &rgn_var) {
-      ghost_variables_t rgn_gvars = get_or_insert_gvars(rgn_var);
-      // At this point region of references has been translated to region of
-      // integers. val can be any scalar including a reference.
-      if (val.get_type().is_bool()) {
-        if (val.is_constant()) {
-          base_dom.assign_bool_cst(
-	      rgn_gvars.get_var(),
-              (val.is_bool_true() ? base_linear_constraint_t::get_true()
-                                  : base_linear_constraint_t::get_false()));
-        } else {
-          base_dom.assign_bool_var(rgn_gvars.get_var(),
-				   get_or_insert_gvars(val.get_variable()).get_var(),
-                                   false);
-        }
-      } else if (val.get_type().is_integer() || val.get_type().is_real() ||
-		 val.get_type().is_reference()) {
-	
-        if (val.is_constant()) {
-          base_dom.assign(rgn_gvars.get_var(), val.get_constant());
-	  
-	  if (val.get_type().is_reference()) {
-	    if (rgn_gvars.has_offset_and_size()) {
-	      // Storing NULL	      
-	      assert(val.get_constant() == number_t(0));
-	      rgn_gvars.get_offset_and_size().forget(base_dom);
-	    }
-	  }
-        } else {
-	  ghost_variables_t val_gvars = get_or_insert_gvars(val.get_variable());	  
-          base_dom.assign(rgn_gvars.get_var(),
-			  val_gvars.get_var());
-	  
-	  if (val.get_type().is_reference()) {
-	    if (rgn_gvars.has_offset_and_size() && val_gvars.has_offset_and_size()) {
-	      rgn_gvars.get_offset_and_size().assign(base_dom, val_gvars.get_offset_and_size());
-	    } else if (rgn_gvars.has_offset_and_size()) {
-	      rgn_gvars.get_offset_and_size().forget(base_dom);
-	    }
-	  }
-        }
-      } else {
-        CRAB_ERROR(domain_name(), "::ref_store: unsupported type ", val.get_type());
-      }
-    };
+    bool is_uninitialized_rgn = m_rgn_init_dom[rgn].is_false();
+    // We conservatively mark the region as may-initialized
+    m_rgn_init_dom.set(rgn, boolean_value::top());
 
+    if (is_tracked_unknown_region(rgn)) {
+      type_value rgn_ty = m_rgn_type_dom[rgn];
+      if (rgn_ty.is_bottom()) {
+	// this shouldn't happen because it can only happen if
+	// m_rgn_type_dom is bottom and this is already checked.
+	CRAB_ERROR(domain_name(), "::ref_store: the dynamic type of region ",
+		   rgn, " is bottom");
+      }
+      if (rgn_ty.is_top()) {
+	crab::CrabStats::count(domain_name() + ".count.ref_store.skipped.dynamic_type_is_top");	  	    
+	forget_region(rgn);	  
+	return;
+      } else if (rgn_ty.get().is_unknown_region()) {
+	// 1. Set the dynamic type of the unknown region. From now on,
+	// all memory accesses must satisfy this type.
+	m_rgn_type_dom.set(rgn, variable_type::mk_region(val.get_type()));
+      } else {
+	// 2. Check that type of val satisfy the dynamic type of the
+	// region.
+	variable_type rgn_content_ty = rgn_ty.get().get_region_content_type();
+	if (val.get_type() != rgn_content_ty) {
+	  if (rgn_content_ty.is_reference()) {
+	    // Skip the store
+	    // 
+	    // IMPORTANT: we are trying to write some non-reference
+	    // value into a region where we wrote a reference
+	    // before. The reason why this is possible is due to
+	    // pointer analysis imprecision.
+	    // 
+	    // Skipping the store is sound because any future read of
+	    // any non-reference value will be soundly ignored (under
+	    // word-level addressability assumption)
+	    CRAB_LOG("region-store",
+		     crab::outs() << "Skipped the write of a value of type "
+		     << val.get_type() << "\n";);
+	    crab::CrabStats::count(domain_name() +
+				   ".count.ref_store.skipped.inconsistent_dynamic_type");
+	    return;
+	  } else if (val.get_type().is_reference()) {
+	    // Reinterpret the region
+	    // 
+	    // IMPORTANT: we throw away previous writes of
+	    // non-reference values in the region and from now on, we
+	    // only stores references.
+	    //
+	    // The argument to make uninitialized the region is that
+	    // previous writes must have happened in different
+	    // locations because those writes wrote values of
+	    // different types.
+	    m_rgn_init_dom.set(rgn, boolean_value::get_false());
+	    m_rgn_type_dom.set(rgn, variable_type::mk_region(val.get_type()));
+	    if (boost::optional<ghost_variables_t> gvars = get_gvars(rgn)) {
+	      m_var_map.erase(rgn);	      
+	      (*gvars).remove_rev_varmap(m_rev_var_map);
+	      (*gvars).forget(m_base_dom);
+	    }
+	    CRAB_LOG("region-store",
+		     crab::outs() << "Reinterpreting the dynamic type of " << rgn
+		     << " to " <<  val.get_type() << "\n";);
+	    // We don't return
+	  } else {
+	    CRAB_LOG("region-store",
+		     CRAB_WARN("region_domain::ref_store: skip unknown region ", rgn,
+			       " because the region has the dynamic type ", rgn_ty,
+			       " and it is not compatible with the type of the lhs ",
+			       val.get_type()););
+	    crab::CrabStats::count(domain_name() +
+				   ".count.ref_store.skipped.inconsistent_dynamic_type");
+	    forget_region(rgn);	  	  
+	    return;
+	  }
+	}
+      }
+    }
+    
+    bool is_tracked_rgn = is_tracked_region(rgn);
+    if (!is_tracked_rgn) {
+      CRAB_LOG("region-store",
+	       CRAB_WARN("region_domain::ref_store: skip unknown region ", rgn););
+      crab::CrabStats::count(domain_name() + ".count.ref_store.skipped.untracked_region");      
+      // don't return yet
+    } 
+        
     auto num_refs = m_rgn_counting_dom[rgn];
     // A region can have more than one reference but we can still
     // perform a strong update as long as nobody wrote yet in the
@@ -1867,11 +2233,8 @@ public:
       /* strong update */
       CRAB_LOG("region-store", crab::outs() << "Performing strong update\n";);
 
-      if (!rgn.get_type().is_unknown_region()) {
-	ref_store(m_base_dom, rgn);
-      } else {
-	CRAB_LOG("region-store",
-		 CRAB_WARN("region_domain::ref_store: skip unknown region ", rgn););
+      if (is_tracked_rgn) {
+	ref_store(m_base_dom, rgn, val);
       } 
       
       if (Params::allocation_sites) {
@@ -1896,14 +2259,11 @@ public:
       /* weak update */
       CRAB_LOG("region-store", crab::outs() << "Performing weak update\n";);
 
-      if (!rgn.get_type().is_unknown_region()) {
+      if (is_tracked_rgn) {
 	base_abstract_domain_t tmp(m_base_dom);
-	ref_store(tmp, rgn);
+	ref_store(tmp, rgn, val);
 	m_base_dom |= tmp;
-      } else {
-	CRAB_LOG("region-store", 
-		 CRAB_WARN("region_domain::ref_store: skip unknown region ", rgn););
-      }
+      } 
       
       if (Params::allocation_sites) {
 	if (val.get_type().is_reference()) {
@@ -1921,8 +2281,9 @@ public:
       
     }
     CRAB_LOG("region-store", crab::outs()
-                                 << "After ref_store(" << ref << "," << rgn
-                                 << "," << val << ")=" << *this << "\n";);
+	     << "After ref_store(" << rgn << ":" << rgn.get_type()
+	     << "," << ref << ":" << ref.get_type()
+	     << "," << val << ":" << val.get_type() << ")=" << *this << "\n";);
   }
 
   // Create a new reference ref2 to region rgn2.
@@ -2790,6 +3151,9 @@ public:
       if (v.get_type().is_region()) {
         m_rgn_counting_dom -= v;
         m_rgn_init_dom -= v;
+	if (is_tracked_unknown_region(v)) {
+	  m_rgn_type_dom -= v;
+	}		
         if (Params::deallocation) {
           m_rgn_dealloc_dom.forget(v);
         }	
@@ -2822,9 +3186,8 @@ public:
     std::vector<base_variable_t> base_vars;
     base_vars.reserve(variables.size());
     for (auto const &v : variables) {
-      if (v.get_type().is_unknown_region()) {
-        // skip those for now
-        continue;
+      if (v.get_type().is_region() && !is_tracked_region(v)) {
+	continue;
       }
       get_or_insert_gvars(v).add(base_vars);
     }
@@ -2846,6 +3209,9 @@ public:
 
     m_rgn_counting_dom.project(sorted_variables);
     m_rgn_init_dom.project(sorted_variables);
+    if (!Params::skip_unknown_regions) {
+      m_rgn_type_dom.project(sorted_variables);
+    }
     if (Params::allocation_sites) {
       m_alloc_site_dom.project(sorted_variables);
     }
@@ -2943,6 +3309,9 @@ public:
     // Rename the rest 
     m_rgn_counting_dom.rename(from, to);
     m_rgn_init_dom.rename(from, to);
+    if (!Params::skip_unknown_regions) {
+      m_rgn_type_dom.rename(from, to);
+    } 
     if (Params::allocation_sites) {
       m_alloc_site_dom.rename(from, to);
     }
@@ -3328,6 +3697,9 @@ public:
       CRAB_LOG("region-print",
 	       o << "(RgnCounter=" << m_rgn_counting_dom << ","
 	       << "RgnInit=" << m_rgn_init_dom;
+	       if (!Params::skip_unknown_regions) {
+		 o << "," << "RgnUnkType=" << m_rgn_type_dom;
+	       }
 	       if (Params::allocation_sites) {
 		 o << "," << "AllocSites=" << m_alloc_site_dom;
 	       }
@@ -3346,8 +3718,15 @@ public:
           } o << "},"
               << "BaseDom=" << m_base_dom << ")\n";);
       std::unordered_map<std::string, std::string> renaming_map;
+      auto get_type_fn = [this](const variable_t& v) -> variable_type {
+	if (has_dynamic_type(v)) {
+	  return get_dynamic_type_or_fail(v);
+	} else {
+	  return variable_type(variable_type_kind::UNK_TYPE); 
+	}
+      };
       // Assigns a string name to each ghost variable
-      ghost_variables_t::mk_renaming_map(m_rev_var_map, renaming_map);
+      ghost_variables_t::mk_renaming_map(m_rev_var_map, get_type_fn, renaming_map);
       m_alloc.add_renaming_map(renaming_map);
       o << m_base_dom;
       m_alloc.clear_renaming_map();
