@@ -10,6 +10,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/graphs/graph_config.hpp>
@@ -1311,7 +1312,7 @@ public:
 
       if (!is_closed) {
         edge_vector delta;
-        if (Params::chrome_dijkstra)
+        if (crab_domain_params_man::get().zones_chrome_dijkstra())
           GrOps::close_after_meet(meet_g, meet_pi, gx, gy, delta);
         else
           GrOps::close_johnson(meet_g, meet_pi, delta);
@@ -1365,7 +1366,7 @@ public:
       return;
     }
     edge_vector delta;
-    if (Params::widen_restabilize)
+    if (crab_domain_params_man::get().zones_widen_restabilize())
       GrOps::close_after_widen(g, potential, vert_set_wrap_t(unstable), delta);
     else
       GrOps::close_johnson(g, potential, delta);
@@ -1441,7 +1442,7 @@ public:
       // Construct difference constraints from the assignment
       diffcsts_of_assign(x, e, diffs_lb, diffs_ub);
       if (diffs_lb.size() > 0 || diffs_ub.size() > 0) {
-        if (Params::special_assign) {
+        if (crab_domain_params_man::get().zones_special_assign()) {
           bool overflow;
           Wt e_val = eval_expression(e, overflow);
           if (overflow) {

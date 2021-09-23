@@ -28,6 +28,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/array_smashing.hpp>
 #include <crab/domains/interval.hpp>
@@ -48,43 +49,9 @@ namespace crab {
 namespace domains {
 
 // forward declaration
-template <typename Domain, class Params> class array_adaptive_domain;
+template <typename Domain> class array_adaptive_domain;
 
 namespace array_adaptive_impl {
-
-class DefaultParams {
-public:
-  /* options for array smashing */
-  enum { is_smashable = 1 };
-  enum { smash_at_nonzero_offset = 1 };
-  enum { max_smashable_cells = 512 };
-  /* options for array expansion */
-  enum { max_array_size = 512 };
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wenum-compare"
-  static_assert(
-      max_array_size <= max_smashable_cells,
-      "max_array_size must be less or equal than max_smashable_cells");
-#pragma GCC diagnostic pop
-};
-
-class NoSmashableParams {
-public:
-  /* options for array smashing */
-  enum { is_smashable = 0 };
-  enum { smash_at_nonzero_offset = 0 };
-  enum { max_smashable_cells = 512 };
-  /* options for array expansion */
-  enum { max_array_size = 512 };
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wenum-compare"
-  static_assert(
-      max_array_size <= max_smashable_cells,
-      "max_array_size must be less or equal than max_smashable_cells");
-#pragma GCC diagnostic pop
-};
 
 // Trivial constant propagation lattice
 class cp_domain_t {
@@ -476,7 +443,7 @@ inline Set set_difference(Set &s1, const typename Set::key_type &e) {
  */
 class offset_map_t {
 private:
-  template <typename Dom, class Params>
+  template <typename Dom>
   friend class crab::domains::array_adaptive_domain;
 
   using cell_set_t = std::set<cell_t>;
@@ -919,16 +886,16 @@ public:
 };
 } // end namespace array_adaptive_impl
 
-template <typename NumDomain, class Params = array_adaptive_impl::DefaultParams>
+template <typename NumDomain>
 class array_adaptive_domain final
-    : public abstract_domain_api<array_adaptive_domain<NumDomain, Params>> {
+    : public abstract_domain_api<array_adaptive_domain<NumDomain>> {
 
 public:
   using number_t = typename NumDomain::number_t;
   using varname_t = typename NumDomain::varname_t;
 
 private:
-  using array_adaptive_domain_t = array_adaptive_domain<NumDomain, Params>;
+  using array_adaptive_domain_t = array_adaptive_domain<NumDomain>;
   using abstract_domain_t = abstract_domain_api<array_adaptive_domain_t>;
 
 public:
@@ -1099,18 +1066,18 @@ private:
         return;
       }
 
-      if (cells.size() > Params::max_smashable_cells) {
+      if (cells.size() > crab_domain_params_man::get().array_adaptive_max_smashable_cells()) {
         // Smashing is expensive because it will go over all cells
         // performing one join per weak update even if the smashed
         // array is already unconstrained. We don't smash if the
         // number of cells to be smashed is too large.
         CRAB_WARN("array adaptive did not smash array because its size is "
                   "greater than ",
-                  Params::max_smashable_cells);
+                  crab_domain_params_man::get().array_adaptive_max_smashable_cells());
         return;
       }
 
-      if (!Params::smash_at_nonzero_offset &&
+      if (!crab_domain_params_man::get().array_adaptive_smash_at_nonzero_offset() &&
           !cells[0].get_offset().is_zero()) {
         return;
       }
@@ -1345,7 +1312,8 @@ private:
         return false;
       }
       std::vector<cell_t> cells = m_offset_map.get_all_cells();
-      return can_be_smashed(cells, elem_sz, Params::smash_at_nonzero_offset);
+      return can_be_smashed(cells, elem_sz,
+			    crab_domain_params_man::get().array_adaptive_smash_at_nonzero_offset());
     }
 
     void write(crab_os &o) const {
@@ -1733,7 +1701,7 @@ private:
           m_inv -= *c_scalar_opt;
         }
       }
-      if (!Params::is_smashable) {
+      if (!crab_domain_params_man::get().array_adaptive_is_smashable()) {
         // Delete completely the cells. If needed again they they will
         // be re-created.
         for (unsigned i = 0, e = cells.size(); i < e; ++i) {
@@ -2845,7 +2813,7 @@ public:
         // XXX: if we have a large array that is never smashed but we
         // do many reads with symbolic offsets then it might be better
         // to smash the array so that each read is cheaper.
-        if (Params::is_smashable) {
+        if (crab_domain_params_man::get().array_adaptive_is_smashable()) {
           if (array_state::can_be_smashed(cells, e_sz, true)) {
             // we smash all overlapping cells into a fresh array
             // (summarized) variable
@@ -2930,7 +2898,8 @@ public:
       array_state next_as(as);
       offset_map_t &offset_map = next_as.get_offset_map();
       boost::optional<number_t> n_opt = ii.singleton();
-      if (n_opt && (offset_map.get_number_cells() < Params::max_array_size)) {
+      if (n_opt && (offset_map.get_number_cells() <
+		    crab_domain_params_man::get().array_adaptive_max_array_size())) {
 
         // -- Constant index: kill overlapping cells + perform strong update
         std::vector<cell_t> cells;
@@ -2956,7 +2925,7 @@ public:
                    crab::outs()
                        << "array write to " << a << " with constant index " << i
                        << "=" << ii << " but array size exceeded threshold of "
-                       << Params::max_array_size
+		       << crab_domain_params_man::get().array_adaptive_max_array_size()
                        << " so smashing is happening.\n";);
         } else {
           CRAB_LOG("array-adaptive", crab::outs() << "array write to " << a
@@ -2965,14 +2934,14 @@ public:
         }
 
         bool smashed = false; // whether smashing took place
-        if (Params::is_smashable) {
+        if (crab_domain_params_man::get().array_adaptive_is_smashable()) {
           std::vector<cell_t> cells = offset_map.get_all_cells();
           if (next_as.can_be_smashed(e_sz) &&
               // Smashing is expensive because it will go over all cells
               // performing one join per weak update even if the smashed
               // array is already unconstrained. We don't smash if the
               // number of cells to be smashed is too large.
-              (cells.size() <= Params::max_smashable_cells)) {
+              (cells.size() <= crab_domain_params_man::get().array_adaptive_max_smashable_cells())) {
             smashed = true;
             CRAB_LOG("array-adaptive-smash",
                      crab::outs() << "Array " << a << " will be smashed\n";);
@@ -3020,7 +2989,8 @@ public:
                                   << " has been smashed:" << m_inv << "\n";);
           } else {
             CRAB_LOG("array-adaptive",
-                     if (cells.size() > Params::max_smashable_cells) {
+                     if (cells.size() >
+			 crab_domain_params_man::get().array_adaptive_max_smashable_cells()) {
                        CRAB_WARN("Array ", a,
                                  " cannot be smashed because too many cells ",
                                  cells.size(), ". Array write at index ", i,
@@ -3097,8 +3067,10 @@ public:
 
     number_t num_elems = (*ub - *lb) / e_sz;
     number_t e = *ub;
-    if (num_elems > Params::max_array_size) {
-      e = *lb + ((number_t(Params::max_array_size) - 1) * e_sz);
+    if (num_elems >
+	crab_domain_params_man::get().array_adaptive_max_array_size()) {
+      e = *lb +
+	((number_t(crab_domain_params_man::get().array_adaptive_max_array_size()) - 1) * e_sz);
       CRAB_WARN("array adaptive store range will ignore indexes greater than ",
                 e);
     }
@@ -3154,7 +3126,7 @@ public:
                               << " := " << kv.second << "\n";);
         do_assign(kv.first, kv.second);
       }
-    } else if (Params::is_smashable) {
+    } else if (crab_domain_params_man::get().array_adaptive_is_smashable()) {
       CRAB_LOG("array-adaptive-array-assign", crab::outs() << "Smashed\n";);
       variable_t smashed_lhs = get_smashed_variable(lhs, m_smashed_varmap);
       variable_t smashed_rhs = get_smashed_variable(rhs, m_smashed_varmap);
@@ -3333,8 +3305,9 @@ public:
 
     number_t num_elems = (*ub - *lb) / e_sz;
     number_t e = *ub;
-    if (num_elems > Params::max_array_size) {
-      e = *lb + ((number_t(Params::max_array_size) - 1) * e_sz);
+    if (num_elems > crab_domain_params_man::get().array_adaptive_max_array_size()) {
+      e = *lb +
+	((number_t(crab_domain_params_man::get().array_adaptive_max_array_size()) - 1) * e_sz);
     }
 
     for (number_t i = *lb; i <= e;) {
@@ -3512,16 +3485,16 @@ public:
 
 }; // end array_adaptive_domain
 
-template <typename Dom, class Params>
-struct abstract_domain_traits<array_adaptive_domain<Dom, Params>> {
+template <typename Dom>
+struct abstract_domain_traits<array_adaptive_domain<Dom>> {
   using number_t = typename Dom::number_t;
   using varname_t = typename Dom::varname_t;
 };
 
-template <typename Dom, class Params>
-class checker_domain_traits<array_adaptive_domain<Dom, Params>> {
+template <typename Dom>
+class checker_domain_traits<array_adaptive_domain<Dom>> {
 public:
-  using this_type = array_adaptive_domain<Dom, Params>;
+  using this_type = array_adaptive_domain<Dom>;
   using base_domain_t = typename this_type::base_domain_t;
   using linear_constraint_t = typename this_type::linear_constraint_t;
   using disjunctive_linear_constraint_system_t =

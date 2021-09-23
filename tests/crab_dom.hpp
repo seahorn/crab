@@ -73,18 +73,9 @@ using z_bool_interval_domain_t =
 /*===================================================================*/
 // Arrays domains
 /*===================================================================*/
-class ArrayAdaptParams {
-public:
-  enum { is_smashable = 1 };
-  enum { smash_at_nonzero_offset = 0 };
-  enum { max_smashable_cells = 64 };
-  enum { max_array_size = 512 };
-};
-using z_aa_int_t = array_adaptive_domain<z_interval_domain_t, ArrayAdaptParams>;
-using z_aa_term_int_t =
-    array_adaptive_domain<z_term_domain_t, ArrayAdaptParams>;
-using z_aa_bool_int_t =
-    array_adaptive_domain<z_bool_interval_domain_t, ArrayAdaptParams>;
+using z_aa_int_t = array_adaptive_domain<z_interval_domain_t>;
+using z_aa_term_int_t = array_adaptive_domain<z_term_domain_t>;
+using z_aa_bool_int_t = array_adaptive_domain<z_bool_interval_domain_t>;
 using z_ae_int_t = array_expansion_domain<z_interval_domain_t>;
 using z_ae_term_int_t = array_expansion_domain<z_term_domain_t>;
 using z_ae_sdbm_t = array_expansion_domain<z_sdbm_domain_t>;
@@ -111,16 +102,10 @@ struct TestRegionParams {
   using varname_allocator_t = crab::var_factory_impl::str_var_alloc_col;  
   using base_abstract_domain_t = BaseAbsDom;
   using base_varname_t = typename BaseAbsDom::varname_t;
-  enum { allocation_sites = 1};    
-  enum { deallocation = 1};  
-  enum { refine_uninitialized_regions = 1};
-  enum { tag_analysis = 1};
-  enum { is_dereferenceable = 0};  
 };
 using z_rgn_aa_int_params_t = TestRegionParams<
   array_adaptive_domain<
-    interval_domain<z_number, typename var_allocator::varname_t>,
-    ArrayAdaptParams>>;
+    interval_domain<z_number, typename var_allocator::varname_t>>>;
 using z_rgn_int_params_t = TestRegionParams<
   interval_domain<z_number, typename var_allocator::varname_t>>;
 using z_rgn_bool_int_params_t = TestRegionParams<

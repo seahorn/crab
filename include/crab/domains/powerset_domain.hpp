@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/support/debug.hpp>
@@ -17,24 +18,14 @@ namespace domains {
  * for the powerset domain. The current widening smashes all disjuncts
  * before calling the widening of the base domain.
  */
-namespace powerset_impl {
-class DefaultParams {
-public:
-  /// Exact meet
-  enum { exact_meet = 0 };
-  /// Smash if the number of disjunctions exceeds this threshold.
-  enum { max_disjuncts = 99999 };
-};
-} // namespace powerset_impl
-
-template <typename Domain, class Params = powerset_impl::DefaultParams>
+template <typename Domain>
 class powerset_domain final
-    : public abstract_domain_api<powerset_domain<Domain, Params>> {
+    : public abstract_domain_api<powerset_domain<Domain>> {
 
 public:
   using number_t = typename Domain::number_t;
   using varname_t = typename Domain::varname_t;
-  using powerset_domain_t = powerset_domain<Domain, Params>;
+  using powerset_domain_t = powerset_domain<Domain>;
   using abstract_domain_t = abstract_domain_api<powerset_domain_t>;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_t::interval_t;
@@ -82,7 +73,7 @@ private:
   powerset_domain(base_dom_vector &&powerset)
       : m_disjuncts(std::move(powerset)) {
     normalize_if_top();
-    if (m_disjuncts.size() > Params::max_disjuncts) {
+    if (m_disjuncts.size() > crab_domain_params_man::get().powerset_max_disjuncts()) {
       smash_disjuncts();
     }
   }
@@ -286,7 +277,7 @@ public:
     }
 
     append(m_disjuncts, other.m_disjuncts);
-    if (m_disjuncts.size() > Params::max_disjuncts) {
+    if (m_disjuncts.size() > crab_domain_params_man::get().powerset_max_disjuncts()) {
       smash_disjuncts();
     }
     CRAB_LOG("powerset", crab::outs() << *this << "\n";);
@@ -299,7 +290,7 @@ public:
 
   virtual powerset_domain_t
   operator&(const powerset_domain_t &other) const override {
-    if (Params::exact_meet) {
+    if (crab_domain_params_man::get().powerset_exact_meet()) {
       return powerset_meet_with(other);
     } else {
       Domain left = smash_disjuncts(*this);
@@ -952,8 +943,8 @@ public:
   }
 };
 
-template <typename Domain, class Params>
-struct abstract_domain_traits<powerset_domain<Domain, Params>> {
+template <typename Domain>
+struct abstract_domain_traits<powerset_domain<Domain>> {
   using number_t = typename Domain::number_t;
   using varname_t = typename Domain::varname_t;
 };

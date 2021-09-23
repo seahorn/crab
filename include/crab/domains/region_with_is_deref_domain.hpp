@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/boolean.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/domains/separate_domains.hpp>
@@ -77,8 +78,7 @@ private:
   // the address of the reference, (2) its offset (distance to the
   // base address of the memory object to which the reference points
   // to), and (3) the size of the memory object. The ghost variables
-  // (2)-(3) are optional (only if Params::is_dereferenceable is
-  // enabled).
+  // (2)-(3) are optional.
   //
   // To make the code of the region domain simpler and extensible, we
   // group together all the ghost variables in a class and provide
@@ -282,7 +282,7 @@ private:
                    " with a type ", vty);
       }
 
-      if (Params::is_dereferenceable &&
+      if (crab_domain_params_man::get().region_is_dereferenceable() &&
           (vty.is_reference() || vty.is_reference_region())) {
         return ghost_variables_t(make_base_variable(alloc, vty),
                                  make_base_variable(alloc, vty),
@@ -430,7 +430,8 @@ private:
         ghost_var_id ghost_id = kv.second.second;
 
         variable_type vty = get_type_fn(v);
-        if (vty.is_reference() || vty.is_reference_region()) {
+        if (crab_domain_params_man::get().region_is_dereferenceable() &&
+	    (vty.is_reference() || vty.is_reference_region())) {
           if (ghost_id == 1) {
             out_str_map[bv.name().str()] = v.name().str() + ".address";
           } else if (ghost_id == 2) {
@@ -708,7 +709,8 @@ private:
       auto it = right.m_var_map.find(v);
       if (it != right.m_var_map.end()) {
         // if we ignore unknown regions, types are the same by construction
-        if (!Params::skip_unknown_regions && !kv.second.same_type(it->second)) {
+        if (!crab_domain_params_man::get().region_skip_unknown_regions() &&
+	    !kv.second.same_type(it->second)) {
           crab::CrabStats::count(
               domain_name() + ".count.join.skipped.inconsistent_dynamic_type");
           continue;
@@ -791,7 +793,8 @@ private:
       auto it = right.m_var_map.find(v);
       if (it != right.m_var_map.end()) {
         // if we ignore unknown regions, types are the same by construction
-        if (!Params::skip_unknown_regions && !kv.second.same_type(it->second)) {
+        if (!crab_domain_params_man::get().region_skip_unknown_regions() &&
+	    !kv.second.same_type(it->second)) {
           crab::CrabStats::count(
               domain_name() +
               ".count.join_or_widen.skipped.inconsistent_dynamic_type");
@@ -880,7 +883,8 @@ private:
       auto it = right.m_var_map.find(v);
       if (it != right.m_var_map.end()) {
         // if we ignore unknown regions, types are the same by construction
-        if (!Params::skip_unknown_regions && !kv.second.same_type(it->second)) {
+        if (!crab_domain_params_man::get().region_skip_unknown_regions() &&
+	    !kv.second.same_type(it->second)) {
           crab::CrabStats::count(
               domain_name() +
               ".count.meet_or_narrowing.skipped.inconsistent_dynamic_type");
@@ -1217,11 +1221,15 @@ private:
     if (!ty.is_unknown_region()) {
       return true;
     }
-    return (Params::skip_unknown_regions ? false : has_dynamic_type(v));
+    return (crab_domain_params_man::get().region_skip_unknown_regions() ?
+	    false :
+	    has_dynamic_type(v));
+	    
   }
 
   static bool is_tracked_unknown_region(const variable_t &v) {
-    return (!Params::skip_unknown_regions && v.get_type().is_unknown_region());
+    return (!crab_domain_params_man::get().region_skip_unknown_regions() &&
+	    v.get_type().is_unknown_region());
   }
 
   // if the variable has a static type (different from unknown region)
@@ -1235,7 +1243,7 @@ private:
       return true;
     }
 
-    if (Params::skip_unknown_regions) {
+    if (crab_domain_params_man::get().region_skip_unknown_regions()) {
       return false;
     } else {
       type_value dyn_ty = m_rgn_type_dom[v];
@@ -1372,13 +1380,13 @@ public:
   bool is_top() const override {
     bool res =
         (!is_bottom() && m_base_dom.is_top() && m_rgn_counting_dom.is_top());
-    if (Params::allocation_sites) {
+    if (crab_domain_params_man::get().region_allocation_sites()) {
       res = res && m_alloc_site_dom.is_top();
     }
-    if (Params::deallocation) {
+    if (crab_domain_params_man::get().region_deallocation()) {
       res = res && m_rgn_dealloc_dom.is_top();
     }
-    if (Params::tag_analysis) {
+    if (crab_domain_params_man::get().region_tag_analysis()) {
       res = res && m_tag_env.is_top();
     }
     return res;
@@ -1413,21 +1421,21 @@ public:
       return false;
     }
 
-    if (Params::allocation_sites) {
+    if (crab_domain_params_man::get().region_allocation_sites()) {
       if (!(m_alloc_site_dom <= o.m_alloc_site_dom)) {
         CRAB_LOG("region-leq", crab::outs() << "Result6=0\n";);
         return false;
       }
     }
 
-    if (Params::deallocation) {
+    if (crab_domain_params_man::get().region_deallocation()) {
       if (!(m_rgn_dealloc_dom <= o.m_rgn_dealloc_dom)) {
         CRAB_LOG("region-leq", crab::outs() << "Result7=0\n";);
         return false;
       }
     }
 
-    if (Params::tag_analysis) {
+    if (crab_domain_params_man::get().region_tag_analysis()) {
       if (!(m_tag_env <= o.m_tag_env)) {
         CRAB_LOG("region-leq", crab::outs() << "Result8=0\n";);
         return false;
@@ -1450,7 +1458,8 @@ public:
       auto it = o.m_var_map.find(v);
       if (it != o.m_var_map.end()) {
         // if we ignore unknown regions, types are the same by construction
-        if (!Params::skip_unknown_regions && !kv.second.same_type(it->second)) {
+        if (!crab_domain_params_man::get().region_skip_unknown_regions() &&
+	    !kv.second.same_type(it->second)) {
           CRAB_ERROR(domain_name(), "::operator<= ", " dynamic type of ", v,
                      " must be the same in both left and right operands");
         }
@@ -1498,7 +1507,7 @@ public:
 
     bool refine_left = false;
     bool refine_right = false;
-    if (Params::refine_uninitialized_regions) {
+    if (crab_domain_params_man::get().region_refine_uninitialized_regions()) {
       refine_left = can_propagate_initialized_regions(
           m_rgn_init_dom, o.m_var_map, left_regions, regions_right_base_vars);
       refine_right = can_propagate_initialized_regions(
@@ -1559,7 +1568,7 @@ public:
 
     bool refine_left = false;
     bool refine_right = false;
-    if (Params::refine_uninitialized_regions) {
+    if (crab_domain_params_man::get().region_refine_uninitialized_regions()) {
       refine_left = can_propagate_initialized_regions(
           m_rgn_init_dom, o.m_var_map, left_regions, regions_right_base_vars);
       refine_right = can_propagate_initialized_regions(
@@ -1728,16 +1737,16 @@ public:
         if (is_tracked_unknown_region(v)) {
           m_rgn_type_dom -= v;
         }
-        if (Params::deallocation) {
+        if (crab_domain_params_man::get().region_deallocation()) {
           m_rgn_dealloc_dom.forget(v);
         }
       }
-      if (Params::allocation_sites) {
+      if (crab_domain_params_man::get().region_allocation_sites()) {
         if (v.get_type().is_reference() || v.get_type().is_region()) {
           m_alloc_site_dom -= v;
         }
       }
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         m_tag_env -= v;
       }
       auto it = m_var_map.find(v);
@@ -1776,15 +1785,15 @@ public:
       m_rgn_type_dom.set(rgn, rgn.get_type());
     }
 
-    if (Params::deallocation) {
+    if (crab_domain_params_man::get().region_deallocation()) {
       // No deallocated objects in the region
       m_rgn_dealloc_dom.set(rgn, boolean_value::get_false());
     }
-    if (Params::allocation_sites) {
+    if (crab_domain_params_man::get().region_allocation_sites()) {
       // Region does not contain any allocation site
       m_alloc_site_dom.set(rgn, alloc_site_env_t::value_type::bottom());
     }
-    if (Params::tag_analysis) {
+    if (crab_domain_params_man::get().region_tag_analysis()) {
       // Region does not contain any tag
       m_tag_env.set(rgn, tag_env_t::value_type::bottom());
     }
@@ -1825,13 +1834,13 @@ public:
     if (is_tracked_unknown_region(lhs_rgn)) {
       m_rgn_type_dom.set(lhs_rgn, m_rgn_type_dom[rhs_rgn]);
     }
-    if (Params::allocation_sites) {
+    if (crab_domain_params_man::get().region_allocation_sites()) {
       m_alloc_site_dom.set(lhs_rgn, m_alloc_site_dom[rhs_rgn]);
     }
-    if (Params::deallocation) {
+    if (crab_domain_params_man::get().region_deallocation()) {
       m_rgn_dealloc_dom.add(rhs_rgn, lhs_rgn);
     }
-    if (Params::tag_analysis) {
+    if (crab_domain_params_man::get().region_tag_analysis()) {
       m_tag_env.set(lhs_rgn, m_tag_env[rhs_rgn]);
     }
 
@@ -1873,13 +1882,13 @@ public:
 
     m_rgn_counting_dom.set(dst_rgn, m_rgn_counting_dom[src_rgn]);
     m_rgn_init_dom.set(dst_rgn, m_rgn_init_dom[src_rgn]);
-    if (Params::allocation_sites) {
+    if (crab_domain_params_man::get().region_allocation_sites()) {
       m_alloc_site_dom.set(dst_rgn, m_alloc_site_dom[src_rgn]);
     }
-    if (Params::deallocation) {
+    if (crab_domain_params_man::get().region_deallocation()) {
       m_rgn_dealloc_dom.add(src_rgn, dst_rgn);
     }
-    if (Params::tag_analysis) {
+    if (crab_domain_params_man::get().region_tag_analysis()) {
       m_tag_env.set(dst_rgn, m_tag_env[src_rgn]);
     }
 
@@ -1929,7 +1938,7 @@ public:
       }
     } else {
       // We can be here either (1) both regions are typed, or (2)
-      // Params::skip_unknown_regions = 1.
+      // crab_domain_params_man::get().region_skip_unknown_regions() = 1.
       ///
       // We shouldn't use region_cast if both regions are typed so we
       // do nothing although we should print a warning or something.
@@ -1960,7 +1969,7 @@ public:
     auto num_refs = m_rgn_counting_dom[rgn];
     m_rgn_counting_dom.set(rgn, num_refs.increment());
 
-    if (Params::allocation_sites) {
+    if (crab_domain_params_man::get().region_allocation_sites()) {
       // Associate allocation site as to ref
       m_alloc_site_dom.set(ref, as);
     }
@@ -1990,13 +1999,13 @@ public:
       return;
     }
 
-    if (Params::allocation_sites) {
+    if (crab_domain_params_man::get().region_allocation_sites()) {
       m_alloc_site_dom -= ref;
     }
 
     // We conservatively mark the region's equivalence class as
     // possibly deallocated
-    if (Params::deallocation) {
+    if (crab_domain_params_man::get().region_deallocation()) {
       if (!m_rgn_dealloc_dom.contains(rgn)) {
         CRAB_LOG("region", CRAB_WARN("lost track of dealloc status of ", rgn,
                                      " in ", m_rgn_dealloc_dom));
@@ -2045,13 +2054,13 @@ public:
       return;
     }
 
-    if (Params::allocation_sites) {
+    if (crab_domain_params_man::get().region_allocation_sites()) {
       if (res.get_type().is_reference()) {
         m_alloc_site_dom.set(res, m_alloc_site_dom[rgn]);
       }
     }
 
-    if (Params::tag_analysis) {
+    if (crab_domain_params_man::get().region_tag_analysis()) {
       m_tag_env.set(res, m_tag_env[rgn]);
     }
 
@@ -2279,7 +2288,7 @@ public:
         ref_store(m_base_dom, rgn, val);
       }
 
-      if (Params::allocation_sites) {
+      if (crab_domain_params_man::get().region_allocation_sites()) {
         if (val.get_type().is_reference()) {
           if (val.is_reference_null()) {
             // reset to empty set because of strong update
@@ -2291,7 +2300,7 @@ public:
         }
       }
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         if (val.is_variable()) {
           m_tag_env.set(rgn, m_tag_env[val.get_variable()]);
         }
@@ -2307,7 +2316,7 @@ public:
         m_base_dom |= tmp;
       }
 
-      if (Params::allocation_sites) {
+      if (crab_domain_params_man::get().region_allocation_sites()) {
         if (val.get_type().is_reference()) {
           if (val.is_variable()) {
             m_alloc_site_dom.set(rgn, m_alloc_site_dom[rgn] |
@@ -2315,7 +2324,7 @@ public:
           }
         }
       }
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         if (val.is_variable()) {
           m_tag_env.set(rgn, m_tag_env[rgn] | m_tag_env[val.get_variable()]);
         }
@@ -2371,15 +2380,15 @@ public:
         m_rgn_counting_dom.set(rgn2, num_refs.increment());
       }
 
-      if (Params::allocation_sites) {
+      if (crab_domain_params_man::get().region_allocation_sites()) {
         m_alloc_site_dom.set(ref2, m_alloc_site_dom[ref1]);
       }
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         m_tag_env.set(ref2, m_tag_env[ref1]);
       }
 
-      if (Params::deallocation) {
+      if (crab_domain_params_man::get().region_deallocation()) {
         bool found1 = m_rgn_dealloc_dom.contains(rgn1);
         bool found2 = m_rgn_dealloc_dom.contains(rgn2);
         if (!found1) {
@@ -2526,7 +2535,7 @@ public:
         return;
       }
 
-      if (Params::allocation_sites) {
+      if (crab_domain_params_man::get().region_allocation_sites()) {
         if (ref_cst.is_equality() && ref_cst.is_binary()) {
           auto lhs_as = m_alloc_site_dom[ref_cst.lhs()];
           auto rhs_as = m_alloc_site_dom[ref_cst.rhs()];
@@ -2572,7 +2581,7 @@ public:
       ghost_variables_t dst_gvars = get_or_insert_gvars(int_var);
       m_base_dom.assign(dst_gvars.get_var(), src_gvars.get_var());
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         m_tag_env.set(int_var, m_tag_env[ref_var]);
       }
     }
@@ -2596,11 +2605,11 @@ public:
         dst_gvars.get_offset_and_size().forget(m_base_dom);
       }
 
-      if (Params::allocation_sites) {
+      if (crab_domain_params_man::get().region_allocation_sites()) {
         m_alloc_site_dom -= ref_var;
       }
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         m_tag_env.set(ref_var, m_tag_env[int_var]);
       }
 
@@ -2625,7 +2634,7 @@ public:
       m_base_dom.apply(op, get_or_insert_gvars(x).get_var(),
                        get_or_insert_gvars(y).get_var(),
                        get_or_insert_gvars(z).get_var());
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         m_tag_env.set(x, m_tag_env[y] | m_tag_env[z]);
       }
     }
@@ -2639,7 +2648,7 @@ public:
       m_base_dom.apply(op, get_or_insert_gvars(x).get_var(),
                        get_or_insert_gvars(y).get_var(), k);
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         m_tag_env.set(x, m_tag_env[y]);
       }
     }
@@ -2652,7 +2661,7 @@ public:
       auto b_e = rename_linear_expr(e);
       m_base_dom.assign(get_or_insert_gvars(x).get_var(), b_e);
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         merge_tags(x, e.variables());
       }
     }
@@ -2667,7 +2676,7 @@ public:
       auto b_cond = rename_linear_cst(cond);
       m_base_dom.select(get_or_insert_gvars(lhs).get_var(), b_cond, b_e1, b_e2);
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         tag_set tags = tag_set::bottom();
         for (auto const &v : e1.variables()) {
           tags = tags | m_tag_env[v];
@@ -2690,7 +2699,7 @@ public:
       m_base_dom.backward_assign(get_or_insert_gvars(x).get_var(), b_e,
                                  invariant.m_base_dom);
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // TODO tag analysis
       }
     }
@@ -2706,7 +2715,7 @@ public:
                                 get_or_insert_gvars(y).get_var(), z,
                                 invariant.m_base_dom);
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // TODO tag analysis
       }
     }
@@ -2723,7 +2732,7 @@ public:
                                 get_or_insert_gvars(z).get_var(),
                                 invariant.m_base_dom);
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // TODO tag analysis
       }
     }
@@ -2751,7 +2760,7 @@ public:
         m_base_dom.set(get_or_insert_gvars(x).get_var(), intv);
       }
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         m_tag_env.set(x, tag_env_t::value_type::bottom());
       }
     }
@@ -2777,7 +2786,7 @@ public:
       m_base_dom.apply(op, get_or_insert_gvars(dst).get_var(),
                        get_or_insert_gvars(src).get_var());
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         m_tag_env.set(dst, m_tag_env[src]);
       }
     }
@@ -2792,7 +2801,7 @@ public:
                        get_or_insert_gvars(y).get_var(),
                        get_or_insert_gvars(z).get_var());
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         m_tag_env.set(x, m_tag_env[y] | m_tag_env[z]);
       }
     }
@@ -2806,7 +2815,7 @@ public:
       m_base_dom.apply(op, get_or_insert_gvars(x).get_var(),
                        get_or_insert_gvars(y).get_var(), z);
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         m_tag_env.set(x, m_tag_env[y]);
       }
     }
@@ -2822,7 +2831,7 @@ public:
       auto b_rhs = rename_linear_cst(rhs);
       m_base_dom.assign_bool_cst(get_or_insert_gvars(lhs).get_var(), b_rhs);
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         merge_tags(lhs, rhs.variables());
       }
     }
@@ -2835,7 +2844,7 @@ public:
 
     if (!is_bottom()) {
 
-      if (Params::allocation_sites) {
+      if (crab_domain_params_man::get().region_allocation_sites()) {
         if ((rhs.is_equality() || rhs.is_disequality()) && rhs.is_binary()) {
           auto op1_as = m_alloc_site_dom[rhs.lhs()];
           auto op2_as = m_alloc_site_dom[rhs.rhs()];
@@ -2864,7 +2873,7 @@ public:
       auto b_rhs = convert_ref_cst_to_linear_cst(rhs);
       m_base_dom.assign_bool_cst(get_or_insert_gvars(lhs).get_var(), b_rhs);
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         merge_tags(lhs, rhs.variables());
       }
     }
@@ -2880,7 +2889,7 @@ public:
                                  get_or_insert_gvars(rhs).get_var(),
                                  is_not_rhs);
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         m_tag_env.set(lhs, m_tag_env[rhs]);
       }
     }
@@ -2895,7 +2904,7 @@ public:
                                    get_or_insert_gvars(y).get_var(),
                                    get_or_insert_gvars(z).get_var());
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         m_tag_env.set(x, m_tag_env[y] | m_tag_env[z]);
       }
     }
@@ -2917,7 +2926,7 @@ public:
                              get_or_insert_gvars(b1).get_var(),
                              get_or_insert_gvars(b2).get_var());
 
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // it can be improve if we know if cond is true or false
         m_tag_env.set(lhs, m_tag_env[b1] | m_tag_env[b2]);
       }
@@ -2933,7 +2942,7 @@ public:
       auto b_rhs = rename_linear_cst(rhs);
       m_base_dom.backward_assign_bool_cst(get_or_insert_gvars(lhs).get_var(),
                                           b_rhs, invariant.m_base_dom);
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // TODO tag analysis
       }
     }
@@ -2949,7 +2958,7 @@ public:
       auto b_rhs = convert_ref_cst_to_linear_cst(rhs);
       m_base_dom.backward_assign_bool_cst(get_or_insert_gvars(lhs).get_var(),
                                           b_rhs, invariant.m_base_dom);
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // TODO tag analysis
       }
     }
@@ -2965,7 +2974,7 @@ public:
       m_base_dom.backward_assign_bool_var(get_or_insert_gvars(lhs).get_var(),
                                           get_or_insert_gvars(rhs).get_var(),
                                           is_not_rhs, invariant.m_base_dom);
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // TODO tag analysis
       }
     }
@@ -2981,7 +2990,7 @@ public:
           op, get_or_insert_gvars(x).get_var(),
           get_or_insert_gvars(y).get_var(), get_or_insert_gvars(z).get_var(),
           invariant.m_base_dom);
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // TODO tag analysis
       }
     }
@@ -3002,7 +3011,7 @@ public:
       auto b_val = rename_linear_expr(val);
       m_base_dom.array_init(get_or_insert_gvars(a).get_var(), b_elem_size,
                             b_lb_idx, b_ub_idx, b_val);
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // TODO tag analysis
       }
     }
@@ -3018,7 +3027,7 @@ public:
       auto b_i = rename_linear_expr(i);
       m_base_dom.array_load(get_or_insert_gvars(lhs).get_var(),
                             get_or_insert_gvars(a).get_var(), b_elem_size, b_i);
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // TODO tag analysis
       }
     }
@@ -3035,7 +3044,7 @@ public:
       auto b_v = rename_linear_expr(v);
       m_base_dom.array_store(get_or_insert_gvars(a).get_var(), b_elem_size, b_i,
                              b_v, is_strong_update);
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // TODO tag analysis
       }
     }
@@ -3055,7 +3064,7 @@ public:
       auto b_v = rename_linear_expr(v);
       m_base_dom.array_store_range(get_or_insert_gvars(a).get_var(),
                                    b_elem_size, b_i, b_j, b_v);
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // TODO tag analysis
       }
     }
@@ -3067,7 +3076,7 @@ public:
     if (!is_bottom()) {
       m_base_dom.array_assign(get_or_insert_gvars(lhs).get_var(),
                               get_or_insert_gvars(rhs).get_var());
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // TODO tag analysis
       }
     }
@@ -3089,7 +3098,7 @@ public:
       m_base_dom.backward_array_init(get_or_insert_gvars(a).get_var(),
                                      b_elem_size, b_lb_idx, b_ub_idx, b_val,
                                      invariant.m_base_dom);
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // TODO tag analysis
       }
     }
@@ -3107,7 +3116,7 @@ public:
       m_base_dom.backward_array_load(get_or_insert_gvars(lhs).get_var(),
                                      get_or_insert_gvars(a).get_var(),
                                      b_elem_size, b_i, invariant.m_base_dom);
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // TODO tag analysis
       }
     }
@@ -3127,7 +3136,7 @@ public:
       m_base_dom.backward_array_store(get_or_insert_gvars(a).get_var(),
                                       b_elem_size, b_i, b_v, is_strong_update,
                                       invariant.m_base_dom);
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // TODO tag analysis
       }
     }
@@ -3149,7 +3158,7 @@ public:
       m_base_dom.backward_array_store_range(get_or_insert_gvars(a).get_var(),
                                             b_elem_size, b_i, b_j, b_v,
                                             invariant.m_base_dom);
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // TODO tag analysis
       }
     }
@@ -3163,7 +3172,7 @@ public:
       m_base_dom.backward_array_assign(get_or_insert_gvars(lhs).get_var(),
                                        get_or_insert_gvars(rhs).get_var(),
                                        invariant.m_base_dom);
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         // TODO tag analysis
       }
     }
@@ -3177,7 +3186,7 @@ public:
     std::vector<base_variable_t> base_vars;
     base_vars.reserve(variables.size());
     for (auto &v : variables) {
-      if (Params::allocation_sites) {
+      if (crab_domain_params_man::get().region_allocation_sites()) {
         if (v.get_type().is_reference() || v.get_type().is_region()) {
           m_alloc_site_dom -= v;
         }
@@ -3188,11 +3197,11 @@ public:
         if (is_tracked_unknown_region(v)) {
           m_rgn_type_dom -= v;
         }
-        if (Params::deallocation) {
+        if (crab_domain_params_man::get().region_deallocation()) {
           m_rgn_dealloc_dom.forget(v);
         }
       }
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         m_tag_env -= v;
       }
       auto it = m_var_map.find(v);
@@ -3243,16 +3252,16 @@ public:
 
     m_rgn_counting_dom.project(sorted_variables);
     m_rgn_init_dom.project(sorted_variables);
-    if (!Params::skip_unknown_regions) {
+    if (!crab_domain_params_man::get().region_skip_unknown_regions()) {
       m_rgn_type_dom.project(sorted_variables);
     }
-    if (Params::allocation_sites) {
+    if (crab_domain_params_man::get().region_allocation_sites()) {
       m_alloc_site_dom.project(sorted_variables);
     }
-    if (Params::deallocation) {
+    if (crab_domain_params_man::get().region_deallocation()) {
       m_rgn_dealloc_dom.project(sorted_variables);
     }
-    if (Params::tag_analysis) {
+    if (crab_domain_params_man::get().region_tag_analysis()) {
       m_tag_env.project(sorted_variables);
     }
   }
@@ -3341,16 +3350,16 @@ public:
     // Rename the rest
     m_rgn_counting_dom.rename(from, to);
     m_rgn_init_dom.rename(from, to);
-    if (!Params::skip_unknown_regions) {
+    if (!crab_domain_params_man::get().region_skip_unknown_regions()) {
       m_rgn_type_dom.rename(from, to);
     }
-    if (Params::allocation_sites) {
+    if (crab_domain_params_man::get().region_allocation_sites()) {
       m_alloc_site_dom.rename(from, to);
     }
-    if (Params::deallocation) {
+    if (crab_domain_params_man::get().region_deallocation()) {
       m_rgn_dealloc_dom.rename(from, to);
     }
-    if (Params::tag_analysis) {
+    if (crab_domain_params_man::get().region_tag_analysis()) {
       m_tag_env.rename(from, to);
     }
   }
@@ -3435,7 +3444,7 @@ public:
     }
 
     if (name == "is_unfreed_or_null") {
-      if (Params::deallocation) {
+      if (crab_domain_params_man::get().region_deallocation()) {
         error_if_not_arity(2, 1);
         error_if_not_variable(inputs[0]);
         error_if_not_variable(inputs[1]);
@@ -3459,7 +3468,7 @@ public:
         }
       }
     } else if (name == "unfreed_or_null") {
-      if (Params::deallocation) {
+      if (crab_domain_params_man::get().region_deallocation()) {
         error_if_not_arity(2, 0);
         error_if_not_variable(inputs[0]);
         error_if_not_variable(inputs[1]);
@@ -3485,7 +3494,7 @@ public:
       auto nonnull_cst = reference_constraint_t::mk_gt_null(ref);
       ref_assume(nonnull_cst);
     } else if (name == "add_tag") {
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         error_if_not_arity(3, 0);
         error_if_not_variable(inputs[0]);
         error_if_not_variable(inputs[1]);
@@ -3501,7 +3510,7 @@ public:
         m_tag_env.set(rgn, m_tag_env[rgn] | tag_set(tag));
       }
     } else if (name == "does_not_have_tag") {
-      if (Params::tag_analysis) {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
         error_if_not_arity(3, 1);
         error_if_not_variable(inputs[0]);
         error_if_not_variable(inputs[1]);
@@ -3521,7 +3530,7 @@ public:
         }
       }
     } else if (name == "is_dereferenceable") {
-      if (Params::is_dereferenceable) {
+      if (crab_domain_params_man::get().region_is_dereferenceable()) {
         error_if_not_arity(3, 1);
         // ignore region variable (inputs[0])
         error_if_not_variable(inputs[1]);
@@ -3652,7 +3661,7 @@ public:
   get_allocation_sites(const variable_t &ref,
                        std::vector<allocation_site> &alloc_sites) override {
 
-    if (!Params::allocation_sites || !ref.get_type().is_reference()) {
+    if (!crab_domain_params_man::get().region_allocation_sites() || !ref.get_type().is_reference()) {
       return false;
     }
 
@@ -3673,7 +3682,7 @@ public:
   virtual bool get_tags(const variable_t &rgn, const variable_t &ref /*unused*/,
                         std::vector<uint64_t> &tags) override {
 
-    if (!Params::tag_analysis ||
+    if (!crab_domain_params_man::get().region_tag_analysis() ||
         (!ref.get_type().is_reference() || !rgn.get_type().is_region())) {
       return false;
     }
@@ -3736,16 +3745,16 @@ public:
       CRAB_LOG(
           "region-print", o << "(RgnCounter=" << m_rgn_counting_dom << ","
                             << "RgnInit=" << m_rgn_init_dom;
-          if (!Params::skip_unknown_regions) {
+          if (!crab_domain_params_man::get().region_skip_unknown_regions()) {
             o << ","
               << "RgnUnkType=" << m_rgn_type_dom;
-          } if (Params::allocation_sites) {
+          } if (crab_domain_params_man::get().region_allocation_sites()) {
             o << ","
               << "AllocSites=" << m_alloc_site_dom;
-          } if (Params::deallocation) {
+          } if (crab_domain_params_man::get().region_deallocation()) {
             o << ","
               << "RgnDealloc=" << m_rgn_dealloc_dom;
-          } if (Params::tag_analysis) {
+          } if (crab_domain_params_man::get().region_tag_analysis()) {
             o << ","
               << "Tags=" << m_tag_env;
           } o

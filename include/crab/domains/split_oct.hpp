@@ -38,6 +38,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/graphs/graph_config.hpp>
@@ -2632,7 +2633,7 @@ public:
         edge_vector delta;
         split_octagons_impl::SplitOctGraph<graph_t> meet_g_oct(meet_g);
 
-        if (Params::chrome_dijkstra) {
+        if (crab_domain_params_man::get().oct_chrome_dijkstra()) {
           GrOps::close_after_meet(meet_g_oct, meet_pi, gx, gy, delta);
         } else {
           GrOps::close_johnson(meet_g_oct, meet_pi, delta);
@@ -2839,7 +2840,7 @@ public:
 
     edge_vector delta;
     split_octagons_impl::SplitOctGraph<graph_t> g_oct(m_graph);
-    if (Params::widen_restabilize) {
+    if (crab_domain_params_man::get().oct_widen_restabilize()) {
       GrOps::close_after_widen(g_oct, m_potential, vert_set_wrap_t(m_unstable),
                                delta);
       m_unstable.clear();

@@ -2,6 +2,8 @@ add_library(Crab ${CRAB_LIBS_TYPE}
   debug.cpp
   stats.cpp
   os.cpp
+  ## abstract domains
+  abstract_domain_params.cpp
   boolean.cpp
   ##numbers 
   bignums.cpp

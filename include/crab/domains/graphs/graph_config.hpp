@@ -45,11 +45,6 @@ enum GraphRep {
 template <typename Number, GraphRep Graph = GraphRep::adapt_ss>
 class DefaultParams {
 public:
-  enum { chrome_dijkstra = 1 };
-  enum { widen_restabilize = 1 };
-  enum { special_assign = 1 };
-  enum { close_bounds_inline = 0 };
-
   using Wt = int64_t;
 
   using graph_t = typename std::conditional<
@@ -65,12 +60,6 @@ public:
 template <typename Number, GraphRep Graph = GraphRep::ss>
 class BigNumDefaultParams {
 public:
-  enum { chrome_dijkstra = 1 };
-  enum { widen_restabilize = 1 };
-  enum { special_assign = 1 };
-  enum { close_bounds_inline = 0 };
-
-  // Use Number as graph weights
   using Wt = Number;
 
   using graph_t = typename std::conditional<
@@ -84,30 +73,7 @@ public:
 template <typename Number, GraphRep Graph = GraphRep::adapt_ss>
 class SafeInt64DefaultParams {
 public:
-  enum { chrome_dijkstra = 1 };
-  enum { widen_restabilize = 1 };
-  enum { special_assign = 1 };
-  enum { close_bounds_inline = 0 };
-
   using Wt = safe_i64;
-
-  using graph_t = typename std::conditional<
-      (Graph == ss), SparseWtGraph<Wt>,
-      typename std::conditional<
-          (Graph == adapt_ss), AdaptGraph<Wt>,
-          typename std::conditional<(Graph == pt), PtGraph<Wt>,
-                                    HtGraph<Wt>>::type>::type>::type;
-};
-
-template <typename Number, GraphRep Graph = GraphRep::adapt_ss>
-class SimpleParams {
-public:
-  enum { chrome_dijkstra = 0 };
-  enum { widen_restabilize = 0 };
-  enum { special_assign = 0 };
-  enum { close_bounds_inline = 1 };
-
-  using Wt = int64_t;
 
   using graph_t = typename std::conditional<
       (Graph == ss), SparseWtGraph<Wt>,

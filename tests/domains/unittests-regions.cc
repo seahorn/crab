@@ -7,6 +7,15 @@ using namespace crab::domain_impl;
 using namespace ikos;
 
 int main(int argc, char **argv) {
+  region_domain_params p(true/*allocation_sites*/,
+			 true/*deallocation*/,
+			 true/*refine_uninitialized_regions*/,
+			 true/*tag_analysis*/,
+			 false/*is_dereferenceable*/,
+			 true/*skip_unknown_regions*/);
+  crab_domain_params_man::get().update_params(p);
+
+  
   bool stats_enabled = false;
   if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
     return 0;
