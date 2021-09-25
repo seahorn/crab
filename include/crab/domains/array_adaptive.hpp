@@ -60,138 +60,50 @@ class cp_domain_t {
   bool m_is_bottom;
   bound_t m_val;
 
-  void set_to_top() {
-    m_is_bottom = false;
-    m_val = bound_t::plus_infinity();
-  }
+  void set_to_top();
 
-  void set_to_bot() {
-    m_is_bottom = true;
-    m_val = bound_t::plus_infinity();
-  }
+  void set_to_bot();
 
-  cp_domain_t(bool is_bottom)
-      : m_is_bottom(is_bottom), m_val(bound_t::plus_infinity()) {}
+  cp_domain_t(bool is_bottom);
 
 public:
-  cp_domain_t() : m_is_bottom(false), m_val(bound_t::plus_infinity()) {}
+  cp_domain_t();
 
-  cp_domain_t(int64_t sz) : m_is_bottom(false), m_val(sz) {}
+  cp_domain_t(int64_t sz);
 
-  cp_domain_t(const ikos::interval<ikos::z_number> &sz)
-      : m_is_bottom(false), m_val(bound_t::plus_infinity()) {
+  cp_domain_t(const ikos::interval<ikos::z_number> &sz);
 
-    if (auto v_opt = sz.singleton()) {
-      m_val = bound_t(*v_opt);
-    }
-  }
+  bool is_top() const;
 
-  bool is_top() const {
-    return (!is_bottom() && (m_val == bound_t::plus_infinity()));
-  }
+  bool is_bottom() const;
 
-  bool is_bottom() const { return m_is_bottom; }
+  bool is_zero() const; 
 
-  bool is_zero() const { return !m_is_bottom && m_val == bound_t(0); }
+  bool is_negative() const; 
 
-  bool is_negative() const { return !m_is_bottom && m_val < bound_t(0); }
+  bound_t val() const;
 
-  bound_t val() const {
-    if (is_bottom()) {
-      CRAB_ERROR("cp_domain_t::val cannot be called on bottom");
-    }
-    return m_val;
-  }
+  boost::optional<uint64_t> get_uint64_val() const;
 
-  boost::optional<uint64_t> get_uint64_val() const {
-    if (is_bottom()) {
-      CRAB_ERROR("cp_domain_t::get_uint64_val cannot be called on bottom");
-    }
+  static cp_domain_t bottom();
 
-    if (m_val.number()) {
-      ikos::z_number n = *(m_val.number());
-      if (n.fits_int64()) {
-        if (static_cast<int64_t>(n) > 0) {
-          return (uint64_t) static_cast<int64_t>(n);
-        }
-      }
-    }
-    return boost::optional<uint64_t>();
-  }
+  static cp_domain_t top();
 
-  static cp_domain_t bottom() { return cp_domain_t(true); }
+  bool operator==(const cp_domain_t &o) const;
 
-  static cp_domain_t top() { return cp_domain_t(false); }
+  bool operator<=(const cp_domain_t &o) const;
 
-  bool operator==(const cp_domain_t &o) const {
-    return *this <= o && o <= *this;
-  }
+  void operator|=(const cp_domain_t &o);
 
-  bool operator<=(const cp_domain_t &o) const {
-    if (is_bottom() || o.is_top()) {
-      return true;
-    } else if (is_top() || o.is_bottom()) {
-      return false;
-    } else {
-      return (m_val == o.m_val);
-    }
-  }
+  cp_domain_t operator|(const cp_domain_t &o) const;
 
-  void operator|=(const cp_domain_t &o) {
-    if (is_bottom() || o.is_top()) {
-      *this = o;
-    } else if (o.is_bottom() || is_top()) {
-      // do nothing
-    } else if (m_val != o.m_val) {
-      set_to_top();
-    } else {
-      // do nothing
-    }
-  }
+  cp_domain_t operator&(const cp_domain_t &o) const;
 
-  cp_domain_t operator|(const cp_domain_t &o) const {
-    if (is_bottom()) {
-      return o;
-    } else if (o.is_bottom()) {
-      return *this;
-    } else if (is_top() || o.is_top()) {
-      return cp_domain_t();
-    } else {
-      if (m_val == o.m_val) {
-        return *this;
-      } else {
-        return cp_domain_t();
-      }
-    }
-  }
+  cp_domain_t operator||(const cp_domain_t &o) const;
 
-  cp_domain_t operator&(const cp_domain_t &o) const {
-    if (is_bottom() || o.is_bottom()) {
-      return bottom();
-    } else if (is_top()) {
-      return o;
-    } else if (o.is_top()) {
-      return *this;
-    } else {
-      if (m_val == o.m_val) {
-        return *this;
-      } else {
-        return bottom();
-      }
-    }
-  }
+  cp_domain_t operator&&(const cp_domain_t &o) const;
 
-  cp_domain_t operator||(const cp_domain_t &o) const { return operator|(o); }
-
-  cp_domain_t operator&&(const cp_domain_t &o) const { return operator&(o); }
-
-  void write(crab_os &o) const {
-    if (is_bottom()) {
-      o << "_|_";
-    } else {
-      o << m_val;
-    }
-  }
+  void write(crab_os &o) const;
 };
 
 // forward declaration
@@ -204,34 +116,27 @@ class offset_t : public indexable {
   ikos::index_t m_val;
 
 public:
-  explicit offset_t(ikos::index_t v) : m_val(v) {}
+  explicit offset_t(ikos::index_t v);
 
-  virtual ikos::index_t index() const override { return m_val; }
+  virtual ikos::index_t index() const override;
 
-  size_t hash() const {
-    // casting to size_t may overflow but it shouldn't affect correctness
-    return std::hash<size_t>{}(static_cast<size_t>(m_val));
-  }
+  size_t hash() const;
 
-  bool operator<(const offset_t &o) const { return m_val < o.m_val; }
+  bool operator<(const offset_t &o) const;
 
-  bool operator==(const offset_t &o) const { return m_val == o.m_val; }
+  bool operator==(const offset_t &o) const;
 
-  bool operator!=(const offset_t &o) const { return !(*this == o); }
+  bool operator!=(const offset_t &o) const;
 
-  offset_t operator%(const offset_t &o) const {
-    return offset_t(m_val % o.m_val);
-  }
+  offset_t operator%(const offset_t &o) const;
 
-  offset_t operator-(const offset_t &o) const {
-    return offset_t(m_val - o.m_val);
-  }
+  offset_t operator-(const offset_t &o) const;
 
-  bool is_negative() const { return m_val < 0; }
+  bool is_negative() const;
 
-  bool is_zero() const { return m_val == 0; }
+  bool is_zero() const;
 
-  virtual void write(crab::crab_os &o) const override { o << m_val; }
+  virtual void write(crab::crab_os &o) const override;
 
   friend crab::crab_os &operator<<(crab::crab_os &o, const offset_t &v) {
     v.write(o);
@@ -261,80 +166,39 @@ private:
   bool m_removed;
 
   // Only offset_map class can create cells
-  cell_t() : m_offset(0), m_size(0), m_removed(false) {}
+  cell_t();
 
-  cell_t(offset_t offset, uint64_t size)
-      : m_offset(offset), m_size(size), m_removed(false) {}
+  cell_t(offset_t offset, uint64_t size);
 
-  static interval_t to_interval(const offset_t o, uint64_t size) {
-    interval_t i(o.index(), o.index() + size - 1);
-    return i;
-  }
+  static interval_t to_interval(const offset_t o, uint64_t size);
 
-  interval_t to_interval() const {
-    return to_interval(get_offset(), get_size());
-  }
+  interval_t to_interval() const;
 
 public:
-  bool is_null() const { return (m_offset.index() == 0 && m_size == 0); }
+  bool is_null() const;
 
-  offset_t get_offset() const { return m_offset; }
+  offset_t get_offset() const;
 
-  size_t get_size() const { return m_size; }
+  size_t get_size() const;
 
-  cell_t clone(void) const {
-    cell_t new_cell;
-    new_cell.m_offset = m_offset;
-    new_cell.m_size = m_size;
-    new_cell.m_removed = m_removed;
-    return new_cell;
-  }
+  cell_t clone(void) const;
 
-  void mark_as_removed(bool v) { m_removed = v; }
+  void mark_as_removed(bool v);
 
-  bool is_removed(void) const { return m_removed; }
+  bool is_removed(void) const;
 
-  size_t hash() const {
-    size_t h1 = m_offset.hash();
-    size_t h2 = std::hash<size_t>{}(m_size);
-    return h1 ^ (h2 << 1);
-  }
+  size_t hash() const;
 
   // inclusion test
-  bool operator<=(const cell_t &o) const {
-    interval_t x = to_interval();
-    interval_t y = o.to_interval();
-    return x <= y;
-  }
+  bool operator<=(const cell_t &o) const;
 
-  bool operator==(const cell_t &o) const {
-    return (get_offset() == o.get_offset() && get_size() == o.get_size());
-  }
+  bool operator==(const cell_t &o) const;
 
-  bool operator<(const cell_t &o) const {
-    if (get_offset() < o.get_offset()) {
-      return true;
-    } else if (get_offset() == o.get_offset()) {
-      return get_size() < o.get_size();
-    } else {
-      return false;
-    }
-  }
+  bool operator<(const cell_t &o) const;
 
   // Return true if [o, o+size) definitely overlaps with the cell,
   // where o is a constant expression.
-  bool overlap(const offset_t &o, uint64_t size) const {
-    if (m_removed)
-      return false;
-
-    interval_t x = to_interval();
-    interval_t y = to_interval(o, size);
-    bool res = (!(x & y).is_bottom());
-    CRAB_LOG("array-adaptive-overlap", crab::outs() << "**Checking if " << x
-                                                    << " overlaps with " << y
-                                                    << "=" << res << "\n";);
-    return res;
-  }
+  bool overlap(const offset_t &o, uint64_t size) const;
 
   // Return true if [symb_lb, symb_ub] may overlap with the cell,
   // where symb_lb and symb_ub are not constant expressions.
@@ -381,16 +245,7 @@ public:
     return false;
   }
 
-  void write(crab::crab_os &o) const {
-    if (is_null()) {
-      o << "NULL";
-    } else {
-      o << to_interval() << " ";
-      if (m_removed) {
-        o << "R";
-      }
-    }
-  }
+  void write(crab::crab_os &o) const;
 
   friend crab::crab_os &operator<<(crab::crab_os &o, const cell_t &c) {
     c.write(o);
@@ -517,290 +372,70 @@ private:
   }; // class domain_po
 
   // Delete completely the cell
-  void erase_cell(const cell_t &c) {
-    if (boost::optional<cell_set_t> cells = m_map.lookup(c.get_offset())) {
-      if ((*cells).erase(c) > 0) {
-        m_map.remove(c.get_offset());
-        if (!(*cells).empty()) {
-          // a bit of a waste ...
-          m_map.insert(c.get_offset(), *cells);
-        }
-      }
-    }
-  }
+  void erase_cell(const cell_t &c);
 
   // Pretend the cell is removed by marking it as "removed"
-  void remove_cell(const cell_t &c) {
-    if (boost::optional<cell_set_t> cells = m_map.lookup(c.get_offset())) {
-      if ((*cells).count(c) > 0) {
-        m_map.remove(c.get_offset());
-        cell_set_t ncells = cell_set_impl::set_difference(*cells, c);
-        cell_t nc = c.clone();
-        nc.mark_as_removed(true);
-        ncells.insert(nc);
-        m_map.insert(c.get_offset(), ncells);
-      }
-    }
-  }
+  void remove_cell(const cell_t &c); 
 
-  void insert_cell(const cell_t &c) {
-    if (boost::optional<cell_set_t> cells = m_map.lookup(c.get_offset())) {
-      if ((*cells).insert(c).second) {
-        m_map.remove(c.get_offset());
-        m_map.insert(c.get_offset(), *cells);
-      }
-    } else {
-      cell_set_t new_cells;
-      new_cells.insert(c);
-      m_map.insert(c.get_offset(), new_cells);
-    }
-  }
+  void insert_cell(const cell_t &c);
 
-  cell_t get_cell(const offset_t &o, uint64_t size) const {
-    if (boost::optional<cell_set_t> cells = m_map.lookup(o)) {
-      cell_t tmp(o, size);
-      auto it = (*cells).find(tmp);
-      if (it != (*cells).end()) {
-        return *it;
-      }
-    }
-    // not found
-    return cell_t();
-  }
+  cell_t get_cell(const offset_t &o, uint64_t size) const;
 
   // create a fresh _unamed_ cell
-  cell_t mk_cell(const offset_t &o, uint64_t size /*bytes*/) {
-    cell_t c = get_cell(o, size);
-    if (c.is_null()) {
-      cell_t nc(o, size);
-      insert_cell(nc);
-      c = nc;
-      CRAB_LOG("array-adaptive", crab::outs()
-                                     << "**Created cell " << c << "\n";);
-    }
-    if (c.is_null()) {
-      CRAB_ERROR("cannot create a null cell from offset ", o, " and size ",
-                 size);
-    }
-    return c;
-  }
+  cell_t mk_cell(const offset_t &o, uint64_t size /*bytes*/);
 
-  offset_map_t(patricia_tree_t &&m) : m_map(std::move(m)) {}
+  offset_map_t(patricia_tree_t &&m);
 
 public:
-  offset_map_t() {}
+  offset_map_t();
 
-  offset_map_t(const offset_map_t &o) : m_map(o.m_map) {}
+  offset_map_t(const offset_map_t &o);
 
-  offset_map_t(const offset_map_t &&o) : m_map(std::move(o.m_map)) {}
+  offset_map_t(const offset_map_t &&o);
 
-  offset_map_t &operator=(const offset_map_t &o) {
-    if (this != &o) {
-      m_map = o.m_map;
-    }
-    return *this;
-  }
+  offset_map_t &operator=(const offset_map_t &o);
 
-  offset_map_t &operator=(const offset_map_t &&o) {
-    if (this != &o) {
-      m_map = std::move(o.m_map);
-    }
-    return *this;
-  }
+  offset_map_t &operator=(const offset_map_t &&o);
+  
+  bool empty() const;
 
-  bool empty() const { return m_map.empty(); }
-
-  std::size_t size() const { return m_map.size(); }
+  std::size_t size() const;
 
   // leq operator
-  bool operator<=(const offset_map_t &o) const {
-    domain_po po;
-    return m_map.leq(o.m_map, po);
-  }
+  bool operator<=(const offset_map_t &o) const;
 
   // set union: if two cells with same offset do not agree on
   // size then they are ignored.
-  offset_map_t operator|(const offset_map_t &o) const {
-    join_op op;
-    offset_map_t res = offset_map_t(apply_operation(op, m_map, o.m_map));
-    CRAB_LOG("array-adaptive-offset-map",
-             crab::outs() << "offset_map join\n"
-                          << *this << "\nand\n"
-                          << o << "\nResult=" << res << "\n";);
-    return res;
-  }
+  offset_map_t operator|(const offset_map_t &o) const;
 
   // set intersection: if two cells with same offset do not agree
   // on size then they are ignored.
-  offset_map_t operator&(const offset_map_t &o) const {
-    meet_op op;
-    offset_map_t res = offset_map_t(apply_operation(op, m_map, o.m_map));
-    CRAB_LOG("array-adaptive-offset-map",
-             crab::outs() << "offset_map meet\n"
-                          << *this << "\nand\n"
-                          << o << "\nResult=" << res << "\n";);
-    return res;
-  }
+  offset_map_t operator&(const offset_map_t &o) const;
 
   // Completely delete the cell from the offset map
-  void erase(const cell_t &c) { erase_cell(c); }
+  void erase(const cell_t &c);
 
-  void erase(const std::vector<cell_t> &cells) {
-    for (unsigned i = 0, e = cells.size(); i < e; ++i) {
-      erase(cells[i]);
-    }
-  }
+  void erase(const std::vector<cell_t> &cells);
 
   // Pretend the cell is removed so no other cells overlap with it but
   // the cell is not actually deleted from the offset map. We need to
   // know all created cells when smashing occurs.
-  void remove(const cell_t &c) { remove_cell(c); }
+  void remove(const cell_t &c);
 
-  void remove(const std::vector<cell_t> &cells) {
-    for (unsigned i = 0, e = cells.size(); i < e; ++i) {
-      remove(cells[i]);
-    }
-  }
+  void remove(const std::vector<cell_t> &cells);
 
   // cells are sorted by offset
-  std::vector<cell_t> get_all_cells() const {
-    std::vector<cell_t> res;
-    for (auto it = m_map.begin(), et = m_map.end(); it != et; ++it) {
-      auto const &o_cells = it->second;
-      for (auto &c : o_cells) {
-        res.push_back(c);
-      }
-    }
-    return res;
-  }
+  std::vector<cell_t> get_all_cells() const;
 
-  unsigned get_number_cells() const {
-    unsigned count = 0;
-    for (auto it = m_map.begin(), et = m_map.end(); it != et; ++it) {
-      auto const &o_cells = it->second;
-      count += o_cells.size();
-    }
-    return count;
-  }
+  unsigned get_number_cells() const;
 
   // Return in out all cells that might overlap with (o, size).
   //
   // It is not marked as const because we insert temporary a cell.
   // However, upon completion this method leaves unmodified the object.
   void get_overlap_cells(const offset_t &o, uint64_t size,
-                         std::vector<cell_t> &out) {
-    compare_binding_t comp;
-
-    bool added = false;
-    cell_t c = get_cell(o, size);
-    if (c.is_null()) {
-      // we need to add a temporary cell for (o, size)
-      c = cell_t(o, size);
-      insert_cell(c);
-      added = true;
-    }
-
-    auto lb_it = std::lower_bound(m_map.begin(), m_map.end(), o, comp);
-    if (lb_it != m_map.end()) {
-      // Store m_map[begin,...,lb_it] into a vector so that we can
-      // go backwards from lb_it.
-      //
-      // TODO: give support for reverse iterator in patricia_tree.
-      std::vector<cell_set_t> upto_lb;
-      upto_lb.reserve(std::distance(m_map.begin(), lb_it));
-      for (auto it = m_map.begin(), et = lb_it; it != et; ++it) {
-        upto_lb.push_back(it->second);
-      }
-      upto_lb.push_back(lb_it->second);
-
-      for (int i = upto_lb.size() - 1; i >= 0; --i) {
-        ///////
-        // All the cells in upto_lb[i] have the same offset. They
-        // just differ in the size.
-        //
-        // If none of the cells in upto_lb[i] overlap with (o, size)
-        // we can stop.
-        ////////
-        bool continue_outer_loop = false;
-        for (const cell_t &x : upto_lb[i]) {
-          if (x.overlap(o, size)) {
-            if (!(x == c)) {
-              // FIXME: we might have some duplicates. this is a very drastic
-              // solution.
-              if (std::find(out.begin(), out.end(), x) == out.end()) {
-                out.push_back(x);
-              }
-            }
-            continue_outer_loop = true;
-          }
-        }
-        if (!continue_outer_loop) {
-          break;
-        }
-      }
-    }
-
-    // search for overlapping cells > o
-    auto ub_it = std::upper_bound(m_map.begin(), m_map.end(), o, comp);
-    for (; ub_it != m_map.end(); ++ub_it) {
-      bool continue_outer_loop = false;
-      for (const cell_t &x : ub_it->second) {
-        if (x.overlap(o, size)) {
-          // FIXME: we might have some duplicates. this is a very drastic
-          // solution.
-          if (std::find(out.begin(), out.end(), x) == out.end()) {
-            out.push_back(x);
-          }
-          continue_outer_loop = true;
-        }
-      }
-      if (!continue_outer_loop) {
-        break;
-      }
-    }
-
-    // do not forget the rest of overlapping cells == o
-    for (auto it = ++lb_it, et = ub_it; it != et; ++it) {
-      bool continue_outer_loop = false;
-      for (const cell_t &x : it->second) {
-        if (x == c) { // we dont put it in out
-          continue;
-        }
-        if (x.overlap(o, size)) {
-          if (!(x == c)) {
-            if (std::find(out.begin(), out.end(), x) == out.end()) {
-              out.push_back(x);
-            }
-          }
-          continue_outer_loop = true;
-        }
-      }
-      if (!continue_outer_loop) {
-        break;
-      }
-    }
-
-    if (added) {
-      // remove the temporary cell for (o, size)
-      assert(!c.is_null());
-      erase_cell(c);
-    }
-
-    CRAB_LOG(
-        "array-adaptive-overlap", crab::outs()
-                                      << "**Overlap set between \n"
-                                      << *this << "\nand "
-                                      << "(" << o << "," << size << ")={";
-        for (unsigned i = 0, e = out.size(); i < e;) {
-          crab::outs() << out[i];
-          ++i;
-          if (i < e) {
-            crab::outs() << ",";
-          }
-        } crab::outs()
-        << "}\n";);
-  }
-
+                         std::vector<cell_t> &out);
+  
   template <typename Dom>
   void get_overlap_cells_symbolic_offset(
       const Dom &dom, const typename Dom::linear_expression_t &symb_lb,
@@ -837,30 +472,9 @@ public:
     }
   }
 
-  void clear(void) { m_map.clear(); }
+  void clear(void);
 
-  void write(crab::crab_os &o) const {
-    if (m_map.empty()) {
-      o << "empty";
-    } else {
-      for (auto it = m_map.begin(), et = m_map.end(); it != et; ++it) {
-        const cell_set_t &cells = it->second;
-        o << "{";
-        for (auto cit = cells.begin(), cet = cells.end(); cit != cet;) {
-          if ((*cit).is_removed()) {
-            ++cit;
-            continue;
-          }
-          o << *cit;
-          ++cit;
-          if (cit != cet) {
-            o << ",";
-          }
-        }
-        o << "}";
-      }
-    }
-  }
+  void write(crab::crab_os &o) const;
 
   friend crab::crab_os &operator<<(crab::crab_os &o, const offset_map_t &m) {
     m.write(o);
