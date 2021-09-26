@@ -1,5 +1,6 @@
 #include <crab/domains/small_range.hpp>
 #include <crab/support/debug.hpp>
+#include <assert.h>
 
 namespace crab {
 namespace domains {
