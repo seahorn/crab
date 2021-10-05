@@ -1,5 +1,6 @@
 #include <crab/domains/abstract_domain_params.hpp>
 #include <string>
+#include <stdexcept>
 
 namespace crab {
 namespace domains {
