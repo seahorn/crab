@@ -12,20 +12,6 @@
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
-namespace crab {
-namespace domains {
-namespace boxes_impl {
-
-class DefaultParams {
-public:
-  enum { ldd_size = 3000 };
-  enum { convexify_threshold = -1 };
-  enum { dynamic_reordering = 0 };
-};
-} // end namespace boxes_impl
-} // end namespace domains
-} // end namespace crab
-
 #ifndef HAVE_LDD
 /*
  * Dummy implementation if ldd not found
@@ -33,11 +19,11 @@ public:
 #include "crab/domains/abstract_domain.def"
 namespace crab {
 namespace domains {
-template <typename N, typename V, typename Params = boxes_impl::DefaultParams>
+template <typename N, typename V>
 class boxes_domain final
-    : public abstract_domain_api<boxes_domain<N, V, Params>> {
+    : public abstract_domain_api<boxes_domain<N, V>> {
 public:
-  using this_type = boxes_domain<N, V, Params>;
+  using this_type = boxes_domain<N, V>;
   boxes_domain() {}
   UNAVAILABLE_DOMAIN("No LDD. Run cmake with -DCRAB_USE_LDD=ON")
 };
@@ -48,6 +34,7 @@ public:
  *  Real implementation starts here
  */
 
+#include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/ldd/ldd.hpp>
@@ -74,13 +61,12 @@ using namespace crab::domains::ldd;
  *
  * FIXME: Ldd_TermReplace seems to leak memory sometimes.
  */
-template <typename Number, typename VariableName,
-          typename Params = boxes_impl::DefaultParams>
+template <typename Number, typename VariableName>
 class boxes_domain final
-    : public abstract_domain_api<boxes_domain<Number, VariableName, Params>> {
+    : public abstract_domain_api<boxes_domain<Number, VariableName>> {
 
   using interval_domain_t = ikos::interval_domain<Number, VariableName>;
-  using boxes_domain_t = boxes_domain<Number, VariableName, Params>;
+  using boxes_domain_t = boxes_domain<Number, VariableName>;
   using abstract_domain_t = abstract_domain_api<boxes_domain_t>;
 
 public:
@@ -116,11 +102,13 @@ private:
   static LddManager *get_ldd_man() {
     if (!s_ldd_man) {
       DdManager *cudd = Cudd_Init(0, 0, CUDD_UNIQUE_SLOTS, 127, 0);
-      theory_t *theory = ldd::create_box_theory<number_t>(Params::ldd_size);
+      unsigned ldd_size = crab_domain_params_man::get().boxes_ldd_size();
+      bool dynamic_reordering = crab_domain_params_man::get().boxes_dynamic_reordering();
+      theory_t *theory = ldd::create_box_theory<number_t>(ldd_size);
       CRAB_LOG("boxes", crab::outs() << "Created a ldd of size "
-                                     << Params::ldd_size << "\n";);
+                                     << ldd_size << "\n";);
       s_ldd_man = Ldd_Init(cudd, theory);
-      if (Params::dynamic_reordering) {
+      if (dynamic_reordering) {
 	Cudd_AutodynEnable(cudd, CUDD_REORDER_GROUP_SIFT);
       }
       Ldd_SanityCheck(get_ldd_man());
@@ -141,8 +129,9 @@ private:
     } else {
       // Reserved dim 0 for SPECIAL use (as a temporary var)
       unsigned int id = s_var_map.size() + 1;
-      if (id >= Params::ldd_size) {
-        CRAB_ERROR("The Ldd size of ", Params::ldd_size, " needs to be larger");
+      unsigned ldd_size = crab_domain_params_man::get().boxes_ldd_size();
+      if (id >= ldd_size) {
+        CRAB_ERROR("The Ldd size of ", ldd_size, " needs to be larger");
       }
       s_var_map.insert(binding_t(v, id));
       return id;
@@ -556,10 +545,11 @@ private:
   }
 
   boxes_domain(LddNodePtr ldd) : m_ldd(ldd) {
-    if (Params::convexify_threshold > 0) {
-      // XXX: the value of Params::convexify_threshold is quite arbitrary. A
+    if (crab_domain_params_man::get().boxes_convexify_threshold() > 0) {
+      // XXX: the value of convexify_threshold is quite arbitrary. A
       // good value seems around 1000000
-      unsigned threshold = num_of_vars() * Params::convexify_threshold;
+      unsigned threshold = num_of_vars() *
+	crab_domain_params_man::get().boxes_convexify_threshold();
       // unsigned num_paths = Ldd_PathSize(NULL, &*m_ldd);
       unsigned num_paths = (unsigned)Cudd_CountPath(&*m_ldd);
       if (threshold > 0 && num_paths > threshold) {
@@ -1753,16 +1743,16 @@ public:
   std::string domain_name() const override { return "Boxes"; }
 };
 
-template <typename N, typename V, typename P>
-LddManager *boxes_domain<N, V, P>::s_ldd_man = nullptr;
+template <typename N, typename V>
+LddManager *boxes_domain<N, V>::s_ldd_man = nullptr;
 
-template <typename N, typename V, typename P>
-typename boxes_domain<N, V, P>::var_map_t boxes_domain<N, V, P>::s_var_map;
+template <typename N, typename V>
+typename boxes_domain<N, V>::var_map_t boxes_domain<N, V>::s_var_map;
 
-template <typename Number, typename VariableName, typename Params>
-class checker_domain_traits<boxes_domain<Number, VariableName, Params>> {
+template <typename Number, typename VariableName>
+class checker_domain_traits<boxes_domain<Number, VariableName>> {
 public:
-  using this_type = boxes_domain<Number, VariableName, Params>;
+  using this_type = boxes_domain<Number, VariableName>;
   using linear_constraint_t = typename this_type::linear_constraint_t;
   using disjunctive_linear_constraint_system_t =
       typename this_type::disjunctive_linear_constraint_system_t;
@@ -1840,11 +1830,11 @@ public:
   }
 };
 
-template <typename Number, typename VariableName, typename Params>
-class special_domain_traits<boxes_domain<Number, VariableName, Params>> {
+template <typename Number, typename VariableName>
+class special_domain_traits<boxes_domain<Number, VariableName>> {
 public:
   static void clear_global_state(void) {
-    boxes_domain<Number, VariableName, Params>::clear_global_state();
+    boxes_domain<Number, VariableName>::clear_global_state();
   }
 };
 
@@ -1854,8 +1844,8 @@ public:
 
 namespace crab {
 namespace domains {
-template <typename Number, typename VariableName, typename Params>
-struct abstract_domain_traits<boxes_domain<Number, VariableName, Params>> {
+template <typename Number, typename VariableName>
+struct abstract_domain_traits<boxes_domain<Number, VariableName>> {
   using number_t = Number;
   using varname_t = VariableName;
 };

@@ -15,16 +15,12 @@ template <typename Number> class ElinaDefaultParams {
 public:
   // use integers with truncation rounding
   enum { use_integers = 1 };
-  // build (if possible) all expressions using Elina tree
-  // expressions. Otherwise, we use linear expressions.
-  enum { use_tree_expressions = 1 };
 };
 
 template <> class ElinaDefaultParams<ikos::q_number> {
 public:
   // use reals
   enum { use_integers = 0 };
-  enum { use_tree_expressions = 1 };
 };
 } // namespace domains
 } // namespace crab
@@ -53,6 +49,7 @@ public:
  * Real implementation starts here.
  */
 
+#include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/elina/elina.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
 
@@ -1436,7 +1433,7 @@ public:
     CRAB_LOG("elina", crab::outs() << "--- "
                                    << "Assume " << csts << " --> ";);
 
-    if (Params::use_tree_expressions) {
+    if (crab_domain_params_man::get().elina_use_tree_expressions()) {
       add_tcons(csts);
     } else {
       add_lincons(csts);
@@ -1459,7 +1456,7 @@ public:
       // expression
       assign_texpr(x, e);
     } else {
-      if (Params::use_tree_expressions) {
+      if (crab_domain_params_man::get().elina_use_tree_expressions()) {
         assign_texpr(x, e);
       } else {
         assign_linexpr(x, e);
@@ -1483,7 +1480,7 @@ public:
         // expression
         apply_texpr(op, x, y, z);
       } else {
-        if (Params::use_tree_expressions) {
+        if (crab_domain_params_man::get().elina_use_tree_expressions()) {
           apply_texpr(op, x, y, z);
         } else {
           apply_linexpr(op, x, y, z);
@@ -1528,7 +1525,7 @@ public:
         // expression
         apply_texpr(op, x, y, z);
       } else {
-        if (Params::use_tree_expressions) {
+        if (crab_domain_params_man::get().elina_use_tree_expressions()) {
           apply_texpr(op, x, y, z);
         } else {
           apply_linexpr(op, x, y, z);

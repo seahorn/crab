@@ -737,6 +737,12 @@ void test_array_adaptive(int test, bool stats_enabled) {
 
 int main(int argc, char **argv) {
 
+  array_adaptive_domain_params p(true/*is_smashable*/,
+				 false/*smash_at_nonzero_offset*/,
+				 64/*max_smashable_cells*/,
+				 512/*max_array_size*/);
+  crab_domain_params_man::get().update_params(p);
+  
   bool stats_enabled = false;
   if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
     return 0;

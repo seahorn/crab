@@ -18,6 +18,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/graphs/graph_config.hpp>
@@ -464,7 +465,7 @@ protected:
       }
       check_potential(g, potential, __LINE__);
       // Compute other updated bounds
-      if (Params::close_bounds_inline) {
+      if (crab_domain_params_man::get().zones_close_bounds_inline()) {
         for (auto e : g.e_preds(v)) {
           if (e.vert == 0)
             continue;
@@ -492,7 +493,7 @@ protected:
       }
       check_potential(g, potential, __LINE__);
 
-      if (Params::close_bounds_inline) {
+      if (crab_domain_params_man::get().zones_close_bounds_inline()) {
         for (auto e : g.e_succs(v)) {
           if (e.vert == 0)
             continue;
@@ -533,7 +534,7 @@ protected:
     // Collect bounds
     // GKG: Now done in close_over_edge
 
-    if (!Params::close_bounds_inline) {
+    if (!crab_domain_params_man::get().zones_close_bounds_inline()) {
       edge_vector delta;
       GrOps::close_after_assign(g, potential, 0, delta);
       GrOps::apply_delta(g, delta);
@@ -703,7 +704,7 @@ protected:
 
     typename graph_t::mut_val_ref_t w;
 
-    if (Params::close_bounds_inline) {
+    if (crab_domain_params_man::get().zones_close_bounds_inline()) {
       if (g.lookup(0, ii, &w))
         g.update_edge(0, w.get() + c, jj, min_op);
       if (g.lookup(jj, 0, &w))
@@ -728,7 +729,7 @@ protected:
           delta.push_back({{se, jj}, wt_sij});
         }
         src_dec.push_back(std::make_pair(se, edge.val));
-        if (Params::close_bounds_inline) {
+        if (crab_domain_params_man::get().zones_close_bounds_inline()) {
           if (g.lookup(0, se, &w))
             g.update_edge(0, w.get() + wt_sij, jj, min_op);
           if (g.lookup(jj, 0, &w))
@@ -751,7 +752,7 @@ protected:
           delta.push_back({{ii, de}, {wt_ijd}});
         }
         dest_dec.push_back(std::make_pair(de, edge.val));
-        if (Params::close_bounds_inline) {
+        if (crab_domain_params_man::get().zones_close_bounds_inline()) {
           if (g.lookup(0, ii, &w))
             g.update_edge(0, w.get() + wt_ijd, de, min_op);
           if (g.lookup(de, 0, &w))
@@ -774,7 +775,7 @@ protected:
         } else {
           g.add_edge(se, wt_sijd, de);
         }
-        if (Params::close_bounds_inline) {
+        if (crab_domain_params_man::get().zones_close_bounds_inline()) {
           if (g.lookup(0, se, &w))
             g.update_edge(0, w.get() + wt_sijd, de, min_op);
           if (g.lookup(de, 0, &w))
@@ -1712,7 +1713,7 @@ public:
         SubGraph<graph_t> meet_g_excl(meet_g, 0);
         // GrOps::close_after_meet(meet_g_excl, meet_pi, gx, gy, delta);
 
-        if (Params::chrome_dijkstra)
+        if (crab_domain_params_man::get().zones_chrome_dijkstra())
           GrOps::close_after_meet(meet_g_excl, meet_pi, gx, gy, delta);
         else
           GrOps::close_johnson(meet_g_excl, meet_pi, delta);
@@ -1720,7 +1721,7 @@ public:
         GrOps::apply_delta(meet_g, delta);
 
         // Recover updated LBs and UBs.
-        if (Params::close_bounds_inline) {
+        if (crab_domain_params_man::get().zones_close_bounds_inline()) {
           Wt_min min_op;
           for (auto e : delta) {
             if (meet_g.elem(0, e.first.first))
@@ -1784,7 +1785,7 @@ public:
     // GrOps::close_after_widen(g, potential, vert_set_wrap_t(unstable), delta);
     // GKG: Check
     SubGraph<graph_t> g_excl(g, 0);
-    if (Params::widen_restabilize)
+    if (crab_domain_params_man::get().zones_widen_restabilize())
       GrOps::close_after_widen(g_excl, potential, vert_set_wrap_t(unstable),
                                delta);
     else
@@ -1857,7 +1858,7 @@ public:
 
     bool is_rhs_constant = false;
     // If it's a constant, just assign the interval.
-    if (!Params::close_bounds_inline) {
+    if (!crab_domain_params_man::get().zones_close_bounds_inline()) {
       // JN: it seems that we can only do this if
       // close_bounds_inline is disabled. Otherwise, the meet
       // operator misses some non-redundant edges. Need to
@@ -1878,7 +1879,7 @@ public:
       // Construct difference constraints from the assignment
       diffcsts_of_assign(x, e, diffs_lb, diffs_ub);
       if (diffs_lb.size() > 0 || diffs_ub.size() > 0) {
-        if (Params::special_assign) {
+        if (crab_domain_params_man::get().zones_special_assign()) {
           bool overflow;
           Wt e_val = eval_expression(e, overflow);
           if (overflow) {

@@ -1,8 +1,14 @@
-add_library(Crab ${CRAB_LIBS_TYPE} 
+add_library(Crab ${CRAB_LIBS_TYPE}
+  ##support
   debug.cpp
   stats.cpp
   os.cpp
+  ##abstract domains
+  abstract_domain_params.cpp
+  array_adaptive_impl.cpp
   boolean.cpp
+  small_range.cpp
+  types.cpp
   ##numbers 
   bignums.cpp
   safeint.cpp
