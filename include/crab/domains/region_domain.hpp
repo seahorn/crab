@@ -2146,7 +2146,6 @@ public:
       // weak read
       CRAB_LOG("region-load", crab::outs() << "Reading from non-singleton\n";);
       if (auto region_gvars_opt = get_gvars(rgn)) {
-        variable_type rgn_ty = get_dynamic_type_or_fail(rgn);
         ghost_variables_t fresh_region_gvars =
             ghost_variables_t::create(m_alloc, (*region_gvars_opt));
         (*region_gvars_opt).expand(m_base_dom, fresh_region_gvars);
