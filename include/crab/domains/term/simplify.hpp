@@ -56,7 +56,7 @@ template <class Num> class NumSimplifier : Simplifier<Num, term_operator_t> {
       term_t *tright = this->_ttbl.get_term_ptr(right);
 
       if ((tleft->kind() == TERM_APP) && term_ftor(tleft) == TERM_OP_MUL) {
-        std::vector<term_id_t> &args(term_args(tleft));
+        const std::vector<term_id_t> &args(term_args(tleft));
         assert(args.size() == 2);
         term_t *tl = this->_ttbl.get_term_ptr(args[0]);
         term_t *tr = this->_ttbl.get_term_ptr(args[1]);
@@ -80,9 +80,8 @@ public:
   boost::optional<term_id_t> simplify_term(term_id_t t) {
     if (term_t *tt = this->_ttbl.get_term_ptr(t)) {
       if (tt->kind() == TERM_APP) {
-        std::vector<term_id_t> &args(term_args(tt));
+        const std::vector<term_id_t> &args(term_args(tt));
         assert(args.size() == 2);
-
         return simplify_term(term_ftor(tt), args[0], args[1]);
       }
     }
