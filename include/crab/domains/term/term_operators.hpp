@@ -1,6 +1,10 @@
 #pragma once
 
+#include <crab/domains/abstract_domain_operators.hpp>
+#include <crab/support/debug.hpp>
 #include <crab/support/os.hpp>
+
+#include <boost/optional.hpp>
 
 namespace crab {
 namespace domains {
@@ -72,6 +76,12 @@ inline crab::crab_os &operator<<(crab::crab_os &o, term_operator_t op) {
   }
   return o;
 }
+
+/* Convert between Crab operators and term domain uninterpreted functors */
+term_operator_t conv2termop(arith_operation_t op);
+term_operator_t conv2termop(bitwise_operation_t op);
+boost::optional<arith_operation_t> conv2arith(term_operator_t op);
+boost::optional<bitwise_operation_t> conv2bitwise(term_operator_t op);
 } // end namespace term
 } // end namespace domains
 } // end namespace crab

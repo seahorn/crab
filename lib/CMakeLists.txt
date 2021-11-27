@@ -8,6 +8,7 @@ add_library(Crab ${CRAB_LIBS_TYPE}
   array_adaptive_impl.cpp
   boolean.cpp
   small_range.cpp
+  term_operators.cpp
   types.cpp
   ##numbers 
   bignums.cpp

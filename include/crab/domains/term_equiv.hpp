@@ -7,7 +7,7 @@
  * Author: Graeme Gange (gkgange@unimelb.edu.au)
  *
  * Contributors: Jorge A. Navas (jorge.navas@sri.com)
- ******************************************************************************/
+******************************************************************************/
 
 #pragma once
 
@@ -28,6 +28,7 @@
 #include <set>
 #include <utility>
 #include <vector>
+#include <map>
 
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
@@ -37,14 +38,12 @@
 //#define VERBOSE
 //#define DEBUG_VARMAP
 //#define DEBUG_MEET
-
 #define USE_TERM_INTERVAL_NORMALIZER
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
 namespace crab {
-
 namespace domains {
 
 namespace term {
@@ -99,7 +98,8 @@ public:
 private:
   using ttbl_t = term::term_table<number_t, term::term_operator_t>;
   using term_id_t = typename ttbl_t::term_id_t;
-
+  using term_t = typename ttbl_t::term_t;
+  
   // WARNING: assumes the underlying domain uses the same number type.
   using dom_number = typename Info::Number;
   using dom_lincst_t = typename dom_t::linear_constraint_t;
@@ -150,38 +150,11 @@ private:
     return t_itv;
   }
 
-  // term_id_t term_of_expr(arith_operation_t op, term_id_t ty, term_id_t tz)
-  // {
-  //   boost::optional<term_id_t> opt_tx = _ttbl.find_ftor(op, ty, tz);
-  //   if(opt_tx)
-  //   {
-  //     // If the term already exists, we can learn nothing.
-  //     return *opt_tx;
-  //   } else {
-  //     // Otherwise, assign the term, and evaluate.
-  //     term_id_t tx = _ttbl.apply_ftor(op, ty, tz);
-  //     _impl.apply(op,
-  //                 domvar_of_term(tx),
-  //                 domvar_of_term(ty), domvar_of_term(tz));
-  //     return tx;
-  //   }
-  // }
-
-  // void apply(arith_operation_t op, variable_t x, variable_t y, bound_t lb,
-  // bound_t ub){
-  //   term_id_t t_x = term_of_expr(op, term_of_var(y), term_of_itv(lb, ub));
-  //   // JNL: check with Graeme
-  //   //      insert only adds an entry if the key does not exist
-  //   //_var_map.insert(std::make_pair(x, t_x));
-  //   rebind_var(x, t_x);
-  //   check_terms(__LINE__);
-  // }
-
   void apply(dom_t &dom, term::term_operator_t op, dom_var_t x, dom_var_t y,
              dom_var_t z) {
-    if (auto top = conv2arith(op)) {
+    if (auto top = term::conv2arith(op)) {
       dom.apply(*top, x, y, z);
-    } else if (auto top = conv2bitwise(op)) {
+    } else if (auto top = term::conv2bitwise(op)) {
       dom.apply(*top, x, y, z);
     } else if (op == term::TERM_OP_FUNCTION) {
       // uninterpreted function: do nothing in the underlying
@@ -197,13 +170,13 @@ private:
   // the current value.
   void eval_ftor(dom_t &dom, ttbl_t &tbl, term_id_t t) {
     // Get the term info.
-    typename ttbl_t::term_t *t_ptr = tbl.get_term_ptr(t);
+    term_t *t_ptr = tbl.get_term_ptr(t);
 
     // Only apply functors.
     if (t_ptr->kind() == term::TERM_APP) {
       term::term_operator_t op = term::term_ftor(t_ptr);
 
-      std::vector<term_id_t> &args(term::term_args(t_ptr));
+      const std::vector<term_id_t> &args(term::term_args(t_ptr));
       assert(args.size() == 2);
       apply(dom, op, domvar_of_term(t), domvar_of_term(args[0]),
             domvar_of_term(args[1]));
@@ -212,15 +185,15 @@ private:
 
   void eval_ftor_down(dom_t &dom, ttbl_t &tbl, term_id_t t) {
     // Get the term info.
-    typename ttbl_t::term_t *t_ptr = tbl.get_term_ptr(t);
+    term_t *t_ptr = tbl.get_term_ptr(t);
 
     // Only apply functors.
     if (t_ptr->kind() == term::TERM_APP) {
       term::term_operator_t op = term::term_ftor(t_ptr);
-      std::vector<term_id_t> &args(term::term_args(t_ptr));
+      const std::vector<term_id_t> &args(term::term_args(t_ptr));
       assert(args.size() == 2);
 
-      if (boost::optional<arith_operation_t> arith_op = conv2arith(op)) {
+      if (boost::optional<arith_operation_t> arith_op = term::conv2arith(op)) {
         term::InverseOps<dom_number, dom_var_t, dom_t>::apply(
             dom, *arith_op, domvar_of_term(t), domvar_of_term(args[0]),
             domvar_of_term(args[1]));
@@ -232,82 +205,6 @@ private:
     dom_t ret = dom;
     eval_ftor(ret, tbl, t);
     return ret;
-  }
-
-  term::term_operator_t conv2termop(arith_operation_t op) {
-    switch (op) {
-    case OP_ADDITION:
-      return term::TERM_OP_ADD;
-    case OP_SUBTRACTION:
-      return term::TERM_OP_SUB;
-    case OP_MULTIPLICATION:
-      return term::TERM_OP_MUL;
-    case OP_SDIV:
-      return term::TERM_OP_SDIV;
-    case OP_UDIV:
-      return term::TERM_OP_UDIV;
-    case OP_SREM:
-      return term::TERM_OP_SREM;
-    default:
-      return term::TERM_OP_UREM;
-    }
-  }
-
-  boost::optional<arith_operation_t> conv2arith(term::term_operator_t op) {
-    switch (op) {
-    case term::TERM_OP_ADD:
-      return OP_ADDITION;
-    case term::TERM_OP_SUB:
-      return OP_SUBTRACTION;
-    case term::TERM_OP_MUL:
-      return OP_MULTIPLICATION;
-    case term::TERM_OP_SDIV:
-      return OP_SDIV;
-    case term::TERM_OP_UDIV:
-      return OP_UDIV;
-    case term::TERM_OP_SREM:
-      return OP_SREM;
-    case term::TERM_OP_UREM:
-      return OP_UREM;
-    default:
-      return boost::optional<arith_operation_t>();
-    }
-  }
-
-  term::term_operator_t conv2termop(bitwise_operation_t op) {
-    switch (op) {
-    case OP_AND:
-      return term::TERM_OP_AND;
-    case OP_OR:
-      return term::TERM_OP_OR;
-    case OP_XOR:
-      return term::TERM_OP_XOR;
-    case OP_SHL:
-      return term::TERM_OP_SHL;
-    case OP_LSHR:
-      return term::TERM_OP_LSHR;
-    default:
-      return term::TERM_OP_ASHR;
-    }
-  }
-
-  boost::optional<bitwise_operation_t> conv2bitwise(term::term_operator_t op) {
-    switch (op) {
-    case term::TERM_OP_AND:
-      return OP_AND;
-    case term::TERM_OP_OR:
-      return OP_OR;
-    case term::TERM_OP_XOR:
-      return OP_XOR;
-    case term::TERM_OP_SHL:
-      return OP_SHL;
-    case term::TERM_OP_LSHR:
-      return OP_LSHR;
-    case term::TERM_OP_ASHR:
-      return OP_ASHR;
-    default:
-      return boost::optional<bitwise_operation_t>();
-    }
   }
 
   void check_terms(int line) const {
@@ -432,7 +329,7 @@ private:
   template <typename OpTy>
   term_id_t build_term(OpTy op, term_id_t ty, term_id_t tz) {
     // Check if the term already exists
-    term::term_operator_t binop = conv2termop(op);
+    term::term_operator_t binop = term::conv2termop(op);
     boost::optional<term_id_t> eopt(_ttbl.find_ftor(binop, ty, tz));
     if (eopt) {
       return *eopt;
@@ -682,8 +579,7 @@ private:
     std::vector<term_id_t> non_var_terms(terms.size());
     auto it = std::copy_if(terms.begin(), terms.end(), non_var_terms.begin(),
                            [&ttbl](term_id_t t) {
-                             typename ttbl_t::term_t *t_ptr =
-                                 ttbl.get_term_ptr(t);
+                             term_t *t_ptr = ttbl.get_term_ptr(t);
                              return (t_ptr && t_ptr->kind() == term::TERM_APP);
                            });
     non_var_terms.resize(std::distance(non_var_terms.begin(), it));
@@ -740,13 +636,13 @@ private:
       return (res.first)->second;
     } else {
       // traverse recursively the term
-      typename ttbl_t::term_t *f_ptr = ttbl.get_term_ptr(*f);
+      term_t *f_ptr = ttbl.get_term_ptr(*f);
 #ifdef DEBUG_MEET
       crab::outs() << "Traversing recursively the term "
                    << "t" << *f << ":";
       crab::outs() << *f_ptr << "\n";
 #endif
-      std::vector<term_id_t> &args(term::term_args(f_ptr));
+      const std::vector<term_id_t> &args(term::term_args(f_ptr));
       std::vector<term_id_t> res_args;
       res_args.reserve(args.size());
       for (term_id_t c : args) {
@@ -1854,6 +1750,7 @@ public:
   using term_id_t = typename term_domain_t::term_id_t;
   using dom_t = Abs;
   using ttbl_t = typename term_domain_t::ttbl_t;
+  using term_t = typename ttbl_t::term_t;
   using term_set_t = boost::container::flat_set<term_id_t>;
 
   static void queue_push(ttbl_t &tbl,
@@ -1886,7 +1783,7 @@ public:
     // Don't need to propagate level 0, since it's for free variables
     for (int d = queue.size() - 1; d > 0; d--) {
       for (term_id_t t : queue[d]) {
-        typename ttbl_t::term_t *t_ptr = ttbl.get_term_ptr(t);
+        term_t *t_ptr = ttbl.get_term_ptr(t);
         if (t_ptr->kind() != term::TERM_APP)
           continue;
 
@@ -1905,8 +1802,8 @@ public:
               if (impl.is_bottom()) { crab::outs() << "\tfound bottom\n"; });
 
           // Enqueue the args.
-          typename ttbl_t::term_t *t_ptr = ttbl.get_term_ptr(t);
-          std::vector<term_id_t> &args(term::term_args(t_ptr));
+          term_t *t_ptr = ttbl.get_term_ptr(t);
+          const std::vector<term_id_t> &args(term::term_args(t_ptr));
           for (term_id_t c : args) {
             if (abs.changed_terms.find(c) == abs.changed_terms.end()) {
               abs.changed_terms.insert(c);
@@ -1946,7 +1843,7 @@ public:
       for (term_id_t t : up_queue[d]) {
         abs.eval_ftor(d_prime, ttbl, t);
         CRAB_LOG("term-normalization",
-                 typename ttbl_t::term_t *t_ptr = ttbl.get_term_ptr(t);
+                 term_t *t_ptr = ttbl.get_term_ptr(t);
                  crab::outs() << "Propagate to parent ";
                  t_ptr->write(crab::outs()); crab::outs() << "\n";
                  crab::outs() << "\tTerm table: "; ttbl.write(crab::outs());
@@ -1999,8 +1896,8 @@ public:
   using term_id_t = typename term_domain_t::term_id_t;
   using dom_t = ikos::interval_domain<Num, Var>;
   using var_t = typename term_domain_t::dom_var_t;
-
   using ttbl_t = typename term_domain_t::ttbl_t;
+  using term_t = typename ttbl_t::term_t;  
   using term_set_t = boost::container::flat_set<term_id_t>;
 
   using interval_t = typename dom_t::interval_t;
@@ -2039,11 +1936,11 @@ public:
     // Don't need to propagate level 0, since it's for free variables
     for (int d = queue.size() - 1; d > 0; d--) {
       for (term_id_t t : queue[d]) {
-        typename ttbl_t::term_t *t_ptr = ttbl.get_term_ptr(t);
+        term_t *t_ptr = ttbl.get_term_ptr(t);
         if (t_ptr->kind() != term::TERM_APP)
           continue;
 
-        std::vector<term_id_t> &args(term::term_args(t_ptr));
+        const std::vector<term_id_t> &args(term::term_args(t_ptr));
         std::vector<interval_t> arg_intervals;
         for (term_id_t c : args)
           arg_intervals.push_back(impl[abs.domvar_of_term(c)]);
@@ -2108,12 +2005,14 @@ public:
 };
 #endif
 
-template <typename Info> struct abstract_domain_traits<term_domain<Info>> {
+template <typename Info>
+struct abstract_domain_traits<term_domain<Info>> {
   using number_t = typename Info::Number;
   using varname_t = typename Info::VariableName;
-};
+}; // end term_domain
 
-template <typename Info> class reduced_domain_traits<term_domain<Info>> {
+template <typename Info>
+class reduced_domain_traits<term_domain<Info>> {
 public:
   using term_domain_t = term_domain<Info>;
   using variable_t = typename term_domain_t::variable_t;
