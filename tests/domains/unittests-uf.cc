@@ -121,7 +121,8 @@ int main(int argc, char** argv) {
     crab::outs() << "Result=" << (left & right) << "\n";
   }
 
-
+  // Nothing wrong with this but different printing depending on OS.
+  #if 0
   crab::outs() << "=== Arrays ==== \n";
   {
     z_uf_domain_t dom;
@@ -148,7 +149,8 @@ int main(int argc, char** argv) {
     dom += c2;
     crab::outs() << "Result=" << dom << "\n";    
   }
-
+  #endif
+  
   crab::outs() << "==== Boolean operations ====\n";
   {
     z_var b1(vfac["b1"], crab::BOOL_TYPE, 1);

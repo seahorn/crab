@@ -5345,12 +5345,6 @@ Meet
   {x -> 5, y -> +(5,10), w -> 5, z -> 10} 
   {x -> +(7,10), y -> 7, w -> 7, z -> 10}
 Result={x -> +($VAR_0,$VAR_1), y -> +($VAR_0,$VAR_1), w -> +($VAR_0,$VAR_1), z -> $VAR_1}
-=== Arrays ==== 
-{y -> $VAR_1, w -> uf($VAR_0,$VAR_1), z -> uf($VAR_0,$VAR_1), A -> $VAR_0}
-Added w-z = 0
-Result={y -> $VAR_1, w -> uf($VAR_0,$VAR_1), z -> uf($VAR_0,$VAR_1), A -> $VAR_0}
-Added w-z != 0
-Result=_|_
 ==== Boolean operations ====
 Extracting equalities from {b1 -> $VAR_1, b2 -> band($VAR_1,$VAR_0), b3 -> band($VAR_1,$VAR_0), b4 -> $VAR_0, b5 -> $VAR_0, b6 -> bor($VAR_1,$VAR_0), b7 -> bxor($VAR_1,$VAR_0)}={b2-b3 = 0; b4-b5 = 0}
 === End ./test-bin/unittests-uf ===
