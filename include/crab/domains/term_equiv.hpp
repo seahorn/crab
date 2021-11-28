@@ -34,9 +34,6 @@
 #include <boost/container/flat_set.hpp>
 #include <boost/optional.hpp>
 
-//#define VERBOSE
-//#define DEBUG_VARMAP
-//#define DEBUG_MEET
 #define USE_TERM_INTERVAL_NORMALIZER
 
 #pragma GCC diagnostic push
@@ -207,25 +204,24 @@ private:
   }
 
   void check_terms(int line) const {
-#ifdef DEBUG_VARMAP
-    for (auto const p : _var_map) {
-      if (!(p.second < _ttbl.size())) {
-        CRAB_ERROR("term_equiv.hpp at line=", line, ": ",
-                   "term id is not the table term");
-      }
-    }
-
-    for (auto kv : _rev_var_map) {
-      for (auto v : kv.second) {
-        auto it = _var_map.find(v);
-        if (it->second != kv.first) {
-          CRAB_ERROR("term_equiv.hpp at line=", line, ": ", v,
-                     " is mapped to t", it->second,
-                     " but the reverse map says that should be t", kv.first);
-        }
-      }
-    }
-#endif
+    CRAB_LOG("terms-check-terms",
+	     for (auto const &p : _var_map) {
+	       if (!(p.second < _ttbl.size())) {
+		 CRAB_ERROR("term_equiv.hpp at line=", line, ": ",
+			    "term id is not the table term");
+	       }
+	     }
+	     
+	     for (auto kv : _rev_var_map) {
+	       for (auto v : kv.second) {
+		 auto it = _var_map.find(v);
+		 if (it->second != kv.first) {
+		   CRAB_ERROR("term_equiv.hpp at line=", line, ": ", v,
+			      " is mapped to t", it->second,
+			      " but the reverse map says that should be t", kv.first);
+		 }
+	       }
+	     });
   }
 
   void deref(term_id_t t) {
@@ -599,22 +595,20 @@ private:
     // already processed
     auto it = cache.find(t);
     if (it != cache.end()) {
-#ifdef DEBUG_MEET
-      crab::outs() << "Found in cache: ";
-      crab::outs() << "t" << t << " --> "
-                   << "t" << it->second << "\n";
-#endif
+      CRAB_LOG("terms-meet",
+	       crab::outs() << "build_dag_term. Found in cache: ";
+	       crab::outs() << "t" << t << " --> "
+	       << "t" << it->second << "\n";);
       return it->second;
     }
 
     // break the cycle with a fresh variable
     if (std::find(stack.begin(), stack.end(), t) != stack.end()) {
       term_id_t v = out_ttbl.fresh_var();
-#ifdef DEBUG_MEET
-      crab::outs() << "Detected cycle: ";
-      crab::outs() << "t" << t << " --> "
-                   << "t" << v << "\n";
-#endif
+      CRAB_LOG("terms-meet",     
+	       crab::outs() << "build_dag_term. Detected cycle: ";
+	       crab::outs() << "t" << t << " --> "
+	       << "t" << v << "\n";);
       return v;
     }
 
@@ -627,20 +621,18 @@ private:
       term_id_t v = out_ttbl.fresh_var();
       auto res = cache.insert(std::make_pair(t, v));
       stack.pop_back();
-#ifdef DEBUG_MEET
-      crab::outs() << "No concrete definition: ";
-      crab::outs() << "t" << t << " --> "
-                   << "t" << (res.first)->second << "\n";
-#endif
+      CRAB_LOG("terms-meet",            
+	       crab::outs() << "build_dag_term. No concrete definition: ";
+	       crab::outs() << "t" << t << " --> "
+	       << "t" << (res.first)->second << "\n";);
       return (res.first)->second;
     } else {
       // traverse recursively the term
       term_t *f_ptr = ttbl.get_term_ptr(*f);
-#ifdef DEBUG_MEET
-      crab::outs() << "Traversing recursively the term "
-                   << "t" << *f << ":";
-      crab::outs() << *f_ptr << "\n";
-#endif
+      CRAB_LOG("terms-meet",                  
+	       crab::outs() << "build_dag_term. Traversing recursively the term "
+	                    << "t" << *f << ":";
+	       crab::outs() << *f_ptr << "\n";);
       const std::vector<term_id_t> &args(term::term_args(f_ptr));
       std::vector<term_id_t> res_args;
       res_args.reserve(args.size());
@@ -651,11 +643,10 @@ private:
       auto res = cache.insert(std::make_pair(
           t, out_ttbl.apply_ftor(term::term_ftor(f_ptr), res_args)));
       stack.pop_back();
-#ifdef DEBUG_MEET
-      crab::outs() << "Finished recursive case: ";
-      crab::outs() << "t" << t << " --> "
-                   << "t" << (res.first)->second << "\n";
-#endif
+      CRAB_LOG("terms-meet",                        
+	       crab::outs() << "build_dag_term. Finished recursive case: ";
+	       crab::outs() << "t" << t << " --> "
+	       << "t" << (res.first)->second << "\n";);
       return (res.first)->second;
     }
   }
@@ -1661,10 +1652,9 @@ public:
     // print underlying domain
     o << tmp._impl;
 
-#ifdef VERBOSE
-    /// For debugging purposes
-    o << " ttbl={" << tmp._ttbl << "}\n";
-#endif
+    CRAB_LOG("terms-print-ttbl",
+	     /// For debugging purposes
+	     o << " ttbl={" << tmp._ttbl << "}\n";);
   }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
