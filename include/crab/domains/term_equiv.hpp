@@ -3,11 +3,11 @@
  * equivalences based on the paper "An Abstract Domain of
  * Uninterpreted Functions" by Gange, Navas, Schachte, Sondergaard,
  * and Stuckey published in VMCAI'16.
- *
+ * 
  * Author: Graeme Gange (gkgange@unimelb.edu.au)
  *
  * Contributors: Jorge A. Navas (jorge.navas@sri.com)
-******************************************************************************/
+ ******************************************************************************/
 
 #pragma once
 
@@ -33,7 +33,6 @@
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
 #include <boost/optional.hpp>
-#include <boost/range.hpp>
 
 //#define VERBOSE
 //#define DEBUG_VARMAP
