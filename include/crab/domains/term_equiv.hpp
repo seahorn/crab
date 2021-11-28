@@ -3,7 +3,7 @@
  * equivalences based on the paper "An Abstract Domain of
  * Uninterpreted Functions" by Gange, Navas, Schachte, Sondergaard,
  * and Stuckey published in VMCAI'16.
- * 
+ *
  * Author: Graeme Gange (gkgange@unimelb.edu.au)
  *
  * Contributors: Jorge A. Navas (jorge.navas@sri.com)
@@ -25,10 +25,10 @@
 #include <crab/types/varname_factory.hpp>
 
 #include <algorithm>
+#include <map>
 #include <set>
 #include <utility>
 #include <vector>
-#include <map>
 
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
@@ -51,8 +51,9 @@ public:
   using Alloc = crab::var_factory_impl::str_var_alloc_col;
   using domain_t = Abs;
 
-  static_assert(std::is_same<typename Abs::varname_t, Alloc::varname_t>::value,
-		"Base abstract domain must use str_var_alloc_col as varname factory");
+  static_assert(
+      std::is_same<typename Abs::varname_t, Alloc::varname_t>::value,
+      "Base abstract domain must use str_var_alloc_col as varname factory");
 };
 } // namespace term
 
@@ -85,9 +86,9 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_or_constant_vector_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  using typename abstract_domain_t::variable_or_constant_vector_t;    
   using number_t = Number;
   using varname_t = VariableName;
 
@@ -95,7 +96,7 @@ private:
   using ttbl_t = term::term_table<number_t, term::term_operator_t>;
   using term_id_t = typename ttbl_t::term_id_t;
   using term_t = typename ttbl_t::term_t;
-  
+
   // WARNING: assumes the underlying domain uses the same number type.
   using dom_number = typename Info::Number;
   using dom_lincst_t = typename dom_t::linear_constraint_t;
@@ -204,24 +205,28 @@ private:
   }
 
   void check_terms(int line) const {
-    CRAB_LOG("terms-check-terms",
-	     for (auto const &p : _var_map) {
-	       if (!(p.second < _ttbl.size())) {
-		 CRAB_ERROR("term_equiv.hpp at line=", line, ": ",
-			    "term id is not the table term");
-	       }
-	     }
-	     
-	     for (auto kv : _rev_var_map) {
-	       for (auto v : kv.second) {
-		 auto it = _var_map.find(v);
-		 if (it->second != kv.first) {
-		   CRAB_ERROR("term_equiv.hpp at line=", line, ": ", v,
-			      " is mapped to t", it->second,
-			      " but the reverse map says that should be t", kv.first);
-		 }
-	       }
-	     });
+    CRAB_LOG(
+        "terms-check-terms",
+        for (auto const &p
+             : _var_map) {
+          if (!(p.second < _ttbl.size())) {
+            CRAB_ERROR("term_equiv.hpp at line=", line, ": ",
+                       "term id is not the table term");
+          }
+        }
+
+        for (auto kv
+             : _rev_var_map) {
+          for (auto v : kv.second) {
+            auto it = _var_map.find(v);
+            if (it->second != kv.first) {
+              CRAB_ERROR("term_equiv.hpp at line=", line, ": ", v,
+                         " is mapped to t", it->second,
+                         " but the reverse map says that should be t",
+                         kv.first);
+            }
+          }
+        });
   }
 
   void deref(term_id_t t) {
@@ -595,20 +600,18 @@ private:
     // already processed
     auto it = cache.find(t);
     if (it != cache.end()) {
-      CRAB_LOG("terms-meet",
-	       crab::outs() << "build_dag_term. Found in cache: ";
-	       crab::outs() << "t" << t << " --> "
-	       << "t" << it->second << "\n";);
+      CRAB_LOG("terms-meet", crab::outs() << "build_dag_term. Found in cache: ";
+               crab::outs() << "t" << t << " --> "
+                            << "t" << it->second << "\n";);
       return it->second;
     }
 
     // break the cycle with a fresh variable
     if (std::find(stack.begin(), stack.end(), t) != stack.end()) {
       term_id_t v = out_ttbl.fresh_var();
-      CRAB_LOG("terms-meet",     
-	       crab::outs() << "build_dag_term. Detected cycle: ";
-	       crab::outs() << "t" << t << " --> "
-	       << "t" << v << "\n";);
+      CRAB_LOG("terms-meet", crab::outs() << "build_dag_term. Detected cycle: ";
+               crab::outs() << "t" << t << " --> "
+                            << "t" << v << "\n";);
       return v;
     }
 
@@ -621,18 +624,19 @@ private:
       term_id_t v = out_ttbl.fresh_var();
       auto res = cache.insert(std::make_pair(t, v));
       stack.pop_back();
-      CRAB_LOG("terms-meet",            
-	       crab::outs() << "build_dag_term. No concrete definition: ";
-	       crab::outs() << "t" << t << " --> "
-	       << "t" << (res.first)->second << "\n";);
+      CRAB_LOG("terms-meet", crab::outs()
+                                 << "build_dag_term. No concrete definition: ";
+               crab::outs() << "t" << t << " --> "
+                            << "t" << (res.first)->second << "\n";);
       return (res.first)->second;
     } else {
       // traverse recursively the term
       term_t *f_ptr = ttbl.get_term_ptr(*f);
-      CRAB_LOG("terms-meet",                  
-	       crab::outs() << "build_dag_term. Traversing recursively the term "
-	                    << "t" << *f << ":";
-	       crab::outs() << *f_ptr << "\n";);
+      CRAB_LOG("terms-meet",
+               crab::outs()
+                   << "build_dag_term. Traversing recursively the term "
+                   << "t" << *f << ":";
+               crab::outs() << *f_ptr << "\n";);
       const std::vector<term_id_t> &args(term::term_args(f_ptr));
       std::vector<term_id_t> res_args;
       res_args.reserve(args.size());
@@ -643,10 +647,10 @@ private:
       auto res = cache.insert(std::make_pair(
           t, out_ttbl.apply_ftor(term::term_ftor(f_ptr), res_args)));
       stack.pop_back();
-      CRAB_LOG("terms-meet",                        
-	       crab::outs() << "build_dag_term. Finished recursive case: ";
-	       crab::outs() << "t" << t << " --> "
-	       << "t" << (res.first)->second << "\n";);
+      CRAB_LOG("terms-meet", crab::outs()
+                                 << "build_dag_term. Finished recursive case: ";
+               crab::outs() << "t" << t << " --> "
+                            << "t" << (res.first)->second << "\n";);
       return (res.first)->second;
     }
   }
@@ -1432,7 +1436,7 @@ public:
   BOOL_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
   DEFAULT_SELECT(term_domain_t)
-  
+
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
     crab::CrabStats::count(domain_name() + ".count.rename");
@@ -1571,14 +1575,13 @@ public:
   }
 
   /* begin intrinsics operations */
-  void intrinsic(std::string name,
-		 const variable_or_constant_vector_t &inputs,
+  void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
   void backward_intrinsic(std::string name,
-			  const variable_or_constant_vector_t &inputs,
+                          const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const term_domain_t &invariant) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
@@ -1653,8 +1656,8 @@ public:
     o << tmp._impl;
 
     CRAB_LOG("terms-print-ttbl",
-	     /// For debugging purposes
-	     o << " ttbl={" << tmp._ttbl << "}\n";);
+             /// For debugging purposes
+             o << " ttbl={" << tmp._ttbl << "}\n";);
   }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
@@ -1831,8 +1834,7 @@ public:
       // up_queue[d] shouldn't change.
       for (term_id_t t : up_queue[d]) {
         abs.eval_ftor(d_prime, ttbl, t);
-        CRAB_LOG("term-normalization",
-                 term_t *t_ptr = ttbl.get_term_ptr(t);
+        CRAB_LOG("term-normalization", term_t *t_ptr = ttbl.get_term_ptr(t);
                  crab::outs() << "Propagate to parent ";
                  t_ptr->write(crab::outs()); crab::outs() << "\n";
                  crab::outs() << "\tTerm table: "; ttbl.write(crab::outs());
@@ -1886,7 +1888,7 @@ public:
   using dom_t = ikos::interval_domain<Num, Var>;
   using var_t = typename term_domain_t::dom_var_t;
   using ttbl_t = typename term_domain_t::ttbl_t;
-  using term_t = typename ttbl_t::term_t;  
+  using term_t = typename ttbl_t::term_t;
   using term_set_t = boost::container::flat_set<term_id_t>;
 
   using interval_t = typename dom_t::interval_t;
@@ -1994,14 +1996,12 @@ public:
 };
 #endif
 
-template <typename Info>
-struct abstract_domain_traits<term_domain<Info>> {
+template <typename Info> struct abstract_domain_traits<term_domain<Info>> {
   using number_t = typename Info::Number;
   using varname_t = typename Info::VariableName;
 }; // end term_domain
 
-template <typename Info>
-class reduced_domain_traits<term_domain<Info>> {
+template <typename Info> class reduced_domain_traits<term_domain<Info>> {
 public:
   using term_domain_t = term_domain<Info>;
   using variable_t = typename term_domain_t::variable_t;
