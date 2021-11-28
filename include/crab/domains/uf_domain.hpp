@@ -1129,7 +1129,7 @@ public:
       if (it != m_var_map.end()) {
         term_id_t id = it->second;
         m_var_map.erase(it);
-        m_var_map.insert({new_v, id});
+        m_var_map.insert(std::make_pair(new_v, id));
         remove_rev_var_map(id, v);
         add_rev_var_map(m_rev_var_map, id, new_v);
       }
