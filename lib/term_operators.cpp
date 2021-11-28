@@ -80,6 +80,30 @@ boost::optional<bitwise_operation_t> conv2bitwise(term::term_operator_t op) {
   }
 }
 
+term::term_operator_t conv2termop(bool_operation_t op) {
+  switch (op) {
+  case OP_BAND:
+    return term::TERM_OP_BAND;
+  case OP_BOR:
+    return term::TERM_OP_BOR;
+  default:
+    return term::TERM_OP_BXOR;
+  }
+}
+
+boost::optional<bool_operation_t> conv2bool(term::term_operator_t op) {
+  switch (op) {
+  case term::TERM_OP_BAND:
+    return OP_BAND;
+  case term::TERM_OP_BOR:
+    return OP_BOR;
+  case term::TERM_OP_BXOR:
+    return OP_BXOR;
+  default:
+    return boost::optional<bool_operation_t>();
+  }
+}
+
 } // namespace term
 } // end namespace domains
 } // end namespace crab

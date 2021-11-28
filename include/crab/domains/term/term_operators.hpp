@@ -18,6 +18,10 @@ typedef enum {
   TERM_OP_UDIV,
   TERM_OP_SREM,
   TERM_OP_UREM,
+  TERM_OP_NOT,
+  TERM_OP_BAND,
+  TERM_OP_BOR,
+  TERM_OP_BXOR,    
   TERM_OP_AND,
   TERM_OP_OR,
   TERM_OP_XOR,
@@ -50,6 +54,18 @@ inline crab::crab_os &operator<<(crab::crab_os &o, term_operator_t op) {
   case TERM_OP_UREM:
     o << "%_u";
     break;
+  case TERM_OP_NOT:
+    o << "not";
+    break;
+  case TERM_OP_BAND:
+    o << "band";
+    break;
+  case TERM_OP_BOR:
+    o << "bor";
+    break;
+  case TERM_OP_BXOR:
+    o << "bxor";
+    break;
   case TERM_OP_AND:
     o << "&";
     break;
@@ -80,8 +96,10 @@ inline crab::crab_os &operator<<(crab::crab_os &o, term_operator_t op) {
 /* Convert between Crab operators and term domain uninterpreted functors */
 term_operator_t conv2termop(arith_operation_t op);
 term_operator_t conv2termop(bitwise_operation_t op);
+term_operator_t conv2termop(bool_operation_t op);
 boost::optional<arith_operation_t> conv2arith(term_operator_t op);
 boost::optional<bitwise_operation_t> conv2bitwise(term_operator_t op);
+boost::optional<bool_operation_t> conv2bool(term_operator_t op);
 } // end namespace term
 } // end namespace domains
 } // end namespace crab
