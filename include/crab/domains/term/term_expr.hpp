@@ -73,7 +73,7 @@ public:
 
 template <class Num, class Ftor> class ftor_term : public term<Num, Ftor> {
 public:
-  ftor_term(Ftor _f, std::vector<term_id> &_args) : ftor(_f), args(_args) {}
+  ftor_term(Ftor _f, const std::vector<term_id> &_args) : ftor(_f), args(_args) {}
   term_kind kind(void) const { return TERM_APP; }
   void write(crab_os &o) const {
     o << ftor << "(";
@@ -209,7 +209,7 @@ public:
 
   template <typename T> void collect_args(std::vector<T> &vec) {}
 
-  term_id apply_ftor(const Ftor &f, std::vector<term_id> &ids) {
+  term_id apply_ftor(const Ftor &f, const std::vector<term_id> &ids) {
     term_ref_t ref(new ftor_term_t(f, ids));
     return add_term(ref);
   }
@@ -221,7 +221,7 @@ public:
     return apply_ftor(f, ids);
   }
 
-  boost::optional<term_id> find_ftor(Ftor &f, std::vector<term_id> &ids) {
+  boost::optional<term_id> find_ftor(Ftor &f, const std::vector<term_id> &ids) {
     term_ref_t ref(new ftor_term_t(f, ids));
     return find_term(ref);
   }
@@ -506,7 +506,7 @@ public:
     }
   }
 
-  void run(std::vector<equation_t> &eqs) {
+  void run(const std::vector<equation_t> &eqs) {
     for (auto e : eqs) {
       *this += e;
     }

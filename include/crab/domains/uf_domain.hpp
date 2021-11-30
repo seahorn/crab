@@ -193,22 +193,22 @@ private:
     }
   }
 
-  term_id_t build_term(term::term_operator_t op, term_id_t ty) {
-    boost::optional<term_id_t> eopt(m_ttbl.find_ftor(op, ty));
-    if (eopt) {
-      return *eopt;
-    } else {
-      term_id_t tx = m_ttbl.apply_ftor(op, ty);
-      return tx;
-    }
+  term_id_t build_term(term::term_operator_t op, term_id_t tx) {
+    std::vector<term_id_t> ids = {tx};
+    return build_term(op, ids);
   }
-
-  term_id_t build_term(term::term_operator_t op, term_id_t ty, term_id_t tz) {
-    boost::optional<term_id_t> eopt(m_ttbl.find_ftor(op, ty, tz));
+  
+  term_id_t build_term(term::term_operator_t op, term_id_t tx, term_id_t ty) {
+    std::vector<term_id_t> ids = {tx,ty};
+    return build_term(op, ids);
+  }
+      
+  term_id_t build_term(term::term_operator_t op, const std::vector<term_id_t> &ids) {
+    boost::optional<term_id_t> eopt(m_ttbl.find_ftor(op, ids));
     if (eopt) {
       return *eopt;
     } else {
-      term_id_t tx = m_ttbl.apply_ftor(op, ty, tz);
+      term_id_t tx = m_ttbl.apply_ftor(op, ids);
       return tx;
     }
   }
