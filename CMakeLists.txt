@@ -23,8 +23,6 @@ endif()
 # Add path for custom modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}  "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# Enforce c++11
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 #--------------- Crab Options ---------------------#
 option(CRAB_USE_LDD   "Enable Ldd library" OFF)
@@ -32,7 +30,8 @@ option(CRAB_USE_APRON "Enable Apron library" OFF)
 option(CRAB_USE_ELINA "Enable Elina library" OFF)
 option(CRAB_BUILD_LIBS_SHARED "Build all Crab libraries dynamically." OFF)
 option(CRAB_ENABLE_STATS "Enable stats" ON)
-## Relevant only for developers
+
+## Only for developers use
 option(CRAB_ENABLE_TESTS "Enable tests" OFF)
 option(CRAB_USE_GENERIC_WRAPPER
   "If tests enabled then use the generic abstract domain" OFF)
@@ -211,8 +210,6 @@ if (CRAB_USE_ELINA)
 endif ()
 
 
-include_directories (${Crab_SOURCE_DIR}/include)
-
 if (CRAB_USE_LDD)
   set_target_properties(ldd PROPERTIES EXCLUDE_FROM_ALL ON)
   message (STATUS "Crab: Boxes domain will be available")  
@@ -234,19 +231,19 @@ else ()
   message (STATUS "Crab: Elina domains will not be available")
 endif ()
 
+#------ Crab Options for logging and stats ----------#
 # Enable always logging
 set(NCRABLOG FALSE)
-
 # Enable or disable stats gathering
 if (CRAB_ENABLE_STATS)
-  message (STATUS "Crab: compiled with support for gathering statistics")  
   set(CRAB_STATS TRUE)
 else()
-  message (STATUS "Crab: compiled without support for gathering statistics")    
   set(CRAB_STATS FALSE)
 endif()
     
-
+#------ Compiler options for Crab -------------------#
+# Enforce c++11
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 # Do not use add_definition for warning flags. add_definition is
 # intended for -D flags.
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
@@ -260,6 +257,7 @@ else ()
   endif ()
 endif ()
 
+#------- Create CRAB_LIBS and CRAB_INCLUDE_DIRS for Crab clients -------#
 set (CRAB_DEPS_LIBS
   ${LDD_LIBRARY} 
   ${APRON_LIBRARY}
@@ -272,7 +270,7 @@ if (TopLevel)
 else ()
   ## Propagate CRAB_LIBS and CRAB_INCLUDE_DIRS to parent
   set (_CRAB_INCLUDE_DIRS 
-       ${Crab_SOURCE_DIR}/include
+       ${crab_SOURCE_DIR}/include
        ## crab config.h
        ${CMAKE_BINARY_DIR}/include )
   if (LDD_FOUND)
@@ -288,14 +286,13 @@ else ()
   set(CRAB_LIBS Crab ${CRAB_DEPS_LIBS} PARENT_SCOPE)  
   set(CRAB_INCLUDE_DIRS ${_CRAB_INCLUDE_DIRS} PARENT_SCOPE)  
 endif()  
-  
-include_directories (${CMAKE_BINARY_DIR}/include)
 
+#------- Compile Crab library and optionally tests -----#
+include_directories(${crab_SOURCE_DIR}/include)
+include_directories(${CMAKE_BINARY_DIR}/include)
 configure_file(include/crab/config.h.cmake
                 ${CMAKE_BINARY_DIR}/include/crab/config.h )
-
 add_subdirectory(lib)
-
 if (CRAB_ENABLE_TESTS)
   message (STATUS "Crab: tests will be compiled")
   if (CRAB_USE_GENERIC_WRAPPER)
