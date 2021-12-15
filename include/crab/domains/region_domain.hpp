@@ -437,7 +437,7 @@ private:
     // (rev_map) maps ghost variables to CrabIR variables.
     void remove_rev_varmap(
         std::unordered_map<base_variable_t, std::pair<variable_t, ghost_var_id>>
-            &rev_map) {
+            &rev_map) const {
       rev_map.erase(m_var);
       if (m_object_offset_size) {
         rev_map.erase((*m_object_offset_size).get_offset());
@@ -3324,30 +3324,28 @@ public:
     }
 
     //
-    // rename m_var_map and m_rev_var_map
+    // 1. rename m_var_map and m_rev_var_map
     //
 
     std::vector<std::pair<variable_t, variable_t>> zipped_vars;
     for (unsigned i = 0, sz = from.size(); i < sz; ++i) {
       zipped_vars.push_back({from[i], to[i]});
     }
-
     auto compare_zipped_pair = [](const std::pair<variable_t, variable_t> &p1,
                                   const std::pair<variable_t, variable_t> &p2) {
       return p1.first < p2.first;
     };
-
     std::sort(zipped_vars.begin(), zipped_vars.end(), compare_zipped_pair);
 
-    // Needed because we cannot insert/delete while iterating over
-    // m_var_map
+    // for renaming base domain
+    base_variable_vector_t old_base_vars, new_base_vars;
+    
+    // needed we cannot insert/delete while iterating over m_var_map
     std::vector<variable_t> var_map_to_remove;
     std::vector<std::pair<variable_t, ghost_variables_t>> var_map_to_insert;
-
     for (auto &kv : m_var_map) {
       variable_t old_var = kv.first;
-      ghost_variables_t old_gvars = kv.second;
-
+      const ghost_variables_t &old_gvars = kv.second;
       std::pair<variable_t, variable_t> p(old_var, old_var);
       auto lower = std::lower_bound(zipped_vars.begin(), zipped_vars.end(), p,
                                     compare_zipped_pair);
@@ -3355,14 +3353,15 @@ public:
       if (!(lower == zipped_vars.end() || old_var < (*lower).first)) {
         // found
         variable_t new_var = (*lower).second;
-        ghost_variables_t new_base_gvars = get_or_insert_gvars(new_var);
-        ;
-
+        const ghost_variables_t &new_gvars = get_or_insert_gvars(new_var);
         var_map_to_remove.push_back(old_var);
-        var_map_to_insert.push_back({new_var, new_base_gvars});
-
+        var_map_to_insert.push_back({new_var, new_gvars});
         old_gvars.remove_rev_varmap(m_rev_var_map);
-        new_base_gvars.update_rev_varmap(m_rev_var_map, new_var);
+        new_gvars.update_rev_varmap(m_rev_var_map, new_var);
+
+	// for renaming base domain
+	old_gvars.add(old_base_vars);
+	new_gvars.add(new_base_vars);
       }
     }
 
@@ -3372,8 +3371,11 @@ public:
     for (auto &p : var_map_to_insert) {
       m_var_map.insert(p);
     }
-
-    // Rename the rest
+    
+    // 2. Rename the base domain
+    m_base_dom.rename(old_base_vars, new_base_vars);
+    
+    // 3. Rename the rest of environments
     m_rgn_counting_dom.rename(from, to);
     m_rgn_init_dom.rename(from, to);
     if (!crab_domain_params_man::get().region_skip_unknown_regions()) {
