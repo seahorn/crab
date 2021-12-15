@@ -3305,11 +3305,6 @@ public:
     CRAB_ERROR("region_domain::expand not implemented");
   }
 
-  // The code might be simpler and more efficient if m_var_map is a
-  // std::map.  However, this would slow down lookups.  The
-  // expectation is that this operation should not been called often
-  // since the region domain is usually at the root of the hierarchy
-  // of domains.
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
     crab::CrabStats::count(domain_name() + ".count.rename");
@@ -3323,55 +3318,28 @@ public:
       CRAB_ERROR(domain_name(), "::rename different lengths");
     }
 
-    //
-    // 1. rename m_var_map and m_rev_var_map
-    //
-
-    std::vector<std::pair<variable_t, variable_t>> zipped_vars;
+   // 1. update m_var_map and m_rev_var_map
+    base_variable_vector_t old_base_vars, new_base_vars;        
     for (unsigned i = 0, sz = from.size(); i < sz; ++i) {
-      zipped_vars.push_back({from[i], to[i]});
-    }
-    auto compare_zipped_pair = [](const std::pair<variable_t, variable_t> &p1,
-                                  const std::pair<variable_t, variable_t> &p2) {
-      return p1.first < p2.first;
-    };
-    std::sort(zipped_vars.begin(), zipped_vars.end(), compare_zipped_pair);
-
-    // for renaming base domain
-    base_variable_vector_t old_base_vars, new_base_vars;
-    
-    // needed we cannot insert/delete while iterating over m_var_map
-    std::vector<variable_t> var_map_to_remove;
-    std::vector<std::pair<variable_t, ghost_variables_t>> var_map_to_insert;
-    for (auto &kv : m_var_map) {
-      variable_t old_var = kv.first;
-      const ghost_variables_t &old_gvars = kv.second;
-      std::pair<variable_t, variable_t> p(old_var, old_var);
-      auto lower = std::lower_bound(zipped_vars.begin(), zipped_vars.end(), p,
-                                    compare_zipped_pair);
-
-      if (!(lower == zipped_vars.end() || old_var < (*lower).first)) {
-        // found
-        variable_t new_var = (*lower).second;
-        const ghost_variables_t &new_gvars = get_or_insert_gvars(new_var);
-        var_map_to_remove.push_back(old_var);
-        var_map_to_insert.push_back({new_var, new_gvars});
-        old_gvars.remove_rev_varmap(m_rev_var_map);
-        new_gvars.update_rev_varmap(m_rev_var_map, new_var);
-
-	// for renaming base domain
-	old_gvars.add(old_base_vars);
-	new_gvars.add(new_base_vars);
+      variable_t old_var = from[i];
+      auto it = m_var_map.find(old_var);
+      if (it == m_var_map.end()) {
+	continue;
       }
+      // update m_var_map and m_rev_var_map to remove old_var and its
+      // ghost variables      
+      const ghost_variables_t &old_gvars = it->second;
+      old_gvars.add(old_base_vars);
+      old_gvars.remove_rev_varmap(m_rev_var_map);
+      m_var_map.erase(old_var); // add this point don't use old_gvars
+       
+      // update m_var_map and m_rev_var_map to accomodate new_var and its
+      // ghost variables.
+      variable_t new_var = to[i];     
+      const ghost_variables_t &new_gvars = get_or_insert_gvars(new_var);                 
+      new_gvars.add(new_base_vars);           
     }
-
-    for (auto &v : var_map_to_remove) {
-      m_var_map.erase(v);
-    }
-    for (auto &p : var_map_to_insert) {
-      m_var_map.insert(p);
-    }
-    
+        
     // 2. Rename the base domain
     m_base_dom.rename(old_base_vars, new_base_vars);
     

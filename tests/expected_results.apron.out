@@ -5304,9 +5304,9 @@ user-defined assertion checker
 
 Unit test 6 for rename
 ({}, {x0 -> [5, 5]; x1 -> [10, 10]})
-After renaming {x0,x1} with {y0,y1}=({}, {y1 -> [10, 10]; y0 -> [5, 5]})
+After renaming {x0,x1} with {y0,y1}=({}, {y0 -> [5, 5]; y1 -> [10, 10]})
 ({}, {rgn1 -> [20, 20]; rgn2 -> [30, 30]})
-After renaming {rgn1,rgn2} with {rgn3,rgn4}=({}, {rgn4 -> [30, 30]; rgn3 -> [20, 20]})
+After renaming {rgn1,rgn2} with {rgn3,rgn4}=({}, {rgn3 -> [20, 20]; rgn4 -> [30, 30]})
 === End ./test-bin/unittests-regions ===
 === Begin ./test-bin/unittests-rename ===
  ===== Intervals ====
