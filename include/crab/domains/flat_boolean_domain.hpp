@@ -651,8 +651,8 @@ private:
   };
 
 
-  using domain_product2_t =
-      domain_product2<number_t, varname_t, bool_domain_t, Dom>;
+  using reduced_domain_product2_t =
+      reduced_domain_product2<number_t, varname_t, bool_domain_t, Dom>;
   
   // bool_to_lincons_env_t and var_refcons_map_t are abstract domains
   // used to map bool variables to sets of constraints such that if
@@ -674,7 +674,7 @@ private:
   using bool_to_refcons_env_t = ikos::separate_domain<variable_t, refcst_domain_t>;
 
   // Reduced product of flat boolean domain and an arbitrary domain.
-  domain_product2_t m_product;
+  reduced_domain_product2_t m_product;
   /** 
    * These three domains used to perform reduction from the boolean
    * domain to the other one.
@@ -806,7 +806,7 @@ private:
   /** End helpers to update m_var_to_lincsts and m_var_to_refcsts **/
 
 
-  flat_boolean_numerical_domain(domain_product2_t &&product,
+  flat_boolean_numerical_domain(reduced_domain_product2_t &&product,
                                 bool_to_lincons_env_t &&var_to_lincsts,
 				bool_to_refcons_env_t &&var_to_refcsts,
                                 invariance_domain &&unchanged_vars)
@@ -817,7 +817,7 @@ private:
 
 public:
   bool_num_domain_t make_top() const override {
-    domain_product2_t prod;
+    reduced_domain_product2_t prod;
     prod.set_to_top();
     return bool_num_domain_t(std::move(prod), bool_to_lincons_env_t::top(),
 			     bool_to_refcons_env_t::top(),
@@ -825,7 +825,7 @@ public:
   }
 
   bool_num_domain_t make_bottom() const override {
-    domain_product2_t prod;
+    reduced_domain_product2_t prod;
     prod.set_to_bottom();
     return bool_num_domain_t(std::move(prod), bool_to_lincons_env_t::bottom(),
 			     bool_to_refcons_env_t::bottom(),
@@ -833,7 +833,7 @@ public:
   }
 
   void set_to_top() override {
-    domain_product2_t prod;
+    reduced_domain_product2_t prod;
     prod.set_to_top();
     bool_num_domain_t abs(std::move(prod), bool_to_lincons_env_t::top(),
 			  bool_to_refcons_env_t::top(),
@@ -842,7 +842,7 @@ public:
   }
 
   void set_to_bottom() override {
-    domain_product2_t prod;
+    reduced_domain_product2_t prod;
     prod.set_to_bottom();
     bool_num_domain_t abs(std::move(prod), bool_to_lincons_env_t::bottom(),
 			  bool_to_refcons_env_t::bottom(),
@@ -1058,13 +1058,13 @@ public:
   }
 
   void set(const variable_t &x, interval_t intv) {
-    // domain_product2 does not define set method
+    // reduced_domain_product2 does not define set method
     m_product.second().set(x, intv); // only on the numerical domain
     m_unchanged_vars -= x;
   }
 
   interval_t operator[](const variable_t &v) override {
-    // domain_product2 does not define [] method
+    // reduced_domain_product2 does not define [] method
     boolean_value bv = m_product.first().get_bool(v);
     interval_t isecond = m_product.second()[v];
 

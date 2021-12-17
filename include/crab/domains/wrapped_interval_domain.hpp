@@ -2763,12 +2763,12 @@ private:
                                            max_reduction_cycles>;
   using wrapped_interval_t = wrapped_interval<number_t>;
   using signedness_t = enum { UNKNOWN_SIGNEDNESS, SIGNED, UNSIGNED };
-  using domain_product2_t =
-      domain_product2<number_t, varname_t, wrapped_interval_domain_t, NumDom>;
+  using reduced_domain_product2_t =
+      reduced_domain_product2<number_t, varname_t, wrapped_interval_domain_t, NumDom>;
 
-  domain_product2_t _product;
+  reduced_domain_product2_t _product;
 
-  wrapped_numerical_domain(const domain_product2_t &product)
+  wrapped_numerical_domain(const reduced_domain_product2_t &product)
       : _product(product) {}
 
   // return true if v may have overflow in the past
@@ -2979,26 +2979,26 @@ private:
 
 public:
   wrapped_numerical_domain_t make_top() const override {
-    domain_product2_t dom_prod;
+    reduced_domain_product2_t dom_prod;
     dom_prod.set_to_top();
     return wrapped_numerical_domain_t(dom_prod);
   }
 
   wrapped_numerical_domain_t make_bottom() const override {
-    domain_product2_t dom_prod;
+    reduced_domain_product2_t dom_prod;
     dom_prod.set_to_bottom();
     return wrapped_numerical_domain_t(dom_prod);
   }
 
   void set_to_top() override {
-    domain_product2_t dom_prod;
+    reduced_domain_product2_t dom_prod;
     dom_prod.set_to_top();
     wrapped_numerical_domain_t abs(dom_prod);
     std::swap(*this, abs);
   }
 
   void set_to_bottom() override {
-    domain_product2_t dom_prod;
+    reduced_domain_product2_t dom_prod;
     dom_prod.set_to_bottom();
     wrapped_numerical_domain_t abs(dom_prod);
     std::swap(*this, abs);
@@ -3178,7 +3178,7 @@ public:
   }
 
   void set(const variable_t &x, interval_t intv) {
-    // domain_product2 does not define set method
+    // reduced_domain_product2 does not define set method
     _product.first().set(x, intv);
     _product.second().set(x, intv);
   }

@@ -41,12 +41,12 @@ public:
   using sign_t = typename sign_domain_t::sign_t;
 
 private:
-  using domain_product2_t =
-      domain_product2<number_t, varname_t, sign_domain_t, constant_domain_t>;
+  using reduced_domain_product2_t =
+      reduced_domain_product2<number_t, varname_t, sign_domain_t, constant_domain_t>;
 
-  domain_product2_t m_product;
+  reduced_domain_product2_t m_product;
 
-  sign_constant_domain(domain_product2_t &&product)
+  sign_constant_domain(reduced_domain_product2_t &&product)
       : m_product(std::move(product)) {}
 
   void reduce_variable(const variable_t &v) {
@@ -75,23 +75,23 @@ private:
 
 public:
   signed_constant_domain_t make_top() const override {
-    domain_product2_t dom_prod;
+    reduced_domain_product2_t dom_prod;
     return signed_constant_domain_t(dom_prod.make_top());
   }
 
   signed_constant_domain_t make_bottom() const override {
-    domain_product2_t dom_prod;
+    reduced_domain_product2_t dom_prod;
     return signed_constant_domain_t(dom_prod.make_bottom());
   }
 
   void set_to_top() override {
-    domain_product2_t dom_prod;
+    reduced_domain_product2_t dom_prod;
     signed_constant_domain_t abs(dom_prod.make_top());
     std::swap(*this, abs);
   }
 
   void set_to_bottom() override {
-    domain_product2_t dom_prod;
+    reduced_domain_product2_t dom_prod;
     signed_constant_domain_t abs(dom_prod.make_bottom());
     std::swap(*this, abs);
   }
