@@ -24,6 +24,21 @@ boolean_value &boolean_value::operator=(const boolean_value &other) {
   return *this;
 }
 
+boolean_value boolean_value::make_bottom() const {
+  boolean_value res(Bottom);
+  return res;
+}
+boolean_value boolean_value::make_top() const {
+  boolean_value res(Top);
+  return res;
+}
+void boolean_value::set_to_top()  {
+  _value = Top;
+}
+  void boolean_value::set_to_bottom()  {
+  _value = Bottom;
+}
+  
 bool boolean_value::is_bottom() const { return (_value == Bottom); }
 
 bool boolean_value::is_top() const { return (_value == Top); }
@@ -32,7 +47,7 @@ bool boolean_value::is_true() const { return (_value == True); }
 
 bool boolean_value::is_false() const { return (_value == False); }
 
-bool boolean_value::operator<=(boolean_value other) const {
+bool boolean_value::operator<=(const boolean_value &other) const {
 
   if (_value == Bottom || other._value == Top)
     return true;
@@ -46,11 +61,15 @@ bool boolean_value::operator<=(boolean_value other) const {
   return false;
 }
 
-bool boolean_value::operator==(boolean_value other) const {
+bool boolean_value::operator==(const boolean_value &other) const {
   return (_value == other._value);
 }
-
-boolean_value boolean_value::operator|(boolean_value other) const {
+  
+void boolean_value::operator|=(const boolean_value &other) {
+  *this = *this | other;
+}
+  
+boolean_value boolean_value::operator|(const boolean_value &other) const {
   if (is_bottom())
     return other;
   if (other.is_bottom())
@@ -64,7 +83,7 @@ boolean_value boolean_value::operator|(boolean_value other) const {
   return top();
 }
 
-boolean_value boolean_value::operator&(boolean_value other) const {
+boolean_value boolean_value::operator&(const boolean_value &other) const {
   if (is_bottom())
     return *this;
   if (other.is_bottom())
@@ -81,12 +100,12 @@ boolean_value boolean_value::operator&(boolean_value other) const {
 }
 
 // the lattice satisfy ACC so join is the widening
-boolean_value boolean_value::operator||(boolean_value other) const {
+boolean_value boolean_value::operator||(const boolean_value &other) const {
   return this->operator|(other);
 }
 
 // the lattice satisfy DCC so meet is the narrowing
-boolean_value boolean_value::operator&&(boolean_value other) const {
+boolean_value boolean_value::operator&&(const boolean_value &other) const {
   return this->operator&(other);
 }
 
@@ -173,5 +192,9 @@ void boolean_value::write(crab_os &o) const {
   }
 }
 
+std::string boolean_value::domain_name() const {
+  return "Bool";
+}
+  
 } // end namespace domains
 } // end namespace crab
