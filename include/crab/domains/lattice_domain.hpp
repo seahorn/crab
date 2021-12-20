@@ -1,5 +1,6 @@
 #pragma once
 
+#include <crab/support/os.hpp>
 #include <string>
 
 namespace crab {
