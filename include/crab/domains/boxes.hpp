@@ -16,16 +16,16 @@
 /*
  * Dummy implementation if ldd not found
  */
-#include "crab/domains/abstract_domain.def"
+#include <crab/domains/dummy_abstract_domain.hpp>
 namespace crab {
 namespace domains {
 template <typename N, typename V>
 class boxes_domain final
-    : public abstract_domain_api<boxes_domain<N, V>> {
+    : public dummy_abstract_domain<boxes_domain<N, V>> {
 public:
-  using this_type = boxes_domain<N, V>;
-  boxes_domain() {}
-  UNAVAILABLE_DOMAIN("No LDD. Run cmake with -DCRAB_USE_LDD=ON")
+  std::string not_implemented_msg() const override {
+    return "No LDD. Run cmake with -DCRAB_USE_LDD=ON";
+  }
 };
 } // namespace domains
 } // namespace crab

@@ -29,17 +29,17 @@ public:
 /*
  * Dummy implementation if Elina not found
  */
-#include "crab/domains/abstract_domain.def"
+#include <crab/domains/dummy_abstract_domain.hpp>
 namespace crab {
 namespace domains {
 template <typename N, typename V, elina_domain_id_t Dom,
           class Params = ElinaDefaultParams<N>>
 class elina_domain final
-    : public abstract_domain_api<elina_domain<N, V, Dom, Params>> {
+  : public dummy_abstract_domain<elina_domain<N, V, Dom, Params>> {
 public:
-  using this_type = elina_domain<N, V, Dom, Params>;
-  elina_domain() {}
-  UNAVAILABLE_DOMAIN("No Elina. Run cmake with -DCRAB_USE_ELINA=ON")
+  std::string not_implemented_msg() const override {
+    return "No Elina. Run cmake with -DCRAB_USE_ELINA=ON";
+  }
 };
 } // namespace domains
 } // namespace crab
