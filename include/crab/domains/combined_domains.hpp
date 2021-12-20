@@ -18,6 +18,7 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
+#include <crab/domains/lattice_domain.hpp>
 #include <crab/support/stats.hpp>
 
 #include <boost/optional.hpp>
@@ -25,10 +26,12 @@
 
 namespace crab {
 namespace domains {
-
+  
 // Reduced product of two arbitrary domains with only lattice
 // operations.
-template <typename Domain1, typename Domain2> class basic_domain_product2 {
+template <typename Domain1, typename Domain2>
+class basic_domain_product2:
+    public lattice_domain_api<basic_domain_product2<Domain1, Domain2>> {
 
 public:
   using basic_domain_product2_t = basic_domain_product2<Domain1, Domain2>;
