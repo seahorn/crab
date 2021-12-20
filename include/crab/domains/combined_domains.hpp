@@ -203,7 +203,11 @@ public:
     if (is_bottom()) {
       o << "_|_";
     } else {
-      o << "(" << m_first << ", " << m_second << ")";
+      o << "(";
+      m_first.write(o);
+      o << ", ";
+      m_second.write(o);
+      o << ")";
     }
   }
 
