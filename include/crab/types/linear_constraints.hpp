@@ -644,8 +644,9 @@ public:
       return (this->_expr.is_constant() && this->_expr.constant() <= 0);
     case STRICT_INEQUALITY:
       return (this->_expr.is_constant() && this->_expr.constant() < 0);
-    default:
-      CRAB_ERROR("Unreachable");
+    // Clang complains switch already covers all values  
+    //default:
+    //  CRAB_ERROR("Unreachable");
     }
   }
 
@@ -659,8 +660,9 @@ public:
       return (this->_expr.is_constant() && this->_expr.constant() > 0);
     case STRICT_INEQUALITY:
       return (this->_expr.is_constant() && this->_expr.constant() >= 0);
-    default:
-      CRAB_ERROR("Unreachable");
+    // Clang complains switch already covers all values
+    // default:
+    //CRAB_ERROR("Unreachable");
     }
   }
 
@@ -844,7 +846,6 @@ negate_inequality(const linear_constraint<z_number, VariableName> &c) {
 template <typename Number, typename VariableName>
 linear_constraint<Number, VariableName> strict_to_non_strict_inequality(
     const linear_constraint<Number, VariableName> &c) {
-  using linear_constraint_t = linear_constraint<Number, VariableName>;
   assert(c.is_strict_inequality());
   // Default implementation: do nothing
   // Given constraint e < 0 we could return two linear constraints: e <= 0 and e

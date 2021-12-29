@@ -407,15 +407,15 @@ public:
   const linear_expression_t &right() const { return m_op2; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_op, m_op1, m_op2, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " = " << m_op1 << m_op << m_op2;
   }
 
@@ -448,15 +448,15 @@ public:
   const linear_expression_t &rhs() const { return m_rhs; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_rhs, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " = " << m_rhs; // << " " << this->m_live;
   }
 
@@ -485,15 +485,15 @@ public:
   const linear_constraint_t &constraint() const { return m_cst; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_cst, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "assume(" << m_cst << ")"; //  << " " << this->m_live;
   }
 
@@ -513,15 +513,17 @@ public:
   unreachable_stmt(basic_block_t *parent) : statement_t(UNREACH, parent) {}
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(parent);
   }
 
-  virtual void write(crab_os &o) const { o << "unreachable"; }
+  virtual void write(crab_os &o) const override  {
+    o << "unreachable";
+  }
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
@@ -541,15 +543,15 @@ public:
   const variable_t &get_variable() const { return m_lhs; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_comment, parent);
   }
 
-  void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "havoc(" << m_lhs << ")";
     if (!m_comment.empty()) {
       o << " /* " << m_comment << "*/";
@@ -601,15 +603,15 @@ public:
   const linear_expression_t &right() const { return m_e2; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_cond, m_e1, m_e2, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " = "
       << "ite(" << m_cond << "," << m_e1 << "," << m_e2 << ")";
   }
@@ -641,15 +643,15 @@ public:
   const linear_constraint_t &constraint() const { return m_cst; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_cst, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "assert(" << m_cst << ")";
     if (this->m_dbg_info.has_debug()) {
       o << "   /* " << this->m_dbg_info <<  " */";
@@ -685,15 +687,15 @@ public:
   bitwidth_t dst_width() const { return get_bitwidth(m_dst); }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_op, m_src, m_dst, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     // bitwidths are casted to int, otherwise operator<< may try
     // to print them as characters if bitwidth_t = uint8_t
     o << m_op << " " << m_src << ":" << (int)src_width() << " to " << m_dst
@@ -781,15 +783,15 @@ public:
   const linear_expression_t &val() const { return m_val; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_arr, m_elem_size, m_lb, m_ub, m_val, parent);
   }
 
-  void write(crab_os &o) const {
+  void write(crab_os &o) const override {
     o << m_arr << "[" << m_lb << "..." << m_ub << "] := " << m_val;
   }
 
@@ -858,16 +860,16 @@ public:
   bool is_strong_update() const { return m_is_strong_update; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_arr, m_elem_size, m_lb, m_ub, m_value,
                          m_is_strong_update, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "array_store(";
     if (m_lb.equal(m_ub)) {
       o << m_arr << "," << m_lb << "," << m_value << ",sz=" << elem_size();
@@ -933,15 +935,15 @@ public:
   const linear_expression_t &elem_size() const { return m_elem_size; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_array, m_elem_size, m_index, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " = "
       << "array_load(" << m_array << "," << m_index << ",sz=" << elem_size()
       << ")";
@@ -979,15 +981,15 @@ public:
   type_t array_type() const { return m_lhs.get_type(); }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_rhs, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "array_assign(" << m_lhs << ", " << m_rhs << ")";
   }
 
@@ -1020,15 +1022,15 @@ public:
   const variable_t &region() const { return m_region; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_region, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "region_init(" << m_region << ":" << m_region.get_type() << ")";
   }
 
@@ -1063,15 +1065,15 @@ public:
   type_t region_type() const { return m_lhs_region.get_type(); }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs_region, m_rhs_region, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "region_copy(" << m_lhs_region << ":" << m_lhs_region.get_type()
       << ", " << m_rhs_region << ":" << m_rhs_region.get_type() << ")";
   }
@@ -1110,15 +1112,15 @@ public:
   type_t dst_type() const { return m_dst_region.get_type(); }  
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_src_region, m_dst_region, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "region_cast "
       << src() << ":" << src_type() << " to "
       << dst() << ":" << dst_type();
@@ -1159,15 +1161,15 @@ public:
   const variable_or_constant_t &size() const { return m_size;}
   
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_region, m_size, m_alloc_site, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " := "
       << "make_ref(" << m_region << ":" << m_region.get_type() << ","
       << m_size << ","
@@ -1206,15 +1208,15 @@ public:
   const variable_t &ref() const { return m_ref; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_region, m_ref, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "remove_ref(" << m_region << ":" << m_region.get_type() << ","
       << m_ref << ":" << m_ref.get_type() << ")";
   }
@@ -1251,15 +1253,15 @@ public:
   const variable_t &region() const { return m_region; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_ref, m_region, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << ":" << m_lhs.get_type() << " := "
       << "load_from_ref(" << m_region << ":" << m_region.get_type() << ","
       << m_ref << ":" << m_ref.get_type() << ")";
@@ -1303,15 +1305,15 @@ public:
   const variable_t &region() const { return m_region; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_ref, m_region, m_val, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "store_to_ref(" << m_region << ":" << m_region.get_type() << ","
       << m_ref << ":" << m_ref.get_type() << "," << m_val << ":"
       << m_val.get_type() << ")";
@@ -1366,16 +1368,16 @@ public:
   const variable_t &rhs_region() const { return m_rhs_region; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_lhs_region, m_rhs, m_rhs_region, m_offset,
                          parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "(" << m_lhs_region << ":" << m_lhs_region.get_type() << "," << m_lhs
       << ":" << m_lhs.get_type() << ") := ";
     if (m_offset.equal(Number(0))) {
@@ -1439,16 +1441,16 @@ public:
   const variable_t &region() const { return m_region; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_ref, m_region, m_index, m_elem_size, parent,
                          this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << ":" << m_lhs.get_type() << " = "
       << "load_from_arr_ref(" << m_region << ":" << m_region.get_type() << ","
       << m_ref << ":" << m_ref.get_type() << "," << m_index << ",sz "
@@ -1521,16 +1523,16 @@ public:
   bool is_strong_update() const { return m_is_strong_update; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_ref, m_region, m_lb, m_ub, m_value, m_elem_size,
                          m_is_strong_update, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "store_to_arr_ref(" << m_region << ":" << m_region.get_type() << ","
       << m_ref << ":" << m_ref.get_type();
     if (m_lb.equal(m_ub)) {
@@ -1588,15 +1590,17 @@ public:
   const reference_constraint_t &constraint() const { return m_cst; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_cst, parent);
   }
 
-  virtual void write(crab_os &o) const { o << "assume(" << m_cst << ")"; }
+  virtual void write(crab_os &o) const override {
+    o << "assume(" << m_cst << ")";
+  }
 
 private:
   reference_constraint_t m_cst;
@@ -1629,15 +1633,15 @@ public:
   const reference_constraint_t &constraint() const { return m_cst; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_cst, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "assert(" << m_cst << ")";
     if (this->m_dbg_info.has_debug()) {
       o << "   /* " << this->m_dbg_info <<  " */";      
@@ -1701,16 +1705,16 @@ public:
   boost::optional<variable_t> right_rgn() const { return m_op2_rgn; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs_ref, m_lhs_rgn, m_cond, m_op1_ref, m_op1_rgn,
                          m_op2_ref, m_op2_rgn, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "(" << m_lhs_ref << "," << m_lhs_rgn << ")"
       << " = "
       << "ite(" << m_cond << ",";
@@ -1764,16 +1768,16 @@ public:
   const variable_t &int_var() const { return m_int_var; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_region, m_ref_var, m_int_var, parent,
                          this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_int_var << ":" << m_int_var.get_type() << " := "
       << "ref_to_int(" << m_region << ":" << m_region.get_type() << ","
       << m_ref_var << ":" << m_ref_var.get_type() << ")";
@@ -1811,16 +1815,16 @@ public:
   const variable_t &ref_var() const { return m_ref_var; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_int_var, m_region, m_ref_var, parent,
                          this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_ref_var << ":" << m_ref_var.get_type() << " := "
       << "int_to_ref(" << m_region << ":" << m_region.get_type() << ","
       << m_int_var << ":" << m_int_var.get_type() << ")";
@@ -1910,15 +1914,15 @@ public:
   }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_func_name, m_lhs, m_args, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     if (m_lhs.empty()) {
       // do nothing
     } else if (m_lhs.size() == 1) {
@@ -2018,15 +2022,15 @@ public:
   }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_intrinsic_name, m_lhs, m_args, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     if (m_lhs.empty()) {
       // do nothing
     } else if (m_lhs.size() == 1) {
@@ -2117,11 +2121,11 @@ public:
   bool is_rhs_linear_constraint() const { return m_is_rhs_linear_constraint; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     if (is_rhs_linear_constraint()) {
       return new this_type(m_lhs, rhs_as_linear_constraint(), parent);
     } else {
@@ -2129,7 +2133,7 @@ public:
     }
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " = ";
     if (is_rhs_linear_constraint()) {
       auto const &rhs = rhs_as_linear_constraint();
@@ -2188,15 +2192,15 @@ public:
   bool is_rhs_negated() const { return m_is_rhs_negated; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_rhs, m_is_rhs_negated, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " = ";
     if (is_rhs_negated()) {
       o << "not(" << m_rhs << ")";
@@ -2244,15 +2248,15 @@ public:
   const variable_t &right() const { return m_op2; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_op, m_op1, m_op2, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " = " << m_op1 << m_op << m_op2;
   }
 
@@ -2283,15 +2287,15 @@ public:
   bool is_negated() const { return m_is_negated; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_var, m_is_negated, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     if (m_is_negated) {
       o << "assume(not(" << m_var << "))";
     } else {
@@ -2335,15 +2339,15 @@ public:
   const variable_t &right() const { return m_b2; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_cond, m_b1, m_b2, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " = "
       << "ite(" << m_cond << "," << m_b1 << "," << m_b2 << ")";
   }
@@ -2374,15 +2378,15 @@ public:
   const variable_t &cond() const { return m_var; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_var, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "assert(" << m_var << ")";
     if (this->m_dbg_info.has_debug()) {
       o << "   /* " << this->m_dbg_info <<  " */";

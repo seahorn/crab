@@ -303,23 +303,23 @@ public:
     }
   }
 
-  std::size_t size() const { return this->_size; }
+  virtual std::size_t size() const override { return this->_size; }
 
-  index_t prefix() const { return this->_prefix; }
+  virtual index_t prefix() const override { return this->_prefix; }
 
-  index_t branching_bit() const { return this->_branching_bit; }
+  virtual index_t branching_bit() const override { return this->_branching_bit; }
 
-  bool is_leaf() const { return false; }
+  virtual bool is_leaf() const override { return false; }
 
-  binding_t binding() const {
+  virtual binding_t binding() const override {
     CRAB_ERROR("Patricia tree: trying to call binding() on a node");
   }
 
-  tree_ptr left_branch() const { return this->_left_branch; }
+  virtual tree_ptr left_branch() const override { return this->_left_branch; }
 
-  tree_ptr right_branch() const { return this->_right_branch; }
+  virtual tree_ptr right_branch() const override { return this->_right_branch; }
 
-  boost::optional<Value> lookup(const Key &key) const {
+  virtual boost::optional<Value> lookup(const Key &key) const override {
     if (key.index() <= this->_prefix) {
       if (this->_left_branch) {
         return this->_left_branch->lookup(key);
@@ -335,7 +335,7 @@ public:
     }
   }
 
-  const Value *find(const Key &key) const {
+  virtual const Value *find(const Key &key) const override {
     if (key.index() <= this->_prefix) {
       if (this->_left_branch) {
         return this->_left_branch->find(key);
@@ -371,25 +371,27 @@ private:
 public:
   leaf(const Key &key_, const Value &value_) : _key(key_), _value(value_) {}
 
-  std::size_t size() const { return 1; }
+  virtual std::size_t size() const override { return 1; }
 
-  index_t prefix() const { return this->_key.index(); }
+  virtual index_t prefix() const override { return this->_key.index(); }
 
-  index_t branching_bit() const { return 0; }
+  virtual index_t branching_bit() const override { return 0; }
 
-  bool is_leaf() const { return true; }
+  virtual bool is_leaf() const override { return true; }
 
-  binding_t binding() const { return binding_t(this->_key, this->_value); }
+  virtual binding_t binding() const override {
+    return binding_t(this->_key, this->_value);
+  }
 
-  tree_ptr left_branch() const {
+  virtual tree_ptr left_branch() const override {
     CRAB_ERROR("Patricia tree: trying to call left_branch() on a leaf");
   }
 
-  tree_ptr right_branch() const {
+  virtual tree_ptr right_branch() const override {
     CRAB_ERROR("Patricia tree: trying to call right_branch() on a leaf");
   }
 
-  boost::optional<Value> lookup(const Key &key_) const {
+  virtual boost::optional<Value> lookup(const Key &key_) const override {
     if (this->_key.index() == key_.index()) {
       return boost::optional<Value>(this->_value);
     } else {
@@ -397,7 +399,7 @@ public:
     }
   }
 
-  const Value *find(const Key &key) const {
+  virtual const Value *find(const Key &key) const override {
     if (this->_key.index() == key.index()) {
       return &(this->_value);
     } else {
@@ -1261,10 +1263,10 @@ public:
 
   class insert_op : public binary_op_t {
     std::pair<bool, boost::optional<Value>> apply(Value /* old_value */,
-                                                  Value new_value) {
+                                                  Value new_value) override {
       return {false, boost::optional<Value>(new_value)};
     }
-    bool default_is_absorbing() { return false; }
+    bool default_is_absorbing() override { return false; }
   }; // class insert_op
 
 public:
@@ -1393,20 +1395,20 @@ public:
 
 private:
   class union_op : public binary_op_t {
-    std::pair<bool, boost::optional<bool>> apply(bool /* x */, bool /* y */) {
+    std::pair<bool, boost::optional<bool>> apply(bool /* x */, bool /* y */) override {
       return {false, boost::optional<bool>(true)};
     };
 
-    bool default_is_absorbing() { return false; }
+    bool default_is_absorbing() override { return false; }
 
   }; // class union_op
 
   class intersection_op : public binary_op_t {
-    std::pair<bool, boost::optional<bool>> apply(bool /* x */, bool /* y */) {
+    std::pair<bool, boost::optional<bool>> apply(bool /* x */, bool /* y */) override {
       return {false, boost::optional<bool>(true)};
     };
 
-    bool default_is_absorbing() { return true; }
+    bool default_is_absorbing() override { return true; }
 
   }; // class intersection_op
 
