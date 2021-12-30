@@ -442,6 +442,8 @@ class abstract_domain_results_api {
 public:
   using number_t = Number;
   using variable_t = variable<Number, VariableName>;
+
+  virtual ~abstract_domain_results_api() {}
   
   // Return a 3-valued boolean about whether the reference variable
   // ref is null.

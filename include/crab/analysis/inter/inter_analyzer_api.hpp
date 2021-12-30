@@ -24,6 +24,7 @@ public:
   using summary_t = inter_analyzer_summary<cfg_t, summary_abs_dom_t>;
   
   /* API methods */
+  virtual ~inter_analyzer_api() {}
   virtual void run(invariant_abs_dom_t init) = 0;
   virtual cg_t& get_call_graph() = 0;
   virtual invariant_abs_dom_t

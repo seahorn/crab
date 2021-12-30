@@ -219,9 +219,13 @@ public:
     return this->_node;
   }
 
-  void accept(wto_component_visitor<G> *v) { v->visit(*this); }
+  virtual void accept(wto_component_visitor<G> *v) override {
+    v->visit(*this);
+  }
 
-  void write(crab::crab_os &o) const { o << this->_node; }
+  virtual void write(crab::crab_os &o) const override {
+    o << this->_node;
+  }
 
 }; // class wto_vertex
 
@@ -256,7 +260,9 @@ public:
     return this->_head;
   }
 
-  void accept(wto_component_visitor<G> *v) { v->visit(*this); }
+  virtual void accept(wto_component_visitor<G> *v) override {
+    v->visit(*this);
+  }
 
   iterator begin() {
     return boost::make_indirect_iterator(_wto_components->begin());
@@ -280,7 +286,7 @@ public:
 
   void reset_fixpo_visits() { _num_fixpo = 0; }
 
-  void write(crab::crab_os &o) const {
+  virtual void write(crab::crab_os &o) const override {
     o << "(" << this->_head;
     if (!this->_wto_components->empty()) {
       o << " ";
@@ -361,7 +367,7 @@ private:
     nesting_builder(nesting_table_ptr nesting_table)
         : _nesting_table(nesting_table) {}
 
-    void visit(wto_cycle_t &cycle) {
+    virtual void visit(wto_cycle_t &cycle) override {
       typename boost::graph_traits<G>::vertex_descriptor head = cycle.head();
       wto_nesting_t previous_nesting = this->_nesting;
       this->_nesting_table->insert(std::make_pair(head, this->_nesting));
@@ -373,7 +379,7 @@ private:
       this->_nesting = previous_nesting;
     }
 
-    void visit(wto_vertex_t &vertex) {
+    virtual void visit(wto_vertex_t &vertex) override {
       this->_nesting_table->insert(
           std::make_pair(vertex.node(), this->_nesting));
     }

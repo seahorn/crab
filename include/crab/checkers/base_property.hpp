@@ -520,41 +520,41 @@ protected:
 
 public:
   /* Visitor API */
-  void visit(bin_op_t &s) { check(s); }
-  void visit(assign_t &s) { check(s); }
-  void visit(assume_t &s) { check(s); }
-  void visit(select_t &s) { check(s); }
-  void visit(assert_t &s) { check(s); }
-  void visit(int_cast_t &s) { check(s); }
-  void visit(havoc_t &s) { check(s); }
-  void visit(unreach_t &s) { check(s); }
-  void visit(callsite_t &s) { check(s); }
-  void visit(intrinsic_t &s) { check(s); }
-  void visit(arr_init_t &s) { check(s); }
-  void visit(arr_assign_t &s) { check(s); }
-  void visit(arr_store_t &s) { check(s); }
-  void visit(arr_load_t &s) { check(s); }
-  void visit(region_init_t &s) { check(s); }
-  void visit(region_copy_t &s) { check(s); }
-  void visit(region_cast_t &s) { check(s); }  
-  void visit(make_ref_t &s) { check(s); }
-  void visit(remove_ref_t &s) { check(s); }  
-  void visit(load_from_ref_t &s) { check(s); }
-  void visit(store_to_ref_t &s) { check(s); }
-  void visit(gep_ref_t &s) { check(s); }
-  void visit(load_from_arr_ref_t &s) { check(s); }
-  void visit(store_to_arr_ref_t &s) { check(s); }
-  void visit(assume_ref_t &s) { check(s); }
-  void visit(assert_ref_t &s) { check(s); }
-  void visit(select_ref_t &s) { check(s); }
-  void visit(int_to_ref_t &s) { check(s); }
-  void visit(ref_to_int_t &s) { check(s); }
-  void visit(bool_bin_op_t &s) { check(s); }
-  void visit(bool_assign_cst_t &s) { check(s); }
-  void visit(bool_assign_var_t &s) { check(s); }
-  void visit(bool_assume_t &s) { check(s); }
-  void visit(bool_select_t &s) { check(s); }
-  void visit(bool_assert_t &s) { check(s); }
+  virtual void visit(bin_op_t &s) override { check(s); }
+  virtual void visit(assign_t &s) override { check(s); }
+  virtual void visit(assume_t &s) override { check(s); }
+  virtual void visit(select_t &s) override { check(s); }
+  virtual void visit(assert_t &s) override { check(s); }
+  virtual void visit(int_cast_t &s) override { check(s); }
+  virtual void visit(havoc_t &s) override { check(s); }
+  virtual void visit(unreach_t &s) override { check(s); }
+  virtual void visit(callsite_t &s) override { check(s); }
+  virtual void visit(intrinsic_t &s) override { check(s); }
+  virtual void visit(arr_init_t &s) override { check(s); }
+  virtual void visit(arr_assign_t &s) override { check(s); }
+  virtual void visit(arr_store_t &s) override { check(s); }
+  virtual void visit(arr_load_t &s) override { check(s); }
+  virtual void visit(region_init_t &s) override { check(s); }
+  virtual void visit(region_copy_t &s) override { check(s); }
+  virtual void visit(region_cast_t &s) override { check(s); }  
+  virtual void visit(make_ref_t &s) override { check(s); }
+  virtual void visit(remove_ref_t &s) override { check(s); }  
+  virtual void visit(load_from_ref_t &s) override { check(s); }
+  virtual void visit(store_to_ref_t &s) override { check(s); }
+  virtual void visit(gep_ref_t &s) override { check(s); }
+  virtual void visit(load_from_arr_ref_t &s) override { check(s); }
+  virtual void visit(store_to_arr_ref_t &s) override { check(s); }
+  virtual void visit(assume_ref_t &s) override { check(s); }
+  virtual void visit(assert_ref_t &s) override { check(s); }
+  virtual void visit(select_ref_t &s) override { check(s); }
+  virtual void visit(int_to_ref_t &s) override { check(s); }
+  virtual void visit(ref_to_int_t &s) override { check(s); }
+  virtual void visit(bool_bin_op_t &s) override { check(s); }
+  virtual void visit(bool_assign_cst_t &s) override { check(s); }
+  virtual void visit(bool_assign_var_t &s) override { check(s); }
+  virtual void visit(bool_assume_t &s) override { check(s); }
+  virtual void visit(bool_select_t &s) override { check(s); }
+  virtual void visit(bool_assert_t &s) override { check(s); }
 
   property_checker(int verbose) : m_abs_tr(nullptr), m_verbose(verbose) {}
 

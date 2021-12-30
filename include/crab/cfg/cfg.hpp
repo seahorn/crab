@@ -4757,7 +4757,7 @@ private:
 
     // Begin visitor
 
-    void visit(bin_op_t &s) {
+    virtual void visit(bin_op_t &s) override {
       const variable_t &lhs = s.lhs();
       const lin_exp_t &op1 = s.left();
       const lin_exp_t &op2 = s.right();
@@ -4783,7 +4783,7 @@ private:
       }
     }
 
-    void visit(assign_t &s) {
+    virtual void visit(assign_t &s) override {
       const variable_t &lhs = s.lhs();
       const lin_exp_t &rhs = s.rhs();
 
@@ -4797,7 +4797,7 @@ private:
       }
     }
 
-    void visit(assume_t &s) {
+    virtual void visit(assume_t &s) override {
       bool first = true;
       const variable_t *first_var = nullptr;
       for (auto const &v : s.constraint().variables()) {
@@ -4813,7 +4813,7 @@ private:
       }
     }
 
-    void visit(assert_t &s) {
+    virtual void visit(assert_t &s) override {
       bool first = true;
       const variable_t *first_var;
       for (auto const &v : s.constraint().variables()) {
@@ -4829,7 +4829,7 @@ private:
       }
     }
 
-    void visit(select_t &s) {
+    virtual void visit(select_t &s) override {
       check_num(s.lhs(), "lhs must be integer or real", s);
       check_varname(s.lhs());
       for (auto const &v : s.left().variables()) {
@@ -4860,7 +4860,7 @@ private:
       }
     }
 
-    void visit(int_cast_t &s) {
+    virtual void visit(int_cast_t &s) override {
       const variable_t &src = s.src();
       const variable_t &dst = s.dst();
 
@@ -4881,8 +4881,9 @@ private:
                      s);
         }
         break;
-      case CAST_SEXT:
-      case CAST_ZEXT:
+      default:
+	//case CAST_SEXT:
+	//case CAST_ZEXT:
         check_int(dst, "destination operand must be integer", s);
         check_int_or_bool(src, "source must be integer or bool", s);
         if (get_bitwidth(dst) <= get_bitwidth(src)) {
@@ -4890,16 +4891,16 @@ private:
                      "than source in ",
                      s);
         }
-        break;
-      default:;
-        ; /*unreachable*/
       }
     }
 
-    void visit(havoc_t &) {}
-    void visit(unreach_t &) {}
+    virtual void visit(havoc_t &) override {
+    }
+    
+    virtual void visit(unreach_t &) override {
+    }
 
-    void visit(bool_bin_op_t &s) {
+    virtual void visit(bool_bin_op_t &s) override {
       check_varname(s.lhs());
       check_varname(s.left());
       check_varname(s.right());
@@ -4908,7 +4909,7 @@ private:
       check_bool(s.right(), "second operand must be boolean", s);
     };
 
-    void visit(bool_assign_cst_t &s) {
+    virtual void visit(bool_assign_cst_t &s) override {
       check_bool(s.lhs(), "lhs must be boolean", s);
       check_varname(s.lhs());
       bool first = true;
@@ -4940,25 +4941,25 @@ private:
         }
       }
     };
-
-    void visit(bool_assign_var_t &s) {
+    
+    virtual void visit(bool_assign_var_t &s) override {
       check_bool(s.lhs(), "lhs must be boolean", s);
       check_bool(s.rhs(), "rhs must be boolean", s);
       check_varname(s.lhs());
       check_varname(s.rhs());
     };
 
-    void visit(bool_assume_t &s) {
+    virtual void visit(bool_assume_t &s) override {
       check_bool(s.cond(), "condition must be boolean", s);
       check_varname(s.cond());
     };
 
-    void visit(bool_assert_t &s) {
+    virtual void visit(bool_assert_t &s) override {
       check_bool(s.cond(), "condition must be boolean", s);
       check_varname(s.cond());
     };
 
-    void visit(bool_select_t &s) {
+    virtual void visit(bool_select_t &s) override {
       check_bool(s.lhs(), "lhs must be boolean", s);
       check_bool(s.lhs(), "condition must be boolean", s);
       check_bool(s.left(), "first operand must be boolean", s);
@@ -4968,7 +4969,7 @@ private:
       check_varname(s.right());
     };
 
-    void visit(arr_init_t &s) {
+    virtual void visit(arr_init_t &s) override {
       // TODO: check that e_sz is the same number that v's bitwidth
       const variable_t &a = s.array();
       const lin_exp_t &e_sz = s.elem_size();
@@ -4992,7 +4993,7 @@ private:
       }
     }
 
-    void visit(arr_store_t &s) {
+    virtual void visit(arr_store_t &s) override {
       // TODO: check that e_sz is the same number that v's bitwidth
       const variable_t &a = s.array();
       check_is_array(a, s);
@@ -5031,7 +5032,7 @@ private:
       }
     }
 
-    void visit(arr_load_t &s) {
+    virtual void visit(arr_load_t &s) override {
       // TODO: check that e_sz is the same number that lhs's bitwidth
       const variable_t &a = s.array();
       const lin_exp_t &e_sz = s.elem_size();
@@ -5050,7 +5051,7 @@ private:
       check_array_and_scalar_type(a, lhs, s);
     }
 
-    void visit(arr_assign_t &s) {
+    virtual void visit(arr_assign_t &s) override {
       const variable_t &lhs = s.lhs();
       const variable_t &rhs = s.rhs();
       check_is_array(lhs, s);
@@ -5061,7 +5062,7 @@ private:
                       s);
     }
 
-    void visit(callsite_t &s) {
+    virtual void visit(callsite_t &s) override {
       // The type consistency with the callee parameters is done
       // elsewhere.
       for (const variable_t &v : s.get_lhs()) {
@@ -5072,7 +5073,7 @@ private:
       }
     }
 
-    void visit(intrinsic_t &s) {
+    virtual void visit(intrinsic_t &s) override {
       for (const variable_t &v : s.get_lhs()) {
         check_varname(v);
       }
@@ -5083,52 +5084,62 @@ private:
       }
     }
 
-    void visit(region_init_t &s){
+    virtual void visit(region_init_t &s) override {
       check_region(s.region(), s);
     }
-    void visit(region_copy_t &s){
+
+    virtual void visit(region_copy_t &s) override {
       check_region(s.lhs_region(), s);
       check_region(s.rhs_region(), s);
       check_same_type(s.lhs_region(), s.rhs_region(),
       		      "region_copy must have same types", s);
     }
-    void visit(region_cast_t &s){
+    
+    virtual void visit(region_cast_t &s) override {
       check_region(s.src(), s);
       check_region(s.dst(), s);
     }
-    void visit(make_ref_t &s){
+    
+    virtual void visit(make_ref_t &s) override {
       check_region(s.region(), s);
       check_ref(s.lhs(), "", s);
     }
-    void visit(remove_ref_t &s){
+    
+    virtual void visit(remove_ref_t &s) override {
       check_region(s.region(), s);
       check_ref(s.ref(), "", s);
     }
-    void visit(load_from_ref_t &s){
+    
+    virtual void visit(load_from_ref_t &s) override {
       check_region(s.region(), s);
       check_ref(s.ref(), "", s);
       check_region_consistent_with_data(s.region(), s.lhs().get_type(), s);
     }
-    void visit(store_to_ref_t &s){
+    
+    virtual void visit(store_to_ref_t &s) override {
       check_region(s.region(), s);
       check_ref(s.ref(), "", s);
       check_region_consistent_with_data(s.region(), s.val().get_type(), s);      
     }
-    void visit(gep_ref_t &s){
+    
+    virtual void visit(gep_ref_t &s) override {
       check_region(s.lhs_region(), s);
       check_region(s.rhs_region(), s);
       check_ref(s.lhs(), "", s);
       check_ref(s.rhs(), "", s);      
     }
-    void visit(load_from_arr_ref_t &s){
+    
+    virtual void visit(load_from_arr_ref_t &s) override {
       // TODO
     }
-    void visit(store_to_arr_ref_t &s){
+
+    virtual void visit(store_to_arr_ref_t &s) override {
       // TODO
     }
-    void visit(assume_ref_t &s){}
-    void visit(assert_ref_t &s){}
-    void visit(select_ref_t &s) {
+    
+    virtual void visit(assume_ref_t &s) override {}
+    virtual void visit(assert_ref_t &s) override {}
+    virtual void visit(select_ref_t &s) override {
       // TODO: check region operands
       check_ref(s.lhs_ref(), "lhs must be reference", s);
       check_bool(s.cond(), "condition must be boolean", s);
@@ -5140,12 +5151,12 @@ private:
       if (s.right_ref().is_variable())
         check_varname(s.right_ref().get_variable());
     }
-    void visit(int_to_ref_t &s){
+    virtual void visit(int_to_ref_t &s) override {
       check_region(s.region(), s);
       check_ref(s.ref_var(), "", s);
       check_num(s.int_var(), "first input must be a number", s);
     }
-    void visit(ref_to_int_t &s){
+    virtual void visit(ref_to_int_t &s) override {
       check_region(s.region(), s);
       check_ref(s.ref_var(), "", s);
       check_num(s.int_var(), "first input must be a number", s);

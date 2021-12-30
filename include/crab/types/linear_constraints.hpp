@@ -642,11 +642,9 @@ public:
       return (this->_expr.is_constant() && this->_expr.constant() == 0);
     case INEQUALITY:
       return (this->_expr.is_constant() && this->_expr.constant() <= 0);
-    case STRICT_INEQUALITY:
+    default:
+      //case STRICT_INEQUALITY:
       return (this->_expr.is_constant() && this->_expr.constant() < 0);
-    // Clang complains switch already covers all values  
-    //default:
-    //  CRAB_ERROR("Unreachable");
     }
   }
 
@@ -658,11 +656,9 @@ public:
       return (this->_expr.is_constant() && this->_expr.constant() != 0);
     case INEQUALITY:
       return (this->_expr.is_constant() && this->_expr.constant() > 0);
-    case STRICT_INEQUALITY:
+    default:
+      //case STRICT_INEQUALITY:
       return (this->_expr.is_constant() && this->_expr.constant() >= 0);
-    // Clang complains switch already covers all values
-    // default:
-    //CRAB_ERROR("Unreachable");
     }
   }
 
@@ -890,10 +886,9 @@ linear_constraint<Number, VariableName>::negate() const {
     }
     case EQUALITY:
       return linear_constraint_t(this->_expr, DISEQUATION);
-    case DISEQUATION:
-      return linear_constraint_t(this->_expr, EQUALITY);
     default:
-      CRAB_ERROR("Cannot negate linear constraint");
+      //case DISEQUATION:
+      return linear_constraint_t(this->_expr, EQUALITY);
     }
   }
 }

@@ -538,7 +538,7 @@ private:
         callgraph_node_t root, std::function<void(callgraph_node_t)> fn)
         : m_root(root), m_fn(fn), m_active(false) {}
 
-    void visit(wto_cycle_t &cycle) {
+    virtual void visit(wto_cycle_t &cycle) override {
       if (cycle.head() == m_root) {
         m_active = true;
         for (auto &comp : cycle) {
@@ -554,7 +554,7 @@ private:
         }
       }
     }
-    void visit(wto_vertex_t &vertex) {
+    virtual void visit(wto_vertex_t &vertex) override {
       if (m_active) {
         m_fn(vertex.node());
       }
@@ -1698,13 +1698,14 @@ private:
     widening_set_t &m_widening_set;
     widening_set_builder(widening_set_t &widening_set)
         : m_widening_set(widening_set) {}
-    void visit(wto_cycle_t &cycle) {
+    virtual void visit(wto_cycle_t &cycle) override {
       m_widening_set.insert(cycle.head());
       for (auto &wto_component : cycle) {
         wto_component.accept(this);
       }
     }
-    void visit(wto_vertex_t &vertex) {}
+    virtual void visit(wto_vertex_t &vertex) override {
+    }
   };
 
   inline AbsDom make_bottom() const {

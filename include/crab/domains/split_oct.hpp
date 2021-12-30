@@ -3160,11 +3160,10 @@ public:
     case OP_SREM:
       set(x, get_interval(y).SRem(get_interval(z)));
       break;
-    case OP_UREM:
+    default:
+      // case OP_UREM:
       set(x, get_interval(y).URem(get_interval(z)));
       break;
-    default:
-      CRAB_ERROR("Operation ", op, " not supported");
     }
     CRAB_LOG("octagon", crab::outs()
                             << "---" << x << ":=" << y << op << z << "\n"
@@ -3200,11 +3199,10 @@ public:
     case OP_SREM:
       set(x, get_interval(y).SRem(interval_t(k)));
       break;
-    case OP_UREM:
+    default:
+      //case OP_UREM:
       set(x, get_interval(y).URem(interval_t(k)));
       break;
-    default:
-      CRAB_ERROR("Operation ", op, " not supported");
     }
     CRAB_LOG("octagon", crab::outs()
                             << "---" << x << ":=" << y << op << k << "\n"
@@ -3258,12 +3256,10 @@ public:
       xi = yi.LShr(zi);
       break;
     }
-    case OP_ASHR: {
+    default:
+      //  case OP_ASHR: 
       xi = yi.AShr(zi);
       break;
-    }
-    default:
-      CRAB_ERROR("Oct: unreachable");
     }
     set(x, xi);
   }
@@ -3302,12 +3298,10 @@ public:
       xi = yi.LShr(zi);
       break;
     }
-    case OP_ASHR: {
+    default:
+      //case OP_ASHR: 
       xi = yi.AShr(zi);
       break;
-    }
-    default:
-      CRAB_ERROR("Oct: unreachable");
     }
     set(x, xi);
   }

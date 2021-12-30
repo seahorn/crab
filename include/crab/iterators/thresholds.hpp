@@ -229,7 +229,7 @@ private:
 public:
   wto_thresholds(CFG cfg, size_t max_size) : m_cfg(cfg), m_max_size(max_size) {}
 
-  void visit(wto_vertex_t &vertex) {
+  virtual void visit(wto_vertex_t &vertex) override {
     if (m_stack.empty())
       return;
 
@@ -244,7 +244,7 @@ public:
     }
   }
 
-  void visit(wto_cycle_t &cycle) {
+  virtual void visit(wto_cycle_t &cycle) override {
     thresholds_t thresholds(m_max_size);
     typename CFG::basic_block_t &bb = m_cfg.get_node(cycle.head());
     get_thresholds(bb, thresholds);

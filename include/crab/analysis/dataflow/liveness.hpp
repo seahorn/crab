@@ -42,9 +42,9 @@ private:
 public:
   liveness_analysis_operations(CFG cfg) : parent_type(cfg) {}
 
-  virtual bool is_forward() { return false; }
+  virtual bool is_forward() override { return false; }
 
-  virtual varset_domain_t entry() {
+  virtual varset_domain_t entry() override {
     varset_domain_t res = varset_domain_t::bottom();
     if (this->m_cfg.has_func_decl()) {
       auto fdecl = this->m_cfg.get_func_decl();
@@ -55,11 +55,11 @@ public:
     return res;
   }
 
-  virtual varset_domain_t merge(varset_domain_t d1, varset_domain_t d2) {
+  virtual varset_domain_t merge(varset_domain_t d1, varset_domain_t d2) override {
     return d1 | d2;
   }
 
-  virtual void init_fixpoint() {
+  virtual void init_fixpoint() override {
     for (auto &b :
          boost::make_iterator_range(this->m_cfg.begin(), this->m_cfg.end())) {
       bool is_unreachable_block = false;
@@ -87,7 +87,7 @@ public:
   }
 
   virtual varset_domain_t analyze(const basic_block_label_t &bb_id,
-                                  varset_domain_t in) {
+                                  varset_domain_t in) override {
     auto it = m_liveness_map.find(bb_id);
     if (it != m_liveness_map.end()) {
       in -= it->second.first;
@@ -99,7 +99,7 @@ public:
     return in;
   }
 
-  virtual std::string name() { return "Liveness"; }
+  virtual std::string name() override { return "Liveness"; }
 };
 
 /** Live variable analysis **/

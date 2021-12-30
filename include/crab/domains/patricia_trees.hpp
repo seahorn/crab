@@ -1395,28 +1395,27 @@ public:
 
 private:
   class union_op : public binary_op_t {
-    std::pair<bool, boost::optional<bool>> apply(bool /* x */, bool /* y */) override {
+    virtual std::pair<bool, boost::optional<bool>> apply(bool /* x */, bool /* y */) override {
       return {false, boost::optional<bool>(true)};
     };
 
-    bool default_is_absorbing() override { return false; }
+    virtual bool default_is_absorbing() override { return false; }
 
   }; // class union_op
 
   class intersection_op : public binary_op_t {
-    std::pair<bool, boost::optional<bool>> apply(bool /* x */, bool /* y */) override {
+    virtual std::pair<bool, boost::optional<bool>> apply(bool /* x */, bool /* y */) override {
       return {false, boost::optional<bool>(true)};
     };
 
-    bool default_is_absorbing() override { return true; }
+    virtual bool default_is_absorbing() override { return true; }
 
   }; // class intersection_op
 
   class subset_po : public partial_order_t {
-    bool leq(bool /* x */, bool /* y */) { return true; };
+    virtual bool leq(bool /* x */, bool /* y */) override { return true; };
 
-    bool default_is_top() { return false; }
-
+    virtual bool default_is_top() override { return false; }
   }; // class subset_po
 
 private:
