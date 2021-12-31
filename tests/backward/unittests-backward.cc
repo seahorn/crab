@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
 
 #ifdef HAVE_APRON
   { // backward array load
-    z_ae_box_apron_t pre, inv;
+    z_aa_box_apron_t pre, inv;
     crab::outs() << "Test using " << pre.domain_name() << "\n";
     pre += (y >= 1);
     pre.backward_array_load(y, M, 4, 4, inv);
@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
   crab::outs() << "============================\n";
 
   { // backward array store
-    z_ae_box_apron_t pre, inv;
+    z_aa_box_apron_t pre, inv;
     crab::outs() << "Test using " << pre.domain_name() << "\n";
     pre += (x >= 2);
     pre += (y >= 1);
@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
   crab::outs() << "============================\n";
 
   { // backward array store
-    z_ae_box_apron_t pre, inv;
+    z_aa_box_apron_t pre, inv;
     crab::outs() << "Test using " << pre.domain_name() << "\n";
     pre += (x >= 2);
     pre += (y >= 1);
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
   crab::outs() << "============================\n";
 
   { // backward array store
-    z_ae_box_apron_t pre, inv;
+    z_aa_box_apron_t pre, inv;
     crab::outs() << "Test using " << pre.domain_name() << "\n";
     pre += (x >= 2);
     pre += (y >= 1);
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
 #ifdef HAVE_ELINA
 #if 0
   { // backward array load
-    z_ae_zones_elina_t pre, inv;
+    z_aa_zones_elina_t pre, inv;
     crab::outs() << "Test using " << pre.domain_name() << "\n";    
     pre += (y >= 1);
     pre.backward_array_load(y, M, 4, 4, inv);
@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
   crab::outs() << "============================\n";
   
   { // backward array store
-    z_ae_zones_elina_t pre, inv;
+    z_aa_zones_elina_t pre, inv;
     crab::outs() << "Test using " << pre.domain_name() << "\n";        
     pre += (x >= 2);
     pre += (y >= 1);
@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
   crab::outs() << "============================\n";
   
   { // backward array store
-    z_ae_zones_elina_t pre, inv;
+    z_aa_zones_elina_t pre, inv;
     crab::outs() << "Test using " << pre.domain_name() << "\n";        
     pre += (x >= 2);
     pre += (y >= 1);
@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
   crab::outs() << "============================\n";
   
   { // backward array store
-    z_ae_zones_elina_t pre, inv;
+    z_aa_zones_elina_t pre, inv;
     crab::outs() << "Test using " << pre.domain_name() << "\n";            
     pre += (x >= 2);
     pre += (y >= 1);
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
   crab::outs() << "============================\n";
 
   { // backward array load
-    z_ae_int_t pre, inv;
+    z_aa_int_t pre, inv;
     crab::outs() << "Test using " << pre.domain_name() << "\n";
     pre += (y >= 1);
     pre.backward_array_load(y, M, 4, 4, inv);
@@ -137,7 +137,7 @@ int main(int argc, char **argv) {
   crab::outs() << "============================\n";
 
   { // backward array store
-    z_ae_int_t pre, inv;
+    z_aa_int_t pre, inv;
     crab::outs() << "Test using " << pre.domain_name() << "\n";
     pre += (x >= 2);
     pre += (y >= 1);
@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
   crab::outs() << "============================\n";
 
   { // backward array store
-    z_ae_int_t pre, inv;
+    z_aa_int_t pre, inv;
     crab::outs() << "Test using " << pre.domain_name() << "\n";
     pre += (x >= 2);
     pre += (y >= 1);
@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
   crab::outs() << "============================\n";
 
   { // backward array store
-    z_ae_int_t pre, inv;
+    z_aa_int_t pre, inv;
     crab::outs() << "Test using " << pre.domain_name() << "\n";
     pre += (x >= 2);
     pre += (y >= 1);
