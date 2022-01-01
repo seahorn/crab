@@ -94,7 +94,7 @@ public:
     virtual void write(crab_os &o) const override { o << str(); }
 
     friend crab_os &operator<<(crab_os &o, const indexed_varname &s) {
-      o << s.str();
+      s.write(o);
       return o;
     }
 
