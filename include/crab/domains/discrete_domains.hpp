@@ -43,7 +43,8 @@
 #include <crab/domains/patricia_trees.hpp>
 #include <crab/support/debug.hpp>
 
-#include <boost/range.hpp>
+#include "boost/range/iterator_range_core.hpp"
+#include "boost/optional.hpp"
 
 namespace ikos {
 
