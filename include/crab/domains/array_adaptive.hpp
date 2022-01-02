@@ -1634,6 +1634,51 @@ private:
     right_dom.rename(old_vars_right, new_vars);
   }
 
+  struct renamed_meet_state {
+    base_domain_t left_dom;
+    base_domain_t right_dom;
+    array_state_map_t array_map;
+    cell_varmap_t cell_varmap;
+    smashed_varmap_t smashed_varmap;
+    renamed_meet_state(base_domain_t &&left, base_domain_t &&right,
+		       array_state_map_t &&_array_map,
+		       cell_varmap_t &&_cell_varmap,
+		       smashed_varmap_t &&_smashed_varmap)
+      : left_dom(std::move(left)), right_dom(std::move(right)),
+	array_map(std::move(_array_map)), cell_varmap(std::move(_cell_varmap)),
+	smashed_varmap(std::move(_smashed_varmap)) {}    
+  };
+
+  // It performs all the renaming needed for meet.  The only operation
+  // is not done is the actual meet of the based domains.
+  renamed_meet_state rename_with_meet_semantics(const array_adaptive_domain_t &other) const {  
+    // Trivial cases are covered elsewhere(i.e., this and other are
+    // bottom and/or top)
+    base_domain_t left_dom(m_inv);
+    cell_varmap_t left_cell_varmap(m_cell_varmap);
+    smashed_varmap_t left_smashed_varmap(m_smashed_varmap);
+    
+    base_domain_t right_dom(other.m_inv);
+    cell_varmap_t right_cell_varmap(other.m_cell_varmap);
+    smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
+    // Must be done before the renaming.
+    auto out_array_map = m_array_map.meet(
+	       other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
+	       right_cell_varmap, right_smashed_varmap, right_dom);
+    
+    smashed_varmap_t out_smashed_varmap;
+    cell_varmap_t out_cell_varmap;
+    do_renaming_for_meet(left_dom, right_dom, left_smashed_varmap,
+			 right_smashed_varmap, left_cell_varmap,
+			 right_cell_varmap, out_smashed_varmap,
+			 out_cell_varmap);
+    
+    renamed_meet_state res(std::move(left_dom), std::move(right_dom),
+			   std::move(out_array_map),
+			   std::move(out_cell_varmap), std::move(out_smashed_varmap));
+    return res;
+  }
+  
   array_adaptive_domain(base_domain_t &&inv, array_state_map_t &&amap,
                         cell_varmap_t &&cvarmap, smashed_varmap_t &&svarmap)
       : m_inv(std::move(inv)), m_array_map(std::move(amap)),
@@ -1884,32 +1929,13 @@ public:
       return other;
     } else {
       CRAB_LOG("array-adaptive",
-               crab::outs() << "Meet " << *this << " and " << other << "\n";);
-
-      base_domain_t left_dom(m_inv);
-      cell_varmap_t left_cell_varmap(m_cell_varmap);
-      smashed_varmap_t left_smashed_varmap(m_smashed_varmap);
-
-      base_domain_t right_dom(other.m_inv);
-      cell_varmap_t right_cell_varmap(other.m_cell_varmap);
-      smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
-
-      // Must be done before the renaming.
-      auto out_array_map = m_array_map.meet(
-          other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
-          right_cell_varmap, right_smashed_varmap, right_dom);
-
-      smashed_varmap_t out_smashed_varmap;
-      cell_varmap_t out_cell_varmap;
-      do_renaming_for_meet(left_dom, right_dom, left_smashed_varmap,
-                           right_smashed_varmap, left_cell_varmap,
-                           right_cell_varmap, out_smashed_varmap,
-                           out_cell_varmap);
-
+	       crab::outs() << "Meet " << *this << " and " << other << "\n";);
+      auto s = rename_with_meet_semantics(other);
       array_adaptive_domain_t res(
-          left_dom & right_dom, std::move(out_array_map),
-          std::move(out_cell_varmap), std::move(out_smashed_varmap));
-      CRAB_LOG("array-adaptive", crab::outs() << "Res=" << res << "\n";);
+          s.left_dom & s.right_dom, std::move(s.array_map),
+          std::move(s.cell_varmap), std::move(s.smashed_varmap));
+      CRAB_LOG("array-adaptive",
+	       crab::outs() << "Res=" << res << "\n";);
       return res;
     }
   }
@@ -2791,24 +2817,34 @@ public:
     crab::CrabStats::count(domain_name() + ".count.backward_array_load");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_array_load");
 
-    if (is_bottom())
+    if (is_bottom()) {
       return;
+    }
 
-    uint64_t e_sz = check_and_get_elem_size(elem_size);
-
+    auto s = rename_with_meet_semantics(invariant);
+    std::swap(m_inv, s.left_dom);
+    std::swap(m_array_map, s.array_map);
+    std::swap(m_cell_varmap, s.cell_varmap);
+    std::swap(m_smashed_varmap, s.smashed_varmap);
+	
     const array_state &as = lookup_array_state(a);
     if (as.is_smashed()) {
       CRAB_WARN("array_adaptive::backward_array_load not implemented if array "
                 "smashed");
     } else {
-      // XXX: we use the forward invariant to extract the array index
+      // We use the forward invariant to extract the array index.
+      // it's ok that invariant is not renamed here.
       interval_t ii = to_interval(i, invariant.get_content_domain());
-      if (boost::optional<number_t> n = ii.singleton()) {
+      if (boost::optional<number_t> n = ii.singleton()) {	
         array_state next_as(as);
         offset_map_t &om = next_as.get_offset_map();
         offset_t o(static_cast<int64_t>(*n));
-        cell_t c = mk_named_cell(a, o, e_sz, om).first;
-        do_backward_assign(lhs, a, c, invariant.m_inv);
+	uint64_t e_sz = check_and_get_elem_size(elem_size);	        
+	// We need to ensure when do_backward_assign is called that
+	// m_inv and s.right_dom (renamed version of invariant.m_inv)
+	// have been properly renamed.
+	cell_t c = mk_named_cell(a, o, e_sz, om).first;
+        do_backward_assign(lhs, a, c, s.right_dom /*invariant.m_inv*/);
         m_array_map.set(a, next_as);
       } else {
         CRAB_LOG("array-adaptive",
@@ -2816,7 +2852,12 @@ public:
         // -- Forget lhs
         m_inv -= lhs;
         // -- Meet with forward invariant
-        *this = *this & invariant;
+	//
+	// m_inv and s.right_dom have been properly renamed so we
+	// don't need need the next line which would do again the
+	// renaming.	
+        //*this = *this & invariant;
+	m_inv = m_inv & s.right_dom;
       }
     }
 
@@ -2833,12 +2874,17 @@ public:
     crab::CrabStats::count(domain_name() + ".count.backward_array_store");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_array_store");
 
-    if (is_bottom())
+    if (is_bottom()) {
       return;
+    }
 
+    auto s = rename_with_meet_semantics(invariant);
+    std::swap(m_inv, s.left_dom);
+    std::swap(m_array_map, s.array_map);
+    std::swap(m_cell_varmap, s.cell_varmap);
+    std::swap(m_smashed_varmap, s.smashed_varmap);
+    
     uint64_t e_sz = check_and_get_elem_size(elem_size);
-
-    // XXX: we use the forward invariant to extract the array index
     const array_state &as = lookup_array_state(a);
     if (as.is_smashed()) {
       CRAB_WARN("array_adaptive::backward_array_store not implemented if array "
@@ -2846,7 +2892,8 @@ public:
     } else {
       array_state next_as(as);
       offset_map_t &om = next_as.get_offset_map();
-      // XXX: we use the forward invariant to extract the array index
+      // We use the forward invariant to extract the array index.
+      // it's ok to use "invariant" without being renamed.
       interval_t ii = to_interval(i, invariant.m_inv);
       if (boost::optional<number_t> n = ii.singleton()) {
         // -- Constant index and the store updated one single cell:
@@ -2858,24 +2905,38 @@ public:
         // that is, get_overlap_cells returns cells different from [o, e_sz)
         if (cells.size() >= 1) {
           kill_cells(a, cells, om);
-          *this = *this & invariant;
+	  // m_inv and s.right_dom have been properly renamed so we
+	  // don't need the next line which would do again the
+	  // renaming.
+	  //
+          //*this = *this & invariant;
+	  m_inv = m_inv & s.right_dom;
         } else {
-          // c might be in m_inv or not.
+	  // We need to ensure when do_backward_assign is called that
+	  // m_inv and s.right_dom (renamed version of invariant.m_inv)
+	  // have been properly renamed.
           cell_t c = mk_named_cell(a, o, e_sz, om).first;
-          do_backward_assign(a, c, val, invariant.m_inv);
+          do_backward_assign(a, c, val, s.right_dom /*invariant.m_inv*/);
         }
       } else {
         // TODOX: smash the array if needed
-
         // -- Non-constant index or multiple overlapping cells: kill
         // -- overlapping cells and meet with forward invariant.
         linear_expression_t symb_lb(i);
         linear_expression_t symb_ub(i + number_t(e_sz - 1));
         std::vector<cell_t> cells;
-        om.get_overlap_cells_symbolic_offset(invariant.m_inv, symb_lb, symb_ub,
+        om.get_overlap_cells_symbolic_offset(s.right_dom /*invariant.m_inv*/,
+					     symb_lb, symb_ub,
                                              cells);
         kill_cells(a, cells, om);
-        *this = *this & invariant;
+	// -- Meet with forward invariant
+        //
+        // m_inv and s.right_dom have been properly renamed so we
+        // don't need need the next line which would do again the
+        // renaming.
+	//
+        //*this = *this & invariant; 
+        m_inv = m_inv & s.right_dom;
       }
       m_array_map.set(a, next_as);
     }
