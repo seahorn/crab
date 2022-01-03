@@ -44,7 +44,9 @@ public:
   explicit operator int64_t() const;
   
   std::string get_str(unsigned base = 10) const;
-
+  
+  mpz_ptr get_mpz_t() { return _n; }
+  
   std::size_t hash() const;
 
   bool fits_int64() const;
