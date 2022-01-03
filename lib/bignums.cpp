@@ -57,11 +57,17 @@ z_number z_number::from_uint64(uint64_t n) {
   return r;
 }
 
-z_number z_number::from_raw_data(const uint64_t*data, unsigned num_words,
+z_number z_number::from_raw_data(const uint64_t*data, size_t num_words,
 				 bool order) {
   z_number r;
   mpz_import(r._n, num_words, (order? 1 : -1), sizeof(uint64_t), 0, 0, data);
   return r;
+}
+
+uint64_t* z_number::to_raw_data(size_t &num_words, bool &sign, bool order) {
+  sign = (*this >= 0);
+  return (uint64_t*)mpz_export(nullptr, &num_words, (order? 1: -1),
+			       sizeof(uint64_t), 0, 0, _n);
 }
   
 z_number::z_number(const std::string &s, unsigned base) {

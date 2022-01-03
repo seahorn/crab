@@ -28,11 +28,17 @@ public:
   z_number(int64_t n);
   z_number(const std::string &s, unsigned base = 10);
   static z_number from_uint64(uint64_t n);
-  /* Return a z_number from num_words words from binary data. If order
+  /* Return a z_number from num_words words of binary data. If order
    is true then most significant word first, otherwise the least
-   significant first. */  
-  static z_number from_raw_data(const uint64_t*data, unsigned num_words,
-				bool order = false);  
+   significant first. The number is treated as unsigned so sign must
+   be treated separately. */  
+  static z_number from_raw_data(const uint64_t*data, size_t num_words,
+				bool order = false);
+  /* Return an array of words from this. If the number is positive
+   then sign is true. If order is true then most significant word
+   first, otherwise the least significant first */  
+  uint64_t *to_raw_data(size_t &num_words, bool &sign, bool order = false);
+  
   ~z_number();
   
   z_number(const z_number &o);
@@ -44,7 +50,8 @@ public:
   explicit operator int64_t() const;
   
   std::string get_str(unsigned base = 10) const;
-  
+
+  // do not use it: to be removed
   mpz_ptr get_mpz_t() { return _n; }
   
   std::size_t hash() const;
