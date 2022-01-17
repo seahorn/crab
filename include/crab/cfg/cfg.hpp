@@ -5098,6 +5098,14 @@ private:
     virtual void visit(region_cast_t &s) override {
       check_region(s.src(), s);
       check_region(s.dst(), s);
+      if (!(s.src().get_type().is_unknown_region() ^
+	    s.dst().get_type().is_unknown_region())) {
+	crab::crab_string_os os;
+	os << "(type checking) "
+	   << "one operand must be unknown region and the other not "
+	   << " in " << s;
+	CRAB_ERROR(os.str());
+      }
     }
     
     virtual void visit(make_ref_t &s) override {
