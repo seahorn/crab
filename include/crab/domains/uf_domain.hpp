@@ -29,6 +29,7 @@
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
 #include <boost/optional.hpp>
+#include <boost/utility/string_ref.hpp>
 
 namespace crab {
 namespace domains {
@@ -348,15 +349,18 @@ private:
     } else {
       assert(t.kind() == term::TERM_APP && "term should be a function");
       const ftor_term_t *ft = static_cast<const ftor_term_t *>(&t);
-      o << ft->ftor << "(";
-      for (unsigned i = 0, sz = ft->args.size(); i < sz;) {
-        print_term(get_term(ft->args[i]), o);
-        ++i;
-        if (i < sz) {
-          o << ",";
-        }
+      o << ft->ftor;
+      if (!ft->args.empty()) {
+	o << "(";
+	for (unsigned i = 0, sz = ft->args.size(); i < sz;) {
+	  print_term(get_term(ft->args[i]), o);
+	  ++i;
+	  if (i < sz) {
+	    o << ",";
+	  }
+	}
+	o << ")";
       }
-      o << ")";
     }
   }
 
@@ -630,6 +634,41 @@ public:
     }
   }
 
+  /* Begin uf-domain API */
+
+  // Precondition:
+  // - value must be > term_operator_t::first_nonreserved_value()
+  // Note that boost::string_ref is a non-owning reference to a string.
+  static term::term_operator_t make_uf(uint32_t value, boost::string_ref name) {
+    term::term_operator_t op(value, name);
+    return op;
+  }
+
+  // Assign uninterpreted symbol to x
+  void set(const variable_t &x, term::term_operator_t symbol) {
+    if (!is_bottom()) {
+      std::vector<term_id_t> targs;
+      term_id_t tx = build_term(symbol, targs);
+      rebind_var(x, tx);
+      check_terms(__LINE__);
+    }    
+  }
+
+  // Assign uninterpreted function "functor(args)" to x
+  void set(const variable_t &x, term::term_operator_t functor, const variable_vector_t &args) {
+    if (!is_bottom()) {
+      std::vector<term_id_t> targs;
+      for (auto const&v: args) {
+	targs.push_back(term_of_var(v));
+      }
+      term_id_t tx = build_term(functor, targs);
+      rebind_var(x, tx);
+      check_terms(__LINE__);      
+    }
+  }
+  /* End uf-domain API */
+
+  
   // Apply operations to variables.
 
   // x = y op z
