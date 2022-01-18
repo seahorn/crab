@@ -4,6 +4,14 @@ namespace crab {
 namespace domains {
 namespace term {
 
+term_operator_t::term_operator_t(uint32_t value, boost::string_ref name)
+  : m_value(value), m_name(name) {
+  if (m_value < first_nonreserved_value()) {
+    CRAB_ERROR("First " + std::to_string(first_nonreserved_value()) +
+	       "numbers are reserved in term_operator_t");
+  }  
+}
+
 term::term_operator_t conv2termop(arith_operation_t op) {
   switch (op) {
   case OP_ADDITION:

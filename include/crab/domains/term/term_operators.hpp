@@ -5,33 +5,54 @@
 #include <crab/support/os.hpp>
 
 #include <boost/optional.hpp>
+#include <boost/utility/string_ref.hpp>
 
 namespace crab {
 namespace domains {
 namespace term {
 
-typedef enum {
-  TERM_OP_ADD,
-  TERM_OP_SUB,
-  TERM_OP_MUL,
-  TERM_OP_SDIV,
-  TERM_OP_UDIV,
-  TERM_OP_SREM,
-  TERM_OP_UREM,
-  TERM_OP_NOT,
-  TERM_OP_BAND,
-  TERM_OP_BOR,
-  TERM_OP_BXOR,    
-  TERM_OP_AND,
-  TERM_OP_OR,
-  TERM_OP_XOR,
-  TERM_OP_SHL,
-  TERM_OP_LSHR,
-  TERM_OP_ASHR,
-  TERM_OP_FUNCTION
-} term_operator_t;
+class term_operator_t {
+  uint32_t m_value;
+  boost::string_ref m_name;
+public:
+  constexpr term_operator_t(uint32_t value)
+    : m_value(value), m_name(boost::string_ref()) {}
+  term_operator_t(uint32_t value, boost::string_ref name);
+  ~term_operator_t() = default;
+  constexpr operator uint32_t() const { return m_value; }
+  constexpr uint32_t value() const { return m_value; }
+  boost::string_ref name() const { return m_name; }
+  constexpr static uint32_t first_nonreserved_value() { return 100;}
+};
 
+constexpr term_operator_t TERM_OP_ADD(0);
+constexpr term_operator_t TERM_OP_SUB(1);
+constexpr term_operator_t TERM_OP_MUL(2);
+constexpr term_operator_t TERM_OP_SDIV(3);
+constexpr term_operator_t TERM_OP_UDIV(4);
+constexpr term_operator_t TERM_OP_SREM(5);
+constexpr term_operator_t TERM_OP_UREM(6);
+constexpr term_operator_t TERM_OP_NOT(7);
+constexpr term_operator_t TERM_OP_BAND(8);
+constexpr term_operator_t TERM_OP_BOR(9);
+constexpr term_operator_t TERM_OP_BXOR(10);
+constexpr term_operator_t TERM_OP_AND(11);
+constexpr term_operator_t TERM_OP_OR(12);
+constexpr term_operator_t TERM_OP_XOR(13);
+constexpr term_operator_t TERM_OP_SHL(14);
+constexpr term_operator_t TERM_OP_LSHR(15);
+constexpr term_operator_t TERM_OP_ASHR(16);
+constexpr term_operator_t TERM_OP_FUNCTION(17);  
+  
 inline crab::crab_os &operator<<(crab::crab_os &o, term_operator_t op) {
+
+  // User-defined operator
+  if (const char* name = op.name().data()) {
+    o << name;
+    return o;
+  }
+
+  // Crab predefined operators
   switch (op) {
   case TERM_OP_ADD:
     o << "+";

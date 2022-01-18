@@ -76,16 +76,19 @@ public:
   ftor_term(Ftor _f, const std::vector<term_id> &_args) : ftor(_f), args(_args) {}
   term_kind kind(void) const { return TERM_APP; }
   void write(crab_os &o) const {
-    o << ftor << "(";
-    bool first = true;
-    for (term_id c : args) {
-      if (first)
-        first = false;
-      else
-        o << ", ";
-      o << c;
+    o << ftor;
+    if (!args.empty()) {
+      o << "(";
+      bool first = true;
+      for (term_id c : args) {
+	if (first)
+	  first = false;
+	else
+	  o << ", ";
+	o << c;
+      }
+      o << ")";
     }
-    o << ")";
   }
 
   Ftor ftor;
