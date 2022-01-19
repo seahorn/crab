@@ -7,6 +7,7 @@ add_library(Crab ${CRAB_LIBS_TYPE}
   abstract_domain_params.cpp
   array_adaptive_impl.cpp
   boolean.cpp
+  region_info.cpp
   small_range.cpp
   term_operators.cpp
   types.cpp
