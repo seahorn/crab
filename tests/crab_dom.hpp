@@ -17,6 +17,7 @@
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/powerset_domain.hpp>
 #include <crab/domains/region_domain.hpp>
+#include <crab/domains/mru_region_domain.hpp>
 #include <crab/domains/sign_domain.hpp>
 #include <crab/domains/sign_constant_domain.hpp>
 #include <crab/domains/sparse_dbm.hpp>
