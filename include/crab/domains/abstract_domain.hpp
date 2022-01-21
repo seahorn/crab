@@ -43,78 +43,63 @@ template <class Number, class VariableName> class abstract_domain_results_api;
  *   using varname_t = VariableName;
  * };
  *
- * Not all domains need to implement all the API functions. The API is
- * divided into:
+ * The API is divided into:
  *
  * (1) Lattice operations
- * (2) (forward) Numerical operations
- * (3) (forward) Boolean operations
- * (4) (forward) Region and reference operations
- * (5) (forward) Array operations
+ * (2) (forward and backward) Numerical operations
+ * (3) (forward and backward) Boolean operations
+ * (4) (only forward) Region and reference operations
+ * (5) (forward and backward) Array operations
  * 
- * Where forward means forward semantics. Currently (2),(3), and (4)
- * have also their counterparts for backward semantics. The
+ * Where forward (backward) means forward (backward) semantics. The
  * abstract_domain_api API doesn't provide backward versions for (4)
  * but it should.
  * 
- * The only mandatory set of operations is (1). Then, each domain
- * decides which operations implement. For those that are not
- * implemented by the domain, it needs to provide at least some
- * (sound) default implementation (in many cases it suffices an empty
- * body or forget the left-hand side of the assignment).
- *
- *
- * ===== Ghost variables vs foreign types ======
+ * ===== Enforcing correct types in abstract operations ======
  *
  * Crab has a simple algorithm that checks whether a CFG is
- * well-typed. However, it doesn't check that the arguments of each
- * abstract operation have the expected types.
+ * well-typed.  However, the CFG type-checker is bypassed when either
+ * an user calls directly abstract operations via the C++ API or when
+ * an abstract domain calls another abstract domain.
  * 
- * For instance, apply(op, x, y, z) performs the arithmetic operation
- * "y op z" and stores the result in x. Therefore, the interpretation
- * of x, y, z is always either integers or reals (remember that we
- * don't allow to mix integers with reals).
+ * For instance, the abstract operation apply(op, x, y, z) performs
+ * the arithmetic operation "y op z" and stores the result in
+ * x. Therefore, the interpretation of x, y, z is always either
+ * integers or reals (remember that we don't allow to mix integers
+ * with reals). However, abstract domains do not check that x,y,z are
+ * numbers. I explain next the motivation for that.
  *
- * However, the CFG type-checking is bypassed when either an user
- * calls directly abstract operations via the C++ API or when an
- * abstract domain calls another abstract domain. Here we focus on the
- * latter.
- * 
  * When an abstract domain consists of a hierarchy of abstract domains
  * (e.g., the region domain), the domain at the top should model
- * top-level variables (such as regions and references) with variables
- * understood by the leaf domains (e.g., a reference variable is
- * modeled as an integer and its value is tracked by a numerical
- * domain). This can be done by adding *ghost* variables. For
- * instance, given a region variable that contains integers we can add
- * a ghost variable of integer type to keep track of the values of the
- * region, and the region domain decides e.g., the assignment
- * semantics for the ghost variable (strong vs weak update). This is
- * conceptually simple and a clean solution. Unfortunately, the use of
- * ghost variables is expensive because the
- * join/meet/widening/narrowing operators need to compute a common
- * renaming of the ghost variables. Sometimes, the use of ghost
- * variables cannot be avoided. For instance, if a CFG variable needs
- * to be shadowed by two or more ghost variables (e.g., an array
+ * top-level variables (such as regions and references) with only
+ * variables understood by the leaf domains (e.g., a reference
+ * variable is modeled as an integer and its value is tracked by a
+ * numerical domain). This can be done by adding *ghost*
+ * variables. For instance, given a region variable that contains
+ * integers we can add a ghost variable of integer type to keep track
+ * of the values of the region, and the region domain decides e.g.,
+ * the assignment semantics for the ghost variable (strong vs weak
+ * update). This is conceptually simple and a clean
+ * solution. Unfortunately, the use of ghost variables is expensive
+ * because the join/meet/widening/narrowing operators need to compute
+ * a common renaming of the ghost variables. Sometimes, the use of
+ * ghost variables cannot be avoided. For instance, if a CFG variable
+ * needs to be shadowed by two or more ghost variables (e.g., an array
  * variable is modeled by many scalar variables). However, in cases
  * where we only add one ghost variable per CFG variable the use of
  * ghost variables can be avoided by allowing top-level domains to
- * pass variables of types that are not necessarily the expected ones
- * (we call them foreign types) by the lower-level abstract domain as
- * long as the abstract domain knows what to do with that foreign
- * type. This is not ideal in my opinion but it can be useful in
- * practice although you need to know what you are doing.
+ * pass directly variables of types that are not necessarily the
+ * expected ones by the lower-level abstract domain as long as the
+ * abstract domain knows what to do with that unexpected type. This is
+ * not ideal in my opinion but it can be useful in practice although
+ * you need to know what you are doing.
  * 
- * The notion of a foreign type is wrt to an abstract domain:
- * - No type  is foreign for the region domain
- * - Region and reference types are foreign for array domains
- * - Anything except integers or booleans are foreign types for
- *   numerical domains.
- * 
- *  Therefore, region and array domains are the ones that can pass
- *  variables with foreign types to other domains. Currently, two
- *  array domains pass variables with foreign types to the base
- *  domain: array_smashing and array_graph.
+ * Currently, array domains pass variables of unexpected types to
+ * subdomains (e.g., a variable of array type that is interpreted as
+ * an integer variable by the subdomain) but it's fine because the
+ * subdomains know what to do with those variables (e.g., they are
+ * passed to the apply operation and therefore, they are interpreted
+ * as integers by the numerical domain).
  **/
 template <class Dom> class abstract_domain_api:
   public abstract_domain_results_api<typename abstract_domain_traits<Dom>::number_t,
