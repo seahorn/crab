@@ -152,7 +152,21 @@ small_range small_range::top() { return small_range(ZeroOrMore); }
 small_range small_range::zero() { return small_range(ExactlyZero); }
 small_range small_range::one() { return small_range(ExactlyOne); }
 small_range small_range::oneOrMore() { return small_range(OneOrMore); }
-
+small_range small_range::make_bottom() const {
+  small_range res(Bottom);
+  return res;
+}
+small_range small_range::make_top() const {
+  small_range res(ZeroOrMore);
+  return res;
+}
+void small_range::set_to_top()  {
+  m_value = ZeroOrMore;
+}
+void small_range::set_to_bottom()  {
+  m_value = Bottom;
+}  
+    
 bool small_range::is_bottom() const { return (m_value == Bottom); }
 
 bool small_range::is_top() const { return (m_value == ZeroOrMore); }
@@ -169,7 +183,7 @@ bool small_range::is_one() const { return (m_value == ExactlyOne); }
     / \ /
    0   1
 */
-bool small_range::operator<=(small_range other) const {
+bool small_range::operator<=(const small_range &other) const {
   if (m_value == other.m_value) {
     return true;
   } else if (m_value == Bottom || other.m_value == ZeroOrMore) {
@@ -188,9 +202,13 @@ bool small_range::operator<=(small_range other) const {
   return false;
 }
 
-bool small_range::operator==(small_range other) const { return m_value == other.m_value; }
+bool small_range::operator==(const small_range &other) const { return m_value == other.m_value; }
 
-small_range small_range::operator|(small_range other) const {
+void small_range::operator|=(const small_range &other) {
+  *this = *this | other;     
+}
+  
+small_range small_range::operator|(const small_range &other) const {
   if (is_bottom()) {
     return other;
   } else if (other.is_bottom()) {
@@ -216,9 +234,9 @@ small_range small_range::operator|(small_range other) const {
   }
 }
 
-small_range small_range::operator||(small_range other) const { return *this | other; }
+small_range small_range::operator||(const small_range &other) const { return *this | other; }
 
-small_range small_range::operator&(small_range other) const {
+small_range small_range::operator&(const small_range &other) const {
   if (is_bottom() || other.is_top()) {
     return *this;
   } else if (other.is_bottom() || is_top()) {
@@ -246,7 +264,7 @@ small_range small_range::operator&(small_range other) const {
   }
 }
 
-small_range small_range::operator&&(small_range other) const { return *this & other; }
+small_range small_range::operator&&(const small_range &other) const { return *this & other; }
 
 small_range small_range::increment(void) {
   if (!is_bottom()) {
@@ -285,6 +303,10 @@ void small_range::write(crab_os &o) const {
   default:
     CRAB_ERROR("unexpected small_range value");
   }
+}
+
+std::string small_range::domain_name() const {
+  return "SmallRange";
 }
 } // end namespace domains
 } // end namespace crab

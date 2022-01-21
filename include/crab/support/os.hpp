@@ -61,19 +61,19 @@ public:
 
   std::string str();
 
-  crab_os &operator<<(char C);
-  crab_os &operator<<(unsigned char C);
-  crab_os &operator<<(signed char C);
-  crab_os &operator<<(const char *Str);
-  crab_os &operator<<(const std::string &Str);
-  crab_os &operator<<(unsigned long N);
-  crab_os &operator<<(long N);
-  crab_os &operator<<(unsigned long long N);
-  crab_os &operator<<(long long N);
-  crab_os &operator<<(const void *P);
-  crab_os &operator<<(unsigned int N);
-  crab_os &operator<<(int N);
-  crab_os &operator<<(double N);
+  crab_os &operator<<(char C) override;
+  crab_os &operator<<(unsigned char C) override;
+  crab_os &operator<<(signed char C) override;
+  crab_os &operator<<(const char *Str) override;
+  crab_os &operator<<(const std::string &Str) override;
+  crab_os &operator<<(unsigned long N) override;
+  crab_os &operator<<(long N) override;
+  crab_os &operator<<(unsigned long long N) override;
+  crab_os &operator<<(long long N) override;
+  crab_os &operator<<(const void *P) override;
+  crab_os &operator<<(unsigned int N) override;
+  crab_os &operator<<(int N) override;
+  crab_os &operator<<(double N) override;
 };
 
 } // namespace crab

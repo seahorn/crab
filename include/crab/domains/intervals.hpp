@@ -275,11 +275,10 @@ public:
     case crab::domains::OP_SREM:
       xi = yi.SRem(zi);
       break;
-    case crab::domains::OP_UREM:
+    default:
+      //case crab::domains::OP_UREM:
       xi = yi.URem(zi);
       break;
-    default:
-      CRAB_ERROR("Operation ", op, " not supported");
     }
     this->_env.set(x, xi);
   }
@@ -312,11 +311,10 @@ public:
     case crab::domains::OP_SREM:
       xi = yi.SRem(zi);
       break;
-    case crab::domains::OP_UREM:
+    default:
+      //case crab::domains::OP_UREM:
       xi = yi.URem(zi);
       break;
-    default:
-      CRAB_ERROR("Operation ", op, " not supported");
     }
     this->_env.set(x, xi);
   }
@@ -414,12 +412,10 @@ public:
       xi = yi.LShr(zi);
       break;
     }
-    case crab::domains::OP_ASHR: {
+    default:
+      //case crab::domains::OP_ASHR:
       xi = yi.AShr(zi);
       break;
-    }
-    default:
-      CRAB_ERROR("unreachable");
     }
     this->_env.set(x, xi);
   }
@@ -453,12 +449,10 @@ public:
       xi = yi.LShr(zi);
       break;
     }
-    case crab::domains::OP_ASHR: {
+    default:
+      //case crab::domains::OP_ASHR: 
       xi = yi.AShr(zi);
       break;
-    }
-    default:
-      CRAB_ERROR("unreachable");
     }
     this->_env.set(x, xi);
   }

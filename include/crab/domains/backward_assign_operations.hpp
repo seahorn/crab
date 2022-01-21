@@ -120,11 +120,11 @@ public:
       } else {
         dom -= x;
       }
-      break;
-    case OP_UDIV:
-    case OP_SREM:
-    case OP_UREM:
+      break;    
     default:
+      //case OP_UDIV:
+      //case OP_SREM:
+      //case OP_UREM:      
       CRAB_WARN("backwards x:= y ", op, " k is not implemented");
       dom -= x;
     }

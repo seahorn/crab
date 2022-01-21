@@ -251,151 +251,6 @@ user-defined assertion checker
 0  Number of total unreachable checks
 
 === End ./test-bin/array_adaptive2 ===
-=== Begin ./test-bin/array_expansion ===
-===================================
- Test 1 for array expansion domain 
-===================================
-Invariants using ArrayExpansion(Term(Intervals))
-Abstract trace: bb0 bb2 bb1 bb3
-user-defined assertion checker
-1  Number of total safe checks
-0  Number of total error checks
-0  Number of total warning checks
-0  Number of total unreachable checks
-
-===================================
- Test 2 for array expansion domain 
-===================================
-Invariants using ArrayExpansion(Term(Intervals))
-Abstract trace: bb0 bb2 bb1 bb3
-user-defined assertion checker
-1  Number of total safe checks
-0  Number of total error checks
-1  Number of total warning checks
-0  Number of total unreachable checks
-
-===================================
- Test 3 for array expansion domain 
-===================================
-Invariants using ArrayExpansion(Term(Intervals))
-Abstract trace: bb0 bb2 bb1 bb3
-user-defined assertion checker
-0  Number of total safe checks
-0  Number of total error checks
-4  Number of total warning checks
-0  Number of total unreachable checks
-
-===================================
- Test 4 for array expansion domain 
-===================================
-Invariants using ArrayExpansion(Term(Intervals))
-Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
-user-defined assertion checker
-2  Number of total safe checks
-0  Number of total error checks
-0  Number of total warning checks
-0  Number of total unreachable checks
-
-===================================
- Test 5 for array expansion domain 
-===================================
-Invariants using ArrayExpansion(Term(Intervals))
-Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
-user-defined assertion checker
-2  Number of total safe checks
-0  Number of total error checks
-0  Number of total warning checks
-0  Number of total unreachable checks
-
-===================================
- Test 6 for array expansion domain 
-===================================
-Invariants using ArrayExpansion(Term(Intervals))
-Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
-user-defined assertion checker
-2  Number of total safe checks
-0  Number of total error checks
-0  Number of total warning checks
-0  Number of total unreachable checks
-
-===================================
- Test 7 for array expansion domain 
-===================================
-Invariants using ArrayExpansion(Term(Intervals))
-Abstract trace: entry ret
-user-defined assertion checker
-2  Number of total safe checks
-0  Number of total error checks
-0  Number of total warning checks
-0  Number of total unreachable checks
-
-===================================
- Test 8 for array expansion domain 
-===================================
-Invariants using ArrayExpansion(Term(Intervals))
-Abstract trace: entry ret
-user-defined assertion checker
-2  Number of total safe checks
-0  Number of total error checks
-0  Number of total warning checks
-0  Number of total unreachable checks
-
-===================================
- Test 9 for array expansion domain 
-===================================
-Invariants using ArrayExpansion(Term(Intervals))
-Abstract trace: entry ret
-user-defined assertion checker
-1  Number of total safe checks
-0  Number of total error checks
-0  Number of total warning checks
-0  Number of total unreachable checks
-
-===================================
- Test 10 for array expansion domain 
-===================================
-Invariants using ArrayExpansion(Term(Intervals))
-Abstract trace: bb0 bb2 bb1 bb3 bb4
-user-defined assertion checker
-0  Number of total safe checks
-0  Number of total error checks
-1  Number of total warning checks
-0  Number of total unreachable checks
-
-===================================
- Test 11 for array expansion domain 
-===================================
-Invariants using ArrayExpansion(Term(Intervals))
-Abstract trace: bb0 bb2 bb1 bb3 bb4
-user-defined assertion checker
-2  Number of total safe checks
-0  Number of total error checks
-0  Number of total warning checks
-0  Number of total unreachable checks
-
-===================================
- Test 12 for array expansion domain 
-===================================
-Invariants using ArrayExpansion(Term(Intervals))
-Abstract trace: bb0
-user-defined assertion checker
-4  Number of total safe checks
-0  Number of total error checks
-2  Number of total warning checks
-0  Number of total unreachable checks
-
-===================================
- Test 13 for array expansion domain 
-===================================
-Invariants using ArrayExpansion(Term(Intervals))
-Abstract trace: bb0
-user-defined assertion checker
-5  Number of total safe checks
-0  Number of total error checks
-0  Number of total warning checks
-0  Number of total unreachable checks
-
-=== End ./test-bin/array_expansion ===
 === Begin ./test-bin/array_graph ===
 Program 1: forall 0<= i< 10. a[i] = 123456Invariants using ArrayGraph(SplitDBM,Intervals)
 entry=({},{})
@@ -880,7 +735,7 @@ bb2:
   array_store(M,4,y,sz=4);
   goto bb3;
 
-Invariants using ArrayExpansion(Intervals)
+Invariants using ArrayAdaptive(ArraySmashing(Intervals))
 entry={}
 bb2={}
 bb3={M[4...7] -> [0, +oo]}
@@ -4967,19 +4822,19 @@ Unit tests for array adaptive domain
 === End ./test-bin/unittests-array-adaptive ===
 === Begin ./test-bin/unittests-backward ===
 ============================
-Test using ArrayExpansion(Intervals)
+Test using ArrayAdaptive(ArraySmashing(Intervals))
 EXPECTED: {M[4..7] >= 1} 
 RESULT: {M[4...7] -> [1, +oo]}
 ============================
-Test using ArrayExpansion(Intervals)
+Test using ArrayAdaptive(ArraySmashing(Intervals))
 EXPECTED: {z >= 2, ...}
 RESULT: {x -> [2, +oo]; y -> [1, +oo]; z -> [2, +oo]}
 ============================
-Test using ArrayExpansion(Intervals)
+Test using ArrayAdaptive(ArraySmashing(Intervals))
 EXPECTED: _|_
 RESULT: _|_
 ============================
-Test using ArrayExpansion(Intervals)
+Test using ArrayAdaptive(ArraySmashing(Intervals))
 EXPECTED: {y >= 2, ...}
 RESULT: {x -> [2, +oo]; y -> [2, +oo]}
 === End ./test-bin/unittests-backward ===
@@ -5142,6 +4997,11 @@ user-defined assertion checker
 0  Number of total warning checks
 0  Number of total unreachable checks
 
+Unit test 6 for rename
+({}, {x0 -> [5, 5]; x1 -> [10, 10]})
+After renaming {x0,x1} with {y0,y1}=({}, {y0 -> [5, 5]; y1 -> [10, 10]})
+({}, {rgn1 -> [20, 20]; rgn2 -> [30, 30]})
+After renaming {rgn1,rgn2} with {rgn3,rgn4}=({}, {rgn3 -> [20, 20]; rgn4 -> [30, 30]})
 === End ./test-bin/unittests-regions ===
 === Begin ./test-bin/unittests-rename ===
  ===== Intervals ====
@@ -5165,6 +5025,29 @@ Before renaming {x -> t0[_x0], y -> t1[_x1]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 After rename x with w and y with z={z -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 After rename x with w={y -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 === End ./test-bin/unittests-rename ===
+=== Begin ./test-bin/unittests-uf ===
+=== Join === 
+{x -> *(8,5), y -> 8} | {x -> *($VAR_0,5), y -> $VAR_0} = {x -> *($VAR_0,5), y -> $VAR_0}
+{x -> 1} | {x -> +(1,1)} = {x -> $VAR_0}
+=== Equalities/Disequalities === 
+Extracting equalities from {y -> $VAR_0, x1 -> *($VAR_0,5), x2 -> *($VAR_0,5), x3 -> *($VAR_0,8)}={x1-x2 = 0}
+After adding x1-x2 = 0 --> {y -> $VAR_0, x1 -> *($VAR_0,5), x2 -> *($VAR_0,5), x3 -> *($VAR_0,8)}
+After adding x1-x2 != 0 --> _|_
+=== Project === 
+Before project {x -> 5, y -> 5, z -> 9}
+After project {x -> 5, y -> 5}
+==== Meet ====
+Meet
+  {x -> 5, y -> +(5,3), w -> 5, z -> 3} 
+  {x -> +(8,2), y -> 8, w -> 8, z -> 2}
+Result={x -> +($VAR_0,$VAR_1), y -> +($VAR_0,$VAR_1), w -> +($VAR_0,$VAR_1), z -> $VAR_1}
+Meet
+  {x -> 5, y -> +(5,10), w -> 5, z -> 10} 
+  {x -> +(7,10), y -> 7, w -> 7, z -> 10}
+Result={x -> +($VAR_0,$VAR_1), y -> +($VAR_0,$VAR_1), w -> +($VAR_0,$VAR_1), z -> $VAR_1}
+==== Boolean operations ====
+Extracting equalities from {b1 -> $VAR_1, b2 -> band($VAR_1,$VAR_0), b3 -> band($VAR_1,$VAR_0), b4 -> $VAR_0, b5 -> $VAR_0, b6 -> bor($VAR_1,$VAR_0), b7 -> bxor($VAR_1,$VAR_0)}={b2-b3 = 0; b4-b5 = 0}
+=== End ./test-bin/unittests-uf ===
 === Begin ./test-bin/unittests-union-find ===
 Dom1={{v1}=>{x -> [5, 5]; y -> [10, 10]},{v2}=>{x -> [5, 5]; y -> [10, 10]},{v3}=>{x -> [5, 5]; y -> [10, 10]},{v4}=>{x -> [5, 5]; y -> [10, 10]}}
 After join v1 and v2={{v1,v2}=>{x -> [5, 5]; y -> [10, 10]},{v3}=>{x -> [5, 5]; y -> [10, 10]},{v4}=>{x -> [5, 5]; y -> [10, 10]}}

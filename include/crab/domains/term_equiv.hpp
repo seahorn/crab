@@ -25,6 +25,7 @@
 #include <crab/types/varname_factory.hpp>
 
 #include <algorithm>
+#include <map>
 #include <set>
 #include <utility>
 #include <vector>
@@ -32,11 +33,6 @@
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
 #include <boost/optional.hpp>
-#include <boost/range.hpp>
-
-//#define VERBOSE
-//#define DEBUG_VARMAP
-//#define DEBUG_MEET
 
 #define USE_TERM_INTERVAL_NORMALIZER
 
@@ -44,7 +40,6 @@
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
 namespace crab {
-
 namespace domains {
 
 namespace term {
@@ -56,8 +51,9 @@ public:
   using Alloc = crab::var_factory_impl::str_var_alloc_col;
   using domain_t = Abs;
 
-  static_assert(std::is_same<typename Abs::varname_t, Alloc::varname_t>::value,
-		"Base abstract domain must use str_var_alloc_col as varname factory");
+  static_assert(
+      std::is_same<typename Abs::varname_t, Alloc::varname_t>::value,
+      "Base abstract domain must use str_var_alloc_col as varname factory");
 };
 } // namespace term
 
@@ -90,15 +86,16 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_or_constant_vector_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  using typename abstract_domain_t::variable_or_constant_vector_t;    
   using number_t = Number;
   using varname_t = VariableName;
 
 private:
   using ttbl_t = term::term_table<number_t, term::term_operator_t>;
   using term_id_t = typename ttbl_t::term_id_t;
+  using term_t = typename ttbl_t::term_t;
 
   // WARNING: assumes the underlying domain uses the same number type.
   using dom_number = typename Info::Number;
@@ -150,38 +147,11 @@ private:
     return t_itv;
   }
 
-  // term_id_t term_of_expr(arith_operation_t op, term_id_t ty, term_id_t tz)
-  // {
-  //   boost::optional<term_id_t> opt_tx = _ttbl.find_ftor(op, ty, tz);
-  //   if(opt_tx)
-  //   {
-  //     // If the term already exists, we can learn nothing.
-  //     return *opt_tx;
-  //   } else {
-  //     // Otherwise, assign the term, and evaluate.
-  //     term_id_t tx = _ttbl.apply_ftor(op, ty, tz);
-  //     _impl.apply(op,
-  //                 domvar_of_term(tx),
-  //                 domvar_of_term(ty), domvar_of_term(tz));
-  //     return tx;
-  //   }
-  // }
-
-  // void apply(arith_operation_t op, variable_t x, variable_t y, bound_t lb,
-  // bound_t ub){
-  //   term_id_t t_x = term_of_expr(op, term_of_var(y), term_of_itv(lb, ub));
-  //   // JNL: check with Graeme
-  //   //      insert only adds an entry if the key does not exist
-  //   //_var_map.insert(std::make_pair(x, t_x));
-  //   rebind_var(x, t_x);
-  //   check_terms(__LINE__);
-  // }
-
   void apply(dom_t &dom, term::term_operator_t op, dom_var_t x, dom_var_t y,
              dom_var_t z) {
-    if (auto top = conv2arith(op)) {
+    if (auto top = term::conv2arith(op)) {
       dom.apply(*top, x, y, z);
-    } else if (auto top = conv2bitwise(op)) {
+    } else if (auto top = term::conv2bitwise(op)) {
       dom.apply(*top, x, y, z);
     } else if (op == term::TERM_OP_FUNCTION) {
       // uninterpreted function: do nothing in the underlying
@@ -197,13 +167,13 @@ private:
   // the current value.
   void eval_ftor(dom_t &dom, ttbl_t &tbl, term_id_t t) {
     // Get the term info.
-    typename ttbl_t::term_t *t_ptr = tbl.get_term_ptr(t);
+    term_t *t_ptr = tbl.get_term_ptr(t);
 
     // Only apply functors.
     if (t_ptr->kind() == term::TERM_APP) {
       term::term_operator_t op = term::term_ftor(t_ptr);
 
-      std::vector<term_id_t> &args(term::term_args(t_ptr));
+      const std::vector<term_id_t> &args(term::term_args(t_ptr));
       assert(args.size() == 2);
       apply(dom, op, domvar_of_term(t), domvar_of_term(args[0]),
             domvar_of_term(args[1]));
@@ -212,15 +182,15 @@ private:
 
   void eval_ftor_down(dom_t &dom, ttbl_t &tbl, term_id_t t) {
     // Get the term info.
-    typename ttbl_t::term_t *t_ptr = tbl.get_term_ptr(t);
+    term_t *t_ptr = tbl.get_term_ptr(t);
 
     // Only apply functors.
     if (t_ptr->kind() == term::TERM_APP) {
       term::term_operator_t op = term::term_ftor(t_ptr);
-      std::vector<term_id_t> &args(term::term_args(t_ptr));
+      const std::vector<term_id_t> &args(term::term_args(t_ptr));
       assert(args.size() == 2);
 
-      if (boost::optional<arith_operation_t> arith_op = conv2arith(op)) {
+      if (boost::optional<arith_operation_t> arith_op = term::conv2arith(op)) {
         term::InverseOps<dom_number, dom_var_t, dom_t>::apply(
             dom, *arith_op, domvar_of_term(t), domvar_of_term(args[0]),
             domvar_of_term(args[1]));
@@ -234,102 +204,29 @@ private:
     return ret;
   }
 
-  term::term_operator_t conv2termop(arith_operation_t op) {
-    switch (op) {
-    case OP_ADDITION:
-      return term::TERM_OP_ADD;
-    case OP_SUBTRACTION:
-      return term::TERM_OP_SUB;
-    case OP_MULTIPLICATION:
-      return term::TERM_OP_MUL;
-    case OP_SDIV:
-      return term::TERM_OP_SDIV;
-    case OP_UDIV:
-      return term::TERM_OP_UDIV;
-    case OP_SREM:
-      return term::TERM_OP_SREM;
-    default:
-      return term::TERM_OP_UREM;
-    }
-  }
-
-  boost::optional<arith_operation_t> conv2arith(term::term_operator_t op) {
-    switch (op) {
-    case term::TERM_OP_ADD:
-      return OP_ADDITION;
-    case term::TERM_OP_SUB:
-      return OP_SUBTRACTION;
-    case term::TERM_OP_MUL:
-      return OP_MULTIPLICATION;
-    case term::TERM_OP_SDIV:
-      return OP_SDIV;
-    case term::TERM_OP_UDIV:
-      return OP_UDIV;
-    case term::TERM_OP_SREM:
-      return OP_SREM;
-    case term::TERM_OP_UREM:
-      return OP_UREM;
-    default:
-      return boost::optional<arith_operation_t>();
-    }
-  }
-
-  term::term_operator_t conv2termop(bitwise_operation_t op) {
-    switch (op) {
-    case OP_AND:
-      return term::TERM_OP_AND;
-    case OP_OR:
-      return term::TERM_OP_OR;
-    case OP_XOR:
-      return term::TERM_OP_XOR;
-    case OP_SHL:
-      return term::TERM_OP_SHL;
-    case OP_LSHR:
-      return term::TERM_OP_LSHR;
-    default:
-      return term::TERM_OP_ASHR;
-    }
-  }
-
-  boost::optional<bitwise_operation_t> conv2bitwise(term::term_operator_t op) {
-    switch (op) {
-    case term::TERM_OP_AND:
-      return OP_AND;
-    case term::TERM_OP_OR:
-      return OP_OR;
-    case term::TERM_OP_XOR:
-      return OP_XOR;
-    case term::TERM_OP_SHL:
-      return OP_SHL;
-    case term::TERM_OP_LSHR:
-      return OP_LSHR;
-    case term::TERM_OP_ASHR:
-      return OP_ASHR;
-    default:
-      return boost::optional<bitwise_operation_t>();
-    }
-  }
-
   void check_terms(int line) const {
-#ifdef DEBUG_VARMAP
-    for (auto const p : _var_map) {
-      if (!(p.second < _ttbl.size())) {
-        CRAB_ERROR("term_equiv.hpp at line=", line, ": ",
-                   "term id is not the table term");
-      }
-    }
-
-    for (auto kv : _rev_var_map) {
-      for (auto v : kv.second) {
-        auto it = _var_map.find(v);
-        if (it->second != kv.first) {
-          CRAB_ERROR("term_equiv.hpp at line=", line, ": ", v,
-                     " is mapped to t", it->second,
-                     " but the reverse map says that should be t", kv.first);
+    CRAB_LOG(
+        "terms-check-terms",
+        for (auto const &p
+             : _var_map) {
+          if (!(p.second < _ttbl.size())) {
+            CRAB_ERROR("term_equiv.hpp at line=", line, ": ",
+                       "term id is not the table term");
+          }
         }
-      }
-    }
-#endif
+
+        for (auto kv
+             : _rev_var_map) {
+          for (auto v : kv.second) {
+            auto it = _var_map.find(v);
+            if (it->second != kv.first) {
+              CRAB_ERROR("term_equiv.hpp at line=", line, ": ", v,
+                         " is mapped to t", it->second,
+                         " but the reverse map says that should be t",
+                         kv.first);
+            }
+          }
+        });
   }
 
   void deref(term_id_t t) {
@@ -432,7 +329,7 @@ private:
   template <typename OpTy>
   term_id_t build_term(OpTy op, term_id_t ty, term_id_t tz) {
     // Check if the term already exists
-    term::term_operator_t binop = conv2termop(op);
+    term::term_operator_t binop = term::conv2termop(op);
     boost::optional<term_id_t> eopt(_ttbl.find_ftor(binop, ty, tz));
     if (eopt) {
       return *eopt;
@@ -682,8 +579,7 @@ private:
     std::vector<term_id_t> non_var_terms(terms.size());
     auto it = std::copy_if(terms.begin(), terms.end(), non_var_terms.begin(),
                            [&ttbl](term_id_t t) {
-                             typename ttbl_t::term_t *t_ptr =
-                                 ttbl.get_term_ptr(t);
+                             term_t *t_ptr = ttbl.get_term_ptr(t);
                              return (t_ptr && t_ptr->kind() == term::TERM_APP);
                            });
     non_var_terms.resize(std::distance(non_var_terms.begin(), it));
@@ -704,22 +600,18 @@ private:
     // already processed
     auto it = cache.find(t);
     if (it != cache.end()) {
-#ifdef DEBUG_MEET
-      crab::outs() << "Found in cache: ";
-      crab::outs() << "t" << t << " --> "
-                   << "t" << it->second << "\n";
-#endif
+      CRAB_LOG("terms-meet", crab::outs() << "build_dag_term. Found in cache: ";
+               crab::outs() << "t" << t << " --> "
+                            << "t" << it->second << "\n";);
       return it->second;
     }
 
     // break the cycle with a fresh variable
     if (std::find(stack.begin(), stack.end(), t) != stack.end()) {
       term_id_t v = out_ttbl.fresh_var();
-#ifdef DEBUG_MEET
-      crab::outs() << "Detected cycle: ";
-      crab::outs() << "t" << t << " --> "
-                   << "t" << v << "\n";
-#endif
+      CRAB_LOG("terms-meet", crab::outs() << "build_dag_term. Detected cycle: ";
+               crab::outs() << "t" << t << " --> "
+                            << "t" << v << "\n";);
       return v;
     }
 
@@ -732,21 +624,20 @@ private:
       term_id_t v = out_ttbl.fresh_var();
       auto res = cache.insert(std::make_pair(t, v));
       stack.pop_back();
-#ifdef DEBUG_MEET
-      crab::outs() << "No concrete definition: ";
-      crab::outs() << "t" << t << " --> "
-                   << "t" << (res.first)->second << "\n";
-#endif
+      CRAB_LOG("terms-meet", crab::outs()
+                                 << "build_dag_term. No concrete definition: ";
+               crab::outs() << "t" << t << " --> "
+                            << "t" << (res.first)->second << "\n";);
       return (res.first)->second;
     } else {
       // traverse recursively the term
-      typename ttbl_t::term_t *f_ptr = ttbl.get_term_ptr(*f);
-#ifdef DEBUG_MEET
-      crab::outs() << "Traversing recursively the term "
+      term_t *f_ptr = ttbl.get_term_ptr(*f);
+      CRAB_LOG("terms-meet",
+               crab::outs()
+                   << "build_dag_term. Traversing recursively the term "
                    << "t" << *f << ":";
-      crab::outs() << *f_ptr << "\n";
-#endif
-      std::vector<term_id_t> &args(term::term_args(f_ptr));
+               crab::outs() << *f_ptr << "\n";);
+      const std::vector<term_id_t> &args(term::term_args(f_ptr));
       std::vector<term_id_t> res_args;
       res_args.reserve(args.size());
       for (term_id_t c : args) {
@@ -756,11 +647,10 @@ private:
       auto res = cache.insert(std::make_pair(
           t, out_ttbl.apply_ftor(term::term_ftor(f_ptr), res_args)));
       stack.pop_back();
-#ifdef DEBUG_MEET
-      crab::outs() << "Finished recursive case: ";
-      crab::outs() << "t" << t << " --> "
-                   << "t" << (res.first)->second << "\n";
-#endif
+      CRAB_LOG("terms-meet", crab::outs()
+                                 << "build_dag_term. Finished recursive case: ";
+               crab::outs() << "t" << t << " --> "
+                            << "t" << (res.first)->second << "\n";);
       return (res.first)->second;
     }
   }
@@ -1546,7 +1436,7 @@ public:
   BOOL_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
   DEFAULT_SELECT(term_domain_t)
-  
+
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
     crab::CrabStats::count(domain_name() + ".count.rename");
@@ -1685,14 +1575,13 @@ public:
   }
 
   /* begin intrinsics operations */
-  void intrinsic(std::string name,
-		 const variable_or_constant_vector_t &inputs,
+  void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
   void backward_intrinsic(std::string name,
-			  const variable_or_constant_vector_t &inputs,
+                          const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const term_domain_t &invariant) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
@@ -1766,10 +1655,9 @@ public:
     // print underlying domain
     o << tmp._impl;
 
-#ifdef VERBOSE
-    /// For debugging purposes
-    o << " ttbl={" << tmp._ttbl << "}\n";
-#endif
+    CRAB_LOG("terms-print-ttbl",
+             /// For debugging purposes
+             o << " ttbl={" << tmp._ttbl << "}\n";);
   }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
@@ -1854,6 +1742,7 @@ public:
   using term_id_t = typename term_domain_t::term_id_t;
   using dom_t = Abs;
   using ttbl_t = typename term_domain_t::ttbl_t;
+  using term_t = typename ttbl_t::term_t;
   using term_set_t = boost::container::flat_set<term_id_t>;
 
   static void queue_push(ttbl_t &tbl,
@@ -1886,7 +1775,7 @@ public:
     // Don't need to propagate level 0, since it's for free variables
     for (int d = queue.size() - 1; d > 0; d--) {
       for (term_id_t t : queue[d]) {
-        typename ttbl_t::term_t *t_ptr = ttbl.get_term_ptr(t);
+        term_t *t_ptr = ttbl.get_term_ptr(t);
         if (t_ptr->kind() != term::TERM_APP)
           continue;
 
@@ -1905,8 +1794,8 @@ public:
               if (impl.is_bottom()) { crab::outs() << "\tfound bottom\n"; });
 
           // Enqueue the args.
-          typename ttbl_t::term_t *t_ptr = ttbl.get_term_ptr(t);
-          std::vector<term_id_t> &args(term::term_args(t_ptr));
+          term_t *t_ptr = ttbl.get_term_ptr(t);
+          const std::vector<term_id_t> &args(term::term_args(t_ptr));
           for (term_id_t c : args) {
             if (abs.changed_terms.find(c) == abs.changed_terms.end()) {
               abs.changed_terms.insert(c);
@@ -1945,8 +1834,7 @@ public:
       // up_queue[d] shouldn't change.
       for (term_id_t t : up_queue[d]) {
         abs.eval_ftor(d_prime, ttbl, t);
-        CRAB_LOG("term-normalization",
-                 typename ttbl_t::term_t *t_ptr = ttbl.get_term_ptr(t);
+        CRAB_LOG("term-normalization", term_t *t_ptr = ttbl.get_term_ptr(t);
                  crab::outs() << "Propagate to parent ";
                  t_ptr->write(crab::outs()); crab::outs() << "\n";
                  crab::outs() << "\tTerm table: "; ttbl.write(crab::outs());
@@ -1999,8 +1887,8 @@ public:
   using term_id_t = typename term_domain_t::term_id_t;
   using dom_t = ikos::interval_domain<Num, Var>;
   using var_t = typename term_domain_t::dom_var_t;
-
   using ttbl_t = typename term_domain_t::ttbl_t;
+  using term_t = typename ttbl_t::term_t;
   using term_set_t = boost::container::flat_set<term_id_t>;
 
   using interval_t = typename dom_t::interval_t;
@@ -2039,11 +1927,11 @@ public:
     // Don't need to propagate level 0, since it's for free variables
     for (int d = queue.size() - 1; d > 0; d--) {
       for (term_id_t t : queue[d]) {
-        typename ttbl_t::term_t *t_ptr = ttbl.get_term_ptr(t);
+        term_t *t_ptr = ttbl.get_term_ptr(t);
         if (t_ptr->kind() != term::TERM_APP)
           continue;
 
-        std::vector<term_id_t> &args(term::term_args(t_ptr));
+        const std::vector<term_id_t> &args(term::term_args(t_ptr));
         std::vector<interval_t> arg_intervals;
         for (term_id_t c : args)
           arg_intervals.push_back(impl[abs.domvar_of_term(c)]);
@@ -2111,7 +1999,7 @@ public:
 template <typename Info> struct abstract_domain_traits<term_domain<Info>> {
   using number_t = typename Info::Number;
   using varname_t = typename Info::VariableName;
-};
+}; // end term_domain
 
 template <typename Info> class reduced_domain_traits<term_domain<Info>> {
 public:

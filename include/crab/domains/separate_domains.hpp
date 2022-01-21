@@ -73,7 +73,7 @@ private:
 
 public:
   class join_op : public binary_op_t {
-    std::pair<bool, boost::optional<Value>> apply(Value x, Value y) {
+    virtual std::pair<bool, boost::optional<Value>> apply(Value x, Value y) override {
       Value z = x.operator|(y);
       if (z.is_top()) {
         return {false, boost::optional<Value>()};
@@ -82,11 +82,13 @@ public:
       }
     };
 
-    bool default_is_absorbing() { return true; }
+    virtual bool default_is_absorbing() override {
+      return true;
+    }
   }; // class join_op
 
   class widening_op : public binary_op_t {
-    std::pair<bool, boost::optional<Value>> apply(Value x, Value y) {
+    virtual std::pair<bool, boost::optional<Value>> apply(Value x, Value y) override {
       Value z = x.operator||(y);
       if (z.is_top()) {
         return {false, boost::optional<Value>()};
@@ -95,7 +97,9 @@ public:
       }
     };
 
-    bool default_is_absorbing() { return true; }
+    virtual bool default_is_absorbing() override {
+      return true;
+    }
 
   }; // class widening_op
 
@@ -106,7 +110,7 @@ public:
   public:
     widening_thresholds_op(const Thresholds &ts) : m_ts(ts) {}
 
-    std::pair<bool, boost::optional<Value>> apply(Value x, Value y) {
+    virtual std::pair<bool, boost::optional<Value>> apply(Value x, Value y) override {
       Value z = x.widening_thresholds(y, m_ts);
       if (z.is_top()) {
         return {false, boost::optional<Value>()};
@@ -115,12 +119,14 @@ public:
       }
     };
 
-    bool default_is_absorbing() { return true; }
+    virtual bool default_is_absorbing() override {
+      return true;
+    }
 
   }; // class widening_thresholds_op
 
   class meet_op : public binary_op_t {
-    std::pair<bool, boost::optional<Value>> apply(Value x, Value y) {
+    virtual std::pair<bool, boost::optional<Value>> apply(Value x, Value y) override {
       Value z = x.operator&(y);
       if (z.is_bottom()) {
         return {true, boost::optional<Value>()};
@@ -129,12 +135,14 @@ public:
       }
     };
 
-    bool default_is_absorbing() { return false; }
+    virtual bool default_is_absorbing() override {
+      return false;
+    }
 
   }; // class meet_op
 
   class narrowing_op : public binary_op_t {
-    std::pair<bool, boost::optional<Value>> apply(Value x, Value y) {
+    virtual std::pair<bool, boost::optional<Value>> apply(Value x, Value y) override {
       Value z = x.operator&&(y);
       if (z.is_bottom()) {
         return {true, boost::optional<Value>()};
@@ -143,14 +151,20 @@ public:
       }
     };
 
-    bool default_is_absorbing() { return false; }
+    virtual bool default_is_absorbing() override {
+      return false;
+    }
 
   }; // class narrowing_op
 
   class domain_po : public partial_order_t {
-    bool leq(Value x, Value y) { return x.operator<=(y); }
+    virtual bool leq(Value x, Value y) override {
+      return x.operator<=(y);
+    }
 
-    bool default_is_top() { return true; }
+    virtual bool default_is_top() override {
+      return true;
+    }
 
   }; // class domain_po
 

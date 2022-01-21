@@ -39,9 +39,9 @@ public:
   using val_t = Val;
   class elt_t {
   public:
-    elt_t(key_t _k, const val_t &_v) : key(_k), val(_v) {}
-
-    elt_t(const elt_t &o) : key(o.key), val(o.val) {}
+    elt_t(key_t _k, const val_t &_v)
+      : key(_k), val(_v) {}
+    elt_t(const elt_t &o) = default;
 
     key_t key;
     val_t val;

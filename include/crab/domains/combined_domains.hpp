@@ -18,6 +18,7 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
+#include <crab/domains/lattice_domain.hpp>
 #include <crab/support/stats.hpp>
 
 #include <boost/optional.hpp>
@@ -25,10 +26,12 @@
 
 namespace crab {
 namespace domains {
-
+  
 // Reduced product of two arbitrary domains with only lattice
 // operations.
-template <typename Domain1, typename Domain2> class basic_domain_product2 {
+template <typename Domain1, typename Domain2>
+class basic_domain_product2:
+    public lattice_domain_api<basic_domain_product2<Domain1, Domain2>> {
 
 public:
   using basic_domain_product2_t = basic_domain_product2<Domain1, Domain2>;
@@ -200,7 +203,11 @@ public:
     if (is_bottom()) {
       o << "_|_";
     } else {
-      o << "(" << m_first << ", " << m_second << ")";
+      o << "(";
+      m_first.write(o);
+      o << ", ";
+      m_second.write(o);
+      o << ")";
     }
   }
 
@@ -221,13 +228,13 @@ public:
 // Reduced product of two arbitrary domains with all operations.
 template <typename Number, typename VariableName, typename Domain1,
           typename Domain2>
-class domain_product2 final
+class reduced_domain_product2 final
     : public abstract_domain_api<
-          domain_product2<Number, VariableName, Domain1, Domain2>> {
+          reduced_domain_product2<Number, VariableName, Domain1, Domain2>> {
 public:
-  using domain_product2_t =
-      domain_product2<Number, VariableName, Domain1, Domain2>;
-  using abstract_domain_t = abstract_domain_api<domain_product2_t>;
+  using reduced_domain_product2_t =
+      reduced_domain_product2<Number, VariableName, Domain1, Domain2>;
+  using abstract_domain_t = abstract_domain_api<reduced_domain_product2_t>;
   using first_type = Domain1;
   using second_type = Domain2;
 
@@ -249,7 +256,7 @@ private:
 
   basic_domain_product2_t m_product;
 
-  domain_product2(basic_domain_product2_t &&product)
+  reduced_domain_product2(basic_domain_product2_t &&product)
       : m_product(std::move(product)) {}
 
   // Reduce operation
@@ -261,42 +268,42 @@ private:
   }
 
 public:
-  domain_product2_t make_top() const override {
+  reduced_domain_product2_t make_top() const override {
     basic_domain_product2_t dom_prod;
-    return domain_product2_t(dom_prod.make_top());
+    return reduced_domain_product2_t(dom_prod.make_top());
   }
 
-  domain_product2_t make_bottom() const override {
+  reduced_domain_product2_t make_bottom() const override {
     basic_domain_product2_t dom_prod;
-    return domain_product2_t(dom_prod.make_bottom());
+    return reduced_domain_product2_t(dom_prod.make_bottom());
   }
 
   void set_to_top() override {
     basic_domain_product2_t dom_prod;
-    domain_product2_t dom(dom_prod.make_top());
+    reduced_domain_product2_t dom(dom_prod.make_top());
     std::swap(*this, dom);
   }
 
   void set_to_bottom() override {
     basic_domain_product2_t dom_prod;
-    domain_product2_t dom(dom_prod.make_bottom());
+    reduced_domain_product2_t dom(dom_prod.make_bottom());
     std::swap(*this, dom);
   }
 
-  domain_product2() : m_product() {}
+  reduced_domain_product2() : m_product() {}
 
-  domain_product2(const domain_product2_t &other) : m_product(other.m_product) {}
+  reduced_domain_product2(const reduced_domain_product2_t &other) : m_product(other.m_product) {}
 
-  domain_product2(const domain_product2_t &&other)
+  reduced_domain_product2(const reduced_domain_product2_t &&other)
       : m_product(std::move(other.m_product)) {}
 
-  domain_product2_t &operator=(const domain_product2_t &other) {
+  reduced_domain_product2_t &operator=(const reduced_domain_product2_t &other) {
     if (this != &other)
       m_product = other.m_product;
     return *this;
   }
 
-  domain_product2_t &operator=(const domain_product2_t &&other) {
+  reduced_domain_product2_t &operator=(const reduced_domain_product2_t &&other) {
     if (this != &other)
       m_product = std::move(other.m_product);
     return *this;
@@ -312,35 +319,35 @@ public:
   Domain2 &second() { return m_product.second(); }
   const Domain2 &second() const { return m_product.second(); }
 
-  bool operator<=(const domain_product2_t &other) const override {
+  bool operator<=(const reduced_domain_product2_t &other) const override {
     return (m_product <= other.m_product);
   }
 
-  bool operator==(const domain_product2_t &other) const {
+  bool operator==(const reduced_domain_product2_t &other) const {
     return (m_product == other.m_product);
   }
 
-  void operator|=(const domain_product2_t &other) override {
+  void operator|=(const reduced_domain_product2_t &other) override {
     m_product |= other.m_product;
   }
 
-  domain_product2_t operator|(const domain_product2_t &other) const override {
-    return domain_product2_t(m_product | other.m_product);
+  reduced_domain_product2_t operator|(const reduced_domain_product2_t &other) const override {
+    return reduced_domain_product2_t(m_product | other.m_product);
   }
 
-  domain_product2_t operator&(const domain_product2_t &other) const override {
-    return domain_product2_t(m_product & other.m_product);
+  reduced_domain_product2_t operator&(const reduced_domain_product2_t &other) const override {
+    return reduced_domain_product2_t(m_product & other.m_product);
   }
 
-  domain_product2_t operator||(const domain_product2_t &other) const override {
-    return domain_product2_t(m_product || other.m_product);
+  reduced_domain_product2_t operator||(const reduced_domain_product2_t &other) const override {
+    return reduced_domain_product2_t(m_product || other.m_product);
   }
 
-  domain_product2_t widening_thresholds(
-      const domain_product2_t &other,
+  reduced_domain_product2_t widening_thresholds(
+      const reduced_domain_product2_t &other,
       const iterators::thresholds<number_t> &ts) const override {
     bool apply_reduction = false;
-    return domain_product2_t(basic_domain_product2_t(
+    return reduced_domain_product2_t(basic_domain_product2_t(
         std::move(m_product.first().widening_thresholds(
             other.m_product.first(), ts)),
         std::move(m_product.second().widening_thresholds(
@@ -348,8 +355,8 @@ public:
         std::move(apply_reduction)));
   }
 
-  domain_product2_t operator&&(const domain_product2_t &other) const override {
-    return domain_product2_t(m_product && other.m_product);
+  reduced_domain_product2_t operator&&(const reduced_domain_product2_t &other) const override {
+    return reduced_domain_product2_t(m_product && other.m_product);
   }
 
   void assign(const variable_t &x, const linear_expression_t &e) override {
@@ -379,7 +386,7 @@ public:
   }  
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
-                       const domain_product2_t &invariant) override {
+                       const reduced_domain_product2_t &invariant) override {
     m_product.first().backward_assign(x, e, invariant.first());
     m_product.second().backward_assign(x, e, invariant.second());
     reduce();
@@ -387,7 +394,7 @@ public:
 
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, Number k,
-                      const domain_product2_t &invariant) override {
+                      const reduced_domain_product2_t &invariant) override {
     m_product.first().backward_apply(op, x, y, k, invariant.first());
     m_product.second().backward_apply(op, x, y, k, invariant.second());
     reduce();
@@ -395,7 +402,7 @@ public:
 
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
-                      const domain_product2_t &invariant) override {
+                      const reduced_domain_product2_t &invariant) override {
     m_product.first().backward_apply(op, x, y, z, invariant.first());
     m_product.second().backward_apply(op, x, y, z, invariant.second());
     reduce();
@@ -492,7 +499,7 @@ public:
                       const linear_expression_t &lb_idx,
                       const linear_expression_t &ub_idx,
                       const linear_expression_t &val,
-                      const domain_product2_t &invariant) override {
+                      const reduced_domain_product2_t &invariant) override {
     m_product.first().backward_array_init(a, elem_size, lb_idx, ub_idx,
                                                val, invariant.first());
     m_product.second().backward_array_init(a, elem_size, lb_idx, ub_idx,
@@ -504,7 +511,7 @@ public:
   backward_array_load(const variable_t &lhs, const variable_t &a,
                       const linear_expression_t &elem_size,
                       const linear_expression_t &i,
-                      const domain_product2_t &invariant) override {
+                      const reduced_domain_product2_t &invariant) override {
 
     m_product.first().backward_array_load(lhs, a, elem_size, i,
                                                invariant.first());
@@ -516,7 +523,7 @@ public:
   virtual void backward_array_store(
       const variable_t &a, const linear_expression_t &elem_size,
       const linear_expression_t &i, const linear_expression_t &val,
-      bool is_strong_update, const domain_product2_t &invariant) override {
+      bool is_strong_update, const reduced_domain_product2_t &invariant) override {
     m_product.first().backward_array_store(
         a, elem_size, i, val, is_strong_update, invariant.first());
     m_product.second().backward_array_store(
@@ -528,7 +535,7 @@ public:
       const variable_t &a, const linear_expression_t &elem_size,
       const linear_expression_t &i, const linear_expression_t &j,
       const linear_expression_t &val,
-      const domain_product2_t &invariant) override {
+      const reduced_domain_product2_t &invariant) override {
     m_product.first().backward_array_store_range(a, elem_size, i, j, val,
                                                       invariant.first());
     m_product.second().backward_array_store_range(a, elem_size, i, j, val,
@@ -538,7 +545,7 @@ public:
 
   virtual void
   backward_array_assign(const variable_t &lhs, const variable_t &rhs,
-                        const domain_product2_t &invariant) override {
+                        const reduced_domain_product2_t &invariant) override {
     m_product.first().backward_array_assign(lhs, rhs, invariant.first());
     m_product.second().backward_array_assign(lhs, rhs, invariant.second());
     reduce();
@@ -747,7 +754,7 @@ public:
   // backward boolean operators
   virtual void backward_assign_bool_cst(const variable_t &lhs,
                                         const linear_constraint_t &rhs,
-                                        const domain_product2_t &inv) override {
+                                        const reduced_domain_product2_t &inv) override {
     m_product.first().backward_assign_bool_cst(lhs, rhs, inv.first());
     m_product.second().backward_assign_bool_cst(lhs, rhs, inv.second());
     reduce();
@@ -756,7 +763,7 @@ public:
   virtual void
   backward_assign_bool_ref_cst(const variable_t &lhs,
                                const reference_constraint_t &rhs,
-                               const domain_product2_t &inv) override {
+                               const reduced_domain_product2_t &inv) override {
     m_product.first().backward_assign_bool_ref_cst(lhs, rhs, inv.first());
     m_product.second().backward_assign_bool_ref_cst(lhs, rhs,
                                                          inv.second());
@@ -765,7 +772,7 @@ public:
 
   virtual void backward_assign_bool_var(const variable_t &lhs,
                                         const variable_t &rhs, bool is_not_rhs,
-                                        const domain_product2_t &inv) override {
+                                        const reduced_domain_product2_t &inv) override {
     m_product.first().backward_assign_bool_var(lhs, rhs, is_not_rhs,
                                                     inv.first());
     m_product.second().backward_assign_bool_var(lhs, rhs, is_not_rhs,
@@ -776,7 +783,7 @@ public:
   virtual void
   backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
                              const variable_t &y, const variable_t &z,
-                             const domain_product2_t &inv) override {
+                             const reduced_domain_product2_t &inv) override {
     m_product.first().backward_apply_binary_bool(op, x, y, z, inv.first());
     m_product.second().backward_apply_binary_bool(op, x, y, z,
                                                        inv.second());
@@ -848,7 +855,7 @@ public:
   void backward_intrinsic(std::string name,
 			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
-                          const domain_product2_t &invariant) override {
+                          const reduced_domain_product2_t &invariant) override {
     m_product.first().backward_intrinsic(name, inputs, outputs,
 					 invariant.first());
     m_product.second().backward_intrinsic(name, inputs, outputs,
@@ -862,7 +869,7 @@ public:
     return m_product.domain_name();
   }
 
-}; // class domain_product2
+}; // class reduced_domain_product2
 
 namespace reduced_product_impl {
 class default_params {
@@ -890,7 +897,7 @@ public:
 };
 } // namespace reduced_product_impl
 
-// This domain is similar to domain_product2 but it combines two
+// This domain is similar to reduced_domain_product2 but it combines two
 // numerical domains and it defines a more precise, customizable
 // reduction operation.
 template <typename Domain1, typename Domain2,
@@ -923,12 +930,12 @@ public:
                 "Domain1 and Domain2 must have same type for varname_t");
 
 private:
-  using domain_product2_t =
-      domain_product2<number_t, varname_t, Domain1, Domain2>;
+  using reduced_domain_product2_t =
+      reduced_domain_product2<number_t, varname_t, Domain1, Domain2>;
 
-  domain_product2_t m_product;
+  reduced_domain_product2_t m_product;
 
-  reduced_numerical_domain_product2(const domain_product2_t &product)
+  reduced_numerical_domain_product2(const reduced_domain_product2_t &product)
       : m_product(product) {}
 
   linear_constraint_system_t to_linear_constraints(const variable_t &v,
@@ -1060,23 +1067,23 @@ private:
 
 public:
   reduced_numerical_domain_product2_t make_top() const override {
-    domain_product2_t dom_prod;
+    reduced_domain_product2_t dom_prod;
     return reduced_numerical_domain_product2_t(dom_prod.make_top());
   }
 
   reduced_numerical_domain_product2_t make_bottom() const override {
-    domain_product2_t dom_prod;
+    reduced_domain_product2_t dom_prod;
     return reduced_numerical_domain_product2_t(dom_prod.make_bottom());
   }
 
   void set_to_top() override {
-    domain_product2_t dom_prod;
+    reduced_domain_product2_t dom_prod;
     reduced_numerical_domain_product2_t abs(dom_prod.make_top());
     std::swap(*this, abs);
   }
 
   void set_to_bottom() override {
-    domain_product2_t dom_prod;
+    reduced_domain_product2_t dom_prod;
     reduced_numerical_domain_product2_t abs(dom_prod.make_bottom());
     std::swap(*this, abs);
   }
@@ -1377,7 +1384,7 @@ public:
 template <typename Number, typename VariableName, typename Domain1,
           typename Domain2>
 struct abstract_domain_traits<
-    domain_product2<Number, VariableName, Domain1, Domain2>> {
+    reduced_domain_product2<Number, VariableName, Domain1, Domain2>> {
   using number_t = Number;
   using varname_t = VariableName;
 };

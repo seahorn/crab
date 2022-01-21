@@ -407,15 +407,15 @@ public:
   const linear_expression_t &right() const { return m_op2; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_op, m_op1, m_op2, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " = " << m_op1 << m_op << m_op2;
   }
 
@@ -448,15 +448,15 @@ public:
   const linear_expression_t &rhs() const { return m_rhs; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_rhs, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " = " << m_rhs; // << " " << this->m_live;
   }
 
@@ -485,15 +485,15 @@ public:
   const linear_constraint_t &constraint() const { return m_cst; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_cst, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "assume(" << m_cst << ")"; //  << " " << this->m_live;
   }
 
@@ -513,15 +513,17 @@ public:
   unreachable_stmt(basic_block_t *parent) : statement_t(UNREACH, parent) {}
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(parent);
   }
 
-  virtual void write(crab_os &o) const { o << "unreachable"; }
+  virtual void write(crab_os &o) const override  {
+    o << "unreachable";
+  }
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
@@ -541,15 +543,15 @@ public:
   const variable_t &get_variable() const { return m_lhs; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_comment, parent);
   }
 
-  void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "havoc(" << m_lhs << ")";
     if (!m_comment.empty()) {
       o << " /* " << m_comment << "*/";
@@ -601,15 +603,15 @@ public:
   const linear_expression_t &right() const { return m_e2; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_cond, m_e1, m_e2, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " = "
       << "ite(" << m_cond << "," << m_e1 << "," << m_e2 << ")";
   }
@@ -641,15 +643,15 @@ public:
   const linear_constraint_t &constraint() const { return m_cst; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_cst, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "assert(" << m_cst << ")";
     if (this->m_dbg_info.has_debug()) {
       o << "   /* " << this->m_dbg_info <<  " */";
@@ -685,15 +687,15 @@ public:
   bitwidth_t dst_width() const { return get_bitwidth(m_dst); }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_op, m_src, m_dst, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     // bitwidths are casted to int, otherwise operator<< may try
     // to print them as characters if bitwidth_t = uint8_t
     o << m_op << " " << m_src << ":" << (int)src_width() << " to " << m_dst
@@ -781,15 +783,15 @@ public:
   const linear_expression_t &val() const { return m_val; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_arr, m_elem_size, m_lb, m_ub, m_val, parent);
   }
 
-  void write(crab_os &o) const {
+  void write(crab_os &o) const override {
     o << m_arr << "[" << m_lb << "..." << m_ub << "] := " << m_val;
   }
 
@@ -858,16 +860,16 @@ public:
   bool is_strong_update() const { return m_is_strong_update; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_arr, m_elem_size, m_lb, m_ub, m_value,
                          m_is_strong_update, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "array_store(";
     if (m_lb.equal(m_ub)) {
       o << m_arr << "," << m_lb << "," << m_value << ",sz=" << elem_size();
@@ -933,15 +935,15 @@ public:
   const linear_expression_t &elem_size() const { return m_elem_size; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_array, m_elem_size, m_index, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " = "
       << "array_load(" << m_array << "," << m_index << ",sz=" << elem_size()
       << ")";
@@ -979,15 +981,15 @@ public:
   type_t array_type() const { return m_lhs.get_type(); }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_rhs, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "array_assign(" << m_lhs << ", " << m_rhs << ")";
   }
 
@@ -1020,15 +1022,15 @@ public:
   const variable_t &region() const { return m_region; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_region, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "region_init(" << m_region << ":" << m_region.get_type() << ")";
   }
 
@@ -1063,15 +1065,15 @@ public:
   type_t region_type() const { return m_lhs_region.get_type(); }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs_region, m_rhs_region, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "region_copy(" << m_lhs_region << ":" << m_lhs_region.get_type()
       << ", " << m_rhs_region << ":" << m_rhs_region.get_type() << ")";
   }
@@ -1110,15 +1112,15 @@ public:
   type_t dst_type() const { return m_dst_region.get_type(); }  
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_src_region, m_dst_region, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "region_cast "
       << src() << ":" << src_type() << " to "
       << dst() << ":" << dst_type();
@@ -1159,15 +1161,15 @@ public:
   const variable_or_constant_t &size() const { return m_size;}
   
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_region, m_size, m_alloc_site, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " := "
       << "make_ref(" << m_region << ":" << m_region.get_type() << ","
       << m_size << ","
@@ -1206,15 +1208,15 @@ public:
   const variable_t &ref() const { return m_ref; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_region, m_ref, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "remove_ref(" << m_region << ":" << m_region.get_type() << ","
       << m_ref << ":" << m_ref.get_type() << ")";
   }
@@ -1251,15 +1253,15 @@ public:
   const variable_t &region() const { return m_region; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_ref, m_region, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << ":" << m_lhs.get_type() << " := "
       << "load_from_ref(" << m_region << ":" << m_region.get_type() << ","
       << m_ref << ":" << m_ref.get_type() << ")";
@@ -1303,15 +1305,15 @@ public:
   const variable_t &region() const { return m_region; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_ref, m_region, m_val, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "store_to_ref(" << m_region << ":" << m_region.get_type() << ","
       << m_ref << ":" << m_ref.get_type() << "," << m_val << ":"
       << m_val.get_type() << ")";
@@ -1366,16 +1368,16 @@ public:
   const variable_t &rhs_region() const { return m_rhs_region; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_lhs_region, m_rhs, m_rhs_region, m_offset,
                          parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "(" << m_lhs_region << ":" << m_lhs_region.get_type() << "," << m_lhs
       << ":" << m_lhs.get_type() << ") := ";
     if (m_offset.equal(Number(0))) {
@@ -1439,16 +1441,16 @@ public:
   const variable_t &region() const { return m_region; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_ref, m_region, m_index, m_elem_size, parent,
                          this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << ":" << m_lhs.get_type() << " = "
       << "load_from_arr_ref(" << m_region << ":" << m_region.get_type() << ","
       << m_ref << ":" << m_ref.get_type() << "," << m_index << ",sz "
@@ -1521,16 +1523,16 @@ public:
   bool is_strong_update() const { return m_is_strong_update; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_ref, m_region, m_lb, m_ub, m_value, m_elem_size,
                          m_is_strong_update, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "store_to_arr_ref(" << m_region << ":" << m_region.get_type() << ","
       << m_ref << ":" << m_ref.get_type();
     if (m_lb.equal(m_ub)) {
@@ -1588,15 +1590,17 @@ public:
   const reference_constraint_t &constraint() const { return m_cst; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_cst, parent);
   }
 
-  virtual void write(crab_os &o) const { o << "assume(" << m_cst << ")"; }
+  virtual void write(crab_os &o) const override {
+    o << "assume(" << m_cst << ")";
+  }
 
 private:
   reference_constraint_t m_cst;
@@ -1629,15 +1633,15 @@ public:
   const reference_constraint_t &constraint() const { return m_cst; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_cst, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "assert(" << m_cst << ")";
     if (this->m_dbg_info.has_debug()) {
       o << "   /* " << this->m_dbg_info <<  " */";      
@@ -1701,16 +1705,16 @@ public:
   boost::optional<variable_t> right_rgn() const { return m_op2_rgn; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs_ref, m_lhs_rgn, m_cond, m_op1_ref, m_op1_rgn,
                          m_op2_ref, m_op2_rgn, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "(" << m_lhs_ref << "," << m_lhs_rgn << ")"
       << " = "
       << "ite(" << m_cond << ",";
@@ -1764,16 +1768,16 @@ public:
   const variable_t &int_var() const { return m_int_var; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_region, m_ref_var, m_int_var, parent,
                          this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_int_var << ":" << m_int_var.get_type() << " := "
       << "ref_to_int(" << m_region << ":" << m_region.get_type() << ","
       << m_ref_var << ":" << m_ref_var.get_type() << ")";
@@ -1811,16 +1815,16 @@ public:
   const variable_t &ref_var() const { return m_ref_var; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_int_var, m_region, m_ref_var, parent,
                          this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_ref_var << ":" << m_ref_var.get_type() << " := "
       << "int_to_ref(" << m_region << ":" << m_region.get_type() << ","
       << m_int_var << ":" << m_int_var.get_type() << ")";
@@ -1910,15 +1914,15 @@ public:
   }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_func_name, m_lhs, m_args, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     if (m_lhs.empty()) {
       // do nothing
     } else if (m_lhs.size() == 1) {
@@ -2018,15 +2022,15 @@ public:
   }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_intrinsic_name, m_lhs, m_args, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     if (m_lhs.empty()) {
       // do nothing
     } else if (m_lhs.size() == 1) {
@@ -2117,11 +2121,11 @@ public:
   bool is_rhs_linear_constraint() const { return m_is_rhs_linear_constraint; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     if (is_rhs_linear_constraint()) {
       return new this_type(m_lhs, rhs_as_linear_constraint(), parent);
     } else {
@@ -2129,7 +2133,7 @@ public:
     }
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " = ";
     if (is_rhs_linear_constraint()) {
       auto const &rhs = rhs_as_linear_constraint();
@@ -2188,15 +2192,15 @@ public:
   bool is_rhs_negated() const { return m_is_rhs_negated; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_rhs, m_is_rhs_negated, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " = ";
     if (is_rhs_negated()) {
       o << "not(" << m_rhs << ")";
@@ -2244,15 +2248,15 @@ public:
   const variable_t &right() const { return m_op2; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_op, m_op1, m_op2, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " = " << m_op1 << m_op << m_op2;
   }
 
@@ -2283,15 +2287,15 @@ public:
   bool is_negated() const { return m_is_negated; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_var, m_is_negated, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     if (m_is_negated) {
       o << "assume(not(" << m_var << "))";
     } else {
@@ -2335,15 +2339,15 @@ public:
   const variable_t &right() const { return m_b2; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_lhs, m_cond, m_b1, m_b2, parent);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << m_lhs << " = "
       << "ite(" << m_cond << "," << m_b1 << "," << m_b2 << ")";
   }
@@ -2374,15 +2378,15 @@ public:
   const variable_t &cond() const { return m_var; }
 
   virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) {
+  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(*this);
   }
 
-  virtual statement_t *clone(basic_block_t *parent) const {
+  virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(m_var, parent, this->m_dbg_info);
   }
 
-  virtual void write(crab_os &o) const {
+  virtual void write(crab_os &o) const override {
     o << "assert(" << m_var << ")";
     if (this->m_dbg_info.has_debug()) {
       o << "   /* " << this->m_dbg_info <<  " */";
@@ -4466,690 +4470,7 @@ using callsite_or_fdecl_map =
   std::unordered_map<callsite_or_fdecl<CFG>, Value,
 		     callsite_or_fdecl_details::hasher<CFG>,
 		     callsite_or_fdecl_details::compare<CFG>>;
-  
-  
-template <class CFG> class type_checker {
-public:
-  type_checker(CFG cfg) : m_cfg(cfg) {}
-
-  void run() {
-    CRAB_LOG("type-check", crab::outs() << "Type checking CFG ...\n";);
-
-    // some sanity checks about the CFG
-    if (m_cfg.size() == 0)
-      CRAB_ERROR("CFG must have at least one basic block");
-
-    // -- LLVM does not enforce having a return instruction so a CFG
-    //    might not have an exit block.
-    // if (!m_cfg.has_exit())
-    //   CRAB_ERROR("CFG must have exit block");
-    // if (m_cfg.size() == 1) {
-    //   if (!(m_cfg.exit() == m_cfg.entry()))
-    //     CRAB_ERROR("CFG entry and exit must be the same");
-    // }
-    // check all statement are well typed
-    type_checker_visitor vis;
-    for (auto &b : boost::make_iterator_range(m_cfg.begin(), m_cfg.end())) {
-      b.accept(&vis);
-    }
-
-    CRAB_LOG("type-check", crab::outs() << "CFG is well-typed!\n";);
-  }
-
-private:
-  CFG m_cfg;
-
-  using B = typename CFG::basic_block_label_t;
-  using V = typename CFG::varname_t;
-  using N = typename CFG::number_t;
-
-  struct type_checker_visitor : public statement_visitor<B, N, V> {
-    using bin_op_t = typename statement_visitor<B, N, V>::bin_op_t;
-    using assign_t = typename statement_visitor<B, N, V>::assign_t;
-    using assume_t = typename statement_visitor<B, N, V>::assume_t;
-    using assert_t = typename statement_visitor<B, N, V>::assert_t;
-    using int_cast_t = typename statement_visitor<B, N, V>::int_cast_t;
-    using select_t = typename statement_visitor<B, N, V>::select_t;
-    using havoc_t = typename statement_visitor<B, N, V>::havoc_t;
-    using unreach_t = typename statement_visitor<B, N, V>::unreach_t;
-    using callsite_t = typename statement_visitor<B, N, V>::callsite_t;
-    using intrinsic_t = typename statement_visitor<B, N, V>::intrinsic_t;
-    using arr_init_t = typename statement_visitor<B, N, V>::arr_init_t;
-    using arr_store_t = typename statement_visitor<B, N, V>::arr_store_t;
-    using arr_load_t = typename statement_visitor<B, N, V>::arr_load_t;
-    using arr_assign_t = typename statement_visitor<B, N, V>::arr_assign_t;
-    using make_ref_t = typename statement_visitor<B, N, V>::make_ref_t;
-    using remove_ref_t = typename statement_visitor<B, N, V>::remove_ref_t;    
-    using region_init_t = typename statement_visitor<B, N, V>::region_init_t;
-    using region_copy_t = typename statement_visitor<B, N, V>::region_copy_t;
-    using region_cast_t = typename statement_visitor<B, N, V>::region_cast_t;    
-    using load_from_ref_t = typename statement_visitor<B, N, V>::load_from_ref_t;
-    using store_to_ref_t = typename statement_visitor<B, N, V>::store_to_ref_t;
-    using gep_ref_t = typename statement_visitor<B, N, V>::gep_ref_t;
-    using load_from_arr_ref_t =
-        typename statement_visitor<B, N, V>::load_from_arr_ref_t;
-    typedef typename statement_visitor<B, N, V>::store_to_arr_ref_t
-        store_to_arr_ref_t;
-    using assume_ref_t = typename statement_visitor<B, N, V>::assume_ref_t;
-    using assert_ref_t = typename statement_visitor<B, N, V>::assert_ref_t;
-    using select_ref_t = typename statement_visitor<B, N, V>::select_ref_t;
-    using int_to_ref_t = typename statement_visitor<B, N, V>::int_to_ref_t;
-    using ref_to_int_t = typename statement_visitor<B, N, V>::ref_to_int_t;
-    using bool_bin_op_t = typename statement_visitor<B, N, V>::bool_bin_op_t;
-    typedef typename statement_visitor<B, N, V>::bool_assign_cst_t
-        bool_assign_cst_t;
-    typedef typename statement_visitor<B, N, V>::bool_assign_var_t
-        bool_assign_var_t;
-    using bool_assume_t = typename statement_visitor<B, N, V>::bool_assume_t;
-    using bool_assert_t = typename statement_visitor<B, N, V>::bool_assert_t;
-    using bool_select_t = typename statement_visitor<B, N, V>::bool_select_t;
-    using statement_t = typename CFG::statement_t;
-    using lin_exp_t = ikos::linear_expression<N, V>;
-    using lin_cst_t = ikos::linear_constraint<N, V>;
-    using variable_t = variable<N, V>;
-    using variable_or_constant_t = variable_or_constant<N, V>;
-    using variable_type_t = typename variable_t::type_t;
-    using variable_bitwidth_t = typename variable_t::bitwidth_t;
-
-    std::unordered_map<std::string, variable_t> m_varname_map;
-
-    type_checker_visitor() {}
-
-    // check that there is no two variables with same name but
-    // different types.
-    void check_varname(const variable_t &v) {
-      // XXX: v.name() which is of type V is not necessarily a
-      // string.  We want to check the actual string name but V
-      // does not have a method that returns the variable name as
-      // a string. The solution is to do this hack using
-      // crab_string_os
-      crab::crab_string_os v1_os;
-      v1_os << v;
-      std::string v1_strname = v1_os.str();
-      auto it = m_varname_map.find(v1_strname);
-      if (it == m_varname_map.end()) {
-        m_varname_map.insert({v1_strname, v});
-      } else {
-        crab::crab_string_os v2_os;
-        v2_os << it->second.name();
-        std::string v2_strname = v2_os.str();
-        if (v1_strname == v2_strname &&
-            (it->second.get_type() != v.get_type())) {
-          crab::crab_string_os os;
-          os << "(type checking) variable name " << v.name()
-             << " is used with different types ";
-          it->second.dump(os);
-          os << " and ";
-          v.dump(os);
-          CRAB_ERROR(os.str());
-        }
-      }
-    }
-
-    // check variable is a number
-    void check_num(const variable_t &v, std::string msg, statement_t &s) {
-      if (!v.get_type().is_integer() && !v.get_type().is_real()) {
-        crab::crab_string_os os;
-        os << "(type checking) " << msg << " in " << s;
-        CRAB_ERROR(os.str());
-      }
-    }
-
-    // check variable is an integer or boolean
-    void check_int_or_bool(const variable_t &v, std::string msg,
-                           statement_t &s) {
-      if (!v.get_type().is_integer() && !v.get_type().is_bool()) {
-        crab::crab_string_os os;
-        os << "(type checking) " << msg << " in " << s;
-        CRAB_ERROR(os.str());
-      }
-    }
-
-    // check variable is an integer
-    void check_int(const variable_t &v, std::string msg, statement_t &s) {
-      if (!v.get_type().is_integer()) {
-        crab::crab_string_os os;
-        os << "(type checking) " << msg << " in " << s;
-        CRAB_ERROR(os.str());
-      }
-    }
-
-    // check variable is a boolean
-    void check_bool(const variable_t &v, std::string msg, statement_t &s) {
-      if (!v.get_type().is_bool()) {
-        crab::crab_string_os os;
-        os << "(type checking) " << msg << " in " << s;
-        CRAB_ERROR(os.str());
-      }
-    }
-
-    // check variable is region
-    void check_region(const variable_t &v, statement_t &s) {
-      if (!v.get_type().is_region()) {
-        crab::crab_string_os os;
-        os << "(type checking) " << v << " is not a region variable in " << s;
-        CRAB_ERROR(os.str());
-      }
-    }
     
-    // check variable is a reference
-    void check_ref(const variable_t &v, std::string msg, statement_t &s) {
-      if (!v.get_type().is_reference()) {
-        crab::crab_string_os os;
-        os << "(type checking) " << msg << " in " << s;
-        CRAB_ERROR(os.str());
-      }
-    }
-
-    void check_ref(const variable_or_constant_t &v, std::string msg,
-                   statement_t &s) {
-      if (!v.get_type().is_reference()) {
-        crab::crab_string_os os;
-        os << "(type checking) " << v << " is not a reference";
-	if (msg != "") {
-	  os << ". " << msg;
-	}
-	os << " in " << s;
-        CRAB_ERROR(os.str());
-      }
-    }
-
-    void check_region_consistent_with_data(const variable_t &rgn,
-					   const variable_type &data_type,
-					   statement_t &s) {
-      if (!rgn.get_type().is_region()) {
-	return;
-      }
-      
-      if (rgn.get_type().is_unknown_region()) {
-	// anything is consistent with an unknown region
-	return;
-      } else if (rgn.get_type().is_bool_region() &&
-		 data_type.is_bool()) {
-	return;
-      } else if (rgn.get_type().is_reference_region() &&
-		 data_type.is_reference()) {
-	return;
-      } else if (rgn.get_type().is_integer_region() &&
-		 data_type.is_integer(rgn.get_type().
-					    get_integer_region_bitwidth())) {
-	return;
-      } else if (rgn.get_type().is_real_region() &&
-		 data_type.is_real()) {
-	return;
-      } else {
-	// TODO: other cases
-	return;
-      }
-      crab::crab_string_os os;
-      os << "(type checking) the type of " << rgn
-	 << " must be consistent with the type of data "
-	 << data_type << " in " << s;
-      CRAB_ERROR(os.str());
-    }
-
-    
-    // check two variables have same types
-    void check_same_type(const variable_t &v1, const variable_t &v2,
-                         std::string msg, statement_t &s) {
-      if (v1.get_type() != v2.get_type()) {
-        crab::crab_string_os os;
-        os << "(type checking) " << msg << " in " << s;
-        CRAB_ERROR(os.str());
-      }
-    }
-
-    // check two variables have different names
-    void check_different_name(const variable_t &v1, const variable_t &v2,
-                              std::string msg, statement_t &s) {
-      if (v1 == v2) {
-        crab::crab_string_os os;
-        os << "(type checking) " << msg << " in " << s;
-        CRAB_ERROR(os.str());
-      }
-    }
-
-    // check linear expressinon is just a number or variable
-    void check_num_or_var(const lin_exp_t &e, std::string msg, statement_t &s) {
-      if (!(e.is_constant() || e.get_variable())) {
-        crab::crab_string_os os;
-        os << "(type checking) " << msg << " in " << s;
-        CRAB_ERROR(os.str());
-      }
-    }
-
-    // check variable is an array
-    void check_is_array(const variable_t &v, statement_t &s) {
-      if (!v.get_type().is_array()) {
-        crab::crab_string_os os;
-        os << "(type checking) " << v << " must be an array variable in " << s;
-        CRAB_ERROR(os.str());
-      }
-    }
-
-    // v1 is array type and v2 is a scalar type consistent with v1
-    void check_array_and_scalar_type(const variable_t &v1, const variable_t &v2,
-                                     statement_t &s) {
-      if (v1.get_type().is_bool_array()) {
-        if (v2.get_type().is_bool())
-          return;
-      } else if (v1.get_type().is_integer_array()) {
-        if (v2.get_type().is_integer())
-          return;
-      } else if (v1.get_type().is_real_array()) {
-        if (v2.get_type().is_real())
-          return;
-      } else {
-        crab::crab_string_os os;
-        os << "(type checking) " << v1 << " must be an array variable in " << s;
-        CRAB_ERROR(os.str());
-      }
-
-      crab::crab_string_os os;
-      os << "(type checking) " << v1 << " and " << v2
-         << " do not have consistent types in " << s;
-      CRAB_ERROR(os.str());
-    }
-
-    // Begin visitor
-
-    void visit(bin_op_t &s) {
-      const variable_t &lhs = s.lhs();
-      const lin_exp_t &op1 = s.left();
-      const lin_exp_t &op2 = s.right();
-
-      check_varname(lhs);
-      check_num(lhs, "lhs must be integer or real", s);
-
-      if (boost::optional<variable_t> v1 = op1.get_variable()) {
-        check_varname(*v1);
-        check_same_type(lhs, *v1,
-                        "first operand cannot have different type from lhs", s);
-      } else {
-        CRAB_ERROR(
-            "(type checking) first binary operand must be a variable in ", s);
-      }
-      if (boost::optional<variable_t> v2 = op2.get_variable()) {
-        check_varname(*v2);
-        check_same_type(
-            lhs, *v2, "second operand cannot have different type from lhs", s);
-      } else {
-        // TODO: we can still check that we use z_number
-        // (q_number) of INT_TYPE (REAL_TYPE)
-      }
-    }
-
-    void visit(assign_t &s) {
-      const variable_t &lhs = s.lhs();
-      const lin_exp_t &rhs = s.rhs();
-
-      check_varname(lhs);
-      check_num(lhs, "lhs must be integer or real", s);
-
-      for (auto const &v : rhs.variables()) {
-        check_varname(v);
-        check_same_type(lhs, v, "variable cannot have different type from lhs",
-                        s);
-      }
-    }
-
-    void visit(assume_t &s) {
-      bool first = true;
-      const variable_t *first_var = nullptr;
-      for (auto const &v : s.constraint().variables()) {
-        check_varname(v);
-        check_num(v, "assume variables must be integer or real", s);
-        if (first) {
-          first_var = &v;
-          first = false;
-        }
-        assert(first_var);
-        check_same_type(*first_var, v, "inconsistent types in assume variables",
-                        s);
-      }
-    }
-
-    void visit(assert_t &s) {
-      bool first = true;
-      const variable_t *first_var;
-      for (auto const &v : s.constraint().variables()) {
-        check_varname(v);
-        check_num(v, "assert variables must be integer or real", s);
-        if (first) {
-          first_var = &v;
-          first = false;
-        }
-        assert(first_var);
-        check_same_type(*first_var, v, "inconsistent types in assert variables",
-                        s);
-      }
-    }
-
-    void visit(select_t &s) {
-      check_num(s.lhs(), "lhs must be integer or real", s);
-      check_varname(s.lhs());
-      for (auto const &v : s.left().variables()) {
-        check_varname(v);
-        check_same_type(s.lhs(), v, "inconsistent types in select variables",
-                        s);
-      }
-      for (auto const &v : s.right().variables()) {
-        check_varname(v);
-        check_same_type(s.lhs(), v, "inconsistent types in select variables",
-                        s);
-      }
-
-      // -- The condition can have different type from lhs/left/right
-      //    operands.
-      bool first = true;
-      const variable_t *first_var;
-      for (auto const &v : s.cond().variables()) {
-        check_varname(v);
-        check_num(v, "assume variables must be integer or real", s);
-        if (first) {
-          first_var = &v;
-          first = false;
-        }
-        assert(first_var);
-        check_same_type(*first_var, v,
-                        "inconsistent types in select condition variables", s);
-      }
-    }
-
-    void visit(int_cast_t &s) {
-      const variable_t &src = s.src();
-      const variable_t &dst = s.dst();
-
-      auto get_bitwidth = [](const variable_t &v) {
-        return (v.get_type().is_integer() ? v.get_type().get_integer_bitwidth()
-                                          : 1);
-      };
-
-      check_varname(src);
-      check_varname(dst);
-      switch (s.op()) {
-      case CAST_TRUNC:
-        check_int(src, "source operand must be integer", s);
-        check_int_or_bool(dst, "destination must be integer or bool", s);
-        if (get_bitwidth(src) <= get_bitwidth(dst)) {
-          CRAB_ERROR("(type checking) bitwidth of source operand must be "
-                     "greater than destination in ",
-                     s);
-        }
-        break;
-      case CAST_SEXT:
-      case CAST_ZEXT:
-        check_int(dst, "destination operand must be integer", s);
-        check_int_or_bool(src, "source must be integer or bool", s);
-        if (get_bitwidth(dst) <= get_bitwidth(src)) {
-          CRAB_ERROR("(type checking) bitwidth of destination must be greater "
-                     "than source in ",
-                     s);
-        }
-        break;
-      default:;
-        ; /*unreachable*/
-      }
-    }
-
-    void visit(havoc_t &) {}
-    void visit(unreach_t &) {}
-
-    void visit(bool_bin_op_t &s) {
-      check_varname(s.lhs());
-      check_varname(s.left());
-      check_varname(s.right());
-      check_bool(s.lhs(), "lhs must be boolean", s);
-      check_bool(s.left(), "first operand must be boolean", s);
-      check_bool(s.right(), "second operand must be boolean", s);
-    };
-
-    void visit(bool_assign_cst_t &s) {
-      check_bool(s.lhs(), "lhs must be boolean", s);
-      check_varname(s.lhs());
-      bool first = true;
-      const variable_t *first_var;
-
-      if (s.is_rhs_linear_constraint()) {
-        for (auto const &v : s.rhs_as_linear_constraint().variables()) {
-          check_varname(v);
-          check_num(v, "rhs variables must be integer or real", s);
-          if (first) {
-            first_var = &v;
-            first = false;
-          }
-          assert(first_var);
-          check_same_type(*first_var, v, "inconsistent types in rhs variables",
-                          s);
-        }
-      } else {
-        for (auto const &v : s.rhs_as_reference_constraint().variables()) {
-          check_varname(v);
-          check_ref(v, "rhs variables must be reference", s);
-          if (first) {
-            first_var = &v;
-            first = false;
-          }
-          assert(first_var);
-          check_same_type(*first_var, v, "inconsistent types in rhs variables",
-                          s);
-        }
-      }
-    };
-
-    void visit(bool_assign_var_t &s) {
-      check_bool(s.lhs(), "lhs must be boolean", s);
-      check_bool(s.rhs(), "rhs must be boolean", s);
-      check_varname(s.lhs());
-      check_varname(s.rhs());
-    };
-
-    void visit(bool_assume_t &s) {
-      check_bool(s.cond(), "condition must be boolean", s);
-      check_varname(s.cond());
-    };
-
-    void visit(bool_assert_t &s) {
-      check_bool(s.cond(), "condition must be boolean", s);
-      check_varname(s.cond());
-    };
-
-    void visit(bool_select_t &s) {
-      check_bool(s.lhs(), "lhs must be boolean", s);
-      check_bool(s.lhs(), "condition must be boolean", s);
-      check_bool(s.left(), "first operand must be boolean", s);
-      check_bool(s.right(), "second operand must be boolean", s);
-      check_varname(s.lhs());
-      check_varname(s.left());
-      check_varname(s.right());
-    };
-
-    void visit(arr_init_t &s) {
-      // TODO: check that e_sz is the same number that v's bitwidth
-      const variable_t &a = s.array();
-      const lin_exp_t &e_sz = s.elem_size();
-      const lin_exp_t &lb = s.lb_index();
-      const lin_exp_t &ub = s.ub_index();
-      const lin_exp_t &v = s.val();
-
-      check_is_array(a, s);
-      check_varname(a);
-      check_num_or_var(lb, "array lower bound index must be number or variable",
-                       s);
-      check_num_or_var(ub, "array upper bound index must be number or variable",
-                       s);
-      check_num_or_var(e_sz, "array element size must be number or variable",
-                       s);
-      check_num_or_var(v, "array value must be number or variable", s);
-      // TODO: check_varname lb and ub if variables
-      if (boost::optional<variable_t> vv = v.get_variable()) {
-        check_varname(*vv);
-        check_array_and_scalar_type(a, *vv, s);
-      }
-    }
-
-    void visit(arr_store_t &s) {
-      // TODO: check that e_sz is the same number that v's bitwidth
-      const variable_t &a = s.array();
-      check_is_array(a, s);
-      check_varname(a);
-
-      const lin_exp_t &e_sz = s.elem_size();
-      const lin_exp_t &v = s.value();
-      if (s.is_strong_update()) {
-        if (!(s.lb_index().equal(s.ub_index()))) {
-          crab::crab_string_os os;
-          os << "(type checking) "
-             << "array lower and upper indexes must be equal because "
-                "strong_update array in "
-             << s;
-          CRAB_ERROR(os.str());
-        }
-      }
-      for (auto const &iv : s.lb_index().variables()) {
-        check_varname(iv);
-        check_int_or_bool(
-            iv, "array index must contain only integer or boolean variables",
-            s);
-      }
-      for (auto const &iv : s.lb_index().variables()) {
-        check_varname(iv);
-        check_int_or_bool(
-            iv, "array index must contain only integer or boolean variables",
-            s);
-      }
-      check_num_or_var(e_sz, "array element size must be number or variable",
-                       s);
-      check_num_or_var(v, "array value must be number or variable", s);
-      if (boost::optional<variable_t> vv = v.get_variable()) {
-        check_varname(*vv);
-        check_array_and_scalar_type(a, *vv, s);
-      }
-    }
-
-    void visit(arr_load_t &s) {
-      // TODO: check that e_sz is the same number that lhs's bitwidth
-      const variable_t &a = s.array();
-      const lin_exp_t &e_sz = s.elem_size();
-      const variable_t &lhs = s.lhs();
-      check_varname(lhs);
-      check_is_array(a, s);
-      check_varname(a);
-      for (auto const &iv : s.index().variables()) {
-        check_varname(iv);
-        check_int_or_bool(
-            iv, "array index must contain only integer or boolean variables",
-            s);
-      }
-      check_num_or_var(e_sz, "array element size must be number or variable",
-                       s);
-      check_array_and_scalar_type(a, lhs, s);
-    }
-
-    void visit(arr_assign_t &s) {
-      const variable_t &lhs = s.lhs();
-      const variable_t &rhs = s.rhs();
-      check_is_array(lhs, s);
-      check_is_array(rhs, s);
-      check_varname(lhs);
-      check_varname(rhs);
-      check_same_type(lhs, rhs, "array assign variables must have same type",
-                      s);
-    }
-
-    void visit(callsite_t &s) {
-      // The type consistency with the callee parameters is done
-      // elsewhere.
-      for (const variable_t &v : s.get_lhs()) {
-        check_varname(v);
-      }
-      for (const variable_t &v : s.get_args()) {
-        check_varname(v);
-      }
-    }
-
-    void visit(intrinsic_t &s) {
-      for (const variable_t &v : s.get_lhs()) {
-        check_varname(v);
-      }
-      for (const variable_or_constant_t &vc : s.get_args()) {
-	if (vc.is_variable()) {
-	  check_varname(vc.get_variable());
-	}
-      }
-    }
-
-    void visit(region_init_t &s){
-      check_region(s.region(), s);
-    }
-    void visit(region_copy_t &s){
-      check_region(s.lhs_region(), s);
-      check_region(s.rhs_region(), s);
-      check_same_type(s.lhs_region(), s.rhs_region(),
-      		      "region_copy must have same types", s);
-    }
-    void visit(region_cast_t &s){
-      check_region(s.src(), s);
-      check_region(s.dst(), s);
-    }
-    void visit(make_ref_t &s){
-      check_region(s.region(), s);
-      check_ref(s.lhs(), "", s);
-    }
-    void visit(remove_ref_t &s){
-      check_region(s.region(), s);
-      check_ref(s.ref(), "", s);
-    }
-    void visit(load_from_ref_t &s){
-      check_region(s.region(), s);
-      check_ref(s.ref(), "", s);
-      check_region_consistent_with_data(s.region(), s.lhs().get_type(), s);
-    }
-    void visit(store_to_ref_t &s){
-      check_region(s.region(), s);
-      check_ref(s.ref(), "", s);
-      check_region_consistent_with_data(s.region(), s.val().get_type(), s);      
-    }
-    void visit(gep_ref_t &s){
-      check_region(s.lhs_region(), s);
-      check_region(s.rhs_region(), s);
-      check_ref(s.lhs(), "", s);
-      check_ref(s.rhs(), "", s);      
-    }
-    void visit(load_from_arr_ref_t &s){
-      // TODO
-    }
-    void visit(store_to_arr_ref_t &s){
-      // TODO
-    }
-    void visit(assume_ref_t &s){}
-    void visit(assert_ref_t &s){}
-    void visit(select_ref_t &s) {
-      // TODO: check region operands
-      check_ref(s.lhs_ref(), "lhs must be reference", s);
-      check_bool(s.cond(), "condition must be boolean", s);
-      check_ref(s.left_ref(), "first operand must be reference", s);
-      check_ref(s.right_ref(), "second operand must be reference", s);
-      check_varname(s.lhs_ref());
-      if (s.left_ref().is_variable())
-        check_varname(s.left_ref().get_variable());
-      if (s.right_ref().is_variable())
-        check_varname(s.right_ref().get_variable());
-    }
-    void visit(int_to_ref_t &s){
-      check_region(s.region(), s);
-      check_ref(s.ref_var(), "", s);
-      check_num(s.int_var(), "first input must be a number", s);
-    }
-    void visit(ref_to_int_t &s){
-      check_region(s.region(), s);
-      check_ref(s.ref_var(), "", s);
-      check_num(s.int_var(), "first input must be a number", s);
-    }
-
-  }; // end class type_checker_visitor
-};   // end class type_checker
-
 } // end namespace cfg
 } // end namespace crab
 

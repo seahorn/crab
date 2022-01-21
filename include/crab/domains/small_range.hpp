@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crab/support/os.hpp>
+#include <crab/domains/lattice_domain.hpp>
 
 namespace crab {
 namespace domains {
@@ -8,7 +9,7 @@ namespace domains {
  * Class that represents the range of intervals
  * {[0,0], [1,1], [0,1], [0,+oo], [1,+oo]}
  */
-class small_range {
+class small_range: public lattice_domain_api<small_range> {
   
   using kind_t = enum {
     Bottom,
@@ -109,9 +110,17 @@ public:
   small_range &operator=(const small_range &other) = default;
   small_range &operator=(small_range &&other) = default;
 
-  bool is_bottom() const;
+  small_range make_top() const override;
 
-  bool is_top() const;
+  small_range make_bottom() const override;
+
+  void set_to_top() override;
+
+  void set_to_bottom() override;
+  
+  bool is_bottom() const override;
+
+  bool is_top() const override;
 
   bool is_zero() const;
 
@@ -125,22 +134,26 @@ public:
        / \ /
       0   1
    */
-  bool operator<=(small_range other) const;
+  bool operator<=(const small_range &other) const override;
 
-  bool operator==(small_range other) const;
+  bool operator==(const small_range &other) const;
 
-  small_range operator|(small_range other) const;
+  void operator|=(const small_range &other) override;
+  
+  small_range operator|(const small_range &other) const override;
 
-  small_range operator||(small_range other) const;
+  small_range operator||(const small_range &other) const override;
 
-  small_range operator&(small_range other) const;
+  small_range operator&(const small_range &other) const override;
 
-  small_range operator&&(small_range other) const;
+  small_range operator&&(const small_range &other) const override;
 
   small_range increment(void);
 
-  void write(crab_os &o) const;
+  void write(crab_os &o) const override;
 
+  std::string domain_name() const override;
+  
   friend crab_os &operator<<(crab_os &o, const small_range &v) {
     v.write(o);
     return o;

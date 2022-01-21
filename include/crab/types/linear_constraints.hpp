@@ -642,10 +642,9 @@ public:
       return (this->_expr.is_constant() && this->_expr.constant() == 0);
     case INEQUALITY:
       return (this->_expr.is_constant() && this->_expr.constant() <= 0);
-    case STRICT_INEQUALITY:
-      return (this->_expr.is_constant() && this->_expr.constant() < 0);
     default:
-      CRAB_ERROR("Unreachable");
+      //case STRICT_INEQUALITY:
+      return (this->_expr.is_constant() && this->_expr.constant() < 0);
     }
   }
 
@@ -657,10 +656,9 @@ public:
       return (this->_expr.is_constant() && this->_expr.constant() != 0);
     case INEQUALITY:
       return (this->_expr.is_constant() && this->_expr.constant() > 0);
-    case STRICT_INEQUALITY:
-      return (this->_expr.is_constant() && this->_expr.constant() >= 0);
     default:
-      CRAB_ERROR("Unreachable");
+      //case STRICT_INEQUALITY:
+      return (this->_expr.is_constant() && this->_expr.constant() >= 0);
     }
   }
 
@@ -844,7 +842,6 @@ negate_inequality(const linear_constraint<z_number, VariableName> &c) {
 template <typename Number, typename VariableName>
 linear_constraint<Number, VariableName> strict_to_non_strict_inequality(
     const linear_constraint<Number, VariableName> &c) {
-  using linear_constraint_t = linear_constraint<Number, VariableName>;
   assert(c.is_strict_inequality());
   // Default implementation: do nothing
   // Given constraint e < 0 we could return two linear constraints: e <= 0 and e
@@ -889,10 +886,9 @@ linear_constraint<Number, VariableName>::negate() const {
     }
     case EQUALITY:
       return linear_constraint_t(this->_expr, DISEQUATION);
-    case DISEQUATION:
-      return linear_constraint_t(this->_expr, EQUALITY);
     default:
-      CRAB_ERROR("Cannot negate linear constraint");
+      //case DISEQUATION:
+      return linear_constraint_t(this->_expr, EQUALITY);
     }
   }
 }

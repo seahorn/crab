@@ -86,16 +86,16 @@ int main(int argc, char **argv) {
 #ifdef HAVE_APRON
   {
     // A forward+backward analysis should prove the assertion holds.
-    z_ae_box_apron_t initial_states;
-    backward_run<z_ae_box_apron_t>(cfg, cfg->entry(), initial_states, 1, 2, 20,
+    z_aa_box_apron_t initial_states;
+    backward_run<z_aa_box_apron_t>(cfg, cfg->entry(), initial_states, 1, 2, 20,
                                    stats_enabled);
   }
 #endif
 
   {
     // A forward+backward analysis should prove the assertion holds.
-    z_ae_int_t initial_states;
-    backward_run<z_ae_int_t>(cfg, cfg->entry(), initial_states, 1, 2, 20,
+    z_aa_int_t initial_states;
+    backward_run<z_aa_int_t>(cfg, cfg->entry(), initial_states, 1, 2, 20,
                              stats_enabled);
   }
 

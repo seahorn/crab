@@ -145,7 +145,7 @@ template <typename CFG> class call_graph {
         : m_cg(cg), m_vertex_map(vertex_map), m_callee_map(callee_map),
           m_from(from) {}
 
-    void visit(callsite_t &cs) {
+    virtual void visit(callsite_t &cs) override {
       auto it_from = m_vertex_map.find(&m_from);
       auto it_to = m_vertex_map.find(&cs);
 

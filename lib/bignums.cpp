@@ -47,6 +47,29 @@ z_number::z_number(int64_t n) {
   }
 }
 
+z_number z_number::from_uint64(uint64_t n) {
+  z_number r;
+  if (n <= std::numeric_limits<unsigned long>::max()) {
+    mpz_set_ui(r._n, static_cast<unsigned long>(n));
+  } else {
+    mpz_import(r._n, 1, 1, sizeof(uint64_t), 0, 0, &n);
+  }
+  return r;
+}
+
+z_number z_number::from_raw_data(const uint64_t*data, size_t num_words,
+				 bool order) {
+  z_number r;
+  mpz_import(r._n, num_words, (order? 1 : -1), sizeof(uint64_t), 0, 0, data);
+  return r;
+}
+
+uint64_t* z_number::to_raw_data(size_t &num_words, bool &sign, bool order) {
+  sign = (*this >= 0);
+  return (uint64_t*)mpz_export(nullptr, &num_words, (order? 1: -1),
+			       sizeof(uint64_t), 0, 0, _n);
+}
+  
 z_number::z_number(const std::string &s, unsigned base) {
   int res = mpz_init_set_str(_n, s.c_str(), base);
   if (res == -1) {
@@ -63,16 +86,6 @@ z_number z_number::from_mpz_t(mpz_t n) {
 z_number z_number::from_mpz_srcptr(mpz_srcptr n) {
   z_number z;
   mpz_set(z._n, n);
-  return z;
-}
-
-z_number z_number::from_uint64(uint64_t n) {
-  z_number z;
-  if (n <= std::numeric_limits<unsigned long>::max()) {
-    mpz_set_ui(z._n, static_cast<unsigned long>(n));
-  } else {
-    mpz_import(z._n, 1, 1, sizeof(uint64_t), 0, 0, &n);
-  }
   return z;
 }
 

@@ -13,6 +13,18 @@
   </tr>
 </table>
 
+If you use this library please cite the paper using the bibtex reference below.
+
+```
+@inproceedings{GN2021,
+  author={Arie Gurfinkel and Jorge A. Navas},
+  title={Abstract Interpretation of {LLVM} with a Region-based Memory Model},
+  booktitle = {Software Verification - 13th International Conference, {VSTTE} 2021,
+               and 14th International Workshop, {NSV} 2021, 
+               October 18-19, 2021, Revised Selected Papers},
+  year={2021}
+}
+```
 
 # Description #
 

@@ -68,8 +68,9 @@ inline crab::crab_os &operator<<(crab::crab_os &o, binary_operation_t op) {
   case BINOP_ASHR:
     o << ">>_r";
     break;
-  default:
-    CRAB_ERROR("unexpected binary operation ", op);
+    // Clang complains switch already covers all values
+    // default:
+    // CRAB_ERROR("unexpected binary operation ", op);
   }
   return o;
 }
@@ -85,8 +86,9 @@ inline crab::crab_os &operator<<(crab::crab_os &o, bool_binary_operation_t op) {
   case BINOP_BXOR:
     o << "^";
     break;
-  default:
-    CRAB_ERROR("unexpected boolean binary operation ", op);
+    // Clang complains switch already covers all values
+    //default:
+    //CRAB_ERROR("unexpected boolean binary operation ", op);
   }
   return o;
 }
@@ -102,8 +104,9 @@ inline crab::crab_os &operator<<(crab::crab_os &o, cast_operation_t op) {
   case CAST_ZEXT:
     o << "zext";
     break;
-  default:
-    CRAB_ERROR("unexpected cast operation", op);
+    // Clang complains switch already covers all values
+    //default:
+    //CRAB_ERROR("unexpected cast operation", op);
   }
   return o;
 }

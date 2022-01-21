@@ -330,11 +330,10 @@ public:
       case REF_GEQ:
         o << " => ";
         break;
-      case REF_GT:
+      default:
+	//case REF_GT:
         o << " > ";
         break;
-      default:;
-        // unreachable
       }
       if (!m_rhs)
         o << "NULL_REF";

@@ -99,9 +99,8 @@ int main(int argc, char **argv) {
   }
 
   {
-    domain_product2<z_number, varname_t, z_sdbm_domain_t,
-                    z_dis_interval_domain_t>
-        inv;
+    reduced_domain_product2<z_number, varname_t, z_sdbm_domain_t,
+			    z_dis_interval_domain_t> inv;      
     inv.intrinsic("foo1", {o1, o2}, {i1, i2});
     inv.intrinsic("foo2", {o1}, {i1});
     inv.intrinsic("foo2", {}, {i1});

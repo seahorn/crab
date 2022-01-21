@@ -193,6 +193,51 @@ int main(int argc, char **argv) {
       crab::outs() << cfg;
       run_and_check(&cfg, cfg.entry(), init, false, 2, 2, 20, stats_enabled);
     }
+
+    {
+      // Rename
+      crab::outs() << "Unit test 6 for rename\n";
+      {
+	z_var x0(vfac["x0"], crab::INT_TYPE, 32);
+	z_var x1(vfac["x1"], crab::INT_TYPE, 32);
+	z_var y0(vfac["y0"], crab::INT_TYPE, 32);
+	z_var y1(vfac["y1"], crab::INT_TYPE, 32);
+		
+	z_rgn_bool_int_t dom;
+	dom.assign(x0, z_number(5));
+	dom.assign(x1, z_number(10));
+	std::vector<z_var> old_vars{x0,x1};
+	std::vector<z_var> new_vars{y0,y1};
+	crab::outs() << dom << "\n";       
+	dom.rename(old_vars,new_vars);
+	crab::outs() << "After renaming {" << x0 << "," << x1 << "} with "
+		     << "{" << y0 << "," << y1 << "}=" << dom << "\n";      
+      }
+      {
+	z_var rgn1(vfac["rgn1"], crab::REG_INT_TYPE, 32);
+	z_var rgn2(vfac["rgn2"], crab::REG_INT_TYPE, 32);
+	z_var rgn3(vfac["rgn3"], crab::REG_INT_TYPE, 32);
+	z_var rgn4(vfac["rgn4"], crab::REG_INT_TYPE, 32);	
+	z_var ref1(vfac["ref1"], crab::REF_TYPE, 32);
+	z_var ref2(vfac["ref2"], crab::REF_TYPE, 32);
+	
+	z_rgn_bool_int_t dom;
+	dom.region_init(rgn1);
+	dom.region_init(rgn2);
+
+	z_var_or_cst_t n20(z_number(20), crab::variable_type(crab::INT_TYPE, 32));
+	z_var_or_cst_t n30(z_number(30), crab::variable_type(crab::INT_TYPE, 32));
+	
+	dom.ref_store(ref1, rgn1, n20);
+	dom.ref_store(ref2, rgn2, n30);
+	std::vector<z_var> old_vars{rgn1, rgn2};
+	std::vector<z_var> new_vars{rgn3, rgn4};
+	crab::outs() << dom << "\n";       
+	dom.rename(old_vars,new_vars);
+	crab::outs() << "After renaming {" << rgn1 << "," << rgn2 << "} with "
+		     << "{" << rgn3 << "," << rgn4 << "}=" << dom << "\n";    	
+      }                  
+    }
   }
   return 0;
 }

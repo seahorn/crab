@@ -32,18 +32,18 @@ public:
 /*
  * Dummy implementation if Apron not found
  */
-#include "crab/domains/abstract_domain.def"
+#include <crab/domains/dummy_abstract_domain.hpp>
 namespace crab {
 namespace domains {
 template <typename N, typename V, apron_domain_id_t Dom,
           class Params = ApronDefaultParams<N>>
 class apron_domain final
-    : public abstract_domain_api<apron_domain<N, V, Dom, Params>> {
+  : public dummy_abstract_domain<apron_domain<N,V,Dom,Params>> {
 public:
-  using this_type = apron_domain<N, V, Dom, Params>;
-  apron_domain() {}
-  UNAVAILABLE_DOMAIN("No Apron. Run cmake with -DCRAB_USE_APRON=ON")
-};
+  std::string not_implemented_msg() const override {
+    return "No Apron. Run cmake with -DCRAB_USE_APRON=ON";
+  }    
+};  
 } // namespace domains
 } // namespace crab
 #else

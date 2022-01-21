@@ -438,13 +438,13 @@ private:
     member_component_visitor(basic_block_label_t node)
         : _node(node), _found(false) {}
 
-    void visit(wto_vertex_t &c) {
+    virtual void visit(wto_vertex_t &c) override {
       if (!_found) {
         _found = (c.node() == _node);
       }
     }
 
-    void visit(wto_cycle_t &c) {
+    virtual void visit(wto_cycle_t &c) override {
       if (!_found) {
         _found = (c.head() == _node);
         if (!_found) {
@@ -471,7 +471,7 @@ public:
       : m_iterator(iterator), m_entry(entry), m_init_inv(std::move(init)),
         m_assumptions(assumptions), m_skip(true) {}
 
-  void visit(wto_vertex_t &vertex) {
+  virtual void visit(wto_vertex_t &vertex) override {
     basic_block_label_t node = vertex.node();
 
     /** decide whether skip vertex or not **/
@@ -514,7 +514,7 @@ public:
     compute_post(node, pre);
   }
 
-  void visit(wto_cycle_t &cycle) {
+  virtual void visit(wto_cycle_t &cycle) override {
     basic_block_label_t head = cycle.head();
 
     auto get_nesting = [this](basic_block_label_t n) {
@@ -670,7 +670,7 @@ private:
 public:
   wto_processor(interleaved_iterator_t *iterator) : m_iterator(iterator) {}
 
-  void visit(wto_vertex_t &vertex) {
+  virtual void visit(wto_vertex_t &vertex) override {
     crab::CrabStats::count("Fixpo.process_invariants");
     crab::ScopedCrabStats __st__("Fixpo.process_invariants");
 
@@ -679,7 +679,7 @@ public:
     m_iterator->process_post(node, m_iterator->get_post(node));
   }
 
-  void visit(wto_cycle_t &cycle) {
+  virtual void visit(wto_cycle_t &cycle) override {
     crab::CrabStats::count("Fixpo.process_invariants");
     crab::ScopedCrabStats __st__("Fixpo.process_invariants");
 

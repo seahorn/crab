@@ -19,31 +19,41 @@ private:
   bool fits_sint() const;
   bool fits_slong() const;
 
-public:
-  // overloaded typecast operators
-  explicit operator int64_t() const;
-
+  // used only by q_number
+  static z_number from_mpz_t(mpz_t n);
+  static z_number from_mpz_srcptr(mpz_srcptr n);
+  
+public: 
   z_number();
   z_number(int64_t n);
   z_number(const std::string &s, unsigned base = 10);
-
   static z_number from_uint64(uint64_t n);
-  static z_number from_mpz_t(mpz_t n);
-  static z_number from_mpz_srcptr(mpz_srcptr n);
-
+  /* Return a z_number from num_words words of binary data. If order
+   is true then most significant word first, otherwise the least
+   significant first. The number is treated as unsigned so sign must
+   be treated separately. */  
+  static z_number from_raw_data(const uint64_t*data, size_t num_words,
+				bool order = false);
+  /* Return an array of words from this. If the number is positive
+   then sign is true. If order is true then most significant word
+   first, otherwise the least significant first */  
+  uint64_t *to_raw_data(size_t &num_words, bool &sign, bool order = false);
+  
+  ~z_number();
+  
   z_number(const z_number &o);
   z_number(z_number &&o);
   z_number &operator=(const z_number &o);
   z_number &operator=(z_number &&o);
 
-  ~z_number();
-
-  mpz_srcptr get_mpz_t() const { return _n; }
-
-  mpz_ptr get_mpz_t() { return _n; }
-
+  // overloaded typecast operators
+  explicit operator int64_t() const;
+  
   std::string get_str(unsigned base = 10) const;
 
+  // do not use it: to be removed
+  mpz_ptr get_mpz_t() { return _n; }
+  
   std::size_t hash() const;
 
   bool fits_int64() const;

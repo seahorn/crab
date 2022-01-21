@@ -27,11 +27,8 @@ public:
   using term_ptr = std::shared_ptr<term_t>;
 
   virtual ~term() {}
-
-  virtual term_kind kind(void) = 0;
-
-  bool operator<(term_t &other);
-
+  virtual term_kind kind(void) const = 0;
+  bool operator<(const term_t &other) const;
   virtual void write(crab_os &o) const = 0;
 
   int depth;
@@ -49,11 +46,9 @@ public:
   using term_ptr = std::shared_ptr<term_t>;
 
   term_ref(term_ptr _p) : p(_p) {}
-
   term_ref(term_t *_p) : p(_p) {}
-
   bool operator<(const term_ref &other) const { return *p < *(other.p); }
-
+  
   term_ptr p;
 };
 
@@ -61,36 +56,39 @@ public:
 template <class Num, class Ftor> class const_term : public term<Num, Ftor> {
 public:
   const_term(Num _val) : val(_val) {}
-  term_kind kind(void) { return TERM_CONST; }
-
+  term_kind kind(void) const { return TERM_CONST; }
   void write(crab_os &o) const { o << "c(" << val << ")"; }
+  
   Num val;
 };
 
 template <class Num, class Ftor> class var_term : public term<Num, Ftor> {
 public:
   var_term(var_id _var) : var(_var) {}
-  term_kind kind(void) { return TERM_VAR; }
+  term_kind kind(void) const { return TERM_VAR; }
   void write(crab_os &o) const { o << "v(" << var << ")"; }
+  
   var_id var;
 };
 
 template <class Num, class Ftor> class ftor_term : public term<Num, Ftor> {
 public:
-  ftor_term(Ftor _f, std::vector<term_id> &_args) : ftor(_f), args(_args) {}
-  term_kind kind(void) { return TERM_APP; }
+  ftor_term(Ftor _f, const std::vector<term_id> &_args) : ftor(_f), args(_args) {}
+  term_kind kind(void) const { return TERM_APP; }
   void write(crab_os &o) const {
-    // o << "<op>(";
-    o << ftor << "(";
-    bool first = true;
-    for (term_id c : args) {
-      if (first)
-        first = false;
-      else
-        o << ", ";
-      o << c;
+    o << ftor;
+    if (!args.empty()) {
+      o << "(";
+      bool first = true;
+      for (term_id c : args) {
+	if (first)
+	  first = false;
+	else
+	  o << ", ";
+	o << c;
+      }
+      o << ")";
     }
-    o << ")";
   }
 
   Ftor ftor;
@@ -98,25 +96,27 @@ public:
 };
 
 // These functions are super-unsafe.
-template <class Num, class Ftor> var_id term_var(term<Num, Ftor> *term) {
-  return static_cast<var_term<Num, Ftor> *>(term)->var;
+template <class Num, class Ftor>
+var_id term_var(const term<Num, Ftor> *term) {
+  return static_cast<const var_term<Num, Ftor> *>(term)->var;
 }
-template <class Num, class Ftor> Num term_const(term<Num, Ftor> *term) {
-  return static_cast<const_term<Num, Ftor> *>(term)->val;
+template <class Num, class Ftor>
+Num term_const(const term<Num, Ftor> *term) {
+  return static_cast<const const_term<Num, Ftor> *>(term)->val;
 }
-
-template <class Num, class Ftor> Ftor term_ftor(term<Num, Ftor> *term) {
-  return static_cast<ftor_term<Num, Ftor> *>(term)->ftor;
+template <class Num, class Ftor>
+Ftor term_ftor(const term<Num, Ftor> *term) {
+  return static_cast<const ftor_term<Num, Ftor> *>(term)->ftor;
 }
 
 template <class Num, class Ftor>
-std::vector<term_id> &term_args(term<Num, Ftor> *term) {
-  return static_cast<ftor_term<Num, Ftor> *>(term)->args;
+const std::vector<term_id> &term_args(const term<Num, Ftor> *term) {
+  return static_cast<const ftor_term<Num, Ftor> *>(term)->args;
 }
 
 // Term ordering
 template <class Num, class Ftor>
-bool term<Num, Ftor>::operator<(term_t &other) {
+bool term<Num, Ftor>::operator<(const term_t &other) const {
   if (kind() != other.kind())
     return kind() < other.kind();
 
@@ -131,8 +131,8 @@ bool term<Num, Ftor>::operator<(term_t &other) {
     if (term_ftor(this) != term_ftor(&other))
       return term_ftor(this) < term_ftor(&other);
 
-    std::vector<int> &xargs(term_args(this));
-    std::vector<int> &yargs(term_args(&other));
+    const std::vector<int> &xargs(term_args(this));
+    const std::vector<int> &yargs(term_args(&other));
 
     if (xargs.size() != yargs.size())
       return xargs.size() < yargs.size();
@@ -188,12 +188,12 @@ public:
     term_ref_t ref(new const_term_t(n));
     return add_term(ref);
   };
-  boost::optional<term_id> find_const(Num &n) {
+  boost::optional<term_id> find_const(const Num &n) {
     term_ref_t ref(new const_term_t(n));
     return find_term(ref);
   }
 
-  term_id make_var(var_id &n) {
+  term_id make_var(var_id n) {
     free_var = std::max(free_var, n + 1);
     term_ref_t ref(new var_term_t(n));
     return add_term(ref);
@@ -212,7 +212,7 @@ public:
 
   template <typename T> void collect_args(std::vector<T> &vec) {}
 
-  term_id apply_ftor(const Ftor &f, std::vector<term_id> &ids) {
+  term_id apply_ftor(const Ftor &f, const std::vector<term_id> &ids) {
     term_ref_t ref(new ftor_term_t(f, ids));
     return add_term(ref);
   }
@@ -224,7 +224,7 @@ public:
     return apply_ftor(f, ids);
   }
 
-  boost::optional<term_id> find_ftor(Ftor &f, std::vector<term_id> &ids) {
+  boost::optional<term_id> find_ftor(Ftor &f, const std::vector<term_id> &ids) {
     term_ref_t ref(new ftor_term_t(f, ids));
     return find_term(ref);
   }
@@ -237,6 +237,8 @@ public:
   }
 
   term_t *get_term_ptr(term_id t) { return terms[t].p.get(); }
+
+  const term_t *get_term_ptr(term_id t) const { return terms[t].p.get(); }
 
   void add_ref(term_id t) { _ref_count[t]++; }
 
@@ -260,7 +262,7 @@ public:
   }
 
   // Check if a tx is a generalization of ty, given an existing context.
-  bool map_leq(term_table_t &y, term_id tx, term_id ty, term_map_t &map) {
+  bool map_leq(term_table_t &y, term_id tx, term_id ty, term_map_t &map) const {
     auto it = map.find(ty);
     if (it != map.end())
       return (*it).second == tx;
@@ -278,8 +280,8 @@ public:
           term_ftor(rx.p.get()) != term_ftor(ry.p.get()))
         return false;
 
-      std::vector<int> &xargs(term_args(rx.p.get()));
-      std::vector<int> &yargs(term_args(ry.p.get()));
+      const std::vector<int> &xargs(term_args(rx.p.get()));
+      const std::vector<int> &yargs(term_args(ry.p.get()));
 
       if (xargs.size() != yargs.size())
         return false;
@@ -297,7 +299,7 @@ public:
   }
 
   term_id_t generalize(term_table_t &y, term_id tx, term_id ty,
-                       term_table_t &out, gener_map_t &g_map) {
+                       term_table_t &out, gener_map_t &g_map) const {
     auto txy = std::make_pair(tx, ty);
     auto it = g_map.find(txy);
     if (it != g_map.end()) {
@@ -332,8 +334,8 @@ public:
             break;
           }
 
-          std::vector<term_id> &xargs(term_args(px));
-          std::vector<term_id> &yargs(term_args(py));
+          const std::vector<term_id> &xargs(term_args(px));
+          const std::vector<term_id> &yargs(term_args(py));
           if (xargs.size() != yargs.size()) {
             ret = out.fresh_var();
             break;
@@ -366,7 +368,7 @@ public:
         ret = make_const(term_const(px));
       } else {
         assert(kx == TERM_APP);
-        std::vector<term_id> &xargs(term_args(px));
+        const std::vector<term_id> &xargs(term_args(px));
         std::vector<term_id> yargs;
         for (unsigned int ii = 0; ii < xargs.size(); ii++)
           yargs.push_back(copy_term(tx, xargs[ii], ren_map));
@@ -392,7 +394,7 @@ public:
     }
   }
 
-  int size() { return terms.size(); }
+  int size() const { return terms.size(); }
 
   int depth(term_id t) { return _depth[t]; }
 
@@ -507,7 +509,7 @@ public:
     }
   }
 
-  void run(std::vector<equation_t> &eqs) {
+  void run(const std::vector<equation_t> &eqs) {
     for (auto e : eqs) {
       *this += e;
     }
@@ -614,8 +616,8 @@ private:
     if (term_ftor(t1_ptr) != term_ftor(t2_ptr))
       return false;
 
-    std::vector<term_id_t> &xargs(term_args(t1_ptr));
-    std::vector<term_id_t> &yargs(term_args(t2_ptr));
+    const std::vector<term_id_t> &xargs(term_args(t1_ptr));
+    const std::vector<term_id_t> &yargs(term_args(t2_ptr));
 
     if (xargs.size() != yargs.size())
       return false;
