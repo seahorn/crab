@@ -163,6 +163,126 @@ private:
       out += kv.first;
     }
   }
+
+  union_find_domain_t join_or_widening(const union_find_domain_t &o, bool is_join) const {
+    if (is_bottom()) {
+      return o;
+    } else if (o.is_bottom()) {
+      return *this;
+    } else if (is_top() | o.is_top()) {
+      union_find_domain_t res;
+      return res;
+    } else {
+      CRAB_LOG("union-find",
+               crab::outs() << (is_join ? "Join" : "Widen")
+	                    << "\n\t" << *this << "\n\t" << o << "\n";);
+      union_find_domain_t left(*this);
+      union_find_domain_t right(o);
+
+      // Keep only common variables      
+      variable_set_t left_vars = variable_set_t::bottom();
+      left.get_all_variables(left_vars);
+      for (auto v: left_vars) {
+	if (!right.contains(v)) {
+	  left.forget(v);
+	}
+      }
+      variable_set_t right_vars = variable_set_t::bottom();      
+      right.get_all_variables(right_vars);      
+      for (auto v: right_vars) {
+	if (!left.contains(v)) {
+	  right.forget(v);
+	}
+      }
+      
+      equiv_class_vars_t right_equiv_classes = right.equiv_classes_vars();
+      equiv_class_vars_t left_equiv_classes = left.equiv_classes_vars();
+      
+      // Merge equivalence classes from the left to the right while
+      // joining/widening the domains associated to the equivalence
+      // classes.
+      //
+      // The merging on the right is needed so that right_dom is updated.
+      for (auto &kv : left_equiv_classes) {
+        boost::optional<variable_t> right_repr = right.merge_vars(kv.second);
+        if (!right_repr)
+          continue; // this shouldn't happen
+        domain_t &left_dom = left.get_equiv_class(kv.first).get_domain();
+        const domain_t &right_dom =
+            right.get_equiv_class(*right_repr).get_domain();
+        left_dom = (is_join ? (left_dom | right_dom): (left_dom || right_dom));
+      }
+
+      // Merge equivalence classes from the right to the left while
+      // joining/widening the domains associated to the equivalence
+      // classes.
+      for (auto &kv : right_equiv_classes) {
+        boost::optional<variable_t> left_repr = left.merge_vars(kv.second);
+        if (!left_repr)
+          continue; // this shouldn't happen
+        domain_t &left_dom = left.get_equiv_class(*left_repr).get_domain();
+        const domain_t &right_dom =
+            right.get_equiv_class(kv.first).get_domain();
+	left_dom = (is_join ? (left_dom | right_dom): (left_dom || right_dom));	
+      }
+      CRAB_LOG("union-find", crab::outs() << "Res=" << left << "\n";);
+      return left;
+    }
+  }
+
+  union_find_domain_t meet_or_narrowing(const union_find_domain_t &o, bool is_meet) const {
+    if (is_bottom() || o.is_top()) {
+      return *this;
+    } else if (o.is_bottom() || is_top()) {
+      return o;
+    } else {
+      /* TOIMPROVE: this operation is imprecise because we still merge
+       * the equivalence classes.
+       */
+      union_find_domain_t left(*this);
+      union_find_domain_t right(o);
+      equiv_class_vars_t right_equiv_classes = right.equiv_classes_vars();
+      equiv_class_vars_t left_equiv_classes = left.equiv_classes_vars();
+
+      // Merge equivalence classes from the right to the left while
+      // applying meet/narrowing
+      //
+      // The merging on the right is needed so that right_dom is updated.
+      for (auto &kv : left_equiv_classes) {
+        domain_t &left_dom = left.get_equiv_class(kv.first).get_domain();
+        // add variables on the right if they do not exist
+        boost::optional<variable_t> right_repr =
+            right.merge_vars(kv.second, left_dom);
+        if (!right_repr)
+          continue; // this shouldn't happen
+        const domain_t &right_dom =
+            right.get_equiv_class(*right_repr).get_domain();
+        left_dom = (is_meet ? left_dom & right_dom: left_dom && right_dom);
+        if (left_dom.is_bottom()) {
+          left.set_to_bottom();
+          return left;
+        }
+      }
+
+      // Merge equivalence classes from the right to the left while
+      // applying meet/narrowing
+      for (auto &kv : right_equiv_classes) {
+        const domain_t &right_dom =
+            right.get_equiv_class(kv.first).get_domain();
+        boost::optional<variable_t> left_repr =
+            left.merge_vars(kv.second, right_dom);
+        if (!left_repr)
+          continue; // this shouldn't happen
+        domain_t &left_dom = left.get_equiv_class(*left_repr).get_domain();
+	left_dom = (is_meet ? left_dom & right_dom: left_dom && right_dom);
+        if (left_dom.is_bottom()) {
+          left.set_to_bottom();
+          return left;
+        }
+      }
+      return left;
+    }
+  }
   
 public:
   union_find_domain(lattice_val val = lattice_val::neither_top_nor_bot)
@@ -194,7 +314,6 @@ public:
 
   // Pre-condition: contains(v)
   // NOTE: it is not "const" because it does path-compression
-  // TODO: make non-recursive
   variable_t &find(const variable_t &v) {
     if (!contains(v)) {
       assert(false);
@@ -208,6 +327,22 @@ public:
       return parent = find(parent);
     }
   }
+
+  // Pre-condition: contains(v)
+  // find operation without path-compression
+  variable_t &find(const variable_t &v) const {
+    if (!contains(v)) {
+      assert(false);
+      CRAB_ERROR("called union_find_domain::find on a non-existing variable ",
+                 v, " in ", *this);
+    }
+    variable_t &parent = m_parents.at(v);
+    if (parent == v) {
+      return parent;
+    } else {
+      return find(parent);
+    }
+  }  
 
   // Return the representative after merging x and y in the same
   // equivalence class.
@@ -317,7 +452,25 @@ public:
   }
 
   // Pre-condition: contains(x)
-  const domain_t &operator[](const variable_t &x) {
+  domain_t &get(const variable_t &x) {
+    if (is_bottom()) {
+      CRAB_ERROR("called union_find_domain::operator[] on bottom");
+    }
+    if (is_top()) {
+      CRAB_ERROR("called union_find_domain::operator[] on top");
+    }
+    if (!contains(x)) {
+      CRAB_ERROR("union_find_domain::operator[] on a non-existing variable ", x,
+                 " in ", *this);
+    }
+
+    variable_t rep_x = find(x);
+    equivalence_class_t &ec_x = m_classes.at(rep_x);
+    return ec_x.get_domain();
+  }
+
+  // Pre-condition: contains(x)
+  const domain_t &get(const variable_t &x) const {
     if (is_bottom()) {
       CRAB_ERROR("called union_find_domain::operator[] on bottom");
     }
@@ -332,7 +485,7 @@ public:
     variable_t rep_x = find(x);
     const equivalence_class_t &ec_x = m_classes.at(rep_x);
     return ec_x.get_domain();
-  }
+  }  
 
   // Return true if *this is a refined partitioning of o
   //    forall x,y \in vars(o) :: o.find(x) != o.find(y) =>
@@ -374,129 +527,19 @@ public:
   }
 
   union_find_domain_t operator|(const union_find_domain_t &o) const {
-    if (is_bottom()) {
-      return o;
-    } else if (o.is_bottom()) {
-      return *this;
-    } else if (is_top() | o.is_top()) {
-      union_find_domain_t res;
-      return res;
-    } else {
-      CRAB_LOG("union-find",
-               crab::outs() << "Join \n\t" << *this << "\n\t" << o << "\n";);
-      union_find_domain_t left(*this);
-      union_find_domain_t right(o);
-
-      // Keep only common variables      
-      variable_set_t left_vars = variable_set_t::bottom();
-      left.get_all_variables(left_vars);
-      for (auto v: left_vars) {
-	if (!right.contains(v)) {
-	  left.forget(v);
-	}
-      }
-      variable_set_t right_vars = variable_set_t::bottom();      
-      right.get_all_variables(right_vars);      
-      for (auto v: right_vars) {
-	if (!left.contains(v)) {
-	  right.forget(v);
-	}
-      }
-      
-      equiv_class_vars_t right_equiv_classes = right.equiv_classes_vars();
-      equiv_class_vars_t left_equiv_classes = left.equiv_classes_vars();
-      
-      // Merge equivalence classes from the left to the right while
-      // joining the domains associated to the equivalence classes.
-      //
-      // The merging on the right is needed so that right_dom is updated.
-      for (auto &kv : left_equiv_classes) {
-        boost::optional<variable_t> right_repr = right.merge_vars(kv.second);
-        if (!right_repr)
-          continue; // this shouldn't happen
-        domain_t &left_dom = left.get_equiv_class(kv.first).get_domain();
-        const domain_t &right_dom =
-            right.get_equiv_class(*right_repr).get_domain();
-        left_dom = left_dom | right_dom;
-      }
-
-      // Merge equivalence classes from the right to the left while
-      // joining the domains associated to the equivalence classes.
-      for (auto &kv : right_equiv_classes) {
-        boost::optional<variable_t> left_repr = left.merge_vars(kv.second);
-        if (!left_repr)
-          continue; // this shouldn't happen
-        domain_t &left_dom = left.get_equiv_class(*left_repr).get_domain();
-        const domain_t &right_dom =
-            right.get_equiv_class(kv.first).get_domain();
-        left_dom = left_dom | right_dom;
-      }
-      CRAB_LOG("union-find", crab::outs() << "Res=" << left << "\n";);
-      return left;
-    }
+    return join_or_widening(o, true /*is_join*/);
   }
 
   union_find_domain_t operator&(const union_find_domain_t &o) const {
-    if (is_bottom() || o.is_top()) {
-      return *this;
-    } else if (o.is_bottom() || is_top()) {
-      return o;
-    } else {
-      /* TOIMPROVE: this operation is imprecise because we still merge
-       * the equivalence classes.
-       */
-      union_find_domain_t left(*this);
-      union_find_domain_t right(o);
-      equiv_class_vars_t right_equiv_classes = right.equiv_classes_vars();
-      equiv_class_vars_t left_equiv_classes = left.equiv_classes_vars();
-
-      // Merge equivalence classes from the right to the left while
-      // applying the meet
-      //
-      // The merging on the right is needed so that right_dom is updated.
-      for (auto &kv : left_equiv_classes) {
-        domain_t &left_dom = left.get_equiv_class(kv.first).get_domain();
-        // add variables on the right if they do not exist
-        boost::optional<variable_t> right_repr =
-            right.merge_vars(kv.second, left_dom);
-        if (!right_repr)
-          continue; // this shouldn't happen
-        const domain_t &right_dom =
-            right.get_equiv_class(*right_repr).get_domain();
-        left_dom = left_dom & right_dom;
-        if (left_dom.is_bottom()) {
-          left.set_to_bottom();
-          return left;
-        }
-      }
-
-      // Merge equivalence classes from the right to the left while
-      // applying the meet
-      for (auto &kv : right_equiv_classes) {
-        const domain_t &right_dom =
-            right.get_equiv_class(kv.first).get_domain();
-        boost::optional<variable_t> left_repr =
-            left.merge_vars(kv.second, right_dom);
-        if (!left_repr)
-          continue; // this shouldn't happen
-        domain_t &left_dom = left.get_equiv_class(*left_repr).get_domain();
-        left_dom = left_dom & right_dom;
-        if (left_dom.is_bottom()) {
-          left.set_to_bottom();
-          return left;
-        }
-      }
-      return left;
-    }
+    return meet_or_narrowing(o, true /*is_meet*/);
   }
 
   union_find_domain_t operator||(const union_find_domain_t &o) const {
-    // finite domain
-    return *this | o;
+    return join_or_widening(o, false /*is_join*/);    
   }
+  
   union_find_domain_t operator&&(const union_find_domain_t &o) const {
-    // finite domain
-    return *this & o;
+    return meet_or_narrowing(o, false /*is_meet*/);
   }
 
   // Add y into the equivalence class of x
