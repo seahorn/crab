@@ -57,8 +57,8 @@ obtained using Docker:
 
 
 ``` shell
-docker pull seahorn/crab_elina:bionic
-docker run -v `pwd`:/host -it seahorn/crab_elina:bionic
+docker pull seahorn/crab:bionic
+docker run -v `pwd`:/host -it seahorn/crab:bionic
 ```
 
 # Requirements for compiling from sources #
@@ -66,7 +66,7 @@ docker run -v `pwd`:/host -it seahorn/crab_elina:bionic
 Crab is written in C++ and relies on the Boost library. The main
 requirements are:
 
-- Modern C++ compiler supporting c++11
+- C++11 compiler 
 - Boost >= 1.65
 - GMP 
 - MPFR (if `-DCRAB_USE_APRON=ON` or `-DCRAB_USE_ELINA=ON`)
