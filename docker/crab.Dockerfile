@@ -58,5 +58,8 @@ RUN cmake -GNinja \
           ../ && \
     cmake --build . --target install
 
+# Run tests
+RUN /crab/tests/run_tests.sh /crab/tests/expected_results.out /crab/build
+
 WORKDIR /crab
 
