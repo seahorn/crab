@@ -30,14 +30,15 @@ option(CRAB_USE_APRON "Enable Apron library" OFF)
 option(CRAB_USE_ELINA "Enable Elina library" OFF)
 option(CRAB_BUILD_LIBS_SHARED "Build all Crab libraries dynamically." OFF)
 option(CRAB_ENABLE_STATS "Enable stats" ON)
-
-## Only for developers use
-option(CRAB_ENABLE_TESTS "Enable tests" OFF)
-option(CRAB_USE_GENERIC_WRAPPER
-  "If tests enabled then use the generic abstract domain" OFF)
 if (CRAB_USE_APRON AND CRAB_USE_ELINA)
   message(FATAL_ERROR "Crab: Apron and Elina are not compatible. Choose one")
 endif()
+
+## Only for developers use
+option(CRAB_ENABLE_TESTS "Enable tests" OFF)
+option(CRAB_ENABLE_ASAN "Enable Address Sanitizer" OFF)
+option(CRAB_USE_GENERIC_WRAPPER
+  "If tests enabled then use the generic abstract domain" OFF)
 
 #--------------- TESTS ----------------------------#
 if (CRAB_ENABLE_TESTS)
@@ -47,6 +48,11 @@ if (CRAB_ENABLE_TESTS)
   ## Enforce these flags only when compiling our tests
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
+   if (CRAB_ENABLE_ASAN)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+     message(STATUS "Crab: enabled Address Sanitizer")
+   endif()
+   
   # Directory where all (binary) tests will be located
   # Binary tests do not go to install directory by default
   if (NOT TEST_DIR)
