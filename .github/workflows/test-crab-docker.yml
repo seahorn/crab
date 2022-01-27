@@ -27,9 +27,9 @@ jobs:
         with:
           ref: master # only checkout master
       - name: Build crab without external libraries + run tests 
-        run: docker build --build-arg BRANCH=master --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Coverage -t seahorn/crab:bionic -f docker/crab.Dockerfile .        
-      - name: Generate coverage report and upload to codecov
-	run: docker run -v $(pwd):/host -it seahorn/crab:bionic /bin/sh -c "bash /crab/tests/run_coverage.sh /crab/build /crab && mv /crab/build/all.info /host" && bash <(curl -s https://codecov.io/bash) -Z -f all.info -t ${{ secrets.CODECOV_TOKEN }}
+        run: docker build --build-arg BRANCH=master --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Coverage -t seahorn/crab:bionic -f docker/crab.Dockerfile .
+      #- name: Generate coverage report and upload to codecov
+      #	run: docker run -v $(pwd):/host -it seahorn/crab:bionic /bin/sh -c "bash /crab/tests/run_coverage.sh /crab/build /crab && mv /crab/build/all.info /host" && bash <(curl -s https://codecov.io/bash) -Z -f all.info -t ${{ secrets.CODECOV_TOKEN }}
       - name: Build crab+apron+ldd-boxes and run tests 
         run: docker build --build-arg BRANCH=master --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab_apron:bionic -f docker/crab.apron.Dockerfile .
       - name: Build crab+elina+ldd-boxes and run tests 
