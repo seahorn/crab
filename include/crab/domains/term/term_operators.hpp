@@ -13,16 +13,19 @@ namespace term {
 
 class term_operator_t {
   uint32_t m_value;
-  boost::string_ref m_name;
+  bool m_reserved;
 public:
-  constexpr term_operator_t(uint32_t value)
-    : m_value(value), m_name(boost::string_ref()) {}
-  term_operator_t(uint32_t value, boost::string_ref name);
+  // used for defining constexpr crab operators
+  constexpr term_operator_t(uint32_t value, bool is_reserved = true)
+    : m_value(value), m_reserved(is_reserved) {}
+  // used for defining new user operators
+  static term_operator_t make_operator(uint32_t value);  
   ~term_operator_t() = default;
   constexpr operator uint32_t() const { return m_value; }
   constexpr uint32_t value() const { return m_value; }
-  boost::string_ref name() const { return m_name; }
-  constexpr static uint32_t first_nonreserved_value() { return 100;}
+  constexpr bool is_reserved() const { return m_reserved;}
+  constexpr static uint32_t first_nonreserved_value() { return 100;}  
+  friend crab::crab_os &operator<<(crab::crab_os &o, term_operator_t op);
 };
 
 constexpr term_operator_t TERM_OP_ADD(0);
@@ -44,76 +47,6 @@ constexpr term_operator_t TERM_OP_LSHR(15);
 constexpr term_operator_t TERM_OP_ASHR(16);
 constexpr term_operator_t TERM_OP_FUNCTION(17);  
   
-inline crab::crab_os &operator<<(crab::crab_os &o, term_operator_t op) {
-
-  // User-defined operator
-  if (const char* name = op.name().data()) {
-    o << name;
-    return o;
-  }
-
-  // Crab predefined operators
-  switch (op) {
-  case TERM_OP_ADD:
-    o << "+";
-    break;
-  case TERM_OP_SUB:
-    o << "-";
-    break;
-  case TERM_OP_MUL:
-    o << "*";
-    break;
-  case TERM_OP_SDIV:
-    o << "/";
-    break;
-  case TERM_OP_UDIV:
-    o << "/_u";
-    break;
-  case TERM_OP_SREM:
-    o << "%";
-    break;
-  case TERM_OP_UREM:
-    o << "%_u";
-    break;
-  case TERM_OP_NOT:
-    o << "not";
-    break;
-  case TERM_OP_BAND:
-    o << "band";
-    break;
-  case TERM_OP_BOR:
-    o << "bor";
-    break;
-  case TERM_OP_BXOR:
-    o << "bxor";
-    break;
-  case TERM_OP_AND:
-    o << "&";
-    break;
-  case TERM_OP_OR:
-    o << "|";
-    break;
-  case TERM_OP_XOR:
-    o << "^";
-    break;
-  case TERM_OP_SHL:
-    o << "<<";
-    break;
-  case TERM_OP_LSHR:
-    o << ">>_l";
-    break;
-  case TERM_OP_ASHR:
-    o << ">>_r";
-    break;
-  case TERM_OP_FUNCTION:
-    o << "uf";
-    break;
-  default:
-    CRAB_ERROR("unexpected binary operation ", op);
-  }
-  return o;
-}
-
 /* Convert between Crab operators and term domain uninterpreted functors */
 term_operator_t conv2termop(arith_operation_t op);
 term_operator_t conv2termop(bitwise_operation_t op);

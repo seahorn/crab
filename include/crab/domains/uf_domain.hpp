@@ -638,9 +638,8 @@ public:
 
   // Precondition:
   // - value must be > term_operator_t::first_nonreserved_value()
-  // Note that boost::string_ref is a non-owning reference to a string.
-  static term::term_operator_t make_uf(uint32_t value, boost::string_ref name) {
-    term::term_operator_t op(value, name);
+  static term::term_operator_t make_uf(uint32_t value) {
+    auto op = term::term_operator_t::make_operator(value);
     return op;
   }
 
