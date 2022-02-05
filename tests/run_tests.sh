@@ -31,7 +31,7 @@ for test in $DIR/test-bin/*
 do
   echo "Running $test"
   echo "=== Begin $test ===" >> $NEWLOG
-  $test >> $NEWLOG
+  $test >> $NEWLOG 2>/dev/null
   echo "=== End $test ===" >> $NEWLOG  
 done
 
