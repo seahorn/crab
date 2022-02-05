@@ -143,13 +143,13 @@ private:
   base_abstract_domain_t m_base_dom;
   /** End base domain **/
   
-  // Map region variables to a tuple of (Count,Init,Type)
+  // Map region variables to a tuple of (RefCount,Init,Type)
   // 
-  // Count: count how many addresses are owned by a region.  This
+  // RefCount: count how many references may point to a region.  This
   // allows us to decide when strong update is sound: only if one
-  // address per region (i.e., singleton).
+  // reference per region (i.e., singleton).
   // 
-  // Init: whether some data might have been written to any address
+  // Init: whether some data might have been written to any reference
   // within the region.
   // 
   // Type: for each unknown region we keep track of the (dynamic) type
@@ -215,8 +215,8 @@ private:
       std::vector<ghost_variables_t> &right_base_vars) const {
     bool propagate = false;
     for (auto kv : left_rgn_info_env) {
-      const boolean_value &left_init_dom = kv.second.init_dom();
-      if (left_init_dom.is_false()) {
+      const boolean_value &left_init_val = kv.second.init_val();
+      if (left_init_val.is_false()) {
         auto it = right_varmap.find(kv.first);
         if (it != right_varmap.end()) {
           // uninitialized on the left but initilized on the right
@@ -868,7 +868,7 @@ private:
       return false;
     } else {
       auto rgn_info = m_rgn_info_env[v];
-      const type_value &dyn_ty = rgn_info.type_dom();
+      const type_value &dyn_ty = rgn_info.type_val();
       if (dyn_ty.is_top() || dyn_ty.is_bottom()) {
         return false;
       }
@@ -902,7 +902,7 @@ private:
     }
 
     auto rgn_info = m_rgn_info_env[v];
-    const type_value &dyn_ty = rgn_info.type_dom();
+    const type_value &dyn_ty = rgn_info.type_val();
     if (dyn_ty.is_top() || dyn_ty.is_bottom()) {
       CRAB_ERROR("get_dynamic_type_or_fail cannot be called on top or bottom");
     }
@@ -1389,7 +1389,7 @@ public:
     }
 
     auto rgn_info = m_rgn_info_env[rgn];
-    const small_range &count_num = rgn_info.count_dom();
+    const small_range &count_num = rgn_info.refcount_val();
     if (count_num <= small_range::oneOrMore()) {
       CRAB_ERROR("region_domain::init_region: ", rgn,
                  " cannot be initialized twice");
@@ -1461,13 +1461,13 @@ public:
       m_tag_env.set(lhs_rgn, m_tag_env[rhs_rgn]);
     }
 
-    if (!is_tracked_region(rhs_rgn, rhs_rgn_info.type_dom())) {
+    if (!is_tracked_region(rhs_rgn, rhs_rgn_info.type_val())) {
       return;
     }
 
     const ghost_variables_t &base_lhs = get_or_insert_gvars(lhs_rgn);
     const ghost_variables_t &base_rhs = get_or_insert_gvars(rhs_rgn);
-    auto const&num_refs = rhs_rgn_info.count_dom();
+    auto const&num_refs = rhs_rgn_info.refcount_val();
     if (num_refs.is_zero() || num_refs.is_one()) {
       // the rhs region is a singleton then we use assign
       base_lhs.assign(m_base_dom, base_rhs);
@@ -1542,12 +1542,12 @@ public:
       assert(dst_rgn.get_type().is_unknown_region());
 
       m_rgn_info_env.set(dst_rgn,
-	  region_domain_impl::region_info(src_rgn_info.count_dom(),
-					  src_rgn_info.init_dom(),
+	  region_domain_impl::region_info(src_rgn_info.refcount_val(),
+					  src_rgn_info.init_val(),
 					  type_value(src_rgn.get_type())));
 
       region_domain_impl::region_info old_dst_rgn_info = m_rgn_info_env[dst_rgn];
-      const type_value &dst_dyn_type = old_dst_rgn_info.type_dom();
+      const type_value &dst_dyn_type = old_dst_rgn_info.type_val();
       if (!has_dynamic_type(dst_rgn, dst_dyn_type)) {
 	// skip assign ghost variables
 	crab::CrabStats::count(domain_name() + ".count.region_cast.skipped");	
@@ -1566,15 +1566,15 @@ public:
       assert(!dst_rgn.get_type().is_unknown_region());
 
       m_rgn_info_env.set(dst_rgn,
-	  region_domain_impl::region_info(src_rgn_info.count_dom(),
-					  src_rgn_info.init_dom(),
+	  region_domain_impl::region_info(src_rgn_info.refcount_val(),
+					  src_rgn_info.init_val(),
 					  type_value(dst_rgn.get_type())));
  
-      if (!has_dynamic_type(src_rgn, src_rgn_info.type_dom())) {
+      if (!has_dynamic_type(src_rgn, src_rgn_info.type_val())) {
 	// skip assign ghost variables
 	crab::CrabStats::count(domain_name() + ".count.region_cast.skipped");	
       } else { 
-	if (type_value(dst_rgn.get_type()) <= src_rgn_info.type_dom()) {
+	if (type_value(dst_rgn.get_type()) <= src_rgn_info.type_val()) {
 	  // make sure dynamic types of src and dst are compatible		
 	  assign_regions(dst_rgn, src_rgn, dst_rgn.get_type());
 	} else {
@@ -1608,9 +1608,9 @@ public:
     // Update region counting
     auto old_rgn_info = m_rgn_info_env[rgn];    
     m_rgn_info_env.set(rgn,
-      region_domain_impl::region_info(old_rgn_info.count_dom().increment(),
-				      old_rgn_info.init_dom(),
-				      old_rgn_info.type_dom()));
+      region_domain_impl::region_info(old_rgn_info.refcount_val().increment(),
+				      old_rgn_info.init_val(),
+				      old_rgn_info.type_val()));
     
     if (crab_domain_params_man::get().region_allocation_sites()) {
       // Associate allocation site as to ref
@@ -1719,7 +1719,7 @@ public:
 
     region_domain_impl::region_info rgn_info = m_rgn_info_env[rgn];
     if (is_tracked_unknown_region(rgn)) {
-      const type_value &rgn_ty = rgn_info.type_dom();
+      const type_value &rgn_ty = rgn_info.type_val();
       if (rgn_ty.is_bottom()) {
         // this shouldn't happen 
         CRAB_ERROR(domain_name(), "::ref_load: the dynamic type of region ",
@@ -1749,7 +1749,7 @@ public:
       }
     }
 
-    const small_range &num_refs = rgn_info.count_dom();
+    const small_range &num_refs = rgn_info.refcount_val();
     if (num_refs.is_zero() || num_refs.is_one()) {
       // strong read
       CRAB_LOG("region-load", crab::outs() << "Reading from singleton\n";);
@@ -1820,13 +1820,13 @@ public:
 
     region_domain_impl::region_info old_rgn_info = m_rgn_info_env[rgn];
     region_domain_impl::region_info new_rgn_info(old_rgn_info);    
-    bool is_uninitialized_rgn = old_rgn_info.init_dom().is_false();
+    bool is_uninitialized_rgn = old_rgn_info.init_val().is_false();
     
     // We conservatively mark the region as may-initialized
-    new_rgn_info.init_dom() = boolean_value::top();
+    new_rgn_info.init_val() = boolean_value::top();
     
     if (is_tracked_unknown_region(rgn)) {
-      const type_value &rgn_ty = old_rgn_info.type_dom();
+      const type_value &rgn_ty = old_rgn_info.type_val();
       if (rgn_ty.is_bottom()) {
         // this shouldn't happen 
         CRAB_ERROR(domain_name(), "::ref_store: the dynamic type of region ",
@@ -1842,7 +1842,7 @@ public:
         // 1. Set the dynamic type of the unknown region. From now on,
         // all memory accesses must satisfy this type.
 
-	new_rgn_info.type_dom() = variable_type::mk_region(val.get_type());
+	new_rgn_info.type_val() = variable_type::mk_region(val.get_type());
       } else {
         // 2. Check that type of val satisfy the dynamic type of the
         // region.
@@ -1879,8 +1879,8 @@ public:
             // locations because those writes wrote values of
             // different types.
 
-	    new_rgn_info.init_dom() = boolean_value::get_false();
-	    new_rgn_info.type_dom() = variable_type::mk_region(val.get_type());
+	    new_rgn_info.init_val() = boolean_value::get_false();
+	    new_rgn_info.type_val() = variable_type::mk_region(val.get_type());
 	    
             if (boost::optional<ghost_variables_t> gvars = get_gvars(rgn)) {
               m_var_map.erase(rgn);
@@ -1919,7 +1919,7 @@ public:
       // don't return yet
     }
 
-    const small_range &num_refs = old_rgn_info.count_dom();
+    const small_range &num_refs = old_rgn_info.refcount_val();
     // A region can have more than one reference but we can still
     // perform a strong update as long as nobody wrote yet in the
     // region. The use of "is_uninitialized_rgn" avoids fooling the
@@ -2030,9 +2030,9 @@ public:
         // Update region counting
 	auto old_rgn2_info = m_rgn_info_env[rgn2];
 	m_rgn_info_env.set(rgn2,
-	  region_domain_impl::region_info(old_rgn2_info.count_dom().increment(),
-					  old_rgn2_info.init_dom(),
-					  old_rgn2_info.type_dom()));
+	  region_domain_impl::region_info(old_rgn2_info.refcount_val().increment(),
+					  old_rgn2_info.init_val(),
+					  old_rgn2_info.type_val()));
       }
 
       if (crab_domain_params_man::get().region_allocation_sites()) {
@@ -2111,7 +2111,7 @@ public:
 
     if (boost::optional<ghost_variables_t> arr_gvars_opt = get_gvars(rgn)) {
       auto rgn_info = m_rgn_info_env[rgn];
-      auto num_refs = rgn_info.count_dom();
+      auto num_refs = rgn_info.refcount_val();
       auto b_elem_size = rename_linear_expr(elem_size);
       if (num_refs.is_zero() || num_refs.is_one()) {
         CRAB_LOG("region", crab::outs() << "Reading from singleton\n";);
@@ -2157,9 +2157,9 @@ public:
     // We conservatively mark the region as may-initialized
     auto old_rgn_info = m_rgn_info_env[rgn];    
     m_rgn_info_env.set(rgn,
-      region_domain_impl::region_info(old_rgn_info.count_dom(),
+      region_domain_impl::region_info(old_rgn_info.refcount_val(),
 				      boolean_value::top(),
-				      old_rgn_info.type_dom()));
+				      old_rgn_info.type_val()));
 
     // TODO: check that the array element matches the type of val
     // (bool or integer)
@@ -2168,7 +2168,7 @@ public:
       // cannot call get_or_insert_gvars if unknown region
       return;
     }
-    auto num_refs = old_rgn_info.count_dom();
+    auto num_refs = old_rgn_info.refcount_val();
     base_variable_t arr_var = get_or_insert_gvars(rgn).get_var();
     auto b_elem_size = rename_linear_expr(elem_size);
     auto b_val = rename_linear_expr(val);
@@ -2280,9 +2280,9 @@ public:
       // Update region counting
       auto old_rgn_info = m_rgn_info_env[rgn];    
       m_rgn_info_env.set(rgn,
-	region_domain_impl::region_info(old_rgn_info.count_dom().increment(),
-					old_rgn_info.init_dom(),
-					old_rgn_info.type_dom()));
+	region_domain_impl::region_info(old_rgn_info.refcount_val().increment(),
+					old_rgn_info.init_val(),
+					old_rgn_info.type_val()));
     }
   }
 
@@ -3109,7 +3109,7 @@ public:
           // have any reference yet. Even if it has only one we cannot
           // tell whether it's the same ref than ref.
 	  auto rgn_info = m_rgn_info_env[rgn];
-          const small_range &num_refs = rgn_info.count_dom();
+          const small_range &num_refs = rgn_info.refcount_val();
           if (num_refs.is_zero()) {
             m_rgn_dealloc_dom.set(rgn, boolean_value::get_false());
           }

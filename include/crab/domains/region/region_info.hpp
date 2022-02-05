@@ -33,16 +33,16 @@ public:
   bool is_bottom() const;
   bool is_top() const;
 
-  // Number of references owned by the region.
-  small_range &count_dom();
+  // Number of references that may point to the region.
+  small_range &refcount_val();
   // Whether the region has been initialized.
-  boolean_value &init_dom();
+  boolean_value &init_val();
   // Type of the region. The type of a region is always known
   // statically except if its type is unknown.
-  type_value &type_dom();
-  const small_range &count_dom() const;
-  const boolean_value &init_dom() const;
-  const type_value &type_dom() const;
+  type_value &type_val();
+  const small_range &refcount_val() const;
+  const boolean_value &init_val() const;
+  const type_value &type_val() const;
 
   bool operator<=(const region_info &other) const;
   bool operator==(const region_info &other) const;
