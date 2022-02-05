@@ -622,8 +622,8 @@ public:
     }
   }
 
-  // Pre-condition: contains(x)
-  domain_t &get(const variable_t &x) {
+  // Return null if !contains(x)
+  domain_t *get(const variable_t &x) {
     if (is_bottom()) {
       CRAB_ERROR("called union_find_domain::operator[] on bottom");
     }
@@ -631,17 +631,16 @@ public:
       CRAB_ERROR("called union_find_domain::operator[] on top");
     }
     if (!contains(x)) {
-      CRAB_ERROR("union_find_domain::operator[] on a non-existing variable ", x,
-                 " in ", *this);
+      return nullptr;
     }
 
     variable_t rep_x = find(x);
     equivalence_class_t &ec_x = m_classes.at(rep_x);
-    return ec_x.get_domain();
+    return &(ec_x.get_domain());
   }
 
-  // Pre-condition: contains(x)
-  const domain_t &get(const variable_t &x) const {
+  // Return null if !contains(x)
+  const domain_t *get(const variable_t &x) const {
     if (is_bottom()) {
       CRAB_ERROR("called union_find_domain::operator[] on bottom");
     }
@@ -649,13 +648,12 @@ public:
       CRAB_ERROR("called union_find_domain::operator[] on top");
     }
     if (!contains(x)) {
-      CRAB_ERROR("union_find_domain::operator[] on a non-existing variable ", x,
-                 " in ", *this);
+      return nullptr;
     }
 
     variable_t rep_x = find(x);
     const equivalence_class_t &ec_x = m_classes.at(rep_x);
-    return ec_x.get_domain();
+    return &(ec_x.get_domain());
   }  
 
   // Return true if *this is a refined partitioning of o

@@ -3086,8 +3086,8 @@ public:
         if (is_null_ref(ref).is_true()) {
           set_bool_var_to_true(bv);
         } else {
-          bool is_allocated = (m_rgn_dealloc_dom.contains(rgn) &&
-                               m_rgn_dealloc_dom.get(rgn).is_false());
+	  const boolean_value *val = m_rgn_dealloc_dom.get(rgn);
+          bool is_allocated = (val && val->is_false());
           /// the reference belongs to a memory region that doesn't have
           /// any deallocated memory object.
           if (is_allocated) {
