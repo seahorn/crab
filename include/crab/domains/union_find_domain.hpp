@@ -378,12 +378,13 @@ public:
   // Pre-condition: contains(v)
   // NOTE: it is not "const" because it does path-compression
   variable_t &find(const variable_t &v) {
-    if (!contains(v)) {
+    auto it = m_parents.find(v);
+    if (it == m_parents.end()) {
       assert(false);
       CRAB_ERROR("called union_find_domain::find on a non-existing variable ",
                  v, " in ", *this);
     }
-    variable_t &parent = m_parents.at(v);
+    variable_t &parent = it->second;
     if (parent == v) {
       return parent;
     } else {
@@ -394,12 +395,13 @@ public:
   // Pre-condition: contains(v)
   // find operation without path-compression
   const variable_t &find(const variable_t &v) const {
-    if (!contains(v)) {
+    auto it = m_parents.find(v);
+    if (it == m_parents.end()) {
       assert(false);
       CRAB_ERROR("called union_find_domain::find on a non-existing variable ",
                  v, " in ", *this);
     }
-    const variable_t &parent = m_parents.at(v);
+    const variable_t &parent = it->second;
     if (parent == v) {
       return parent;
     } else {
@@ -412,15 +414,6 @@ public:
   // it returns the representative of the new equivalence class,
   // otherwise, none.
   boost::optional<variable_t> join(const variable_t &x, const variable_t &y) {
-    if (!contains(x)) {
-      CRAB_ERROR("called union_find_domain::join on a non-existing variable ",
-                 x, " in ", *this);
-    }
-    if (!contains(y)) {
-      CRAB_ERROR("called union_find_domain::join on a non-existing variable ",
-                 y, " in ", *this);
-    }
-
     variable_t rep_x = find(x);
     variable_t rep_y = find(y);
     MergeSemantics merge_op;
