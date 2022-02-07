@@ -40,9 +40,9 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
-#include <crab/domains/array_graph/array_graph_ops.hpp>
 #include <crab/domains/array_graph/array_segmentation.hpp>
 #include <crab/domains/graphs/adapt_sgraph.hpp>
+#include <crab/domains/graphs/semiring_graph_ops.hpp>
 #include <crab/domains/graphs/sparse_graph.hpp>
 #include <crab/domains/intervals.hpp>
 // XXX: for now the only scalar domain
@@ -90,7 +90,7 @@ public:
 
 private:
   using GrPerm = GraphPerm<graph_t>;
-  using GrOps = ArrayGrOps<graph_t, IsDistWeight>;
+  using GrOps = SemiringGrOps<graph_t, IsDistWeight>;
   using Wt_join = typename GrOps::Wt_join;
   using Wt_meet = typename GrOps::Wt_meet;
 

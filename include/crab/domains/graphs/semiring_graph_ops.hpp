@@ -11,10 +11,10 @@ namespace crab {
 
 namespace domains {
 
-// XXX: We do not use directly GrOps from graph_ops.hpp because
-//     GrOps assumes that the weight domain is integers with min
-//     and + operators rather than a more general semiring.
-template <class Gr, bool IsDistWt> class ArrayGrOps {
+// This class generalizes GrOps from graph_ops.hpp to a more general
+// semiring (GrOps only deals with integers).
+template <class Gr, bool IsDistWt>
+class SemiringGrOps {
   //
   // IsDistWt must be true iff
   //   Wt_meet.apply(x, Wt_join.apply(y,z)) =
