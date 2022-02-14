@@ -1,6 +1,5 @@
 #pragma once
 
-#include <crab/domains/discrete_domains.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -10,6 +9,7 @@
 #include <algorithm>
 #include <unordered_map>
 #include <vector>
+#include <set>
 
 /**
  * A standard union-find equipped with lattice operations (inclusion,
@@ -19,11 +19,7 @@
 namespace crab {
 namespace domains {
 
-template <class Variable, class Domain> class equivalence_class {
-public:
-  using variable_t = Variable;
-  using domain_t = Domain;
-
+template <class Domain> class equivalence_class {
 private:
   std::size_t m_rank;
   Domain m_val;
@@ -42,7 +38,7 @@ public:
 }; // end class equivalence_class
 
 /*
-  Partition a set of variables into equivalence classes. Apart from
+  Partition a set of elements into equivalence classes. Apart from
   lattice operations, the domain provides standard union-find
   operations:
 
@@ -53,9 +49,9 @@ public:
   In addition, each equivalence class has associated an abstract state
   of type Domain.
 
-  The method "top()" returns an union-find in which all variables are
+  The method "top()" returns an union-find in which all elements are
   in the same equivalence class. Since the domain does not know the
-  universe of variables, the method "is_top()" only succeeds if the
+  universe of elements, the method "is_top()" only succeeds if the
   union_find_domain state was created by calling directly "top()".
   The method "bottom()" represents an unreachable/failure abstract
   state. Do not use "top()" if you intend to generate an empty
@@ -91,23 +87,23 @@ struct uf_intersection_semantics_t: public uf_merge_semantics_t<Domain> {
   }
 };
   
-template<class Variable, class Domain,
+template<class Element, class Domain,
 	 // By default, we apply union semantics.
 	 class MergeSemantics = uf_union_semantics_t<Domain>>
 class union_find_domain {
 public:
-  using variable_t = Variable;
+  using element_t = Element;
   using domain_t = Domain;
   enum class lattice_val { bottom, top, neither_top_nor_bot };    
 private:
-  using union_find_domain_t = union_find_domain<Variable, Domain, MergeSemantics>;
-  using parents_map_t = std::unordered_map<variable_t, variable_t>;
+  using union_find_domain_t = union_find_domain<Element, Domain, MergeSemantics>;
+  using parents_map_t = std::unordered_map<element_t, element_t>;
 public:
-  using variable_set_t = ikos::discrete_domain<variable_t>;  
-  using equivalence_class_vars_t = std::unordered_map<variable_t, variable_set_t>;
-  using equivalence_class_t = equivalence_class<variable_t, Domain>;  
+  using element_set_t = std::set<element_t>;  
+  using equivalence_class_elems_t = std::unordered_map<element_t, element_set_t>;
+  using equivalence_class_t = equivalence_class<Domain>;  
 private:  
-  using classes_map_t = std::unordered_map<variable_t, equivalence_class_t>;
+  using classes_map_t = std::unordered_map<element_t, equivalence_class_t>;
 
   // immediate link to the parent
   parents_map_t m_parents;
@@ -120,17 +116,17 @@ private:
     m_classes.clear();
   }
  
-  // Return the representative after merging all variables in vars.
-  // Pre-condition: if dom != none then forall v \in vars:: contains(v)
-  boost::optional<variable_t>
-  merge_vars(const variable_set_t &vars,
+  // Return the representative after merging all elements in elems.
+  // Pre-condition: if dom != none then forall v \in elems:: contains(v)
+  boost::optional<element_t>
+  merge_elems(const element_set_t &elems,
              boost::optional<domain_t> dom = boost::none) {
-    auto it = vars.begin();
-    auto et = vars.end();
+    auto it = elems.begin();
+    auto et = elems.end();
     if (it == et) {
       return boost::none;
     }
-    variable_t v = *it;
+    element_t v = *it;
     if (dom && !contains(v)) {
       make(v, *dom);
       if (is_bottom()) {
@@ -140,10 +136,10 @@ private:
     ++it;
 
     if (it == et) {
-      return (contains(v) ? boost::optional<variable_t>(find(v)) : boost::none);
+      return (contains(v) ? boost::optional<element_t>(find(v)) : boost::none);
     }
 
-    boost::optional<variable_t> repr;
+    boost::optional<element_t> repr;
     for (; it != et; ++it) {
       if (dom && !contains(*it)) {
         make(*it, *dom);
@@ -162,7 +158,7 @@ private:
   void print(crab_os &o) const {
     o << "({";
     for (auto it = m_parents.begin(), et = m_parents.end(); it != et;) {
-      variable_t key = it->first, value = it->second;
+      element_t key = it->first, value = it->second;
       o << key << " -> " << value;
       ++it;
       if (it != et) {
@@ -171,7 +167,7 @@ private:
     }
     o << "}, {";
     for (auto it = m_classes.begin(), et = m_classes.end(); it != et;) {
-      variable_t rep = it->first;
+      element_t rep = it->first;
       equivalence_class_t ec = it->second;
       o << rep << " -> " << ec.get_domain();
       ++it;
@@ -182,9 +178,9 @@ private:
     o << "})";
   }
 
-  void get_all_variables(variable_set_t &out) const {
+  void get_all_members(element_set_t &out) const {
     for (auto &kv: m_parents) {
-      out += kv.first;
+      out.insert(kv.first);
     }
   }
 
@@ -203,24 +199,24 @@ private:
       union_find_domain_t left(*this);
       union_find_domain_t right(o);
 
-      // Keep only common variables      
-      variable_set_t left_vars = variable_set_t::bottom();
-      left.get_all_variables(left_vars);
-      for (auto v: left_vars) {
+      // Keep only common elements      
+      element_set_t left_elems;
+      left.get_all_members(left_elems);
+      for (auto v: left_elems) {
 	if (!right.contains(v)) {
 	  left.forget(v);
 	}
       }
-      variable_set_t right_vars = variable_set_t::bottom();      
-      right.get_all_variables(right_vars);      
-      for (auto v: right_vars) {
+      element_set_t right_elems;
+      right.get_all_members(right_elems);      
+      for (auto v: right_elems) {
 	if (!left.contains(v)) {
 	  right.forget(v);
 	}
       }
       
-      equivalence_class_vars_t right_equiv_classes = right.equiv_classes_vars();
-      equivalence_class_vars_t left_equiv_classes = left.equiv_classes_vars();
+      equivalence_class_elems_t right_equiv_classes = right.equiv_classes_elems();
+      equivalence_class_elems_t left_equiv_classes = left.equiv_classes_elems();
 
       // Merge equivalence classes from the left to the right while
       // joining/widening the domains associated to the equivalence
@@ -228,8 +224,8 @@ private:
       //
       // The merging on the right is needed so that right_dom is updated.
       for (auto &kv : left_equiv_classes) {
-        boost::optional<variable_t> right_repr =
-	  right.merge_vars(kv.second);
+        boost::optional<element_t> right_repr =
+	  right.merge_elems(kv.second);
         if (!right_repr) {
 	  // this shouldn't happen
 	  CRAB_ERROR("unexpected situation in join_or_widening 1");
@@ -244,8 +240,8 @@ private:
       // joining/widening the domains associated to the equivalence
       // classes.
       for (auto &kv : right_equiv_classes) {
-        boost::optional<variable_t> left_repr =
-	  left.merge_vars(kv.second);
+        boost::optional<element_t> left_repr =
+	  left.merge_elems(kv.second);
         if (!left_repr) {
 	   // this shouldn't happen
 	  CRAB_ERROR("unexpected situation in join_or_widening 2");
@@ -271,8 +267,8 @@ private:
        */
       union_find_domain_t left(*this);
       union_find_domain_t right(o);
-      equivalence_class_vars_t right_equiv_classes = right.equiv_classes_vars();
-      equivalence_class_vars_t left_equiv_classes = left.equiv_classes_vars();
+      equivalence_class_elems_t right_equiv_classes = right.equiv_classes_elems();
+      equivalence_class_elems_t left_equiv_classes = left.equiv_classes_elems();
 
       // Merge equivalence classes from the right to the left while
       // applying meet/narrowing
@@ -280,9 +276,9 @@ private:
       // The merging on the right is needed so that right_dom is updated.
       for (auto &kv : left_equiv_classes) {
         domain_t &left_dom = left.get_equiv_class(kv.first).get_domain();
-        // add variables on the right if they do not exist
-        boost::optional<variable_t> right_repr =
-	  right.merge_vars(kv.second, left_dom);
+        // add elements on the right if they do not exist
+        boost::optional<element_t> right_repr =
+	  right.merge_elems(kv.second, left_dom);
         if (!right_repr) {
 	  // this shouldn't happen
 	  CRAB_ERROR("unexpected situation in meet_or_narrowing 1");
@@ -301,8 +297,8 @@ private:
       for (auto &kv : right_equiv_classes) {
         const domain_t &right_dom =
             right.get_equiv_class(kv.first).get_domain();
-        boost::optional<variable_t> left_repr =
-	  left.merge_vars(kv.second, right_dom);
+        boost::optional<element_t> left_repr =
+	  left.merge_elems(kv.second, right_dom);
         if (!left_repr) {
 	   // this shouldn't happen
 	  CRAB_ERROR("unexpected situation in meet_or_narrowing 2");
@@ -355,7 +351,7 @@ public:
   }
     
   // Pre-condition: !contains(v)
-  void make(const variable_t &v, Domain val) {
+  void make(const element_t &v, Domain val) {
     if (is_bottom()) {
       CRAB_ERROR("calling union_find_domain::make on bottom");
     }
@@ -363,7 +359,7 @@ public:
       CRAB_ERROR("calling union_find_domain::make on top");
     }
     if (contains(v)) {
-      CRAB_ERROR("variable already exists when called union_find_domain::make");
+      CRAB_ERROR("element already exists when called union_find_domain::make");
     }
 
     MergeSemantics op;
@@ -377,14 +373,14 @@ public:
 
   // Pre-condition: contains(v)
   // NOTE: it is not "const" because it does path-compression
-  variable_t &find(const variable_t &v) {
+  element_t &find(const element_t &v) {
     auto it = m_parents.find(v);
     if (it == m_parents.end()) {
       assert(false);
-      CRAB_ERROR("called union_find_domain::find on a non-existing variable ",
+      CRAB_ERROR("called union_find_domain::find on a non-existing element ",
                  v, " in ", *this);
     }
-    variable_t &parent = it->second;
+    element_t &parent = it->second;
     if (parent == v) {
       return parent;
     } else {
@@ -394,14 +390,14 @@ public:
 
   // Pre-condition: contains(v)
   // find operation without path-compression
-  const variable_t &find(const variable_t &v) const {
+  const element_t &find(const element_t &v) const {
     auto it = m_parents.find(v);
     if (it == m_parents.end()) {
       assert(false);
-      CRAB_ERROR("called union_find_domain::find on a non-existing variable ",
+      CRAB_ERROR("called union_find_domain::find on a non-existing elem ",
                  v, " in ", *this);
     }
-    const variable_t &parent = it->second;
+    const element_t &parent = it->second;
     if (parent == v) {
       return parent;
     } else {
@@ -413,9 +409,9 @@ public:
   // Post-condition: merge x and y. If the result is not bottom then
   // it returns the representative of the new equivalence class,
   // otherwise, none.
-  boost::optional<variable_t> join(const variable_t &x, const variable_t &y) {
-    variable_t rep_x = find(x);
-    variable_t rep_y = find(y);
+  boost::optional<element_t> join(const element_t &x, const element_t &y) {
+    element_t rep_x = find(x);
+    element_t rep_y = find(y);
     MergeSemantics merge_op;
     if (rep_x != rep_y) {
       equivalence_class_t &ec_x = m_classes.at(rep_x);
@@ -449,28 +445,28 @@ public:
     }
   }
 
-  bool contains(const variable_t &v) const {
+  bool contains(const element_t &v) const {
     return m_parents.find(v) != m_parents.end();
   }
 
   // Pre-condition: contains(v)
-  equivalence_class_t &get_equiv_class(const variable_t &v) {
+  equivalence_class_t &get_equiv_class(const element_t &v) {
     return m_classes.at(find(v));
   }
 
   // Pre-condition: contains(v). No path-compression.
-  const equivalence_class_t &get_equiv_class(const variable_t &v) const {
+  const equivalence_class_t &get_equiv_class(const element_t &v) const {
     return m_classes.at(find(v));
   }
 
-  void remove_equiv_class(const variable_t &v) {
+  void remove_equiv_class(const element_t &v) {
     if (!contains(v)) {
       return;
     }
-    variable_t rep_v = find(v);
+    element_t rep_v = find(v);
     m_classes.erase(rep_v);
 
-    equivalence_class_vars_t map = equiv_classes_vars();
+    equivalence_class_elems_t map = equiv_classes_elems();
     auto it = map.find(rep_v);
     if (it != map.end()) {
       for (auto v : it->second) {
@@ -536,38 +532,38 @@ public:
     return boost::make_iterator_range(it, et);
   }
 
-  // Build a map from representative to a set with all the variables
+  // Build a map from representative to a set with all the elements
   // in the equivalence class.
-  equivalence_class_vars_t equiv_classes_vars() {
-    equivalence_class_vars_t res;
+  equivalence_class_elems_t equiv_classes_elems() {
+    equivalence_class_elems_t res;
     for (auto &kv : m_parents) {
-      variable_t rep = find(kv.second);
+      element_t rep = find(kv.second);
       auto it = res.find(rep);
       if (it == res.end()) {
-        variable_set_t varset = variable_set_t::bottom();
-        varset += kv.first;
-        res.insert({rep, varset});
+        element_set_t s;
+        s.insert(kv.first);
+        res.insert({rep, s});
       } else {
-        variable_set_t &varset = it->second;
-        varset += kv.first;
+        element_set_t &s = it->second;
+        s.insert(kv.first);
       }
     }
     return res;
   }
 
   // Without path-compression
-  equivalence_class_vars_t equiv_classes_vars() const {
-    equivalence_class_vars_t res;
+  equivalence_class_elems_t equiv_classes_elems() const {
+    equivalence_class_elems_t res;
     for (auto &kv : m_parents) {
-      variable_t rep = find(kv.second);
+      element_t rep = find(kv.second);
       auto it = res.find(rep);
       if (it == res.end()) {
-        variable_set_t varset = variable_set_t::bottom();
-        varset += kv.first;
-        res.insert({rep, varset});
+        element_set_t s;
+        s.insert(kv.first);
+        res.insert({rep, s});
       } else {
-        variable_set_t &varset = it->second;
-        varset += kv.first;
+        element_set_t &s = it->second;
+        s.insert(kv.first);
       }
     }
     return res;
@@ -600,7 +596,7 @@ public:
     m_val = lattice_val::bottom;
   }
 
-  void set(const variable_t &x, domain_t dom) {
+  void set(const element_t &x, domain_t dom) {
     if (is_bottom()) { 
       return;
     }
@@ -616,14 +612,14 @@ public:
       make(x, dom);
     } else {
       // Modify the abstract state of the whole equivalence class
-      variable_t rep_x = find(x);
+      element_t rep_x = find(x);
       equivalence_class_t &ec_x = m_classes.at(rep_x);
       ec_x.get_domain() = dom;
     }
   }
 
   // Return null if !contains(x)
-  domain_t *get(const variable_t &x) {
+  domain_t *get(const element_t &x) {
     if (is_bottom()) {
       CRAB_ERROR("called union_find_domain::operator[] on bottom");
     }
@@ -634,13 +630,13 @@ public:
       return nullptr;
     }
 
-    variable_t rep_x = find(x);
+    element_t rep_x = find(x);
     equivalence_class_t &ec_x = m_classes.at(rep_x);
     return &(ec_x.get_domain());
   }
 
   // Return null if !contains(x)
-  const domain_t *get(const variable_t &x) const {
+  const domain_t *get(const element_t &x) const {
     if (is_bottom()) {
       CRAB_ERROR("called union_find_domain::operator[] on bottom");
     }
@@ -651,13 +647,13 @@ public:
       return nullptr;
     }
 
-    variable_t rep_x = find(x);
+    element_t rep_x = find(x);
     const equivalence_class_t &ec_x = m_classes.at(rep_x);
     return &(ec_x.get_domain());
   }  
 
   // Return true if *this is a refined partitioning of o
-  //    forall x,y \in vars(o) :: o.find(x) != o.find(y) =>
+  //    forall x,y \in elems(o) :: o.find(x) != o.find(y) =>
   //                              this.find(x) != this.find(y)
   bool operator<=(const union_find_domain_t &o) const {
     if (is_bottom() || o.is_top()) {
@@ -667,19 +663,21 @@ public:
     } else {
       union_find_domain_t left(*this);
       union_find_domain_t right(o);
-      equivalence_class_vars_t right_equiv_classes = right.equiv_classes_vars();
-      equivalence_class_vars_t left_equiv_classes = left.equiv_classes_vars();
+      equivalence_class_elems_t right_equiv_classes = right.equiv_classes_elems();
+      equivalence_class_elems_t left_equiv_classes = left.equiv_classes_elems();
       for (auto &kv : right_equiv_classes) {
-        variable_t right_repr = kv.first;
-        variable_set_t &right_vars = kv.second;
-        for (variable_t right_v :
-             boost::make_iterator_range(right_vars.begin(), right_vars.end())) {
+        element_t right_repr = kv.first;
+        element_set_t &right_elems = kv.second;
+        for (const element_t &right_v : right_elems) {
           if (!left.contains(right_v)) {
             return false;
           }
-          variable_t left_repr = left.find(right_v);
-          variable_set_t &left_vars = left_equiv_classes[left_repr];
-          if (!(left_vars <= right_vars)) {
+          element_t left_repr = left.find(right_v);
+          element_set_t &left_elems = left_equiv_classes[left_repr];
+
+	  // !(left_elems <= right_elems)
+	  if (!std::includes(right_elems.begin(), right_elems.end(),
+			     left_elems.begin(), left_elems.end())) {	    
             return false;
           }
           const domain_t &left_dom =
@@ -712,7 +710,7 @@ public:
   }
 
   // Add y into the equivalence class of x
-  void add(const variable_t &x, const variable_t &y) {
+  void add(const element_t &x, const element_t &y) {
     if (is_bottom() || is_top()) {
       return;
     }
@@ -722,13 +720,13 @@ public:
     if (contains(y)) {
       forget(y);
     }
-    variable_t rep_x = find(x);
+    element_t rep_x = find(x);
     m_parents.insert({y, rep_x});
   }
 
   // The domain attached to the affected equivalence class is not
   // modified.  
-  void forget(const variable_t &v) {
+  void forget(const element_t &v) {
     if (is_bottom() || is_top()) {
       return;
     }
@@ -736,7 +734,7 @@ public:
     if (contains(v)) {
       if (m_parents.at(v) != v) {
         // v is not a representative
-        variable_t rep_v = find(v);
+        element_t rep_v = find(v);
         for (auto &kv : m_parents) {
           if (kv.second == v) {
             m_parents.at(kv.first) = rep_v;
@@ -744,7 +742,7 @@ public:
         }
       } else {
         // v is the representative of the equivalence class
-        boost::optional<variable_t> new_rep;
+        boost::optional<element_t> new_rep;
         for (auto &kv : m_parents) {
           if (kv.first != v && kv.second == v) {
             if (!new_rep) {
@@ -763,42 +761,42 @@ public:
 
   // The domains attached to the affected equivalence classes are not
   // modified
-  void project(const std::vector<variable_t> &variables) {
+  void project(const std::vector<element_t> &elements) {
     if (is_bottom() || is_top()) {
       return;
     }
 
-    // First, collect all variables to be forgotten
-    std::vector<variable_t> sorted_variables(variables);
-    std::sort(sorted_variables.begin(), sorted_variables.end());
-    std::vector<variable_t> variables_to_forget;
-    variables_to_forget.reserve(m_parents.size());
+    // First, collect all elements to be forgotten
+    std::vector<element_t> sorted_elements(elements);
+    std::sort(sorted_elements.begin(), sorted_elements.end());
+    std::vector<element_t> elements_to_forget;
+    elements_to_forget.reserve(m_parents.size());
     for (auto &kv : m_parents) {
-      auto lower = std::lower_bound(sorted_variables.begin(),
-                                    sorted_variables.end(), kv.first);
-      if (lower == sorted_variables.end() || kv.first < *lower) { // not found
-        variables_to_forget.push_back(kv.first);
+      auto lower = std::lower_bound(sorted_elements.begin(),
+                                    sorted_elements.end(), kv.first);
+      if (lower == sorted_elements.end() || kv.first < *lower) { // not found
+        elements_to_forget.push_back(kv.first);
       }
     }
-    // Forget variables
-    for (auto &v : variables_to_forget) {
+    // Forget elements
+    for (auto &v : elements_to_forget) {
       forget(v);
     }
   }
 
   // The domain attached to the affected equivalence class is not
   // modified
-  void rename(const std::vector<variable_t> &old_variables,
-              const std::vector<variable_t> &new_variables) {
+  void rename(const std::vector<element_t> &old_elements,
+              const std::vector<element_t> &new_elements) {
     if (is_top() || is_bottom()) {
       return;
     }
-    if (old_variables.size() != new_variables.size()) {
+    if (old_elements.size() != new_elements.size()) {
       CRAB_ERROR(
           "union_find_domain::rename with input vectors of different sizes");
     }
 
-    auto rename_var = [this](const variable_t &x, const variable_t &y) {
+    auto rename_elem = [this](const element_t &x, const element_t &y) {
       if (contains(y)) {
         CRAB_ERROR("union_find_domain::rename assumes that ", y,
                    " does not exist");
@@ -826,8 +824,8 @@ public:
       }
     };
 
-    for (unsigned i = 0, sz = old_variables.size(); i < sz; ++i) {
-      rename_var(old_variables[i], new_variables[i]);
+    for (unsigned i = 0, sz = old_elements.size(); i < sz; ++i) {
+      rename_elem(old_elements[i], new_elements[i]);
     }
   }
 
@@ -839,24 +837,24 @@ public:
     } else {
 
       // Sort everything to print always the same thing
-      auto sorted_equiv_classes = [](const equivalence_class_vars_t &unsorted_map) {
-	     std::vector<std::pair<variable_t, std::vector<variable_t>>> sorted_eq_classes;
+      auto sorted_equiv_classes = [](const equivalence_class_elems_t &unsorted_map) {
+	     std::vector<std::pair<element_t, std::vector<element_t>>> sorted_eq_classes;
 	     for (auto &kv: unsorted_map) {
-	       std::vector<variable_t> sorted_eq_class(kv.second.begin(), kv.second.end());
+	       std::vector<element_t> sorted_eq_class(kv.second.begin(), kv.second.end());
 	       std::sort(sorted_eq_class.begin(), sorted_eq_class.end());
 	       sorted_eq_classes.emplace_back(std::make_pair(kv.first, sorted_eq_class));
 	     }
 	     std::sort(sorted_eq_classes.begin(), sorted_eq_classes.end(),
-		       [](const std::pair<variable_t, std::vector<variable_t>> &p1,
-			  const std::pair<variable_t, std::vector<variable_t>> &p2) {
+		       [](const std::pair<element_t, std::vector<element_t>> &p1,
+			  const std::pair<element_t, std::vector<element_t>> &p2) {
 			 return p1.first < p2.first;
 		       });
 	     return sorted_eq_classes;
       };
 
-      auto print_vars_vector = [&o](const std::vector<variable_t>& vars) {
+      auto print_elems_vector = [&o](const std::vector<element_t>& elems) {
 				 o << "{";
-				 for (auto it = vars.begin(), et = vars.end(); it!=et;) {
+				 for (auto it = elems.begin(), et = elems.end(); it!=et;) {
 				   o << *it;
 				   ++it;
 				   if (it != et) {
@@ -868,13 +866,13 @@ public:
       
       union_find_domain_t tmp(*this);
       CRAB_LOG("union-find-print", tmp.print(o); o << "\n";);
-      equivalence_class_vars_t ec_vars = tmp.equiv_classes_vars();
-      auto sorted_ec_vars = sorted_equiv_classes(ec_vars);
+      equivalence_class_elems_t ec_elems = tmp.equiv_classes_elems();
+      auto sorted_ec_elems = sorted_equiv_classes(ec_elems);
       o << "{";
-      for (auto it = sorted_ec_vars.begin(), et = sorted_ec_vars.end(); it != et;) {
+      for (auto it = sorted_ec_elems.begin(), et = sorted_ec_elems.end(); it != et;) {
 	auto &p = *it;
-        variable_t &rep = tmp.find(p.first);
-	print_vars_vector(p.second);
+        element_t &rep = tmp.find(p.first);
+	print_elems_vector(p.second);
 	o << "=>" << tmp.m_classes.at(rep).get_domain();
         ++it;
         if (it != et) {
