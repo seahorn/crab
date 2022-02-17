@@ -418,8 +418,8 @@ tree<Key, Value>::make_node(index_t prefix, index_t branching_bit,
   tree_ptr n;
   if (left_branch) {
     if (right_branch) {
-      n = tree_ptr(std::make_shared<node<Key, Value>>(
-          prefix, branching_bit, left_branch, right_branch));
+      n = std::make_shared<node<Key, Value>>(
+	       prefix, branching_bit, left_branch, right_branch);
     } else {
       n = left_branch;
     }
@@ -436,8 +436,7 @@ tree<Key, Value>::make_node(index_t prefix, index_t branching_bit,
 template <typename Key, typename Value>
 typename tree<Key, Value>::ptr tree<Key, Value>::make_leaf(const Key &key,
                                                            const Value &value) {
-  using tree_ptr = typename tree<Key, Value>::ptr;
-  return tree_ptr(std::make_shared<leaf<Key, Value>>(key, value));
+  return std::make_shared<leaf<Key, Value>>(key, value);
 }
 
 template <typename Key, typename Value>
