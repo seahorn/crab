@@ -18,13 +18,35 @@ template <class Weight> class HtGraph {
 public:
   using Wt = Weight;
   using graph_t = HtGraph<Wt>;
-
   using vert_id = unsigned int;
 
   using pred_t = std::unordered_set<vert_id>;
   using succ_t = std::unordered_map<vert_id, Wt>;
   using succ_elt_t = typename succ_t::value_type;
 
+  class mut_val_ref_t {
+  public:
+    mut_val_ref_t() : w(nullptr) {}
+    const Wt &get() const {
+      assert(w);
+      return *w;
+    }
+    Wt &get() {
+      assert(w);
+      return *w;
+    }
+    void operator=(Wt *_w) {
+      w = _w;
+    }
+    void operator=(Wt _w) {
+      assert(w);
+      *w = _w;
+    }
+
+  private:
+    Wt *w;
+  };
+  
   HtGraph() : edge_count(0), _succs(), _preds(), is_free(), free_id() {}
 
   template <class Wo> HtGraph(const HtGraph<Wo> &o) : edge_count(0) {
@@ -145,30 +167,7 @@ public:
 
   // Check whether an edge is live
   bool elem(vert_id x, vert_id y) const { return succs(x).mem(y); }
-
-  class mut_val_ref_t {
-  public:
-    mut_val_ref_t() : w(nullptr) {}
-    operator Wt() const {
-      assert(w);
-      return *w;
-    }
-    Wt get() const {
-      assert(w);
-      return *w;
-    }
-    void operator=(Wt *_w) { w = _w; }
-    void operator=(Wt _w) {
-      assert(w);
-      *w = _w;
-    }
-
-  private:
-    Wt *w;
-  };
-
-  using mut_val_ref_t = mut_val_ref_t;
-
+  
   bool lookup(vert_id x, vert_id y, mut_val_ref_t *w) {
     if (!succs(x).mem(y))
       return false;

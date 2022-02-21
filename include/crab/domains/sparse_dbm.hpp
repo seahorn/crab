@@ -532,7 +532,7 @@ protected:
         if (overflow) {
           return;
         }
-        if (g.lookup(v, 0, &w) && lb_val < w) {
+        if (g.lookup(v, 0, &w) && lb_val < w.get()) {
           g.set_edge(v, lb_val, 0);
           if (!repair_potential(v, 0)) {
             set_to_bottom();
@@ -558,7 +558,7 @@ protected:
         if (overflow) {
           return;
         }
-        if (g.lookup(0, v, &w) && (ub_val < w)) {
+        if (g.lookup(0, v, &w) && (ub_val < w.get())) {
           g.set_edge(0, ub_val, v);
           if (!repair_potential(0, v)) {
             set_to_bottom();
@@ -966,7 +966,7 @@ public:
           vert_id y = vert_renaming[oy];
           Wt ow = edge.val;
 
-          if (!left.g.lookup(x, y, &wx) || (ow < wx))
+          if (!left.g.lookup(x, y, &wx) || (ow < wx.get()))
             return false;
         }
       }

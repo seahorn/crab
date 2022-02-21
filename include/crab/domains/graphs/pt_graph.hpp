@@ -15,7 +15,6 @@ template <class Weight> class PtGraph {
 public:
   using Wt = Weight;
   using graph_t = PtGraph<Wt>;
-
   using vert_id = unsigned int;
 
   class vert_idx : public indexable {
@@ -31,6 +30,45 @@ public:
 
   using pred_t = ikos::patricia_tree_set<vert_idx>;
   using succ_t = ikos::patricia_tree<vert_idx, Wt>;
+
+  class mut_val_ref_t {    
+  public:
+    mut_val_ref_t() : g(nullptr) {}
+    
+    mut_val_ref_t(graph_t &_g, vert_id _s, vert_id _d)
+      : g(&_g), s(_s), d(_d), w(g->succs(s).value(d)) {}
+       
+    const Wt &get() const {
+      assert(g);
+      return w;
+    }
+
+    Wt &get() {
+      assert(g);
+      return w;
+    }
+    
+    void operator=(const mut_val_ref_t &o) {
+      if (this != &o) {
+        g = o.g;
+        s = o.s;
+        d = o.d;
+        w = o.w;
+      }
+    }
+    
+    void operator=(Wt _w) {
+      assert(g);
+      g->set_edge(s, _w, d);
+      w = _w;
+    }
+    
+  private:
+    graph_t *g;
+    vert_id s;
+    vert_id d;
+    Wt w;
+  };
 
   PtGraph() : edge_count(0), _succs(), _preds(), is_free(), free_id() {}
 
@@ -152,49 +190,7 @@ public:
 
   // Check whether an edge is live
   bool elem(vert_id x, vert_id y) const { return succs(x).mem(y); }
-
-  class mut_val_ref_t {
-
-  public:
-    mut_val_ref_t() : g(nullptr) {}
-
-    mut_val_ref_t(graph_t &_g, vert_id _s, vert_id _d)
-        : g(&_g), s(_s), d(_d), w(g->succs(s).value(d)) {}
-
-    operator Wt() const {
-      assert(g);
-      return w;
-    }
-
-    Wt get() const {
-      assert(g);
-      return w;
-    }
-
-    void operator=(const mut_val_ref_t &o) {
-      if (this != &o) {
-        g = o.g;
-        s = o.s;
-        d = o.d;
-        w = o.w;
-      }
-    }
-
-    void operator=(Wt _w) {
-      assert(g);
-      g->set_edge(s, _w, d);
-      w = _w;
-    }
-
-  private:
-    graph_t *g;
-    vert_id s;
-    vert_id d;
-    Wt w;
-  };
-
-  using mut_val_ref_t = mut_val_ref_t;
-
+ 
   bool lookup(vert_id x, vert_id y, mut_val_ref_t *w) {
     if (!succs(x).mem(y))
       return false;

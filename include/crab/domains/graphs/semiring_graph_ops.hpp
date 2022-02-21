@@ -39,15 +39,15 @@ class SemiringGrOps {
   }
 
 public:
-  static bool less_than(Wt w1, Wt w2) { return (!(w2 <= w1)); }
+  static bool less_than(const Wt &w1, const Wt &w2) { return (!(w2 <= w1)); }
 
   struct Wt_join {
-    Wt apply(Wt x, Wt y) { return x | y; }
+    Wt apply(const Wt &x, const Wt &y) { return x | y; }
     bool default_is_absorbing() { return true; }
   };
 
   struct Wt_meet {
-    Wt apply(Wt x, Wt y) { return x & y; }
+    Wt apply(const Wt &x, const Wt &y) { return x & y; }
     bool default_is_absorbing() { return false; }
   };
 
@@ -81,7 +81,7 @@ public:
       for (auto e : l.e_succs(s)) {
         vert_id d = e.vert;
         if (r.lookup(s, d, &wr))
-          add_edge(g, s, e.val | (Wt)wr, d);
+          add_edge(g, s, e.val | wr.get(), d);
       }
     }
     return g;
@@ -102,14 +102,14 @@ public:
           // refine from a top weight
           add_edge(g, s, e.val, e.vert);
         } else {
-          wg = (is_meet ? e.val & (Wt)wg : e.val && (Wt)wg);
+          wg = (is_meet ? e.val & wg.get() : e.val && wg.get());
         }
       }
       // Check if this vertex is stable
       for (auto e : l.e_succs(s)) {
         vert_id d = e.vert;
         if (g.lookup(s, d, &wg)) {
-          if (less_than((Wt)wg, e.val)) {
+          if (less_than(wg.get(), e.val)) {
             changed.push_back(s);
             break;
           }
@@ -121,7 +121,7 @@ public:
       for (auto e : r.e_succs(s)) {
         vert_id d = e.vert;
         if (g.lookup(s, d, &wg)) {
-          if (less_than((Wt)wg, e.val)) {
+          if (less_than(wg.get(), e.val)) {
             changed.push_back(s);
             break;
           }
@@ -146,14 +146,14 @@ public:
       for (auto e : r.e_succs(s)) {
         vert_id d = e.vert;
         if (l.lookup(s, d, &wl))
-          add_edge(g, s, (Wt)wl || e.val, d);
+          add_edge(g, s, wl.get() || e.val, d);
       }
       // Check if this vertex is stable
       mut_val_ref_t widen_wl;
       for (auto e : l.e_succs(s)) {
         vert_id d = e.vert;
         if (g.lookup(s, d, &widen_wl)) {
-          if (less_than(e.val, (Wt)widen_wl)) {
+          if (less_than(e.val, widen_wl.get())) {
             unstable.push_back(s);
             break;
           }
@@ -171,8 +171,8 @@ public:
     mut_val_ref_t w0;
     if (g.lookup(i, j, &w0)) {
       // w := w0 & (w_ik | w_kj)
-      Wt w = ((Wt)w0 & w_ik) | ((Wt)w0 & w_kj);
-      if (less_than(w, w0)) {
+      Wt w = (w0.get() & w_ik) | (w0.get() & w_kj);
+      if (less_than(w, w0.get())) {
         w0 = w;
         return true;
       }
@@ -210,8 +210,8 @@ public:
         for (vert_id j : g.verts()) {
           bool has_ik = g.lookup(i, k, &w_ik);
           bool has_kj = g.lookup(k, j, &w_kj);
-          change = maybe_extend(g, i, j, (has_ik ? (Wt)w_ik : make_wt_top()),
-                                (has_kj ? (Wt)w_kj : make_wt_top()));
+          change = maybe_extend(g, i, j, (has_ik ? w_ik.get() : make_wt_top()),
+                                (has_kj ? w_kj.get() : make_wt_top()));
         }
       }
     }
@@ -235,14 +235,14 @@ public:
       mut_val_ref_t w_ix, w_iy, w_yi, w_xi;
       if (g.lookup(i, x, &w_ix)) {
         if (g.lookup(i, y, &w_iy)) {
-          if (less_than((Wt)w_ix | (Wt)w, w_iy))
+          if (less_than(w_ix.get() | w.get(), w_iy.get()))
             Q1.push_back(i);
         } else
           Q1.push_back(i);
       }
       if (g.lookup(y, i, &w_yi)) {
         if (g.lookup(x, i, &w_xi)) {
-          if (less_than((Wt)w_yi | (Wt)w, w_xi))
+          if (less_than(w_yi.get() | w.get(), w_xi.get()))
             Q2.push_back(i);
         } else
           Q2.push_back(i);
@@ -254,11 +254,11 @@ public:
     for (auto i : Q1) {
       for (auto j : Q2) {
         if (y == j && g.lookup(i, x, &w_ix)) {
-          change = maybe_extend(g, i, j, (Wt)w_ix, (Wt)w);
+          change = maybe_extend(g, i, j, w_ix.get(), w.get());
         } else if (i == x && g.lookup(y, j, &w_yj)) {
-          change = maybe_extend(g, i, j, (Wt)w, (Wt)w_yj);
+          change = maybe_extend(g, i, j, w.get(), w_yj.get());
         } else if (g.lookup(i, x, &w_ix) && g.lookup(y, j, &w_yj)) {
-          change = maybe_extend(g, i, j, (Wt)w_ix | (Wt)w, (Wt)w_yj);
+          change = maybe_extend(g, i, j, w_ix.get() | w.get(), w_yj.get());
         }
       }
     }
@@ -293,7 +293,7 @@ public:
       vert_id q = heap.removeMin();
       for (auto e : g.e_succs(q)) {
         vert_id d = e.vert;
-        Wt w = dists[q] | (Wt)e.val;
+        Wt w = dists[q] | e.val;
         if (less_than(w, dists[d])) {
           dists[d] = w;
           if (heap.inHeap(d))

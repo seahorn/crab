@@ -442,8 +442,7 @@ public:
           _vert_id oy = edge.vert;
           assert(vert_renaming[ox] != -1);
           _vert_id y = vert_renaming[oy];
-          auto ow = (Weight)edge.val;
-          if (!left._g.lookup(x, y, &wx) || (!((Weight)wx <= ow)))
+          if (!left._g.lookup(x, y, &wx) || (!(wx.get() <= edge.val)))
             return false;
         }
       }
@@ -769,7 +768,7 @@ public:
       for (auto e : _g.e_succs(p)) {
         auto q = e.vert;
         if (_g.lookup(p, q, &w_pq)) {
-          Weight w = (Weight)w_pq;
+          Weight w = w_pq.get();
           w -= v;
           Wt_meet op;
           _g.update_edge(p, w, q, op);
@@ -1506,7 +1505,7 @@ private:
 
     mut_val_ref_t wi;
     if (_g.lookup_edge(landmark_ref_t(i), get_landmark_prime(i), &wi))
-      return (Content)wi;
+      return wi.get();
     else
       return make_content_top();
   }
@@ -1523,7 +1522,7 @@ private:
     landmark_ref_t lm_i(i);
     landmark_ref_t lm_i_prime = get_landmark_prime(i);
     if (_g.lookup_edge(lm_i, lm_i_prime, &wi)) {
-      Content w = (Content)wi;
+      Content w = wi.get();
       w -= v;
       // XXX: update_edge closes the array graph
       _g.update_edge(lm_i, w, lm_i_prime);
@@ -1567,7 +1566,7 @@ private:
         auto q = e.vert;
         if ((p == lm_i) && (q == lm_i_prime))
           continue;
-        if (_g.lookup_edge(p, q, &w_pq) && ((Content)w_pq).is_bottom())
+        if (_g.lookup_edge(p, q, &w_pq) && w_pq.get().is_bottom())
           continue;
         // we know already that p < q in the array graph
 
@@ -1578,7 +1577,7 @@ private:
         if (solve.is_unsat(make_leq_cst(lm_i_prime, q)))
           continue;
 
-        w_pq = (Content)w_pq | (Content)wi;
+        w_pq = w_pq.get() | wi.get();
       }
     }
   }
@@ -1627,7 +1626,7 @@ private:
     //// edges between x_old and x_old'
     mut_val_ref_t w;
     if (_g.lookup_edge(lm_x, lm_x_prime, &w))
-      _g.update_edge(lm_x_old, (Content)w, lm_x_old_prime);
+      _g.update_edge(lm_x_old, w.get(), lm_x_old_prime);
     _g.update_edge(lm_x_old_prime, make_content_bottom(), lm_x_old);
 
     /// --- Remove x and x'

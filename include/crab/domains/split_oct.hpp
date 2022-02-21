@@ -460,7 +460,7 @@ private:
   template <class G> void update_delta(G &g, edge_vector &delta) const {
     mut_val_ref_t w;
     for (std::pair<std::pair<vert_id, vert_id>, Wt> &e : delta) {
-      if (!g.lookup(e.first.first, e.first.second, &w) || e.second < w) {
+      if (!g.lookup(e.first.first, e.first.second, &w) || e.second < w.get()) {
         g.set_edge(e.first.first, Wt(e.second), e.first.second);
       }
     }
@@ -1442,7 +1442,7 @@ private:
         if (overflow) {
           return true;
         }
-        if (m_graph.lookup(v, v + 1, &w) && lb_val < w) {
+        if (m_graph.lookup(v, v + 1, &w) && lb_val < w.get()) {
           m_graph.set_edge(v, lb_val, v + 1);
           if (!repair_potential(v, v + 1)) {
             set_to_bottom();
@@ -1461,7 +1461,7 @@ private:
         if (overflow) {
           return true;
         }
-        if (m_graph.lookup(v + 1, v, &w) && (ub_val < w)) {
+        if (m_graph.lookup(v + 1, v, &w) && (ub_val < w.get())) {
           m_graph.set_edge(v + 1, ub_val, v);
           if (!repair_potential(v + 1, v)) {
             set_to_bottom();
@@ -1821,7 +1821,7 @@ private:
     g.growTo(sz);
 
     Wt_min min_op;
-    mut_val_ref_t wx, wy;
+    mut_val_ref_t wx;
 
     /**
      * Add stable relationships which are explicit both in l and r
@@ -1830,8 +1830,8 @@ private:
       for (auto e : r.e_succs(s)) {
         vert_id d = e.vert;
         /* check if s->d is explicit in l */
-        if (l.lookup(s, d, &wx) && e.val <= wx) {
-          g.add_edge(s, wx, d);
+        if (l.lookup(s, d, &wx) && e.val <= wx.get()) {
+          g.add_edge(s, wx.get(), d);
           CRAB_LOG(
               "octagon-widening", auto vs = m_rev_vert_map[s];
               auto vd = m_rev_vert_map[d]; if (s % 2 == 0 && s + 1 == d) {

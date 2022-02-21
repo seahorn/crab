@@ -15,6 +15,28 @@ public:
 
   using vert_id = unsigned int;
 
+  class mut_val_ref_t {
+  public:
+    mut_val_ref_t() : w(nullptr) {}
+    const Wt &get() const {
+      assert(w);
+      return *w;
+    }
+    Wt &get() {
+      assert(w);
+      return *w;
+    }
+    void operator=(Wt *_w) {
+      w = _w;
+    }
+    void operator=(Wt _w) {
+      assert(w);
+      *w = _w;
+    }    
+  private:
+    Wt *w;
+  };
+  
   SparseWtGraph(unsigned int _maxsz = 10, float _growth_rate = 1.4)
       : max_sz(_maxsz), sz(0), growth_rate(_growth_rate), edge_count(0),
         fwd_adjs(
@@ -251,30 +273,7 @@ public:
 
   // Check whether an edge is live
   bool elem(vert_id x, vert_id y) const { return succs(x).mem(y); }
-
-  class mut_val_ref_t {
-  public:
-    mut_val_ref_t() : w(nullptr) {}
-    operator Wt() const {
-      assert(w);
-      return *w;
-    }
-    Wt get() const {
-      assert(w);
-      return *w;
-    }
-    void operator=(Wt *_w) { w = _w; }
-    void operator=(Wt _w) {
-      assert(w);
-      *w = _w;
-    }
-
-  private:
-    Wt *w;
-  };
-
-  using mut_val_ref_t = mut_val_ref_t;
-
+  
   bool lookup(vert_id x, vert_id y, mut_val_ref_t *w) {
     if (!succs(x).mem(y))
       return false;
