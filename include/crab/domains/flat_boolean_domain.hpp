@@ -180,14 +180,14 @@ public:
   void assign_bool_cst(const variable_t &x,
                        const linear_constraint_t &cst) override {
     m_env -= x;
-    CRAB_LOG("flat-boolean", auto bx = m_env[x];
+    CRAB_LOG("flat-boolean", auto bx = m_env.at(x);
              crab::outs() << x << ":=" << bx << "\n");
   }
 
   void assign_bool_ref_cst(const variable_t &x,
                            const reference_constraint_t &cst) override {
     m_env -= x;
-    CRAB_LOG("flat-boolean", auto bx = m_env[x];
+    CRAB_LOG("flat-boolean", auto bx = m_env.at(x);
              crab::outs() << x << ":=" << bx << "\n");
   }
 
@@ -195,8 +195,8 @@ public:
                        bool is_not_y) override {
     crab::CrabStats::count(domain_name() + ".count.assign_bool_var");
     crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_var");
-    m_env.set(x, (is_not_y ? m_env[y].Negate() : m_env[y]));
-    CRAB_LOG("flat-boolean", auto bx = m_env[x];
+    m_env.set(x, (is_not_y ? m_env.at(y).Negate() : m_env.at(y)));
+    CRAB_LOG("flat-boolean", auto bx = m_env.at(x);
              crab::outs() << "After " << x << ":=";
              if (is_not_y) crab::outs() << "not(" << y << ")";
              else crab::outs() << y;
@@ -210,19 +210,19 @@ public:
 
     switch (op) {
     case OP_BAND:
-      m_env.set(x, m_env[y].And(m_env[z]));
+      m_env.set(x, m_env.at(y).And(m_env.at(z)));
       break;
     case OP_BOR:
-      m_env.set(x, m_env[y].Or(m_env[z]));
+      m_env.set(x, m_env.at(y).Or(m_env.at(z)));
       break;
     case OP_BXOR:
-      m_env.set(x, m_env[y].Xor(m_env[z]));
+      m_env.set(x, m_env.at(y).Xor(m_env.at(z)));
       break;
     default:
       CRAB_ERROR("Unknown boolean operator");
     }
 
-    CRAB_LOG("flat-boolean", auto bx = m_env[x];
+    CRAB_LOG("flat-boolean", auto bx = m_env.at(x);
              crab::outs() << "After " << x << ":=" << y << " " << op << " " << z
                           << " --->" << x << "=" << bx << "\n");
   }
@@ -232,11 +232,11 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".assume_bool");
 
     if (!is_negated)
-      m_env.set(x, m_env[x] & boolean_value::get_true());
+      m_env.set(x, m_env.at(x) & boolean_value::get_true());
     else
-      m_env.set(x, m_env[x] & boolean_value::get_false());
+      m_env.set(x, m_env.at(x) & boolean_value::get_false());
 
-    CRAB_LOG("flat-boolean", auto bx = m_env[x];
+    CRAB_LOG("flat-boolean", auto bx = m_env.at(x);
              if (!is_negated) crab::outs()
              << "After assume(" << x << ") --> " << x << "=" << bx << "\n";
              else crab::outs() << "After assume(not(" << x << ")) --> " << x
@@ -253,7 +253,7 @@ public:
 	flat_boolean_domain_t inv1(*this);
 	inv1.assume_bool(cond, !negate);
 	if (inv1.is_bottom()) {
-	  m_env.set(lhs, m_env[b2]);
+	  m_env.set(lhs, m_env.at(b2));
 	  return;
 	}
 	
@@ -261,11 +261,11 @@ public:
 	flat_boolean_domain_t inv2(*this);
 	inv2.assume_bool(cond, negate);
 	if (inv2.is_bottom()) {
-	  m_env.set(lhs, m_env[b1]);
+	  m_env.set(lhs, m_env.at(b1));
 	  return;
 	}
 	
-	m_env.set(lhs, m_env[b1] | m_env[b2]);
+	m_env.set(lhs, m_env.at(b1) | m_env.at(b2));
       }
     }
   }
@@ -276,7 +276,7 @@ public:
 
   void set_bool(const variable_t &x, boolean_value v) { m_env.set(x, v); }
 
-  boolean_value get_bool(const variable_t &x) { return m_env[x]; }
+  boolean_value get_bool(const variable_t &x) { return m_env.at(x); }
 
   // backward boolean operators
   void backward_assign_bool_cst(const variable_t &lhs,
@@ -692,9 +692,9 @@ private:
 				 const variable_t &x, const variable_t &y,
 				 bool is_negated) {
     if (!is_negated) {
-      env.set(x, env[y]);
+      env.set(x, env.at(y));
     } else {
-      typename BoolToCstEnv::value_type csts = env[y];
+      typename BoolToCstEnv::value_type csts = env.at(y);
       if (csts.size() == 1) {
 	// cst is either linear_constraint or reference_constraint
         auto cst = *(csts.begin());
@@ -740,14 +740,14 @@ private:
   void reduction_assume_bool(BoolToCstEnv &env,
 			     const variable_t &x, bool is_negated) {
 
-    if (env[x].is_top() || env[x].is_bottom()) {
+    if (env.at(x).is_top() || env.at(x).is_bottom()) {
       return;
     }
 
     // Perform reduction from the flat boolean domain to the
     // other domain.
     if (!is_negated) {
-      for (auto cst : env[x]) {
+      for (auto cst : env.at(x)) {
         // -- we only apply reduction if we know that all the
         // constraint variables have not been modified since they
         // were added into env.
@@ -761,7 +761,7 @@ private:
       }
     } else {
       // we only perform reduction if there is only one constraint
-      typename BoolToCstEnv::value_type csts = env[x];
+      typename BoolToCstEnv::value_type csts = env.at(x);
       if (csts.size() == 1) {
         auto cst = *(csts.begin());
         if (add_if_unchanged(cst.negate())) {
@@ -795,9 +795,9 @@ private:
 			     const variable_t &b1, const variable_t &b2) {
 
     if (eval_true(cond)) {
-      env.set(lhs, env[b1]); // lhs:= select(cond, b1, b2) --> lhs := b1
+      env.set(lhs, env.at(b1)); // lhs:= select(cond, b1, b2) --> lhs := b1
     } else if (eval_false(cond)) {
-      env.set(lhs, env[b2]); // lhs:= select(cond, b1, b2) --> lhs := b2
+      env.set(lhs, env.at(b2)); // lhs:= select(cond, b1, b2) --> lhs := b2
     } else {
       env -= lhs;
     } 
@@ -1668,8 +1668,8 @@ public:
     bool_to_refcons_env_t new_var_to_refcsts;    
     invariance_domain new_unchanged_vars;
     for (variable_t v : variables) {
-      new_var_to_lincsts.set(v, m_var_to_lincsts[v]);
-      new_var_to_refcsts.set(v, m_var_to_refcsts[v]);      
+      new_var_to_lincsts.set(v, m_var_to_lincsts.at(v));
+      new_var_to_refcsts.set(v, m_var_to_refcsts.at(v));      
       
       if (m_unchanged_vars[v]) {
         new_unchanged_vars += v;
@@ -1689,8 +1689,8 @@ public:
     }
 
     m_product.expand(x, new_x);
-    m_var_to_lincsts.set(new_x, m_var_to_lincsts[x]);
-    m_var_to_refcsts.set(new_x, m_var_to_refcsts[x]);    
+    m_var_to_lincsts.set(new_x, m_var_to_lincsts.at(x));
+    m_var_to_refcsts.set(new_x, m_var_to_refcsts.at(x));    
     if (m_unchanged_vars[x]) {
       m_unchanged_vars += new_x;
     }

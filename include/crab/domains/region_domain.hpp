@@ -812,7 +812,7 @@ private:
   void merge_tags(const variable_t &x, RangeVars vars) {
     tag_set tags = tag_set::bottom();
     for (auto const &v : vars) {
-      tags = tags | m_tag_env[v];
+      tags = tags | m_tag_env.at(v);
     }
     m_tag_env.set(x, tags);
   }
@@ -867,7 +867,7 @@ private:
     if (crab_domain_params_man::get().region_skip_unknown_regions()) {
       return false;
     } else {
-      auto rgn_info = m_rgn_info_env[v];
+      auto rgn_info = m_rgn_info_env.at(v);
       const type_value &dyn_ty = rgn_info.type_val();
       if (dyn_ty.is_top() || dyn_ty.is_bottom()) {
         return false;
@@ -901,7 +901,7 @@ private:
       return v.get_type();
     }
 
-    auto rgn_info = m_rgn_info_env[v];
+    auto rgn_info = m_rgn_info_env.at(v);
     const type_value &dyn_ty = rgn_info.type_val();
     if (dyn_ty.is_top() || dyn_ty.is_bottom()) {
       CRAB_ERROR("get_dynamic_type_or_fail cannot be called on top or bottom");
@@ -1388,7 +1388,7 @@ public:
       return;
     }
 
-    auto rgn_info = m_rgn_info_env[rgn];
+    auto rgn_info = m_rgn_info_env.at(rgn);
     const small_range &count_num = rgn_info.refcount_val();
     if (count_num <= small_range::oneOrMore()) {
       CRAB_ERROR("region_domain::init_region: ", rgn,
@@ -1448,17 +1448,17 @@ public:
       return;
     }
 
-    region_domain_impl::region_info rhs_rgn_info = m_rgn_info_env[rhs_rgn];
+    region_domain_impl::region_info rhs_rgn_info = m_rgn_info_env.at(rhs_rgn);
     m_rgn_info_env.set(lhs_rgn, rhs_rgn_info);
     
     if (crab_domain_params_man::get().region_allocation_sites()) {
-      m_alloc_site_dom.set(lhs_rgn, m_alloc_site_dom[rhs_rgn]);
+      m_alloc_site_dom.set(lhs_rgn, m_alloc_site_dom.at(rhs_rgn));
     }
     if (crab_domain_params_man::get().region_deallocation()) {
       m_rgn_dealloc_dom.add(rhs_rgn, lhs_rgn);
     }
     if (crab_domain_params_man::get().region_tag_analysis()) {
-      m_tag_env.set(lhs_rgn, m_tag_env[rhs_rgn]);
+      m_tag_env.set(lhs_rgn, m_tag_env.at(rhs_rgn));
     }
 
     if (!is_tracked_region(rhs_rgn, rhs_rgn_info.type_val())) {
@@ -1528,16 +1528,16 @@ public:
     }
 
     if (crab_domain_params_man::get().region_allocation_sites()) {
-      m_alloc_site_dom.set(dst_rgn, m_alloc_site_dom[src_rgn]);
+      m_alloc_site_dom.set(dst_rgn, m_alloc_site_dom.at(src_rgn));
     }
     if (crab_domain_params_man::get().region_deallocation()) {
       m_rgn_dealloc_dom.add(src_rgn, dst_rgn);
     }
     if (crab_domain_params_man::get().region_tag_analysis()) {
-      m_tag_env.set(dst_rgn, m_tag_env[src_rgn]);
+      m_tag_env.set(dst_rgn, m_tag_env.at(src_rgn));
     }
          
-    region_domain_impl::region_info src_rgn_info = m_rgn_info_env[src_rgn];          
+    region_domain_impl::region_info src_rgn_info = m_rgn_info_env.at(src_rgn);          
     if (!src_rgn.get_type().is_unknown_region()) {
       assert(dst_rgn.get_type().is_unknown_region());
 
@@ -1546,7 +1546,7 @@ public:
 					  src_rgn_info.init_val(),
 					  type_value(src_rgn.get_type())));
 
-      region_domain_impl::region_info old_dst_rgn_info = m_rgn_info_env[dst_rgn];
+      region_domain_impl::region_info old_dst_rgn_info = m_rgn_info_env.at(dst_rgn);
       const type_value &dst_dyn_type = old_dst_rgn_info.type_val();
       if (!has_dynamic_type(dst_rgn, dst_dyn_type)) {
 	// skip assign ghost variables
@@ -1606,7 +1606,7 @@ public:
     }
 
     // Update region counting
-    auto old_rgn_info = m_rgn_info_env[rgn];    
+    auto old_rgn_info = m_rgn_info_env.at(rgn);    
     m_rgn_info_env.set(rgn,
       region_domain_impl::region_info(old_rgn_info.refcount_val().increment(),
 				      old_rgn_info.init_val(),
@@ -1699,12 +1699,12 @@ public:
 
     if (crab_domain_params_man::get().region_allocation_sites()) {
       if (res.get_type().is_reference()) {
-        m_alloc_site_dom.set(res, m_alloc_site_dom[rgn]);
+        m_alloc_site_dom.set(res, m_alloc_site_dom.at(rgn));
       }
     }
 
     if (crab_domain_params_man::get().region_tag_analysis()) {
-      m_tag_env.set(res, m_tag_env[rgn]);
+      m_tag_env.set(res, m_tag_env.at(rgn));
     }
 
     if (!is_tracked_region(rgn)) {
@@ -1717,7 +1717,7 @@ public:
       return;
     }
 
-    region_domain_impl::region_info rgn_info = m_rgn_info_env[rgn];
+    region_domain_impl::region_info rgn_info = m_rgn_info_env.at(rgn);
     if (is_tracked_unknown_region(rgn)) {
       const type_value &rgn_ty = rgn_info.type_val();
       if (rgn_ty.is_bottom()) {
@@ -1818,7 +1818,7 @@ public:
       return;
     }
 
-    region_domain_impl::region_info old_rgn_info = m_rgn_info_env[rgn];
+    region_domain_impl::region_info old_rgn_info = m_rgn_info_env.at(rgn);
     region_domain_impl::region_info new_rgn_info(old_rgn_info);    
     bool is_uninitialized_rgn = old_rgn_info.init_val().is_false();
     
@@ -1945,14 +1945,14 @@ public:
             m_alloc_site_dom.set(rgn, allocation_sites::bottom());
           } else {
             assert(val.is_variable());
-            m_alloc_site_dom.set(rgn, m_alloc_site_dom[val.get_variable()]);
+            m_alloc_site_dom.set(rgn, m_alloc_site_dom.at(val.get_variable()));
           }
         }
       }
 
       if (crab_domain_params_man::get().region_tag_analysis()) {
         if (val.is_variable()) {
-          m_tag_env.set(rgn, m_tag_env[val.get_variable()]);
+          m_tag_env.set(rgn, m_tag_env.at(val.get_variable()));
         }
       }
 
@@ -1969,14 +1969,14 @@ public:
       if (crab_domain_params_man::get().region_allocation_sites()) {
         if (val.get_type().is_reference()) {
           if (val.is_variable()) {
-            m_alloc_site_dom.set(rgn, m_alloc_site_dom[rgn] |
-                                          m_alloc_site_dom[val.get_variable()]);
+            m_alloc_site_dom.set(rgn, m_alloc_site_dom.at(rgn) |
+				 m_alloc_site_dom.at(val.get_variable()));
           }
         }
       }
       if (crab_domain_params_man::get().region_tag_analysis()) {
         if (val.is_variable()) {
-          m_tag_env.set(rgn, m_tag_env[rgn] | m_tag_env[val.get_variable()]);
+          m_tag_env.set(rgn, m_tag_env.at(rgn) | m_tag_env.at(val.get_variable()));
         }
       }
     }
@@ -2028,7 +2028,7 @@ public:
 
       if (!(rgn1 == rgn2 && (eval(offset) == (number_t(0))))) {
         // Update region counting
-	auto old_rgn2_info = m_rgn_info_env[rgn2];
+	auto old_rgn2_info = m_rgn_info_env.at(rgn2);
 	m_rgn_info_env.set(rgn2,
 	  region_domain_impl::region_info(old_rgn2_info.refcount_val().increment(),
 					  old_rgn2_info.init_val(),
@@ -2036,11 +2036,11 @@ public:
       }
 
       if (crab_domain_params_man::get().region_allocation_sites()) {
-        m_alloc_site_dom.set(ref2, m_alloc_site_dom[ref1]);
+        m_alloc_site_dom.set(ref2, m_alloc_site_dom.at(ref1));
       }
 
       if (crab_domain_params_man::get().region_tag_analysis()) {
-        m_tag_env.set(ref2, m_tag_env[ref1]);
+        m_tag_env.set(ref2, m_tag_env.at(ref1));
       }
 
       if (crab_domain_params_man::get().region_deallocation()) {
@@ -2110,7 +2110,7 @@ public:
     // (bool or int)
 
     if (boost::optional<ghost_variables_t> arr_gvars_opt = get_gvars(rgn)) {
-      auto rgn_info = m_rgn_info_env[rgn];
+      auto rgn_info = m_rgn_info_env.at(rgn);
       auto num_refs = rgn_info.refcount_val();
       auto b_elem_size = rename_linear_expr(elem_size);
       if (num_refs.is_zero() || num_refs.is_one()) {
@@ -2155,7 +2155,7 @@ public:
     }
 
     // We conservatively mark the region as may-initialized
-    auto old_rgn_info = m_rgn_info_env[rgn];    
+    auto old_rgn_info = m_rgn_info_env.at(rgn);    
     m_rgn_info_env.set(rgn,
       region_domain_impl::region_info(old_rgn_info.refcount_val(),
 				      boolean_value::top(),
@@ -2201,8 +2201,8 @@ public:
 
       if (crab_domain_params_man::get().region_allocation_sites()) {
         if (ref_cst.is_equality() && ref_cst.is_binary()) {
-          auto lhs_as = m_alloc_site_dom[ref_cst.lhs()];
-          auto rhs_as = m_alloc_site_dom[ref_cst.rhs()];
+          auto lhs_as = m_alloc_site_dom.at(ref_cst.lhs());
+          auto rhs_as = m_alloc_site_dom.at(ref_cst.rhs());
           // **Important note about soundness**: if the program
           // environment is not modeled precisely enough we can
           // conclude *incorrectly* that p == q is definitely not
@@ -2246,7 +2246,7 @@ public:
       m_base_dom.assign(dst_gvars.get_var(), src_gvars.get_var());
 
       if (crab_domain_params_man::get().region_tag_analysis()) {
-        m_tag_env.set(int_var, m_tag_env[ref_var]);
+        m_tag_env.set(int_var, m_tag_env.at(ref_var));
       }
     }
   }
@@ -2274,11 +2274,11 @@ public:
       }
 
       if (crab_domain_params_man::get().region_tag_analysis()) {
-        m_tag_env.set(ref_var, m_tag_env[int_var]);
+        m_tag_env.set(ref_var, m_tag_env.at(int_var));
       }
 
       // Update region counting
-      auto old_rgn_info = m_rgn_info_env[rgn];    
+      auto old_rgn_info = m_rgn_info_env.at(rgn);    
       m_rgn_info_env.set(rgn,
 	region_domain_impl::region_info(old_rgn_info.refcount_val().increment(),
 					old_rgn_info.init_val(),
@@ -2302,7 +2302,7 @@ public:
                        get_or_insert_gvars(y).get_var(),
                        get_or_insert_gvars(z).get_var());
       if (crab_domain_params_man::get().region_tag_analysis()) {
-        m_tag_env.set(x, m_tag_env[y] | m_tag_env[z]);
+        m_tag_env.set(x, m_tag_env.at(y) | m_tag_env.at(z));
       }
     }
   }
@@ -2316,7 +2316,7 @@ public:
                        get_or_insert_gvars(y).get_var(), k);
 
       if (crab_domain_params_man::get().region_tag_analysis()) {
-        m_tag_env.set(x, m_tag_env[y]);
+        m_tag_env.set(x, m_tag_env.at(y));
       }
     }
   }
@@ -2346,10 +2346,10 @@ public:
       if (crab_domain_params_man::get().region_tag_analysis()) {
         tag_set tags = tag_set::bottom();
         for (auto const &v : e1.variables()) {
-          tags = tags | m_tag_env[v];
+          tags = tags | m_tag_env.at(v);
         }
         for (auto const &v : e2.variables()) {
-          tags = tags | m_tag_env[v];
+          tags = tags | m_tag_env.at(v);
         }
         m_tag_env.set(lhs, tags);
       }
@@ -2454,7 +2454,7 @@ public:
                        get_or_insert_gvars(src).get_var());
 
       if (crab_domain_params_man::get().region_tag_analysis()) {
-        m_tag_env.set(dst, m_tag_env[src]);
+        m_tag_env.set(dst, m_tag_env.at(src));
       }
     }
   }
@@ -2469,7 +2469,7 @@ public:
                        get_or_insert_gvars(z).get_var());
 
       if (crab_domain_params_man::get().region_tag_analysis()) {
-        m_tag_env.set(x, m_tag_env[y] | m_tag_env[z]);
+        m_tag_env.set(x, m_tag_env.at(y) | m_tag_env.at(z));
       }
     }
   }
@@ -2483,7 +2483,7 @@ public:
                        get_or_insert_gvars(y).get_var(), z);
 
       if (crab_domain_params_man::get().region_tag_analysis()) {
-        m_tag_env.set(x, m_tag_env[y]);
+        m_tag_env.set(x, m_tag_env.at(y));
       }
     }
   }
@@ -2513,8 +2513,8 @@ public:
 
       if (crab_domain_params_man::get().region_allocation_sites()) {
         if ((rhs.is_equality() || rhs.is_disequality()) && rhs.is_binary()) {
-          auto op1_as = m_alloc_site_dom[rhs.lhs()];
-          auto op2_as = m_alloc_site_dom[rhs.rhs()];
+          auto op1_as = m_alloc_site_dom.at(rhs.lhs());
+          auto op2_as = m_alloc_site_dom.at(rhs.rhs());
           // -- See note about soundness in ref_asume.
           if (!op1_as.is_bottom() && !op2_as.is_bottom()) {
             allocation_sites inter = op1_as & op2_as;
@@ -2557,7 +2557,7 @@ public:
                                  is_not_rhs);
 
       if (crab_domain_params_man::get().region_tag_analysis()) {
-        m_tag_env.set(lhs, m_tag_env[rhs]);
+        m_tag_env.set(lhs, m_tag_env.at(rhs));
       }
     }
   }
@@ -2572,7 +2572,7 @@ public:
                                    get_or_insert_gvars(z).get_var());
 
       if (crab_domain_params_man::get().region_tag_analysis()) {
-        m_tag_env.set(x, m_tag_env[y] | m_tag_env[z]);
+        m_tag_env.set(x, m_tag_env.at(y) | m_tag_env.at(z));
       }
     }
   }
@@ -2595,7 +2595,7 @@ public:
 
       if (crab_domain_params_man::get().region_tag_analysis()) {
         // it can be improve if we know if cond is true or false
-        m_tag_env.set(lhs, m_tag_env[b1] | m_tag_env[b2]);
+        m_tag_env.set(lhs, m_tag_env.at(b1) | m_tag_env.at(b2));
       }
     }
   }
@@ -3108,7 +3108,7 @@ public:
           // We can only mark the region as "deallocated" if it doesn't
           // have any reference yet. Even if it has only one we cannot
           // tell whether it's the same ref than ref.
-	  auto rgn_info = m_rgn_info_env[rgn];
+	  auto rgn_info = m_rgn_info_env.at(rgn);
           const small_range &num_refs = rgn_info.refcount_val();
           if (num_refs.is_zero()) {
             m_rgn_dealloc_dom.set(rgn, boolean_value::get_false());
@@ -3136,7 +3136,7 @@ public:
 
         // We ignore ref and merge the tag with the tags already in
         // the region
-        m_tag_env.set(rgn, m_tag_env[rgn] | tag_set(tag));
+        m_tag_env.set(rgn, m_tag_env.at(rgn) | tag_set(tag));
       }
     } else if (name == "does_not_have_tag") {
       if (crab_domain_params_man::get().region_tag_analysis()) {
@@ -3151,7 +3151,7 @@ public:
         error_if_not_ref(ref);
         tag_t tag(inputs[2].get_constant());
         variable_t bv = outputs[0];
-        tag_set tags = m_tag_env[rgn];
+        tag_set tags = m_tag_env.at(rgn);
         if (!(tag_set(tag) <= tags)) {
           set_bool_var_to_true(bv);
         } else {
@@ -3299,7 +3299,7 @@ public:
       return false;
     }
 
-    allocation_sites out = m_alloc_site_dom[ref];
+    allocation_sites out = m_alloc_site_dom.at(ref);
 
     if (out.is_top()) {
       return false;
@@ -3321,7 +3321,7 @@ public:
       return false;
     }
 
-    tag_set tag_set = m_tag_env[rgn];
+    tag_set tag_set = m_tag_env.at(rgn);
 
     if (tag_set.is_top()) {
       return false;

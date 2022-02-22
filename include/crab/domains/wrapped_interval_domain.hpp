@@ -1348,7 +1348,7 @@ private:
       wrapped_interval_t c = wrapped_interval_t::mk_winterval(kv.first, width);
       // eval_expr should be "const" but operator[] in _env is not marked as
       // "const"
-      r += c * this->_env[kv.second];
+      r += c * this->_env.at(kv.second);
     }
     return r;
   }
@@ -1475,7 +1475,7 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
     this->_env.set(v, i);
     CRAB_LOG("wrapped-int", crab::outs()
-                                << v << ":=" << i << "=" << _env[v] << "\n");
+	     << v << ":=" << i << "=" << _env.at(v) << "\n");
   }
 
   void set(const variable_t &v, interval_t i) {
@@ -1486,7 +1486,7 @@ public:
           wrapped_interval_t::mk_winterval(i.lb(), i.ub(), v.get_bitwidth());
       this->_env.set(v, rhs);
       CRAB_LOG("wrapped-int", crab::outs()
-                                  << v << ":=" << i << "=" << _env[v] << "\n");
+	       << v << ":=" << i << "=" << _env.at(v) << "\n");
     } else {
       CRAB_WARN(
           "ignored assignment of an open interval in wrapped interval domain");
@@ -1499,25 +1499,25 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
     this->_env.set(v, wrapped_interval_t::mk_winterval(n, v.get_bitwidth()));
     CRAB_LOG("wrapped-int", crab::outs()
-                                << v << ":=" << n << "=" << _env[v] << "\n");
+	     << v << ":=" << n << "=" << _env.at(v) << "\n");
   }
 
   // Return unlimited interval
   virtual interval_t operator[](const variable_t &v) override {
-    wrapped_interval_t w_i = this->_env[v];
+    wrapped_interval_t w_i = this->_env.at(v);
     return w_i.to_interval();
   }
 
   // Return wrapped interval
   wrapped_interval_t get_wrapped_interval(const variable_t &v) const {
-    return this->_env[v];
+    return this->_env.at(v);
   }
 
   void assign(const variable_t &x, const linear_expression_t &e) override {
     crab::CrabStats::count(domain_name() + ".count.assign");
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
     if (boost::optional<variable_t> v = e.get_variable()) {
-      this->_env.set(x, this->_env[*v]);
+      this->_env.set(x, this->_env.at(*v));
     } else {
       wrapped_interval_t r = eval_expr(
           e,
@@ -1525,7 +1525,7 @@ public:
       this->_env.set(x, r);
     }
     CRAB_LOG("wrapped-int", crab::outs()
-                                << x << ":=" << e << "=" << _env[x] << "\n");
+	     << x << ":=" << e << "=" << _env.at(x) << "\n");
   }
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
@@ -1533,8 +1533,8 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    wrapped_interval_t yi = this->_env[y];
-    wrapped_interval_t zi = this->_env[z];
+    wrapped_interval_t yi = _env.at(y);
+    wrapped_interval_t zi = _env.at(z);
     wrapped_interval_t xi = wrapped_interval_t::bottom();
 
     switch (op) {
@@ -1564,7 +1564,7 @@ public:
     }
     this->_env.set(x, xi);
     CRAB_LOG("wrapped-int", crab::outs() << x << ":=" << y << " " << op << " "
-                                         << z << "=" << _env[x] << "\n");
+	     << z << "=" << _env.at(x) << "\n");
   }
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
@@ -1572,7 +1572,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    wrapped_interval_t yi = this->_env[y];
+    wrapped_interval_t yi = _env.at(y);
     wrapped_interval_t zi = wrapped_interval_t::mk_winterval(
         k,
         (x.get_type().is_integer() ? x.get_type().get_integer_bitwidth() : 0));
@@ -1605,7 +1605,7 @@ public:
     }
     this->_env.set(x, xi);
     CRAB_LOG("wrapped-int", crab::outs() << x << ":=" << y << " " << op << " "
-                                         << k << "=" << _env[x] << "\n");
+	     << k << "=" << _env.at(x) << "\n");
   }
 
   // cast operations
@@ -1615,7 +1615,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    wrapped_interval_t src_i = this->_env[src];
+    wrapped_interval_t src_i = this->_env.at(src);
     wrapped_interval_t dst_i;
 
     auto get_bitwidth = [](const variable_t v) {
@@ -1661,8 +1661,8 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    wrapped_interval_t yi = this->_env[y];
-    wrapped_interval_t zi = this->_env[z];
+    wrapped_interval_t yi = _env.at(y);
+    wrapped_interval_t zi = _env.at(z);
     wrapped_interval_t xi = wrapped_interval_t::bottom();
 
     switch (op) {
@@ -1701,7 +1701,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    wrapped_interval_t yi = this->_env[y];
+    wrapped_interval_t yi = _env.at(y);
     wrapped_interval_t zi = wrapped_interval_t::mk_winterval(
         k,
         (x.get_type().is_integer() ? x.get_type().get_integer_bitwidth() : 0));
@@ -1808,7 +1808,7 @@ public:
       return;
     }
 
-    set(new_x, this->_env[x]);
+    set(new_x, _env.at(x));
   }
 
   void normalize() override {}
@@ -2186,7 +2186,7 @@ private:
       //  precisely captured). Because of this, we cannot keep track
       //  of y.
       _limit_env.set(x, wrapped_interval_limit_value::convert(new_i));
-      CRAB_LOG("wrapped-int-hist", auto v = _limit_env[x];
+      CRAB_LOG("wrapped-int-hist", auto v = _limit_env.at(x);
                crab::outs()
                << x
                << " may be initialized, old val=top,  and new val != top) = "
@@ -2197,7 +2197,7 @@ private:
     wrapped_interval_limit_value old_l = wrapped_interval_limit_value::bottom();
     wrapped_interval_limit_value new_l;
     if (may_be_initialized(x)) {
-      old_l = _limit_env[x];
+      old_l = _limit_env.at(x);
       // XXX: it's not enough to convert only new_i. E.g., char x = 127; x++;
       //  convert([127,127])   = no-cross
       //  convert([-128,-128]) = no-cross
@@ -2375,7 +2375,7 @@ public:
   }
 
   wrapped_interval_limit_value get_limit_value(const variable_t &x) const {
-    return _limit_env[x];
+    return _limit_env.at(x);
   }
 
   wrapped_interval_domain_t &get_wrapped_interval_domain() {
@@ -2631,7 +2631,7 @@ public:
     }
 
     _w_int_dom.expand(x, new_x);
-    _limit_env.set(new_x, _limit_env[x]);
+    _limit_env.set(new_x, _limit_env.at(x));
     if (may_be_initialized(x)) {
       _init_set += new_x;
     }
@@ -2650,7 +2650,7 @@ public:
     separate_domain_t projected_env = separate_domain_t::top();
     discrete_domain_t projected_init_set = discrete_domain_t::bottom();
     for (variable_t v : vars) {
-      projected_env.set(v, _limit_env[v]);
+      projected_env.set(v, _limit_env.at(v));
       if (may_be_initialized(v)) {
         projected_init_set += v;
       }

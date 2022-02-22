@@ -618,7 +618,7 @@ private:
 
 private:
   bool refine(const variable_t &v, congruence_t i, CongruenceCollection &env) {
-    congruence_t old_i = env[v];
+    congruence_t old_i = env.at(v);
     congruence_t new_i = old_i & i;
     if (new_i.is_bottom()) {
       return true;
@@ -638,7 +638,7 @@ private:
     for (auto kv : cst) {
       const variable_t &v = kv.second;
       if (!(v == pivot)) {
-        residual = residual - (kv.first * env[v]);
+        residual = residual - (kv.first * env.at(v));
         ++(m_op_count);
       }
     }
@@ -861,7 +861,7 @@ public:
     return interval_t::top();
   }
 
-  congruence_t to_congruence(const variable_t &v) { return this->_env[v]; }
+  congruence_t to_congruence(const variable_t &v) { return this->_env.at(v); }
 
   congruence_t to_congruence(const linear_expression_t &expr) {
     congruence_t r(expr.constant());
@@ -888,7 +888,7 @@ public:
 
     congruence_t r = e.constant();
     for (auto kv : e) {
-      r = r + (kv.first * this->_env[kv.second]);
+      r = r + (kv.first * this->_env.at(kv.second));
     }
     this->_env.set(x, r);
   }
@@ -898,8 +898,8 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    congruence_t yi = this->_env[y];
-    congruence_t zi = this->_env[z];
+    congruence_t yi = this->_env.at(y);
+    congruence_t zi = this->_env.at(z);
     congruence_t xi = congruence_t::bottom();
 
     switch (op) {
@@ -935,7 +935,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    congruence_t yi = this->_env[y];
+    congruence_t yi = this->_env.at(y);
     congruence_t zi(k);
     congruence_t xi = congruence_t::bottom();
 
@@ -1012,8 +1012,8 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    congruence_t yi = this->_env[y];
-    congruence_t zi = this->_env[z];
+    congruence_t yi = this->_env.at(y);
+    congruence_t zi = this->_env.at(z);
     congruence_t xi = congruence_t::bottom();
 
     switch (op) {
@@ -1051,7 +1051,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    congruence_t yi = this->_env[y];
+    congruence_t yi = this->_env.at(y);
     congruence_t zi(k);
     congruence_t xi = congruence_t::bottom();
 
@@ -1118,7 +1118,7 @@ public:
       return;
     }
 
-    set(new_x, this->_env[x]);
+    set(new_x, this->_env.at(x));
   }
 
   void normalize() override {}

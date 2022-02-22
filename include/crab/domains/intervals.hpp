@@ -93,7 +93,7 @@ private:
     for (typename linear_expression_t::iterator it = expr.begin();
          it != expr.end(); ++it) {
       interval_t c(it->first);
-      r += c * this->_env[it->second];
+      r += c * this->_env.at(it->second);
     }
     return r;
   }
@@ -224,7 +224,7 @@ public:
     this->_env -= v;
   }
 
-  interval_t operator[](const variable_t &v) override { return this->_env[v]; }
+  interval_t operator[](const variable_t &v) override { return this->_env.at(v); }
 
   void operator+=(const linear_constraint_system_t &csts) override {
     crab::CrabStats::count(domain_name() + ".count.add_constraints");
@@ -237,11 +237,11 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
 
     if (boost::optional<variable_t> v = e.get_variable()) {
-      this->_env.set(x, this->_env[(*v)]);
+      this->_env.set(x, this->_env.at(*v));
     } else {
       interval_t r = e.constant();
       for (auto kv : e) {
-        r += kv.first * this->_env[kv.second];
+        r += kv.first * this->_env.at(kv.second);
       }
       this->_env.set(x, r);
     }
@@ -252,8 +252,8 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    interval_t yi = this->_env[y];
-    interval_t zi = this->_env[z];
+    interval_t yi = this->_env.at(y);
+    interval_t zi = this->_env.at(z);
     interval_t xi = interval_t::bottom();
 
     switch (op) {
@@ -288,7 +288,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    interval_t yi = this->_env[y];
+    interval_t yi = this->_env.at(y);
     interval_t zi(k);
     interval_t xi = interval_t::bottom();
 
@@ -372,7 +372,7 @@ public:
     if ((op == crab::domains::OP_ZEXT || op == crab::domains::OP_SEXT) &&
 	src.get_type().is_bool()) {
       interval_t dst_max(number_t(0), number_t(1));
-      _env.set(dst, _env[dst] & dst_max);
+      _env.set(dst, _env.at(dst) & dst_max);
     }
     
   }
@@ -383,8 +383,8 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    interval_t yi = this->_env[y];
-    interval_t zi = this->_env[z];
+    interval_t yi = this->_env.at(y);
+    interval_t zi = this->_env.at(z);
     interval_t xi = interval_t::bottom();
 
     switch (op) {
@@ -421,7 +421,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    interval_t yi = this->_env[y];
+    interval_t yi = this->_env.at(y);
     interval_t zi(k);
     interval_t xi = interval_t::bottom();
     switch (op) {
@@ -516,7 +516,7 @@ public:
       return;
     }
 
-    set(new_x, this->_env[x]);
+    set(new_x, this->_env.at(x));
   }
 
   void normalize() override {}

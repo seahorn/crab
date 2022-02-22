@@ -681,7 +681,7 @@ private:
 
     // Solve < and > constraints
     auto solve_strict_inequality = [this](const variable_t &v, sign_t rhs, bool is_less_than) {
-          sign_t lhs = m_env[v];
+      sign_t lhs = m_env.at(v);
 	  CRAB_LOG("sign-domain",
 		   crab::outs() << v << "=" << lhs;
 		   if (is_less_than) {
@@ -692,11 +692,11 @@ private:
 		   crab::outs() << rhs << "\n";);
 	  
 	  if (rhs.equal_zero()) {
-	    m_env.set(v, m_env[v] & (is_less_than ?
+	    m_env.set(v, m_env.at(v) & (is_less_than ?
 				     sign_t::mk_less_than_zero():
 				     sign_t::mk_greater_than_zero()));
 	    CRAB_LOG("sign-domain",
-		     crab::outs() << "\t" << "Refined " << v  << "=" << m_env[v] << "\n";);
+		     crab::outs() << "\t" << "Refined " << v  << "=" << m_env.at(v) << "\n";);
 	    if (is_bottom()) return;	    
 	  } else {
 	    if (!is_less_than) {
@@ -713,7 +713,7 @@ private:
 
     // Solve <= and >= constraints
     auto solve_inequality = [this](const variable_t &v, sign_t rhs, bool is_less_equal) {
-          sign_t lhs = m_env[v];
+      sign_t lhs = m_env.at(v);
 	  CRAB_LOG("sign-domain",
 		   crab::outs() << v << "=" << lhs;
 		   if (is_less_equal) {
@@ -724,11 +724,11 @@ private:
 		   crab::outs() << rhs << "\n";);
 	  
 	  if (rhs.equal_zero()) {
-	    m_env.set(v, m_env[v] & (is_less_equal ?
+	    m_env.set(v, m_env.at(v) & (is_less_equal ?
 				     sign_t::mk_less_or_equal_than_zero():
 				     sign_t::mk_greater_or_equal_than_zero()));
 	    CRAB_LOG("sign-domain",
-		     crab::outs() << "\t" << "Refined " << v  << "=" << m_env[v] << "\n";);
+		     crab::outs() << "\t" << "Refined " << v  << "=" << m_env.at(v) << "\n";);
 	    if (is_bottom()) return;
 	  } else {
 	    if (!is_less_equal) {
@@ -787,31 +787,33 @@ private:
 	}
 		
 	for (auto kv: equal) {
-          sign_t lhs = m_env[kv.first];
+          sign_t lhs = m_env.at(kv.first);
           sign_t rhs = kv.second;
 	  CRAB_LOG("sign-domain",
 		   crab::outs() << kv.first << "=" << lhs << " == " << rhs << "\n";);
-	  m_env.set(kv.first, m_env[kv.first] & rhs);
+	  m_env.set(kv.first, m_env.at(kv.first) & rhs);
 	  CRAB_LOG("sign-domain",
-		   crab::outs() << "\t" << "Refined " << kv.first  << "=" << m_env[kv.first] << "\n";);
+		   crab::outs() << "\t" << "Refined " << kv.first  << "=" << m_env.at(kv.first) << "\n";);
 	  if (is_bottom()) return;	  
 	}
 
 	for (auto kv: not_equal) {
-          sign_t lhs = m_env[kv.first];
+          sign_t lhs = m_env.at(kv.first);
           sign_t rhs = kv.second;
 	  CRAB_LOG("sign-domain",
 		   crab::outs() << kv.first << "=" << lhs << " != " << rhs << "\n";);
 	  if (rhs.equal_zero()) {
 	    m_env.set(kv.first,
-		      m_env[kv.first] & sign_t::mk_not_equal_zero());
+		      m_env.at(kv.first) & sign_t::mk_not_equal_zero());
 	    CRAB_LOG("sign-domain",
-		     crab::outs() << "\t" << "Refined " << kv.first  << "=" << m_env[kv.first] << "\n";);
+		     crab::outs() << "\t" << "Refined " << kv.first  << "="
+		     << m_env.at(kv.first) << "\n";);
 	    if (is_bottom()) return;	    
 	  } else if (rhs.not_equal_zero()) {
-	    m_env.set(kv.first, m_env[kv.first] & sign_t::mk_equal_zero());
+	    m_env.set(kv.first, m_env.at(kv.first) & sign_t::mk_equal_zero());
 	    CRAB_LOG("sign-domain",
-		     crab::outs() << "\t" << "Refined " << kv.first  << "=" << m_env[kv.first] << "\n";);
+		     crab::outs() << "\t" << "Refined " << kv.first  << "="
+		     << m_env.at(kv.first) << "\n";);
 	    if (is_bottom()) return;	    
 	  }
 	}
@@ -863,7 +865,7 @@ private:
     for (auto kv : e) {
       const variable_t &v = kv.second;
       if (v.index() != pivot.index()) {
-        residual = residual - (sign_t(kv.first) * m_env[v]);
+        residual = residual - (sign_t(kv.first) * m_env.at(v));
       }
     }
     return residual;
@@ -876,7 +878,7 @@ private:
     sign_t r(expr.constant());
     for (auto kv : expr) {
       sign_t c(kv.first);
-      r = r + (c * m_env[kv.second]);
+      r = r + (c * m_env.at(kv.second));
     }
     return r;
   }
@@ -901,7 +903,7 @@ public:
   }
 
   sign_t get_sign(const variable_t &v) const {
-    return m_env[v];
+    return m_env.at(v);
   }
 
   void set_sign(const variable_t &v, sign_t s) {
@@ -991,7 +993,7 @@ public:
   }
 
   interval_t operator[](const variable_t &v) override {
-    return m_env[v].to_interval();
+    return m_env.at(v).to_interval();
   }
 
   void operator+=(const linear_constraint_system_t &csts) override {
@@ -1006,12 +1008,12 @@ public:
     CRAB_LOG("sign-domain",
 	     crab::outs() << x << " := " << e << "\n";);
     if (boost::optional<variable_t> v = e.get_variable()) {
-      m_env.set(x, m_env[(*v)]);
+      m_env.set(x, m_env.at(*v));
     } else {
       m_env.set(x, eval_expr(e));
     }
     CRAB_LOG("sign-domain",
-	     crab::outs() << "RES=" << m_env[x] << "\n";);
+	     crab::outs() << "RES=" << m_env.at(x) << "\n";);
   }
 
   void apply(crab::domains::arith_operation_t op, const variable_t &x,
@@ -1019,8 +1021,8 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    sign_t yi = m_env[y];
-    sign_t zi = m_env[z];
+    sign_t yi = m_env.at(y);
+    sign_t zi = m_env.at(z);
     sign_t xi = sign_t::bottom();
 
     switch (op) {
@@ -1056,7 +1058,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    sign_t yi = m_env[y];
+    sign_t yi = m_env.at(y);
     sign_t zi(k);
     sign_t xi = sign_t::bottom();
 
@@ -1139,8 +1141,8 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    sign_t yi = m_env[y];
-    sign_t zi = m_env[z];
+    sign_t yi = m_env.at(y);
+    sign_t zi = m_env.at(z);
     sign_t xi = sign_t::bottom();
 
     switch (op) {
@@ -1179,7 +1181,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    sign_t yi = m_env[y];
+    sign_t yi = m_env.at(y);
     sign_t zi(k);
     sign_t xi = sign_t::bottom();
 
@@ -1278,7 +1280,7 @@ public:
       return;
     }
 
-    m_env.set(new_x, m_env[x]);
+    m_env.set(new_x, m_env.at(x));
   }
 
   void normalize() override {}

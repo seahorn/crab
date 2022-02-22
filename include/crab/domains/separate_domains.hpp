@@ -335,7 +335,7 @@ public:
     return _tree.find(k);
   }
 
-  Value operator[](const Key &k) const {
+  Value at(const Key &k) const {
     if (is_bottom()) {
       return Value::bottom();
     } else {
@@ -392,7 +392,7 @@ public:
       // project on less than factor% of keys: we copy
       separate_domain_t env;
       for (auto key : keys) {
-        env.set(key, operator[](key));
+        env.set(key, at(key));
       }
       std::swap(*this, env);
     } else {
@@ -668,9 +668,9 @@ public:
     return *this;
   }
 
-  value_type operator[](const Key &k) {
+  value_type at(const Key &k) const {
     if (is_bottom()) {
-      CRAB_ERROR("separate_discrete_domain::operator[] is undefined on bottom");
+      CRAB_ERROR("separate_discrete_domain::at is undefined on bottom");
     } else if (is_top()) {
       return value_type::top();
     } else {
@@ -695,7 +695,7 @@ public:
       // project on less than factor% of keys: we copy
       separate_discrete_domain_t env;
       for (auto key : keys) {
-        env.set(key, operator[](key));
+        env.set(key, at(key));
       }
       std::swap(*this, env);
     } else {

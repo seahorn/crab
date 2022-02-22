@@ -1218,7 +1218,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.to_intervals");
     crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
 
-    dis_interval_t x = this->_env[v];
+    dis_interval_t x = this->_env.at(v);
     return x.approx();
   }
 
@@ -1258,11 +1258,11 @@ public:
 
     // crab::outs() << "*** " <<  x << ":=" << e << " in " << *this << "\n";
     if (boost::optional<variable_t> v = e.get_variable()) {
-      this->_env.set(x, this->_env[(*v)]);
+      this->_env.set(x, this->_env.at(*v));
     } else {
       dis_interval_t r(e.constant());
       for (auto t : e)
-        r += dis_interval_t(t.first) * this->_env[t.second];
+        r += dis_interval_t(t.first) * this->_env.at(t.second);
       this->_env.set(x, r);
     }
     // crab::outs() << "result=" << *this << "\n";
@@ -1275,7 +1275,7 @@ public:
 
     // crab::outs() << "*** " << x << ":=" << y << op << z << " in " << *this <<
     // "\n";
-    dis_interval_t yi = this->_env[y];
+    dis_interval_t yi = this->_env.at(y);
     dis_interval_t zi(z);
     dis_interval_t xi = dis_interval_t::top();
     switch (op) {
@@ -1312,8 +1312,8 @@ public:
 
     // crab::outs() << "*** " << x << ":=" << y << op << z << " in " << *this <<
     // "\n";
-    dis_interval_t yi = this->_env[y];
-    dis_interval_t zi = this->_env[z];
+    dis_interval_t yi = this->_env.at(y);
+    dis_interval_t zi = this->_env.at(z);
     dis_interval_t xi = dis_interval_t::top();
     switch (op) {
     case OP_ADDITION:
@@ -1373,8 +1373,8 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    dis_interval_t yi = this->_env[y];
-    dis_interval_t zi = this->_env[z];
+    dis_interval_t yi = this->_env.at(y);
+    dis_interval_t zi = this->_env.at(z);
     dis_interval_t xi = dis_interval_t::top();
     switch (op) {
     case OP_AND:
@@ -1404,7 +1404,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    dis_interval_t yi = this->_env[y];
+    dis_interval_t yi = this->_env.at(y);
     dis_interval_t zi(k);
     dis_interval_t xi = dis_interval_t::top();
     switch (op) {
@@ -1447,7 +1447,7 @@ public:
     if (is_bottom() || is_top()) {
       return;
     }
-    this->_env.set(new_x, this->_env[x]);
+    this->_env.set(new_x, this->_env.at(x));
   }
 
   void project(const variable_vector_t &variables) override {
