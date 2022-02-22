@@ -94,18 +94,22 @@ public:
 
   virtual void write(crab_os &o) const override { o << str(); }
 
+  size_t hash() const {
+    std::hash<ikos::index_t> hasher;
+    return hasher(index());
+  }
+  
   friend crab_os &operator<<(crab_os &o, const this_type &s) {
     s.write(o);
     return o;
   }
 
-  size_t hash() const {
-    std::hash<ikos::index_t> hasher;
-    return hasher(index());
-  }
-
-  friend size_t hash_value(const this_type &v) { return v.hash(); }
 };
+// used by boost::hash_combine (no std::hash_combine in C+11)  
+//template <typename T>
+//inline std::size_t hash_value(const crab::var_factory_impl::indexed_varname<T>&v) {
+//  return v.hash();
+//}  
 } // end namespace var_factory_impl
 } // end namespace crab
 
