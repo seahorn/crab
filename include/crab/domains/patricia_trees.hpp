@@ -56,7 +56,7 @@ namespace ikos {
 
 template <typename Value> class partial_order {
 public:
-  virtual bool leq(Value, Value) = 0;
+  virtual bool leq(const Value&, const Value&) = 0;
 
   virtual bool default_is_top() = 0; // True if the default value is the top
                                      // element for the partial order (false if
@@ -68,7 +68,7 @@ public:
 
 template <typename Value> class unary_op {
 public:
-  virtual boost::optional<Value> apply(Value) = 0;
+  virtual boost::optional<Value> apply(const Value&) = 0;
 
   virtual ~unary_op() {}
 
@@ -80,7 +80,7 @@ public:
   // else if second element of the pair is empty then top
   // else the value stored in the second element of the pair.
   virtual std::pair<bool, boost::optional<Value>>
-      apply(Value, Value) = 0; // The operation is idempotent: apply(x, x) = x
+      apply(const Value&, const Value&) = 0; // The operation is idempotent: apply(x, x) = x
 
   virtual bool default_is_absorbing() = 0; // True if the default value is
                                            // absorbing (false if it is neutral)
@@ -92,8 +92,8 @@ public:
 template <typename Key, typename Value> class key_binary_op {
 public:
   virtual std::pair<bool, boost::optional<Value>>
-  apply(const Key &, Value,
-        Value) = 0; // The operation is idempotent: apply(x, x) = x
+  // The operation is idempotent: apply(x, x) = x
+  apply(const Key &, const Value&, const Value&) = 0;         
 
   virtual bool default_is_absorbing() = 0; // True if the default value is
                                            // absorbing (false if it is neutral)
@@ -1261,8 +1261,8 @@ public:
   }; // class iterator
 
   class insert_op : public binary_op_t {
-    std::pair<bool, boost::optional<Value>> apply(Value /* old_value */,
-                                                  Value new_value) override {
+    std::pair<bool, boost::optional<Value>> apply(const Value& /* old_value */,
+                                                  const Value& new_value) override {
       return {false, boost::optional<Value>(new_value)};
     }
     bool default_is_absorbing() override { return false; }
@@ -1394,7 +1394,8 @@ public:
 
 private:
   class union_op : public binary_op_t {
-    virtual std::pair<bool, boost::optional<bool>> apply(bool /* x */, bool /* y */) override {
+    virtual std::pair<bool, boost::optional<bool>> apply(const bool& /* x */,
+							 const bool& /* y */) override {
       return {false, boost::optional<bool>(true)};
     };
 
@@ -1403,7 +1404,8 @@ private:
   }; // class union_op
 
   class intersection_op : public binary_op_t {
-    virtual std::pair<bool, boost::optional<bool>> apply(bool /* x */, bool /* y */) override {
+    virtual std::pair<bool, boost::optional<bool>> apply(const bool& /* x */,
+							 const bool& /* y */) override {
       return {false, boost::optional<bool>(true)};
     };
 
@@ -1412,7 +1414,7 @@ private:
   }; // class intersection_op
 
   class subset_po : public partial_order_t {
-    virtual bool leq(bool /* x */, bool /* y */) override { return true; };
+    virtual bool leq(const bool& /* x */, const bool& /* y */) override { return true; };
 
     virtual bool default_is_top() override { return false; }
   }; // class subset_po

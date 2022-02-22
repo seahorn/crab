@@ -617,7 +617,7 @@ private:
   discrete_pair_domain(bool b) : m_is_top(b) {}
 
   class join_op : public binary_op_t {
-    std::pair<bool, boost::optional<Value>> apply(Value x, Value y) {
+    std::pair<bool, boost::optional<Value>> apply(const Value &x, const Value &y) {
       Value z = x.operator|(y);
       if (z.is_top()) {
         return {false, boost::optional<Value>()};
@@ -629,7 +629,7 @@ private:
   }; // class join_op
 
   class meet_op : public binary_op_t {
-    std::pair<bool, boost::optional<Value>> apply(Value x, Value y) {
+    std::pair<bool, boost::optional<Value>> apply(const Value &x, const Value &y) {
       Value z = x.operator&(y);
       if (z.is_bottom()) {
         return {true, boost::optional<Value>()};
@@ -641,7 +641,7 @@ private:
   }; // class meet_op
 
   class domain_po : public partial_order_t {
-    bool leq(Value x, Value y) { return x.operator<=(y); }
+    bool leq(const Value &x, const Value &y) { return x.operator<=(y); }
     bool default_is_top() { return false; }
   }; // class domain_po
 

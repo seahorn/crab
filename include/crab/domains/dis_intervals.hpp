@@ -326,7 +326,7 @@ public:
 
   // required for separate_domains
   // pre: *this and o are normalized
-  bool operator==(dis_interval_t o) const {
+  bool operator==(const dis_interval_t &o) const {
 #if 0
        // -- semantic check
        return (*this <= o && o <= *this);
@@ -377,7 +377,7 @@ public:
   }
 
   // pre: *this and o are normalized
-  dis_interval_t operator|(dis_interval_t o) const {
+  dis_interval_t operator|(const dis_interval_t &o) const {
 
     CRAB_LOG("disint", crab::outs()
                            << "Join of " << *this << " and " << o << "\n");
@@ -553,7 +553,7 @@ public:
   }
 
   // pre: *this and o are normalized
-  dis_interval_t operator&(dis_interval_t o) const {
+  dis_interval_t operator&(const dis_interval_t &o) const {
     if (this->is_bottom() || o.is_bottom()) {
       return this->bottom();
     } else if (this->is_top()) {
@@ -598,13 +598,13 @@ private:
 
     WidenWithThresholdsOp(const Thresholds &ts) : m_ts(ts) {}
 
-    interval_t apply(interval_t before, interval_t after) {
+    interval_t apply(const interval_t &before, const interval_t &after) {
       return before.widening_thresholds(after, m_ts);
     }
   };
 
   template <typename WidenOp>
-  dis_interval_t widening(dis_interval_t o, WidenOp widen_op) const {
+  dis_interval_t widening(const dis_interval_t &o, WidenOp widen_op) const {
     if (this->is_bottom()) {
       return o;
     } else if (o.is_bottom()) {
@@ -670,20 +670,20 @@ private:
 
 public:
   // pre: *this and o are normalized
-  dis_interval_t operator||(dis_interval_t o) const {
+  dis_interval_t operator||(const dis_interval_t &o) const {
     WidenOp op;
     return widening(o, op);
   }
 
   // pre: *this and o are normalized
   template <typename Thresholds>
-  dis_interval_t widening_thresholds(dis_interval_t o, const Thresholds &ts) {
+  dis_interval_t widening_thresholds(const dis_interval_t &o, const Thresholds &ts) const {
     WidenWithThresholdsOp<Thresholds> op(ts);
     return widening(o, op);
   }
 
   // pre: *this and o are normalized
-  dis_interval_t operator&&(dis_interval_t o) const {
+  dis_interval_t operator&&(const dis_interval_t &o) const {
     // CRAB_WARN(" DisIntervals narrowing operator replaced with meet");
     return (*this & o);
   }
@@ -691,7 +691,7 @@ public:
 private:
   // pre: x and y are normalized
   template <typename BinOp>
-  dis_interval_t apply_bin_op(dis_interval_t x, dis_interval_t y, BinOp op,
+  dis_interval_t apply_bin_op(const dis_interval_t &x, const dis_interval_t &y, BinOp op,
                               bool shortcut_top) const {
 
     // if shortcut_top is true then the result is top if one of the
@@ -755,7 +755,7 @@ private:
 
   // pre: x is normalized
   template <typename UnaryOp>
-  dis_interval_t apply_unary_op(dis_interval_t x, UnaryOp op) const {
+  dis_interval_t apply_unary_op(const dis_interval_t &x, UnaryOp op) const {
 
     if (x.is_bottom())
       return this->bottom();
@@ -789,7 +789,7 @@ private:
   }
 
 public:
-  dis_interval_t operator+(dis_interval_t x) const {
+  dis_interval_t operator+(const dis_interval_t &x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
@@ -798,7 +798,7 @@ public:
     }
   }
 
-  dis_interval_t &operator+=(dis_interval_t x) {
+  dis_interval_t &operator+=(const dis_interval_t &x) {
     return this->operator=(this->operator+(x));
   }
 
@@ -811,7 +811,7 @@ public:
     }
   }
 
-  dis_interval_t operator-(dis_interval_t x) const {
+  dis_interval_t operator-(const dis_interval_t &x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
@@ -820,11 +820,11 @@ public:
     }
   }
 
-  dis_interval_t &operator-=(dis_interval_t x) {
+  dis_interval_t &operator-=(const dis_interval_t &x) {
     return this->operator=(this->operator-(x));
   }
 
-  dis_interval_t operator*(dis_interval_t x) const {
+  dis_interval_t operator*(const dis_interval_t &x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
@@ -833,11 +833,11 @@ public:
     }
   }
 
-  dis_interval_t &operator*=(dis_interval_t x) {
+  dis_interval_t &operator*=(const dis_interval_t &x) {
     return this->operator=(this->operator*(x));
   }
 
-  dis_interval_t operator/(dis_interval_t x) {
+  dis_interval_t operator/(const dis_interval_t &x) {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
@@ -846,7 +846,7 @@ public:
     }
   }
 
-  dis_interval_t &operator/=(dis_interval_t x) {
+  dis_interval_t &operator/=(const dis_interval_t &x) {
     return this->operator=(this->operator/(x));
   }
 
@@ -887,7 +887,7 @@ public:
 
   // division and remainder operations
 
-  dis_interval_t UDiv(dis_interval_t x) const {
+  dis_interval_t UDiv(const dis_interval_t &x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
@@ -896,7 +896,7 @@ public:
     }
   }
 
-  dis_interval_t SRem(dis_interval_t x) const {
+  dis_interval_t SRem(const dis_interval_t &x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
@@ -905,7 +905,7 @@ public:
     }
   }
 
-  dis_interval_t URem(dis_interval_t x) const {
+  dis_interval_t URem(const dis_interval_t &x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
@@ -915,7 +915,7 @@ public:
   }
 
   // bitwise operations
-  dis_interval_t And(dis_interval_t x) const {
+  dis_interval_t And(const dis_interval_t &x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
@@ -924,7 +924,7 @@ public:
     }
   }
 
-  dis_interval_t Or(dis_interval_t x) const {
+  dis_interval_t Or(const dis_interval_t &x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
@@ -933,7 +933,7 @@ public:
     }
   }
 
-  dis_interval_t Xor(dis_interval_t x) const {
+  dis_interval_t Xor(const dis_interval_t &x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
@@ -942,7 +942,7 @@ public:
     }
   }
 
-  dis_interval_t Shl(dis_interval_t x) const {
+  dis_interval_t Shl(const dis_interval_t &x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
@@ -951,7 +951,7 @@ public:
     }
   }
 
-  dis_interval_t LShr(dis_interval_t x) const {
+  dis_interval_t LShr(const dis_interval_t &x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
@@ -960,7 +960,7 @@ public:
     }
   }
 
-  dis_interval_t AShr(dis_interval_t x) const {
+  dis_interval_t AShr(const dis_interval_t &x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {

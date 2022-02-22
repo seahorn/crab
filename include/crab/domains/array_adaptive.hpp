@@ -254,28 +254,28 @@ public:
 };
 
 namespace cell_set_impl {
-template <typename Set> inline Set set_intersection(Set &s1, Set &s2) {
+template <typename Set> inline Set set_intersection(const Set &s1, const Set &s2) {
   Set s3;
   std::set_intersection(s1.begin(), s1.end(), s2.begin(), s2.end(),
                         std::inserter(s3, s3.end()));
   return s3;
 }
 
-template <typename Set> inline Set set_union(Set &s1, Set &s2) {
+template <typename Set> inline Set set_union(const Set &s1, const Set &s2) {
   Set s3;
   std::set_union(s1.begin(), s1.end(), s2.begin(), s2.end(),
                  std::inserter(s3, s3.end()));
   return s3;
 }
 
-template <typename Set> inline bool set_inclusion(Set &s1, Set &s2) {
+template <typename Set> inline bool set_inclusion(const Set &s1, const Set &s2) {
   Set s3;
   std::set_difference(s1.begin(), s1.end(), s2.begin(), s2.end(),
                       std::inserter(s3, s3.end()));
   return s3.empty();
 }
 
-template <typename Set> inline Set set_difference(Set &s1, Set &s2) {
+template <typename Set> inline Set set_difference(const Set &s1, const Set &s2) {
   Set s3;
   std::set_difference(s1.begin(), s1.end(), s2.begin(), s2.end(),
                       std::inserter(s3, s3.end()));
@@ -345,8 +345,8 @@ private:
   class join_op : public binary_op_t {
     // apply is called when two bindings (one each from a
     // different map) have the same key(i.e., offset).
-    std::pair<bool, boost::optional<cell_set_t>> apply(cell_set_t x,
-                                                       cell_set_t y) {
+    std::pair<bool, boost::optional<cell_set_t>> apply(const cell_set_t &x,
+                                                       const cell_set_t &y) {
       return {false, cell_set_impl::set_union(x, y)};
     }
     // if one map does not have a key in the other map we add it.
@@ -354,8 +354,8 @@ private:
   };
 
   class meet_op : public binary_op_t {
-    std::pair<bool, boost::optional<cell_set_t>> apply(cell_set_t x,
-                                                       cell_set_t y) {
+    std::pair<bool, boost::optional<cell_set_t>> apply(const cell_set_t &x,
+                                                       const cell_set_t &y) {
       return {false, cell_set_impl::set_union(x, y)};
     }
     // if one map does not have a key in the other map we ignore
@@ -364,7 +364,7 @@ private:
   };
 
   class domain_po : public partial_order_t {
-    bool leq(cell_set_t x, cell_set_t y) {
+    bool leq(const cell_set_t &x, const cell_set_t &y) {
       return cell_set_impl::set_inclusion(x, y);
     }
     // default value is bottom (i.e., empty map)
@@ -968,7 +968,7 @@ private:
             m_dom_right(dom_right) {}
 
       std::pair<bool, boost::optional<array_state>>
-      apply(const variable_t &k, array_state x, array_state y) {
+      apply(const variable_t &k, const array_state &x, const array_state &y) {
         array_state z = x.join(k, y, m_cvm_left, m_svm_left, m_dom_left,
                                m_cvm_right, m_svm_right, m_dom_right);
         return {false, boost::optional<array_state>(z)};
@@ -994,7 +994,7 @@ private:
             m_dom_right(dom_right) {}
 
       std::pair<bool, boost::optional<array_state>>
-      apply(const variable_t &k, array_state x, array_state y) {
+      apply(const variable_t &k, const array_state &x, const array_state &y) {
         array_state z = x.meet(k, y, m_cvm_left, m_svm_left, m_dom_left,
                                m_cvm_right, m_svm_right, m_dom_right);
         return {false, boost::optional<array_state>(z)};

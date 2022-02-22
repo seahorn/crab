@@ -73,7 +73,7 @@ private:
 
 public:
   class join_op : public binary_op_t {
-    virtual std::pair<bool, boost::optional<Value>> apply(Value x, Value y) override {
+    virtual std::pair<bool, boost::optional<Value>> apply(const Value &x, const Value &y) override {
       Value z = x.operator|(y);
       if (z.is_top()) {
         return {false, boost::optional<Value>()};
@@ -88,7 +88,7 @@ public:
   }; // class join_op
 
   class widening_op : public binary_op_t {
-    virtual std::pair<bool, boost::optional<Value>> apply(Value x, Value y) override {
+    virtual std::pair<bool, boost::optional<Value>> apply(const Value &x, const Value &y) override {
       Value z = x.operator||(y);
       if (z.is_top()) {
         return {false, boost::optional<Value>()};
@@ -110,7 +110,7 @@ public:
   public:
     widening_thresholds_op(const Thresholds &ts) : m_ts(ts) {}
 
-    virtual std::pair<bool, boost::optional<Value>> apply(Value x, Value y) override {
+    virtual std::pair<bool, boost::optional<Value>> apply(const Value &x, const Value &y) override {
       Value z = x.widening_thresholds(y, m_ts);
       if (z.is_top()) {
         return {false, boost::optional<Value>()};
@@ -126,7 +126,7 @@ public:
   }; // class widening_thresholds_op
 
   class meet_op : public binary_op_t {
-    virtual std::pair<bool, boost::optional<Value>> apply(Value x, Value y) override {
+    virtual std::pair<bool, boost::optional<Value>> apply(const Value &x, const Value &y) override {
       Value z = x.operator&(y);
       if (z.is_bottom()) {
         return {true, boost::optional<Value>()};
@@ -142,7 +142,7 @@ public:
   }; // class meet_op
 
   class narrowing_op : public binary_op_t {
-    virtual std::pair<bool, boost::optional<Value>> apply(Value x, Value y) override {
+    virtual std::pair<bool, boost::optional<Value>> apply(const Value &x, const Value &y) override {
       Value z = x.operator&&(y);
       if (z.is_bottom()) {
         return {true, boost::optional<Value>()};
@@ -158,7 +158,7 @@ public:
   }; // class narrowing_op
 
   class domain_po : public partial_order_t {
-    virtual bool leq(Value x, Value y) override {
+    virtual bool leq(const Value &x, const Value &y) override {
       return x.operator<=(y);
     }
 
@@ -181,55 +181,47 @@ private:
     return t1;
   }
 
-  separate_domain(patricia_tree_t t) : _is_bottom(false), _tree(t) {}
+  separate_domain(patricia_tree_t &&t) : _is_bottom(false), _tree(std::move(t)) {}
 
   separate_domain(bool b) : _is_bottom(!b) {}
 
 public:
   separate_domain() : _is_bottom(false) {}
-
-  separate_domain(const separate_domain_t &e)
-      : _is_bottom(e._is_bottom), _tree(e._tree) {}
-
-  separate_domain(const separate_domain_t &&e)
-      : _is_bottom(e._is_bottom), _tree(std::move(e._tree)) {}
-
-  separate_domain_t &operator=(separate_domain_t e) {
-    this->_is_bottom = e._is_bottom;
-    this->_tree = e._tree;
-    return *this;
-  }
+  separate_domain(const separate_domain_t &o) = default;
+  separate_domain(separate_domain_t &&o) = default;    
+  separate_domain_t &operator=(const separate_domain_t &o) = default;
+  separate_domain_t &operator=(separate_domain_t &&o) = default;
 
   iterator begin() const {
-    if (this->is_bottom()) {
+    if (is_bottom()) {
       CRAB_ERROR("Separate domain: trying to invoke iterator on bottom");
     } else {
-      return this->_tree.begin();
+      return _tree.begin();
     }
   }
 
   iterator end() const {
-    if (this->is_bottom()) {
+    if (is_bottom()) {
       CRAB_ERROR("Separate domain: trying to invoke iterator on bottom");
     } else {
-      return this->_tree.end();
+      return _tree.end();
     }
   }
 
-  bool is_bottom() const { return this->_is_bottom; }
+  bool is_bottom() const { return _is_bottom; }
 
   bool is_top() const {
-    return (!this->is_bottom() && this->_tree.size() == 0);
+    return (!is_bottom() && _tree.size() == 0);
   }
 
   bool operator<=(const separate_domain_t &e) const {
-    if (this->is_bottom()) {
+    if (is_bottom()) {
       return true;
     } else if (e.is_bottom()) {
       return false;
     } else {
       domain_po po;
-      return this->_tree.leq(e._tree, po);
+      return _tree.leq(e._tree, po);
     }
   }
 
@@ -239,28 +231,28 @@ public:
 
   // Join
   separate_domain_t operator|(const separate_domain_t &e) const {
-    if (this->is_bottom()) {
+    if (is_bottom()) {
       return e;
     } else if (e.is_bottom()) {
       return *this;
     } else {
       join_op o;
       bool is_bottom /*unused*/;
-      patricia_tree_t res = apply_operation(o, this->_tree, e._tree, is_bottom);
+      patricia_tree_t res = apply_operation(o, _tree, e._tree, is_bottom);
       return separate_domain_t(std::move(res));
     }
   }
 
   // Meet
   separate_domain_t operator&(const separate_domain_t &e) const {
-    if (this->is_bottom() || e.is_bottom()) {
-      return this->bottom();
+    if (is_bottom() || e.is_bottom()) {
+      return bottom();
     } else {
       meet_op o;
       bool is_bottom;
-      patricia_tree_t res = apply_operation(o, this->_tree, e._tree, is_bottom);
+      patricia_tree_t res = apply_operation(o, _tree, e._tree, is_bottom);
       if (is_bottom) {
-        return this->bottom();
+        return bottom();
       } else {
         return separate_domain_t(std::move(res));
       }
@@ -269,14 +261,14 @@ public:
 
   // Widening
   separate_domain_t operator||(const separate_domain_t &e) const {
-    if (this->is_bottom()) {
+    if (is_bottom()) {
       return e;
     } else if (e.is_bottom()) {
       return *this;
     } else {
       widening_op o;
       bool is_bottom /*unused*/;
-      patricia_tree_t res = apply_operation(o, this->_tree, e._tree, is_bottom);
+      patricia_tree_t res = apply_operation(o, _tree, e._tree, is_bottom);
       return separate_domain_t(std::move(res));
     }
   }
@@ -285,63 +277,63 @@ public:
   template <typename Thresholds>
   separate_domain_t widening_thresholds(const separate_domain_t &e,
                                         const Thresholds &ts) const {
-    if (this->is_bottom()) {
+    if (is_bottom()) {
       return e;
     } else if (e.is_bottom()) {
       return *this;
     } else {
       widening_thresholds_op<Thresholds> o(ts);
       bool is_bottom /*unused*/;
-      patricia_tree_t res = apply_operation(o, this->_tree, e._tree, is_bottom);
+      patricia_tree_t res = apply_operation(o, _tree, e._tree, is_bottom);
       return separate_domain_t(std::move(res));
     }
   }
 
   // Narrowing
   separate_domain_t operator&&(const separate_domain_t &e) const {
-    if (this->is_bottom() || e.is_bottom()) {
+    if (is_bottom() || e.is_bottom()) {
       return separate_domain_t(false);
     } else {
       narrowing_op o;
       bool is_bottom;
-      patricia_tree_t res = apply_operation(o, this->_tree, e._tree, is_bottom);
+      patricia_tree_t res = apply_operation(o, _tree, e._tree, is_bottom);
       if (is_bottom) {
-        return this->bottom();
+        return bottom();
       } else {
         return separate_domain_t(std::move(res));
       }
     }
   }
 
-  void set(Key k, Value v) {
-    if (!this->is_bottom()) {
+  void set(const Key &k, const Value &v) {
+    if (!is_bottom()) {
       if (v.is_bottom()) {
         set_to_bottom();
       } else if (v.is_top()) {
-        this->_tree.remove(k);
+        _tree.remove(k);
       } else {
-        this->_tree.insert(k, v);
+        _tree.insert(k, v);
       }
     }
   }
 
   void set_to_bottom() {
-    this->_is_bottom = true;
-    this->_tree = patricia_tree_t();
+    _is_bottom = true;
+    _tree = patricia_tree_t();
   }
 
   separate_domain_t &operator-=(const Key &k) {
-    if (!this->is_bottom()) {
-      this->_tree.remove(k);
+    if (!is_bottom()) {
+      _tree.remove(k);
     }
     return *this;
   }
-
+  
   Value operator[](const Key &k) const {
-    if (this->is_bottom()) {
+    if (is_bottom()) {
       return Value::bottom();
     } else {
-      boost::optional<Value> v = this->_tree.lookup(k);
+      boost::optional<Value> v = _tree.lookup(k);
       if (v) {
         return *v;
       } else {
@@ -356,24 +348,24 @@ public:
     } else if (is_top()) {
       CRAB_ERROR("separate_domains::size() is undefined if top");
     } else {
-      return this->_tree.size();
+      return _tree.size();
     }
   }
 
   void write(crab::crab_os &o) const {
-    if (this->is_bottom()) {
+    if (is_bottom()) {
       o << "_|_";
     } else {
       o << "{";
-      for (typename patricia_tree_t::iterator it = this->_tree.begin();
-           it != this->_tree.end();) {
+      for (typename patricia_tree_t::iterator it = _tree.begin();
+           it != _tree.end();) {
         Key k = it->first;
         k.write(o);
         o << " -> ";
         Value v = it->second;
         v.write(o);
         ++it;
-        if (it != this->_tree.end()) {
+        if (it != _tree.end()) {
           o << "; ";
         }
       }
@@ -387,7 +379,7 @@ public:
     }
     const int factor = 60;   // between 0 and 100
     const int small_env = 5; // size of a small environment
-    int num_total_keys = (int)this->_tree.size();
+    int num_total_keys = (int)_tree.size();
     int num_keys = (int)keys.size();
     if (num_total_keys <= small_env ||
         num_keys < num_total_keys * factor / 100) {
@@ -404,7 +396,7 @@ public:
       std::sort(sorted_keys.begin(), sorted_keys.end());
       std::vector<Key> project_out_keys;
       project_out_keys.reserve(num_total_keys);
-      for (auto it = this->_tree.begin(); it != this->_tree.end(); ++it) {
+      for (auto it = _tree.begin(); it != _tree.end(); ++it) {
         Key key = it->first;
         if (!std::binary_search(sorted_keys.begin(), sorted_keys.end(), key)) {
           project_out_keys.push_back(key);
@@ -516,7 +508,8 @@ private:
   }
   /* begin patricia_tree API */
   class join_op : public binary_op_t {
-    std::pair<bool, boost::optional<value_type>> apply(value_type x, value_type y) override {
+    std::pair<bool, boost::optional<value_type>> apply(const value_type &x,
+						       const value_type &y) override {
       value_type z = x.operator|(y);
       if (z.is_top()) {
 	// special encoding for top: the patricia tree will not keep
@@ -530,7 +523,8 @@ private:
   }; // class join_op
 
   class meet_op : public binary_op_t {
-    std::pair<bool, boost::optional<value_type>> apply(value_type x,  value_type y) override {
+    std::pair<bool, boost::optional<value_type>> apply(const value_type &x,
+						       const value_type &y) override {
       value_type z = x.operator&(y);
       // Returning this pair means that if z is bottom do not treat it
       // special and just update the patricia tree with z.
@@ -540,7 +534,7 @@ private:
   }; // class meet_op
 
   class domain_po : public partial_order_t {
-    bool leq(value_type x, value_type y) { return x.operator<=(y); }
+    bool leq(const value_type &x, const value_type &y) { return x.operator<=(y); }
     bool default_is_top() { return true; }
   }; // class domain_po
   /* end patricia_tree API */

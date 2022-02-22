@@ -32,7 +32,7 @@ template <typename Number> class wrapped_interval {
 
   using wrapped_interval_t = wrapped_interval<Number>;
 
-  wrapped_interval_t default_implementation(wrapped_interval_t x) const {
+  wrapped_interval_t default_implementation(const wrapped_interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return wrapped_interval_t::bottom();
     } else {
@@ -102,7 +102,7 @@ template <typename Number> class wrapped_interval {
     }
   }
 
-  wrapped_interval_t signed_mul(wrapped_interval_t x) const {
+  wrapped_interval_t signed_mul(const wrapped_interval_t &x) const {
     assert(!is_bottom() && !x.is_bottom());
 
     bool msb_start = _start.msb();
@@ -154,7 +154,7 @@ template <typename Number> class wrapped_interval {
     return res;
   }
 
-  wrapped_interval_t unsigned_mul(wrapped_interval_t x) const {
+  wrapped_interval_t unsigned_mul(const wrapped_interval_t &x) const {
     assert(!is_bottom() && !x.is_bottom());
 
     bitwidth_t b = get_bitwidth(__LINE__);
@@ -171,7 +171,7 @@ template <typename Number> class wrapped_interval {
   }
 
   // if out is empty then the intersection is empty
-  void exact_meet(wrapped_interval_t x,
+  void exact_meet(const wrapped_interval_t &x,
                   std::vector<wrapped_interval_t> &out) const {
     if (is_bottom() || x.is_bottom()) {
       // bottom
@@ -200,7 +200,7 @@ template <typename Number> class wrapped_interval {
 
   // Perform the reduced product of signed and unsigned multiplication.
   // It uses exact meet rather than abstract meet.
-  void reduced_signed_unsigned_mul(wrapped_interval_t x,
+  void reduced_signed_unsigned_mul(const wrapped_interval_t &x,
                                    std::vector<wrapped_interval_t> &out) const {
     if (is_bottom() || x.is_bottom()) {
       return;
@@ -215,7 +215,7 @@ template <typename Number> class wrapped_interval {
                   ++i) { crab::outs() << "\t" << out[i] << "\n"; });
   }
 
-  wrapped_interval_t unsigned_div(wrapped_interval_t x) const {
+  wrapped_interval_t unsigned_div(const wrapped_interval_t &x) const {
     CRAB_LOG("wrapped-int-div", crab::outs() << *this << " /_u " << x << "=";);
     assert(!x[wrapint(0, x.get_bitwidth(__LINE__))]);
     assert(!is_bottom() && !x.is_bottom());
@@ -225,7 +225,7 @@ template <typename Number> class wrapped_interval {
     return res;
   }
 
-  wrapped_interval_t signed_div(wrapped_interval_t x) const {
+  wrapped_interval_t signed_div(const wrapped_interval_t &x) const {
     CRAB_LOG("wrapped-int-div", crab::outs() << *this << " /_s " << x << "=";);
     assert(!x[wrapint(0, x.get_bitwidth(__LINE__))]);
     assert(!is_bottom() && !x.is_bottom());
@@ -555,13 +555,13 @@ public:
     }
   }
 
-  bool operator==(wrapped_interval_t x) const {
+  bool operator==(const wrapped_interval_t &x) const {
     return (*this <= x && x <= *this);
   }
 
-  bool operator!=(wrapped_interval_t x) const { return !(this->operator==(x)); }
+  bool operator!=(const wrapped_interval_t &x) const { return !(this->operator==(x)); }
 
-  wrapped_interval_t operator|(wrapped_interval_t x) const {
+  wrapped_interval_t operator|(const wrapped_interval_t &x) const {
     if (*this <= x) {
       return x;
     } else if (x <= *this) {
@@ -586,7 +586,7 @@ public:
     }
   }
 
-  wrapped_interval_t operator&(wrapped_interval_t x) const {
+  wrapped_interval_t operator&(const wrapped_interval_t &x) const {
     if (*this <= x) {
       return *this;
     } else if (x <= *this) {
@@ -622,7 +622,7 @@ public:
     }
   }
 
-  wrapped_interval_t operator||(wrapped_interval_t x) const {
+  wrapped_interval_t operator||(const wrapped_interval_t &x) const {
     if (is_bottom()) {
       return x;
     } else if (x.is_bottom()) {
@@ -740,8 +740,8 @@ public:
 
   // TODO: factorize code with operator||
   template <typename Thresholds>
-  wrapped_interval_t widening_thresholds(wrapped_interval_t x,
-                                         const Thresholds &ts) {
+  wrapped_interval_t widening_thresholds(const wrapped_interval_t &x,
+                                         const Thresholds &ts) const {
 
     if (is_bottom()) {
       return x;
@@ -876,12 +876,12 @@ public:
     }
   }
 
-  wrapped_interval_t operator&&(wrapped_interval_t x) const {
+  wrapped_interval_t operator&&(const wrapped_interval_t &x) const {
     // TODO: for now we call the meet operator.
     return (this->operator&(x));
   }
 
-  wrapped_interval_t operator+(wrapped_interval_t x) const {
+  wrapped_interval_t operator+(const wrapped_interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return wrapped_interval_t::bottom();
     } else if (is_top() || x.is_top()) {
@@ -899,7 +899,7 @@ public:
     }
   }
 
-  wrapped_interval_t &operator+=(wrapped_interval_t x) {
+  wrapped_interval_t &operator+=(const wrapped_interval_t &x) {
     return this->operator=(this->operator+(x));
   }
 
@@ -913,7 +913,7 @@ public:
     }
   }
 
-  wrapped_interval_t operator-(wrapped_interval_t x) const {
+  wrapped_interval_t operator-(const wrapped_interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return wrapped_interval_t::bottom();
     } else if (is_top() || x.is_top()) {
@@ -930,11 +930,11 @@ public:
     }
   }
 
-  wrapped_interval_t &operator-=(wrapped_interval_t x) {
+  wrapped_interval_t &operator-=(const wrapped_interval_t &x) {
     return this->operator=(this->operator-(x));
   }
 
-  wrapped_interval_t operator*(wrapped_interval_t x) const {
+  wrapped_interval_t operator*(const wrapped_interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return wrapped_interval_t::bottom();
     }
@@ -972,19 +972,19 @@ public:
     }
   }
 
-  wrapped_interval_t &operator*=(wrapped_interval_t x) {
+  wrapped_interval_t &operator*=(const wrapped_interval_t &x) {
     return this->operator=(this->operator*(x));
   }
 
   // signed division
-  wrapped_interval_t operator/(wrapped_interval_t x) const { return SDiv(x); }
+  wrapped_interval_t operator/(const wrapped_interval_t &x) const { return SDiv(x); }
 
-  wrapped_interval_t &operator/=(wrapped_interval_t x) {
+  wrapped_interval_t &operator/=(const wrapped_interval_t &x) {
     return this->operator=(this->operator/(x));
   }
 
   /** division and remainder operations **/
-  wrapped_interval_t SDiv(wrapped_interval_t x) const {
+  wrapped_interval_t SDiv(const wrapped_interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return wrapped_interval_t::bottom();
     }
@@ -1011,7 +1011,7 @@ public:
     }
   }
 
-  wrapped_interval_t UDiv(wrapped_interval_t x) const {
+  wrapped_interval_t UDiv(const wrapped_interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return wrapped_interval_t::bottom();
     }
@@ -1038,11 +1038,11 @@ public:
     }
   }
 
-  wrapped_interval_t SRem(wrapped_interval_t x) const {
+  wrapped_interval_t SRem(const wrapped_interval_t &x) const {
     return default_implementation(x);
   }
 
-  wrapped_interval_t URem(wrapped_interval_t x) const {
+  wrapped_interval_t URem(const wrapped_interval_t &x) const {
     return default_implementation(x);
   }
 
@@ -1117,7 +1117,7 @@ public:
 
   /** bitwise operations **/
   // Shl, LShr, and AShr shifts are treated as unsigned numbers
-  wrapped_interval_t Shl(wrapped_interval_t x) const {
+  wrapped_interval_t Shl(const wrapped_interval_t &x) const {
     if (is_bottom())
       return *this;
 
@@ -1129,7 +1129,7 @@ public:
     }
   }
 
-  wrapped_interval_t LShr(wrapped_interval_t x) const {
+  wrapped_interval_t LShr(const wrapped_interval_t &x) const {
     if (is_bottom())
       return *this;
 
@@ -1141,7 +1141,7 @@ public:
     }
   }
 
-  wrapped_interval_t AShr(wrapped_interval_t x) const {
+  wrapped_interval_t AShr(const wrapped_interval_t &x) const {
     if (is_bottom())
       return *this;
 
@@ -1153,15 +1153,15 @@ public:
     }
   }
 
-  wrapped_interval_t And(wrapped_interval_t x) const {
+  wrapped_interval_t And(const wrapped_interval_t &x) const {
     return default_implementation(x);
   }
 
-  wrapped_interval_t Or(wrapped_interval_t x) const {
+  wrapped_interval_t Or(const wrapped_interval_t &x) const {
     return default_implementation(x);
   }
 
-  wrapped_interval_t Xor(wrapped_interval_t x) const {
+  wrapped_interval_t Xor(const wrapped_interval_t &x) const {
     return default_implementation(x);
   }
 
