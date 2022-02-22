@@ -328,7 +328,13 @@ public:
     }
     return *this;
   }
-  
+
+  // return null if k is not found
+  const Value* find(const Key &k) const {
+    assert(!is_bottom());
+    return _tree.find(k);
+  }
+
   Value operator[](const Key &k) const {
     if (is_bottom()) {
       return Value::bottom();
