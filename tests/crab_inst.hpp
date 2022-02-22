@@ -59,6 +59,8 @@ Z_RUNNER(crab::domain_impl::z_rgn_int_t)
 Z_RUNNER(crab::domain_impl::z_rgn_sign_t)
 Z_RUNNER(crab::domain_impl::z_rgn_sign_constant_t)
 Z_RUNNER(crab::domain_impl::z_rgn_sdbm_t)
+Z_RUNNER(crab::object_domain_impl::z_obj_zones_t)
+Z_RUNNER(crab::object_domain_impl::z_obj_sdbm_t)
 
 Q_RUNNER(crab::domain_impl::q_interval_domain_t)
 Q_RUNNER(crab::domain_impl::q_oct_apron_domain_t)
