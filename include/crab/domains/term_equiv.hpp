@@ -1372,10 +1372,15 @@ public:
        *  We treat the array store as an uninterpreted function
        *  array_store(a, i, val) -->  tmp := f(a,i); assume(tmp == val);
        */
-      /// -- tmp := f(a,i)
+       /// -- tmp := f(a,i)
       term_id_t t_uf(build_function(term_of_var(a), build_linexpr(i)));
-      // map always t_uf to the same variable tmp
-      variable_t tmp(vfac.get(t_uf));
+      // FIXME:
+      // 1. we are creating a fresh varname each time we are called.
+      // 2. we are creating an untyped variable. This is ok if the
+      // underlying domain is, for instance, intervals but it will
+      // fail if we use a more type-dependent numerical domain such as
+      // wrapped intervals.
+      variable_t tmp(vfac.get());
       // forget tmp
       this->operator-=(tmp);
       // forget the old value for t_uf, otherwise we can get

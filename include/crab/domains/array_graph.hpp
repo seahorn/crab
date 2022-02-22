@@ -1344,7 +1344,7 @@ public:
       case LMV: {
         auto v =
             std::static_pointer_cast<const landmark_var_t>(lm._ref)->get_var();
-        variable_t v_prime(vfac.get(v.index()));
+        variable_t v_prime(vfac.get(v.name(), ".next"));
         landmark_ref_t lm_prime(v_prime, v.name().str());
         s_var_landmarks.insert(std::make_pair(lm, lm_prime));
         num_vl++;
@@ -1386,7 +1386,7 @@ public: // public only for tests
   void add_landmark(variable_t v) {
     landmark_ref_t lm_v(v);
     auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
-    landmark_ref_t lm_v_prime(variable_t(vfac.get(v.name().index())),
+    landmark_ref_t lm_v_prime(variable_t(vfac.get(v.name(), ".next")),
                               v.name().str());
     // add pair  x -> x'
     s_var_landmarks.insert(std::make_pair(lm_v, lm_v_prime));
