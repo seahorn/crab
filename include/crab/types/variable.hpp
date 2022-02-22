@@ -250,6 +250,8 @@ class variable : public indexable {
   // does not use it.  This allows, e.g., linear_constraint to
   // deduce the kind of Number from constraints like x < y.
 
+  static_assert(std::is_base_of<crab::indexable, VariableName>::value,
+		"VariableName must be a derived class of indexable");
 public:
   using variable_t = variable<Number, VariableName>;
   using bitwidth_t = unsigned;
@@ -291,10 +293,13 @@ public:
 
   virtual ikos::index_t index() const override { return _n.index(); }
 
+  // Note: for hash(), operator==, and operator< we could delegate on
+  // calling _n's methods if _n is an indexed_varname. This is always
+  // the case, but we don't rely on that here.
+  
   std::size_t hash() const {
-    // casting to size_t may overflow but it shouldn't affect
-    // correctness.
-    return std::hash<size_t>{}(static_cast<size_t>(_n.index()));
+    std::hash<ikos::index_t> hasher;
+    return hasher(_n.index());    
   }
 
   bool operator==(const variable_t &o) const { return index() == o.index(); }
