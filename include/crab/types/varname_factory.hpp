@@ -15,10 +15,10 @@
 
 #include <functional>
 #include <limits>
+#include <map>
 #include <memory>
 #include <unordered_map>
 #include <vector>
-#include <map>
 
 namespace crab {
 
@@ -30,32 +30,31 @@ public:
 
 namespace var_factory_impl {
 
-template<typename T> class variable_factory;
-  
-template <class T>   
-class indexed_varname : public indexable {
+template <typename T> class variable_factory;
+
+template <class T> class indexed_varname : public indexable {
   template <typename Any> friend class variable_factory;
-  
+
   using this_type = indexed_varname<T>;
   using variable_factory_t = variable_factory<T>;
-  
+
   boost::optional<T> m_s;
   ikos::index_t m_id;
   // optional string name associated with m_id if m_s is boost::none
   std::shared_ptr<std::string> m_name;
   variable_factory_t *m_vfac;
-  
+
   indexed_varname() = delete;
   // first constructor
   indexed_varname(ikos::index_t id, variable_factory_t *vfac,
-		  std::string name = "")
-    : m_s(boost::none), m_id(id),
-      m_name(name == "" ? nullptr : std::make_shared<std::string>(name)),
-      m_vfac(vfac) {}
+                  std::string name = "")
+      : m_s(boost::none), m_id(id),
+        m_name(name == "" ? nullptr : std::make_shared<std::string>(name)),
+        m_vfac(vfac) {}
   // second constructor
   indexed_varname(T s, ikos::index_t id, variable_factory_t *vfac)
-    : m_s(s), m_id(id), m_name(nullptr), m_vfac(vfac) {}
-  
+      : m_s(s), m_id(id), m_name(nullptr), m_vfac(vfac) {}
+
   std::string rename(const std::string &s) const {
     auto it = m_vfac->get_renaming_map().find(s);
     if (it != m_vfac->get_renaming_map().end()) {
@@ -64,18 +63,16 @@ class indexed_varname : public indexable {
       return s;
     }
   }
-  
+
 public:
   indexed_varname(const this_type &is) = default;
   indexed_varname(this_type &&is) = default;
-  ~indexed_varname() = default;  
+  ~indexed_varname() = default;
   this_type &operator=(const this_type &is) = default;
   this_type &operator=(this_type &&is) = default;
-  
-  virtual ikos::index_t index() const override {
-    return m_id;
-  }
-  
+
+  virtual ikos::index_t index() const override { return m_id; }
+
   std::string str() const {
     if (m_s) {
       return rename(crab::variable_name_traits<T>::to_string(*m_s));
@@ -86,46 +83,44 @@ public:
       return rename("@V_" + std::to_string(m_id));
     }
   }
-  
+
   boost::optional<T> get() const { return m_s; }
-  
+
   variable_factory_t &get_var_factory() { return *m_vfac; }
-  
+
   bool operator<(const this_type &s) const { return (m_id < s.m_id); }
-  
+
   bool operator==(const this_type &s) const { return (m_id == s.m_id); }
-  
+
   virtual void write(crab_os &o) const override { o << str(); }
-  
+
   friend crab_os &operator<<(crab_os &o, const this_type &s) {
-      s.write(o);
-      return o;
+    s.write(o);
+    return o;
   }
 
   size_t hash() const {
     std::hash<ikos::index_t> hasher;
     return hasher(index());
   }
-  
-  friend size_t hash_value(const this_type &v) {
-    return v.hash();
-  }
+
+  friend size_t hash_value(const this_type &v) { return v.hash(); }
 };
 } // end namespace var_factory_impl
 } // end namespace crab
 
 namespace std {
-template<typename T>
-struct hash<crab::var_factory_impl::indexed_varname<T>> {
-  size_t operator()(const typename crab::var_factory_impl::indexed_varname<T> &v) const {
-    return v.hash(); }
+template <typename T> struct hash<crab::var_factory_impl::indexed_varname<T>> {
+  size_t operator()(
+      const typename crab::var_factory_impl::indexed_varname<T> &v) const {
+    return v.hash();
+  }
 };
 } // end namespace std
 
-
 namespace crab {
 namespace var_factory_impl {
-    
+
 // This variable factory (it's actually a factory of
 // indexed_varname's) creates a new indexed_variable associated to an
 // element of type T if provided. It can also create indexed_varname's
@@ -137,8 +132,9 @@ namespace var_factory_impl {
 template <class T> class variable_factory {
   using variable_factory_t = variable_factory<T>;
   using t_map_t = std::unordered_map<T, indexed_varname<T>>;
-  using shadow_map_t = std::unordered_map<indexed_varname<T>,
-					  std::map<std::string, indexed_varname<T>>>;
+  using shadow_map_t =
+      std::unordered_map<indexed_varname<T>,
+                         std::map<std::string, indexed_varname<T>>>;
   // global counter to generate indexes
   ikos::index_t m_next_id;
   // (cached) indexed_varname's associated with a T-instance.
@@ -148,7 +144,7 @@ template <class T> class variable_factory {
   // (cached) indexed_varname's associated with another indexed_varname.
   shadow_map_t m_shadow_map;
   mutable std::unordered_map<std::string, std::string> m_renaming_map;
-   
+
   ikos::index_t get_and_increment_id(void) {
     if (m_next_id == std::numeric_limits<ikos::index_t>::max()) {
       CRAB_ERROR("Reached limit of ", std::numeric_limits<ikos::index_t>::max(),
@@ -158,10 +154,11 @@ template <class T> class variable_factory {
     ++m_next_id;
     return res;
   }
-  
+
 public:
-  using varname_t = indexed_varname<T>; 
-  using shadow_var_range = boost::iterator_range<typename std::vector<varname_t>::const_iterator>;
+  using varname_t = indexed_varname<T>;
+  using shadow_var_range =
+      boost::iterator_range<typename std::vector<varname_t>::const_iterator>;
 
   variable_factory() : m_next_id(1) {}
 
@@ -189,7 +186,7 @@ public:
   //
   // If you are an abstract domain then do not use it unless strictly
   // necessary because it can produce an unbounded number of
-  // indexed_varname objects. 
+  // indexed_varname objects.
   virtual varname_t get(std::string name = "") {
     varname_t iv(get_and_increment_id(), this, name);
     m_shadow_vars.push_back(iv);
@@ -197,9 +194,9 @@ public:
   }
 
   // API for abstract domains
-  // 
+  //
   // Create a fresh indexed_varname associated to var.
-  // Given the same var and name it always return the same indexed_varname.  
+  // Given the same var and name it always return the same indexed_varname.
   // The returned indexed_varname's name is var's name concatenated with name.
   virtual varname_t get(const varname_t &var, std::string name) {
     auto it = m_shadow_map.find(var);
@@ -213,15 +210,15 @@ public:
       std::map<std::string, varname_t> &named_shadows = it->second;
       auto nit = named_shadows.find(name);
       if (nit != named_shadows.end()) {
-	return nit->second;
+        return nit->second;
       } else {
-	varname_t iv(get_and_increment_id(), this, var.str() + name);
-	named_shadows.insert({name, iv});
-	return iv;	
+        varname_t iv(get_and_increment_id(), this, var.str() + name);
+        named_shadows.insert({name, iv});
+        return iv;
       }
     }
   }
-  
+
   // Allow temporary renaming for pretty printing
   void add_renaming_map(
       const std::unordered_map<std::string, std::string> &smap) const {
@@ -229,26 +226,22 @@ public:
     m_renaming_map.insert(smap.begin(), smap.end());
   }
 
-  void clear_renaming_map() const {
-    m_renaming_map.clear();
-  }
+  void clear_renaming_map() const { m_renaming_map.clear(); }
 
-  const std::unordered_map<std::string, std::string>&
-  get_renaming_map() const {
+  const std::unordered_map<std::string, std::string> &get_renaming_map() const {
     return m_renaming_map;
   }
 
   // return all the non-T variables created by the factory.
-  virtual shadow_var_range get_shadow_vars() const {    
+  virtual shadow_var_range get_shadow_vars() const {
     std::vector<varname_t> out(m_shadow_vars.begin(), m_shadow_vars.end());
-    for (auto &kv_: m_shadow_map) {
-      for (auto &kv: kv_.second) {
-	out.push_back(kv.second);
+    for (auto &kv_ : m_shadow_map) {
+      for (auto &kv : kv_.second) {
+        out.push_back(kv.second);
       }
     }
     return boost::make_iterator_range(out.begin(), out.end());
   }
-      
 };
 
 //! Specialized factory for strings
@@ -257,7 +250,7 @@ class str_variable_factory : public variable_factory<std::string> {
 
 public:
   using varname_t = typename variable_factory_t::varname_t;
-  using shadow_var_range = typename variable_factory_t::shadow_var_range;  
+  using shadow_var_range = typename variable_factory_t::shadow_var_range;
 
   str_variable_factory() : variable_factory_t() {}
 };
