@@ -101,12 +101,10 @@ public:
 
 namespace patricia_trees_impl {
 template <typename Key, typename Value, typename ValueEqual> class tree;
-
-template <typename Value> struct value_equal_to;
 } // end namespace patricia_trees_impl
 
 template <typename Key, typename Value,
-          typename ValueEqual = patricia_trees_impl::value_equal_to<Value>>
+          typename ValueEqual = std::equal_to<Value>>
 class patricia_tree {
 private:
   using tree_t = patricia_trees_impl::tree<Key, Value, ValueEqual>;
@@ -1574,9 +1572,5 @@ bool tree<Key, Value, ValueEqual>::compare(
   }
   return true;
 }
-
-template <class T> struct value_equal_to {
-  bool operator()(const T &v1, const T &v2) const { return v1 == v2; }
-};
 } // namespace patricia_trees_impl
 } // namespace ikos

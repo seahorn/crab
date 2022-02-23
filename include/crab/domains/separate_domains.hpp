@@ -54,7 +54,7 @@ namespace ikos {
 
 /* Environment from Key to Value with all lattice operations */ 
 template <typename Key, typename Value,
-	  typename ValueEqual = patricia_trees_impl::value_equal_to<Value>>
+	  typename ValueEqual = std::equal_to<Value>>
 class separate_domain {
 
 private:
