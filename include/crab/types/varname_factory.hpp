@@ -161,8 +161,6 @@ template <class T> class variable_factory {
 
 public:
   using varname_t = indexed_varname<T>;
-  using shadow_var_range =
-      boost::iterator_range<typename std::vector<varname_t>::const_iterator>;
 
   variable_factory() : m_next_id(1) {}
 
@@ -236,15 +234,15 @@ public:
     return m_renaming_map;
   }
 
-  // return all the non-T variables created by the factory.
-  virtual shadow_var_range get_shadow_vars() const {
+  // return all the non-T variables created by the factory.  
+  virtual std::vector<varname_t> get_shadow_vars() const {
     std::vector<varname_t> out(m_shadow_vars.begin(), m_shadow_vars.end());
     for (auto &kv_ : m_shadow_map) {
       for (auto &kv : kv_.second) {
-        out.push_back(kv.second);
+        out.push_back(varname_t(kv.second));
       }
     }
-    return boost::make_iterator_range(out.begin(), out.end());
+    return out;
   }
 };
 
@@ -254,7 +252,6 @@ class str_variable_factory : public variable_factory<std::string> {
 
 public:
   using varname_t = typename variable_factory_t::varname_t;
-  using shadow_var_range = typename variable_factory_t::shadow_var_range;
 
   str_variable_factory() : variable_factory_t() {}
 };
