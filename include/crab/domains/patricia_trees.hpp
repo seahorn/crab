@@ -128,9 +128,9 @@ inline bool match_prefix(index_t k, index_t p, index_t m) {
   return mask(k, m) == p;
 }
 
-template <typename Key, typename Value> class tree {
+template <typename Key, typename Value, typename ValueEqual> class tree {
 public:
-  using tree_t = tree<Key, Value>;
+  using tree_t = tree<Key, Value, ValueEqual>;
   using tree_ptr = std::shared_ptr<tree_t>;
   using ptr = tree_ptr;
   using unary_op_t = unary_op<Value>;
@@ -271,11 +271,12 @@ public:
 
 }; // class tree
 
-template <typename Key, typename Value> class node : public tree<Key, Value> {
+template <typename Key, typename Value, typename ValueEqual>
+class node : public tree<Key, Value, ValueEqual> {
 private:
-  using tree_ptr = typename tree<Key, Value>::ptr;
-  using binding_t = typename tree<Key, Value>::binding_t;
-  using node_t = node<Key, Value>;
+  using tree_ptr = typename tree<Key, Value, ValueEqual>::ptr;
+  using binding_t = typename tree<Key, Value, ValueEqual>::binding_t;
+  using node_t = node<Key, Value, ValueEqual>;
 
 private:
   std::size_t _size;
@@ -353,11 +354,12 @@ public:
 
 }; // class node
 
-template <typename Key, typename Value> class leaf : public tree<Key, Value> {
+template <typename Key, typename Value, typename ValueEqual>
+class leaf : public tree<Key, Value, ValueEqual> {
 private:
-  using tree_ptr = typename tree<Key, Value>::ptr;
-  using binding_t = typename tree<Key, Value>::binding_t;
-  using leaf_t = leaf<Key, Value>;
+  using tree_ptr = typename tree<Key, Value, ValueEqual>::ptr;
+  using binding_t = typename tree<Key, Value, ValueEqual>::binding_t;
+  using leaf_t = leaf<Key, Value, ValueEqual>;
 
 private:
   Key _key;
@@ -409,16 +411,16 @@ public:
 
 }; // class leaf
 
-template <typename Key, typename Value>
-typename tree<Key, Value>::ptr
-tree<Key, Value>::make_node(index_t prefix, index_t branching_bit,
-                            typename tree<Key, Value>::ptr left_branch,
-                            typename tree<Key, Value>::ptr right_branch) {
-  using tree_ptr = typename tree<Key, Value>::ptr;
+template <typename Key, typename Value, typename ValueEqual>
+typename tree<Key, Value, ValueEqual>::ptr
+tree<Key, Value, ValueEqual>::make_node(index_t prefix, index_t branching_bit,
+						  typename tree<Key, Value, ValueEqual>::ptr left_branch,
+						  typename tree<Key, Value, ValueEqual>::ptr right_branch) {
+  using tree_ptr = typename tree<Key, Value, ValueEqual>::ptr;
   tree_ptr n;
   if (left_branch) {
     if (right_branch) {
-      n = std::make_shared<node<Key, Value>>(
+      n = std::make_shared<node<Key, Value, ValueEqual>>(
 	       prefix, branching_bit, left_branch, right_branch);
     } else {
       n = left_branch;
@@ -433,17 +435,17 @@ tree<Key, Value>::make_node(index_t prefix, index_t branching_bit,
   return n;
 }
 
-template <typename Key, typename Value>
-typename tree<Key, Value>::ptr tree<Key, Value>::make_leaf(const Key &key,
+  template <typename Key, typename Value, typename ValueEqual>
+typename tree<Key, Value, ValueEqual>::ptr tree<Key, Value, ValueEqual>::make_leaf(const Key &key,
                                                            const Value &value) {
-  return std::make_shared<leaf<Key, Value>>(key, value);
+  return std::make_shared<leaf<Key, Value, ValueEqual>>(key, value);
 }
 
-template <typename Key, typename Value>
-typename tree<Key, Value>::ptr
-tree<Key, Value>::join(typename tree<Key, Value>::ptr t0,
-                       typename tree<Key, Value>::ptr t1) {
-  using tree_ptr = typename tree<Key, Value>::ptr;
+  template <typename Key, typename Value, typename ValueEqual>
+typename tree<Key, Value, ValueEqual>::ptr
+tree<Key, Value, ValueEqual>::join(typename tree<Key, Value, ValueEqual>::ptr t0,
+                       typename tree<Key, Value, ValueEqual>::ptr t1) {
+  using tree_ptr = typename tree<Key, Value, ValueEqual>::ptr;
   index_t p0 = t0->prefix();
   index_t p1 = t1->prefix();
   index_t m =
@@ -458,12 +460,12 @@ tree<Key, Value>::join(typename tree<Key, Value>::ptr t0,
   return t;
 }
 
-template <typename Key, typename Value>
-std::pair<bool, typename tree<Key, Value>::ptr>
-tree<Key, Value>::insert(typename tree<Key, Value>::ptr t, const Key &key_,
+  template <typename Key, typename Value, typename ValueEqual>
+std::pair<bool, typename tree<Key, Value, ValueEqual>::ptr>
+tree<Key, Value, ValueEqual>::insert(typename tree<Key, Value, ValueEqual>::ptr t, const Key &key_,
                          const Value &value_, binary_op_t &op,
                          bool combine_left_to_right) {
-  using tree_ptr = typename tree<Key, Value>::ptr;
+  using tree_ptr = typename tree<Key, Value, ValueEqual>::ptr;
   tree_ptr nil;
   std::pair<bool, tree_ptr> res, res_lb, res_rb;
   std::pair<bool, boost::optional<Value>> new_value;
@@ -532,7 +534,8 @@ tree<Key, Value>::insert(typename tree<Key, Value>::ptr t, const Key &key_,
           return bottom;
         }
         if (new_value.second) {
-          if (*(new_value.second) == value) {
+	  ValueEqual op;
+	  if (op(*(new_value.second), value)) {
             return {false, t};
           } else {
             return {false, make_leaf(key_, *(new_value.second))};
@@ -557,12 +560,12 @@ tree<Key, Value>::insert(typename tree<Key, Value>::ptr t, const Key &key_,
   }
 }
 
-template <typename Key, typename Value>
-std::pair<bool, typename tree<Key, Value>::ptr>
-tree<Key, Value>::insert(typename tree<Key, Value>::ptr t, const Key &key_,
+  template <typename Key, typename Value, typename ValueEqual>
+std::pair<bool, typename tree<Key, Value, ValueEqual>::ptr>
+tree<Key, Value, ValueEqual>::insert(typename tree<Key, Value, ValueEqual>::ptr t, const Key &key_,
                          const Value &value_, key_binary_op_t &op,
                          bool combine_left_to_right) {
-  using tree_ptr = typename tree<Key, Value>::ptr;
+  using tree_ptr = typename tree<Key, Value, ValueEqual>::ptr;
   tree_ptr nil;
   std::pair<bool, tree_ptr> res, res_lb, res_rb;
   std::pair<bool, boost::optional<Value>> new_value;
@@ -633,7 +636,8 @@ tree<Key, Value>::insert(typename tree<Key, Value>::ptr t, const Key &key_,
         }
 
         if (new_value.second) {
-          if (*(new_value.second) == value) {
+	  ValueEqual op;
+          if (op(*(new_value.second), value)) {
             return {false, t};
           } else {
             return {false, make_leaf(key_, *(new_value.second))};
@@ -658,10 +662,10 @@ tree<Key, Value>::insert(typename tree<Key, Value>::ptr t, const Key &key_,
   }
 }
 
-template <typename Key, typename Value>
-typename tree<Key, Value>::ptr
-tree<Key, Value>::transform(typename tree<Key, Value>::ptr t, unary_op_t &op) {
-  using tree_ptr = typename tree<Key, Value>::ptr;
+  template <typename Key, typename Value, typename ValueEqual>
+typename tree<Key, Value, ValueEqual>::ptr
+tree<Key, Value, ValueEqual>::transform(typename tree<Key, Value, ValueEqual>::ptr t, unary_op_t &op) {
+  using tree_ptr = typename tree<Key, Value, ValueEqual>::ptr;
   tree_ptr nil;
   if (t) {
     if (t->is_node()) {
@@ -690,7 +694,8 @@ tree<Key, Value>::transform(typename tree<Key, Value>::ptr t, unary_op_t &op) {
       const Value &value = b.second;
       boost::optional<Value> new_value = op.apply(value);
       if (new_value) {
-        if (*new_value == value) {
+	ValueEqual op;
+        if (op(*new_value, value)) {
           return t;
         } else {
           return make_leaf(b.first, *new_value);
@@ -704,10 +709,10 @@ tree<Key, Value>::transform(typename tree<Key, Value>::ptr t, unary_op_t &op) {
   }
 }
 
-template <typename Key, typename Value>
-typename tree<Key, Value>::ptr
-tree<Key, Value>::remove(typename tree<Key, Value>::ptr t, const Key &key_) {
-  using tree_ptr = typename tree<Key, Value>::ptr;
+  template <typename Key, typename Value, typename ValueEqual>
+typename tree<Key, Value, ValueEqual>::ptr
+tree<Key, Value, ValueEqual>::remove(typename tree<Key, Value, ValueEqual>::ptr t, const Key &key_) {
+  using tree_ptr = typename tree<Key, Value, ValueEqual>::ptr;
   tree_ptr nil;
   index_t id = key_.index();
   if (t) {
@@ -755,12 +760,12 @@ tree<Key, Value>::remove(typename tree<Key, Value>::ptr t, const Key &key_) {
   }
 }
 
-template <typename Key, typename Value>
-std::pair<bool, typename tree<Key, Value>::ptr>
-tree<Key, Value>::merge(typename tree<Key, Value>::ptr s,
-                        typename tree<Key, Value>::ptr t, binary_op_t &op,
+  template <typename Key, typename Value, typename ValueEqual>
+std::pair<bool, typename tree<Key, Value, ValueEqual>::ptr>
+tree<Key, Value, ValueEqual>::merge(typename tree<Key, Value, ValueEqual>::ptr s,
+                        typename tree<Key, Value, ValueEqual>::ptr t, binary_op_t &op,
                         bool combine_left_to_right) {
-  using tree_ptr = typename tree<Key, Value>::ptr;
+  using tree_ptr = typename tree<Key, Value, ValueEqual>::ptr;
   tree_ptr nil;
   std::pair<bool, tree_ptr> res, res_lb, res_rb;
   std::pair<bool, boost::optional<Value>> new_value;
@@ -781,7 +786,8 @@ tree<Key, Value>::merge(typename tree<Key, Value>::ptr s,
             }
 
             if (new_value.second) {
-              if (*(new_value.second) == b.second) {
+	      ValueEqual op;
+              if (op(*(new_value.second), b.second)) {
                 return {false, s};
               } else {
                 return {false, make_leaf(b.first, *(new_value.second))};
@@ -806,7 +812,8 @@ tree<Key, Value>::merge(typename tree<Key, Value>::ptr s,
               return bottom;
             }
             if (new_value.second) {
-              if (*(new_value.second) == b.second) {
+	      ValueEqual op;
+              if (op(*(new_value.second), b.second)) {
                 return {false, t};
               } else {
                 return {false, make_leaf(b.first, *(new_value.second))};
@@ -931,12 +938,12 @@ tree<Key, Value>::merge(typename tree<Key, Value>::ptr s,
   }
 }
 
-template <typename Key, typename Value>
-std::pair<bool, typename tree<Key, Value>::ptr>
-tree<Key, Value>::key_merge(typename tree<Key, Value>::ptr s,
-                            typename tree<Key, Value>::ptr t,
+  template <typename Key, typename Value, typename ValueEqual>
+std::pair<bool, typename tree<Key, Value, ValueEqual>::ptr>
+tree<Key, Value, ValueEqual>::key_merge(typename tree<Key, Value, ValueEqual>::ptr s,
+                            typename tree<Key, Value, ValueEqual>::ptr t,
                             key_binary_op_t &op, bool combine_left_to_right) {
-  using tree_ptr = typename tree<Key, Value>::ptr;
+  using tree_ptr = typename tree<Key, Value, ValueEqual>::ptr;
   tree_ptr nil;
   std::pair<bool, tree_ptr> res, res_lb, res_rb;
   std::pair<bool, boost::optional<Value>> new_value;
@@ -958,7 +965,8 @@ tree<Key, Value>::key_merge(typename tree<Key, Value>::ptr s,
             }
 
             if (new_value.second) {
-              if (*(new_value.second) == b.second) {
+	      ValueEqual op;
+              if (op(*(new_value.second), b.second)) {
                 return {false, s};
               } else {
                 return {false, make_leaf(b.first, *(new_value.second))};
@@ -985,7 +993,8 @@ tree<Key, Value>::key_merge(typename tree<Key, Value>::ptr s,
             }
 
             if (new_value.second) {
-              if (*(new_value.second) == b.second) {
+	      ValueEqual op;
+              if (op(*(new_value.second), b.second)) {
                 return {false, t};
               } else {
                 return {false, make_leaf(b.first, *(new_value.second))};
@@ -1110,9 +1119,9 @@ tree<Key, Value>::key_merge(typename tree<Key, Value>::ptr s,
   }
 }
 
-template <typename Key, typename Value>
-bool tree<Key, Value>::compare(typename tree<Key, Value>::ptr s,
-                               typename tree<Key, Value>::ptr t,
+  template <typename Key, typename Value, typename ValueEqual>
+bool tree<Key, Value, ValueEqual>::compare(typename tree<Key, Value, ValueEqual>::ptr s,
+                               typename tree<Key, Value, ValueEqual>::ptr t,
                                partial_order_t &po,
                                bool compare_left_to_right) {
   if (s) {
@@ -1212,11 +1221,18 @@ bool tree<Key, Value>::compare(typename tree<Key, Value>::ptr s,
   return true;
 }
 
+template<class T> struct value_equal_to {
+  bool operator()(const T &v1, const T &v2) const {
+    return v1 == v2;
+  }
+};  
 } // namespace patricia_trees_impl
 
-template <typename Key, typename Value> class patricia_tree {
+template <typename Key, typename Value,
+	  typename ValueEqual = patricia_trees_impl::value_equal_to<Value>>
+class patricia_tree {
 private:
-  using tree_t = patricia_trees_impl::tree<Key, Value>;
+  using tree_t = patricia_trees_impl::tree<Key, Value, ValueEqual>;
   using tree_ptr = typename tree_t::ptr;
 
 public:
@@ -1224,7 +1240,7 @@ public:
       std::is_base_of<crab::indexable, Key>::value,
       "Key must inherit from indexable to be used as a key in a patricia tree");
 
-  using patricia_tree_t = patricia_tree<Key, Value>;
+  using patricia_tree_t = patricia_tree<Key, Value, ValueEqual>;
   using unary_op_t = typename tree_t::unary_op_t;
   using binary_op_t = typename tree_t::binary_op_t;
   using key_binary_op_t = typename tree_t::key_binary_op_t;
@@ -1239,7 +1255,7 @@ public:
       : public boost::iterator_facade<iterator, binding_t,
                                       boost::forward_traversal_tag, binding_t> {
     friend class boost::iterator_core_access;
-    friend class patricia_tree<Key, Value>;
+    friend class patricia_tree<Key, Value, ValueEqual>;
 
   private:
     typename tree_t::iterator _it;
@@ -1356,7 +1372,7 @@ public:
 template <typename Element> class patricia_tree_set {
 private:
   using patricia_tree_t = patricia_tree<Element, bool>;
-
+  
 public:
   using patricia_tree_set_t = patricia_tree_set<Element>;
   using unary_op_t = typename patricia_tree_t::unary_op_t;

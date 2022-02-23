@@ -53,16 +53,18 @@
 namespace ikos {
 
 /* Environment from Key to Value with all lattice operations */ 
-template <typename Key, typename Value> class separate_domain {
+template <typename Key, typename Value,
+	  typename ValueEqual = patricia_trees_impl::value_equal_to<Value>>
+class separate_domain {
 
 private:
-  using patricia_tree_t = patricia_tree<Key, Value>;
+  using patricia_tree_t = patricia_tree<Key, Value, ValueEqual>;
   using unary_op_t = typename patricia_tree_t::unary_op_t;
   using binary_op_t = typename patricia_tree_t::binary_op_t;
   using partial_order_t = typename patricia_tree_t::partial_order_t;
 
 public:
-  using separate_domain_t = separate_domain<Key, Value>;
+  using separate_domain_t = separate_domain<Key, Value, ValueEqual>;
   using iterator = typename patricia_tree_t::iterator;
   using key_type = Key;
   using value_type = Value;
@@ -459,7 +461,7 @@ public:
   }
 
   friend crab::crab_os &operator<<(crab::crab_os &o,
-                                   const separate_domain<Key, Value> &d) {
+                                   const separate_domain<Key, Value, ValueEqual> &d) {
     d.write(o);
     return o;
   }
@@ -487,7 +489,6 @@ namespace domains {
  * still be bottom meaning failure/undefined/unreachable.
  */ 
 template <typename Key, typename Element> class separate_discrete_domain {
-
 private:
   using discrete_domain_t = ikos::discrete_domain<Element>;
   using patricia_tree_t = ikos::patricia_tree<Key, discrete_domain_t>;
