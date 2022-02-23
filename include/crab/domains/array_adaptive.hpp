@@ -845,7 +845,7 @@ private:
       }
     }
 
-    bool operator==(const array_state &o) {
+    bool operator==(const array_state &o) const {
       if (m_is_smashed != o.m_is_smashed) {
         return false;
       }
