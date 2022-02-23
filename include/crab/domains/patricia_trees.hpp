@@ -1419,36 +1419,45 @@ private:
     virtual bool default_is_top() override { return false; }
   }; // class subset_po
 
-private:
-  static patricia_tree_t do_union(patricia_tree_t t1,
-                                  const patricia_tree_t &t2) {
+  patricia_tree_t do_union(patricia_tree_t t1,
+			   const patricia_tree_t &t2) const {
     union_op o;
     t1.merge_with(t2, o);
     return t1;
   }
 
-  static patricia_tree_t do_intersection(patricia_tree_t t1,
-                                         const patricia_tree_t &t2) {
+  void do_union_with(const patricia_tree_t &t) {		     
+    union_op o;
+    _tree.merge_with(t, o);
+  }
+  
+  patricia_tree_t do_intersection(patricia_tree_t t1,
+				  const patricia_tree_t &t2) const {
     intersection_op o;
     t1.merge_with(t2, o);
     return t1;
   }
 
-private:
-  patricia_tree_set(patricia_tree_t t) : _tree(t) {}
+  void do_intersection_with(const patricia_tree_t &t) {				  
+    intersection_op o;
+    _tree.merge_with(t, o);
+  }
+  
+  patricia_tree_set(patricia_tree_t &&t) : _tree(std::move(t)) {}
 
 public:
   patricia_tree_set() {}
 
-  patricia_tree_set(const patricia_tree_set_t &s) : _tree(s._tree) {}
-
-  patricia_tree_set_t &operator=(const patricia_tree_set_t &t) {
-    this->_tree = t._tree;
-    return *this;
-  }
-
   patricia_tree_set(const Element &e) { this->_tree.insert(e, true); }
+  
+  patricia_tree_set(const patricia_tree_set_t &s) = default;
 
+  patricia_tree_set_t &operator=(const patricia_tree_set_t &t) = default;
+
+  patricia_tree_set(patricia_tree_set_t &&s) = default;
+
+  patricia_tree_set_t &operator=(patricia_tree_set_t &&t) = default;
+  
   std::size_t size() const { return this->_tree.size(); }
 
   iterator begin() const { return iterator(this->_tree); }
@@ -1493,22 +1502,22 @@ public:
   bool empty() const { return this->_tree.empty(); }
 
   patricia_tree_set_t operator|(const patricia_tree_set_t &s) const {
-    patricia_tree_set_t u(do_union(this->_tree, s._tree));
+    patricia_tree_set_t u(std::move(do_union(this->_tree, s._tree)));
     return u;
   }
 
   patricia_tree_set_t &operator|=(const patricia_tree_set_t &s) {
-    this->_tree = do_union(this->_tree, s._tree);
+    do_union_with(s._tree);
     return *this;
   }
 
   patricia_tree_set_t operator&(const patricia_tree_set_t &s) const {
-    patricia_tree_set_t i(do_intersection(this->_tree, s._tree));
+    patricia_tree_set_t i(std::move(do_intersection(this->_tree, s._tree)));
     return i;
   }
 
   patricia_tree_set_t &operator&=(const patricia_tree_set_t &s) {
-    this->_tree = do_intersection(this->_tree, s._tree);
+    do_intersection_with(s._tree);
     return *this;
   }
 
