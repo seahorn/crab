@@ -772,7 +772,7 @@ tree<Key, Value>::merge(typename tree<Key, Value>::ptr s,
       } else if (s->is_leaf()) {
         binding_t b = s->binding();
         if (op.default_is_absorbing()) {
-          boost::optional<Value> value = t->lookup(b.first);
+	  const Value *value = t->find(b.first);
           if (value) {
             new_value = combine_left_to_right ? op.apply(b.second, *value)
                                               : op.apply(*value, b.second);
@@ -798,7 +798,7 @@ tree<Key, Value>::merge(typename tree<Key, Value>::ptr s,
       } else if (t->is_leaf()) {
         binding_t b = t->binding();
         if (op.default_is_absorbing()) {
-          boost::optional<Value> value = s->lookup(b.first);
+	  const Value* value = s->find(b.first);
           if (value) {
             new_value = combine_left_to_right ? op.apply(*value, b.second)
                                               : op.apply(b.second, *value);
@@ -948,7 +948,7 @@ tree<Key, Value>::key_merge(typename tree<Key, Value>::ptr s,
       } else if (s->is_leaf()) {
         binding_t b = s->binding();
         if (op.default_is_absorbing()) {
-          boost::optional<Value> value = t->lookup(b.first);
+	  const Value* value = t->find(b.first);
           if (value) {
             new_value = combine_left_to_right
                             ? op.apply(b.first, b.second, *value)
@@ -975,7 +975,7 @@ tree<Key, Value>::key_merge(typename tree<Key, Value>::ptr s,
       } else if (t->is_leaf()) {
         binding_t b = t->binding();
         if (op.default_is_absorbing()) {
-          boost::optional<Value> value = s->lookup(b.first);
+	  const Value* value = s->find(b.first);
           if (value) {
             new_value = combine_left_to_right
                             ? op.apply(b.first, *value, b.second)
@@ -1122,10 +1122,10 @@ bool tree<Key, Value>::compare(typename tree<Key, Value>::ptr s,
           binding_t b = s->binding();
           const Key &key = b.first;
           const Value &value = b.second;
-          boost::optional<Value> value_ = t->lookup(key);
+	  const Value* value_ = t->find(key);
           if (value_) {
-            Value left = compare_left_to_right ? value : *value_;
-            Value right = compare_left_to_right ? *value_ : value;
+            const Value &left = compare_left_to_right ? value : *value_;
+            const Value &right = compare_left_to_right ? *value_ : value;
             if (!po.leq(left, right)) {
               return false;
             }
