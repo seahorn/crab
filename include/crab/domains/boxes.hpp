@@ -559,7 +559,7 @@ private:
     }
   }
 
-  interval_domain_t to_intervals(LddNodePtr &ldd) {
+  interval_domain_t to_intervals(LddNodePtr &ldd) const {
     crab::CrabStats::count(domain_name() + ".count.to_intervals");
     crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
 
@@ -1092,13 +1092,19 @@ public:
   }
 
   virtual interval_t operator[](const variable_t &v) override {
+    return at(v);
+  }
+
+  virtual interval_t at(const variable_t &v) const override {
     crab::CrabStats::count(domain_name() + ".count.to_intervals");
     crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
 
-    if (is_bottom())
+    if (is_bottom()) {
       return interval_t::bottom();
-    if (is_top())
+    }
+    if (is_top()) {
       return interval_t::top();
+    }
 
     LddNodePtr ldd = project(v);
     interval_domain_t intv = to_intervals(ldd);
@@ -1108,7 +1114,7 @@ public:
                                            << "Projection " << i << "\n";);
     return i;
   }
-
+  
   // x := e
   void assign(const variable_t &x, const linear_expression_t &e) override {
     crab::CrabStats::count(domain_name() + ".count.assign");

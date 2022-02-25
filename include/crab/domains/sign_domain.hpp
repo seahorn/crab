@@ -993,6 +993,10 @@ public:
   }
 
   interval_t operator[](const variable_t &v) override {
+    return at(v);
+  }
+
+  interval_t at(const variable_t &v) const override {
     return m_env.at(v).to_interval();
   }
 

@@ -2332,6 +2332,10 @@ public:
     return _scalar[v];
   }
 
+  virtual interval_t at(const variable_t &v) const override {
+    return _scalar.at(v);
+  }
+  
   /// array_graph is a functor domain that implements all operations
   /// except region/reference operations.
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(array_graph_domain_t)

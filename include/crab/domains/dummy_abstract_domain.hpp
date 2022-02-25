@@ -64,6 +64,9 @@ public:
   interval_t operator[](const variable_t &v) override {
     CRAB_ERROR(not_implemented_msg());
   }
+  interval_t at(const variable_t &v) const override {
+    CRAB_ERROR(not_implemented_msg());
+  }  
   void operator+=(const linear_constraint_system_t &csts) override {
     CRAB_ERROR(not_implemented_msg());
   }

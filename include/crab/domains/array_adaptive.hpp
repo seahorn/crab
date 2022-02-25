@@ -2143,10 +2143,26 @@ public:
   void minimize() override { m_inv.minimize(); }
 
   virtual interval_t operator[](const variable_t &v) override {
-    if (!v.get_type().is_array()) {
-      return m_inv[v];
+    if (is_bottom()) {
+      return interval_t::bottom();
     } else {
-      return interval_t::top();
+      if (!v.get_type().is_array()) {
+	return m_inv.at(v);
+      } else {
+	return interval_t::top();
+      }
+    }    
+  }
+
+  virtual interval_t at(const variable_t &v) const override {
+    if (is_bottom()) {
+      return interval_t::bottom();
+    } else {
+      if (!v.get_type().is_array()) {
+	return m_inv.at(v);
+      } else {
+	return interval_t::top();
+      }
     }
   }
 

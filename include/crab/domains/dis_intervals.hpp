@@ -1215,12 +1215,20 @@ public:
   }
 
   interval_t operator[](const variable_t &v) override {
+    return at(v);
+  }
+
+  interval_t at(const variable_t &v) const override {
     crab::CrabStats::count(domain_name() + ".count.to_intervals");
     crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
 
-    dis_interval_t x = this->_env.at(v);
-    return x.approx();
-  }
+    if (is_bottom()) {
+      return interval_t::bottom();
+    } else {
+      dis_interval_t x = this->_env.at(v);
+      return x.approx();
+    }
+  }  
 
   void set(const variable_t &v, interval_t intv) {
     crab::CrabStats::count(domain_name() + ".count.assign");

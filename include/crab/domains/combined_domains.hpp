@@ -820,6 +820,10 @@ public:
     return m_product.first()[v] & m_product.second()[v];
   }
 
+  virtual interval_t at(const variable_t &v) const override {
+    return m_product.first().at(v) & m_product.second().at(v);
+  }  
+
   virtual linear_constraint_system_t
   to_linear_constraint_system() const override {
     linear_constraint_system_t csts;
@@ -1194,6 +1198,10 @@ public:
   interval_t operator[](const variable_t &v) override {
     return m_product.first()[v] & m_product.second()[v];
   }
+
+  interval_t at(const variable_t &v) const override {
+    return m_product.first().at(v) & m_product.second().at(v);
+  }  
 
   void operator+=(const linear_constraint_system_t &csts) override {
     m_product += csts;

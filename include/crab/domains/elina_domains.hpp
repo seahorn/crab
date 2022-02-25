@@ -1269,6 +1269,10 @@ public:
   }
 
   interval_t operator[](const variable_t &v) override {
+    return at(v);
+  }
+  
+  interval_t at(const variable_t &v) const override {
     crab::CrabStats::count(domain_name() + ".count.to_intervals");
     crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
 

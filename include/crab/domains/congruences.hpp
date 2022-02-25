@@ -861,6 +861,11 @@ public:
     return interval_t::top();
   }
 
+  virtual interval_t at(const variable_t &v) const override {
+    CRAB_WARN(domain_name(), "::at not implemented");
+    return interval_t::top();
+  }  
+
   congruence_t to_congruence(const variable_t &v) { return this->_env.at(v); }
 
   congruence_t to_congruence(const linear_expression_t &expr) {

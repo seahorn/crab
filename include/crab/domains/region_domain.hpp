@@ -2439,10 +2439,28 @@ public:
     } else if (is_top()) {
       return interval_t::top();
     } else {
-      return m_base_dom[get_or_insert_gvars(x).get_var()];
+      if (boost::optional<ghost_variables_t> gvars = get_gvars(x)) {
+	return m_base_dom[(*gvars).get_var()];
+      } else {
+	return interval_t::top();
+      }
     }
   }
 
+  interval_t at(const variable_t &x) const override {
+    if (is_bottom()) {
+      return interval_t::bottom();
+    } else if (is_top()) {
+      return interval_t::top();
+    } else {
+      if (boost::optional<ghost_variables_t> gvars = get_gvars(x)) {
+	return m_base_dom.at((*gvars).get_var());
+      } else {
+	return interval_t::top();
+      }
+    }
+  }
+  
   // int cast operations and bitwise operations
   void apply(int_conv_operation_t op, const variable_t &dst,
              const variable_t &src) override {

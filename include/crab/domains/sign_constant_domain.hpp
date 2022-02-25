@@ -151,6 +151,10 @@ public:
     return m_product.first()[v] & m_product.second()[v];
   }
 
+  interval_t at(const variable_t &v) const override {
+    return m_product.first().at(v) & m_product.second().at(v);
+  }
+  
   void operator+=(const linear_constraint_system_t &csts) override {
     if (is_bottom())
       return;

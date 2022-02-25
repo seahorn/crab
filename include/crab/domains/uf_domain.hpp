@@ -823,6 +823,10 @@ public:
   }
 
   interval_t operator[](const variable_t &x) override {
+    return at(x);
+  }
+
+  interval_t at(const variable_t &x) const override {
     crab::CrabStats::count(domain_name() + ".count.to_intervals");
     crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
     if (is_bottom()) {
@@ -830,7 +834,7 @@ public:
     } else {
       return interval_t::top();
     }
-  }
+  }  
 
   void apply(int_conv_operation_t /*op*/, const variable_t &dst,
              const variable_t &src) override {

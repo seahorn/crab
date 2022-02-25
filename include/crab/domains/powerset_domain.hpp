@@ -824,10 +824,24 @@ public:
   // Miscellaneous operations
 
   interval_t operator[](const variable_t &v) override {
-    Domain smashed = smash_disjuncts(*this);
-    return smashed[v];
+    return at(v);
   }
 
+  interval_t at(const variable_t &v) const override {
+    if (is_bottom()) {
+      return interval_t::bottom();
+    }
+    if (m_disjuncts.empty()) {
+      return interval_t::top();
+    }
+    
+    interval_t res = m_disjuncts[0].at(v);
+    for (unsigned i = 1, sz = m_disjuncts.size(); i < sz; ++i) {
+      res = res | m_disjuncts[i].at(v);
+    }
+    return res;
+  }
+  
   void set(const variable_t &v, interval_t intv) {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {

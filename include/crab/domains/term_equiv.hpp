@@ -1264,17 +1264,38 @@ public:
     // Needed for accuracy
     normalize();
 
-    if (is_bottom())
+    if (is_bottom()) {
       return interval_t::bottom();
-
-    auto it = _var_map.find(x);
-    if (it == _var_map.end())
-      return interval_t::top();
-
-    dom_var_t dom_x = domvar_of_term(it->second);
-
-    return _impl[dom_x];
+    } else {
+      auto it = _var_map.find(x);
+      if (it == _var_map.end()) {
+	return interval_t::top();
+      } else {
+	dom_var_t dom_x = domvar_of_term(it->second);
+	return _impl[dom_x];
+      }
+    }
   }
+
+  interval_t at(const variable_t &x) const override {
+    crab::CrabStats::count(domain_name() + ".count.to_intervals");
+    crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
+
+    if (is_bottom()) {
+      return interval_t::bottom();
+    } else {
+      auto it = _var_map.find(x);
+      if (it == _var_map.end()) {
+	return interval_t::top();
+      } else {
+	if (boost::optional<dom_var_t> dom_x = domvar_of_term(it->second)) {
+	  return _impl.at(*dom_x);
+	} else {
+	  return interval_t::top();
+	}
+      }
+    }
+  }  
 
   void set(const variable_t &x, interval_t intv) {
     crab::CrabStats::count(domain_name() + ".count.assign");

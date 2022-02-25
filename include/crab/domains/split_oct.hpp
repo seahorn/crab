@@ -1506,12 +1506,12 @@ private:
     return;
   }
 
-  interval_t get_interval(const variable_t &x) {
+  interval_t get_interval(const variable_t &x) const {
     return get_interval(m_vert_map, m_graph, x);
   }
 
-  interval_t get_interval(vert_map_t &m, graph_t &r,
-                          const variable_t &x) const {
+  interval_t get_interval(const vert_map_t &m, const graph_t &r, const variable_t &x) const {
+                          
     auto it = m.find(x);
     if (it == m.end())
       return interval_t::top();
@@ -2818,6 +2818,14 @@ public:
     }
   }
 
+  interval_t at(const variable_t &x) const override {
+    crab::CrabStats::count(domain_name() + ".count.to_intervals");
+    crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
+    
+    return (is_bottom() ? interval_t::bottom() :
+	    get_interval(m_vert_map, m_graph, x));
+  }
+  
   void normalize(void) override {
     crab::CrabStats::count(domain_name() + ".count.normalize");
     crab::ScopedCrabStats __st__(domain_name() + ".normalize");

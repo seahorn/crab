@@ -1504,9 +1504,13 @@ public:
 
   // Return unlimited interval
   virtual interval_t operator[](const variable_t &v) override {
+    return at(v);
+  }
+
+  virtual interval_t at(const variable_t &v) const override {
     wrapped_interval_t w_i = this->_env.at(v);
     return w_i.to_interval();
-  }
+  }  
 
   // Return wrapped interval
   wrapped_interval_t get_wrapped_interval(const variable_t &v) const {
@@ -2370,6 +2374,10 @@ public:
     return _w_int_dom[v];
   }
 
+  virtual interval_t at(const variable_t &v) const override {
+    return _w_int_dom.at(v);
+  }
+  
   wrapped_interval_t get_wrapped_interval(const variable_t &v) const {
     return _w_int_dom.get_wrapped_interval(v);
   }
@@ -3187,6 +3195,10 @@ public:
     return _product[v];
   }
 
+  virtual interval_t at(const variable_t &v) const override {
+    return _product.at(v);
+  }
+  
   void operator-=(const variable_t &v) { _product -= v; }
 
   // backward arithmetic operations

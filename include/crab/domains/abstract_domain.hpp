@@ -102,7 +102,8 @@ template <class Number, class VariableName> class abstract_domain_results_api;
  * as integers by the numerical domain).
  **/
 template <class Dom> class abstract_domain_api:
-  public abstract_domain_results_api<typename abstract_domain_traits<Dom>::number_t,
+  public lattice_domain_api<Dom>,
+         abstract_domain_results_api<typename abstract_domain_traits<Dom>::number_t,
 				     typename abstract_domain_traits<Dom>::varname_t> {
 public:
   using number_t = typename abstract_domain_traits<Dom>::number_t;
@@ -358,9 +359,13 @@ public:
   virtual void operator-=(const variable_t &v) = 0;
 
   // Return an interval with the possible values of v if such notion
-  // exists in the abstract domain.
+  // exists in the abstract domain. Calling this method might trigger
+  // normalization if the underlying domain requires so.
   virtual interval_t operator[](const variable_t &v) = 0;
 
+  // Similar to operator[] but it doesn't modify the internal state.
+  virtual interval_t at(const variable_t &v) const = 0;
+  
   // Convert the abstract state into a conjunction of linear constraints.
   virtual linear_constraint_system_t to_linear_constraint_system() const = 0;
 
@@ -478,8 +483,11 @@ public:
       override {}                                                              \
   virtual void operator+=(const linear_constraint_system_t &csts) override {}  \
   virtual interval_t operator[](const variable_t &x) override {                \
-    return interval_t::top();                                                  \
+    return at(x);							       \
   }                                                                            \
+  virtual interval_t at(const variable_t &x) const override {		       \
+    return interval_t::top();                                                  \
+  }									       \
   virtual void apply(crab::domains::int_conv_operation_t op,                   \
                      const variable_t &dst, const variable_t &src) override {} \
   virtual void apply(crab::domains::bitwise_operation_t op,                    \

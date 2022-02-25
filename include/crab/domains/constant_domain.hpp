@@ -506,6 +506,10 @@ public:
   }
 
   interval_t operator[](const variable_t &v) override {
+    return at(v);
+  }
+
+  interval_t at(const variable_t &v) const override {
     constant_t c = m_env.at(v);
     if (c.is_bottom()) {
       return interval_t::bottom();

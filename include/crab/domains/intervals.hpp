@@ -224,7 +224,11 @@ public:
     this->_env -= v;
   }
 
-  interval_t operator[](const variable_t &v) override { return this->_env.at(v); }
+  interval_t operator[](const variable_t &v) override { return at(v); }
+
+  interval_t at(const variable_t &v) const override {
+    return this->_env.at(v);
+  }
 
   void operator+=(const linear_constraint_system_t &csts) override {
     crab::CrabStats::count(domain_name() + ".count.add_constraints");

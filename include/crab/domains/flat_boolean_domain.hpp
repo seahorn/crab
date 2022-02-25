@@ -276,7 +276,7 @@ public:
 
   void set_bool(const variable_t &x, boolean_value v) { m_env.set(x, v); }
 
-  boolean_value get_bool(const variable_t &x) { return m_env.at(x); }
+  boolean_value get_bool(const variable_t &x) const { return m_env.at(x); }
 
   // backward boolean operators
   void backward_assign_bool_cst(const variable_t &lhs,
@@ -629,7 +629,7 @@ private:
       return *this;
     }
 
-    bool operator[](const variable_t &v) {
+    bool at(const variable_t &v) const{
       invariance_domain d(v);
       return (d <= *this);
     }
@@ -1067,16 +1067,32 @@ public:
     // reduced_domain_product2 does not define [] method
     boolean_value bv = m_product.first().get_bool(v);
     interval_t isecond = m_product.second()[v];
-
-    if (bv.is_bottom() || isecond.is_bottom())
+    if (bv.is_bottom() || isecond.is_bottom()) {
       return interval_t::bottom();
-
-    if (bv.is_true())
+    }     
+    if (bv.is_true()) {
       return interval_t(number_t(1)) & isecond;
-    else if (bv.is_false())
+    } else if (bv.is_false()) {
       return interval_t(number_t(0)) & isecond;
-    else
+    } else {
       return isecond;
+    }
+  }
+
+  interval_t at(const variable_t &v) const override {
+    // reduced_domain_product2 does not define [] method
+    boolean_value bv = m_product.first().get_bool(v);
+    interval_t isecond = m_product.second().at(v);
+    if (bv.is_bottom() || isecond.is_bottom()) {
+      return interval_t::bottom();
+    }
+    if (bv.is_true()) {
+      return interval_t(number_t(1)) & isecond;
+    } else if (bv.is_false()) {
+      return interval_t(number_t(0)) & isecond;
+    } else {
+      return isecond;
+    }
   }
 
   void operator-=(const variable_t &v) override {
@@ -1671,7 +1687,7 @@ public:
       new_var_to_lincsts.set(v, m_var_to_lincsts.at(v));
       new_var_to_refcsts.set(v, m_var_to_refcsts.at(v));      
       
-      if (m_unchanged_vars[v]) {
+      if (m_unchanged_vars.at(v)) {
         new_unchanged_vars += v;
       }
     }
@@ -1691,7 +1707,7 @@ public:
     m_product.expand(x, new_x);
     m_var_to_lincsts.set(new_x, m_var_to_lincsts.at(x));
     m_var_to_refcsts.set(new_x, m_var_to_refcsts.at(x));    
-    if (m_unchanged_vars[x]) {
+    if (m_unchanged_vars.at(x)) {
       m_unchanged_vars += new_x;
     }
   }
