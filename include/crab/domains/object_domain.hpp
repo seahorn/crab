@@ -200,8 +200,6 @@ private:
     std::swap(m_obj_info_env, out_obj_info_env);
     std::swap(m_base_dom, out_base_dom);
     std::swap(m_odi_map, out_odi_map);
-
-    CRAB_LOG("object-domain", crab::outs() << *this << "\n");
   }
 
   // join / widening two abstract states, return a new join / widening state
@@ -278,16 +276,16 @@ private:
                     const object_domain_t &right) const {
 
     if (!(left.m_obj_info_env <= right.m_obj_info_env)) {
-      CRAB_LOG("object-leq", crab::outs() << "Result3=0\n";);
+      CRAB_LOG("object", crab::outs() << "Result3=0\n";);
       return false;
     }
 
     bool res = left.m_base_dom <= right.m_base_dom;
-    CRAB_LOG("object-leq", crab::outs() << "Result4=" << res << "\n";);
+    CRAB_LOG("object", crab::outs() << "Result4=" << res << "\n";);
 
     res = left.m_odi_map <= right.m_odi_map;
 
-    CRAB_LOG("object-leq", crab::outs() << "Result5=" << res << "\n";);
+    CRAB_LOG("object", crab::outs() << "Result5=" << res << "\n";);
     return res;
   }
 
@@ -338,6 +336,10 @@ private:
     CRAB_ERROR("unexpected reference constraint");
   }
 
+  bool is_unknown_region(const variable_t &v) {
+    return v.get_type().is_unknown_region();
+  }
+
   static void ERROR_IF_NOT_REGION(const variable_t &v, unsigned line) {
     if (!v.get_type().is_region()) {
       CRAB_ERROR(v, ":", v.get_type(), " is not a region at line ", line);
@@ -363,8 +365,19 @@ private:
     }
   }
 
-  obj_id_t get_obj_id(variable_t rgn) {
-    assert(m_flds_id_map != nullptr);
+  boost::optional<obj_id_t> get_obj_id(variable_t rgn) {
+    if (!m_flds_id_map) {
+      return boost::none;
+    }
+    auto it = (*m_flds_id_map).find(rgn);
+    if (it == (*m_flds_id_map).end()) {
+      return boost::none;
+    }
+    return it->second;
+  }
+
+  obj_id_t get_obj_id_or_fail(variable_t rgn) {
+    assert(m_flds_id_map);
     auto it = (*m_flds_id_map).find(rgn);
     if (it == (*m_flds_id_map).end()) {
       CRAB_ERROR(domain_name(),
@@ -374,8 +387,8 @@ private:
     return it->second;
   }
 
-  void get_obj_flds(obj_id_t id, variable_vector_t &obj_flds) {
-    assert(m_flds_id_map != nullptr);
+  void get_obj_flds(obj_id_t id, variable_vector_t &obj_flds) const {
+    assert(m_flds_id_map);
     for (auto kv : (*m_flds_id_map)) {
       if (kv.second == id) {
         obj_flds.push_back(kv.first);
@@ -388,20 +401,16 @@ private:
   void object_write(crab_os &o) const { // a special output for object domain
     // not using api from seperate domain
     if (m_odi_map.is_bottom()) {
-      o << "_|_";
+      o << "Object = _|_";
     } else if (m_odi_map.is_top()) {
-      o << "{}";
+      o << "Object = {}";
     } else {
       assert(m_flds_id_map != nullptr);
       for (auto it = m_odi_map.begin(); it != m_odi_map.end();) {
         o << "Object( ";
         obj_id_t id = it->first;
         variable_vector_t vars;
-        for (auto &kv : (*m_flds_id_map)) {
-          if (id == kv.second) {
-            vars.push_back(kv.first);
-          }
-        }
+        get_obj_flds(id, vars);
         std::sort(vars.begin(), vars.end());
         for (auto &v : vars)
           o << v << " ";
@@ -489,13 +498,13 @@ public:
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
 
-    CRAB_LOG("object-leq", crab::outs() << "Inclusion test:\n\t" << *this
-                                        << "\n\t" << o << "\n";);
+    CRAB_LOG("object", crab::outs() << "Inclusion test:\n\t" << *this << "\n\t"
+                                    << o << "\n";);
     if (is_bottom() || o.is_top()) {
-      CRAB_LOG("object-leq", crab::outs() << "Result1=1\n";);
+      CRAB_LOG("object", crab::outs() << "Result1=1\n";);
       return true;
     } else if (is_top() || o.is_bottom()) {
-      CRAB_LOG("object-leq", crab::outs() << "Result2=0\n";);
+      CRAB_LOG("object", crab::outs() << "Result2=0\n";);
       return false;
     }
 
@@ -513,9 +522,12 @@ public:
       return;
     }
 
-    CRAB_LOG("object", crab::outs() << "Join " << *this << " and " << o << "=");
+    CRAB_LOG("object", crab::outs()
+                           << "Join " << *this << " and " << o << " =\n");
 
     self_join(o);
+
+    CRAB_LOG("object", crab::outs() << *this << "\n");
   }
 
   object_domain_t operator|(const object_domain_t &o) const override {
@@ -528,7 +540,8 @@ public:
       return *this;
     }
 
-    CRAB_LOG("object", crab::outs() << "Join " << *this << " and " << o << "=");
+    CRAB_LOG("object", crab::outs()
+                           << "Join " << *this << " and " << o << " =\n");
 
     object_domain_t res(
         std::move(join_or_widening(*this, o, true /*is join*/)));
@@ -546,7 +559,8 @@ public:
       return o;
     }
 
-    CRAB_LOG("object", crab::outs() << "Meet " << *this << " and " << o << "=");
+    CRAB_LOG("object", crab::outs()
+                           << "Meet " << *this << " and " << o << " =\n");
 
     object_domain_t res(
         std::move(meet_or_narrowing(*this, o, true /*is meet*/)));
@@ -569,7 +583,7 @@ public:
     }
 
     CRAB_LOG("object", crab::outs()
-                           << "Widening " << *this << " and " << o << "=");
+                           << "Widening " << *this << " and " << o << " =\n");
 
     object_domain_t res(
         std::move(join_or_widening(*this, o, false /*is widen*/)));
@@ -594,7 +608,7 @@ public:
     }
 
     CRAB_LOG("object", crab::outs() << "Widening with threshold " << *this
-                                    << " and " << o << "=");
+                                    << " and " << o << " =\n");
 
     object_domain_t res(
         std::move(join_or_widening(*this, o, false /*is widen*/)));
@@ -614,12 +628,12 @@ public:
     }
 
     CRAB_LOG("object", crab::outs()
-                           << "Narrowing " << *this << " and " << o << "=");
+                           << "Narrowing " << *this << " and " << o << " =\n");
 
     object_domain_t res(
         std::move(meet_or_narrowing(*this, o, false /*is narrow*/)));
 
-    crab::outs() << res << "\n";
+    CRAB_LOG("object", crab::outs() << res << "\n");
     return res;
   }
 
@@ -690,19 +704,26 @@ public:
       return;
     }
 
-    // The odi must exist for each region after instrisic calls
-    obj_id_t id = get_obj_id(rgn);
+    // for now skip analysis for unknown region
+    if (is_unknown_region(rgn)) {
+      return;
+    }
 
-    // retrieve an abstract object info
-    auto old_obj_info = m_obj_info_env.at(id);
+    if (auto id_opt = get_obj_id(rgn)) {
+      // After instrisic calls, the object id must exist for each region if the
+      // region belongs to an abstract object
 
-    // TODO: need to check number of references for an abstract object
-    // if we consider singleton object in the future
+      // retrieve an abstract object info
+      auto old_obj_info = m_obj_info_env.at(*id_opt);
 
-    m_obj_info_env.set(rgn,
-                       region_domain_impl::region_info(
-                           old_obj_info.refcount_val().increment(),
-                           old_obj_info.init_val(), old_obj_info.type_val()));
+      // TODO: need to check number of references for an abstract object
+      // if we consider singleton object in the future
+
+      m_obj_info_env.set(*id_opt,
+                         region_domain_impl::region_info(
+                             old_obj_info.refcount_val().increment(),
+                             old_obj_info.init_val(), old_obj_info.type_val()));
+    }
 
     CRAB_LOG("object", crab::outs() << "After ref_make(" << ref << "," << rgn
                                     << ":" << rgn.get_type() << "," << size
@@ -752,9 +773,14 @@ public:
       return;
     }
 
+    // for now skip analysis for unknown region
+    if (is_unknown_region(rgn)) {
+      return;
+    }
+
     if (is_null_ref(ref).is_true()) {
-      CRAB_LOG("object-load", CRAB_WARN(domain_name(), "::ref_load: reference ",
-                                        ref, " is null."););
+      CRAB_LOG("object", CRAB_WARN(domain_name(), "::ref_load: reference ", ref,
+                                   " is null."););
       // set_to_bottom();
       crab::CrabStats::count(domain_name() +
                              ".count.ref_load.skipped.null_reference");
@@ -763,33 +789,36 @@ public:
     }
     // At this point, the requirement for 2 is satisfied
 
-    // The object id must exist for each region after instrisic calls
-    obj_id_t id = get_obj_id(rgn);
+    if (auto id_opt = get_obj_id(rgn)) {
+      // After instrisic calls, the object id must exist for each region if the
+      // region belongs to an abstract object
 
-    // retrieve an abstract object info
-    auto obj_info = m_obj_info_env.at(id);
+      // retrieve an abstract object info
+      auto obj_info = m_obj_info_env.at(*id_opt);
 
-    const small_range &num_refs = obj_info.refcount_val();
+      const small_range &num_refs = obj_info.refcount_val();
 
-    // In crab IR, the number of references cannot be zero
-    //  if ref_load access a not null reference.
-    // So zero case should not exist
-    assert(!num_refs.is_zero());
+      // In crab IR, the number of references cannot be zero
+      //  if ref_load access a not null reference.
+      // So zero case should not exist
+      assert(!num_refs.is_zero());
 
-    // read from odi map
-    const field_abstract_domain_t *obj_dom_ref = m_odi_map.find(id);
-    if (!obj_dom_ref) {  // not found in odi map, means object domain is top
-      m_base_dom -= res; // forget res means res == top
-      // the requirment 3.1 is satisfied
-    } else {
-      field_abstract_domain_t *obj_dom_ref_no_const =
-          const_cast<field_abstract_domain_t *>(obj_dom_ref);
-      interval_t ival = obj_dom_ref_no_const->operator[](rgn);
-      object_domain_impl::assign_interval(m_base_dom, res, ival); // res := ival
-      // the requirment 3.2 is satisfied
+      // read from odi map
+      const field_abstract_domain_t *obj_dom_ref = m_odi_map.find(*id_opt);
+      if (!obj_dom_ref) {  // not found in odi map, means object domain is top
+        m_base_dom -= res; // forget res means res == top
+        // the requirment 3.1 is satisfied
+      } else {
+        field_abstract_domain_t *obj_dom_ref_no_const =
+            const_cast<field_abstract_domain_t *>(obj_dom_ref);
+        interval_t ival = obj_dom_ref_no_const->operator[](rgn);
+        object_domain_impl::assign_interval(m_base_dom, res,
+                                            ival); // res := ival
+        // the requirment 3.2 is satisfied
+      }
+
+      // post condition meets
     }
-
-    // post condition meets
 
     CRAB_LOG("object", crab::outs()
                            << "After " << res << ":="
@@ -848,39 +877,47 @@ public:
       return;
     }
 
-    // The object id must exist for each region after instrisic calls
-    obj_id_t id = get_obj_id(rgn);
-    // retrieve an abstract object info
-    auto obj_info = m_obj_info_env.at(id);
-
-    const small_range &num_refs = obj_info.refcount_val();
-    assert(!num_refs.is_zero());
-
-    // read from odi map
-    auto obj_dom_ptr = m_odi_map.find(id);
-    field_abstract_domain_t res_obj_dom =
-        obj_dom_ptr ?
-                    // found in odi map, create new one by copying old one
-            field_abstract_domain_t((*obj_dom_ptr))
-                    :
-                    // not found, create a new one
-            field_abstract_domain_t();
-
-    if (val.is_constant()) {
-      res_obj_dom.assign(rgn, val.get_constant());
-    } else { // val is a variable
-      interval_t ival = m_base_dom[val.get_variable()];
-      object_domain_impl::assign_interval(res_obj_dom, rgn, ival);
-    }
-    // At this point, we have done a strong update
-
-    if (obj_dom_ptr &&
-        !num_refs.is_one()) { // num_refs > 1, perform a weak update
-      res_obj_dom |= *obj_dom_ptr;
+    // for now skip analysis for unknown region
+    if (is_unknown_region(rgn)) {
+      return;
     }
 
-    m_odi_map.set(id, res_obj_dom);
-    // post condition meets
+    if (auto id_opt = get_obj_id(rgn)) {
+      // After instrisic calls, the object id must exist for each region if the
+      // region belongs to an abstract object
+
+      // retrieve an abstract object info
+      auto obj_info = m_obj_info_env.at(*id_opt);
+
+      const small_range &num_refs = obj_info.refcount_val();
+      assert(!num_refs.is_zero());
+
+      // read from odi map
+      auto obj_dom_ptr = m_odi_map.find(*id_opt);
+      field_abstract_domain_t res_obj_dom =
+          obj_dom_ptr ?
+                      // found in odi map, create new one by copying old one
+              field_abstract_domain_t((*obj_dom_ptr))
+                      :
+                      // not found, create a new one
+              field_abstract_domain_t();
+
+      if (val.is_constant()) {
+        res_obj_dom.assign(rgn, val.get_constant());
+      } else { // val is a variable
+        interval_t ival = m_base_dom[val.get_variable()];
+        object_domain_impl::assign_interval(res_obj_dom, rgn, ival);
+      }
+      // At this point, we have done a strong update
+
+      if (obj_dom_ptr &&
+          !num_refs.is_one()) { // num_refs > 1, perform a weak update
+        res_obj_dom |= *obj_dom_ptr;
+      }
+
+      m_odi_map.set(*id_opt, res_obj_dom);
+      // post condition meets
+    }
 
     CRAB_LOG("object", crab::outs()
                            << "After ref_store(" << rgn << ":" << rgn.get_type()
@@ -902,6 +939,12 @@ public:
     ERROR_IF_NOT_REF(ref2, __LINE__);
 
     if (is_bottom()) {
+      return;
+    }
+
+    // for now skip analysis for unknown region or a region not belonging to an
+    // abstract object
+    if (is_unknown_region(rgn1) || is_unknown_region(rgn2)) {
       return;
     }
 
@@ -1386,7 +1429,7 @@ public:
     } else {
       o << "Base = ";
       m_base_dom.write(o);
-      o << ",\n";
+      o << ", ";
       object_write(o);
     }
   }
