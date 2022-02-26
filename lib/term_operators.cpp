@@ -4,14 +4,84 @@ namespace crab {
 namespace domains {
 namespace term {
 
-term_operator_t::term_operator_t(uint32_t value, boost::string_ref name)
-  : m_value(value), m_name(name) {
-  if (m_value < first_nonreserved_value()) {
-    CRAB_ERROR("First " + std::to_string(first_nonreserved_value()) +
+term_operator_t term_operator_t::make_operator(uint32_t value) {
+  term_operator_t op(value, false /*user-defined*/);
+  if (op.value() < op.first_nonreserved_value()) {
+    CRAB_ERROR("First " + std::to_string(op.first_nonreserved_value()) +
 	       "numbers are reserved in term_operator_t");
-  }  
+  }
+  return op;
 }
 
+crab::crab_os &operator<<(crab::crab_os &o, term_operator_t op) {
+ 
+  if (!op.is_reserved()) {
+    // User-defined operator      
+    o << "UF_SYM_" << std::to_string(op.value());
+  } else {
+    // Crab predefined operators
+    switch (op) {
+    case TERM_OP_ADD:
+      o << "+";
+      break;
+    case TERM_OP_SUB:
+      o << "-";
+      break;
+    case TERM_OP_MUL:
+      o << "*";
+      break;
+    case TERM_OP_SDIV:
+      o << "/";
+      break;
+    case TERM_OP_UDIV:
+      o << "/_u";
+      break;
+    case TERM_OP_SREM:
+      o << "%";
+      break;
+    case TERM_OP_UREM:
+      o << "%_u";
+      break;
+    case TERM_OP_NOT:
+      o << "not";
+      break;
+    case TERM_OP_BAND:
+      o << "band";
+      break;
+    case TERM_OP_BOR:
+      o << "bor";
+      break;
+    case TERM_OP_BXOR:
+      o << "bxor";
+      break;
+    case TERM_OP_AND:
+      o << "&";
+      break;
+    case TERM_OP_OR:
+      o << "|";
+      break;
+    case TERM_OP_XOR:
+      o << "^";
+      break;
+    case TERM_OP_SHL:
+      o << "<<";
+      break;
+    case TERM_OP_LSHR:
+      o << ">>_l";
+      break;
+    case TERM_OP_ASHR:
+      o << ">>_r";
+      break;
+    case TERM_OP_FUNCTION:
+      o << "uf";
+      break;
+    default:
+      CRAB_ERROR("unexpected term_operator_t op");
+    }
+  }
+  return o;
+}
+  
 term::term_operator_t conv2termop(arith_operation_t op) {
   switch (op) {
   case OP_ADDITION:

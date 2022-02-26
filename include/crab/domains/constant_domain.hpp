@@ -316,7 +316,7 @@ private:
     constant_t r(expr.constant());
     for (auto const&kv : expr) {
       constant_t c(kv.first);
-      r  = r.Add(c.Mul(m_env[kv.second]));
+      r  = r.Add(c.Mul(m_env.at(kv.second)));
       if (r.is_top()) {
 	break;
       }
@@ -330,7 +330,7 @@ private:
       constant_t c(kv.first);
       const variable_t &v = kv.second;
       if (!(v == pivot)) {
-	residual = residual.Sub(c.Mul(m_env[v]));
+	residual = residual.Sub(c.Mul(m_env.at(v)));
 	if (residual.is_top()) {
 	  break;
 	}
@@ -370,7 +370,7 @@ private:
 	const variable_t &pivot = kv.second;
 	constant_t new_c = compute_residual(cst, pivot).SDiv(c);
 	if (!new_c.is_top()) {
-	  m_env.set(pivot, m_env[pivot] & new_c);
+	  m_env.set(pivot, m_env.at(pivot) & new_c);
 	}
       }
     }
@@ -441,7 +441,7 @@ public:
   }
 
   constant_t get_constant(const variable_t &v) const {
-    return m_env[v];
+    return m_env.at(v);
   }
 
   void set_constant(const variable_t &v, constant_t c) {
@@ -506,7 +506,11 @@ public:
   }
 
   interval_t operator[](const variable_t &v) override {
-    constant_t c = m_env[v];
+    return at(v);
+  }
+
+  interval_t at(const variable_t &v) const override {
+    constant_t c = m_env.at(v);
     if (c.is_bottom()) {
       return interval_t::bottom();
     } else if (c.is_top()) {
@@ -527,7 +531,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.assign");
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
     if (boost::optional<variable_t> v = e.get_variable()) {
-      m_env.set(x, m_env[(*v)]);
+      m_env.set(x, m_env.at(*v));
     } else {
       m_env.set(x, eval(e));
     }
@@ -539,8 +543,8 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     if (!is_bottom()) {
-      constant_t yc = m_env[y];
-      constant_t zc = m_env[z];
+      constant_t yc = m_env.at(y);
+      constant_t zc = m_env.at(z);
       constant_t xc = constant_t::top();
       switch (op) {
       case crab::domains::OP_ADDITION:
@@ -577,7 +581,7 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     if (!is_bottom()) {
-      constant_t yc = m_env[y];
+      constant_t yc = m_env.at(y);
       constant_t zc(k);
       constant_t xc = constant_t::top();
       switch (op) {
@@ -662,8 +666,8 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     if (!is_bottom()) {
-      constant_t yc = m_env[y];
-      constant_t zc = m_env[z];
+      constant_t yc = m_env.at(y);
+      constant_t zc = m_env.at(z);
       constant_t xc = constant_t::top();
       switch (op) {
       case crab::domains::OP_AND:
@@ -698,7 +702,7 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     if (!is_bottom()) {
-      constant_t yc = m_env[y];
+      constant_t yc = m_env.at(y);
       constant_t zc(k);
       constant_t xc = constant_t::top();
       switch (op) {
@@ -791,7 +795,7 @@ public:
       return;
     }
 
-    m_env.set(new_x, m_env[x]);
+    m_env.set(new_x, m_env.at(x));
   }
 
   void normalize() override {}

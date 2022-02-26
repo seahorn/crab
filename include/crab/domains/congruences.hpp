@@ -155,11 +155,11 @@ public:
 
   Number get_remainder() const { return _b; }
 
-  bool operator==(congruence_t o) const {
+  bool operator==(const congruence_t &o) const {
     return (is_bottom() == o.is_bottom() && _a == o._a && _b == o._b);
   }
 
-  bool operator!=(congruence_t x) const { return !this->operator==(x); }
+  bool operator!=(const congruence_t &x) const { return !this->operator==(x); }
 
   /** Lattice Operations **/
 
@@ -182,7 +182,7 @@ public:
     return (_a % o._a == 0) && (_b % o._a == o._b % o._a);
   }
 
-  congruence_t operator|(congruence_t o) {
+  congruence_t operator|(const congruence_t &o) const {
     if (is_bottom()) {
       return o;
     } else if (o.is_bottom()) {
@@ -194,7 +194,7 @@ public:
     }
   }
 
-  congruence_t operator&(congruence_t o) {
+  congruence_t operator&(const congruence_t &o) const {
     if (is_bottom() || o.is_bottom()) {
       return bottom();
     }
@@ -237,19 +237,19 @@ public:
     }
   }
 
-  congruence_t operator||(congruence_t o) {
+  congruence_t operator||(const congruence_t &o) const {
     // Equivalent to join, domain is flat
     return *this | o;
   }
 
-  congruence_t operator&&(congruence_t o) {
+  congruence_t operator&&(const congruence_t &o) const {
     // Simply refines top element
     return (is_top()) ? o : *this;
   }
 
   /** Arithmetic Operators **/
 
-  congruence_t operator+(congruence_t o) {
+  congruence_t operator+(const congruence_t &o) const {
     if (this->is_bottom() || o.is_bottom())
       return congruence_t::bottom();
     else if (this->is_top() || o.is_top())
@@ -258,7 +258,7 @@ public:
       return congruence_t(gcd(_a, o._a), _b + o._b);
   }
 
-  congruence_t operator-(congruence_t o) {
+  congruence_t operator-(const congruence_t &o) const {
     if (this->is_bottom() || o.is_bottom())
       return congruence_t::bottom();
     else if (this->is_top() || o.is_top())
@@ -267,14 +267,14 @@ public:
       return congruence_t(gcd(_a, o._a), _b - o._b);
   }
 
-  congruence_t operator-() {
+  congruence_t operator-() const {
     if (this->is_bottom() || this->is_top())
       return *this;
     else
       return congruence_t(_a, -_b + _a);
   }
 
-  congruence_t operator*(congruence_t o) {
+  congruence_t operator*(const congruence_t &o) const {
     if (this->is_bottom() || o.is_bottom())
       return congruence_t::bottom();
     else if ((this->is_top() || o.is_top()) && _a != 0 && o._a != 0)
@@ -284,7 +284,7 @@ public:
   }
 
   // signed division
-  congruence_t operator/(congruence_t o) {
+  congruence_t operator/(const congruence_t &o) const {
     if (this->is_bottom() || o.is_bottom())
       return congruence_t::bottom();
     else if (o == congruence(0))
@@ -329,7 +329,7 @@ public:
   }
 
   // signed remainder operator
-  congruence_t operator%(congruence_t o) {
+  congruence_t operator%(const congruence_t &o) const {
     if (this->is_bottom() || o.is_bottom())
       return congruence_t::bottom();
     else if (o == congruence(0))
@@ -388,7 +388,7 @@ public:
       Innovation, Design and Engineering, Malardalen University (2010).
    **/
 
-  congruence_t And(congruence_t o) {
+  congruence_t And(const congruence_t &o) const {
     if (this->is_bottom() || o.is_bottom())
       return congruence_t::bottom();
     else if (this->is_top() || o.is_top())
@@ -408,7 +408,7 @@ public:
     }
   }
 
-  congruence_t Or(congruence_t o) {
+  congruence_t Or(const congruence_t &o) const {
     if (this->is_bottom() || o.is_bottom())
       return congruence_t::bottom();
     else if (this->is_top() || o.is_top())
@@ -428,7 +428,7 @@ public:
     }
   }
 
-  congruence_t Xor(congruence_t o) {
+  congruence_t Xor(const congruence_t &o) const {
     if (this->is_bottom() || o.is_bottom())
       return congruence_t::bottom();
     else if (this->is_top() || o.is_top())
@@ -446,7 +446,7 @@ public:
     }
   }
 
-  congruence_t Shl(congruence_t o) {
+  congruence_t Shl(const congruence_t &o) const {
     if (this->is_bottom() || o.is_bottom())
       return congruence_t::bottom();
     else if (this->is_top() || o.is_top())
@@ -472,7 +472,7 @@ public:
     }
   }
 
-  congruence_t AShr(congruence_t o) {
+  congruence_t AShr(const congruence_t &o) const {
     if (this->is_bottom() || o.is_bottom())
       return congruence_t::bottom();
     else if (this->is_top() || o.is_top())
@@ -497,7 +497,7 @@ public:
     }
   }
 
-  congruence_t LShr(congruence_t o) {
+  congruence_t LShr(const congruence_t &o) const {
     if (this->is_bottom() || o.is_bottom())
       return congruence_t::bottom();
     else if (this->is_top() || o.is_top())
@@ -524,13 +524,13 @@ public:
 
   // division and remainder operations
 
-  congruence_t SDiv(congruence_t x) { return this->operator/(x); }
+  congruence_t SDiv(const congruence_t &x) const { return this->operator/(x); }
 
-  congruence_t UDiv(congruence_t x) { return congruence_t::top(); }
+  congruence_t UDiv(const congruence_t &x) const { return congruence_t::top(); }
 
-  congruence_t SRem(congruence_t x) { return this->operator%(x); }
+  congruence_t SRem(const congruence_t &x) const { return this->operator%(x); }
 
-  congruence_t URem(congruence_t x) { return congruence_t::top(); }
+  congruence_t URem(const congruence_t &x) const { return congruence_t::top(); }
 
   void write(crab::crab_os &o) const {
     if (is_bottom()) {
@@ -555,42 +555,42 @@ inline crab::crab_os &operator<<(crab::crab_os &o,
 }
 
 template <typename Number>
-inline congruence<Number> operator+(Number c, congruence<Number> x) {
+inline congruence<Number> operator+(Number c, const congruence<Number> &x) {
   return congruence<Number>(c) + x;
 }
 
 template <typename Number>
-inline congruence<Number> operator+(congruence<Number> x, Number c) {
+inline congruence<Number> operator+(const congruence<Number> &x, Number c) {
   return x + congruence<Number>(c);
 }
 
 template <typename Number>
-inline congruence<Number> operator*(Number c, congruence<Number> x) {
+inline congruence<Number> operator*(Number c, const congruence<Number> &x) {
   return congruence<Number>(c) * x;
 }
 
 template <typename Number>
-inline congruence<Number> operator*(congruence<Number> x, Number c) {
+inline congruence<Number> operator*(const congruence<Number> &x, Number c) {
   return x * congruence<Number>(c);
 }
 
 template <typename Number>
-inline congruence<Number> operator/(Number c, congruence<Number> x) {
+inline congruence<Number> operator/(Number c, const congruence<Number> &x) {
   return congruence<Number>(c) / x;
 }
 
 template <typename Number>
-inline congruence<Number> operator/(congruence<Number> x, Number c) {
+inline congruence<Number> operator/(const congruence<Number> &x, Number c) {
   return x / congruence<Number>(c);
 }
 
 template <typename Number>
-inline congruence<Number> operator-(Number c, congruence<Number> x) {
+inline congruence<Number> operator-(Number c, const congruence<Number> &x) {
   return congruence<Number>(c) - x;
 }
 
 template <typename Number>
-inline congruence<Number> operator-(congruence<Number> x, Number c) {
+inline congruence<Number> operator-(const congruence<Number> &x, Number c) {
   return x - congruence<Number>(c);
 }
 
@@ -618,7 +618,7 @@ private:
 
 private:
   bool refine(const variable_t &v, congruence_t i, CongruenceCollection &env) {
-    congruence_t old_i = env[v];
+    congruence_t old_i = env.at(v);
     congruence_t new_i = old_i & i;
     if (new_i.is_bottom()) {
       return true;
@@ -638,7 +638,7 @@ private:
     for (auto kv : cst) {
       const variable_t &v = kv.second;
       if (!(v == pivot)) {
-        residual = residual - (kv.first * env[v]);
+        residual = residual - (kv.first * env.at(v));
         ++(m_op_count);
       }
     }
@@ -861,7 +861,12 @@ public:
     return interval_t::top();
   }
 
-  congruence_t to_congruence(const variable_t &v) { return this->_env[v]; }
+  virtual interval_t at(const variable_t &v) const override {
+    CRAB_WARN(domain_name(), "::at not implemented");
+    return interval_t::top();
+  }  
+
+  congruence_t to_congruence(const variable_t &v) { return this->_env.at(v); }
 
   congruence_t to_congruence(const linear_expression_t &expr) {
     congruence_t r(expr.constant());
@@ -888,7 +893,7 @@ public:
 
     congruence_t r = e.constant();
     for (auto kv : e) {
-      r = r + (kv.first * this->_env[kv.second]);
+      r = r + (kv.first * this->_env.at(kv.second));
     }
     this->_env.set(x, r);
   }
@@ -898,8 +903,8 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    congruence_t yi = this->_env[y];
-    congruence_t zi = this->_env[z];
+    congruence_t yi = this->_env.at(y);
+    congruence_t zi = this->_env.at(z);
     congruence_t xi = congruence_t::bottom();
 
     switch (op) {
@@ -935,7 +940,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    congruence_t yi = this->_env[y];
+    congruence_t yi = this->_env.at(y);
     congruence_t zi(k);
     congruence_t xi = congruence_t::bottom();
 
@@ -1012,8 +1017,8 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    congruence_t yi = this->_env[y];
-    congruence_t zi = this->_env[z];
+    congruence_t yi = this->_env.at(y);
+    congruence_t zi = this->_env.at(z);
     congruence_t xi = congruence_t::bottom();
 
     switch (op) {
@@ -1051,7 +1056,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    congruence_t yi = this->_env[y];
+    congruence_t yi = this->_env.at(y);
     congruence_t zi(k);
     congruence_t xi = congruence_t::bottom();
 
@@ -1118,7 +1123,7 @@ public:
       return;
     }
 
-    set(new_x, this->_env[x]);
+    set(new_x, this->_env.at(x));
   }
 
   void normalize() override {}

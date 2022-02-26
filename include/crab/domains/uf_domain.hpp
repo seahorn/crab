@@ -59,14 +59,16 @@ public:
 
 private:
   using ttbl_t = term::term_table<number_t, term::term_operator_t>;
+public:
   using term_id_t = typename ttbl_t::term_id_t;
   using term_t = typename ttbl_t::term_t;
+  using var_set_t = std::set<variable_t>;  
+private:  
   using const_term_t = typename ttbl_t::const_term_t;
   using var_term_t = typename ttbl_t::var_term_t;
   using ftor_term_t = typename ttbl_t::ftor_term_t;
 
   using var_map_t = boost::container::flat_map<variable_t, term_id_t>;
-  using var_set_t = std::set<variable_t>;
   using rev_var_map_t = boost::container::flat_map<term_id_t, var_set_t>;
   using linterm_t = typename linear_expression_t::component_t;
 
@@ -136,12 +138,7 @@ private:
   }
   /* End manipulate the reverse variable map */
 
-  const term_t &get_term(term_id_t t) const {
-    const term_t *ptr_t = m_ttbl.get_term_ptr(t);
-    assert(ptr_t);
-    return *ptr_t;
-  }
-
+   
   void rebind_var(const variable_t &x, term_id_t tx) {
     m_ttbl.add_ref(tx);
 
@@ -638,9 +635,8 @@ public:
 
   // Precondition:
   // - value must be > term_operator_t::first_nonreserved_value()
-  // Note that boost::string_ref is a non-owning reference to a string.
-  static term::term_operator_t make_uf(uint32_t value, boost::string_ref name) {
-    term::term_operator_t op(value, name);
+  static term::term_operator_t make_uf(uint32_t value) {
+    auto op = term::term_operator_t::make_operator(value);
     return op;
   }
 
@@ -665,6 +661,42 @@ public:
       rebind_var(x, tx);
       check_terms(__LINE__);      
     }
+  }
+
+  // API to traverse the term associated to a variable.
+  // FIXME: probably ugly to expose term_id_t but it's needed right now.
+  const term_t &get_term(term_id_t t) const {
+    const term_t *ptr_t = m_ttbl.get_term_ptr(t);
+    assert(ptr_t);
+    return *ptr_t;
+  }
+
+  const term_t *get_term(const variable_t &x) const {
+    auto it = m_var_map.find(x);
+    if (it != m_var_map.end()) {
+      return &(get_term(it->second));
+    } else {
+      return nullptr;
+    } 
+  }
+
+  // API to get program variables that are mapped to a given term.  A
+  // set is needed because many program variables can be mapped to the
+  // same term.
+  // 
+  // Post-condition: if the return value is not nullptr then the set
+  // is not empty.
+  const var_set_t *get_variables(const term_t *t) const {
+    // it's fine to remove constness here because find_term won't
+    // modify it.
+    typename ttbl_t::term_ref_t t_ref(const_cast<term_t*>(t));
+    if (boost::optional<term_id_t> t_id = m_ttbl.find_term(t_ref)) {
+      auto it = m_rev_var_map.find(*t_id);
+      if (it != m_rev_var_map.end()) {	
+	return (it->second.empty() ? nullptr: &(it->second));
+      }
+    }        
+    return nullptr;
   }
   /* End uf-domain API */
 
@@ -791,6 +823,10 @@ public:
   }
 
   interval_t operator[](const variable_t &x) override {
+    return at(x);
+  }
+
+  interval_t at(const variable_t &x) const override {
     crab::CrabStats::count(domain_name() + ".count.to_intervals");
     crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
     if (is_bottom()) {
@@ -798,7 +834,7 @@ public:
     } else {
       return interval_t::top();
     }
-  }
+  }  
 
   void apply(int_conv_operation_t /*op*/, const variable_t &dst,
              const variable_t &src) override {

@@ -32,7 +32,7 @@ template <typename Number> class wrapped_interval {
 
   using wrapped_interval_t = wrapped_interval<Number>;
 
-  wrapped_interval_t default_implementation(wrapped_interval_t x) const {
+  wrapped_interval_t default_implementation(const wrapped_interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return wrapped_interval_t::bottom();
     } else {
@@ -102,7 +102,7 @@ template <typename Number> class wrapped_interval {
     }
   }
 
-  wrapped_interval_t signed_mul(wrapped_interval_t x) const {
+  wrapped_interval_t signed_mul(const wrapped_interval_t &x) const {
     assert(!is_bottom() && !x.is_bottom());
 
     bool msb_start = _start.msb();
@@ -154,7 +154,7 @@ template <typename Number> class wrapped_interval {
     return res;
   }
 
-  wrapped_interval_t unsigned_mul(wrapped_interval_t x) const {
+  wrapped_interval_t unsigned_mul(const wrapped_interval_t &x) const {
     assert(!is_bottom() && !x.is_bottom());
 
     bitwidth_t b = get_bitwidth(__LINE__);
@@ -171,7 +171,7 @@ template <typename Number> class wrapped_interval {
   }
 
   // if out is empty then the intersection is empty
-  void exact_meet(wrapped_interval_t x,
+  void exact_meet(const wrapped_interval_t &x,
                   std::vector<wrapped_interval_t> &out) const {
     if (is_bottom() || x.is_bottom()) {
       // bottom
@@ -200,7 +200,7 @@ template <typename Number> class wrapped_interval {
 
   // Perform the reduced product of signed and unsigned multiplication.
   // It uses exact meet rather than abstract meet.
-  void reduced_signed_unsigned_mul(wrapped_interval_t x,
+  void reduced_signed_unsigned_mul(const wrapped_interval_t &x,
                                    std::vector<wrapped_interval_t> &out) const {
     if (is_bottom() || x.is_bottom()) {
       return;
@@ -215,7 +215,7 @@ template <typename Number> class wrapped_interval {
                   ++i) { crab::outs() << "\t" << out[i] << "\n"; });
   }
 
-  wrapped_interval_t unsigned_div(wrapped_interval_t x) const {
+  wrapped_interval_t unsigned_div(const wrapped_interval_t &x) const {
     CRAB_LOG("wrapped-int-div", crab::outs() << *this << " /_u " << x << "=";);
     assert(!x[wrapint(0, x.get_bitwidth(__LINE__))]);
     assert(!is_bottom() && !x.is_bottom());
@@ -225,7 +225,7 @@ template <typename Number> class wrapped_interval {
     return res;
   }
 
-  wrapped_interval_t signed_div(wrapped_interval_t x) const {
+  wrapped_interval_t signed_div(const wrapped_interval_t &x) const {
     CRAB_LOG("wrapped-int-div", crab::outs() << *this << " /_s " << x << "=";);
     assert(!x[wrapint(0, x.get_bitwidth(__LINE__))]);
     assert(!is_bottom() && !x.is_bottom());
@@ -555,13 +555,13 @@ public:
     }
   }
 
-  bool operator==(wrapped_interval_t x) const {
+  bool operator==(const wrapped_interval_t &x) const {
     return (*this <= x && x <= *this);
   }
 
-  bool operator!=(wrapped_interval_t x) const { return !(this->operator==(x)); }
+  bool operator!=(const wrapped_interval_t &x) const { return !(this->operator==(x)); }
 
-  wrapped_interval_t operator|(wrapped_interval_t x) const {
+  wrapped_interval_t operator|(const wrapped_interval_t &x) const {
     if (*this <= x) {
       return x;
     } else if (x <= *this) {
@@ -586,7 +586,7 @@ public:
     }
   }
 
-  wrapped_interval_t operator&(wrapped_interval_t x) const {
+  wrapped_interval_t operator&(const wrapped_interval_t &x) const {
     if (*this <= x) {
       return *this;
     } else if (x <= *this) {
@@ -622,7 +622,7 @@ public:
     }
   }
 
-  wrapped_interval_t operator||(wrapped_interval_t x) const {
+  wrapped_interval_t operator||(const wrapped_interval_t &x) const {
     if (is_bottom()) {
       return x;
     } else if (x.is_bottom()) {
@@ -740,8 +740,8 @@ public:
 
   // TODO: factorize code with operator||
   template <typename Thresholds>
-  wrapped_interval_t widening_thresholds(wrapped_interval_t x,
-                                         const Thresholds &ts) {
+  wrapped_interval_t widening_thresholds(const wrapped_interval_t &x,
+                                         const Thresholds &ts) const {
 
     if (is_bottom()) {
       return x;
@@ -876,12 +876,12 @@ public:
     }
   }
 
-  wrapped_interval_t operator&&(wrapped_interval_t x) const {
+  wrapped_interval_t operator&&(const wrapped_interval_t &x) const {
     // TODO: for now we call the meet operator.
     return (this->operator&(x));
   }
 
-  wrapped_interval_t operator+(wrapped_interval_t x) const {
+  wrapped_interval_t operator+(const wrapped_interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return wrapped_interval_t::bottom();
     } else if (is_top() || x.is_top()) {
@@ -899,7 +899,7 @@ public:
     }
   }
 
-  wrapped_interval_t &operator+=(wrapped_interval_t x) {
+  wrapped_interval_t &operator+=(const wrapped_interval_t &x) {
     return this->operator=(this->operator+(x));
   }
 
@@ -913,7 +913,7 @@ public:
     }
   }
 
-  wrapped_interval_t operator-(wrapped_interval_t x) const {
+  wrapped_interval_t operator-(const wrapped_interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return wrapped_interval_t::bottom();
     } else if (is_top() || x.is_top()) {
@@ -930,11 +930,11 @@ public:
     }
   }
 
-  wrapped_interval_t &operator-=(wrapped_interval_t x) {
+  wrapped_interval_t &operator-=(const wrapped_interval_t &x) {
     return this->operator=(this->operator-(x));
   }
 
-  wrapped_interval_t operator*(wrapped_interval_t x) const {
+  wrapped_interval_t operator*(const wrapped_interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return wrapped_interval_t::bottom();
     }
@@ -972,19 +972,19 @@ public:
     }
   }
 
-  wrapped_interval_t &operator*=(wrapped_interval_t x) {
+  wrapped_interval_t &operator*=(const wrapped_interval_t &x) {
     return this->operator=(this->operator*(x));
   }
 
   // signed division
-  wrapped_interval_t operator/(wrapped_interval_t x) const { return SDiv(x); }
+  wrapped_interval_t operator/(const wrapped_interval_t &x) const { return SDiv(x); }
 
-  wrapped_interval_t &operator/=(wrapped_interval_t x) {
+  wrapped_interval_t &operator/=(const wrapped_interval_t &x) {
     return this->operator=(this->operator/(x));
   }
 
   /** division and remainder operations **/
-  wrapped_interval_t SDiv(wrapped_interval_t x) const {
+  wrapped_interval_t SDiv(const wrapped_interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return wrapped_interval_t::bottom();
     }
@@ -1011,7 +1011,7 @@ public:
     }
   }
 
-  wrapped_interval_t UDiv(wrapped_interval_t x) const {
+  wrapped_interval_t UDiv(const wrapped_interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return wrapped_interval_t::bottom();
     }
@@ -1038,11 +1038,11 @@ public:
     }
   }
 
-  wrapped_interval_t SRem(wrapped_interval_t x) const {
+  wrapped_interval_t SRem(const wrapped_interval_t &x) const {
     return default_implementation(x);
   }
 
-  wrapped_interval_t URem(wrapped_interval_t x) const {
+  wrapped_interval_t URem(const wrapped_interval_t &x) const {
     return default_implementation(x);
   }
 
@@ -1117,7 +1117,7 @@ public:
 
   /** bitwise operations **/
   // Shl, LShr, and AShr shifts are treated as unsigned numbers
-  wrapped_interval_t Shl(wrapped_interval_t x) const {
+  wrapped_interval_t Shl(const wrapped_interval_t &x) const {
     if (is_bottom())
       return *this;
 
@@ -1129,7 +1129,7 @@ public:
     }
   }
 
-  wrapped_interval_t LShr(wrapped_interval_t x) const {
+  wrapped_interval_t LShr(const wrapped_interval_t &x) const {
     if (is_bottom())
       return *this;
 
@@ -1141,7 +1141,7 @@ public:
     }
   }
 
-  wrapped_interval_t AShr(wrapped_interval_t x) const {
+  wrapped_interval_t AShr(const wrapped_interval_t &x) const {
     if (is_bottom())
       return *this;
 
@@ -1153,15 +1153,15 @@ public:
     }
   }
 
-  wrapped_interval_t And(wrapped_interval_t x) const {
+  wrapped_interval_t And(const wrapped_interval_t &x) const {
     return default_implementation(x);
   }
 
-  wrapped_interval_t Or(wrapped_interval_t x) const {
+  wrapped_interval_t Or(const wrapped_interval_t &x) const {
     return default_implementation(x);
   }
 
-  wrapped_interval_t Xor(wrapped_interval_t x) const {
+  wrapped_interval_t Xor(const wrapped_interval_t &x) const {
     return default_implementation(x);
   }
 
@@ -1348,7 +1348,7 @@ private:
       wrapped_interval_t c = wrapped_interval_t::mk_winterval(kv.first, width);
       // eval_expr should be "const" but operator[] in _env is not marked as
       // "const"
-      r += c * this->_env[kv.second];
+      r += c * this->_env.at(kv.second);
     }
     return r;
   }
@@ -1475,7 +1475,7 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
     this->_env.set(v, i);
     CRAB_LOG("wrapped-int", crab::outs()
-                                << v << ":=" << i << "=" << _env[v] << "\n");
+	     << v << ":=" << i << "=" << _env.at(v) << "\n");
   }
 
   void set(const variable_t &v, interval_t i) {
@@ -1486,7 +1486,7 @@ public:
           wrapped_interval_t::mk_winterval(i.lb(), i.ub(), v.get_bitwidth());
       this->_env.set(v, rhs);
       CRAB_LOG("wrapped-int", crab::outs()
-                                  << v << ":=" << i << "=" << _env[v] << "\n");
+	       << v << ":=" << i << "=" << _env.at(v) << "\n");
     } else {
       CRAB_WARN(
           "ignored assignment of an open interval in wrapped interval domain");
@@ -1499,18 +1499,22 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
     this->_env.set(v, wrapped_interval_t::mk_winterval(n, v.get_bitwidth()));
     CRAB_LOG("wrapped-int", crab::outs()
-                                << v << ":=" << n << "=" << _env[v] << "\n");
+	     << v << ":=" << n << "=" << _env.at(v) << "\n");
   }
 
   // Return unlimited interval
   virtual interval_t operator[](const variable_t &v) override {
-    wrapped_interval_t w_i = this->_env[v];
-    return w_i.to_interval();
+    return at(v);
   }
+
+  virtual interval_t at(const variable_t &v) const override {
+    wrapped_interval_t w_i = this->_env.at(v);
+    return w_i.to_interval();
+  }  
 
   // Return wrapped interval
   wrapped_interval_t get_wrapped_interval(const variable_t &v) const {
-    return this->_env[v];
+    return this->_env.at(v);
   }
 
   // This operation shouldn't be called from other abstract domains
@@ -1520,7 +1524,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.assign");
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
     if (boost::optional<variable_t> v = e.get_variable()) {
-      this->_env.set(x, this->_env[*v]);
+      this->_env.set(x, this->_env.at(*v));
     } else {
       wrapped_interval_t r = eval_expr(
           e,
@@ -1528,7 +1532,7 @@ public:
       this->_env.set(x, r);
     }
     CRAB_LOG("wrapped-int", crab::outs()
-                                << x << ":=" << e << "=" << _env[x] << "\n");
+	     << x << ":=" << e << "=" << _env.at(x) << "\n");
   }
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
@@ -1536,8 +1540,8 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    wrapped_interval_t yi = this->_env[y];
-    wrapped_interval_t zi = this->_env[z];
+    wrapped_interval_t yi = _env.at(y);
+    wrapped_interval_t zi = _env.at(z);
     wrapped_interval_t xi = wrapped_interval_t::bottom();
 
     switch (op) {
@@ -1567,7 +1571,7 @@ public:
     }
     this->_env.set(x, xi);
     CRAB_LOG("wrapped-int", crab::outs() << x << ":=" << y << " " << op << " "
-                                         << z << "=" << _env[x] << "\n");
+	     << z << "=" << _env.at(x) << "\n");
   }
 
   // This operation shouldn't be called from other abstract domains
@@ -1578,7 +1582,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    wrapped_interval_t yi = this->_env[y];
+    wrapped_interval_t yi = _env.at(y);
     wrapped_interval_t zi = wrapped_interval_t::mk_winterval(
         k,
         (x.get_type().is_integer() ? x.get_type().get_integer_bitwidth() : 0));
@@ -1611,7 +1615,7 @@ public:
     }
     this->_env.set(x, xi);
     CRAB_LOG("wrapped-int", crab::outs() << x << ":=" << y << " " << op << " "
-                                         << k << "=" << _env[x] << "\n");
+	     << k << "=" << _env.at(x) << "\n");
   }
 
   // cast operations
@@ -1624,7 +1628,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    wrapped_interval_t src_i = this->_env[src];
+    wrapped_interval_t src_i = this->_env.at(src);
     wrapped_interval_t dst_i;
 
     auto get_bitwidth = [](const variable_t v) {
@@ -1670,8 +1674,8 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    wrapped_interval_t yi = this->_env[y];
-    wrapped_interval_t zi = this->_env[z];
+    wrapped_interval_t yi = _env.at(y);
+    wrapped_interval_t zi = _env.at(z);
     wrapped_interval_t xi = wrapped_interval_t::bottom();
 
     switch (op) {
@@ -1713,7 +1717,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    wrapped_interval_t yi = this->_env[y];
+    wrapped_interval_t yi = _env.at(y);
     wrapped_interval_t zi = wrapped_interval_t::mk_winterval(
         k,
         (x.get_type().is_integer() ? x.get_type().get_integer_bitwidth() : 0));
@@ -1820,7 +1824,7 @@ public:
       return;
     }
 
-    set(new_x, this->_env[x]);
+    set(new_x, _env.at(x));
   }
 
   void normalize() override {}
@@ -2198,7 +2202,7 @@ private:
       //  precisely captured). Because of this, we cannot keep track
       //  of y.
       _limit_env.set(x, wrapped_interval_limit_value::convert(new_i));
-      CRAB_LOG("wrapped-int-hist", auto v = _limit_env[x];
+      CRAB_LOG("wrapped-int-hist", auto v = _limit_env.at(x);
                crab::outs()
                << x
                << " may be initialized, old val=top,  and new val != top) = "
@@ -2209,7 +2213,7 @@ private:
     wrapped_interval_limit_value old_l = wrapped_interval_limit_value::bottom();
     wrapped_interval_limit_value new_l;
     if (may_be_initialized(x)) {
-      old_l = _limit_env[x];
+      old_l = _limit_env.at(x);
       // XXX: it's not enough to convert only new_i. E.g., char x = 127; x++;
       //  convert([127,127])   = no-cross
       //  convert([-128,-128]) = no-cross
@@ -2382,12 +2386,16 @@ public:
     return _w_int_dom[v];
   }
 
+  virtual interval_t at(const variable_t &v) const override {
+    return _w_int_dom.at(v);
+  }
+  
   wrapped_interval_t get_wrapped_interval(const variable_t &v) const {
     return _w_int_dom.get_wrapped_interval(v);
   }
 
   wrapped_interval_limit_value get_limit_value(const variable_t &x) const {
-    return _limit_env[x];
+    return _limit_env.at(x);
   }
 
   wrapped_interval_domain_t &get_wrapped_interval_domain() {
@@ -2643,7 +2651,7 @@ public:
     }
 
     _w_int_dom.expand(x, new_x);
-    _limit_env.set(new_x, _limit_env[x]);
+    _limit_env.set(new_x, _limit_env.at(x));
     if (may_be_initialized(x)) {
       _init_set += new_x;
     }
@@ -2662,7 +2670,7 @@ public:
     separate_domain_t projected_env = separate_domain_t::top();
     discrete_domain_t projected_init_set = discrete_domain_t::bottom();
     for (variable_t v : vars) {
-      projected_env.set(v, _limit_env[v]);
+      projected_env.set(v, _limit_env.at(v));
       if (may_be_initialized(v)) {
         projected_init_set += v;
       }
@@ -3202,6 +3210,10 @@ public:
     return _product[v];
   }
 
+  virtual interval_t at(const variable_t &v) const override {
+    return _product.at(v);
+  }
+  
   void operator-=(const variable_t &v) { _product -= v; }
 
   // backward arithmetic operations

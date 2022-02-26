@@ -115,7 +115,7 @@ private:
     crab::ScopedCrabStats __st__("Linear Interval Solver.Solving refinement");
     CRAB_LOG("integer-solver",
              crab::outs() << "\tRefine " << v << " with " << i << "\n";);
-    Interval old_i = env[v];
+    Interval old_i = env.at(v);
     Interval new_i = old_i & i;
     CRAB_LOG("integer-solver",
              crab::outs() << "\tOld=" << old_i << " New=" << new_i << "\n";);
@@ -154,7 +154,7 @@ private:
       if (!(v == pivot)) {
         residual =
             residual -
-            (interval_traits::mk_interval<Interval>(kv.first, w) * env[v]);
+	  (interval_traits::mk_interval<Interval>(kv.first, w) * env.at(v));
         ++(m_op_count);
         if (residual.is_top())
           break;
@@ -204,7 +204,7 @@ private:
         // do nothing
       } else {
         // cst is a disequation
-        Interval old_i = env[pivot];
+        Interval old_i = env.at(pivot);
         Interval new_i = interval_traits::trim_interval(old_i, rhs);
         if (new_i.is_bottom()) {
           return true;

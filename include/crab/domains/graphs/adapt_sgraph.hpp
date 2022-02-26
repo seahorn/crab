@@ -376,6 +376,32 @@ public:
     return g;
   }
 
+  class mut_val_ref_t {
+  public:
+    mut_val_ref_t() : w(nullptr) {}
+    
+    Wt& get() {
+      assert(w);
+      return *w;
+    }
+
+    const Wt& get() const {
+      assert(w);
+      return *w;
+    }
+    void operator=(Wt *_w) {
+      w = _w;
+    }
+    
+    void operator=(Wt _w) {
+      assert(w);
+      *w = _w;
+    }
+    
+  private:
+    Wt *w;
+  };
+  
   class vert_iterator {
   public:
     vert_iterator(vert_id _v, const std::vector<bool> &_is_free)
@@ -563,30 +589,7 @@ public:
     _succs[s].lookup(d, &idx);
     return _ws[idx];
   }
-
-  class mut_val_ref_t {
-  public:
-    mut_val_ref_t() : w(nullptr) {}
-    operator Wt() const {
-      assert(w);
-      return *w;
-    }
-    Wt get() const {
-      assert(w);
-      return *w;
-    }
-    void operator=(Wt *_w) { w = _w; }
-    void operator=(Wt _w) {
-      assert(w);
-      *w = _w;
-    }
-
-  private:
-    Wt *w;
-  };
-
-  using mut_val_ref_t = mut_val_ref_t;
-
+    
   bool lookup(vert_id s, vert_id d, mut_val_ref_t *w) {
     size_t idx;
     if (_succs[s].lookup(d, &idx)) {

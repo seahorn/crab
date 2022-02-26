@@ -555,7 +555,7 @@ public:
       for (auto e : l.e_succs(s)) {
         vert_id d = e.vert;
         if (r.lookup(s, d, &wr))
-          g.add_edge(s, std::max(e.val, (Wt)wr), d);
+          g.add_edge(s, std::max(e.val, wr.get()), d);
       }
     }
     return g;
@@ -586,7 +586,7 @@ public:
         if (!g.lookup(s, e.vert, &wg)) {
           g.add_edge(s, e.val, e.vert);
         } else {
-          if (e.val < wg)
+          if (e.val < wg.get())
             wg = e.val;
         }
       }
@@ -605,8 +605,8 @@ public:
     for (vert_id s : r.verts()) {
       for (auto e : r.e_succs(s)) {
         vert_id d = e.vert;
-        if (l.lookup(s, d, &wl) && e.val <= wl)
-          g.add_edge(s, wl, d);
+        if (l.lookup(s, d, &wl) && e.val <= wl.get())
+          g.add_edge(s, wl.get(), d);
       }
 
       // Check if this vertex is stable

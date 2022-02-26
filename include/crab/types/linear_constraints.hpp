@@ -169,9 +169,16 @@ public:
   }
 
   size_t hash() const {
+    auto hash_term = [](const variable_t &v, const Number &n) {
+      // boost implementation of std::pair
+      size_t seed = 0;
+      boost::hash_combine(seed, n);
+      boost::hash_combine(seed, v);
+      return seed; 
+    };
     size_t res = 0;
     for (const_iterator it = begin(), et = end(); it != et; ++it) {
-      boost::hash_combine(res, std::make_pair((*it).second, (*it).first));
+      boost::hash_combine(res, hash_term((*it).second, (*it).first));
     }
     boost::hash_combine(res, _cst);
     return res;

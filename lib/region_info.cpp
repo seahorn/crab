@@ -12,9 +12,9 @@ region_info::region_info(region_info::product_t &&product)
 
 region_info::region_info(small_range count, boolean_value init,
                          type_value type) {
-  count_dom() = count;
-  init_dom() = init;
-  type_dom() = type;
+  refcount_val() = count;
+  init_val() = init;
+  type_val() = type;
 }
 
 region_info region_info::bottom() {
@@ -32,19 +32,19 @@ bool region_info::is_bottom() const { return m_product.is_bottom(); }
 
 bool region_info::is_top() const { return m_product.is_top(); }
 
-small_range &region_info::count_dom() { return m_product.first(); }
+small_range &region_info::refcount_val() { return m_product.first(); }
 
-boolean_value &region_info::init_dom() { return m_product.second().first(); }
+boolean_value &region_info::init_val() { return m_product.second().first(); }
 
-type_value &region_info::type_dom() { return m_product.second().second(); }
+type_value &region_info::type_val() { return m_product.second().second(); }
 
-const small_range &region_info::count_dom() const { return m_product.first(); }
+const small_range &region_info::refcount_val() const { return m_product.first(); }
 
-const boolean_value &region_info::init_dom() const {
+const boolean_value &region_info::init_val() const {
   return m_product.second().first();
 }
 
-const type_value &region_info::type_dom() const {
+const type_value &region_info::type_val() const {
   return m_product.second().second();
 }
 
@@ -77,9 +77,9 @@ region_info region_info::operator&&(const region_info &other) const {
 }
 
 void region_info::write(crab::crab_os &o) const {
-  o << "Count=" << count_dom() << ","
-    << "Init=" << init_dom() << ","
-    << "DynType=" << type_dom();
+  o << "RefCount=" << refcount_val() << ","
+    << "Init=" << init_val() << ","
+    << "DynType=" << type_val();
 }
 } // end namespace region_domain_impl
 } // end namespace domains

@@ -208,6 +208,10 @@ public:
     return m_base_dom[v];
   }
 
+  virtual interval_t at(const variable_t &v) const override {
+    return m_base_dom.at(v);
+  }
+
   void forget(const variable_vector_t &variables) override {
     m_base_dom.forget(variables);
   }

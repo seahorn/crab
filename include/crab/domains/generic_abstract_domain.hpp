@@ -210,6 +210,7 @@ private:
                           const abstract_domain_concept &invariant) = 0;
     virtual void operator-=(const variable_t &v) = 0;
     virtual interval_t operator[](const variable_t &v) = 0;
+    virtual interval_t at(const variable_t &v) const = 0;    
     virtual linear_constraint_system_t to_linear_constraint_system() const = 0;
     virtual disjunctive_linear_constraint_system_t
     to_disjunctive_linear_constraint_system() const = 0;
@@ -593,6 +594,9 @@ private:
     interval_t operator[](const variable_t &v) override {
       return m_inv.operator[](v);
     }
+    interval_t at(const variable_t &v) const override {
+      return m_inv.at(v);
+    }    
     linear_constraint_system_t to_linear_constraint_system() const override {
       return m_inv.to_linear_constraint_system();
     }
@@ -929,6 +933,9 @@ public:
   interval_t operator[](const variable_t &v) override {
     return m_concept->operator[](v);
   }
+  interval_t at(const variable_t &v) const override {
+    return m_concept->at(v);
+  }  
   linear_constraint_system_t to_linear_constraint_system() const override {
     return m_concept->to_linear_constraint_system();
   }
@@ -1422,6 +1429,10 @@ public:
   interval_t operator[](const variable_t &v) override {
     detach();
     return norm().operator[](v);
+  }
+  
+  interval_t at(const variable_t &v) const override {
+    return norm().at(v);
   }
 
   linear_constraint_system_t to_linear_constraint_system() const override {

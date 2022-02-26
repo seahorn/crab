@@ -398,8 +398,7 @@ public:
 
   int depth(term_id t) { return _depth[t]; }
 
-protected:
-  boost::optional<term_id> find_term(term_ref_t ref) {
+  boost::optional<term_id> find_term(term_ref_t ref) const {
     auto it = _map.find(ref);
     if (it != _map.end())
       return boost::optional<term_id>(it->second);
@@ -407,6 +406,7 @@ protected:
       return boost::optional<term_id>();
   }
 
+protected:  
   // When we know that a germ doesn't already exist.
   term_id fresh_term(term_ref_t ref) {
     if (free_terms.size() > 0) {

@@ -43,7 +43,7 @@ do
 	  "${CRAB_ROOT}/include/crab/*" \
 	  "${CRAB_ROOT}/lib/*" \
 	  -o $BUILD_DIR/lcov_files/$test.info
-    cat $BUILD_DIR/lcov_files/$test.info >> $BUILD_DIR/${OUTFILE}
+    cat $BUILD_DIR/lcov_files/coverage.$test.info >> $BUILD_DIR/${OUTFILE}
 done
 echo 'done!'
 

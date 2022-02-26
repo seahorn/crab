@@ -446,15 +446,13 @@ public:
     m_product.second().set(v, x.second());
   }
 
-  interval_congruence_t get(const variable_t &v) {
-    return interval_congruence_t(m_product.first()[v],
-                                 m_product.second().to_congruence(v));
+  interval_t operator[](const variable_t &v) override {
+    return m_product.first()[v];
   }
 
-  interval_t operator[](const variable_t &v) override {
-    interval_congruence_t x = get(v);
-    return x.first();
-  }
+  interval_t at(const variable_t &v) const override {
+    return m_product.first().at(v);
+  }  
 
   void operator+=(const linear_constraint_system_t &csts) override {
     m_product += csts;

@@ -299,13 +299,11 @@ public:
     }
   }
 
-  interval(const interval_t &i) : _lb(i._lb), _ub(i._ub) {}
-
-  interval_t &operator=(interval_t i) {
-    _lb = i._lb;
-    _ub = i._ub;
-    return *this;
-  }
+  
+  interval(const interval_t &i) = default;
+  interval_t &operator=(const interval_t &i) = default;
+  interval(interval_t &&i) = default;
+  interval_t &operator=(interval_t &&i) = default;
 
   bound_t lb() const { return _lb; }
 
@@ -323,7 +321,7 @@ public:
     return interval_t(_lb, bound_t::plus_infinity());
   }
 
-  bool operator==(interval_t x) const {
+  bool operator==(const interval_t &x) const {
     if (is_bottom()) {
       return x.is_bottom();
     } else {
@@ -331,9 +329,9 @@ public:
     }
   }
 
-  bool operator!=(interval_t x) const { return !operator==(x); }
+  bool operator!=(const interval_t &x) const { return !operator==(x); }
 
-  bool operator<=(interval_t x) const {
+  bool operator<=(const interval_t &x) const {
     if (is_bottom()) {
       return true;
     } else if (x.is_bottom()) {
@@ -343,7 +341,7 @@ public:
     }
   }
 
-  interval_t operator|(interval_t x) const {
+  interval_t operator|(const interval_t &x) const {
     if (is_bottom()) {
       return x;
     } else if (x.is_bottom()) {
@@ -353,7 +351,7 @@ public:
     }
   }
 
-  interval_t operator&(interval_t x) const {
+  interval_t operator&(const interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return bottom();
     } else {
@@ -361,7 +359,7 @@ public:
     }
   }
 
-  interval_t operator||(interval_t x) const {
+  interval_t operator||(const interval_t &x) const {
     if (is_bottom()) {
       return x;
     } else if (x.is_bottom()) {
@@ -373,7 +371,7 @@ public:
   }
 
   template <typename Thresholds>
-  interval_t widening_thresholds(interval_t x, const Thresholds &ts) {
+  interval_t widening_thresholds(const interval_t &x, const Thresholds &ts) const {
     if (is_bottom()) {
       return x;
     } else if (x.is_bottom()) {
@@ -385,7 +383,7 @@ public:
     }
   }
 
-  interval_t operator&&(interval_t x) const {
+  interval_t operator&&(const interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return bottom();
     } else {
@@ -394,7 +392,7 @@ public:
     }
   }
 
-  interval_t operator+(interval_t x) const {
+  interval_t operator+(const interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return bottom();
     } else {
@@ -402,7 +400,7 @@ public:
     }
   }
 
-  interval_t &operator+=(interval_t x) { return operator=(operator+(x)); }
+  interval_t &operator+=(const interval_t &x) { return operator=(operator+(x)); }
 
   interval_t operator-() const {
     if (is_bottom()) {
@@ -412,7 +410,7 @@ public:
     }
   }
 
-  interval_t operator-(interval_t x) const {
+  interval_t operator-(const interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return bottom();
     } else {
@@ -420,9 +418,9 @@ public:
     }
   }
 
-  interval_t &operator-=(interval_t x) { return operator=(operator-(x)); }
+  interval_t &operator-=(const interval_t &x) { return operator=(operator-(x)); }
 
-  interval_t operator*(interval_t x) const {
+  interval_t operator*(const interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return bottom();
     } else {
@@ -435,11 +433,11 @@ public:
     }
   }
 
-  interval_t &operator*=(interval_t x) { return operator=(operator*(x)); }
+  interval_t &operator*=(const interval_t &x) { return operator=(operator*(x)); }
 
-  interval_t operator/(interval_t x) const;
+  interval_t operator/(const interval_t &x) const;
 
-  interval_t &operator/=(interval_t x) { return operator=(operator/(x)); }
+  interval_t &operator/=(const interval_t &x) { return operator=(operator/(x)); }
 
   boost::optional<Number> singleton() const {
     if (!is_bottom() && _lb == _ub) {
@@ -468,7 +466,7 @@ public:
 
   // division and remainder operations
 
-  interval_t UDiv(interval_t x) const {
+  interval_t UDiv(const interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return bottom();
     } else {
@@ -476,7 +474,7 @@ public:
     }
   }
 
-  interval_t SRem(interval_t x) const {
+  interval_t SRem(const interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return bottom();
     } else {
@@ -484,7 +482,7 @@ public:
     }
   }
 
-  interval_t URem(interval_t x) const {
+  interval_t URem(const interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return bottom();
     } else {
@@ -493,7 +491,7 @@ public:
   }
 
   // bitwise operations
-  interval_t And(interval_t x) const {
+  interval_t And(const interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return bottom();
     } else {
@@ -501,7 +499,7 @@ public:
     }
   }
 
-  interval_t Or(interval_t x) const {
+  interval_t Or(const interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return bottom();
     } else {
@@ -509,9 +507,9 @@ public:
     }
   }
 
-  interval_t Xor(interval_t x) const { return Or(x); }
+  interval_t Xor(const interval_t &x) const { return Or(x); }
 
-  interval_t Shl(interval_t x) const {
+  interval_t Shl(const interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return bottom();
     } else {
@@ -519,7 +517,7 @@ public:
     }
   }
 
-  interval_t LShr(interval_t x) const {
+  interval_t LShr(const interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return bottom();
     } else {
@@ -527,7 +525,7 @@ public:
     }
   }
 
-  interval_t AShr(interval_t x) const {
+  interval_t AShr(const interval_t &x) const {
     if (is_bottom() || x.is_bottom()) {
       return bottom();
     } else {
@@ -539,7 +537,7 @@ public:
 
 template <>
 inline interval<q_number> interval<q_number>::
-operator/(interval<q_number> x) const {
+operator/(const interval<q_number> &x) const {
   if (is_bottom() || x.is_bottom()) {
     return bottom();
   } else {
@@ -568,7 +566,7 @@ operator/(interval<q_number> x) const {
 
 template <>
 inline interval<z_number> interval<z_number>::
-operator/(interval<z_number> x) const {
+operator/(const interval<z_number> &x) const {
   if (is_bottom() || x.is_bottom()) {
     return bottom();
   } else {
@@ -613,7 +611,7 @@ operator/(interval<z_number> x) const {
 }
 
 template <>
-inline interval<z_number> interval<z_number>::SRem(interval<z_number> x) const {
+inline interval<z_number> interval<z_number>::SRem(const interval<z_number> &x) const {
   // note that the sign of the divisor does not matter
 
   if (is_bottom() || x.is_bottom()) {
@@ -649,7 +647,7 @@ inline interval<z_number> interval<z_number>::SRem(interval<z_number> x) const {
 }
 
 template <>
-inline interval<z_number> interval<z_number>::URem(interval<z_number> x) const {
+inline interval<z_number> interval<z_number>::URem(const interval<z_number> &x) const {
 
   if (is_bottom() || x.is_bottom()) {
     return bottom();
@@ -684,7 +682,7 @@ inline interval<z_number> interval<z_number>::URem(interval<z_number> x) const {
 }
 
 template <>
-inline interval<z_number> interval<z_number>::And(interval<z_number> x) const {
+inline interval<z_number> interval<z_number>::And(const interval<z_number> &x) const {
   if (is_bottom() || x.is_bottom()) {
     return bottom();
   } else {
@@ -702,7 +700,7 @@ inline interval<z_number> interval<z_number>::And(interval<z_number> x) const {
 }
 
 template <>
-inline interval<z_number> interval<z_number>::Or(interval<z_number> x) const {
+inline interval<z_number> interval<z_number>::Or(const interval<z_number> &x) const {
   if (is_bottom() || x.is_bottom()) {
     return bottom();
   } else {
@@ -728,7 +726,7 @@ inline interval<z_number> interval<z_number>::Or(interval<z_number> x) const {
 }
 
 template <>
-inline interval<z_number> interval<z_number>::Xor(interval<z_number> x) const {
+inline interval<z_number> interval<z_number>::Xor(const interval<z_number> &x) const {
   if (is_bottom() || x.is_bottom()) {
     return bottom();
   } else {
@@ -744,7 +742,7 @@ inline interval<z_number> interval<z_number>::Xor(interval<z_number> x) const {
 }
 
 template <>
-inline interval<z_number> interval<z_number>::Shl(interval<z_number> x) const {
+inline interval<z_number> interval<z_number>::Shl(const interval<z_number> &x) const {
   if (is_bottom() || x.is_bottom()) {
     return bottom();
   } else {
@@ -770,7 +768,7 @@ inline interval<z_number> interval<z_number>::Shl(interval<z_number> x) const {
 }
 
 template <>
-inline interval<z_number> interval<z_number>::AShr(interval<z_number> x) const {
+inline interval<z_number> interval<z_number>::AShr(const interval<z_number> &x) const {
   if (is_bottom() || x.is_bottom()) {
     return bottom();
   } else {
@@ -795,7 +793,7 @@ inline interval<z_number> interval<z_number>::AShr(interval<z_number> x) const {
 }
 
 template <>
-inline interval<z_number> interval<z_number>::LShr(interval<z_number> x) const {
+inline interval<z_number> interval<z_number>::LShr(const interval<z_number> &x) const {
   if (is_bottom() || x.is_bottom()) {
     return bottom();
   } else {
@@ -815,42 +813,42 @@ inline interval<z_number> interval<z_number>::LShr(interval<z_number> x) const {
 }
 
 template <typename Number>
-inline interval<Number> operator+(Number c, interval<Number> x) {
+inline interval<Number> operator+(Number c, const interval<Number> &x) {
   return interval<Number>(c) + x;
 }
 
 template <typename Number>
-inline interval<Number> operator+(interval<Number> x, Number c) {
+inline interval<Number> operator+(const interval<Number> &x, Number c) {
   return x + interval<Number>(c);
 }
 
 template <typename Number>
-inline interval<Number> operator*(Number c, interval<Number> x) {
+inline interval<Number> operator*(Number c, const interval<Number> &x) {
   return interval<Number>(c) * x;
 }
 
 template <typename Number>
-inline interval<Number> operator*(interval<Number> x, Number c) {
+inline interval<Number> operator*(const interval<Number> &x, Number c) {
   return x * interval<Number>(c);
 }
 
 template <typename Number>
-inline interval<Number> operator/(Number c, interval<Number> x) {
+inline interval<Number> operator/(Number c, const interval<Number> &x) {
   return interval<Number>(c) / x;
 }
 
 template <typename Number>
-inline interval<Number> operator/(interval<Number> x, Number c) {
+inline interval<Number> operator/(const interval<Number> &x, Number c) {
   return x / interval<Number>(c);
 }
 
 template <typename Number>
-inline interval<Number> operator-(Number c, interval<Number> x) {
+inline interval<Number> operator-(Number c, const interval<Number> &x) {
   return interval<Number>(c) - x;
 }
 
 template <typename Number>
-inline interval<Number> operator-(interval<Number> x, Number c) {
+inline interval<Number> operator-(const interval<Number> &x, Number c) {
   return x - interval<Number>(c);
 }
 
