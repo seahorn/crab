@@ -1275,7 +1275,14 @@ public:
                           const object_domain_t &invariant) override {}
 
   linear_constraint_system_t to_linear_constraint_system() const override {
-    return linear_constraint_t::get_false();
+    if (is_bottom()) {
+      return linear_constraint_t::get_false();
+    } else if (is_top()) {
+      return linear_constraint_t::get_true();
+    } else {
+      linear_constraint_system_t out_csts = m_base_dom.to_linear_constraint_system();
+      return out_csts;
+    }
   }
 
   // Convert the abstract state into a disjunction of conjunction
@@ -1325,8 +1332,13 @@ public:
   // Return an interval with the possible values of v if such notion
   // exists in the abstract domain.
   interval_t operator[](const variable_t &v) override {
-
-    return interval_t::bottom();
+    if (is_bottom()) {
+      return interval_t::bottom();
+    } else if (is_top()) {
+      return interval_t::top();
+    } else {
+      return m_base_dom[v];
+    }
   }
 
   /* begin intrinsics operations */
