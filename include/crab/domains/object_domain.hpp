@@ -179,6 +179,78 @@ private:
   // Perform *this = join(*this, right)
   void self_join(const object_domain_t &right) {
 
+    // The join operation is sound if:
+    // Invariant 1: the singleton object in base domain, the object info implies
+    // the number of reference is exactly one
+    // Invariant 2: the non-singleton obj in odi map, the object info implies
+    // the number of reference is > 1
+    // I.e. for each abstract object,
+    //  there is only three states of object reference: 0, 1, and [1, +oo]
+    // If those invariants, holds, the following join operation is sound:
+
+    // For each abstract object, generally, we have four cases at the join:
+    // The following example only shows properties related to
+    // just one abstract object:
+
+    // Case 1: not singleton, odi map contains a field domain for that object
+    // Solution: we join the base dom and odi map
+    // E.g.
+    //  s1: Base = { ... }, Object (V_1, V_2) = { V_1 <= V_2, V_2 <= 5 }
+    //  s2: Base = { ... }, Object (V_1, V_2) = { V_1 = 3, V_2 <= 5 }
+    //  s1 U s2 : Base in s1 U Base in s2,
+    //            Object (V_1, V_2) = { V_1 <= V_2, V_2 <= 5 }
+
+    // Case 2: singleton object in base domain
+    //         odi map does not contain a field domain for that object
+    // Solution: we join the base dom and odi map
+    // E.g.
+    //  s1: Base = { V_1 = 3, V_2 = 6 }, Object (V_1, V_2) = empty
+    //  s2: Base = { V_1 = 2, V_2 = 4 }, Object (V_1, V_2) = empty
+    //  s1 U s2: Base in s1 U Base in s2
+    //           Object (V_1, V_2) = empty
+
+    // Case 3:
+    // one state: singleton object in base domain,
+    //  odi map does not contain a field domain for that object
+    // another: not singleton, odi map contains a field domain for that object
+    // Solution: project singleton object, join with non-singleton in the odi
+    // map
+    //  Let s1 be the first state, s2 is second one.
+    //  Let Vs be the fields in that abstract object.
+    //  For Base in s1,
+    //  only_singleton = Base.project(Vs)
+    //  no_singleton = Base.forget(Vs)
+    //  s1 U s2 :
+    //  no_singleton U Base in s2,
+    //      Object (Vs) in s2 U only_singleton
+    // E.g.
+    //  s1: Base = { V_1 = 3, V_2 = 6 }, Object (V_1, V_2) = empty
+    //  s2: Base = { ... }, Object (V_1, V_2) = { V_1 <= 3, V_2 <= 5 }
+    //  s1 U s2:
+    //    Base = (Base in s1).project(V_1, V_2) U Base in s2
+    //    Object (V_1, V_2) = { V_1 <= 3, V_2 <= 6 }
+
+    // Other cases (simple):
+    // one state: exists such an abstract object
+    // another: does not exist that abstract object
+    // Solution: we join the base dom and odi map
+    // Example1:
+    //  s1: Base = { V_1 = 3, V_2 = 6 }, Object (V_1, V_2) = empty
+    //  s2: Base = { ... }, Object (V_1, V_2) = empty
+    //  s1 U s2 :
+    //    Base = { ... }, Object (V_1, V_2) = empty
+
+    // Example2:
+    //  s1: Base = { ... }, Object (V_1, V_2) = { V_1 <= V_2, V_2 <= 5 }
+    //  s2: Base = { ... }, Object (V_1, V_2) = empty
+    //  s1 U s2 :
+    //    Base = Base^s1 U Base^s2,
+    //    Object (V_1, V_2) = empty
+
+    // Overall, for both cases, the only third case requires move singleton
+    // into odi map. Other cases require join operation on each subdomain as
+    // before.
+
     // 1. join the parts of each state that do not require common renaming
     obj_info_env_t out_obj_info_env(m_obj_info_env | right.m_obj_info_env);
 
@@ -188,10 +260,22 @@ private:
         base_abstract_domain_t(m_base_dom | right.m_base_dom);
 
     // 2.2 join the objects' domain over odi map
-    // In the real join operation,
-    // the following join operates on two odi maps containg the same keys
-    // even if it can performed without such assumption.
     odi_map_t out_odi_map(m_odi_map | right.m_odi_map);
+
+    // Handle case 3
+    for (auto it = m_obj_info_env.begin(); it != m_obj_info_env.end(); it++) {
+      obj_id_t rep = it->first;
+      const small_range &left_num_refs = it->second.refcount_val();
+      const small_range &right_num_refs =
+          right.m_obj_info_env.at(rep).refcount_val();
+      if (left_num_refs.is_one() &&
+          right_num_refs == small_range::oneOrMore()) {
+        join_singleton_with_non_singleton(rep, m_base_dom, out_odi_map);
+      } else if (right_num_refs.is_one() &&
+                 left_num_refs == small_range::oneOrMore()) {
+        join_singleton_with_non_singleton(rep, right.m_base_dom, out_odi_map);
+      }
+    }
 
     // m_flds_id_map is fixed after intrinsic calls. No need to update
     assert(m_flds_id_map == right.m_flds_id_map);
@@ -226,6 +310,22 @@ private:
     odi_map_t out_odi_map(is_join ? left.m_odi_map | right.m_odi_map
                                   : left.m_odi_map || right.m_odi_map);
 
+    // Handle case 3, see comments on self_join method.
+    for (auto it = left.m_obj_info_env.begin(); it != left.m_obj_info_env.end();
+         it++) {
+      obj_id_t rep = it->first;
+      const small_range &left_num_refs = it->second.refcount_val();
+      const small_range &right_num_refs =
+          right.m_obj_info_env.at(rep).refcount_val();
+      if (left_num_refs.is_one() &&
+          right_num_refs == small_range::oneOrMore()) {
+        join_singleton_with_non_singleton(rep, left.m_base_dom, out_odi_map);
+      } else if (right_num_refs.is_one() &&
+                 left_num_refs == small_range::oneOrMore()) {
+        join_singleton_with_non_singleton(rep, right.m_base_dom, out_odi_map);
+      }
+    }
+
     // m_flds_id_map is fixed after intrinsic calls. No need to update
     assert(left.m_flds_id_map == right.m_flds_id_map);
 
@@ -241,6 +341,65 @@ private:
   object_domain_t meet_or_narrowing(const object_domain_t &left,
                                     const object_domain_t &right,
                                     const bool is_meet) const {
+
+    // For each abstract object, generally, we have four cases at the meet:
+    // The following example only shows properties related to
+    // just one abstract object:
+
+    // Case 1: not singleton, odi map contains a field domain for that object
+    // Solution: we meet the base dom and odi map
+    // E.g.
+    //  s1: Base = { ... }, Object (V_1, V_2) = { V_1 <= V_2, V_2 <= 5 }
+    //  s2: Base = { ... }, Object (V_1, V_2) = { V_1 = 3, V_2 <= 5 }
+    //  s1 meet s2 : Base in s1 meet Base in s2,
+    //            Object1 (V_1, V_2) = meet s1 with s2
+
+    // Case 2: singleton object in base domain
+    //         odi map does not contain a field domain for that object
+    // Solution: we meet the base dom and odi map
+    // E.g.
+    //  s1: Base = { V_1 = 3, V_2 = 6 }, Object (V_1, V_2) = empty
+    //  s2: Base = { V_1 = 2, V_2 = 4 }, Object (V_1, V_2) = empty
+    //  s1 meet s2:
+    //    Base = { bot }, Object (V_1, V_2) = empty
+
+    // Case 3:
+    // one state: singleton object in base domain,
+    //  odi map does not contain a field domain for that object
+    // another: not singleton, odi map contains a field domain for that object
+
+    // Solution: meet non-singleton in odi map with singleton in base domain
+    //  Let s1 be the first state, s2 is second one.
+    //  Let Vs be the fields in that abstract object.
+    //  For Base in s1,
+    //  only_singleton = object in s2
+    //  object in s2 = top (empty)
+    //  s1 meet s2 :
+    //  only_singleton meet Base in s1,
+    //      Object (Vs) in s2 = top
+    // E.g.
+    //  s1: Base = { V_1 = 3, V_2 = 4 }, Object (V_1, V_2) = empty
+    //  s2: Base = { ... }, Object (V_1, V_2) = { V_1 <= V_2, V_2 <= 5 }
+    //  s1 meet s2:
+    //    b = Base in s1 meet { V_1 <= V_2, V_2 <= 5 }
+    //    Base = b meet s2 in Base
+    //    Object (V_1, V_2) = empty
+
+    // Other cases:
+    // one state: exists such an abstract object
+    // another: does not exist that abstract object
+    // Example1:
+    //  s1: Base = { V_1 = 3, V_2 = 6 }, Object (V_1, V_2) = empty
+    //  s2: Base = { ... }, Object (V_1, V_2) = empty
+    //  s1 meet s2 :
+    //    Base = Base^s1 meet Base^s2, Object (V_1, V_2) = empty
+
+    // Example2:
+    //  s1: Base = { ... }, Object (V_1, V_2) = { V_1 <= V_2, V_2 <= 5 }
+    //  s2: Base = { ... }, Object (V_1, V_2) = empty
+    //  s1 meet s2 :
+    //   Base = Base^s1 meet Base^s2,
+    //   Object (V_1, V_2) = { V_1 <= V_2, V_2 <= 5 }
 
     // 1. meet / narrowing the parts of each state that do not require common
     // renaming
@@ -259,6 +418,26 @@ private:
     // even if it can performed without such assumption.
     odi_map_t out_odi_map(is_meet ? left.m_odi_map & right.m_odi_map
                                   : left.m_odi_map && right.m_odi_map);
+
+    // Handle case 3
+    for (auto it = left.m_obj_info_env.begin(); it != left.m_obj_info_env.end();
+         it++) {
+      obj_id_t rep = it->first;
+      const small_range &left_num_refs = it->second.refcount_val();
+      const small_range &right_num_refs =
+          right.m_obj_info_env.at(rep).refcount_val();
+      if (left_num_refs.is_one() &&
+          right_num_refs == small_range::oneOrMore()) {
+        meet_non_singleton_with_singleton(rep, out_base_dom, right.m_odi_map);
+        field_abstract_domain_t out_obj_dom; // top
+        out_odi_map.set(rep, out_obj_dom);
+      } else if (right_num_refs.is_one() &&
+                 left_num_refs == small_range::oneOrMore()) {
+        meet_non_singleton_with_singleton(rep, out_base_dom, left.m_odi_map);
+        field_abstract_domain_t out_obj_dom; // top
+        out_odi_map.set(rep, out_obj_dom);
+      }
+    }
 
     // m_flds_id_map is fixed after intrinsic calls. No need to update
     assert(left.m_flds_id_map == right.m_flds_id_map);
@@ -365,6 +544,13 @@ private:
     }
   }
 
+  static void ERROR_IF_DOM_TYPE_NOT_SAME() {
+    // FIXME: the current solution does not support different dom operations
+    static_assert(
+        std::is_same<base_abstract_domain_t, field_abstract_domain_t>::value,
+        "base_abstract_domain_t and field_abstract_domain_t must be the same");
+  }
+
   boost::optional<obj_id_t> get_obj_id(variable_t rgn) {
     if (!m_flds_id_map) {
       return boost::none;
@@ -423,6 +609,64 @@ private:
         }
         o << "\n";
       }
+    }
+  }
+
+  void move_singleton_to_odi_map(variable_t rep) {
+    variable_vector_t flds_vec;
+    get_obj_flds(rep, flds_vec);
+
+    base_abstract_domain_t tmp_base(m_base_dom);
+    tmp_base.project(flds_vec);
+
+    // Be careful of the following operation if type of base dom and object dom
+    // are different
+    ERROR_IF_DOM_TYPE_NOT_SAME();
+
+    field_abstract_domain_t res_obj_dom;
+    const field_abstract_domain_t *obj_dom_ref = m_odi_map.find(rep);
+    // In this case, the odi map must not exist that object domain
+    assert(!obj_dom_ref);
+    res_obj_dom = tmp_base;
+
+    m_odi_map.set(rep, res_obj_dom);
+    m_base_dom.forget(flds_vec);
+  }
+
+  void join_singleton_with_non_singleton(variable_t rep,
+                                         const base_abstract_domain_t &base_dom,
+                                         odi_map_t &odi_map) const {
+    variable_vector_t flds_vec;
+    get_obj_flds(rep, flds_vec);
+
+    base_abstract_domain_t tmp_base(base_dom);
+    tmp_base.project(flds_vec);
+
+    // Be careful of the following operation if type of base dom and object dom
+    // are different
+    ERROR_IF_DOM_TYPE_NOT_SAME();
+
+    field_abstract_domain_t res_obj_dom;
+    const field_abstract_domain_t *obj_dom_ref = odi_map.find(rep);
+    if (obj_dom_ref) {
+      res_obj_dom = tmp_base | *obj_dom_ref;
+    }
+
+    odi_map.set(rep, res_obj_dom);
+  }
+
+  void meet_non_singleton_with_singleton(variable_t rep,
+                                         base_abstract_domain_t &base_dom,
+                                         const odi_map_t &odi_map) const {
+
+    // Be careful of the following operation if type of base dom and object dom
+    // are different
+    ERROR_IF_DOM_TYPE_NOT_SAME();
+
+    const field_abstract_domain_t *obj_dom_ref = odi_map.find(rep);
+
+    if (obj_dom_ref) {
+      base_dom = base_dom & *obj_dom_ref;
     }
   }
 
@@ -716,8 +960,16 @@ public:
       // retrieve an abstract object info
       auto old_obj_info = m_obj_info_env.at(*id_opt);
 
-      // TODO: need to check number of references for an abstract object
-      // if we consider singleton object in the future
+      const small_range &num_refs = old_obj_info.refcount_val();
+
+      // Check number of references for an abstract object
+      if (num_refs.is_one()) {
+        // if the abstract object is a singleton object,
+        // now the number of references is increasing,
+        // need to move fields' properties into odi map
+        const field_abstract_domain_t *obj_dom_ref = m_odi_map.find(*id_opt);
+        move_singleton_to_odi_map(*id_opt);
+      }
 
       m_obj_info_env.set(*id_opt,
                          region_domain_impl::region_info(
@@ -747,11 +999,12 @@ public:
     //  E.g. if region represents integer, the register must be an integer type
     //  2. The reference ref is not evaluated as null pointer.
     //  3. The object domain of the abstract object is either:
-    //     object domain is Top (i.e. the object domain is not found in odi map)
-    //  or object domain exists
-    //  3.1 if object domain is Top, the overapproximate res value as top
-    //  3.2 if object domain exists, extract interval for rgn in object domain
-    //    assign res := interval into base domain
+    //  3.1 The number of reference = 1: singleton object remained in base dom
+    //        Perform assignment on base dom for res := rgn
+    //  or the number of reference > 1:
+    //  3.2 if object domain is Top, the overapproximate res value as top
+    //  3.3 if object domain exists, extract interval for rgn in object domain
+    //    assign the interval into base domain
     //
     //  post condition: the odi map not changed, the base domain is updated
 
@@ -803,18 +1056,23 @@ public:
       // So zero case should not exist
       assert(!num_refs.is_zero());
 
-      // read from odi map
-      const field_abstract_domain_t *obj_dom_ref = m_odi_map.find(*id_opt);
-      if (!obj_dom_ref) {  // not found in odi map, means object domain is top
-        m_base_dom -= res; // forget res means res == top
+      if (num_refs.is_one()) { // singleton object
+        m_base_dom.assign(res, rgn);
         // the requirment 3.1 is satisfied
-      } else {
-        field_abstract_domain_t *obj_dom_ref_no_const =
-            const_cast<field_abstract_domain_t *>(obj_dom_ref);
-        interval_t ival = obj_dom_ref_no_const->operator[](rgn);
-        object_domain_impl::assign_interval(m_base_dom, res,
-                                            ival); // res := ival
-        // the requirment 3.2 is satisfied
+      } else { // num_refs > 1, use odi map
+        // read from odi map
+        const field_abstract_domain_t *obj_dom_ref = m_odi_map.find(*id_opt);
+        if (!obj_dom_ref) {  // not found in odi map, means object domain is top
+          m_base_dom -= res; // forget res means res == top
+          // the requirment 3.2 is satisfied
+        } else {
+          field_abstract_domain_t *obj_dom_ref_no_const =
+              const_cast<field_abstract_domain_t *>(obj_dom_ref);
+          interval_t ival = obj_dom_ref_no_const->operator[](rgn);
+          object_domain_impl::assign_interval(m_base_dom, res,
+                                              ival); // res := ival
+          // the requirment 3.3 is satisfied
+        }
       }
 
       // post condition meets
@@ -851,7 +1109,10 @@ public:
     //     abstraction is an over-approximation here: the region is updated for
     //     new val as combined the old properties (through join op)
     //
-    // Meanwhile the object domain of the abstract object is either:
+    // For a. the property of this abstract object is in the base domain:
+    //    perform assign in base dom, except if val is not in base domain
+    //
+    // For b. the object domain of the abstract object is either:
     //     object domain is Top (i.e. the object domain is not found in odi map)
     //  or object domain exists
     //
@@ -892,30 +1153,32 @@ public:
       const small_range &num_refs = obj_info.refcount_val();
       assert(!num_refs.is_zero());
 
-      // read from odi map
-      auto obj_dom_ptr = m_odi_map.find(*id_opt);
-      field_abstract_domain_t res_obj_dom =
-          obj_dom_ptr ?
-                      // found in odi map, create new one by copying old one
-              field_abstract_domain_t((*obj_dom_ptr))
-                      :
-                      // not found, create a new one
-              field_abstract_domain_t();
+      if (num_refs.is_one()) { // singleton object, perform a strong update
+        if (val.is_constant()) {
+          m_base_dom.assign(rgn, val.get_constant());
+        } else {
+          m_base_dom.assign(rgn, val.get_variable());
+        }
+      } else { // num_refs > 1, use odi map
+        // read from odi map
+        auto obj_dom_ptr = m_odi_map.find(*id_opt);
+        // if not found, it means that domain is top, no need to update
 
-      if (val.is_constant()) {
-        res_obj_dom.assign(rgn, val.get_constant());
-      } else { // val is a variable
-        interval_t ival = m_base_dom[val.get_variable()];
-        object_domain_impl::assign_interval(res_obj_dom, rgn, ival);
+        if (obj_dom_ptr) {
+          field_abstract_domain_t res_obj_dom =
+              field_abstract_domain_t((*obj_dom_ptr));
+          if (val.is_constant()) {
+            res_obj_dom.assign(rgn, val.get_constant());
+          } else { // val is a variable
+            interval_t ival = m_base_dom[val.get_variable()];
+            object_domain_impl::assign_interval(res_obj_dom, rgn, ival);
+          }
+
+          res_obj_dom |= *obj_dom_ptr; // perform a weak update
+          m_odi_map.set(*id_opt, res_obj_dom);
+        }
       }
-      // At this point, we have done a strong update
 
-      if (obj_dom_ptr &&
-          !num_refs.is_one()) { // num_refs > 1, perform a weak update
-        res_obj_dom |= *obj_dom_ptr;
-      }
-
-      m_odi_map.set(*id_opt, res_obj_dom);
       // post condition meets
     }
 
@@ -1280,7 +1543,8 @@ public:
     } else if (is_top()) {
       return linear_constraint_t::get_true();
     } else {
-      linear_constraint_system_t out_csts = m_base_dom.to_linear_constraint_system();
+      linear_constraint_system_t out_csts =
+          m_base_dom.to_linear_constraint_system();
       return out_csts;
     }
   }
