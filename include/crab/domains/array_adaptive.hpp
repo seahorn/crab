@@ -345,22 +345,24 @@ private:
   class join_op : public binary_op_t {
     // apply is called when two bindings (one each from a
     // different map) have the same key(i.e., offset).
-    std::pair<bool, boost::optional<cell_set_t>> apply(const cell_set_t &x,
-                                                       const cell_set_t &y) {
+    std::pair<bool, boost::optional<cell_set_t>> apply(const offset_t &,
+						       const cell_set_t &x,
+                                                       const cell_set_t &y) override {
       return {false, cell_set_impl::set_union(x, y)};
     }
     // if one map does not have a key in the other map we add it.
-    bool default_is_absorbing() { return false; }
+    bool default_is_absorbing() override { return false; }
   };
 
   class meet_op : public binary_op_t {
-    std::pair<bool, boost::optional<cell_set_t>> apply(const cell_set_t &x,
-                                                       const cell_set_t &y) {
+    std::pair<bool, boost::optional<cell_set_t>> apply(const offset_t &,
+						       const cell_set_t &x,
+                                                       const cell_set_t &y) override {
       return {false, cell_set_impl::set_union(x, y)};
     }
     // if one map does not have a key in the other map we ignore
     // it.
-    bool default_is_absorbing() { return true; }
+    bool default_is_absorbing() override { return true; }
   };
 
   class domain_po : public partial_order_t {
@@ -943,7 +945,7 @@ private:
   class array_state_map_t {
   private:
     using patricia_tree_t = ikos::patricia_tree<variable_t, array_state>;
-    using key_binary_op_t = typename patricia_tree_t::key_binary_op_t;
+    using binary_op_t = typename patricia_tree_t::binary_op_t;
 
   public:
     using iterator = typename patricia_tree_t::iterator;
@@ -951,7 +953,7 @@ private:
   private:
     patricia_tree_t m_tree;
 
-    class join_op : public key_binary_op_t {
+    class join_op : public binary_op_t {
       cell_varmap_t &m_cvm_left;
       smashed_varmap_t &m_svm_left;
       base_domain_t &m_dom_left;
@@ -968,16 +970,16 @@ private:
             m_dom_right(dom_right) {}
 
       std::pair<bool, boost::optional<array_state>>
-      apply(const variable_t &k, const array_state &x, const array_state &y) {
+      apply(const variable_t &k, const array_state &x, const array_state &y) override {
         array_state z = x.join(k, y, m_cvm_left, m_svm_left, m_dom_left,
                                m_cvm_right, m_svm_right, m_dom_right);
         return {false, boost::optional<array_state>(z)};
       }
 
-      bool default_is_absorbing() { return true; }
+      bool default_is_absorbing() override { return true; }
     }; // class join_op
 
-    class meet_op : public key_binary_op_t {
+    class meet_op : public binary_op_t {
       cell_varmap_t &m_cvm_left;
       smashed_varmap_t &m_svm_left;
       base_domain_t &m_dom_left;
@@ -994,15 +996,15 @@ private:
             m_dom_right(dom_right) {}
 
       std::pair<bool, boost::optional<array_state>>
-      apply(const variable_t &k, const array_state &x, const array_state &y) {
+      apply(const variable_t &k, const array_state &x, const array_state &y) override {
         array_state z = x.meet(k, y, m_cvm_left, m_svm_left, m_dom_left,
                                m_cvm_right, m_svm_right, m_dom_right);
         return {false, boost::optional<array_state>(z)};
       }
-      bool default_is_absorbing() { return false; }
+      bool default_is_absorbing() override { return false; }
     }; // class meet_op
 
-    patricia_tree_t apply_operation(key_binary_op_t &o, patricia_tree_t t1,
+    patricia_tree_t apply_operation(binary_op_t &o, patricia_tree_t t1,
                                     const patricia_tree_t &t2) const {
       bool res = t1.merge_with(t2, o);
       if (res) {

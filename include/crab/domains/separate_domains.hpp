@@ -59,11 +59,11 @@ class separate_domain {
 
 private:
   using patricia_tree_t = patricia_tree<Key, Value, ValueEqual>;
-  using unary_op_t = typename patricia_tree_t::unary_op_t;
   using binary_op_t = typename patricia_tree_t::binary_op_t;
   using partial_order_t = typename patricia_tree_t::partial_order_t;
 
 public:
+  using unary_op_t = typename patricia_tree_t::unary_op_t;  
   using separate_domain_t = separate_domain<Key, Value, ValueEqual>;
   using iterator = typename patricia_tree_t::iterator;
   using key_type = Key;
@@ -73,9 +73,9 @@ private:
   bool _is_bottom;
   patricia_tree_t _tree;
 
-public:
   class join_op : public binary_op_t {
-    virtual std::pair<bool, boost::optional<Value>> apply(const Value &x, const Value &y) override {
+    virtual std::pair<bool, boost::optional<Value>>
+    apply(const Key &/*key*/, const Value &x, const Value &y) override {
       Value z = x.operator|(y);
       if (z.is_top()) {
         return {false, boost::optional<Value>()};
@@ -90,7 +90,8 @@ public:
   }; // class join_op
 
   class widening_op : public binary_op_t {
-    virtual std::pair<bool, boost::optional<Value>> apply(const Value &x, const Value &y) override {
+    virtual std::pair<bool, boost::optional<Value>>
+    apply(const Key &/*key*/, const Value &x, const Value &y) override {
       Value z = x.operator||(y);
       if (z.is_top()) {
         return {false, boost::optional<Value>()};
@@ -108,11 +109,11 @@ public:
   template <typename Thresholds>
   class widening_thresholds_op : public binary_op_t {
     const Thresholds &m_ts;
-
   public:
     widening_thresholds_op(const Thresholds &ts) : m_ts(ts) {}
 
-    virtual std::pair<bool, boost::optional<Value>> apply(const Value &x, const Value &y) override {
+    virtual std::pair<bool, boost::optional<Value>>
+    apply(const Key &/*key*/, const Value &x, const Value &y) override {
       Value z = x.widening_thresholds(y, m_ts);
       if (z.is_top()) {
         return {false, boost::optional<Value>()};
@@ -128,7 +129,8 @@ public:
   }; // class widening_thresholds_op
 
   class meet_op : public binary_op_t {
-    virtual std::pair<bool, boost::optional<Value>> apply(const Value &x, const Value &y) override {
+    virtual std::pair<bool, boost::optional<Value>>
+    apply(const Key &/*key*/, const Value &x, const Value &y) override {
       Value z = x.operator&(y);
       if (z.is_bottom()) {
         return {true, boost::optional<Value>()};
@@ -144,7 +146,8 @@ public:
   }; // class meet_op
 
   class narrowing_op : public binary_op_t {
-    virtual std::pair<bool, boost::optional<Value>> apply(const Value &x, const Value &y) override {
+    virtual std::pair<bool, boost::optional<Value>>
+    apply(const Key &/*key*/, const Value &x, const Value &y) override {
       Value z = x.operator&&(y);
       if (z.is_bottom()) {
         return {true, boost::optional<Value>()};
@@ -170,12 +173,6 @@ public:
 
   }; // class domain_po
 
-public:
-  static separate_domain_t top() { return separate_domain_t(); }
-
-  static separate_domain_t bottom() { return separate_domain_t(false); }
-
-private:
   static patricia_tree_t apply_operation(binary_op_t &o, patricia_tree_t t1,
                                          const patricia_tree_t &t2,
                                          bool &is_bottom) {
@@ -194,6 +191,9 @@ public:
   separate_domain_t &operator=(const separate_domain_t &o) = default;
   separate_domain_t &operator=(separate_domain_t &&o) = default;
 
+  static separate_domain_t top() { return separate_domain_t(); }
+  static separate_domain_t bottom() { return separate_domain_t(false); }
+  
   iterator begin() const {
     if (is_bottom()) {
       CRAB_ERROR("Separate domain: trying to invoke iterator on bottom");
@@ -515,8 +515,8 @@ private:
   }
   /* begin patricia_tree API */
   class join_op : public binary_op_t {
-    std::pair<bool, boost::optional<value_type>> apply(const value_type &x,
-						       const value_type &y) override {
+    std::pair<bool, boost::optional<value_type>>
+    apply(const key_type &/*key*/, const value_type &x, const value_type &y) override {
       value_type z = x.operator|(y);
       if (z.is_top()) {
 	// special encoding for top: the patricia tree will not keep
@@ -530,8 +530,8 @@ private:
   }; // class join_op
 
   class meet_op : public binary_op_t {
-    std::pair<bool, boost::optional<value_type>> apply(const value_type &x,
-						       const value_type &y) override {
+    std::pair<bool, boost::optional<value_type>>
+    apply(const key_type &/*key*/, const value_type &x, const value_type &y) override {
       value_type z = x.operator&(y);
       // Returning this pair means that if z is bottom do not treat it
       // special and just update the patricia tree with z.
