@@ -108,6 +108,11 @@ private:
       typename field_abstract_domain_t::linear_constraint_system_t;
   using flds_dom_varname_allocator_t = typename Params::varname_allocator_t;
 
+  // FIXME: the current solution does not support different dom operations
+  static_assert(
+      std::is_same<base_abstract_domain_t, field_abstract_domain_t>::value,
+      "base_abstract_domain_t and field_abstract_domain_t must be the same");
+
   /**------------------ Begin type definitions ------------------**/
 
   // Object identifier / object id
@@ -266,14 +271,19 @@ private:
     for (auto it = m_obj_info_env.begin(); it != m_obj_info_env.end(); it++) {
       obj_id_t rep = it->first;
       const small_range &left_num_refs = it->second.refcount_val();
-      const small_range &right_num_refs =
-          right.m_obj_info_env.at(rep).refcount_val();
+      auto right_obj_info_ref = right.m_obj_info_env.find(rep);
+      if (!right_obj_info_ref) {
+        continue;
+      }
+      const small_range &right_num_refs = (*right_obj_info_ref).refcount_val();
       if (left_num_refs.is_one() &&
           right_num_refs == small_range::oneOrMore()) {
-        join_singleton_with_non_singleton(rep, m_base_dom, out_odi_map);
+        join_or_widen_singleton_with_non_singleton(rep, m_base_dom, out_odi_map,
+                                                   true /* is_join*/);
       } else if (right_num_refs.is_one() &&
                  left_num_refs == small_range::oneOrMore()) {
-        join_singleton_with_non_singleton(rep, right.m_base_dom, out_odi_map);
+        join_or_widen_singleton_with_non_singleton(
+            rep, right.m_base_dom, out_odi_map, true /* is_join*/);
       }
     }
 
@@ -315,14 +325,19 @@ private:
          it++) {
       obj_id_t rep = it->first;
       const small_range &left_num_refs = it->second.refcount_val();
-      const small_range &right_num_refs =
-          right.m_obj_info_env.at(rep).refcount_val();
+      auto right_obj_info_ref = right.m_obj_info_env.find(rep);
+      if (!right_obj_info_ref) {
+        continue;
+      }
+      const small_range &right_num_refs = (*right_obj_info_ref).refcount_val();
       if (left_num_refs.is_one() &&
           right_num_refs == small_range::oneOrMore()) {
-        join_singleton_with_non_singleton(rep, left.m_base_dom, out_odi_map);
+        join_or_widen_singleton_with_non_singleton(rep, left.m_base_dom,
+                                                   out_odi_map, is_join);
       } else if (right_num_refs.is_one() &&
                  left_num_refs == small_range::oneOrMore()) {
-        join_singleton_with_non_singleton(rep, right.m_base_dom, out_odi_map);
+        join_or_widen_singleton_with_non_singleton(rep, right.m_base_dom,
+                                                   out_odi_map, is_join);
       }
     }
 
@@ -424,18 +439,23 @@ private:
          it++) {
       obj_id_t rep = it->first;
       const small_range &left_num_refs = it->second.refcount_val();
-      const small_range &right_num_refs =
-          right.m_obj_info_env.at(rep).refcount_val();
+      auto right_obj_info_ref = right.m_obj_info_env.find(rep);
+      if (!right_obj_info_ref) {
+        continue;
+      }
+      const small_range &right_num_refs = (*right_obj_info_ref).refcount_val();
       if (left_num_refs.is_one() &&
           right_num_refs == small_range::oneOrMore()) {
-        meet_non_singleton_with_singleton(rep, out_base_dom, right.m_odi_map);
-        field_abstract_domain_t out_obj_dom; // top
-        out_odi_map.set(rep, out_obj_dom);
+        meet_or_narrow_non_singleton_with_singleton(rep, out_base_dom,
+                                                    right.m_odi_map, is_meet);
+        out_odi_map -= rep; // remove non singleton in odi map since meet in odi
+                            // map will keep that
       } else if (right_num_refs.is_one() &&
                  left_num_refs == small_range::oneOrMore()) {
-        meet_non_singleton_with_singleton(rep, out_base_dom, left.m_odi_map);
-        field_abstract_domain_t out_obj_dom; // top
-        out_odi_map.set(rep, out_obj_dom);
+        meet_or_narrow_non_singleton_with_singleton(rep, out_base_dom,
+                                                    left.m_odi_map, is_meet);
+        out_odi_map -= rep; // remove non singleton in odi map since meet in odi
+                            // map will keep that
       }
     }
 
@@ -544,13 +564,6 @@ private:
     }
   }
 
-  static void ERROR_IF_DOM_TYPE_NOT_SAME() {
-    // FIXME: the current solution does not support different dom operations
-    static_assert(
-        std::is_same<base_abstract_domain_t, field_abstract_domain_t>::value,
-        "base_abstract_domain_t and field_abstract_domain_t must be the same");
-  }
-
   boost::optional<obj_id_t> get_obj_id(variable_t rgn) {
     if (!m_flds_id_map) {
       return boost::none;
@@ -619,54 +632,51 @@ private:
     base_abstract_domain_t tmp_base(m_base_dom);
     tmp_base.project(flds_vec);
 
-    // Be careful of the following operation if type of base dom and object dom
-    // are different
-    ERROR_IF_DOM_TYPE_NOT_SAME();
-
     field_abstract_domain_t res_obj_dom;
     const field_abstract_domain_t *obj_dom_ref = m_odi_map.find(rep);
     // In this case, the odi map must not exist that object domain
     assert(!obj_dom_ref);
+
+    // Be careful of the following operation if type of base dom and object dom
+    // are different
     res_obj_dom = tmp_base;
 
     m_odi_map.set(rep, res_obj_dom);
     m_base_dom.forget(flds_vec);
   }
 
-  void join_singleton_with_non_singleton(variable_t rep,
-                                         const base_abstract_domain_t &base_dom,
-                                         odi_map_t &odi_map) const {
+  void join_or_widen_singleton_with_non_singleton(
+                        variable_t rep, const base_abstract_domain_t &base_dom,
+                        odi_map_t &odi_map, const bool is_join) const {
     variable_vector_t flds_vec;
     get_obj_flds(rep, flds_vec);
 
     base_abstract_domain_t tmp_base(base_dom);
     tmp_base.project(flds_vec);
 
-    // Be careful of the following operation if type of base dom and object dom
-    // are different
-    ERROR_IF_DOM_TYPE_NOT_SAME();
-
     field_abstract_domain_t res_obj_dom;
     const field_abstract_domain_t *obj_dom_ref = odi_map.find(rep);
+
+    // Be careful of the following operation if type of base dom and object dom
+    // are different
     if (obj_dom_ref) {
-      res_obj_dom = tmp_base | *obj_dom_ref;
+      res_obj_dom =
+          is_join ? tmp_base | *obj_dom_ref : tmp_base || *obj_dom_ref;
     }
 
     odi_map.set(rep, res_obj_dom);
   }
 
-  void meet_non_singleton_with_singleton(variable_t rep,
-                                         base_abstract_domain_t &base_dom,
-                                         const odi_map_t &odi_map) const {
-
-    // Be careful of the following operation if type of base dom and object dom
-    // are different
-    ERROR_IF_DOM_TYPE_NOT_SAME();
+  void meet_or_narrow_non_singleton_with_singleton(
+                        variable_t rep, base_abstract_domain_t &base_dom,
+                        const odi_map_t &odi_map, const bool is_meet) const {
 
     const field_abstract_domain_t *obj_dom_ref = odi_map.find(rep);
 
+    // Be careful of the following operation if type of base dom and object dom
+    // are different
     if (obj_dom_ref) {
-      base_dom = base_dom & *obj_dom_ref;
+      base_dom = is_meet ? base_dom & *obj_dom_ref : base_dom && *obj_dom_ref;
     }
   }
 
@@ -1047,9 +1057,10 @@ public:
       // region belongs to an abstract object
 
       // retrieve an abstract object info
-      auto obj_info = m_obj_info_env.at(*id_opt);
+      auto obj_info_ref = m_obj_info_env.find(*id_opt);
+      assert(obj_info_ref); // The object info must exsits
 
-      const small_range &num_refs = obj_info.refcount_val();
+      const small_range &num_refs = (*obj_info_ref).refcount_val();
 
       // In crab IR, the number of references cannot be zero
       //  if ref_load access a not null reference.
@@ -1066,9 +1077,7 @@ public:
           m_base_dom -= res; // forget res means res == top
           // the requirment 3.2 is satisfied
         } else {
-          field_abstract_domain_t *obj_dom_ref_no_const =
-              const_cast<field_abstract_domain_t *>(obj_dom_ref);
-          interval_t ival = obj_dom_ref_no_const->operator[](rgn);
+          interval_t ival = (*obj_dom_ref).at(rgn);
           object_domain_impl::assign_interval(m_base_dom, res,
                                               ival); // res := ival
           // the requirment 3.3 is satisfied
@@ -1148,9 +1157,10 @@ public:
       // region belongs to an abstract object
 
       // retrieve an abstract object info
-      auto obj_info = m_obj_info_env.at(*id_opt);
+      auto(*obj_info_ref) = m_obj_info_env.find(*id_opt);
+      assert((*obj_info_ref)); // The object info must exsits
 
-      const small_range &num_refs = obj_info.refcount_val();
+      const small_range &num_refs = (*obj_info_ref).refcount_val();
       assert(!num_refs.is_zero());
 
       if (num_refs.is_one()) { // singleton object, perform a strong update
@@ -1605,6 +1615,16 @@ public:
     }
   }
 
+  interval_t at(const variable_t &v) const override {
+    if (is_bottom()) {
+      return interval_t::bottom();
+    } else if (is_top()) {
+      return interval_t::top();
+    } else {
+      return m_base_dom.at(v);
+    }
+  }
+
   /* begin intrinsics operations */
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
@@ -1650,9 +1670,6 @@ public:
       }
 
       // initialize information for an abstract object
-      // retrieve an abstract object info
-      auto obj_info = m_obj_info_env.at(obj_id);
-      // update m_obj_info_env
       m_obj_info_env.set(obj_id, region_domain_impl::region_info(
                                      // No references owned by the object
                                      small_range::zero(),
