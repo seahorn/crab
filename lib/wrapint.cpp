@@ -6,6 +6,7 @@
 #include <climits>
 #include <sstream>
 #include <string>
+#include <functional>
 
 namespace crab {
 
@@ -184,6 +185,18 @@ ikos::z_number wrapint::get_signed_bignum() const {
 
 bool wrapint::is_zero() const { return _n == 0; }
 
+std::size_t wrapint::hash() const {
+  auto combine = [](size_t seed, size_t hash_val) -> size_t {
+    // Similar to boost::hash_combine
+    seed ^= hash_val + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    return seed;
+  };
+  size_t x = std::hash<uint64_t>{}(_n);
+  size_t y = std::hash<uint64_t>{}(_width);
+  size_t z = std::hash<uint64_t>{}(_mod);
+  return combine(combine(x, y), z);
+}
+  
 wrapint wrapint::operator+(wrapint x) const {
   sanity_check_bitwidths(x);
 
