@@ -646,8 +646,8 @@ private:
   }
 
   void join_or_widen_singleton_with_non_singleton(
-                        variable_t rep, const base_abstract_domain_t &base_dom,
-                        odi_map_t &odi_map, const bool is_join) const {
+      variable_t rep, const base_abstract_domain_t &base_dom,
+      odi_map_t &odi_map, const bool is_join) const {
     variable_vector_t flds_vec;
     get_obj_flds(rep, flds_vec);
 
@@ -668,8 +668,8 @@ private:
   }
 
   void meet_or_narrow_non_singleton_with_singleton(
-                        variable_t rep, base_abstract_domain_t &base_dom,
-                        const odi_map_t &odi_map, const bool is_meet) const {
+      variable_t rep, base_abstract_domain_t &base_dom,
+      const odi_map_t &odi_map, const bool is_meet) const {
 
     const field_abstract_domain_t *obj_dom_ref = odi_map.find(rep);
 
@@ -891,41 +891,8 @@ public:
     return res;
   }
 
-  // x := e operates on register dom
-  void assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
-
-    if (!is_bottom()) {
-      m_base_dom.assign(x, e);
-    }
-  }
-
-  // add all constraints \in csts
-  void operator+=(const linear_constraint_system_t &csts) override {
-    crab::CrabStats::count(domain_name() + ".count.add_constraints");
-    crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
-
-    if (!is_bottom()) {
-      m_base_dom += csts;
-    }
-  }
-
-  // lhs := rhs
-  void assign_bool_cst(const variable_t &lhs,
-                       const linear_constraint_t &rhs) override {
-    crab::CrabStats::count(domain_name() + ".count.assign_bool_cst");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst");
-
-    if (!is_bottom()) {
-      m_base_dom.assign_bool_cst(lhs, rhs);
-    }
-  }
-
-  // if region variable is not in odi_map_t, create a new odi for it. That
-  // means the region variable belongs to an object that only contains a single
-  // region.
   /***************** Regions and reference operations *****************/
+
   // Initialize a region
   void region_init(const variable_t &rgn) override {
     crab::CrabStats::count(domain_name() + ".count.region_init");
@@ -1229,6 +1196,83 @@ public:
                            << offset << ")=" << *this << "\n";);
   }
 
+  // Add constraints between references
+  void ref_assume(const reference_constraint_t &ref_cst) override {
+    crab::CrabStats::count(domain_name() + ".count.ref_assume");
+    crab::ScopedCrabStats __st__(domain_name() + ".ref_assume");
+
+    if (!is_bottom()) {
+      if (ref_cst.is_tautology()) {
+        return;
+      }
+      if (ref_cst.is_contradiction()) {
+        set_to_bottom();
+        return;
+      }
+
+      auto lin_cst = convert_ref_cst_to_linear_cst(ref_cst);
+      m_base_dom += lin_cst;
+      m_is_bottom = m_base_dom.is_bottom();
+    }
+
+    CRAB_LOG("object",
+             crab::outs() << "ref_assume(" << ref_cst << ")" << *this << "\n";);
+  }
+
+  // Convert a reference to an integer variable
+  void ref_to_int(const variable_t &rgn, const variable_t &ref_var,
+                  const variable_t &int_var) override {
+
+    crab::CrabStats::count(domain_name() + ".count.ref_to_int");
+    crab::ScopedCrabStats __st__(domain_name() + ".ref_to_int");
+
+    ERROR_IF_NOT_REF(ref_var, __LINE__);
+    ERROR_IF_NOT_INT(int_var, __LINE__);
+
+    if (!is_bottom()) {
+      // We represent reference as numerical in domain
+      m_base_dom.assign(int_var, ref_var);
+    }
+  }
+
+  // Convert an integer variable to a reference
+  void int_to_ref(const variable_t &int_var, const variable_t &rgn,
+                  const variable_t &ref_var) override {
+    crab::CrabStats::count(domain_name() + ".count.int_to_ref");
+    crab::ScopedCrabStats __st__(domain_name() + ".int_to_ref");
+
+    ERROR_IF_NOT_REF(ref_var, __LINE__);
+    ERROR_IF_NOT_INT(int_var, __LINE__);
+
+    if (!is_bottom()) {
+      m_base_dom.assign(ref_var, int_var);
+    }
+  }
+
+  // Make a copy of a region
+  void region_copy(const variable_t &lhs_reg,
+                   const variable_t &rhs_reg) override {}
+  // Cast between regions of different types
+  void region_cast(const variable_t &src_reg,
+                   const variable_t &dst_reg) override {}
+  // Remove a reference ref within region reg
+  void ref_free(const variable_t &reg, const variable_t &ref) override {}
+  // Treat memory pointed by ref  as an array and perform an array load.
+  void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
+                           const variable_t &region,
+                           const linear_expression_t &index,
+                           const linear_expression_t &elem_size) override {}
+  // Treat region as an array and perform an array store.
+  void ref_store_to_array(const variable_t &ref, const variable_t &region,
+                          const linear_expression_t &index,
+                          const linear_expression_t &elem_size,
+                          const linear_expression_t &val) override {}
+
+  // This default implementation is expensive because it will call the
+  // join.
+  DEFAULT_SELECT_REF(object_domain_t)
+
+  /**************************** Numerical operations *************************/
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
 
@@ -1298,7 +1342,38 @@ public:
     }
   }
 
+  // x := e operates on register dom
+  void assign(const variable_t &x, const linear_expression_t &e) override {
+    crab::CrabStats::count(domain_name() + ".count.assign");
+    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+
+    if (!is_bottom()) {
+      m_base_dom.assign(x, e);
+    }
+  }
+
+  // add all constraints \in csts
+  void operator+=(const linear_constraint_system_t &csts) override {
+    crab::CrabStats::count(domain_name() + ".count.add_constraints");
+    crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
+
+    if (!is_bottom()) {
+      m_base_dom += csts;
+    }
+  }
+
   /********************** Boolean operations **********************/
+
+  // lhs := rhs
+  void assign_bool_cst(const variable_t &lhs,
+                       const linear_constraint_t &rhs) override {
+    crab::CrabStats::count(domain_name() + ".count.assign_bool_cst");
+    crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst");
+
+    if (!is_bottom()) {
+      m_base_dom.assign_bool_cst(lhs, rhs);
+    }
+  }
 
   // lhs := not(rhs) if is_not_rhs
   // lhs := rhs      otherwise
@@ -1358,119 +1433,10 @@ public:
     }
   }
 
-  // Add constraints between references
-  void ref_assume(const reference_constraint_t &ref_cst) override {
-    crab::CrabStats::count(domain_name() + ".count.ref_assume");
-    crab::ScopedCrabStats __st__(domain_name() + ".ref_assume");
-
-    if (!is_bottom()) {
-      if (ref_cst.is_tautology()) {
-        return;
-      }
-      if (ref_cst.is_contradiction()) {
-        set_to_bottom();
-        return;
-      }
-
-      auto lin_cst = convert_ref_cst_to_linear_cst(ref_cst);
-      m_base_dom += lin_cst;
-      m_is_bottom = m_base_dom.is_bottom();
-    }
-
-    CRAB_LOG("object",
-             crab::outs() << "ref_assume(" << ref_cst << ")" << *this << "\n";);
-  }
-
-  // Convert a reference to an integer variable
-  void ref_to_int(const variable_t &rgn, const variable_t &ref_var,
-                  const variable_t &int_var) override {
-
-    crab::CrabStats::count(domain_name() + ".count.ref_to_int");
-    crab::ScopedCrabStats __st__(domain_name() + ".ref_to_int");
-
-    ERROR_IF_NOT_REF(ref_var, __LINE__);
-    ERROR_IF_NOT_INT(int_var, __LINE__);
-
-    if (!is_bottom()) {
-      // We represent reference as numerical in domain
-      m_base_dom.assign(int_var, ref_var);
-    }
-  }
-
-  // Convert an integer variable to a reference
-  void int_to_ref(const variable_t &int_var, const variable_t &rgn,
-                  const variable_t &ref_var) override {
-    crab::CrabStats::count(domain_name() + ".count.int_to_ref");
-    crab::ScopedCrabStats __st__(domain_name() + ".int_to_ref");
-
-    ERROR_IF_NOT_REF(ref_var, __LINE__);
-    ERROR_IF_NOT_INT(int_var, __LINE__);
-
-    if (!is_bottom()) {
-      m_base_dom.assign(ref_var, int_var);
-    }
-  }
-
-  // This default implementation is expensive because it will call the
-  // join.
-  DEFAULT_SELECT_REF(object_domain_t)
+  /********************** Array operations **********************/
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(object_domain_t)
 
   // FIXME: The followings are UNDEFINED METHODS
-  bool get_allocation_sites(const variable_t &ref,
-                            std::vector<allocation_site> &out) override {
-    return false;
-  }
-
-  bool get_tags(const variable_t &rgn, const variable_t &ref,
-                std::vector<uint64_t> &out) override {
-    return false;
-  }
-
-  /********************** Array operations **********************/
-  // make a fresh array with contents a[j] initialized to val such that
-  // j \in [lb_idx,ub_idx] and j % elem_size == val.
-  // elem_size is in bytes.
-  void array_init(const variable_t &a, const linear_expression_t &elem_size,
-                  const linear_expression_t &lb_idx,
-                  const linear_expression_t &ub_idx,
-                  const linear_expression_t &val) override {}
-  // lhs := a[i] where elem_size is in bytes
-  void array_load(const variable_t &lhs, const variable_t &a,
-                  const linear_expression_t &elem_size,
-                  const linear_expression_t &i) override {}
-  // a[i] := val where elem_size is in bytes
-  void array_store(const variable_t &a, const linear_expression_t &elem_size,
-                   const linear_expression_t &i, const linear_expression_t &val,
-                   bool is_strong_update) override {}
-  // forall i<=k<j and k % elem_size == 0 :: a[k] := val.
-  // elem_size is in bytes
-  void array_store_range(const variable_t &a,
-                         const linear_expression_t &elem_size,
-                         const linear_expression_t &i,
-                         const linear_expression_t &j,
-                         const linear_expression_t &val) override {}
-  // forall i :: a[i] := b[i]
-  void array_assign(const variable_t &a, const variable_t &b) override {}
-
-  /********************* Regions and reference operations *********************/
-  // Make a copy of a region
-  void region_copy(const variable_t &lhs_reg,
-                   const variable_t &rhs_reg) override {}
-  // Cast between regions of different types
-  void region_cast(const variable_t &src_reg,
-                   const variable_t &dst_reg) override {}
-  // Remove a reference ref within region reg
-  void ref_free(const variable_t &reg, const variable_t &ref) override {}
-  // Treat memory pointed by ref  as an array and perform an array load.
-  void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                           const variable_t &region,
-                           const linear_expression_t &index,
-                           const linear_expression_t &elem_size) override {}
-  // Treat region as an array and perform an array store.
-  void ref_store_to_array(const variable_t &ref, const variable_t &region,
-                          const linear_expression_t &index,
-                          const linear_expression_t &elem_size,
-                          const linear_expression_t &val) override {}
 
   /********************** Backward numerical operations **********************/
   // x = y op z
@@ -1506,31 +1472,6 @@ public:
                                   const variable_t &y, const variable_t &z,
                                   const object_domain_t &invariant) override {}
 
-  /********************** Backward array operations **********************/
-  void backward_array_init(const variable_t &a,
-                           const linear_expression_t &elem_size,
-                           const linear_expression_t &lb_idx,
-                           const linear_expression_t &ub_idx,
-                           const linear_expression_t &val,
-                           const object_domain_t &invariant) override {}
-  void backward_array_load(const variable_t &lhs, const variable_t &a,
-                           const linear_expression_t &elem_size,
-                           const linear_expression_t &i,
-                           const object_domain_t &invariant) override {}
-  void backward_array_store(const variable_t &a,
-                            const linear_expression_t &elem_size,
-                            const linear_expression_t &i,
-                            const linear_expression_t &v, bool is_strong_update,
-                            const object_domain_t &invariant) override {}
-  void backward_array_store_range(const variable_t &a,
-                                  const linear_expression_t &elem_size,
-                                  const linear_expression_t &i,
-                                  const linear_expression_t &j,
-                                  const linear_expression_t &v,
-                                  const object_domain_t &invariant) override {}
-  void backward_array_assign(const variable_t &a, const variable_t &b,
-                             const object_domain_t &invariant) override {}
-
   /********************** Miscellaneous operations **********************/
 
   // Normalize the abstract domain if such notion exists.
@@ -1547,24 +1488,26 @@ public:
                           const variable_vector_t &outputs,
                           const object_domain_t &invariant) override {}
 
-  linear_constraint_system_t to_linear_constraint_system() const override {
-    if (is_bottom()) {
-      return linear_constraint_t::get_false();
-    } else if (is_top()) {
-      return linear_constraint_t::get_true();
-    } else {
-      linear_constraint_system_t out_csts =
-          m_base_dom.to_linear_constraint_system();
-      return out_csts;
-    }
-  }
-
   // Convert the abstract state into a disjunction of conjunction
   // of linear constraints.
   disjunctive_linear_constraint_system_t
   to_disjunctive_linear_constraint_system() const override {
     CRAB_ERROR(domain_name(), "::to_disjunctive_linear_constraint_system not "
                               "implemented");
+  }
+
+  bool get_allocation_sites(const variable_t &ref,
+                            std::vector<allocation_site> &out) override {
+
+    CRAB_ERROR(domain_name(), "::get_allocation_sites not implemented");
+    return false;
+  }
+
+  bool get_tags(const variable_t &rgn, const variable_t &ref,
+                std::vector<uint64_t> &out) override {
+
+    CRAB_ERROR(domain_name(), "::get_tags not implemented");
+    return false;
   }
 
   // FIXME: The above methods are UNDEFINED METHODS
@@ -1622,6 +1565,18 @@ public:
       return interval_t::top();
     } else {
       return m_base_dom.at(v);
+    }
+  }
+
+  linear_constraint_system_t to_linear_constraint_system() const override {
+    if (is_bottom()) {
+      return linear_constraint_t::get_false();
+    } else if (is_top()) {
+      return linear_constraint_t::get_true();
+    } else {
+      linear_constraint_system_t out_csts =
+          m_base_dom.to_linear_constraint_system();
+      return out_csts;
     }
   }
 
