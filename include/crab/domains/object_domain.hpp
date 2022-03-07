@@ -268,22 +268,23 @@ private:
     odi_map_t out_odi_map(m_odi_map | right.m_odi_map);
 
     // Handle case 3
-    for (auto it = m_obj_info_env.begin(); it != m_obj_info_env.end(); it++) {
-      obj_id_t rep = it->first;
-      const small_range &left_num_refs = it->second.refcount_val();
-      auto right_obj_info_ref = right.m_obj_info_env.find(rep);
-      if (!right_obj_info_ref) {
+    for (auto kv : m_obj_info_env) {
+      const obj_id_t &id = kv.first;
+      const small_range &l_num_refs = kv.second.refcount_val();
+      auto r_obj_info_ref = right.m_obj_info_env.find(id);
+      if (!r_obj_info_ref) {
         continue;
       }
-      const small_range &right_num_refs = (*right_obj_info_ref).refcount_val();
-      if (left_num_refs.is_one() &&
-          right_num_refs == small_range::oneOrMore()) {
-        join_or_widen_singleton_with_non_singleton(rep, m_base_dom, out_odi_map,
-                                                   true /* is_join*/);
-      } else if (right_num_refs.is_one() &&
-                 left_num_refs == small_range::oneOrMore()) {
+      const small_range &r_num_refs = (*r_obj_info_ref).refcount_val();
+      if (l_num_refs.is_one() && r_num_refs == small_range::oneOrMore()) {
+        // left state: singleton
+        // right state: non-singleton
         join_or_widen_singleton_with_non_singleton(
-            rep, right.m_base_dom, out_odi_map, true /* is_join*/);
+            id, *this, right, out_odi_map, true /* is_join*/);
+      } else if (r_num_refs.is_one() &&
+                 l_num_refs == small_range::oneOrMore()) {
+        join_or_widen_singleton_with_non_singleton(
+            id, right, *this, out_odi_map, true /* is_join*/);
       }
     }
 
@@ -321,23 +322,23 @@ private:
                                   : left.m_odi_map || right.m_odi_map);
 
     // Handle case 3, see comments on self_join method.
-    for (auto it = left.m_obj_info_env.begin(); it != left.m_obj_info_env.end();
-         it++) {
-      obj_id_t rep = it->first;
-      const small_range &left_num_refs = it->second.refcount_val();
-      auto right_obj_info_ref = right.m_obj_info_env.find(rep);
-      if (!right_obj_info_ref) {
+    for (auto kv : left.m_obj_info_env) {
+      const obj_id_t &id = kv.first;
+      const small_range &l_num_refs = kv.second.refcount_val();
+      auto r_obj_info_ref = right.m_obj_info_env.find(id);
+      if (!r_obj_info_ref) {
         continue;
       }
-      const small_range &right_num_refs = (*right_obj_info_ref).refcount_val();
-      if (left_num_refs.is_one() &&
-          right_num_refs == small_range::oneOrMore()) {
-        join_or_widen_singleton_with_non_singleton(rep, left.m_base_dom,
-                                                   out_odi_map, is_join);
-      } else if (right_num_refs.is_one() &&
-                 left_num_refs == small_range::oneOrMore()) {
-        join_or_widen_singleton_with_non_singleton(rep, right.m_base_dom,
-                                                   out_odi_map, is_join);
+      const small_range &r_num_refs = (*r_obj_info_ref).refcount_val();
+      if (l_num_refs.is_one() && r_num_refs == small_range::oneOrMore()) {
+        // left state: singleton
+        // right state: non-singleton
+        join_or_widen_singleton_with_non_singleton(id, left, right, out_odi_map,
+                                                   is_join);
+      } else if (r_num_refs.is_one() &&
+                 l_num_refs == small_range::oneOrMore()) {
+        join_or_widen_singleton_with_non_singleton(id, right, left, out_odi_map,
+                                                   is_join);
       }
     }
 
@@ -435,27 +436,27 @@ private:
                                   : left.m_odi_map && right.m_odi_map);
 
     // Handle case 3
-    for (auto it = left.m_obj_info_env.begin(); it != left.m_obj_info_env.end();
-         it++) {
-      obj_id_t rep = it->first;
-      const small_range &left_num_refs = it->second.refcount_val();
-      auto right_obj_info_ref = right.m_obj_info_env.find(rep);
-      if (!right_obj_info_ref) {
+    for (auto kv : left.m_obj_info_env) {
+      const obj_id_t &id = kv.first;
+      const small_range &l_num_refs = kv.second.refcount_val();
+      auto r_obj_info_ref = right.m_obj_info_env.find(id);
+      if (!r_obj_info_ref) {
         continue;
       }
-      const small_range &right_num_refs = (*right_obj_info_ref).refcount_val();
-      if (left_num_refs.is_one() &&
-          right_num_refs == small_range::oneOrMore()) {
-        meet_or_narrow_non_singleton_with_singleton(rep, out_base_dom,
+      const small_range &r_num_refs = (*r_obj_info_ref).refcount_val();
+      if (l_num_refs.is_one() && r_num_refs == small_range::oneOrMore()) {
+        // left state: singleton
+        // right state: non-singleton
+        meet_or_narrow_non_singleton_with_singleton(id, out_base_dom,
                                                     right.m_odi_map, is_meet);
-        out_odi_map -= rep; // remove non singleton in odi map since meet in odi
-                            // map will keep that
-      } else if (right_num_refs.is_one() &&
-                 left_num_refs == small_range::oneOrMore()) {
-        meet_or_narrow_non_singleton_with_singleton(rep, out_base_dom,
+        out_odi_map -= id; // remove non singleton in odi map since meet in odi
+                           // map will keep that
+      } else if (r_num_refs.is_one() &&
+                 l_num_refs == small_range::oneOrMore()) {
+        meet_or_narrow_non_singleton_with_singleton(id, out_base_dom,
                                                     left.m_odi_map, is_meet);
-        out_odi_map -= rep; // remove non singleton in odi map since meet in odi
-                            // map will keep that
+        out_odi_map -= id; // remove non singleton in odi map since meet in odi
+                           // map will keep that
       }
     }
 
@@ -625,53 +626,55 @@ private:
     }
   }
 
-  void move_singleton_to_odi_map(variable_t rep) {
+  void move_singleton_to_odi_map(const obj_id_t &id) {
     variable_vector_t flds_vec;
-    get_obj_flds(rep, flds_vec);
+    get_obj_flds(id, flds_vec);
 
-    base_abstract_domain_t tmp_base(m_base_dom);
-    tmp_base.project(flds_vec);
+    base_abstract_domain_t singleton_base(m_base_dom);
+    singleton_base.project(flds_vec);
 
     field_abstract_domain_t res_obj_dom;
-    const field_abstract_domain_t *obj_dom_ref = m_odi_map.find(rep);
+    const field_abstract_domain_t *obj_dom_ref = m_odi_map.find(id);
     // In this case, the odi map must not exist that object domain
     assert(!obj_dom_ref);
 
     // Be careful of the following operation if type of base dom and object dom
     // are different
-    res_obj_dom = tmp_base;
+    res_obj_dom = singleton_base;
 
-    m_odi_map.set(rep, res_obj_dom);
+    m_odi_map.set(id, res_obj_dom);
     m_base_dom.forget(flds_vec);
   }
 
   void join_or_widen_singleton_with_non_singleton(
-      variable_t rep, const base_abstract_domain_t &base_dom,
-      odi_map_t &odi_map, const bool is_join) const {
+      const obj_id_t &id, const object_domain_t &s_single,
+      const object_domain_t &s_non_single, odi_map_t &odi_map,
+      const bool is_join) const {
     variable_vector_t flds_vec;
-    get_obj_flds(rep, flds_vec);
+    s_single.get_obj_flds(id, flds_vec);
 
-    base_abstract_domain_t tmp_base(base_dom);
-    tmp_base.project(flds_vec);
+    base_abstract_domain_t singleton_base(s_single.m_base_dom);
+    singleton_base.project(flds_vec);
 
-    field_abstract_domain_t res_obj_dom;
-    const field_abstract_domain_t *obj_dom_ref = odi_map.find(rep);
+    field_abstract_domain_t res_obj_dom; // initial value is top
+    const field_abstract_domain_t *obj_dom_ref =
+        s_non_single.m_odi_map.find(id);
 
     // Be careful of the following operation if type of base dom and object dom
     // are different
     if (obj_dom_ref) {
-      res_obj_dom =
-          is_join ? tmp_base | *obj_dom_ref : tmp_base || *obj_dom_ref;
+      res_obj_dom = is_join ? singleton_base | *obj_dom_ref
+                            : singleton_base || *obj_dom_ref;
     }
 
-    odi_map.set(rep, res_obj_dom);
+    odi_map.set(id, res_obj_dom);
   }
 
   void meet_or_narrow_non_singleton_with_singleton(
-      variable_t rep, base_abstract_domain_t &base_dom,
+      const obj_id_t &id, base_abstract_domain_t &base_dom,
       const odi_map_t &odi_map, const bool is_meet) const {
 
-    const field_abstract_domain_t *obj_dom_ref = odi_map.find(rep);
+    const field_abstract_domain_t *obj_dom_ref = odi_map.find(id);
 
     // Be careful of the following operation if type of base dom and object dom
     // are different
