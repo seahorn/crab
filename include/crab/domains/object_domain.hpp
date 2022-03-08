@@ -141,7 +141,13 @@ private:
       std::shared_ptr<std::unordered_map<variable_t, obj_id_t>>;
   /**------------------ End type definitions ------------------**/
 
-  /**------------------ Begin field definitions ------------------**/
+  /**------------------ Begin class field definitions ------------------**/
+  // This domain is based on region based memory model, an abstract memory
+  // object is spawn from a set of regions.
+  // In addition, we model the memory architecture with a cache.
+  // The operation such as memory load or store are precisely abstracted
+  // if the requested properties can be found in the cache.
+
   // a special symbol to represent bottom state of the object domain
   // object domain is bottom if this flag is set or all subdomains are bottom.
   bool m_is_bottom;
@@ -154,7 +160,9 @@ private:
   // A map from each region variable to corresponding object domain
   odi_map_t m_odi_map;
 
-  // Map region variables to a tuple of (Count,Init,Type)
+  // Map object ids to a tuple of (Count,Init,Type)
+  // In addition, any regions are not part of an object treat introduced by
+  // the intrinsic method, we treat them as objects with single field.
   //
   // Count: count how many allocations are owned by an abstract object.
   // Each call to ref_make models a new allocation.
@@ -168,9 +176,12 @@ private:
 
   // Map region variables to an object id for an abstract object
   // To determine the object id,
-  // now is using the first region variable passed by the intrinsic method
+  // we choose the first region variable passed by the intrinsic method.
+  // If any regions that not indicating by the intrinsic, we add those regions
+  // into this method during the evaluation of make_ref.
+  // TODO: for now, we did not cover unknown regions.
   obj_flds_id_map_t m_flds_id_map;
-  /**------------------ End field definitions ------------------**/
+  /**------------------ End class field definitions ------------------**/
 
   /**------------------ Begin helper method definitions ------------------**/
   // Constructor Definition
@@ -565,7 +576,7 @@ private:
     }
   }
 
-  boost::optional<obj_id_t> get_obj_id(variable_t rgn) {
+  boost::optional<obj_id_t> get_obj_id(const variable_t &rgn) {
     if (!m_flds_id_map) {
       return boost::none;
     }
@@ -587,12 +598,26 @@ private:
     return it->second;
   }
 
-  void get_obj_flds(obj_id_t id, variable_vector_t &obj_flds) const {
+  void get_obj_flds(const obj_id_t &id, variable_vector_t &obj_flds) const {
     assert(m_flds_id_map);
     for (auto kv : (*m_flds_id_map)) {
       if (kv.second == id) {
         obj_flds.push_back(kv.first);
       }
+    }
+  }
+
+  void update_fields_id_map(const variable_t &rgn, const obj_id_t &id) {
+    // update m_flds_id_map
+    if (!m_flds_id_map) { // create a object fields - id map if it is null
+      m_flds_id_map =
+          std::make_shared<std::unordered_map<variable_t, obj_id_t>>();
+    }
+    auto it = (*m_flds_id_map).find(rgn);
+    if (it != (*m_flds_id_map).end()) {
+      it->second = id;
+    } else {
+      (*m_flds_id_map).insert({rgn, id});
     }
   }
 
@@ -605,7 +630,6 @@ private:
     } else if (m_odi_map.is_top()) {
       o << "Object = {}";
     } else {
-      assert(m_flds_id_map != nullptr);
       for (auto it = m_odi_map.begin(); it != m_odi_map.end();) {
         o << "Object( ";
         obj_id_t id = it->first;
@@ -907,6 +931,17 @@ public:
       return;
     }
 
+    // for now skip analysis for unknown region
+    if (is_unknown_region(rgn)) {
+      return;
+    }
+
+    if (get_obj_id(rgn) == boost::none) {
+      // if a region does not belong to an object, treat it as an object
+      // treat region as a field, as well as an object id
+      update_fields_id_map(rgn, rgn);
+    }
+
     CRAB_LOG("object", crab::outs()
                            << "After region_init(" << rgn << ":"
                            << rgn.get_type() << ")=" << *this << "\n";);
@@ -934,11 +969,23 @@ public:
     }
 
     if (auto id_opt = get_obj_id(rgn)) {
-      // After instrisic calls, the object id must exist for each region if the
-      // region belongs to an abstract object
+      // the object id must exist for each region if the
+      // region belongs to an abstract object.
 
       // retrieve an abstract object info
-      auto old_obj_info = m_obj_info_env.at(*id_opt);
+      auto obj_info_ref = m_obj_info_env.find(*id_opt);
+      auto old_obj_info = obj_info_ref != nullptr
+                              ? (*obj_info_ref)
+                              :
+                              // initialize information for an abstract object
+                              // for object not informed by intrisic calls
+                              region_domain_impl::region_info(
+                                  // No references owned by the object
+                                  small_range::zero(),
+                                  // unused
+                                  boolean_value::get_false(),
+                                  // unused
+                                  rgn.get_type());
 
       const small_range &num_refs = old_obj_info.refcount_val();
 
@@ -947,7 +994,6 @@ public:
         // if the abstract object is a singleton object,
         // now the number of references is increasing,
         // need to move fields' properties into odi map
-        const field_abstract_domain_t *obj_dom_ref = m_odi_map.find(*id_opt);
         move_singleton_to_odi_map(*id_opt);
       }
 
@@ -1023,8 +1069,8 @@ public:
     // At this point, the requirement for 2 is satisfied
 
     if (auto id_opt = get_obj_id(rgn)) {
-      // After instrisic calls, the object id must exist for each region if the
-      // region belongs to an abstract object
+      // the object id must exist for each region if the
+      // region belongs to an abstract object.
 
       // retrieve an abstract object info
       auto obj_info_ref = m_obj_info_env.find(*id_opt);
@@ -1117,18 +1163,28 @@ public:
       return;
     }
 
+    if (is_null_ref(ref).is_true()) {
+      CRAB_LOG("object", CRAB_WARN(domain_name(), "::ref_store: reference ",
+                                   ref, " is null."););
+      // set_to_bottom();
+      crab::CrabStats::count(domain_name() +
+                             ".count.ref_load.skipped.null_reference");
+      operator-=(rgn);
+      return;
+    }
+
     // for now skip analysis for unknown region
     if (is_unknown_region(rgn)) {
       return;
     }
 
     if (auto id_opt = get_obj_id(rgn)) {
-      // After instrisic calls, the object id must exist for each region if the
-      // region belongs to an abstract object
+      // the object id must exist for each region if the
+      // region belongs to an abstract object.
 
       // retrieve an abstract object info
-      auto(*obj_info_ref) = m_obj_info_env.find(*id_opt);
-      assert((*obj_info_ref)); // The object info must exsits
+      auto obj_info_ref = m_obj_info_env.find(*id_opt);
+      assert(obj_info_ref); // The object info must exsits
 
       const small_range &num_refs = (*obj_info_ref).refcount_val();
       assert(!num_refs.is_zero());
@@ -1484,7 +1540,16 @@ public:
   void minimize() override {}
 
   // Make a new copy of var without relating var with new_var
-  void expand(const variable_t &var, const variable_t &new_var) override {}
+  void expand(const variable_t &var, const variable_t &new_var) override {
+    crab::CrabStats::count(domain_name() + ".count.expand");
+    crab::ScopedCrabStats __st__(domain_name() + ".expand");
+
+    if (is_bottom() || is_top()) {
+      return;
+    }
+
+    CRAB_ERROR(domain_name(), "::expand not implemented");
+  }
 
   void backward_intrinsic(std::string name,
                           const variable_or_constant_vector_t &inputs,
@@ -1517,8 +1582,11 @@ public:
 
   // Forget v
   void operator-=(const variable_t &v) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    crab::CrabStats::count(domain_name() + ".count.-=");
+    crab::ScopedCrabStats __st__(domain_name() + ".-=");
+
+    if (!is_bottom()) {
+    }
   }
 
   void forget(const variable_vector_t &variables) override {
@@ -1537,6 +1605,8 @@ public:
     if (is_bottom() || is_top()) {
       return;
     }
+
+    CRAB_ERROR(domain_name(), "::project not implemented");
   }
 
   void rename(const variable_vector_t &from,
@@ -1547,6 +1617,11 @@ public:
     if (is_bottom() || is_top()) {
       return;
     }
+
+    if (from.size() != to.size()) {
+      CRAB_ERROR(domain_name(), "::rename different lengths");
+    }
+    CRAB_ERROR(domain_name(), "::rename not implemented");
   }
 
   // Return an interval with the possible values of v if such notion
@@ -1613,10 +1688,6 @@ public:
       assert(inputs.size() >= 1);
       error_if_not_rgn(inputs[0]);
       obj_id_t obj_id = inputs[0].get_variable();
-      if (!m_flds_id_map) { // create a object fields - id map if it is null
-        m_flds_id_map =
-            std::make_shared<std::unordered_map<variable_t, variable_t>>();
-      }
       for (int i = 0, sz = inputs.size(); i < sz; ++i) {
         error_if_not_rgn(inputs[i]); // this should not happen
         if (inputs[i].get_type().is_unknown_region()) {
@@ -1624,7 +1695,7 @@ public:
           // out. The base domain shouldn't care about regions anyway.
           return;
         }
-        (*m_flds_id_map).insert({inputs[i].get_variable(), obj_id});
+        update_fields_id_map(inputs[i].get_variable(), obj_id);
       }
 
       // initialize information for an abstract object
