@@ -1586,6 +1586,37 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".-=");
 
     if (!is_bottom()) {
+      // To forget a variable, it is easier to forget if variable is not a rgn
+      // However, if it is a region, we need to perform the followings:
+      // 1. the abstract object that region var belongs to is a singleton,
+      //    forget it in base dom
+      // 2. object is not singleton, forget it in odi map
+      if (v.get_type().is_region()) {
+        // for now skip analysis for unknown region
+        if (is_unknown_region(v)) {
+          return;
+        }
+        if (auto id_opt = get_obj_id(v)) {
+          // retrieve an abstract object info
+          auto old_obj_info = m_obj_info_env.at(*id_opt);
+
+          const small_range &num_refs = old_obj_info.refcount_val();
+
+          // Check number of references for an abstract object
+          if (num_refs.is_one()) { // singleton object
+            m_base_dom -= v;
+          } else if (num_refs == small_range::oneOrMore()) { // non-singleton
+            auto obj_dom_ref = m_odi_map.find(*id_opt);
+            if (obj_dom_ref) {
+              field_abstract_domain_t res_obj_dom = *obj_dom_ref;
+              res_obj_dom -= v;
+              m_odi_map.set(*id_opt, res_obj_dom);
+            }
+          }
+        }
+      } else { // forget a non region variable
+        m_base_dom -= v;
+      }
     }
   }
 
@@ -1596,6 +1627,18 @@ public:
     if (is_bottom() || is_top()) {
       return;
     }
+
+    variable_vector_t no_rgn_vars;
+    no_rgn_vars.reserve(variables.size());
+    for (auto &v : variables) {
+      if (v.get_type().is_region()) {
+        operator-=(v);
+      } else {
+        no_rgn_vars.push_back(v);
+      }
+    }
+
+    m_base_dom.forget(no_rgn_vars);
   }
 
   void project(const variable_vector_t &variables) override {
