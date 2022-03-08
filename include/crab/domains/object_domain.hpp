@@ -483,7 +483,7 @@ private:
     bool res = left.m_base_dom <= right.m_base_dom;
     CRAB_LOG("object", crab::outs() << "Result4=" << res << "\n";);
 
-    res = left.m_odi_map <= right.m_odi_map;
+    res &= (left.m_odi_map <= right.m_odi_map);
 
     CRAB_LOG("object", crab::outs() << "Result5=" << res << "\n";);
     return res;
