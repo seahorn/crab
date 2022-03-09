@@ -576,6 +576,7 @@ private:
     }
   }
 
+  /***************** Fields and Object id operations *****************/
   boost::optional<obj_id_t> get_obj_id(const variable_t &rgn) {
     if (!m_flds_id_map) {
       return boost::none;
@@ -650,6 +651,7 @@ private:
     }
   }
 
+  /***************** ODI map operations *****************/
   void move_singleton_to_odi_map(const obj_id_t &id) {
     variable_vector_t flds_vec;
     get_obj_flds(id, flds_vec);
@@ -704,6 +706,38 @@ private:
     // are different
     if (obj_dom_ref) {
       base_dom = is_meet ? base_dom & *obj_dom_ref : base_dom && *obj_dom_ref;
+    }
+  }
+
+  /***************** Debug operations *****************/
+  void print_flds_id_map(crab_os &o) const {
+    o << "Fields -> id map: ";
+    if (!m_flds_id_map) {
+      o << "not created \n";
+    } else if ((*m_flds_id_map).empty()) {
+      o << "empty \n";
+    } else {
+      std::unordered_map<obj_id_t, variable_vector_t> print_map;
+      for (auto kv : (*m_flds_id_map)) {
+        variable_t field = kv.first;
+        obj_id_t id = kv.second;
+        auto it = print_map.find(id);
+        if (it == print_map.end()) {
+          print_map.insert({id, {field}});
+        } else {
+          it->second.push_back(field);
+        }
+      }
+
+      // print map
+      for (auto kv : print_map) {
+        o << "Object (";
+        for (auto &v : kv.second) {
+          o << v << " ";
+        }
+        o << ")";
+      }
+      o << "\n";
     }
   }
 
@@ -940,6 +974,14 @@ public:
       // if a region does not belong to an object, treat it as an object
       // treat region as a field, as well as an object id
       update_fields_id_map(rgn, rgn);
+      // initialize information for an abstract object for object
+      m_obj_info_env.set(rgn, region_domain_impl::region_info(
+                                  // No references owned by the object
+                                  small_range::zero(),
+                                  // unused
+                                  boolean_value::get_false(),
+                                  // unused
+                                  rgn.get_type()));
     }
 
     CRAB_LOG("object", crab::outs()
@@ -973,19 +1015,7 @@ public:
       // region belongs to an abstract object.
 
       // retrieve an abstract object info
-      auto obj_info_ref = m_obj_info_env.find(*id_opt);
-      auto old_obj_info = obj_info_ref != nullptr
-                              ? (*obj_info_ref)
-                              :
-                              // initialize information for an abstract object
-                              // for object not informed by intrisic calls
-                              region_domain_impl::region_info(
-                                  // No references owned by the object
-                                  small_range::zero(),
-                                  // unused
-                                  boolean_value::get_false(),
-                                  // unused
-                                  rgn.get_type());
+      auto old_obj_info = m_obj_info_env.at(*id_opt);
 
       const small_range &num_refs = old_obj_info.refcount_val();
 
@@ -1309,11 +1339,44 @@ public:
   }
 
   // Make a copy of a region
-  void region_copy(const variable_t &lhs_reg,
-                   const variable_t &rhs_reg) override {}
+  // copy from rhs to lhs
+  void region_copy(const variable_t &lhs_rgn,
+                   const variable_t &rhs_rgn) override {
+    crab::CrabStats::count(domain_name() + ".count.region_copy");
+    crab::ScopedCrabStats __st__(domain_name() + ".region_copy");
+
+    /* These are ensured by well-typed Crab CFGs */
+    ERROR_IF_NOT_REGION(lhs_rgn, __LINE__);
+    ERROR_IF_NOT_REGION(rhs_rgn, __LINE__);
+    if (lhs_rgn.get_type() != rhs_rgn.get_type()) {
+      CRAB_ERROR(domain_name() + "::region_copy ", lhs_rgn, ":=", rhs_rgn,
+                 " with different types");
+    }
+
+    if (is_bottom()) {
+      return;
+    }
+
+    CRAB_LOG("object", crab::outs()
+                           << "After region_copy(" << lhs_rgn << ":"
+                           << lhs_rgn.get_type() << "," << rhs_rgn << ":"
+                           << rhs_rgn.get_type() << ")=" << *this << "\n";);
+  }
+
   // Cast between regions of different types
-  void region_cast(const variable_t &src_reg,
-                   const variable_t &dst_reg) override {}
+  void region_cast(const variable_t &src_rgn,
+                   const variable_t &dst_rgn) override {
+    // A region_cast is used to cast unknown regions to typed regions,
+    // or viceversa.
+    crab::CrabStats::count(domain_name() + ".count.region_cast");
+    crab::ScopedCrabStats __st__(domain_name() + ".region_cast");
+
+    CRAB_LOG("object", crab::outs()
+                           << "After region_cast(" << src_rgn << ":"
+                           << src_rgn.get_type() << "," << dst_rgn << ":"
+                           << dst_rgn.get_type() << ")=" << *this << "\n";);
+  }
+
   // Remove a reference ref within region reg
   void ref_free(const variable_t &reg, const variable_t &ref) override {}
   // Treat memory pointed by ref  as an array and perform an array load.
@@ -1739,9 +1802,12 @@ public:
           return;
         }
         update_fields_id_map(inputs[i].get_variable(), obj_id);
+        // Note that, region initialization is before the intrinsic calls
+        // Any obj info set up are not for object id will be removed.
+        m_obj_info_env -= inputs[i].get_variable();
       }
 
-      // initialize information for an abstract object
+      // initialize information for an abstract object for object
       m_obj_info_env.set(obj_id, region_domain_impl::region_info(
                                      // No references owned by the object
                                      small_range::zero(),
@@ -1749,7 +1815,6 @@ public:
                                      boolean_value::get_false(),
                                      // unused
                                      obj_id.get_type()));
-
       // No need to update odi map
       // because top for an abstract object in seperate domain is not exists
     }
