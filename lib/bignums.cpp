@@ -3,6 +3,11 @@
 
 #include <limits>
 #include <string>
+#include <functional>
+
+#include <boost/functional/hash.hpp>
+#include <boost/utility/string_view.hpp>
+#include <boost/version.hpp>
 
 namespace ikos {
 namespace bignums_impl {
@@ -116,10 +121,28 @@ std::string z_number::get_str(unsigned base) const {
   bignums_impl::scoped_cstring res(mpz_get_str(0, base, _n));
   return std::string(res.m_str);
 }
-
-std::size_t z_number::hash() const {
-  boost::hash<std::string> hasher;
-  return hasher(get_str());
+  
+std::size_t z_number::hash() const {  
+  // Inspired by
+  // https://www.boost.org/doc/libs/1_66_0/libs/multiprecision/doc/html/boost_multiprecision/tut/hash.html
+  auto hash_val = [](const mpz_srcptr v) {
+    boost::string_view view(reinterpret_cast<char*>(v->_mp_d),
+			    abs(v->_mp_size) * sizeof(mp_limb_t));
+#if BOOST_VERSION / 100 % 100 >= 74
+    // I don't know for sure which boost version started supporting
+    // direct hashing of boost::string_view.  I only know that 1.68
+    // didn't and 1.74 does for sure.
+    size_t result = boost::hash<boost::string_view>{}(view);
+#else    
+    size_t result = boost::hash_range(view.begin(), view.end());
+#endif     
+    // produce different hashes for negative x
+    if (v->_mp_size < 0) {
+      result = ~result;
+    }
+    return result;    
+  };  
+  return hash_val(static_cast<mpz_srcptr>(_n));
 }
 
 bool z_number::fits_sint() const { return mpz_fits_sint_p(_n); }
@@ -403,8 +426,8 @@ std::string q_number::get_str(unsigned base) const {
 }
 
 std::size_t q_number::hash() const {
-  boost::hash<std::string> hasher;
-  return hasher(get_str());
+  // TOFIX: this needs to be faster.
+  return std::hash<std::string>{}(get_str());  
 }
 
 q_number q_number::operator+(q_number x) const {

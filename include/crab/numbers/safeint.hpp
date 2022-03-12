@@ -66,6 +66,8 @@ public:
   // TODO: output parameters whether operation overflows
   safe_i64 &operator-=(safe_i64 x);
 
+  std::size_t hash() const;
+  
   bool operator==(safe_i64 x) const;
 
   bool operator!=(safe_i64 x) const;

@@ -329,7 +329,7 @@ protected:
                            /* x >= lb for each {x,lb} in lbs */
                            std::vector<std::pair<variable_t, Wt>> &lbs,
                            /* x <= ub for each {x,ub} in ubs */
-                           std::vector<std::pair<variable_t, Wt>> &ubs) {
+                           std::vector<std::pair<variable_t, Wt>> &ubs) /*const*/ {
 
     Wt unbounded_lbcoeff;
     Wt unbounded_ubcoeff;
@@ -358,7 +358,7 @@ protected:
       }
       if (coeff > Wt(0)) {
         variable_t y(p.second);
-        bound_t y_lb = operator[](y).lb();
+        bound_t y_lb = at(y).lb();
         if (y_lb.is_infinite()) {
           if (unbounded_lbvar) {
             return;
@@ -375,7 +375,7 @@ protected:
         }
       } else {
         variable_t y(p.second);
-        bound_t y_ub = operator[](y).ub();
+        bound_t y_ub = at(y).ub();
         if (y_ub.is_infinite()) {
           if (unbounded_ubvar) {
             return;
@@ -2175,18 +2175,71 @@ public:
     }
   }
 
+// return true iff cst is unsatisfiable without modifying the DBM
+  bool is_unsat(const linear_constraint_t &cst) /*const*/ {
+    if (is_bottom() || cst.is_contradiction()) {
+      return true;
+    }
+
+    if (is_top() || cst.is_tautology()) {
+      return false;
+    }
+
+    std::vector<std::pair<variable_t, Wt>> lbs, ubs;
+    std::vector<diffcst_t> diffcsts;
+
+    if (cst.is_inequality()) {
+      linear_expression_t exp = cst.expression();
+      diffcsts_of_lin_leq(exp, diffcsts, lbs, ubs);
+    } else if (cst.is_strict_inequality()) {
+      auto nc =
+          ikos::linear_constraint_impl::strict_to_non_strict_inequality(cst);
+      if (nc.is_inequality()) {
+        linear_expression_t exp = nc.expression();
+        diffcsts_of_lin_leq(exp, diffcsts, lbs, ubs);
+      } else {
+        // we couldn't convert the strict into a non-strict
+        return false;
+      }
+    } else if (cst.is_equality()) {
+      linear_expression_t exp = cst.expression();
+      diffcsts_of_lin_leq(exp, diffcsts, lbs, ubs);
+      diffcsts_of_lin_leq(-exp, diffcsts, lbs, ubs);
+    } else {
+      return false;
+    }
+
+    // check difference constraints
+    for (auto diffcst : diffcsts) {
+      variable_t x = diffcst.first.first;
+      variable_t y = diffcst.first.second;
+      Wt k = diffcst.second;
+      if (is_unsat_edge(get_vert(y), get_vert(x), k)) {
+        return true;
+      }
+    }
+
+    // check interval constraints
+    for (auto ub : ubs) {
+      if (is_unsat_edge(0, get_vert(ub.first), ub.second)) {
+        return true;
+      }
+    }
+    for (auto lb : lbs) {
+      if (is_unsat_edge(get_vert(lb.first), 0, -lb.second)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+  
   interval_t operator[](const variable_t &x) override {
     crab::CrabStats::count(domain_name() + ".count.to_intervals");
     crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
-
-    // Needed for accuracy
     normalize();
-
-    if (is_bottom()) {
-      return interval_t::bottom();
-    } else {
-      return get_interval(vert_map, g, x);
-    }
+    return (is_bottom() ? interval_t::bottom() :
+	    get_interval(vert_map, g, x));    
   }
 
   interval_t at(const variable_t &x) const override {
@@ -2579,77 +2632,6 @@ public:
   }
 
   std::string domain_name() const override { return "SplitDBM"; }
-
-  // =====  begin array_graph domain
-  // return true iff cst is unsatisfiable without modifying the DBM
-  bool is_unsat(const linear_constraint_t &cst) /*const*/ {
-    if (is_bottom() || cst.is_contradiction()) {
-      return true;
-    }
-
-    if (is_top() || cst.is_tautology()) {
-      return false;
-    }
-
-    std::vector<std::pair<variable_t, Wt>> lbs, ubs;
-    std::vector<diffcst_t> diffcsts;
-
-    if (cst.is_inequality()) {
-      linear_expression_t exp = cst.expression();
-      diffcsts_of_lin_leq(exp, diffcsts, lbs, ubs);
-    } else if (cst.is_strict_inequality()) {
-      auto nc =
-          ikos::linear_constraint_impl::strict_to_non_strict_inequality(cst);
-      if (nc.is_inequality()) {
-        linear_expression_t exp = nc.expression();
-        diffcsts_of_lin_leq(exp, diffcsts, lbs, ubs);
-      } else {
-        // we couldn't convert the strict into a non-strict
-        return false;
-      }
-    } else if (cst.is_equality()) {
-      linear_expression_t exp = cst.expression();
-      diffcsts_of_lin_leq(exp, diffcsts, lbs, ubs);
-      diffcsts_of_lin_leq(-exp, diffcsts, lbs, ubs);
-    } else {
-      return false;
-    }
-
-    // check difference constraints
-    for (auto diffcst : diffcsts) {
-      variable_t x = diffcst.first.first;
-      variable_t y = diffcst.first.second;
-      Wt k = diffcst.second;
-      if (is_unsat_edge(get_vert(y), get_vert(x), k)) {
-        return true;
-      }
-    }
-
-    // check interval constraints
-    for (auto ub : ubs) {
-      if (is_unsat_edge(0, get_vert(ub.first), ub.second)) {
-        return true;
-      }
-    }
-    for (auto lb : lbs) {
-      if (is_unsat_edge(get_vert(lb.first), 0, -lb.second)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  void active_variables(std::vector<variable_t> &out) const {
-    out.reserve(g.size());
-    for (auto v : g.verts()) {
-      if (rev_map[v]) {
-        variable_t vv = *rev_map[v];
-        out.push_back(vv);
-      }
-    }
-  }
-  // =====  end array_graph domain
 }; // class split_dbm_domain
 
 template <typename Number, typename VariableName, typename Params>

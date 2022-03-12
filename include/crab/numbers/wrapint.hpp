@@ -74,6 +74,8 @@ public:
 
   uint64_t get_uint64_t() const;
 
+  std::size_t hash() const;
+  
   // return the wrapint as an unsigned big number
   ikos::z_number get_unsigned_bignum() const;
 
