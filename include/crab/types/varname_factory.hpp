@@ -34,10 +34,12 @@ template <typename T> class variable_factory;
 
 template <class T> class indexed_varname : public indexable {
   template <typename Any> friend class variable_factory;
-
-  using this_type = indexed_varname<T>;
+public:  
   using variable_factory_t = variable_factory<T>;
-
+  
+private:
+  using this_type = indexed_varname<T>;
+  
   boost::optional<T> m_s;
   ikos::index_t m_id;
   // optional string name associated with m_id if m_s is boost::none
