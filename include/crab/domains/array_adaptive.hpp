@@ -7,7 +7,7 @@
  * - offset is an unsigned number
  * - size is an unsigned number
  *
- * A cell, when associated to an array A, is mapped to a scalar
+ * A cell, when associated to an array A, is mapped to a scalar ghost
  * variable in the base domain representing the byte contents of the
  * array segment A[offset,...,offset+size-1]
  *
@@ -23,6 +23,19 @@
  * modeled as weak updates but we still ensure that the number of
  * accessed bytes and the offset are consistent with previous array
  * accesses.
+ *
+ * Ghost variables:
+ * 
+ * - Each concrete array cell is modeled by a scalar ghost
+ *   variable. This is managed by cell_ghost_man.
+ * - Optionally, smashed arrays can be also modeled by a ghost
+ *   variable although by default they are not. This is done by
+ *   smashed_ghost_man class. There is no a good reason to use a ghost
+ *   variable in this case but the option is available.
+ * - Ghost variables are created by the same variable factory used to
+ *   generate the CrabIR. We don't reuse ghost variables so there is a
+ *   small risk of running out of ghost variables. If that happens, a
+ *   runtime error will be reported.
  ******************************************************************************/
 
 #pragma once
@@ -52,59 +65,6 @@ namespace domains {
 template <typename Domain> class array_adaptive_domain;
 
 namespace array_adaptive_impl {
-
-// Trivial constant propagation lattice
-class cp_domain_t {
-  using bound_t = ikos::bound<ikos::z_number>;
-
-  bool m_is_bottom;
-  bound_t m_val;
-
-  void set_to_top();
-
-  void set_to_bot();
-
-  cp_domain_t(bool is_bottom);
-
-public:
-  cp_domain_t();
-
-  cp_domain_t(int64_t sz);
-
-  cp_domain_t(const ikos::interval<ikos::z_number> &sz);
-
-  bool is_top() const;
-
-  bool is_bottom() const;
-
-  bool is_zero() const; 
-
-  bool is_negative() const; 
-
-  bound_t val() const;
-
-  boost::optional<uint64_t> get_uint64_val() const;
-
-  static cp_domain_t bottom();
-
-  static cp_domain_t top();
-
-  bool operator==(const cp_domain_t &o) const;
-
-  bool operator<=(const cp_domain_t &o) const;
-
-  void operator|=(const cp_domain_t &o);
-
-  cp_domain_t operator|(const cp_domain_t &o) const;
-
-  cp_domain_t operator&(const cp_domain_t &o) const;
-
-  cp_domain_t operator||(const cp_domain_t &o) const;
-
-  cp_domain_t operator&&(const cp_domain_t &o) const;
-
-  void write(crab_os &o) const;
-};
 
 // forward declaration
 class offset_map;
@@ -500,6 +460,569 @@ public:
   /* Top is called when a key is not found in a patricia tree */
   static offset_map_t top() { return offset_map_t(); }
 };
+
+
+/* A map from an array variable to a vector of pairs of cell and
+ * scalar variable.
+ *
+ * The vector is sorted so that finding/inserting/erasing cells is
+ * faster.
+ */
+template<typename Variable>
+class cell_varmap {
+  using variable_t = Variable;
+  
+public:
+  using sorted_cell_var_vector = std::vector<std::pair<cell_t, variable_t>>;
+  
+private:
+  struct less_cell_var {
+    bool operator()(const std::pair<cell_t, variable_t> &p,
+		    const cell_t &c) const {
+      return p.first < c;
+    }
+  };
+  std::unordered_map<variable_t, sorted_cell_var_vector> m_map;
+  
+public:
+  using iterator =
+    typename std::unordered_map<variable_t,
+				sorted_cell_var_vector>::iterator;
+  using const_iterator =
+    typename std::unordered_map<variable_t,
+				sorted_cell_var_vector>::const_iterator;
+  using cell_var_iterator = typename sorted_cell_var_vector::iterator;
+  
+  cell_varmap() {}
+  
+  iterator begin() { return m_map.begin(); }
+  iterator end() { return m_map.end(); }
+  const_iterator begin() const { return m_map.begin(); }
+  const_iterator end() const { return m_map.end(); }
+  
+  cell_var_iterator begin_cells(const variable_t &array) {
+    return m_map[array].begin();
+  }
+  cell_var_iterator end_cells(const variable_t &array) {
+    return m_map[array].end();
+  }
+  
+  boost::optional<variable_t> find(const variable_t &array,
+				   const cell_t &c) const {
+    auto it = m_map.find(array);
+    if (it == m_map.end()) {
+      return boost::none;
+    }
+    
+    const sorted_cell_var_vector &cell_vars = it->second;
+    less_cell_var cmp;
+    auto lb = std::lower_bound(cell_vars.begin(), cell_vars.end(), c, cmp);
+    if (lb != cell_vars.end() && !(c < (*lb).first)) {
+      return (*lb).second;
+    } else {
+      return boost::none;
+    }
+  }
+  
+  void erase(const variable_t &array, const cell_t &c) {
+    auto it = m_map.find(array);
+    if (it == m_map.end()) {
+      return;
+    }
+    
+    sorted_cell_var_vector &cell_vars = it->second;
+    less_cell_var cmp;
+    auto lb = std::lower_bound(cell_vars.begin(), cell_vars.end(), c, cmp);
+    if (lb != cell_vars.end() && !(c < (*lb).first)) {
+      cell_vars.erase(lb);
+    }
+  }
+  
+  void erase(const variable_t &array) { m_map.erase(array); }
+  
+  void insert(const variable_t &array, const cell_t &c,
+	      const variable_t &base_v) {
+    std::vector<std::pair<cell_t, variable_t>> vs;
+    auto it = m_map.insert({array, vs}).first;
+    sorted_cell_var_vector &cell_vars = it->second;
+    less_cell_var cmp;
+    auto lb = std::lower_bound(cell_vars.begin(), cell_vars.end(), c, cmp);
+    if (lb != cell_vars.end() && !(c < (*lb).first)) {
+      // already exists
+      return;
+    }
+    cell_vars.insert(lb, {c, base_v});
+  }
+  
+  void insert(const variable_t &array) {
+    sorted_cell_var_vector vec;
+    auto res = m_map.insert({array, vec});
+    if (!res.second) {
+      CRAB_ERROR("cell_varmap::insert already exists");
+    }
+  }
+  
+  void write(crab_os &o) const {
+    for (auto &kv : m_map) {
+      o << kv.first << ":\n";
+      for (auto &cv : kv.second) {
+	o << "\t" << cv.first << " --> " << cv.second << "\n";
+      }
+    }
+  }
+};
+
+/* ===  Begin management of ghost variables === */
+
+// Model each array cell with a ghost variable.
+// 
+// TOIMPROVE: we can avoid expensive join and meet operations because
+// each cell can be indentified by a concrete offset so we can use
+// strings to name concrete offsets.
+template<typename Domain>
+class cell_ghost_man {
+  using variable_t = typename Domain::variable_t;
+  using variable_vector_t = typename Domain::variable_vector_t;
+  using varname_t = typename variable_t::varname_t;
+  using type_t = typename variable_t::type_t;  
+  using offset_t = array_adaptive_impl::offset_t;
+  using cell_t = array_adaptive_impl::cell_t;  
+  using ghost_map_t = array_adaptive_impl::cell_varmap<variable_t>;
+  using this_type = cell_ghost_man<Domain>;
+  
+  ghost_map_t m_map;
+
+  static variable_type_kind get_array_element_type(type_t array_type) {
+    if (array_type.is_bool_array()) {
+      return BOOL_TYPE;
+    } else if (array_type.is_integer_array()) {
+      return INT_TYPE;
+    } else {
+      assert(array_type.is_real_array());
+      return REAL_TYPE;
+    }
+  }
+
+  static std::string mk_scalar_name(const varname_t &a, const offset_t &o,
+                                    uint64_t size) {
+    crab::crab_string_os os;
+    os << a << "[";
+    if (size == 1) {
+      os << o;
+    } else {
+      os << o << "..." << o.index() + size - 1;
+    }
+    os << "]";
+    return os.str();
+  }
+  
+  variable_t make_ghost(const variable_t &a, const cell_t &c) {
+    assert(!c.is_null());
+    // assign a scalar variable to the cell
+    auto &vfac = const_cast<varname_t *>(&(a.name()))->get_var_factory();
+    std::string vname = mk_scalar_name(a.name(), c.get_offset(), c.get_size());
+    variable_type_kind vtype_kind = get_array_element_type(a.get_type());
+    variable_t scalar_var(vfac.get(vname), vtype_kind,
+			  (vtype_kind == BOOL_TYPE
+			   ? 1
+			   : (vtype_kind == INT_TYPE ? 8 * c.get_size() : 0)));
+    return scalar_var;
+  }
+
+  variable_t insert_ghost(const variable_t &a, const cell_t &c) {
+    variable_t ghost_v = make_ghost(a, c);
+    m_map.insert(a, c, ghost_v);
+    return ghost_v;    
+  }
+  
+  cell_ghost_man(ghost_map_t &&m): m_map(std::move(m)) {}
+  
+public:
+  
+  cell_ghost_man() {}
+  
+  variable_t get_or_insert_ghost(const variable_t &a, const cell_t &c) {
+    if (boost::optional<variable_t> scalar_v = m_map.find(a, c)) {
+      return *scalar_v;
+    } else {
+      return insert_ghost(a, c);
+    }
+  }
+  
+  boost::optional<variable_t> get_ghost(const variable_t&a, const cell_t&c) const {
+    return m_map.find(a, c);
+  }
+
+  void erase_all(const variable_t &a) {
+    m_map.erase(a);
+  }
+
+  void erase(const variable_t &a, const cell_t &c) {
+    m_map.erase(a, c);
+  }
+  
+  this_type join(const this_type &right_man,
+		 Domain &left_val, Domain &right_val) const {
+
+    std::vector<variable_t> old_ghost_vars_left, old_ghost_vars_right, new_ghost_vars;
+    ghost_map_t out_map;
+    const ghost_map_t &left_map = m_map;
+    const ghost_map_t &right_map = right_man.m_map;
+        
+    for (auto const&kv : left_map) {
+      for (auto const&cv : kv.second) {
+        const variable_t &array_var = kv.first;
+        const cell_t &c = cv.first;
+        const variable_t &v1 = cv.second;
+        auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
+        if (boost::optional<variable_t> v2 = right_map.find(array_var, c)) {
+          if (v1 != *v2) {
+            assert(v1.name().str() == (*v2).name().str());
+            assert(v1.get_type() == (*v2).get_type());
+            variable_t outv(vfac.get(v1.name().str()), v1.get_type());
+            old_ghost_vars_left.push_back(v1);
+            old_ghost_vars_right.push_back(*v2);
+            new_ghost_vars.push_back(outv);
+            out_map.insert(array_var, c, outv);
+          } else {
+            out_map.insert(array_var, c, v1);
+          }
+        }
+      }
+    }
+
+    left_val.rename(old_ghost_vars_left, new_ghost_vars);
+    right_val.rename(old_ghost_vars_right, new_ghost_vars);
+    return this_type(std::move(out_map));
+  }
+
+ this_type meet(const this_type &right_man,
+		Domain &left_val, Domain &right_val) const {
+
+   std::vector<variable_t> old_ghost_vars_left, old_ghost_vars_right, new_ghost_vars;
+   ghost_map_t out_map;
+   const ghost_map_t &left_map = m_map;
+   const ghost_map_t &right_map = right_man.m_map;
+
+   // Add all mappings from the left operand
+   for (auto const&kv : left_map) {
+     for (auto const&cv : kv.second) {
+       const variable_t &array_var = kv.first;
+       const cell_t &c = cv.first;
+       const variable_t &v1 = cv.second;
+       auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
+       if (boost::optional<variable_t> v2 = right_map.find(array_var, c)) {
+	 if (v1 != *v2) {
+	   // same key but different ghost -> create a fresh common ghost
+	   assert(v1.name().str() == (*v2).name().str());
+	   assert(v1.get_type() == (*v2).get_type());
+	   variable_t outv(vfac.get(v1.name().str()), v1.get_type());
+	   old_ghost_vars_left.push_back(v1);
+	   old_ghost_vars_right.push_back(*v2);
+	   new_ghost_vars.push_back(outv);
+	   out_map.insert(array_var, c, outv);
+	   continue;
+	 }
+       }
+       out_map.insert(array_var, c, v1);
+     }
+   }
+   
+   // Add the rest of mappings from the right operand
+   for (auto const&kv : right_map) {
+      for (auto const&cv : kv.second) {
+        const variable_t &array_var = kv.first;
+        const cell_t &c = cv.first;
+        const variable_t &v = cv.second;
+        if (!left_map.find(array_var, c)) {
+          out_map.insert(array_var, c, v);
+        }
+      }
+    }
+
+    left_val.rename(old_ghost_vars_left, new_ghost_vars);
+    right_val.rename(old_ghost_vars_right, new_ghost_vars);
+
+    return this_type(std::move(out_map));
+ }
+
+  void rename(const variable_t &old_array, const variable_t &new_array,
+	      std::function<cell_t(const offset_t&, uint64_t)> mk_unnamed_cell,
+	      variable_vector_t &old_ghosts, variable_vector_t &new_ghosts) {
+    
+    // We insert here an empty vector so that no resizing can happen
+    // while we iterate over m_map.
+    m_map.insert(new_array);
+    for (auto it = m_map.begin_cells(old_array),
+	   et = m_map.end_cells(old_array);
+	 it != et; ++it) {
+      const cell_t &old_c = (*it).first;
+      const variable_t &old_ghost = (*it).second;
+      /// Modify m_map but it doesn't invalidate iterators
+      /// because new_array is already in m_map.
+      cell_t new_c = mk_unnamed_cell(old_c.get_offset(), old_c.get_size());
+      variable_t new_ghost = insert_ghost(new_array, new_c);
+      old_ghosts.push_back(old_ghost);
+      new_ghosts.push_back(new_ghost);
+    }	  
+  }
+	
+  void write(crab_os &o) const {
+    for (auto const &kv: m_map) {
+      for (auto const&cv : kv.second) {
+	crab::outs() << kv.first << "#" << cv.first << " -> "
+		     << cv.second << "\n";
+      }
+    } 
+  }
+};
+
+#if 0
+// Model each smashed array with a ghost variable  
+template<typename Domain>
+class smashed_ghost_man  {
+  using variable_t = typename Domain::variable_t;
+  using variable_vector_t = typename Domain::variable_vector_t;
+  using varname_t = typename variable_t::varname_t;
+  using ghost_map_t = std::unordered_map<variable_t, variable_t>;
+  using this_type = smashed_ghost_man<Domain>;  
+  
+  ghost_map_t m_map;
+  
+  static variable_t mk_ghost_variable(const variable_t &v) {
+    auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
+    crab::crab_string_os os;
+    os << "smashed(" << v << ")";
+    return variable_t(vfac.get(os.str()), v.get_type());
+  }
+  
+  smashed_ghost_man(ghost_map_t &&map): m_map(std::move(map)) {}
+  
+public:
+  smashed_ghost_man() {}
+  smashed_ghost_man(const this_type &o) = default;
+  smashed_ghost_man(this_type &&o) = default;
+  this_type &operator=(const this_type &o) = default;
+  this_type &operator=(this_type &&o) = default;
+  
+  variable_t get_ghost(const variable_t &a) {
+    if (!a.get_type().is_array()) {
+      CRAB_ERROR("array_adaptive::get_ghost only takes array variables");		   
+    }
+    auto it = m_map.find(a);
+    if (it != m_map.end()) {
+	return it->second;
+    } else {
+      variable_t ghost_var = mk_ghost_variable(a);
+      m_map.insert({a, ghost_var});
+      return ghost_var;
+    }
+  }
+  
+  void operator-=(const variable_t &v) {
+    m_map.erase(v);
+  }
+  
+  this_type join(const this_type &right_ghost,
+		 Domain &left_val, Domain &right_val) const {
+    
+    std::vector<variable_t> old_ghost_vars_left, old_ghost_vars_right, new_ghost_vars;
+    ghost_map_t out_map;
+    const ghost_map_t &left_map = m_map;
+    const ghost_map_t &right_map = right_ghost.m_map;
+    
+    for (auto const&kv : left_map) {
+      const variable_t &v1 = kv.second;
+      auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
+      auto it = right_map.find(kv.first);
+      if (it != right_map.end()) {
+	const variable_t &v2 = it->second;
+	if (v1 != v2) {
+	  assert(v1.name().str() == v2.name().str());
+	  assert(v1.get_type() == v2.get_type());
+	  variable_t outv(vfac.get(v1.name().str()), v1.get_type());
+	  old_ghost_vars_left.push_back(v1);
+	  old_ghost_vars_right.push_back(v2);
+	  new_ghost_vars.push_back(outv);
+	  out_map.insert({kv.first, outv});
+	} else {
+	  out_map.insert(kv);
+	  }
+      }
+    }
+    
+    /// Rename the abstract values
+    left_val.rename(old_ghost_vars_left, new_ghost_vars);
+    right_val.rename(old_ghost_vars_right, new_ghost_vars);
+    
+    return this_type(std::move(out_map));
+  }
+  
+  this_type meet(const this_type &right_ghost,
+		 Domain &left_val, Domain &right_val) const {
+    
+    std::vector<variable_t> old_ghost_vars_left, old_ghost_vars_right, new_ghost_vars;
+    ghost_map_t out_map;
+    const ghost_map_t &left_map = m_map;
+    const ghost_map_t &right_map = right_ghost.m_map;
+    
+    // Add all mappings from the left operand
+    for (auto const&kv : left_map) {
+      const variable_t &v1 = kv.second;
+      auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
+      auto it = right_map.find(kv.first);
+      if (it != right_map.end()) {
+	const variable_t &v2 = it->second;
+	if (v1 != v2) {
+	  // same key but different ghost -> create a fresh common ghost
+	  assert(v1.name().str() == v2.name().str());
+	  assert(v1.get_type() == v2.get_type());
+	  variable_t outv(vfac.get(v1.name().str()), v1.get_type());
+	  old_ghost_vars_left.push_back(v1);
+	  old_ghost_vars_right.push_back(v2);
+	  new_ghost_vars.push_back(outv);
+	  out_map.insert({kv.first, outv});
+	  continue;
+	}
+      }
+      out_map.insert(kv);
+    }
+    
+      // Add the rest of mappings from the right operand
+    for (auto const&kv : right_map) {
+      auto it = left_map.find(kv.first);
+      if (it == left_map.end()) {
+	out_map.insert(kv);
+      }
+    }
+    
+    // Rename the abstract values
+    left_val.rename(old_ghost_vars_left, new_ghost_vars);
+    right_val.rename(old_ghost_vars_right, new_ghost_vars);
+    
+    return this_type(std::move(out_map));
+  }
+
+  void rename(const variable_t &old_v, const variable_t &new_v,   
+	      variable_vector_t &old_ghosts, variable_vector_t &new_ghosts) {
+    auto it = m_map.find(old_v);
+    if (it != m_map.end()) {
+      variable_t new_ghost_v = mk_ghost_variable(new_v);
+      variable_t old_ghost_v = it->second;
+      m_map.erase(it);
+      m_map.insert({new_v, new_ghost_v});
+      old_ghosts.push_back(old_ghost_v);
+      new_ghosts.push_back(new_ghost_v);
+    }
+  }
+  
+  bool empty() const {
+    return m_map.empty();
+  }
+  
+  void write(crab_os &o) const {
+    for (auto const &kv : m_map) {
+      crab::outs() << kv.first << " --> " << kv.second << "\n";
+    }    
+  }
+};  
+#else
+// Don't generate a ghost variable for a smashed array
+template<typename Domain>
+class smashed_ghost_man  {
+  using variable_t = typename Domain::variable_t;
+  using variable_vector_t = typename Domain::variable_vector_t;  
+  using varname_t = typename variable_t::varname_t;
+  using this_type = smashed_ghost_man<Domain>;  
+public:
+  smashed_ghost_man() {}
+  smashed_ghost_man(const this_type &o) = default;
+  smashed_ghost_man(this_type &&o) = default;
+  this_type &operator=(const this_type &o) = default;
+  this_type &operator=(this_type &&o) = default;
+  
+  variable_t get_ghost(const variable_t &a) {
+    if (!a.get_type().is_array()) {
+      CRAB_ERROR("array_adaptive::get_ghost only takes array variables");		   
+    }
+    return a;
+  }
+  
+  void operator-=(const variable_t &) {}
+  
+  this_type join(const this_type &, Domain &, Domain &) const {
+    return *this;
+  }
+  
+  this_type meet(const this_type &, Domain &, Domain &) const {
+    return *this;
+  }
+  
+  void rename(const variable_t &, const variable_t &,
+	      variable_vector_t &, variable_vector_t &) {}
+  
+  bool empty() const {
+    return true;
+  }
+  
+  void write(crab_os &) const {}
+};  
+#endif
+/*** ===  End management of ghost variables === */
+
+// Constant value extended with bottom and top.  
+class constant_value {
+  using bound_t = ikos::bound<ikos::z_number>;
+
+  bool m_is_bottom;
+  bound_t m_val;
+
+  void set_to_top();
+
+  void set_to_bot();
+
+  constant_value(bool is_bottom);
+
+public:
+  constant_value();
+
+  constant_value(int64_t sz);
+
+  constant_value(const ikos::interval<ikos::z_number> &sz);
+
+  bool is_top() const;
+
+  bool is_bottom() const;
+
+  bool is_zero() const; 
+
+  bool is_negative() const; 
+
+  bound_t val() const;
+
+  boost::optional<uint64_t> get_uint64_val() const;
+
+  static constant_value bottom();
+
+  static constant_value top();
+
+  bool operator==(const constant_value &o) const;
+
+  bool operator<=(const constant_value &o) const;
+
+  void operator|=(const constant_value &o);
+
+  constant_value operator|(const constant_value &o) const;
+
+  constant_value operator&(const constant_value &o) const;
+
+  constant_value operator||(const constant_value &o) const;
+
+  constant_value operator&&(const constant_value &o) const;
+
+  void write(crab_os &o) const;
+};
+  
 } // end namespace array_adaptive_impl
 
 template <typename NumDomain>
@@ -532,122 +1055,15 @@ private:
   using offset_t = array_adaptive_impl::offset_t;
   using offset_map_t = array_adaptive_impl::offset_map_t;
   using cell_t = array_adaptive_impl::cell_t;
-  using cp_domain_t = array_adaptive_impl::cp_domain_t;
-
-  /* A map from an array variable to a vector of pairs of cell and
-   * scalar variable.
-   *
-   * The vector is sorted so that finding/inserting/erasing cells is
-   * faster.
-   */
-  class cell_varmap_t {
-  public:
-    using sorted_cell_var_vector = std::vector<std::pair<cell_t, variable_t>>;
-
-  private:
-    struct less_cell_var {
-      bool operator()(const std::pair<cell_t, variable_t> &p,
-                      const cell_t &c) const {
-        return p.first < c;
-      }
-    };
-    std::unordered_map<variable_t, sorted_cell_var_vector> m_map;
-
-  public:
-    using iterator =
-        typename std::unordered_map<variable_t,
-                                    sorted_cell_var_vector>::iterator;
-    using const_iterator =
-        typename std::unordered_map<variable_t,
-                                    sorted_cell_var_vector>::const_iterator;
-    using cell_var_iterator = typename sorted_cell_var_vector::iterator;
-
-    cell_varmap_t() {}
-
-    iterator begin() { return m_map.begin(); }
-    iterator end() { return m_map.end(); }
-    const_iterator begin() const { return m_map.begin(); }
-    const_iterator end() const { return m_map.end(); }
-
-    cell_var_iterator begin_cells(const variable_t &array) {
-      return m_map[array].begin();
-    }
-    cell_var_iterator end_cells(const variable_t &array) {
-      return m_map[array].end();
-    }
-
-    boost::optional<variable_t> find(const variable_t &array,
-                                     const cell_t &c) const {
-      auto it = m_map.find(array);
-      if (it == m_map.end()) {
-        return boost::none;
-      }
-
-      const sorted_cell_var_vector &cell_vars = it->second;
-      less_cell_var cmp;
-      auto lb = std::lower_bound(cell_vars.begin(), cell_vars.end(), c, cmp);
-      if (lb != cell_vars.end() && !(c < (*lb).first)) {
-        return (*lb).second;
-      } else {
-        return boost::none;
-      }
-    }
-
-    void erase(const variable_t &array, const cell_t &c) {
-      auto it = m_map.find(array);
-      if (it == m_map.end()) {
-        return;
-      }
-
-      sorted_cell_var_vector &cell_vars = it->second;
-      less_cell_var cmp;
-      auto lb = std::lower_bound(cell_vars.begin(), cell_vars.end(), c, cmp);
-      if (lb != cell_vars.end() && !(c < (*lb).first)) {
-        cell_vars.erase(lb);
-      }
-    }
-
-    void erase(const variable_t &array) { m_map.erase(array); }
-
-    void insert(const variable_t &array, const cell_t &c,
-                const variable_t &base_v) {
-      std::vector<std::pair<cell_t, variable_t>> vs;
-      auto it = m_map.insert({array, vs}).first;
-      sorted_cell_var_vector &cell_vars = it->second;
-      less_cell_var cmp;
-      auto lb = std::lower_bound(cell_vars.begin(), cell_vars.end(), c, cmp);
-      if (lb != cell_vars.end() && !(c < (*lb).first)) {
-        // already exists
-        return;
-      }
-      cell_vars.insert(lb, {c, base_v});
-    }
-
-    void insert(const variable_t &array) {
-      sorted_cell_var_vector vec;
-      auto res = m_map.insert({array, vec});
-      if (!res.second) {
-        CRAB_ERROR("cell_varmap_t::insert already exists");
-      }
-    }
-
-    void write(crab_os &o) const {
-      for (auto &kv : m_map) {
-        o << kv.first << ":\n";
-        for (auto &cv : kv.second) {
-          o << "\t" << cv.first << " --> " << cv.second << "\n";
-        }
-      }
-    }
-  };
-
-  using smashed_varmap_t = std::unordered_map<variable_t, variable_t>;
+  using constant_value = array_adaptive_impl::constant_value;
+  using cell_ghost_man_t = array_adaptive_impl::cell_ghost_man<base_domain_t>;
+  using smashed_ghost_man_t = array_adaptive_impl::smashed_ghost_man<base_domain_t>;
 
   class array_state {
     // whether the array has been smashed
     bool m_is_smashed;
     // element size of the array if smashed
-    cp_domain_t m_element_sz;
+    constant_value m_element_sz;
     // precise array contents if no smashed
     offset_map_t m_offset_map;
 
@@ -668,9 +1084,8 @@ private:
     }
 
     // Smash the array if it's safe to do so.
-    // Return true if the array ha
-    void smash_array(const variable_t &a, const cp_domain_t &elem_sz,
-                     cell_varmap_t &cvm, smashed_varmap_t &svm,
+    void smash_array(const variable_t &a, const constant_value &elem_sz,
+                     cell_ghost_man_t &cm, smashed_ghost_man_t &sm,
                      base_domain_t &base_dom) {
 
       // we only smash the array if elem_sz is a constant value and
@@ -700,8 +1115,7 @@ private:
 
       if (boost::optional<uint64_t> sz_opt = elem_sz.get_uint64_val()) {
         bool can_be_smashed = true;
-        variable_t smashed_a =
-            array_adaptive_domain_t::get_smashed_variable(a, svm);
+        variable_t smashed_a = sm.get_ghost(a);
         for (unsigned k = 0, num_cells = cells.size(); k < num_cells; ++k) {
           const cell_t &c = cells[k];
           if (!consistent_offset(c.get_offset(), *sz_opt)) {
@@ -713,7 +1127,7 @@ private:
           }
           const bool is_strong_update = (k == 0);
           linear_expression_t idx(number_t(c.get_offset().index()));
-          if (boost::optional<variable_t> c_scalar_var = cvm.find(a, c)) {
+          if (boost::optional<variable_t> c_scalar_var = cm.get_ghost(a, c)) {
             base_dom.array_store(smashed_a, c.get_size(), idx, *c_scalar_var,
                                  is_strong_update);
           } else {
@@ -722,7 +1136,7 @@ private:
                 CRAB_WARN(
                     "cannot smashing because of scalar variable for array ", a,
                     " and cell ", c, " not found in ");
-                cvm.write(crab::outs()); crab::outs() << "\n";);
+                cm.write(crab::outs()); crab::outs() << "\n";);
             can_be_smashed = false;
             break;
           }
@@ -731,13 +1145,13 @@ private:
         if (can_be_smashed) {
           for (unsigned k = 0, num_cells = cells.size(); k < num_cells; ++k) {
             const cell_t &c = cells[k];
-            if (boost::optional<variable_t> c_scalar_var = cvm.find(a, c)) {
+            if (boost::optional<variable_t> c_scalar_var = cm.get_ghost(a, c)) {
               // remove the synthethic cell from the base domain and
               // from the offset map
               base_dom -= *c_scalar_var;
             }
             get_offset_map().erase(c);
-            cvm.erase(a, c);
+            cm.erase(a, c);
           }
           m_is_smashed = true;
           m_element_sz = elem_sz;
@@ -759,7 +1173,7 @@ private:
   public:
     array_state() : m_is_smashed(false), m_element_sz((int64_t)0) {}
 
-    array_state(bool &&is_smashed, cp_domain_t &&sz, offset_map_t &&om)
+    array_state(bool &&is_smashed, constant_value &&sz, offset_map_t &&om)
         : m_is_smashed(std::move(is_smashed)), m_element_sz(std::move(sz)),
           m_offset_map(std::move(om)) {
       do_sanity_checks();
@@ -800,19 +1214,19 @@ private:
 
     /*** begin mergeable_map API ***/
     array_state join(const variable_t &v, const array_state &o,
-                     cell_varmap_t &cvm_left, smashed_varmap_t &svm_left,
-                     base_domain_t &dom_left, cell_varmap_t &cvm_right,
-                     smashed_varmap_t &svm_right,
+                     cell_ghost_man_t &cm_left, smashed_ghost_man_t &sm_left,
+                     base_domain_t &dom_left, cell_ghost_man_t &cm_right,
+                     smashed_ghost_man_t &sm_right,
                      base_domain_t &dom_right) const {
       if (m_is_smashed && !o.m_is_smashed) {
         array_state right(o);
-        right.smash_array(v, get_element_sz(), cvm_right, svm_right, dom_right);
+        right.smash_array(v, get_element_sz(), cm_right, sm_right, dom_right);
         return array_state(m_is_smashed | right.m_is_smashed,
                            m_element_sz | right.m_element_sz,
                            m_offset_map | right.m_offset_map);
       } else if (!m_is_smashed && o.m_is_smashed) {
         array_state left(*this);
-        left.smash_array(v, o.get_element_sz(), cvm_left, svm_left, dom_left);
+        left.smash_array(v, o.get_element_sz(), cm_left, sm_left, dom_left);
         return array_state(left.m_is_smashed | o.m_is_smashed,
                            left.m_element_sz | o.m_element_sz,
                            left.m_offset_map | o.m_offset_map);
@@ -824,19 +1238,19 @@ private:
     }
 
     array_state meet(const variable_t &v, const array_state &o,
-                     cell_varmap_t &cvm_left, smashed_varmap_t &svm_left,
-                     base_domain_t &dom_left, cell_varmap_t &cvm_right,
-                     smashed_varmap_t &svm_right,
+                     cell_ghost_man_t &cm_left, smashed_ghost_man_t &sm_left,
+                     base_domain_t &dom_left, cell_ghost_man_t &cm_right,
+                     smashed_ghost_man_t &sm_right,
                      base_domain_t &dom_right) const {
       if (m_is_smashed && !o.m_is_smashed) {
         array_state right(o);
-        right.smash_array(v, get_element_sz(), cvm_right, svm_right, dom_right);
+        right.smash_array(v, get_element_sz(), cm_right, sm_right, dom_right);
         return array_state(m_is_smashed & right.m_is_smashed,
                            m_element_sz & right.m_element_sz,
                            m_offset_map & right.m_offset_map);
       } else if (!m_is_smashed && o.m_is_smashed) {
         array_state left(*this);
-        left.smash_array(v, o.get_element_sz(), cvm_left, svm_left, dom_left);
+        left.smash_array(v, o.get_element_sz(), cm_left, sm_left, dom_left);
         return array_state(left.m_is_smashed & o.m_is_smashed,
                            left.m_element_sz & o.m_element_sz,
                            left.m_offset_map & o.m_offset_map);
@@ -884,9 +1298,9 @@ private:
 
     const offset_map_t &get_offset_map() const { return m_offset_map; }
 
-    cp_domain_t &get_element_sz() { return m_element_sz; }
+    constant_value &get_element_sz() { return m_element_sz; }
 
-    const cp_domain_t &get_element_sz() const { return m_element_sz; }
+    const constant_value &get_element_sz() const { return m_element_sz; }
 
     static bool can_be_smashed(const std::vector<cell_t> &cells,
                                uint64_t elem_sz,
@@ -954,25 +1368,25 @@ private:
     patricia_tree_t m_tree;
 
     class join_op : public binary_op_t {
-      cell_varmap_t &m_cvm_left;
-      smashed_varmap_t &m_svm_left;
+      cell_ghost_man_t &m_cm_left;
+      smashed_ghost_man_t &m_sm_left;
       base_domain_t &m_dom_left;
-      cell_varmap_t &m_cvm_right;
-      smashed_varmap_t &m_svm_right;
+      cell_ghost_man_t &m_cm_right;
+      smashed_ghost_man_t &m_sm_right;
       base_domain_t &m_dom_right;
 
     public:
-      join_op(cell_varmap_t &cvm_left, smashed_varmap_t &svm_left,
-              base_domain_t &dom_left, cell_varmap_t &cvm_right,
-              smashed_varmap_t &svm_right, base_domain_t &dom_right)
-          : m_cvm_left(cvm_left), m_svm_left(svm_left), m_dom_left(dom_left),
-            m_cvm_right(cvm_right), m_svm_right(svm_right),
+      join_op(cell_ghost_man_t &cm_left, smashed_ghost_man_t &sm_left,
+              base_domain_t &dom_left, cell_ghost_man_t &cm_right,
+              smashed_ghost_man_t &sm_right, base_domain_t &dom_right)
+          : m_cm_left(cm_left), m_sm_left(sm_left), m_dom_left(dom_left),
+            m_cm_right(cm_right), m_sm_right(sm_right),
             m_dom_right(dom_right) {}
 
       std::pair<bool, boost::optional<array_state>>
       apply(const variable_t &k, const array_state &x, const array_state &y) override {
-        array_state z = x.join(k, y, m_cvm_left, m_svm_left, m_dom_left,
-                               m_cvm_right, m_svm_right, m_dom_right);
+        array_state z = x.join(k, y, m_cm_left, m_sm_left, m_dom_left,
+                               m_cm_right, m_sm_right, m_dom_right);
         return {false, boost::optional<array_state>(z)};
       }
 
@@ -980,25 +1394,25 @@ private:
     }; // class join_op
 
     class meet_op : public binary_op_t {
-      cell_varmap_t &m_cvm_left;
-      smashed_varmap_t &m_svm_left;
+      cell_ghost_man_t &m_cm_left;
+      smashed_ghost_man_t &m_sm_left;
       base_domain_t &m_dom_left;
-      cell_varmap_t &m_cvm_right;
-      smashed_varmap_t &m_svm_right;
+      cell_ghost_man_t &m_cm_right;
+      smashed_ghost_man_t &m_sm_right;
       base_domain_t &m_dom_right;
 
     public:
-      meet_op(cell_varmap_t &cvm_left, smashed_varmap_t &svm_left,
-              base_domain_t &dom_left, cell_varmap_t &cvm_right,
-              smashed_varmap_t &svm_right, base_domain_t &dom_right)
-          : m_cvm_left(cvm_left), m_svm_left(svm_left), m_dom_left(dom_left),
-            m_cvm_right(cvm_right), m_svm_right(svm_right),
+      meet_op(cell_ghost_man_t &cm_left, smashed_ghost_man_t &sm_left,
+              base_domain_t &dom_left, cell_ghost_man_t &cm_right,
+              smashed_ghost_man_t &sm_right, base_domain_t &dom_right)
+          : m_cm_left(cm_left), m_sm_left(sm_left), m_dom_left(dom_left),
+            m_cm_right(cm_right), m_sm_right(sm_right),
             m_dom_right(dom_right) {}
 
       std::pair<bool, boost::optional<array_state>>
       apply(const variable_t &k, const array_state &x, const array_state &y) override {
-        array_state z = x.meet(k, y, m_cvm_left, m_svm_left, m_dom_left,
-                               m_cvm_right, m_svm_right, m_dom_right);
+        array_state z = x.meet(k, y, m_cm_left, m_sm_left, m_dom_left,
+                               m_cm_right, m_sm_right, m_dom_right);
         return {false, boost::optional<array_state>(z)};
       }
       bool default_is_absorbing() override { return false; }
@@ -1045,23 +1459,23 @@ private:
     size_t size() const { return m_tree.size(); }
 
     // Join
-    array_state_map_t join(const array_state_map_t &o, cell_varmap_t &cvm_left,
-                           smashed_varmap_t &svm_left, base_domain_t &dom_left,
-                           cell_varmap_t &cvm_right,
-                           smashed_varmap_t &svm_right,
+    array_state_map_t join(const array_state_map_t &o, cell_ghost_man_t &cm_left,
+                           smashed_ghost_man_t &sm_left, base_domain_t &dom_left,
+                           cell_ghost_man_t &cm_right,
+                           smashed_ghost_man_t &sm_right,
                            base_domain_t &dom_right) const {
-      join_op op(cvm_left, svm_left, dom_left, cvm_right, svm_right, dom_right);
+      join_op op(cm_left, sm_left, dom_left, cm_right, sm_right, dom_right);
       patricia_tree_t res = apply_operation(op, m_tree, o.m_tree);
       return array_state_map_t(std::move(res));
     }
 
     // Meet
-    array_state_map_t meet(const array_state_map_t &o, cell_varmap_t &cvm_left,
-                           smashed_varmap_t &svm_left, base_domain_t &dom_left,
-                           cell_varmap_t &cvm_right,
-                           smashed_varmap_t &svm_right,
+    array_state_map_t meet(const array_state_map_t &o, cell_ghost_man_t &cm_left,
+                           smashed_ghost_man_t &sm_left, base_domain_t &dom_left,
+                           cell_ghost_man_t &cm_right,
+                           smashed_ghost_man_t &sm_right,
                            base_domain_t &dom_right) const {
-      meet_op op(cvm_left, svm_left, dom_left, cvm_right, svm_right, dom_right);
+      meet_op op(cm_left, sm_left, dom_left, cm_right, sm_right, dom_right);
       patricia_tree_t res = apply_operation(op, m_tree, o.m_tree);
       return array_state_map_t(std::move(res));
     }
@@ -1135,19 +1549,15 @@ private:
     }
   }; // class array_state_map_t
 
-  // -- scalar domain containing scalar variables, synthetic scalar
-  // -- variables from cells and synthetic summarized smashed
-  // -- variables.
-  base_domain_t m_inv;
-
+  // -- scalar domain containing scalar variables, ghost scalar
+  //    variables from cells and ghost summarized smashed variables.
+  base_domain_t m_base_dom;
   // -- map an array variable to its synthetic cells
   array_state_map_t m_array_map;
-
-  // -- map a synthetic cell to a scalar variable used in m_inv
-  cell_varmap_t m_cell_varmap;
-
-  // -- map an array variable to its smashed version used in m_inv
-  smashed_varmap_t m_smashed_varmap;
+  // -- manage ghost variables to model concrete arrays
+  cell_ghost_man_t m_cell_ghost_man;
+  // -- manage ghost variables to model smashed arrays
+  smashed_ghost_man_t m_smashed_ghost_man;
 
 private:
   const array_state &lookup_array_state(const variable_t &v) {
@@ -1166,31 +1576,7 @@ private:
     }
     return *as;
   }
-
-  static std::string mk_scalar_name(const varname_t &a, const offset_t &o,
-                                    uint64_t size) {
-    crab::crab_string_os os;
-    os << a << "[";
-    if (size == 1) {
-      os << o;
-    } else {
-      os << o << "..." << o.index() + size - 1;
-    }
-    os << "]";
-    return os.str();
-  }
-
-  static variable_type_kind get_array_element_type(type_t array_type) {
-    if (array_type.is_bool_array()) {
-      return BOOL_TYPE;
-    } else if (array_type.is_integer_array()) {
-      return INT_TYPE;
-    } else {
-      assert(array_type.is_real_array());
-      return REAL_TYPE;
-    }
-  }
-
+    
   // Return a named cell, i.e., a cell with a scalar variable
   // associated to it.
   std::pair<cell_t, variable_t> mk_named_cell(const variable_t &a,
@@ -1199,22 +1585,8 @@ private:
                                               offset_map_t &om) {
     // create first an unnamed cell
     cell_t c = om.mk_cell(o, sz);
-
-    if (boost::optional<variable_t> scalar_v = m_cell_varmap.find(a, c)) {
-      return {c, *scalar_v};
-    } else {
-      assert(!c.is_null());
-      // assign a scalar variable to the cell
-      auto &vfac = const_cast<varname_t *>(&(a.name()))->get_var_factory();
-      std::string vname = mk_scalar_name(a.name(), o, sz);
-      variable_type_kind vtype_kind = get_array_element_type(a.get_type());
-      variable_t scalar_var(vfac.get(vname), vtype_kind,
-                            (vtype_kind == BOOL_TYPE
-                                 ? 1
-                                 : (vtype_kind == INT_TYPE ? 8 * sz : 0)));
-      m_cell_varmap.insert(a, c, scalar_var);
-      return {c, scalar_var};
-    }
+    variable_t scalar_v = m_cell_ghost_man.get_or_insert_ghost(a, c);
+    return {c, scalar_v};
   }
 
   using variable_opt_t = boost::optional<variable_t>;
@@ -1222,36 +1594,7 @@ private:
     if (!array_v.get_type().is_array()) {
       CRAB_ERROR("array_adaptive::get_scalar only if array variable");
     }
-    return m_cell_varmap.find(array_v, c);
-  }
-
-  static variable_t mk_smashed_variable(const variable_t &v) {
-    if (!v.get_type().is_array()) {
-      CRAB_ERROR(
-          "array_adaptive::mk_smashed_variable only takes array variables");
-    }
-
-    auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
-    crab::crab_string_os os;
-    os << "smashed(" << v << ")";
-    return variable_t(vfac.get(os.str()), v.get_type());
-  }
-
-  static variable_t get_smashed_variable(const variable_t &a,
-                                         smashed_varmap_t &svm) {
-    if (!a.get_type().is_array()) {
-      CRAB_ERROR(
-          "array_adaptive::get_smashed_variable only takes array variables");
-    }
-
-    auto it = svm.find(a);
-    if (it != svm.end()) {
-      return it->second;
-    } else {
-      variable_t smashed_var = mk_smashed_variable(a);
-      svm.insert({a, smashed_var});
-      return smashed_var;
-    }
+    return m_cell_ghost_man.get_ghost(array_v, c);
   }
 
   std::vector<variable_t> get_array_variables() const {
@@ -1282,13 +1625,13 @@ private:
         }
       }
     } else {
-      scalar_vars.push_back(get_smashed_variable(v, m_smashed_varmap));
+      scalar_vars.push_back(m_smashed_ghost_man.get_ghost(v));
     }
 
     m_array_map -= v;
-    m_cell_varmap.erase(v);
-    m_smashed_varmap.erase(v);
-    m_inv.forget(scalar_vars);
+    m_cell_ghost_man.erase_all(v);
+    m_smashed_ghost_man -= v;
+    m_base_dom.forget(scalar_vars);
   }
 
   interval_t to_interval(const linear_expression_t &expr, base_domain_t inv) {
@@ -1301,7 +1644,7 @@ private:
   }
 
   interval_t to_interval(const linear_expression_t &expr) {
-    return to_interval(expr, m_inv);
+    return to_interval(expr, m_base_dom);
   }
 
   void kill_cells(const variable_t &a, const std::vector<cell_t> &cells,
@@ -1314,7 +1657,7 @@ private:
       for (unsigned i = 0, e = cells.size(); i < e; ++i) {
         const cell_t &c = cells[i];
         if (variable_opt_t c_scalar_opt = get_scalar(a, c)) {
-          m_inv -= *c_scalar_opt;
+          m_base_dom -= *c_scalar_opt;
         }
       }
       if (!crab_domain_params_man::get().array_adaptive_is_smashable()) {
@@ -1323,7 +1666,7 @@ private:
         for (unsigned i = 0, e = cells.size(); i < e; ++i) {
           const cell_t &c = cells[i];
           offset_map.erase(c);
-          m_cell_varmap.erase(a, c);
+          m_cell_ghost_man.erase(a, c);
         }
       } else {
         // if an array is smashable then we don't delete the cells
@@ -1344,9 +1687,9 @@ private:
     }
     auto lhs_ty = lhs.get_type();
     if (lhs_ty.is_bool()) {
-      m_inv.assign_bool_var(lhs, rhs, false);
+      m_base_dom.assign_bool_var(lhs, rhs, false);
     } else if (lhs_ty.is_integer() || lhs_ty.is_real()) {
-      m_inv.assign(lhs, rhs);
+      m_base_dom.assign(lhs, rhs);
     } else {
       CRAB_ERROR(
           "array_adaptive assignment with unexpected array element type");
@@ -1359,15 +1702,15 @@ private:
     if (lhs_ty.is_bool()) {
       if (v.is_constant()) {
         if (v.constant() >= number_t(1)) {
-          m_inv.assign_bool_cst(lhs, linear_constraint_t::get_true());
+          m_base_dom.assign_bool_cst(lhs, linear_constraint_t::get_true());
         } else {
-          m_inv.assign_bool_cst(lhs, linear_constraint_t::get_false());
+          m_base_dom.assign_bool_cst(lhs, linear_constraint_t::get_false());
         }
       } else if (auto var = v.get_variable()) {
-        m_inv.assign_bool_var(lhs, (*var), false);
+        m_base_dom.assign_bool_var(lhs, (*var), false);
       }
     } else if (lhs_ty.is_integer() || lhs_ty.is_real()) {
-      m_inv.assign(lhs, v);
+      m_base_dom.assign(lhs, v);
     } else {
       CRAB_ERROR(
           "array_adaptive assignment with unexpected array element type");
@@ -1383,9 +1726,9 @@ private:
     }
     auto lhs_ty = lhs.get_type();
     if (lhs_ty.is_bool()) {
-      m_inv.backward_assign_bool_var(lhs, rhs, false, dom);
+      m_base_dom.backward_assign_bool_var(lhs, rhs, false, dom);
     } else if (lhs_ty.is_integer() || lhs_ty.is_real()) {
-      m_inv.backward_assign(lhs, rhs, dom);
+      m_base_dom.backward_assign(lhs, rhs, dom);
     } else {
       CRAB_ERROR("array_adaptive backward_assignment with unexpected array "
                  "element type");
@@ -1429,17 +1772,17 @@ private:
     if (lhs_ty.is_bool()) {
       if (v.is_constant()) {
         if (v.constant() >= number_t(1)) {
-          m_inv.backward_assign_bool_cst(lhs, linear_constraint_t::get_true(),
+          m_base_dom.backward_assign_bool_cst(lhs, linear_constraint_t::get_true(),
                                          dom);
         } else {
-          m_inv.backward_assign_bool_cst(lhs, linear_constraint_t::get_false(),
+          m_base_dom.backward_assign_bool_cst(lhs, linear_constraint_t::get_false(),
                                          dom);
         }
       } else if (auto var = v.get_variable()) {
-        m_inv.backward_assign_bool_var(lhs, (*var), false, dom);
+        m_base_dom.backward_assign_bool_var(lhs, (*var), false, dom);
       }
     } else if (lhs_ty.is_integer() || lhs_ty.is_real()) {
-      m_inv.backward_assign(lhs, v, dom);
+      m_base_dom.backward_assign(lhs, v, dom);
     } else {
       CRAB_ERROR("array_adaptive backward assignment with unexpected array "
                  "element type");
@@ -1448,8 +1791,7 @@ private:
 
   // The internal representation contains summarized variables of
   // array type and add them as dimensions in the underlying numerical
-  // domain. This is OK but it shouldn't be exposed outside via linear
-  // constraints.
+  // domain. They shouldn't be exposed outside via linear constraints.
   //
   // XXX: we should also probably filter out scalar variables
   // originated from cells.
@@ -1480,175 +1822,19 @@ private:
                ". Found ", elem_size);
   }
 
-  void do_renaming_for_join(base_domain_t &left_dom, base_domain_t &right_dom,
-                            smashed_varmap_t &left_svm,
-                            smashed_varmap_t &right_svm,
-                            cell_varmap_t &left_cvm, cell_varmap_t &right_cvm,
-                            smashed_varmap_t &out_svm,
-                            cell_varmap_t &out_cvm) const {
-
-    std::vector<variable_t> old_vars_left, old_vars_right, new_vars;
-
-    // Common renaming for smashed scalars
-    for (auto &kv : left_svm) {
-      variable_t &v1 = kv.second;
-      auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
-      auto it = right_svm.find(kv.first);
-      if (it != right_svm.end()) {
-        variable_t &v2 = it->second;
-        if (v1 != v2) {
-          assert(v1.name().str() == v2.name().str());
-          assert(v1.get_type() == v2.get_type());
-          variable_t outv(vfac.get(v1.name().str()), v1.get_type());
-          old_vars_left.push_back(v1);
-          old_vars_right.push_back(v2);
-          new_vars.push_back(outv);
-          out_svm.insert({kv.first, outv});
-        } else {
-          out_svm.insert(kv);
-        }
-      }
-    }
-
-    /// Rename the base domains
-    left_dom.rename(old_vars_left, new_vars);
-    right_dom.rename(old_vars_right, new_vars);
-
-    old_vars_left.clear();
-    old_vars_right.clear();
-    new_vars.clear();
-
-    // Common renaming for cell scalars
-    for (auto &kv : left_cvm) {
-      for (auto &cv : kv.second) {
-        const variable_t &array_var = kv.first;
-        const cell_t &c = cv.first;
-        const variable_t &v1 = cv.second;
-        auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
-        if (boost::optional<variable_t> v2 = right_cvm.find(array_var, c)) {
-          if (v1 != *v2) {
-            assert(v1.name().str() == (*v2).name().str());
-            assert(v1.get_type() == (*v2).get_type());
-            variable_t outv(vfac.get(v1.name().str()), v1.get_type());
-            old_vars_left.push_back(v1);
-            old_vars_right.push_back(*v2);
-            new_vars.push_back(outv);
-            out_cvm.insert(array_var, c, outv);
-          } else {
-            out_cvm.insert(array_var, c, v1);
-          }
-        }
-      }
-    }
-
-    /// Rename the base domains
-    left_dom.rename(old_vars_left, new_vars);
-    right_dom.rename(old_vars_right, new_vars);
-  }
-
-  void do_renaming_for_meet(base_domain_t &left_dom, base_domain_t &right_dom,
-                            smashed_varmap_t &left_svm,
-                            smashed_varmap_t &right_svm,
-                            cell_varmap_t &left_cvm, cell_varmap_t &right_cvm,
-                            smashed_varmap_t &out_svm,
-                            cell_varmap_t &out_cvm) const {
-
-    std::vector<variable_t> old_vars_left, old_vars_right, new_vars;
-
-    /* Figure out common renaming for smashed scalars */
-
-    // Add all mappings from the left operand
-    for (auto &kv : left_svm) {
-      variable_t &v1 = kv.second;
-      auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
-      auto it = right_svm.find(kv.first);
-      if (it != right_svm.end()) {
-        variable_t &v2 = it->second;
-        if (v1 != v2) {
-          // same key but different scalar -> create a fresh common scalar
-          assert(v1.name().str() == v2.name().str());
-          assert(v1.get_type() == v2.get_type());
-          variable_t outv(vfac.get(v1.name().str()), v1.get_type());
-          old_vars_left.push_back(v1);
-          old_vars_right.push_back(v2);
-          new_vars.push_back(outv);
-          out_svm.insert({kv.first, outv});
-          continue;
-        }
-      }
-      out_svm.insert(kv);
-    }
-
-    // Add the rest of mappings from the right operand
-    for (auto &kv : right_svm) {
-      auto it = left_svm.find(kv.first);
-      if (it == left_svm.end()) {
-        out_svm.insert(kv);
-      }
-    }
-
-    left_dom.rename(old_vars_left, new_vars);
-    right_dom.rename(old_vars_right, new_vars);
-
-    old_vars_left.clear();
-    old_vars_right.clear();
-    new_vars.clear();
-
-    /* Figure out common renaming for cell scalars */
-
-    // Add all mappings from the left operand
-    for (auto &kv : left_cvm) {
-      for (auto &cv : kv.second) {
-        const variable_t &array_var = kv.first;
-        const cell_t &c = cv.first;
-        const variable_t &v1 = cv.second;
-        auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
-        if (boost::optional<variable_t> v2 = right_cvm.find(array_var, c)) {
-          if (v1 != *v2) {
-            // same key but different scalar -> create a fresh common scalar
-            assert(v1.name().str() == (*v2).name().str());
-            assert(v1.get_type() == (*v2).get_type());
-            variable_t outv(vfac.get(v1.name().str()), v1.get_type());
-            old_vars_left.push_back(v1);
-            old_vars_right.push_back(*v2);
-            new_vars.push_back(outv);
-            out_cvm.insert(array_var, c, outv);
-            continue;
-          }
-        }
-        out_cvm.insert(array_var, c, v1);
-      }
-    }
-
-    // Add the rest of mappings from the right operand
-    for (auto &kv : right_cvm) {
-      for (auto &cv : kv.second) {
-        const variable_t &array_var = kv.first;
-        const cell_t &c = cv.first;
-        const variable_t &v = cv.second;
-        if (!left_cvm.find(array_var, c)) {
-          out_cvm.insert(array_var, c, v);
-        }
-      }
-    }
-
-    left_dom.rename(old_vars_left, new_vars);
-    right_dom.rename(old_vars_right, new_vars);
-  }
-
   struct renamed_meet_state {
     base_domain_t left_dom;
     base_domain_t right_dom;
     array_state_map_t array_map;
-    cell_varmap_t cell_varmap;
-    smashed_varmap_t smashed_varmap;
+    cell_ghost_man_t cell_ghost_man;
+    smashed_ghost_man_t smashed_ghost_man;
     renamed_meet_state(base_domain_t &&left, base_domain_t &&right,
 		       array_state_map_t &&_array_map,
-		       cell_varmap_t &&_cell_varmap,
-		       smashed_varmap_t &&_smashed_varmap)
+		       cell_ghost_man_t &&_cell_ghost_man,
+		       smashed_ghost_man_t &&_smashed_ghost_man)
       : left_dom(std::move(left)), right_dom(std::move(right)),
-	array_map(std::move(_array_map)), cell_varmap(std::move(_cell_varmap)),
-	smashed_varmap(std::move(_smashed_varmap)) {}    
+	array_map(std::move(_array_map)), cell_ghost_man(std::move(_cell_ghost_man)),
+	smashed_ghost_man(std::move(_smashed_ghost_man)) {}    
   };
 
   // It performs all the renaming needed for meet.  The only operation
@@ -1656,43 +1842,41 @@ private:
   renamed_meet_state rename_with_meet_semantics(const array_adaptive_domain_t &other) const {  
     // Trivial cases are covered elsewhere(i.e., this and other are
     // bottom and/or top)
-    base_domain_t left_dom(m_inv);
-    cell_varmap_t left_cell_varmap(m_cell_varmap);
-    smashed_varmap_t left_smashed_varmap(m_smashed_varmap);
+    base_domain_t left_dom(m_base_dom);
+    cell_ghost_man_t left_cell_ghost_man(m_cell_ghost_man);
+    smashed_ghost_man_t left_smashed_ghost_man(m_smashed_ghost_man);
     
-    base_domain_t right_dom(other.m_inv);
-    cell_varmap_t right_cell_varmap(other.m_cell_varmap);
-    smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
+    base_domain_t right_dom(other.m_base_dom);
+    cell_ghost_man_t right_cell_ghost_man(other.m_cell_ghost_man);
+    smashed_ghost_man_t right_smashed_ghost_man(other.m_smashed_ghost_man);
     // Must be done before the renaming.
     auto out_array_map = m_array_map.meet(
-	       other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
-	       right_cell_varmap, right_smashed_varmap, right_dom);
+	       other.m_array_map, left_cell_ghost_man, left_smashed_ghost_man, left_dom,
+	       right_cell_ghost_man, right_smashed_ghost_man, right_dom);
     
-    smashed_varmap_t out_smashed_varmap;
-    cell_varmap_t out_cell_varmap;
-    do_renaming_for_meet(left_dom, right_dom, left_smashed_varmap,
-			 right_smashed_varmap, left_cell_varmap,
-			 right_cell_varmap, out_smashed_varmap,
-			 out_cell_varmap);
+    smashed_ghost_man_t out_smashed_ghost_man =
+      left_smashed_ghost_man.meet(right_smashed_ghost_man, left_dom, right_dom);
+    cell_ghost_man_t out_cell_ghost_man =
+      left_cell_ghost_man.meet(right_cell_ghost_man, left_dom, right_dom);
     
     renamed_meet_state res(std::move(left_dom), std::move(right_dom),
 			   std::move(out_array_map),
-			   std::move(out_cell_varmap), std::move(out_smashed_varmap));
+			   std::move(out_cell_ghost_man), std::move(out_smashed_ghost_man));
     return res;
   }
   
   array_adaptive_domain(base_domain_t &&inv, array_state_map_t &&amap,
-                        cell_varmap_t &&cvarmap, smashed_varmap_t &&svarmap)
-      : m_inv(std::move(inv)), m_array_map(std::move(amap)),
-        m_cell_varmap(std::move(cvarmap)),
-        m_smashed_varmap(std::move(svarmap)) {}
+                        cell_ghost_man_t &&cvarmap, smashed_ghost_man_t &&svarmap)
+      : m_base_dom(std::move(inv)), m_array_map(std::move(amap)),
+        m_cell_ghost_man(std::move(cvarmap)),
+        m_smashed_ghost_man(std::move(svarmap)) {}
 
 public:
   array_adaptive_domain(bool is_bottom = false) {
     if (is_bottom) {
-      m_inv.set_to_bottom();
+      m_base_dom.set_to_bottom();
     } else {
-      m_inv.set_to_top();
+      m_base_dom.set_to_top();
     }
   }
 
@@ -1717,18 +1901,18 @@ public:
   }
 
   array_adaptive_domain(const array_adaptive_domain_t &other)
-      : m_inv(other.m_inv), m_array_map(other.m_array_map),
-        m_cell_varmap(other.m_cell_varmap),
-        m_smashed_varmap(other.m_smashed_varmap) {
+      : m_base_dom(other.m_base_dom), m_array_map(other.m_array_map),
+        m_cell_ghost_man(other.m_cell_ghost_man),
+        m_smashed_ghost_man(other.m_smashed_ghost_man) {
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
   }
 
   array_adaptive_domain(const array_adaptive_domain_t &&other)
-      : m_inv(std::move(other.m_inv)),
+      : m_base_dom(std::move(other.m_base_dom)),
         m_array_map(std::move(other.m_array_map)),
-        m_cell_varmap(std::move(other.m_cell_varmap)),
-        m_smashed_varmap(std::move(other.m_smashed_varmap)) {
+        m_cell_ghost_man(std::move(other.m_cell_ghost_man)),
+        m_smashed_ghost_man(std::move(other.m_smashed_ghost_man)) {
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
   }
@@ -1737,10 +1921,10 @@ public:
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
     if (this != &other) {
-      m_inv = other.m_inv;
+      m_base_dom = other.m_base_dom;
       m_array_map = other.m_array_map;
-      m_cell_varmap = other.m_cell_varmap;
-      m_smashed_varmap = other.m_smashed_varmap;
+      m_cell_ghost_man = other.m_cell_ghost_man;
+      m_smashed_ghost_man = other.m_smashed_ghost_man;
     }
     return *this;
   }
@@ -1749,17 +1933,17 @@ public:
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
     if (this != &other) {
-      m_inv = std::move(other.m_inv);
+      m_base_dom = std::move(other.m_base_dom);
       m_array_map = std::move(other.m_array_map);
-      m_cell_varmap = std::move(other.m_cell_varmap);
-      m_smashed_varmap = std::move(other.m_smashed_varmap);
+      m_cell_ghost_man = std::move(other.m_cell_ghost_man);
+      m_smashed_ghost_man = std::move(other.m_smashed_ghost_man);
     }
     return *this;
   }
 
-  bool is_bottom() const override { return (m_inv.is_bottom()); }
+  bool is_bottom() const override { return (m_base_dom.is_bottom()); }
 
-  bool is_top() const override { return (m_inv.is_top()); }
+  bool is_top() const override { return (m_base_dom.is_top()); }
 
   bool operator<=(const array_adaptive_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.leq");
@@ -1775,61 +1959,11 @@ public:
                array_adaptive_domain_t right(other);
                crab::outs() << "Check if " << left << " <= " << right << "\n");
 
-      base_domain_t left_dom(m_inv);
-      base_domain_t right_dom(other.m_inv);
-      std::vector<variable_t> old_vars_left, old_vars_right, new_vars;
+      base_domain_t left_dom(m_base_dom);
+      base_domain_t right_dom(other.m_base_dom);
 
-      /* Figure out common renaming */
-
-      for (auto &kv : m_smashed_varmap) {
-        const variable_t &v1 = kv.second;
-        auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
-        auto it = other.m_smashed_varmap.find(kv.first);
-        // cell exists in both
-        if (it != other.m_smashed_varmap.end()) {
-          const variable_t &v2 = it->second;
-          assert(v1.name().str() == v2.name().str());
-          assert(v1.get_type() == v2.get_type());
-          // same name and type but different variable id
-          if (v1 != v2) {
-            variable_t outv(vfac.get(v1.name().str()), v1.get_type());
-            old_vars_left.push_back(v1);
-            old_vars_right.push_back(v2);
-            new_vars.push_back(outv);
-          }
-        }
-      }
-      left_dom.rename(old_vars_left, new_vars);
-      right_dom.rename(old_vars_right, new_vars);
-
-      old_vars_left.clear();
-      old_vars_right.clear();
-      new_vars.clear();
-
-      for (auto &kv : m_cell_varmap) {
-        for (auto &cv : kv.second) {
-          const variable_t &array_var = kv.first;
-          const cell_t &c = cv.first;
-          const variable_t &v1 = cv.second;
-          auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
-          // cell exists in both
-          if (boost::optional<variable_t> v2 =
-                  other.m_cell_varmap.find(array_var, c)) {
-            assert(v1.name().str() == (*v2).name().str());
-            assert(v1.get_type() == (*v2).get_type());
-            // same name and type but different variable id
-            if (v1 != (*v2)) {
-              variable_t outv(vfac.get(v1.name().str()), v1.get_type());
-              old_vars_left.push_back(v1);
-              old_vars_right.push_back(*v2);
-              new_vars.push_back(outv);
-            }
-          }
-        }
-      }
-
-      left_dom.rename(old_vars_left, new_vars);
-      right_dom.rename(old_vars_right, new_vars);
+      m_smashed_ghost_man.join(other.m_smashed_ghost_man, left_dom, right_dom);
+      m_cell_ghost_man.join(other.m_cell_ghost_man, left_dom, right_dom);
 
       // We need to be careful if one array state is smashed and the
       // other is not.
@@ -1840,7 +1974,7 @@ public:
   }
 
   bool operator==(array_adaptive_domain_t other) {
-    return (m_inv <= other.m_inv && other.m_inv <= m_inv);
+    return (m_base_dom <= other.m_base_dom && other.m_base_dom <= m_base_dom);
   }
 
   void operator|=(const array_adaptive_domain_t &other) override {
@@ -1858,24 +1992,23 @@ public:
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << *this << "\n";);
     } else {
 
-      base_domain_t right_dom(other.m_inv);
-      cell_varmap_t right_cell_varmap(other.m_cell_varmap);
-      smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
+      base_domain_t right_dom(other.m_base_dom);
+      cell_ghost_man_t right_cell_ghost_man(other.m_cell_ghost_man);
+      smashed_ghost_man_t right_smashed_ghost_man(other.m_smashed_ghost_man);
 
       // this must be done before the renaming
       m_array_map = std::move(m_array_map.join(
-          other.m_array_map, m_cell_varmap, m_smashed_varmap, m_inv,
-          right_cell_varmap, right_smashed_varmap, right_dom));
+          other.m_array_map, m_cell_ghost_man, m_smashed_ghost_man, m_base_dom,
+          right_cell_ghost_man, right_smashed_ghost_man, right_dom));
 
-      smashed_varmap_t out_smashed_varmap;
-      cell_varmap_t out_cell_varmap;
-      do_renaming_for_join(m_inv, right_dom, m_smashed_varmap,
-                           right_smashed_varmap, m_cell_varmap,
-                           right_cell_varmap, out_smashed_varmap,
-                           out_cell_varmap);
-      m_inv |= right_dom;
-      std::swap(m_cell_varmap, out_cell_varmap);
-      std::swap(m_smashed_varmap, out_smashed_varmap);
+      smashed_ghost_man_t out_smashed_ghost_man =
+	m_smashed_ghost_man.join(right_smashed_ghost_man, m_base_dom, right_dom);
+      cell_ghost_man_t out_cell_ghost_man =
+	m_cell_ghost_man.join(right_cell_ghost_man, m_base_dom, right_dom);
+          
+      m_base_dom |= right_dom;
+      std::swap(m_cell_ghost_man, out_cell_ghost_man);
+      std::swap(m_smashed_ghost_man, out_smashed_ghost_man);
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << *this << "\n";);
     }
   }
@@ -1892,29 +2025,27 @@ public:
       CRAB_LOG("array-adaptive",
                crab::outs() << "Join " << *this << " and " << other << "\n";);
 
-      base_domain_t left_dom(m_inv);
-      cell_varmap_t left_cell_varmap(m_cell_varmap);
-      smashed_varmap_t left_smashed_varmap(m_smashed_varmap);
+      base_domain_t left_dom(m_base_dom);
+      cell_ghost_man_t left_cell_ghost_man(m_cell_ghost_man);
+      smashed_ghost_man_t left_smashed_ghost_man(m_smashed_ghost_man);
 
-      base_domain_t right_dom(other.m_inv);
-      cell_varmap_t right_cell_varmap(other.m_cell_varmap);
-      smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
+      base_domain_t right_dom(other.m_base_dom);
+      cell_ghost_man_t right_cell_ghost_man(other.m_cell_ghost_man);
+      smashed_ghost_man_t right_smashed_ghost_man(other.m_smashed_ghost_man);
 
       // Must be done before the renaming.
       auto out_array_map = std::move(m_array_map.join(
-          other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
-          right_cell_varmap, right_smashed_varmap, right_dom));
+          other.m_array_map, left_cell_ghost_man, left_smashed_ghost_man, left_dom,
+          right_cell_ghost_man, right_smashed_ghost_man, right_dom));
 
-      smashed_varmap_t out_smashed_varmap;
-      cell_varmap_t out_cell_varmap;
-      do_renaming_for_join(left_dom, right_dom, left_smashed_varmap,
-                           right_smashed_varmap, left_cell_varmap,
-                           right_cell_varmap, out_smashed_varmap,
-                           out_cell_varmap);
-
+      smashed_ghost_man_t out_smashed_ghost_man =
+	left_smashed_ghost_man.join(right_smashed_ghost_man, left_dom, right_dom);
+      cell_ghost_man_t out_cell_ghost_man =
+	left_cell_ghost_man.join(right_cell_ghost_man, left_dom, right_dom);
+      
       array_adaptive_domain_t res(
           left_dom | right_dom, std::move(out_array_map),
-          std::move(out_cell_varmap), std::move(out_smashed_varmap));
+          std::move(out_cell_ghost_man), std::move(out_smashed_ghost_man));
 
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << res << "\n";);
       return res;
@@ -1935,7 +2066,7 @@ public:
       auto s = rename_with_meet_semantics(other);
       array_adaptive_domain_t res(
           s.left_dom & s.right_dom, std::move(s.array_map),
-          std::move(s.cell_varmap), std::move(s.smashed_varmap));
+          std::move(s.cell_ghost_man), std::move(s.smashed_ghost_man));
       CRAB_LOG("array-adaptive",
 	       crab::outs() << "Res=" << res << "\n";);
       return res;
@@ -1954,30 +2085,27 @@ public:
       CRAB_LOG("array-adaptive", crab::outs() << "Widening " << *this << " and "
                                               << other << "\n";);
 
-      base_domain_t left_dom(m_inv);
-      cell_varmap_t left_cell_varmap(m_cell_varmap);
-      smashed_varmap_t left_smashed_varmap(m_smashed_varmap);
+      base_domain_t left_dom(m_base_dom);
+      cell_ghost_man_t left_cell_ghost_man(m_cell_ghost_man);
+      smashed_ghost_man_t left_smashed_ghost_man(m_smashed_ghost_man);
 
-      base_domain_t right_dom(other.m_inv);
-      cell_varmap_t right_cell_varmap(other.m_cell_varmap);
-      smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
+      base_domain_t right_dom(other.m_base_dom);
+      cell_ghost_man_t right_cell_ghost_man(other.m_cell_ghost_man);
+      smashed_ghost_man_t right_smashed_ghost_man(other.m_smashed_ghost_man);
 
       // Must be done before the renaming.
       auto out_array_map = m_array_map.join(
-          other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
-          right_cell_varmap, right_smashed_varmap, right_dom);
-
-      smashed_varmap_t out_smashed_varmap;
-      cell_varmap_t out_cell_varmap;
-
-      do_renaming_for_join(left_dom, right_dom, left_smashed_varmap,
-                           right_smashed_varmap, left_cell_varmap,
-                           right_cell_varmap, out_smashed_varmap,
-                           out_cell_varmap);
-
+          other.m_array_map, left_cell_ghost_man, left_smashed_ghost_man, left_dom,
+          right_cell_ghost_man, right_smashed_ghost_man, right_dom);
+      
+      smashed_ghost_man_t out_smashed_ghost_man =
+	left_smashed_ghost_man.join(right_smashed_ghost_man, left_dom, right_dom);
+      cell_ghost_man_t out_cell_ghost_man =
+	left_cell_ghost_man.join(right_cell_ghost_man, left_dom, right_dom);
+      
       array_adaptive_domain_t res(
           left_dom || right_dom, std::move(out_array_map),
-          std::move(out_cell_varmap), std::move(out_smashed_varmap));
+          std::move(out_cell_ghost_man), std::move(out_smashed_ghost_man));
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << res << "\n";);
       return res;
     }
@@ -1996,29 +2124,27 @@ public:
       CRAB_LOG("array-adaptive", crab::outs() << "Widening " << *this << " and "
                                               << other << "\n";);
 
-      base_domain_t left_dom(m_inv);
-      cell_varmap_t left_cell_varmap(m_cell_varmap);
-      smashed_varmap_t left_smashed_varmap(m_smashed_varmap);
+      base_domain_t left_dom(m_base_dom);
+      cell_ghost_man_t left_cell_ghost_man(m_cell_ghost_man);
+      smashed_ghost_man_t left_smashed_ghost_man(m_smashed_ghost_man);
 
-      base_domain_t right_dom(other.m_inv);
-      cell_varmap_t right_cell_varmap(other.m_cell_varmap);
-      smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
+      base_domain_t right_dom(other.m_base_dom);
+      cell_ghost_man_t right_cell_ghost_man(other.m_cell_ghost_man);
+      smashed_ghost_man_t right_smashed_ghost_man(other.m_smashed_ghost_man);
 
       // Must be done before the renaming.
       auto out_array_map = m_array_map.join(
-          other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
-          right_cell_varmap, right_smashed_varmap, right_dom);
+          other.m_array_map, left_cell_ghost_man, left_smashed_ghost_man, left_dom,
+          right_cell_ghost_man, right_smashed_ghost_man, right_dom);
 
-      smashed_varmap_t out_smashed_varmap;
-      cell_varmap_t out_cell_varmap;
-      do_renaming_for_join(left_dom, right_dom, left_smashed_varmap,
-                           right_smashed_varmap, left_cell_varmap,
-                           right_cell_varmap, out_smashed_varmap,
-                           out_cell_varmap);
-
+      smashed_ghost_man_t out_smashed_ghost_man =
+	left_smashed_ghost_man.join(right_smashed_ghost_man, left_dom, right_dom);
+      cell_ghost_man_t out_cell_ghost_man =
+	left_cell_ghost_man.join(right_cell_ghost_man, left_dom, right_dom);
+      
       array_adaptive_domain_t res(
           left_dom.widening_thresholds(right_dom, ts), std::move(out_array_map),
-          std::move(out_cell_varmap), std::move(out_smashed_varmap));
+          std::move(out_cell_ghost_man), std::move(out_smashed_ghost_man));
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << res << "\n";);
       return res;
     }
@@ -2036,30 +2162,27 @@ public:
       CRAB_LOG("array-adaptive", crab::outs() << "Narrowing " << *this
                                               << " and " << other << "\n";);
 
-      base_domain_t left_dom(m_inv);
-      cell_varmap_t left_cell_varmap(m_cell_varmap);
-      smashed_varmap_t left_smashed_varmap(m_smashed_varmap);
+      base_domain_t left_dom(m_base_dom);
+      cell_ghost_man_t left_cell_ghost_man(m_cell_ghost_man);
+      smashed_ghost_man_t left_smashed_ghost_man(m_smashed_ghost_man);
 
-      base_domain_t right_dom(other.m_inv);
-      cell_varmap_t right_cell_varmap(other.m_cell_varmap);
-      smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
+      base_domain_t right_dom(other.m_base_dom);
+      cell_ghost_man_t right_cell_ghost_man(other.m_cell_ghost_man);
+      smashed_ghost_man_t right_smashed_ghost_man(other.m_smashed_ghost_man);
 
       // Must be done before the renaming.
       auto out_array_map = m_array_map.join(
-          other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
-          right_cell_varmap, right_smashed_varmap, right_dom);
+          other.m_array_map, left_cell_ghost_man, left_smashed_ghost_man, left_dom,
+          right_cell_ghost_man, right_smashed_ghost_man, right_dom);
 
-      smashed_varmap_t out_smashed_varmap;
-      cell_varmap_t out_cell_varmap;
-
-      do_renaming_for_meet(left_dom, right_dom, left_smashed_varmap,
-                           right_smashed_varmap, left_cell_varmap,
-                           right_cell_varmap, out_smashed_varmap,
-                           out_cell_varmap);
-
+      smashed_ghost_man_t out_smashed_ghost_man =
+	left_smashed_ghost_man.meet(right_smashed_ghost_man, left_dom, right_dom);
+      cell_ghost_man_t out_cell_ghost_man =
+	left_cell_ghost_man.meet(right_cell_ghost_man, left_dom, right_dom);
+      
       array_adaptive_domain_t res(
           left_dom && right_dom, std::move(out_array_map),
-          std::move(out_cell_varmap), std::move(out_smashed_varmap));
+          std::move(out_cell_ghost_man), std::move(out_smashed_ghost_man));
 
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << res << "\n";);
       return res;
@@ -2087,7 +2210,7 @@ public:
         scalar_variables.push_back(v);
       }
     }
-    m_inv.forget(scalar_variables);
+    m_base_dom.forget(scalar_variables);
   }
 
   void project(const variable_vector_t &variables) override {
@@ -2099,7 +2222,7 @@ public:
     }
 
     // if we must keep array variable v then we need to keep all its
-    // synthetic cells in m_inv.
+    // synthetic cells in m_base_dom.
 
     variable_vector_t keep_vars;
     std::set<variable_t> keep_arrays;
@@ -2125,31 +2248,31 @@ public:
             }
           }
         } else {
-          keep_vars.push_back(get_smashed_variable(v, m_smashed_varmap));
+          keep_vars.push_back(m_smashed_ghost_man.get_ghost(v));
         }
       } else {
         m_array_map -= v;
-        m_cell_varmap.erase(v);
-        m_smashed_varmap.erase(v);
+        m_cell_ghost_man.erase_all(v);
+	m_smashed_ghost_man -= v;	
       }
     }
 
     // Finally we project
-    m_inv.project(keep_vars);
+    m_base_dom.project(keep_vars);
   }
 
   void normalize() override {
     CRAB_WARN("array adaptive normalize not implemented");
   }
 
-  void minimize() override { m_inv.minimize(); }
+  void minimize() override { m_base_dom.minimize(); }
 
   virtual interval_t operator[](const variable_t &v) override {
     if (is_bottom()) {
       return interval_t::bottom();
     } else {
       if (!v.get_type().is_array()) {
-	return m_inv.at(v);
+	return m_base_dom.at(v);
       } else {
 	return interval_t::top();
       }
@@ -2161,7 +2284,7 @@ public:
       return interval_t::bottom();
     } else {
       if (!v.get_type().is_array()) {
-	return m_inv.at(v);
+	return m_base_dom.at(v);
       } else {
 	return interval_t::top();
       }
@@ -2181,7 +2304,7 @@ public:
 		     [](const variable_t &v) {
           return v.get_type().is_integer() || v.get_type().is_bool();
         }))) {
-      m_inv.intrinsic(name, inputs, outputs);
+      m_base_dom.intrinsic(name, inputs, outputs);
     } else {
       CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
     }
@@ -2199,7 +2322,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.add_constraints");
     crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
 
-    m_inv += csts;
+    m_base_dom += csts;
 
     CRAB_LOG("array-adaptive",
              crab::outs() << "assume(" << csts << ")  " << *this << "\n";);
@@ -2216,7 +2339,7 @@ public:
     if (var.get_type().is_array()) {
       forget_array(var);
     } else {
-      m_inv -= var;
+      m_base_dom -= var;
     }
   }
 
@@ -2224,7 +2347,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.assign");
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
 
-    m_inv.assign(x, e);
+    m_base_dom.assign(x, e);
 
     CRAB_LOG("array-adaptive", crab::outs() << "apply " << x << " := " << e
                                             << " " << *this << "\n";);
@@ -2235,7 +2358,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    m_inv.apply(op, x, y, z);
+    m_base_dom.apply(op, x, y, z);
 
     CRAB_LOG("array-adaptive", crab::outs()
                                    << "apply " << x << " := " << y << " " << op
@@ -2247,7 +2370,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    m_inv.apply(op, x, y, z);
+    m_base_dom.apply(op, x, y, z);
 
     CRAB_LOG("array-adaptive", crab::outs()
                                    << "apply " << x << " := " << y << " " << op
@@ -2256,24 +2379,24 @@ public:
 
   void select(const variable_t &lhs, const linear_constraint_t &cond,
 		      const linear_expression_t &e1,  const linear_expression_t &e2) override {
-    m_inv.select(lhs, cond, e1, e2);
+    m_base_dom.select(lhs, cond, e1, e2);
   }
   
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const array_adaptive_domain_t &inv) override {
-    m_inv.backward_assign(x, e, inv.m_inv);
+    m_base_dom.backward_assign(x, e, inv.m_base_dom);
   }
 
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, number_t z,
                       const array_adaptive_domain_t &inv) override {
-    m_inv.backward_apply(op, x, y, z, inv.m_inv);
+    m_base_dom.backward_apply(op, x, y, z, inv.m_base_dom);
   }
 
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const array_adaptive_domain_t &inv) override {
-    m_inv.backward_apply(op, x, y, z, inv.m_inv);
+    m_base_dom.backward_apply(op, x, y, z, inv.m_base_dom);
   }
 
   void apply(int_conv_operation_t op, const variable_t &dst,
@@ -2281,7 +2404,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    m_inv.apply(op, dst, src);
+    m_base_dom.apply(op, dst, src);
   }
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
@@ -2289,7 +2412,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    m_inv.apply(op, x, y, z);
+    m_base_dom.apply(op, x, y, z);
 
     CRAB_LOG("array-adaptive", crab::outs()
                                    << "apply " << x << " := " << y << " " << op
@@ -2301,7 +2424,7 @@ public:
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
-    m_inv.apply(op, x, y, k);
+    m_base_dom.apply(op, x, y, k);
 
     CRAB_LOG("array-adaptive", crab::outs()
                                    << "apply " << x << " := " << y << " " << op
@@ -2313,32 +2436,32 @@ public:
   // boolean operators
   virtual void assign_bool_cst(const variable_t &lhs,
                                const linear_constraint_t &rhs) override {
-    m_inv.assign_bool_cst(lhs, rhs);
+    m_base_dom.assign_bool_cst(lhs, rhs);
   }
 
   virtual void assign_bool_ref_cst(const variable_t &lhs,
                                    const reference_constraint_t &rhs) override {
-    m_inv.assign_bool_ref_cst(lhs, rhs);
+    m_base_dom.assign_bool_ref_cst(lhs, rhs);
   }
 
   virtual void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                bool is_not_rhs) override {
-    m_inv.assign_bool_var(lhs, rhs, is_not_rhs);
+    m_base_dom.assign_bool_var(lhs, rhs, is_not_rhs);
   }
 
   virtual void apply_binary_bool(bool_operation_t op, const variable_t &x,
                                  const variable_t &y,
                                  const variable_t &z) override {
-    m_inv.apply_binary_bool(op, x, y, z);
+    m_base_dom.apply_binary_bool(op, x, y, z);
   }
 
   virtual void assume_bool(const variable_t &v, bool is_negated) override {
-    m_inv.assume_bool(v, is_negated);
+    m_base_dom.assume_bool(v, is_negated);
   }
 
   virtual void select_bool(const variable_t &lhs, const variable_t &cond,
 			   const variable_t &b1, const variable_t &b2) override {
-    m_inv.select_bool(lhs, cond, b1, b2);
+    m_base_dom.select_bool(lhs, cond, b1, b2);
   }
   
   // backward boolean operators
@@ -2346,28 +2469,28 @@ public:
   backward_assign_bool_cst(const variable_t &lhs,
                            const linear_constraint_t &rhs,
                            const array_adaptive_domain_t &inv) override {
-    m_inv.backward_assign_bool_cst(lhs, rhs, inv.m_inv);
+    m_base_dom.backward_assign_bool_cst(lhs, rhs, inv.m_base_dom);
   }
 
   virtual void
   backward_assign_bool_ref_cst(const variable_t &lhs,
                                const reference_constraint_t &rhs,
                                const array_adaptive_domain_t &inv) override {
-    m_inv.backward_assign_bool_ref_cst(lhs, rhs, inv.m_inv);
+    m_base_dom.backward_assign_bool_ref_cst(lhs, rhs, inv.m_base_dom);
   }
 
   virtual void
   backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                            bool is_not_rhs,
                            const array_adaptive_domain_t &inv) override {
-    m_inv.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv.m_inv);
+    m_base_dom.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv.m_base_dom);
   }
 
   virtual void
   backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
                              const variable_t &y, const variable_t &z,
                              const array_adaptive_domain_t &inv) override {
-    m_inv.backward_apply_binary_bool(op, x, y, z, inv.m_inv);
+    m_base_dom.backward_apply_binary_bool(op, x, y, z, inv.m_base_dom);
   }
 
   /// array_adaptive is a functor domain that implements all
@@ -2418,12 +2541,12 @@ public:
     const array_state &as = lookup_array_state(a);
     if (as.is_smashed()) {
       // Check smashed array is consistent with elem_size
-      const cp_domain_t &a_elem_size = as.get_element_sz();
-      cp_domain_t cp_e_sz((int64_t)e_sz);
+      const constant_value &a_elem_size = as.get_element_sz();
+      constant_value cp_e_sz((int64_t)e_sz);
       cp_e_sz |= a_elem_size;
       if (!cp_e_sz.is_top()) {
-        variable_t smashed_a = get_smashed_variable(a, m_smashed_varmap);
-        m_inv.array_load(lhs, smashed_a, elem_size, i);
+        variable_t smashed_a = m_smashed_ghost_man.get_ghost(a);
+        m_base_dom.array_load(lhs, smashed_a, elem_size, i);
         goto array_load_end;
       } else {
         // lhs will be forgotten
@@ -2466,18 +2589,18 @@ public:
         linear_expression_t symb_ub(i + number_t(e_sz - 1));
         std::vector<cell_t> cells;
         const offset_map_t &offset_map = as.get_offset_map();
-        offset_map.get_overlap_cells_symbolic_offset(m_inv, symb_lb, symb_ub,
+        offset_map.get_overlap_cells_symbolic_offset(m_base_dom, symb_lb, symb_ub,
                                                      cells);
         // XXX: if we have a large array that is never smashed but we
         // do many reads with symbolic offsets then it might be better
         // to smash the array so that each read is cheaper.
         if (crab_domain_params_man::get().array_adaptive_is_smashable()) {
           if (array_state::can_be_smashed(cells, e_sz, true)) {
-            // we smash all overlapping cells into a fresh array
+            // we smash all overlapping cells into a temporary array
             // (summarized) variable
             auto &vfac =
                 const_cast<varname_t *>(&(a.name()))->get_var_factory();
-            variable_t fresh_var(vfac.get(), a.get_type());
+            variable_t tmp_var(vfac.get(), a.get_type());
             bool found_cell_without_scalar = false;
             for (unsigned k = 0, num_cells = cells.size(); k < num_cells; ++k) {
               const cell_t &c = cells[k];
@@ -2493,17 +2616,17 @@ public:
                 break;
               }
               const bool is_strong_update = (k == 0);
-              m_inv.array_store(fresh_var, elem_size, i, *c_scalar_opt,
+              m_base_dom.array_store(tmp_var, elem_size, i, *c_scalar_opt,
                                 is_strong_update);
             }
             if (found_cell_without_scalar) {
-              m_inv -= lhs;
+              m_base_dom -= lhs;
             } else {
               // we read from the temporary summarized variable
-              m_inv.array_load(lhs, fresh_var, elem_size, i);
+              m_base_dom.array_load(lhs, tmp_var, elem_size, i);
             }
             // we forget the temporary summarized variable
-            m_inv -= fresh_var;
+            m_base_dom -= tmp_var;
             goto array_load_end;
           } else {
             CRAB_LOG("array-adaptive",
@@ -2519,7 +2642,7 @@ public:
         }
       }
     }
-    m_inv -= lhs;
+    m_base_dom -= lhs;
 
   array_load_end:
     CRAB_LOG("array-adaptive", linear_expression_t ub = i + elem_size - 1;
@@ -2542,14 +2665,14 @@ public:
     const array_state &as = lookup_array_state(a);
 
     if (as.is_smashed()) {
-      variable_t smashed_a = get_smashed_variable(a, m_smashed_varmap);
-      const cp_domain_t &a_elem_size = as.get_element_sz();
-      cp_domain_t cp_e_sz((int64_t)e_sz);
+      variable_t smashed_a = m_smashed_ghost_man.get_ghost(a);
+      const constant_value &a_elem_size = as.get_element_sz();
+      constant_value cp_e_sz((int64_t)e_sz);
       cp_e_sz |= a_elem_size;
       if (!cp_e_sz.is_top()) {
-        m_inv.array_store(smashed_a, elem_size, i, val, is_strong_update);
+        m_base_dom.array_store(smashed_a, elem_size, i, val, is_strong_update);
       } else {
-        m_inv -= smashed_a;
+        m_base_dom -= smashed_a;
       }
     } else {
       interval_t ii = to_interval(i);
@@ -2604,7 +2727,7 @@ public:
             CRAB_LOG("array-adaptive-smash",
                      crab::outs() << "Array " << a << " will be smashed\n";);
             bool found_cell_without_scalar = false;
-            variable_t smashed_a = get_smashed_variable(a, m_smashed_varmap);
+            variable_t smashed_a = m_smashed_ghost_man.get_ghost(a);
             for (unsigned k = 0, num_cells = cells.size(); k < num_cells; ++k) {
               const cell_t &c = cells[k];
               auto c_scalar_opt = get_scalar(a, c);
@@ -2613,18 +2736,18 @@ public:
                 break;
               }
               const bool is_strong_update = (k == 0);
-              m_inv.array_store(smashed_a, elem_size, i, *c_scalar_opt,
+              m_base_dom.array_store(smashed_a, elem_size, i, *c_scalar_opt,
                                 is_strong_update);
               CRAB_LOG("array-adaptive-smash",
                        crab::outs() << "\tAfter smashing " << *c_scalar_opt
-                                    << "=" << m_inv << "\n";);
+                                    << "=" << m_base_dom << "\n";);
             }
 
             if (found_cell_without_scalar) {
-              m_inv -= smashed_a;
+              m_base_dom -= smashed_a;
             } else {
               // Finally the array store
-              m_inv.array_store(smashed_a, elem_size, i, val, is_strong_update);
+              m_base_dom.array_store(smashed_a, elem_size, i, val, is_strong_update);
             }
 
             // The removal of cells from offset_map must be done after
@@ -2634,17 +2757,17 @@ public:
               if (auto c_scalar_opt = get_scalar(a, c)) {
                 // destroy the synthethic cell from the base domain and
                 // from the offset map
-                m_inv -= *c_scalar_opt;
+                m_base_dom -= *c_scalar_opt;
               }
               offset_map.erase(c);
-              m_cell_varmap.erase(a, c);
+              m_cell_ghost_man.erase(a, c);
             }
             next_as.set_smashed(true);
-            next_as.get_element_sz() = cp_domain_t(number_t(e_sz));
+            next_as.get_element_sz() = constant_value(number_t(e_sz));
 
             CRAB_LOG("array-adaptive-smash",
                      crab::outs() << "Array " << a
-                                  << " has been smashed:" << m_inv << "\n";);
+                                  << " has been smashed:" << m_base_dom << "\n";);
           } else {
             CRAB_LOG("array-adaptive",
                      if (cells.size() >
@@ -2665,7 +2788,7 @@ public:
           linear_expression_t symb_lb(i);
           linear_expression_t symb_ub(i + number_t(e_sz - 1));
           std::vector<cell_t> cells;
-          offset_map.get_overlap_cells_symbolic_offset(m_inv, symb_lb, symb_ub,
+          offset_map.get_overlap_cells_symbolic_offset(m_base_dom, symb_lb, symb_ub,
                                                        cells);
           CRAB_LOG(
               "array-adaptive", crab::outs() << "Killed cells: {";
@@ -2767,7 +2890,7 @@ public:
         renmap.insert({new_c_scalar, *c_scalar_opt});
       }
 
-      cp_domain_t elem_sz = as.get_element_sz();
+      constant_value elem_sz = as.get_element_sz();
       m_array_map.set(
           lhs, array_state(false, std::move(elem_sz), std::move(lhs_om)));
 
@@ -2786,9 +2909,9 @@ public:
       }
     } else if (crab_domain_params_man::get().array_adaptive_is_smashable()) {
       CRAB_LOG("array-adaptive-array-assign", crab::outs() << "Smashed\n";);
-      variable_t smashed_lhs = get_smashed_variable(lhs, m_smashed_varmap);
-      variable_t smashed_rhs = get_smashed_variable(rhs, m_smashed_varmap);
-      m_inv.array_assign(smashed_lhs, smashed_rhs);
+      variable_t smashed_lhs = m_smashed_ghost_man.get_ghost(lhs);
+      variable_t smashed_rhs = m_smashed_ghost_man.get_ghost(rhs);
+      m_base_dom.array_assign(smashed_lhs, smashed_rhs);
       m_array_map.set(lhs, as);
     }
     CRAB_LOG("array-adaptive", crab::outs() << "Res=" << *this << "\n";);
@@ -2840,10 +2963,10 @@ public:
     }
 
     auto s = rename_with_meet_semantics(invariant);
-    std::swap(m_inv, s.left_dom);
+    std::swap(m_base_dom, s.left_dom);
     std::swap(m_array_map, s.array_map);
-    std::swap(m_cell_varmap, s.cell_varmap);
-    std::swap(m_smashed_varmap, s.smashed_varmap);
+    std::swap(m_cell_ghost_man, s.cell_ghost_man);
+    std::swap(m_smashed_ghost_man, s.smashed_ghost_man);
 	
     const array_state &as = lookup_array_state(a);
     if (as.is_smashed()) {
@@ -2859,23 +2982,23 @@ public:
         offset_t o(static_cast<int64_t>(*n));
 	uint64_t e_sz = check_and_get_elem_size(elem_size);	        
 	// We need to ensure when do_backward_assign is called that
-	// m_inv and s.right_dom (renamed version of invariant.m_inv)
+	// m_base_dom and s.right_dom (renamed version of invariant.m_base_dom)
 	// have been properly renamed.
 	cell_t c = mk_named_cell(a, o, e_sz, om).first;
-        do_backward_assign(lhs, a, c, s.right_dom /*invariant.m_inv*/);
+        do_backward_assign(lhs, a, c, s.right_dom /*invariant.m_base_dom*/);
         m_array_map.set(a, next_as);
       } else {
         CRAB_LOG("array-adaptive",
                  CRAB_WARN("array index is not a constant value"););
         // -- Forget lhs
-        m_inv -= lhs;
+        m_base_dom -= lhs;
         // -- Meet with forward invariant
 	//
-	// m_inv and s.right_dom have been properly renamed so we
+	// m_base_dom and s.right_dom have been properly renamed so we
 	// don't need need the next line which would do again the
 	// renaming.	
         //*this = *this & invariant;
-	m_inv = m_inv & s.right_dom;
+	m_base_dom = m_base_dom & s.right_dom;
       }
     }
 
@@ -2897,10 +3020,10 @@ public:
     }
 
     auto s = rename_with_meet_semantics(invariant);
-    std::swap(m_inv, s.left_dom);
+    std::swap(m_base_dom, s.left_dom);
     std::swap(m_array_map, s.array_map);
-    std::swap(m_cell_varmap, s.cell_varmap);
-    std::swap(m_smashed_varmap, s.smashed_varmap);
+    std::swap(m_cell_ghost_man, s.cell_ghost_man);
+    std::swap(m_smashed_ghost_man, s.smashed_ghost_man);
     
     uint64_t e_sz = check_and_get_elem_size(elem_size);
     const array_state &as = lookup_array_state(a);
@@ -2912,7 +3035,7 @@ public:
       offset_map_t &om = next_as.get_offset_map();
       // We use the forward invariant to extract the array index.
       // it's ok to use "invariant" without being renamed.
-      interval_t ii = to_interval(i, invariant.m_inv);
+      interval_t ii = to_interval(i, invariant.m_base_dom);
       if (boost::optional<number_t> n = ii.singleton()) {
         // -- Constant index and the store updated one single cell:
         // -- backward assign in the base domain.
@@ -2923,18 +3046,18 @@ public:
         // that is, get_overlap_cells returns cells different from [o, e_sz)
         if (cells.size() >= 1) {
           kill_cells(a, cells, om);
-	  // m_inv and s.right_dom have been properly renamed so we
+	  // m_base_dom and s.right_dom have been properly renamed so we
 	  // don't need the next line which would do again the
 	  // renaming.
 	  //
           //*this = *this & invariant;
-	  m_inv = m_inv & s.right_dom;
+	  m_base_dom = m_base_dom & s.right_dom;
         } else {
 	  // We need to ensure when do_backward_assign is called that
-	  // m_inv and s.right_dom (renamed version of invariant.m_inv)
+	  // m_base_dom and s.right_dom (renamed version of invariant.m_base_dom)
 	  // have been properly renamed.
           cell_t c = mk_named_cell(a, o, e_sz, om).first;
-          do_backward_assign(a, c, val, s.right_dom /*invariant.m_inv*/);
+          do_backward_assign(a, c, val, s.right_dom /*invariant.m_base_dom*/);
         }
       } else {
         // TODOX: smash the array if needed
@@ -2943,18 +3066,18 @@ public:
         linear_expression_t symb_lb(i);
         linear_expression_t symb_ub(i + number_t(e_sz - 1));
         std::vector<cell_t> cells;
-        om.get_overlap_cells_symbolic_offset(s.right_dom /*invariant.m_inv*/,
+        om.get_overlap_cells_symbolic_offset(s.right_dom /*invariant.m_base_dom*/,
 					     symb_lb, symb_ub,
                                              cells);
         kill_cells(a, cells, om);
 	// -- Meet with forward invariant
         //
-        // m_inv and s.right_dom have been properly renamed so we
+        // m_base_dom and s.right_dom have been properly renamed so we
         // don't need need the next line which would do again the
         // renaming.
 	//
         //*this = *this & invariant; 
-        m_inv = m_inv & s.right_dom;
+        m_base_dom = m_base_dom & s.right_dom;
       }
       m_array_map.set(a, next_as);
     }
@@ -2979,7 +3102,7 @@ public:
     uint64_t e_sz = check_and_get_elem_size(elem_size);
 
     // make copy to avoid one extra copy
-    base_domain_t base_dom(invariant.m_inv);
+    base_domain_t base_dom(invariant.m_base_dom);
     interval_t lb_i = to_interval(lb_idx, base_dom);
     auto lb = lb_i.singleton();
     if (!lb) {
@@ -3022,13 +3145,13 @@ public:
                                  ".to_linear_constraint_system");
 
     return filter_nonscalar_vars(
-        std::move(m_inv.to_linear_constraint_system()));
+        std::move(m_base_dom.to_linear_constraint_system()));
   }
 
   disjunctive_linear_constraint_system_t
   to_disjunctive_linear_constraint_system() const override {
     disjunctive_linear_constraint_system_t res;
-    auto disj_csts = m_inv.to_disjunctive_linear_constraint_system();
+    auto disj_csts = m_base_dom.to_disjunctive_linear_constraint_system();
     for (auto &csts : disj_csts) {
       auto filtered_csts = filter_nonscalar_vars(std::move(csts));
       if (!filtered_csts.is_true()) {
@@ -3038,12 +3161,36 @@ public:
     return res;
   }
 
-  base_domain_t get_content_domain() const { return m_inv; }
+  base_domain_t get_content_domain() const { return m_base_dom; }
 
-  base_domain_t &get_content_domain() { return m_inv; }
+  base_domain_t &get_content_domain() { return m_base_dom; }
 
-  void write(crab_os &o) const override {
-    o << m_inv;
+  void write(crab_os &o) const override {    
+    typename varname_t::variable_factory_t *vfac = nullptr;    
+    std::unordered_map<std::string, std::string> renaming_map;
+    
+    for (auto it = m_array_map.begin(), et = m_array_map.end(); it != et;
+             ++it) {
+      const variable_t &v = it->first;
+      const array_state &as = it->second;
+      if (as.is_smashed()) {
+	renaming_map[v.name().str()] = std::string("smashed(") + v.name().str() + ")";
+	if (!vfac) {
+	  vfac = &(const_cast<varname_t *>(&(v.name()))->get_var_factory());
+	}
+      }
+    }
+    if (vfac) {
+      vfac->add_renaming_map(renaming_map);
+    }
+    
+    o << m_base_dom;
+    
+    if (vfac) {
+      vfac->clear_renaming_map();
+    }
+    
+    
     CRAB_LOG(
         "array-adaptive-print-details", crab::outs() << "\n";
         crab::outs() << "=== CELLS PER ARRAY === \n";
@@ -3054,27 +3201,17 @@ public:
           crab::outs() << "ARRAY VAR " << v << ":\n";
           as.write(crab::outs());
           crab::outs() << "\n";
-        } crab::outs()
-        << "=== MAP FROM CELLS TO SCALARS === \n";
-        for (auto const &kv
-             : m_cell_varmap) {
-          for (auto &cv : kv.second) {
-            crab::outs() << "\t" << kv.first << "#" << cv.first << " -> "
-                         << cv.second << "\n";
-          }
-        } crab::outs()
-        << "=== SMASHED VARIABLES ===\n";
-        if (m_smashed_varmap.empty()) {
-          crab::outs() << "No smashed variables\n";
-        } else {
-          for (auto const &kv : m_smashed_varmap) {
-            crab::outs() << kv.first << " --> " << kv.second << "\n";
-          }
+        }
+	crab::outs() << "=== CELL GHOST VARIABLES === \n";        
+	m_cell_ghost_man.write(crab::outs());
+        if (!m_smashed_ghost_man.empty()) {
+	  crab::outs() << "=== SMASHED GHOST VARIABLES ===\n";        	  
+	  m_smashed_ghost_man.write(crab::outs());
         });
   }
 
   std::string domain_name() const override {
-    std::string name("ArrayAdaptive(" + m_inv.domain_name() + ")");
+    std::string name("ArrayAdaptive(" + m_base_dom.domain_name() + ")");
     return name;
   }
 
@@ -3090,7 +3227,7 @@ public:
     if (v.get_type().is_array()) {
       CRAB_WARN(domain_name(), "::expand not implemented for array variable");
     } else {
-      m_inv.expand(v, new_v);
+      m_base_dom.expand(v, new_v);
     }
   }
 
@@ -3129,49 +3266,30 @@ public:
       variable_t old_v = array_from[i];
       variable_t new_v = array_to[i];
 
-      // Rename m_smashed_varmap
-      auto it = m_smashed_varmap.find(old_v);
-      if (it != m_smashed_varmap.end()) {
-        variable_t new_smashed_v = mk_smashed_variable(new_v);
-        variable_t old_smashed_v = it->second;
-        m_smashed_varmap.erase(it);
-        m_smashed_varmap.insert({new_v, new_smashed_v});
-        // renaming in the base domain
-        scalar_from.push_back(old_smashed_v);
-        scalar_to.push_back(new_smashed_v);
-      }
-
-      // Rename m_cell_varmap and m_array_map
+      // Rename m_smashed_ghost_man
+      m_smashed_ghost_man.rename(old_v, new_v, scalar_from, scalar_to);
+      
+      // Rename m_cell_ghost_man and m_array_map
       if (const array_state *old_as = m_array_map.find(old_v)) {
         array_state new_as;
         new_as.set_smashed(old_as->is_smashed());
-        cp_domain_t &new_cp_dom = new_as.get_element_sz();
+        constant_value &new_cp_dom = new_as.get_element_sz();
         new_cp_dom = old_as->get_element_sz();
         offset_map_t &offset_map = new_as.get_offset_map();
-        // We insert here an empty vector so that no resizing can happen
-        // while we iterate over m_cell_varmap.
-        m_cell_varmap.insert(new_v);
-        for (auto it = m_cell_varmap.begin_cells(old_v),
-                  et = m_cell_varmap.end_cells(old_v);
-             it != et; ++it) {
-          const cell_t &old_c = (*it).first;
-          const variable_t &old_scalar = (*it).second;
-          /// Modify m_cell_varmap but it doesn't invalidate iterators
-          /// because new_v is already in m_cell_varmap.
-          auto named_cell = mk_named_cell(new_v, old_c.get_offset(),
-                                          old_c.get_size(), offset_map);
-          variable_t new_scalar = named_cell.second;
-          // renaming in the base domain
-          scalar_from.push_back(old_scalar);
-          scalar_to.push_back(new_scalar);
-        }
+
+	m_cell_ghost_man.rename(old_v, new_v,
+			    [&offset_map](const offset_t &o, uint64_t sz) -> cell_t {
+			      return offset_map.mk_cell(o, sz);
+			    },
+			    scalar_from, scalar_to);
+	
         m_array_map -= old_v;
         m_array_map.set(new_v, new_as);
       }
-      m_cell_varmap.erase(old_v);
+      m_cell_ghost_man.erase_all(old_v);
     } // end for
 
-    m_inv.rename(scalar_from, scalar_to);
+    m_base_dom.rename(scalar_from, scalar_to);
     CRAB_LOG("array-adaptive", crab::outs()
                                    << "After renaming " << *this << "\n";);
   }

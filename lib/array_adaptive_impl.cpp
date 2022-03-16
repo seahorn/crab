@@ -9,25 +9,25 @@ namespace array_adaptive_impl {
 
 using bound_t = ikos::bound<ikos::z_number>;
 
-void cp_domain_t::set_to_top() {
+void constant_value::set_to_top() {
   m_is_bottom = false;
   m_val = bound_t::plus_infinity();
 }
 
-void cp_domain_t::set_to_bot() {
+void constant_value::set_to_bot() {
   m_is_bottom = true;
   m_val = bound_t::plus_infinity();
 }
 
-cp_domain_t::cp_domain_t(bool is_bottom)
+constant_value::constant_value(bool is_bottom)
     : m_is_bottom(is_bottom), m_val(bound_t::plus_infinity()) {}
 
-cp_domain_t::cp_domain_t()
+constant_value::constant_value()
     : m_is_bottom(false), m_val(bound_t::plus_infinity()) {}
 
-cp_domain_t::cp_domain_t(int64_t sz) : m_is_bottom(false), m_val(sz) {}
+constant_value::constant_value(int64_t sz) : m_is_bottom(false), m_val(sz) {}
 
-cp_domain_t::cp_domain_t(const ikos::interval<ikos::z_number> &sz)
+constant_value::constant_value(const ikos::interval<ikos::z_number> &sz)
     : m_is_bottom(false), m_val(bound_t::plus_infinity()) {
 
   if (auto v_opt = sz.singleton()) {
@@ -35,30 +35,30 @@ cp_domain_t::cp_domain_t(const ikos::interval<ikos::z_number> &sz)
   }
 }
 
-bool cp_domain_t::is_top() const {
+bool constant_value::is_top() const {
   return (!is_bottom() && (m_val == bound_t::plus_infinity()));
 }
 
-bool cp_domain_t::is_bottom() const { return m_is_bottom; }
+bool constant_value::is_bottom() const { return m_is_bottom; }
 
-bool cp_domain_t::is_zero() const {
+bool constant_value::is_zero() const {
   return !m_is_bottom && m_val == bound_t(0);
 }
 
-bool cp_domain_t::is_negative() const {
+bool constant_value::is_negative() const {
   return !m_is_bottom && m_val < bound_t(0);
 }
 
-bound_t cp_domain_t::val() const {
+bound_t constant_value::val() const {
   if (is_bottom()) {
-    CRAB_ERROR("cp_domain_t::val cannot be called on bottom");
+    CRAB_ERROR("constant_value::val cannot be called on bottom");
   }
   return m_val;
 }
 
-boost::optional<uint64_t> cp_domain_t::get_uint64_val() const {
+boost::optional<uint64_t> constant_value::get_uint64_val() const {
   if (is_bottom()) {
-    CRAB_ERROR("cp_domain_t::get_uint64_val cannot be called on bottom");
+    CRAB_ERROR("constant_value::get_uint64_val cannot be called on bottom");
   }
 
   if (m_val.number()) {
@@ -72,15 +72,15 @@ boost::optional<uint64_t> cp_domain_t::get_uint64_val() const {
   return boost::optional<uint64_t>();
 }
 
-cp_domain_t cp_domain_t::bottom() { return cp_domain_t(true); }
+constant_value constant_value::bottom() { return constant_value(true); }
 
-cp_domain_t cp_domain_t::top() { return cp_domain_t(false); }
+constant_value constant_value::top() { return constant_value(false); }
 
-bool cp_domain_t::operator==(const cp_domain_t &o) const {
+bool constant_value::operator==(const constant_value &o) const {
   return *this <= o && o <= *this;
 }
 
-bool cp_domain_t::operator<=(const cp_domain_t &o) const {
+bool constant_value::operator<=(const constant_value &o) const {
   if (is_bottom() || o.is_top()) {
     return true;
   } else if (is_top() || o.is_bottom()) {
@@ -90,7 +90,7 @@ bool cp_domain_t::operator<=(const cp_domain_t &o) const {
   }
 }
 
-void cp_domain_t::operator|=(const cp_domain_t &o) {
+void constant_value::operator|=(const constant_value &o) {
   if (is_bottom() || o.is_top()) {
     *this = o;
   } else if (o.is_bottom() || is_top()) {
@@ -102,23 +102,23 @@ void cp_domain_t::operator|=(const cp_domain_t &o) {
   }
 }
 
-cp_domain_t cp_domain_t::operator|(const cp_domain_t &o) const {
+constant_value constant_value::operator|(const constant_value &o) const {
   if (is_bottom()) {
     return o;
   } else if (o.is_bottom()) {
     return *this;
   } else if (is_top() || o.is_top()) {
-    return cp_domain_t();
+    return constant_value();
   } else {
     if (m_val == o.m_val) {
       return *this;
     } else {
-      return cp_domain_t();
+      return constant_value();
     }
   }
 }
 
-cp_domain_t cp_domain_t::operator&(const cp_domain_t &o) const {
+constant_value constant_value::operator&(const constant_value &o) const {
   if (is_bottom() || o.is_bottom()) {
     return bottom();
   } else if (is_top()) {
@@ -134,15 +134,15 @@ cp_domain_t cp_domain_t::operator&(const cp_domain_t &o) const {
   }
 }
 
-cp_domain_t cp_domain_t::operator||(const cp_domain_t &o) const {
+constant_value constant_value::operator||(const constant_value &o) const {
   return operator|(o);
 }
 
-cp_domain_t cp_domain_t::operator&&(const cp_domain_t &o) const {
+constant_value constant_value::operator&&(const constant_value &o) const {
   return operator&(o);
 }
 
-void cp_domain_t::write(crab_os &o) const {
+void constant_value::write(crab_os &o) const {
   if (is_bottom()) {
     o << "_|_";
   } else {
