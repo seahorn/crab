@@ -60,26 +60,39 @@
 
 namespace crab {
 namespace domains {
-namespace region_domain_impl {
-template <class Number, class VariableName, class BaseAbsDom>
-class Params {
-public:
-  using number_t = Number;
-  using varname_t = VariableName;
-  using varname_allocator_t = crab::var_factory_impl::str_var_alloc_col;
-  using base_abstract_domain_t = BaseAbsDom;
-  using base_varname_t = typename BaseAbsDom::varname_t;
 
-  static_assert(std::is_same<Number, typename BaseAbsDom::number_t>::value,
-                "Number type and BaseAbsDom::number_t must be the same");
-  // This is a strong requirement
-  static_assert(
-      std::is_same<base_varname_t,
-                   typename varname_allocator_t::varname_t>::value,
-      "BaseAbsDom::varname_t and allocator_varname_t must be the same");
-};  
-} // end namespace region_domain_impl
-
+/// Params should be defined as follows:
+///
+/// If varname_t is equal base_varname_t then  
+///   template <class Number, class VariableName, class BaseAbsDom>
+///   class Params {
+///   public:
+///     // types for the region domain  
+///     using number_t = Number;
+///     using varname_t = VariableName;
+///     // types for the base domain used by the region domain
+///     using base_abstract_domain_t = BaseAbsDom;
+///     using base_varname_t = typename BaseAbsDom::varname_t;
+///     // unused type in this case
+///     using varname_allocator_t = varname_t::variable_factory_t;  
+///   };
+///
+/// If  varname_t is not equal to base_varname_t then  
+///   template <class Number, class VariableName, class BaseAbsDom>
+///   class Params {
+///   public:
+///     // types for the region domain    
+///     using number_t = Number;
+///     using varname_t = VariableName;
+///     // types for the base domain used by the region domain  
+///     using base_abstract_domain_t = BaseAbsDom;
+///     using base_varname_t = typename BaseAbsDom::varname_t;
+///     // type used in this case to create varnames in the base domain  
+///     using varname_allocator_t = crab::var_factory_impl::str_var_alloc_col;
+///   
+///     static_assert(std::is_same<base_varname_t, typename varname_allocator_t::varname_t>::value, "...")  
+/// };  
+///   
   
 template <typename Params>
 class region_domain final
@@ -107,6 +120,7 @@ private:
   using base_variable_vector_t =
     typename base_abstract_domain_t::variable_vector_t;
   using base_variable_t = typename base_abstract_domain_t::variable_t;
+  using base_varname_t = typename base_variable_t::varname_t;
   using base_variable_or_constant_t =
     typename base_abstract_domain_t::variable_or_constant_t;
   using base_linear_expression_t =
@@ -115,15 +129,25 @@ private:
     typename base_abstract_domain_t::linear_constraint_t;
   using base_linear_constraint_system_t =
     typename base_abstract_domain_t::linear_constraint_system_t;
-  
-  // Management of ghost variables  
-  using base_varname_allocator_t = typename Params::varname_allocator_t;  
-  using ghost_variables_t = region_domain_impl::
-    ghost_variables<abstract_domain_t, base_abstract_domain_t,
-		    base_varname_allocator_t>;
-  using ghost_var_man_t = region_domain_impl::
-    ghost_variable_manager<abstract_domain_t, base_abstract_domain_t,
-			   base_varname_allocator_t>;  
+
+  static_assert(std::is_same<typename Params::number_t,
+		typename Params::base_abstract_domain_t::number_t>::value,
+		"The region domain must use same Number type than its base domain");
+
+  static_assert(std::is_same<varname_t, base_varname_t>::value ||		
+		std::is_same<typename Params::base_varname_t,
+		             typename Params::varname_allocator_t::varname_t>::value,
+		"Either region and base domain uses the same variable factory or base domain uses Params::varname_allocator_t");
+		
+  // Management of ghost variables
+  using ghost_var_man_t =  typename
+    std::conditional<std::is_same<varname_t, base_varname_t>::value,
+     	  region_domain_impl::ghost_variable_manager_with_fixed_naming
+     		   <region_domain_t, base_abstract_domain_t>,
+     	  region_domain_impl::ghost_variable_manager_with_variable_naming
+		     <region_domain_t, base_abstract_domain_t,
+		      typename Params::varname_allocator_t>>::type;    
+  using ghost_variables_t = typename ghost_var_man_t::ghost_variables_t;  
   // Map regions to finite domains
   using rgn_info_env_t = ikos::separate_domain<variable_t, region_domain_impl::region_info>;
   // Union-find where equivalence classes are attached to boolean values
@@ -271,14 +295,18 @@ private:
                                       right.m_rgn_dealloc_dom);
     tag_env_t out_tag_env(m_tag_env | right.m_tag_env);
 
-    base_abstract_domain_t right_dom(right.m_base_dom);
-
-    ghost_var_man_t out_ghost_var_man =
-      m_ghost_var_man.join(right.m_ghost_var_man, m_base_dom, right_dom);
-			   
-    m_base_dom |= right_dom;
+    if (ghost_var_man_t::need_renaming()) {
+      base_abstract_domain_t right_dom(right.m_base_dom);
+      ghost_var_man_t out_ghost_var_man =
+	m_ghost_var_man.join(right.m_ghost_var_man, m_base_dom, right_dom);
+      m_base_dom |= right_dom;      
+      std::swap(m_ghost_var_man, out_ghost_var_man);
+    } else {
+      m_base_dom |= right.m_base_dom;
+    }
+    
     m_is_bottom = m_base_dom.is_bottom();
-    std::swap(m_ghost_var_man, out_ghost_var_man);
+
     std::swap(m_rgn_info_env, out_rgn_info_env);
     std::swap(m_tag_env, out_tag_env);    
     std::swap(m_alloc_site_dom, out_alloc_site_dom);
@@ -308,19 +336,23 @@ private:
     // ghost variables).  The domain is finite
     rgn_dealloc_t out_rgn_dealloc_dom(left.m_rgn_dealloc_dom |
                                       right.m_rgn_dealloc_dom);
-    
-    base_abstract_domain_t left_dom(left.m_base_dom);
-    base_abstract_domain_t right_dom(right.m_base_dom);    
-    ghost_var_man_t out_ghost_var_man =
-      m_ghost_var_man.join(right.m_ghost_var_man, left_dom, right_dom);    
-    base_abstract_domain_t out_base_dom(base_dom_op(left_dom, right_dom));
 
-    region_domain_t res(
-        std::move(out_ghost_var_man),
-        std::move(out_rgn_info_env),
-        std::move(out_base_dom), std::move(out_alloc_site_dom),
-        std::move(out_rgn_dealloc_dom), std::move(out_tag_env));
-    return res;
+    if (ghost_var_man_t::need_renaming()) {
+      base_abstract_domain_t left_dom(left.m_base_dom);
+      base_abstract_domain_t right_dom(right.m_base_dom);    
+      ghost_var_man_t out_ghost_var_man =
+	m_ghost_var_man.join(right.m_ghost_var_man, left_dom, right_dom);    
+      base_abstract_domain_t out_base_dom(base_dom_op(left_dom, right_dom));
+      return region_domain_t(std::move(out_ghost_var_man), std::move(out_rgn_info_env),
+			     std::move(out_base_dom), std::move(out_alloc_site_dom),
+			     std::move(out_rgn_dealloc_dom), std::move(out_tag_env));
+    } else {
+      base_abstract_domain_t out_base_dom(base_dom_op(left.m_base_dom, right.m_base_dom));
+      ghost_var_man_t out_ghost_var_man(m_ghost_var_man);
+      return region_domain_t(std::move(out_ghost_var_man), std::move(out_rgn_info_env),
+			     std::move(out_base_dom), std::move(out_alloc_site_dom),
+			     std::move(out_rgn_dealloc_dom), std::move(out_tag_env));
+    }
   }
 
   region_domain_t do_meet_or_narrowing(const region_domain_t &left,
@@ -346,18 +378,22 @@ private:
         out_alloc_site_dom.is_bottom()) {
       return make_bottom();
     }
-
-    base_abstract_domain_t left_dom(left.m_base_dom);
-    base_abstract_domain_t right_dom(right.m_base_dom);    
-    ghost_var_man_t out_ghost_var_man =
-      m_ghost_var_man.meet(right.m_ghost_var_man, left_dom, right_dom);        
-    base_abstract_domain_t out_base_dom(base_dom_op(left_dom, right_dom));
-
-    region_domain_t res(
-        std::move(out_ghost_var_man), std::move(out_rgn_info_env),
-        std::move(out_base_dom), std::move(out_alloc_site_dom),
-        std::move(out_rgn_dealloc_dom), std::move(out_tag_env));
-    return res;
+    if (ghost_var_man_t::need_renaming()) {
+      base_abstract_domain_t left_dom(left.m_base_dom);
+      base_abstract_domain_t right_dom(right.m_base_dom);    
+      ghost_var_man_t out_ghost_var_man =
+	m_ghost_var_man.meet(right.m_ghost_var_man, left_dom, right_dom);        
+      base_abstract_domain_t out_base_dom(base_dom_op(left_dom, right_dom));
+      return region_domain_t(std::move(out_ghost_var_man), std::move(out_rgn_info_env),
+			     std::move(out_base_dom), std::move(out_alloc_site_dom),
+			     std::move(out_rgn_dealloc_dom), std::move(out_tag_env));
+    } else {
+      base_abstract_domain_t out_base_dom(base_dom_op(left.m_base_dom, right.m_base_dom));
+      ghost_var_man_t out_ghost_var_man(m_ghost_var_man);      
+      return region_domain_t(std::move(out_ghost_var_man), std::move(out_rgn_info_env),
+			     std::move(out_base_dom), std::move(out_alloc_site_dom),
+			     std::move(out_rgn_dealloc_dom), std::move(out_tag_env));
+    }
   }
 
   void ref_store(base_abstract_domain_t &base_dom, const variable_t &rgn_var,
@@ -707,16 +743,21 @@ public:
         return false;
       }
     }
-    
-    base_abstract_domain_t left_dom(m_base_dom);
-    base_abstract_domain_t right_dom(o.m_base_dom);
-    m_ghost_var_man.join(o.m_ghost_var_man, left_dom, right_dom);
 
-    CRAB_LOG("region-leq", crab::outs()
-                               << "Inclusion test (after renaming):\n\t"
-                               << left_dom << "\n\t" << right_dom << "\n";);
+    bool res = false;
+    if (ghost_var_man_t::need_renaming()) {
+      base_abstract_domain_t left_dom(m_base_dom);
+      base_abstract_domain_t right_dom(o.m_base_dom);
+      m_ghost_var_man.join(o.m_ghost_var_man, left_dom, right_dom);
 
-    bool res = left_dom <= right_dom;
+      CRAB_LOG("region-leq", crab::outs()
+	       << "Inclusion test (after renaming):\n\t"
+	       << left_dom << "\n\t" << right_dom << "\n";);
+      
+      res = (left_dom <= right_dom);
+    } else {
+      res = (m_base_dom <= o.m_base_dom);
+    }
     CRAB_LOG("region-leq", crab::outs() << "Result9=" << res << "\n";);
     return res;
   }
@@ -1369,9 +1410,10 @@ public:
       // weak read
       CRAB_LOG("region-load", crab::outs() << "Reading from non-singleton\n";);
       if (auto region_gvars_opt = get_gvars(rgn)) {
-        ghost_variables_t fresh_region_gvars = m_ghost_var_man.dup((*region_gvars_opt));
-        (*region_gvars_opt).expand(m_base_dom, fresh_region_gvars);	
-        gvars_res.assign(m_base_dom, fresh_region_gvars);
+        ghost_variables_t dup_region_gvars = m_ghost_var_man.dup((*region_gvars_opt));
+        (*region_gvars_opt).expand(m_base_dom, dup_region_gvars);	
+        gvars_res.assign(m_base_dom, dup_region_gvars);
+	dup_region_gvars.forget(m_base_dom); // important to forget
       } else {
         gvars_res.forget(m_base_dom);
       }

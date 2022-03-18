@@ -18,7 +18,7 @@ namespace region_domain_impl {
 // abstract operations so that the rest of the code is mostly
 // unaware of how many ghost variables the domain is keeping track
 // and how they should be updated.
-template <class Domain, class GhostDomain, class GhostVarnameAlloc>
+template <class Domain, class GhostDomain, typename GhostVarnameAlloc>
 class ghost_variables {
 public:
   using domain_t = Domain;
@@ -38,6 +38,7 @@ public:
 
   using ghost_variable_vector_t = typename ghost_domain_t::variable_vector_t;
   using ghost_variable_t = typename ghost_domain_t::variable_t;
+  using ghost_varname_t = typename ghost_variable_t::varname_t;
   using ghost_variable_or_constant_t =
       typename ghost_domain_t::variable_or_constant_t;
   using ghost_linear_expression_t =
@@ -46,6 +47,16 @@ public:
       typename ghost_domain_t::linear_constraint_t;
   using ghost_linear_constraint_system_t =
       typename ghost_domain_t::linear_constraint_system_t;
+  
+  using var_allocator_fn_t =
+    std::function<ghost_varname_t(ghost_varname_allocator_t &alloc,
+				  const varname_t&v,
+				  const std::string&role)>;
+
+  using ghost_var_allocator_fn_t =
+    std::function<ghost_varname_t(ghost_varname_allocator_t &alloc,
+				  const ghost_varname_t&v,
+				  const std::string&role)>;
 
   // class for shadowing offset and sizes
   class ghost_offset_and_size {
@@ -193,14 +204,12 @@ public:
     check_types();
   }
 
-  // Create a fresh ghost variable in the base domain to shadow v
+
+  // Create a ghost variable in the ghost domain for ghosting v  
   static ghost_variable_t
-  make_ghost_variable(ghost_varname_allocator_t &var_allocator,
-                      const variable_type &vty) {
+  make_ghost_variable(ghost_varname_t name,  const variable_type &vty) {
     if (vty.is_reference()) {
-      ghost_variable_t bv(var_allocator.next(), crab::INT_TYPE,
-                          32 /*should be defined in Params*/);
-      return bv;
+      return ghost_variable_t(name, crab::INT_TYPE, 32 /*should be defined in Params*/); 
     } else if (vty.is_region()) {
       variable_type_kind ty;
       unsigned bitwidth = 0;
@@ -225,46 +234,77 @@ public:
         assert(false);
         CRAB_ERROR("make_ghost_variable: unreachable");
       }
-      ghost_variable_t bv(var_allocator.next(), ty, bitwidth);
-      return bv;
+      return ghost_variable_t(name, ty, bitwidth);
     } else {
-      ghost_variable_t bv(var_allocator.next(), vty);
-      return bv;
+      return ghost_variable_t(name, vty);
     }
+  }                      
+    
+
+  // VarAllocFn can be either var_allocator_fn_t or ghost_var_allocator_fn_t
+  // VariableName can be either varname_t or ghost_varname_t
+  template<typename VarAllocFn, typename VariableName>
+  static ghost_variable_t
+  make_ghost_variable(ghost_varname_allocator_t &alloc,
+		      VarAllocFn alloc_fn,
+		      const VariableName &name,
+		      const std::string& role,		      
+                      const variable_type &vty) {
+    ghost_varname_t gname(alloc_fn(alloc, name, role));
+    return make_ghost_variable(gname, vty);
   }
 
+    
 public:
+    
   static ghost_variables create(ghost_varname_allocator_t &alloc,
+				var_allocator_fn_t alloc_fn,
+				const varname_t &name,
                                 const variable_type &vty, unsigned line = 0) {
     if (vty.is_unknown_region()) {
       CRAB_ERROR("create should not be called at line ", line, " with a type ",
                  vty);
     }
 
+
     if (crab_domain_params_man::get().region_is_dereferenceable() &&
         (vty.is_reference() || vty.is_reference_region())) {
-      return ghost_variables(make_ghost_variable(alloc, vty),
-                             make_ghost_variable(alloc, vty),
-                             make_ghost_variable(alloc, vty), vty);
+      return ghost_variables(make_ghost_variable(alloc, alloc_fn, name, "address", vty),
+                             make_ghost_variable(alloc, alloc_fn, name, "offset", vty),
+                             make_ghost_variable(alloc, alloc_fn, name, "size", vty), vty);
     } else {
-      return ghost_variables(make_ghost_variable(alloc, vty), vty);
+      return ghost_variables(make_ghost_variable(alloc, alloc_fn, name, "", vty), vty);
     }
   }
 
-  // Create a fresh set of ghost variables from x
+  // Create a fresh set of ghost variables from x. We only care about
+  // the types of gvars.
   static ghost_variables create(ghost_varname_allocator_t &alloc,
-                                const ghost_variables &x) {
-    if (x.has_offset_and_size()) {
-      ghost_offset_and_size offset_size = x.get_offset_and_size();
+				ghost_var_allocator_fn_t alloc_fn,
+                                const ghost_variables &gvars) {
+    if (gvars.has_offset_and_size()) {
+      ghost_offset_and_size offset_size = gvars.get_offset_and_size();
+      auto addr_gvar = gvars.get_var();
+      auto off_gvar = offset_size.get_offset();
+      auto sz_gvar = offset_size.get_size();      
       return ghost_variables(
-          make_ghost_variable(alloc, x.get_var().get_type()),
-          make_ghost_variable(alloc, offset_size.get_offset().get_type()),
-          make_ghost_variable(alloc, offset_size.get_size().get_type()),
-          x.m_vty);
+	  make_ghost_variable(alloc, alloc_fn, addr_gvar.name(), "address", addr_gvar.get_type()),
+          make_ghost_variable(alloc, alloc_fn, off_gvar.name(), "offset", off_gvar.get_type()),
+          make_ghost_variable(alloc, alloc_fn, sz_gvar.name(), "size", sz_gvar.get_type()),
+          gvars.m_vty);
     } else {
-      return ghost_variables(make_ghost_variable(alloc, x.get_var().get_type()),
-                             x.m_vty);
+      auto gvar = gvars.get_var();
+      return ghost_variables(
+	 make_ghost_variable(alloc, alloc_fn, gvar.name(), "", gvar.get_type()), gvars.m_vty);
     }
+  }
+
+  // Return the variable factory used to create the ghost variables
+  // (i.e., passed to create)
+  ghost_varname_allocator_t& get_vfac() const {
+    auto &vfac = const_cast<ghost_varname_t *>(&(m_var.name()))->get_var_factory();
+    return vfac;
+    
   }
 
   // Return true if the types of the ghost variables are
