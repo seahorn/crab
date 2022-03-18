@@ -235,7 +235,7 @@ public:
 
 public:
   static ghost_variables create(ghost_varname_allocator_t &alloc,
-                                const variable_type &vty, unsigned line) {
+                                const variable_type &vty, unsigned line = 0) {
     if (vty.is_unknown_region()) {
       CRAB_ERROR("create should not be called at line ", line, " with a type ",
                  vty);

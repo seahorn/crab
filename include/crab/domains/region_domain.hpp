@@ -14,38 +14,48 @@
 #include <crab/types/tag.hpp>
 #include <crab/types/varname_factory.hpp>
 
-#include "region/ghost_variables.hpp"
-#include "region/region_info.hpp"
-#include "region/tags.hpp"
+#include <crab/domains/region/ghost_variables.hpp>
+#include <crab/domains/region/ghost_variable_manager.hpp>
+#include <crab/domains/region/region_info.hpp>
+#include <crab/domains/region/tags.hpp>
 
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
 
 ////////////////////////////////////////////////////////////////////////
-// Abstract domain for regions and references based on smashing.
-//
-// This domain is based on the simple smashing abstraction described
-// in the paper "Abstract Interpretation of LLVM with a Region-based
-// Memory Model" (VSTTE'21).
-//
-// This implementation extends the paper description in several ways:
-//
-// - Support for region_copy and region_cast whose semantics are not
-//   described in the VSTTE paper.
-// - A buffer overflow analysis (`is_dereferenceable` intrinsics)
-// - A nullity analysis (`nonnull` intrinsics)
-// - A (very limited) use-after-free analysis (`is_unfreed_or_nll` and
-//   `unfreed_or_null` intrinsics)
-// - A tag analysis: references can be tagged using `add_tag`
-//   intrinsics. The intrinsics `does_not_have_tag` can be used to
-//   query the analysis.
-// - Type inference for regions. The CrabIR is strongly-typed except
-//   for regions of type "unknown". An unknown region unifies with
-//   regions of any other type. The type of an unknown region can be
-//   narrowed to a more precise type by inspecting the region
-//   writes. If a region is unknown then the analysis ignores
-//   conservately all reads from it.
+/// Abstract domain for regions and references based on smashing.
+///
+/// This domain is based on the simple smashing abstraction described
+/// in the paper "Abstract Interpretation of LLVM with a Region-based
+/// Memory Model" (VSTTE'21).
+///
+/// This implementation extends the paper description in several ways:
+///
+/// - Support for region_copy and region_cast whose semantics are not
+///   described in the VSTTE paper.
+/// - A buffer overflow analysis (`is_dereferenceable` intrinsics)
+/// - A nullity analysis (`nonnull` intrinsics)
+/// - A (very limited) use-after-free analysis (`is_unfreed_or_nll` and
+///   `unfreed_or_null` intrinsics)
+/// - A tag analysis: references can be tagged using `add_tag`
+///   intrinsics. The intrinsics `does_not_have_tag` can be used to
+///   query the analysis.
+/// - Type inference for regions. The CrabIR is strongly-typed except
+///   for regions of type "unknown". An unknown region unifies with
+///   regions of any other type. The type of an unknown region can be
+///   narrowed to a more precise type by inspecting the region
+///   writes. If a region is unknown then the analysis ignores
+///   conservately all reads from it.
+///
+///   Ghost variables:
+/// 
+/// - The region domain adds ghost variables for buffer overflow and
+///   nullity analysis. All the ghosting stuff is managed by the
+///   ghost_variable_manager (region/ghost_variable_manager.hpp). Add
+///   more ghost variables to keep track of more things (e.g., base
+///   addresses) should only affect region/ghost_variables.hpp.
+///   
 ////////////////////////////////////////////////////////////////////////
 
 namespace crab {
@@ -67,8 +77,9 @@ public:
       std::is_same<base_varname_t,
                    typename varname_allocator_t::varname_t>::value,
       "BaseAbsDom::varname_t and allocator_varname_t must be the same");
-};
+};  
 } // end namespace region_domain_impl
+
   
 template <typename Params>
 class region_domain final
@@ -94,52 +105,45 @@ private:
   /**------------- Begin type definitions -------------------**/  
   using base_abstract_domain_t = typename Params::base_abstract_domain_t;
   using base_variable_vector_t =
-      typename base_abstract_domain_t::variable_vector_t;
+    typename base_abstract_domain_t::variable_vector_t;
   using base_variable_t = typename base_abstract_domain_t::variable_t;
   using base_variable_or_constant_t =
-      typename base_abstract_domain_t::variable_or_constant_t;
+    typename base_abstract_domain_t::variable_or_constant_t;
   using base_linear_expression_t =
-      typename base_abstract_domain_t::linear_expression_t;
+    typename base_abstract_domain_t::linear_expression_t;
   using base_linear_constraint_t =
-      typename base_abstract_domain_t::linear_constraint_t;
+    typename base_abstract_domain_t::linear_constraint_t;
   using base_linear_constraint_system_t =
-      typename base_abstract_domain_t::linear_constraint_system_t;  
+    typename base_abstract_domain_t::linear_constraint_system_t;
+  
+  // Management of ghost variables  
   using base_varname_allocator_t = typename Params::varname_allocator_t;  
   using ghost_variables_t = region_domain_impl::
     ghost_variables<abstract_domain_t, base_abstract_domain_t,
 		    base_varname_allocator_t>;
-  using tag_t = region_domain_impl::tag<number_t>;  
+  using ghost_var_man_t = region_domain_impl::
+    ghost_variable_manager<abstract_domain_t, base_abstract_domain_t,
+			   base_varname_allocator_t>;  
   // Map regions to finite domains
   using rgn_info_env_t = ikos::separate_domain<variable_t, region_domain_impl::region_info>;
   // Union-find where equivalence classes are attached to boolean values
   using rgn_dealloc_t = union_find_domain<variable_t, boolean_value>;
-  // Map from variable to its ghost variables
-  using var_map_t = std::unordered_map<variable_t, ghost_variables_t>;
-  // Reverse map used only for pretty printing: a CrabIR variable has
-  // associated a set of ghost variables. This reverse map maps back
-  // each ghost variable to its CrabIR variable.
-  using ghost_var_id = unsigned;
-  using rev_var_map_t =
-      std::unordered_map<base_variable_t, std::pair<variable_t, ghost_var_id>>;
   // Map each reference or region variable to a set of allocation sites
   using alloc_site_env_t = separate_discrete_domain<variable_t, allocation_site>;
   using allocation_sites = typename alloc_site_env_t::value_type;
   // Map variables to sets of tags
+  using tag_t = region_domain_impl::tag<number_t>;  
   using tag_env_t = separate_discrete_domain<variable_t, tag_t>;
   using tag_set = typename tag_env_t::value_type;
   /**------------- End type definitions -------------------**/
 
   bool m_is_bottom; // special symbol for bottom
+  
   /** Begin base domain **/
-  // To create ghost variables for the base domain.
-  base_varname_allocator_t m_alloc;
-  // Map a variable_t to its ghost variables:
-  var_map_t m_var_map;
-  // Reverse map from ghost variables to variable_t
-  rev_var_map_t m_rev_var_map;
-  // The base abstract domain (over ghost variables): all the heavy
-  // lifting is done here.  m_base_dom does not have any variable of
-  // region or reference type.
+  // Proxy to deal with m_base_dom.
+  ghost_var_man_t m_ghost_var_man;
+  // The base abstract domain: all the heavy lifting is done here.
+  // m_base_dom does not have any variable of region/reference type.
   base_abstract_domain_t m_base_dom;
   /** End base domain **/
   
@@ -194,12 +198,10 @@ private:
  
 
   region_domain(
-      base_varname_allocator_t &&alloc, var_map_t &&var_map,
-      rev_var_map_t &&rev_var_map, rgn_info_env_t &&rgn_info_env,
+      ghost_var_man_t &&ghost_var_man, rgn_info_env_t &&rgn_info_env,
       base_abstract_domain_t &&base_dom, alloc_site_env_t &&alloc_site_dom,
       rgn_dealloc_t &&rgn_dealloc_dom, tag_env_t &&tag_env)
-      : m_is_bottom(base_dom.is_bottom()), m_alloc(std::move(alloc)),
-        m_var_map(std::move(var_map)), m_rev_var_map(std::move(rev_var_map)),
+    : m_is_bottom(base_dom.is_bottom()), m_ghost_var_man(std::move(ghost_var_man)),
         m_base_dom(std::move(base_dom)),
 	m_rgn_info_env(std::move(rgn_info_env)),
 	m_tag_env(std::move(tag_env)),
@@ -209,26 +211,26 @@ private:
   using base_dom_binop_t = std::function<base_abstract_domain_t(
       base_abstract_domain_t, base_abstract_domain_t)>;
 
-  bool can_propagate_initialized_regions(
-      const rgn_info_env_t &left_rgn_info_env, const var_map_t &right_varmap,
-      variable_vector_t &regions,
-      std::vector<ghost_variables_t> &right_base_vars) const {
-    bool propagate = false;
-    for (auto kv : left_rgn_info_env) {
-      const boolean_value &left_init_val = kv.second.init_val();
-      if (left_init_val.is_false()) {
-        auto it = right_varmap.find(kv.first);
-        if (it != right_varmap.end()) {
-          // uninitialized on the left but initilized on the right
-          regions.push_back(it->first);
-          right_base_vars.push_back(it->second);
-          propagate = true;
-        }
-      }
-    }
-    return propagate;
+  std::function<variable_type(const variable_t&)> get_type_fn() const {
+    auto fn = [this](const variable_t &v) {
+      if (has_dynamic_type(v)) {
+	return get_dynamic_type_or_fail(v);
+      } else {
+	// only needed for write
+	return variable_type(variable_type_kind::UNK_TYPE);
+      } 
+    };
+    return fn;
   }
-
+  
+  ghost_variables_t get_or_insert_gvars(const variable_t &v) {
+    return m_ghost_var_man.get_or_insert(v);
+  }
+  
+  boost::optional<ghost_variables_t> get_gvars(const variable_t &v) const {
+    return m_ghost_var_man.get(v);
+  }
+  
   // Special step: if one region is uninitialized on left operand but
   // initialized on the right then we extract the information from the
   // right and add it to the left. This can happen if the first store
@@ -239,61 +241,26 @@ private:
   // This step is not optimal because it keeps only non-relational
   // information about regions but no relational information between
   // regions and other variables.
-  void refine_regions(const variable_vector_t &left_regions,
-                      /* the ghost variables for each regions[i] on right_dom*/
-                      const std::vector<ghost_variables_t> &old_right_gvars,
-                      /* left operand */
-                      var_map_t &left_varmap, rev_var_map_t &left_rev_varmap,
-                      base_varname_allocator_t &left_alloc,
-                      base_abstract_domain_t &left_dom,
-                      /* right operand */
-                      const base_abstract_domain_t &right_dom,
-                      base_varname_allocator_t old_right_alloc) const {
-    assert(left_regions.size() == old_right_gvars.size());
-    if (left_regions.empty()) {
-      return;
+
+  // Return true if a region variable is initialized on the right but
+  // uninitialized on the left.
+  bool can_propagate_initialized_regions(
+      const rgn_info_env_t &left_rgn_info_env,
+      const rgn_info_env_t &right_rgn_info_env,
+      variable_vector_t &out) const {
+    bool propagate = false;
+    for (auto kv : left_rgn_info_env) {
+      const variable_t &v = kv.first;
+      const boolean_value &left_init_val = kv.second.init_val();
+      if (left_init_val.is_false() /*&& right_rgn_info_env.at(v).init_val().is_true()*/) {	
+	out.push_back(v);
+	propagate = true;
+      }
     }
-
-    // This is needed to avoid variable clashing with the left operand
-    base_varname_allocator_t right_alloc(left_alloc, old_right_alloc);
-
-    /* Modify the left by creating a variable in the base domain for
-       the region*/
-    base_variable_vector_t new_left_vars, new_right_vars;
-    base_variable_vector_t old_right_vars;
-
-    new_left_vars.reserve(left_regions.size());
-    new_right_vars.reserve(left_regions.size());
-    for (unsigned i = 0, sz = left_regions.size(); i < sz; ++i) {
-      ghost_variables_t new_left_gvars = get_or_insert_gvars(
-          left_regions[i], left_varmap, left_rev_varmap, left_alloc);
-      // FIXME/TODO[if skip_unknown_regions = 0]: must pass the
-      // dynamic type instead of left_regions[i].get_type(), otherwise
-      // it will crash.
-      ghost_variables_t new_right_gvars = ghost_variables_t::create(
-          right_alloc, left_regions[i].get_type(), __LINE__);
-
-      new_left_gvars.add(new_left_vars);
-      new_right_gvars.add(new_right_vars);
-      old_right_gvars[i].add(old_right_vars);
-    }
-
-    assert(old_right_vars.size() == new_right_vars.size());
-    assert(new_left_vars.size() == new_right_vars.size());
-
-    /* Propagate invariants on the region from the right to the left */
-    base_abstract_domain_t dom(right_dom);
-    dom.project(old_right_vars);
-
-    // Renaming in two steps to avoid variable clashing with the left
-    // operand. The assumption is that old_right_vars and
-    // new_left_vars might have common names. (it might be not
-    // necessary anymore).
-    dom.rename(old_right_vars, new_right_vars);
-    dom.rename(new_right_vars, new_left_vars);
-    left_dom = left_dom & dom;
+    return propagate;
   }
-
+  
+  
   // Perform *this = join(*this, right)
   void do_join(const region_domain_t &right) {
     rgn_info_env_t out_rgn_info_env(m_rgn_info_env |
@@ -304,54 +271,18 @@ private:
                                       right.m_rgn_dealloc_dom);
     tag_env_t out_tag_env(m_tag_env | right.m_tag_env);
 
-    base_varname_allocator_t out_alloc(m_alloc, right.m_alloc);
     base_abstract_domain_t right_dom(right.m_base_dom);
-    var_map_t out_var_map;
-    rev_var_map_t out_rev_var_map;
-    base_variable_vector_t left_vars, right_vars, out_vars;
-    // upper bound to avoid reallocations
-    size_t num_renamings = m_var_map.size();
-    left_vars.reserve(num_renamings);
-    right_vars.reserve(num_renamings);
-    out_vars.reserve(num_renamings);
-    // perform the common renamings
-    for (auto &kv : m_var_map) {
-      const variable_t &v = kv.first;
-      auto it = right.m_var_map.find(v);
-      if (it != right.m_var_map.end()) {
-        // if we ignore unknown regions, types are the same by construction
-        if (!crab_domain_params_man::get().region_skip_unknown_regions() &&
-	    !kv.second.same_type(it->second)) {
-          crab::CrabStats::count(
-              domain_name() + ".count.join.skipped.inconsistent_dynamic_type");
-          continue;
-        }
-        ghost_variables_t out_gvars(
-            ghost_variables_t::create(out_alloc, kv.second));
-        kv.second.add(left_vars);
-        it->second.add(right_vars);
-        out_gvars.add(out_vars);
-        out_var_map.insert({v, out_gvars});
-        out_gvars.update_rev_varmap(out_rev_var_map, v);
-      }
-    }
-    // See comments in do_join_or_widening
-    m_base_dom.project(left_vars);
-    m_base_dom.rename(left_vars, out_vars);
-    right_dom.project(right_vars);
-    right_dom.rename(right_vars, out_vars);
 
+    ghost_var_man_t out_ghost_var_man =
+      m_ghost_var_man.join(right.m_ghost_var_man, m_base_dom, right_dom);
+			   
     m_base_dom |= right_dom;
     m_is_bottom = m_base_dom.is_bottom();
-    std::swap(m_alloc, out_alloc);
+    std::swap(m_ghost_var_man, out_ghost_var_man);
     std::swap(m_rgn_info_env, out_rgn_info_env);
     std::swap(m_tag_env, out_tag_env);    
     std::swap(m_alloc_site_dom, out_alloc_site_dom);
     std::swap(m_rgn_dealloc_dom, out_rgn_dealloc_dom);
-    std::swap(m_var_map, out_var_map);
-    std::swap(m_rev_var_map, out_rev_var_map);
-
-    CRAB_LOG("region", crab::outs() << *this << "\n");
   }
 
   region_domain_t do_join_or_widening(const region_domain_t &left,
@@ -378,61 +309,15 @@ private:
     rgn_dealloc_t out_rgn_dealloc_dom(left.m_rgn_dealloc_dom |
                                       right.m_rgn_dealloc_dom);
     
-
-    base_varname_allocator_t out_alloc(left.m_alloc, right.m_alloc);
     base_abstract_domain_t left_dom(left.m_base_dom);
-    base_abstract_domain_t right_dom(right.m_base_dom);
-    var_map_t out_var_map;
-    rev_var_map_t out_rev_var_map;
-
-    // -- Compute common renamings
-    base_variable_vector_t left_vars, right_vars, out_vars;
-    // upper bound to avoid reallocations
-    size_t num_renamings = left.m_var_map.size();
-    left_vars.reserve(num_renamings);
-    right_vars.reserve(num_renamings);
-    out_vars.reserve(num_renamings);
-
-    for (auto &kv : left.m_var_map) {
-      const variable_t &v = kv.first;
-      auto it = right.m_var_map.find(v);
-      if (it != right.m_var_map.end()) {
-        // if we ignore unknown regions, types are the same by construction
-        if (!crab_domain_params_man::get().region_skip_unknown_regions() &&
-	    !kv.second.same_type(it->second)) {
-          crab::CrabStats::count(
-              domain_name() +
-              ".count.join_or_widen.skipped.inconsistent_dynamic_type");
-          continue;
-        }
-        ghost_variables_t out_gvars(
-            ghost_variables_t::create(out_alloc, kv.second));
-        kv.second.add(left_vars);
-        it->second.add(right_vars);
-        out_gvars.add(out_vars);
-        out_var_map.insert({v, out_gvars});
-        out_gvars.update_rev_varmap(out_rev_var_map, v);
-      }
-    }
-
-    // JN: project might be necessary to avoid keeping variables that
-    // exist in the base domain but they doen't exist on m_var_map.
-    //
-    // If such a variable exists only on either left_dom or right_dom
-    // the join removes it.  However, if we have the same variable in
-    // both left_dom and righ_dom then the join will preserve it.
-    //
-    left_dom.project(left_vars);
-    left_dom.rename(left_vars, out_vars);
-    right_dom.project(right_vars);
-    right_dom.rename(right_vars, out_vars);
-
-    // Final join or widening
+    base_abstract_domain_t right_dom(right.m_base_dom);    
+    ghost_var_man_t out_ghost_var_man =
+      m_ghost_var_man.join(right.m_ghost_var_man, left_dom, right_dom);    
     base_abstract_domain_t out_base_dom(base_dom_op(left_dom, right_dom));
 
     region_domain_t res(
-        std::move(out_alloc), std::move(out_var_map),
-        std::move(out_rev_var_map), std::move(out_rgn_info_env),
+        std::move(out_ghost_var_man),
+        std::move(out_rgn_info_env),
         std::move(out_base_dom), std::move(out_alloc_site_dom),
         std::move(out_rgn_dealloc_dom), std::move(out_tag_env));
     return res;
@@ -462,98 +347,14 @@ private:
       return make_bottom();
     }
 
-    base_varname_allocator_t out_alloc(left.m_alloc, right.m_alloc);
     base_abstract_domain_t left_dom(left.m_base_dom);
-    base_abstract_domain_t right_dom(right.m_base_dom);
-    var_map_t out_var_map;
-    rev_var_map_t out_rev_var_map;
-
-    base_variable_vector_t left_vars, right_vars, out_vars;
-    base_variable_vector_t only_left_vars, only_left_out_vars;
-    base_variable_vector_t only_right_vars, only_right_out_vars;
-    // upper bound to avoid reallocations
-    size_t left_renamings = left.m_var_map.size();
-    size_t right_renamings = right.m_var_map.size();
-    size_t num_renamings = left_renamings + right_renamings;
-    left_vars.reserve(num_renamings);
-    right_vars.reserve(num_renamings);
-    out_vars.reserve(num_renamings);
-    only_left_vars.reserve(left_renamings);
-    only_left_out_vars.reserve(left_renamings);
-    only_right_vars.reserve(right_renamings);
-    only_right_out_vars.reserve(right_renamings);
-
-    for (auto &kv : left.m_var_map) {
-      const variable_t &v = kv.first;
-      auto it = right.m_var_map.find(v);
-      if (it != right.m_var_map.end()) {
-        // if we ignore unknown regions, types are the same by construction
-        if (!crab_domain_params_man::get().region_skip_unknown_regions() &&
-	    !kv.second.same_type(it->second)) {
-          crab::CrabStats::count(
-              domain_name() +
-              ".count.meet_or_narrowing.skipped.inconsistent_dynamic_type");
-          continue;
-        }
-        // common renaming
-        ghost_variables_t out_gvars(
-            ghost_variables_t::create(out_alloc, kv.second));
-        kv.second.add(left_vars);
-        it->second.add(right_vars);
-        out_gvars.add(out_vars);
-        out_var_map.insert({v, out_gvars});
-        out_gvars.update_rev_varmap(out_rev_var_map, v);
-      } else {
-        // only on left
-        ghost_variables_t out_gvars(
-            ghost_variables_t::create(out_alloc, kv.second));
-        kv.second.add(only_left_vars);
-        out_gvars.add(only_left_out_vars);
-        out_var_map.insert({kv.first, out_gvars});
-        out_gvars.update_rev_varmap(out_rev_var_map, kv.first);
-      }
-    }
-
-    // add missing maps from right operand
-    for (auto &kv : right.m_var_map) {
-      const variable_t &v = kv.first;
-      auto it = left.m_var_map.find(v);
-      if (it == left.m_var_map.end()) {
-        // only on right
-        ghost_variables_t out_gvars(
-            ghost_variables_t::create(out_alloc, kv.second));
-        kv.second.add(only_right_vars);
-        out_gvars.add(only_right_out_vars);
-        out_var_map.insert({kv.first, out_gvars});
-        out_gvars.update_rev_varmap(out_rev_var_map, kv.first);
-      }
-    }
-
-    // append only_left_vars and left_vars
-    only_left_vars.insert(only_left_vars.end(), left_vars.begin(),
-                          left_vars.end());
-    // append only_left_out_vars end out_vars
-    only_left_out_vars.insert(only_left_out_vars.end(), out_vars.begin(),
-                              out_vars.end());
-    // need to project before renaming
-    left_dom.project(only_left_vars);
-    left_dom.rename(only_left_vars, only_left_out_vars);
-
-    // append only_right_vars and right_vars
-    only_right_vars.insert(only_right_vars.end(), right_vars.begin(),
-                           right_vars.end());
-    // append only_right_out_vars end out_vars
-    only_right_out_vars.insert(only_right_out_vars.end(), out_vars.begin(),
-                               out_vars.end());
-    // need to project before renaming
-    right_dom.project(only_right_vars);
-    right_dom.rename(only_right_vars, only_right_out_vars);
-
+    base_abstract_domain_t right_dom(right.m_base_dom);    
+    ghost_var_man_t out_ghost_var_man =
+      m_ghost_var_man.meet(right.m_ghost_var_man, left_dom, right_dom);        
     base_abstract_domain_t out_base_dom(base_dom_op(left_dom, right_dom));
 
     region_domain_t res(
-        std::move(out_alloc), std::move(out_var_map),
-        std::move(out_rev_var_map), std::move(out_rgn_info_env),
+        std::move(out_ghost_var_man), std::move(out_rgn_info_env),
         std::move(out_base_dom), std::move(out_alloc_site_dom),
         std::move(out_rgn_dealloc_dom), std::move(out_tag_env));
     return res;
@@ -610,203 +411,50 @@ private:
     }
   }
 
-  /*
-   * To rename variables (variable_t) to ghost variables
-   * (base_variable_t) so that they can be used in the base abstract
-   * domain.
-   */
-
-  const ghost_variables_t &get_or_insert_gvars(const variable_t &v) {
-    return get_or_insert_gvars(v, m_var_map, m_rev_var_map, m_alloc);
-  }
-
-  const ghost_variables_t &
-  get_or_insert_gvars(const variable_t &v, var_map_t &varmap,
-                      rev_var_map_t &rev_varmap,
-                      base_varname_allocator_t &alloc) const {
-    auto it = varmap.find(v);
-    if (it != varmap.end()) {
-      return it->second;
-    } else {
-      variable_type vty = get_dynamic_type_or_fail(v);
-      auto gvars = ghost_variables_t::create(alloc, vty, __LINE__);
-      auto res = varmap.insert({v, gvars});
-      if (res.second) {
-        gvars.update_rev_varmap(rev_varmap, v);
-      }
-      return res.first->second;
-    }
-  }
-
-  ghost_variables_t get_gvars_or_fail(const variable_t &v) const {
-    auto it = m_var_map.find(v);
-    if (it != m_var_map.end()) {
-      return it->second;
-    } else {
-      CRAB_ERROR("get_gvars_or_fail failed");
-    }
-  }
-
-  boost::optional<ghost_variables_t> get_gvars(const variable_t &v) const {
-    auto it = m_var_map.find(v);
-    if (it != m_var_map.end()) {
-      return it->second;
-    } else {
-      return boost::none;
-    }
-  }
-
+  /** Renaming expressions in case the base domain has a different
+      type for varnames.  **/
   base_variable_or_constant_t
   rename_variable_or_constant(const variable_or_constant_t &v) {
-    if (v.is_constant()) {
-      return base_variable_or_constant_t(v.get_constant(), v.get_type());
-    } else {
-      base_variable_t bv = get_or_insert_gvars(v.get_variable()).get_var();
-      return base_variable_or_constant_t(bv);
-    }
+    return m_ghost_var_man.rename_variable_or_constant(v);
   }
+    
 
-  // Rename linear expression
   base_linear_expression_t rename_linear_expr(const linear_expression_t &e) {
-    base_linear_expression_t out(e.constant());
-    for (auto it = e.begin(), et = e.end(); it != et; ++it) {
-      const variable_t &v = (*it).second;
-      const number_t &coef = (*it).first;
-      base_variable_t nv = get_or_insert_gvars(v).get_var();
-      out = out + (coef * nv);
-    }
-    return out;
+    return m_ghost_var_man.rename_linear_expr(e);
   }
+  
 
-  // Rename linear constraint
   base_linear_constraint_t rename_linear_cst(const linear_constraint_t &cst) {
-    if (cst.is_inequality() || cst.is_strict_inequality()) {
-      return base_linear_constraint_t(
-          rename_linear_expr(cst.expression()),
-          (typename base_linear_constraint_t::kind_t)cst.kind(),
-          cst.is_signed());
-
-    } else {
-      return base_linear_constraint_t(
-          rename_linear_expr(cst.expression()),
-          (typename base_linear_constraint_t::kind_t)cst.kind());
-    }
+    return m_ghost_var_man.rename_linear_cst(cst);
   }
 
-  // used only for to_linear_constraint_system()
-  boost::optional<variable_t> rev_rename_var(const base_variable_t &v,
-                                             bool ignore_references) const {
-    auto it = m_rev_var_map.find(v);
-    if (it != m_rev_var_map.end()) {
-      variable_t v = it->second.first;
-      ghost_var_id ghost_id = it->second.second;
-      if (!ignore_references || !v.get_type().is_reference()) {
-        if (ghost_id == 1) { // we only get the first ghost variable
-                             // which represents the address of the
-                             // reference. Skipping other ghost
-                             // variables such as offsets and sizes.
-          return v;
-        }
-      }
-    }
-    return boost::none;
-  }
-
-  // used only for to_linear_constraint_system()
-  boost::optional<linear_expression_t>
-  rev_rename_linear_expr(const base_linear_expression_t &e,
-                         bool ignore_references) const {
-    linear_expression_t out(e.constant());
-    for (auto it = e.begin(), et = e.end(); it != et; ++it) {
-      const base_variable_t &v = (*it).second;
-      const number_t &coef = (*it).first;
-      if (boost::optional<variable_t> v_opt =
-              rev_rename_var(v, ignore_references)) {
-        out = out + (coef * (*v_opt));
-      } else {
-        return boost::optional<linear_expression_t>();
-      }
-    }
-    return out;
-  }
-
-  // used only for to_linear_constraint_system()
-  boost::optional<linear_constraint_t>
-  rev_rename_linear_cst(const base_linear_constraint_t &cst,
-                        bool ignore_references) const {
-    if (boost::optional<linear_expression_t> e =
-            rev_rename_linear_expr(cst.expression(), ignore_references)) {
-
-      if (cst.is_inequality() || cst.is_strict_inequality()) {
-        return linear_constraint_t(
-            *e, (typename linear_constraint_t::kind_t)cst.kind(),
-            cst.is_signed());
-
-      } else {
-        return linear_constraint_t(
-            *e, (typename linear_constraint_t::kind_t)cst.kind());
-      }
-    } else {
-      return boost::optional<linear_constraint_t>();
-    }
-  }
-
-  // Rename linear constraints
   base_linear_constraint_system_t
   rename_linear_cst_sys(const linear_constraint_system_t &csts) {
-    base_linear_constraint_system_t out;
-    for (auto const &cst : csts) {
-      out += rename_linear_cst(cst);
-    }
-    return out;
+    return m_ghost_var_man.rename_linear_cst_sys(csts);
   }
 
   base_linear_constraint_t
   convert_ref_cst_to_linear_cst(const reference_constraint_t &ref_cst) {
-    if (ref_cst.is_tautology()) {
-      return base_linear_constraint_t::get_true();
-    } else if (ref_cst.is_contradiction()) {
-      return base_linear_constraint_t::get_false();
-    } else {
-      if (ref_cst.is_unary()) {
-        assert(ref_cst.lhs().get_type().is_reference());
-        base_variable_t x = get_or_insert_gvars(ref_cst.lhs()).get_var();
-        if (ref_cst.is_equality()) {
-          return base_linear_constraint_t(x == number_t(0));
-        } else if (ref_cst.is_disequality()) {
-          return base_linear_constraint_t(x != number_t(0));
-        } else if (ref_cst.is_less_or_equal_than()) {
-          return base_linear_constraint_t(x <= number_t(0));
-        } else if (ref_cst.is_less_than()) {
-          return base_linear_constraint_t(x < number_t(0));
-        } else if (ref_cst.is_greater_or_equal_than()) {
-          return base_linear_constraint_t(x >= number_t(0));
-        } else if (ref_cst.is_greater_than()) {
-          return base_linear_constraint_t(x > number_t(0));
-        }
-      } else {
-        assert(ref_cst.lhs().get_type().is_reference());
-        assert(ref_cst.rhs().get_type().is_reference());
-        base_variable_t x = get_or_insert_gvars(ref_cst.lhs()).get_var();
-        base_variable_t y = get_or_insert_gvars(ref_cst.rhs()).get_var();
-        number_t offset = ref_cst.offset();
-        if (ref_cst.is_equality()) {
-          return base_linear_constraint_t(x == y + offset);
-        } else if (ref_cst.is_disequality()) {
-          return base_linear_constraint_t(x != y + offset);
-        } else if (ref_cst.is_less_or_equal_than()) {
-          return base_linear_constraint_t(x <= y + offset);
-        } else if (ref_cst.is_less_than()) {
-          return base_linear_constraint_t(x < y + offset);
-        } else if (ref_cst.is_greater_or_equal_than()) {
-          return base_linear_constraint_t(x >= y + offset);
-        } else if (ref_cst.is_greater_than()) {
-          return base_linear_constraint_t(x > y + offset);
-        }
-      }
-    }
-    CRAB_ERROR("unexpected reference constraint");
+    return m_ghost_var_man.ghosting_ref_cst_to_linear_cst(ref_cst);
   }
+    
+  boost::optional<variable_t> rev_rename_var(const base_variable_t &v,
+					     bool ignore_references) const {
+    return m_ghost_var_man.rev_rename_var(v, ignore_references);
+  }
+  
+  boost::optional<linear_expression_t>
+  rev_rename_linear_expr(const base_linear_expression_t &e,
+			 bool ignore_references) const {
+    return m_ghost_var_man.rev_rename_linear_expr(e, ignore_references);
+  }
+
+  boost::optional<linear_constraint_t>
+  rev_rename_linear_cst(const base_linear_constraint_t &cst,
+			bool ignore_references) const {
+    return m_ghost_var_man.rev_rename_linear_cst(cst, ignore_references);
+  }
+
 
   template <class RangeVars>
   void merge_tags(const variable_t &x, RangeVars vars) {
@@ -938,7 +586,8 @@ private:
   }
 
 public:
-  region_domain_t make_top() const override { return region_domain_t(true); }
+  region_domain_t make_top() const override {
+    return region_domain_t(true); }
 
   region_domain_t make_bottom() const override {
     return region_domain_t(false);
@@ -954,27 +603,26 @@ public:
     std::swap(*this, abs);
   }
 
-  region_domain(bool is_top = true) : m_is_bottom(!is_top) {}
-
+  region_domain(bool is_top = true)
+    : m_is_bottom(!is_top), m_ghost_var_man(get_type_fn()){}
+      
   region_domain(const region_domain_t &o)
-      : m_is_bottom(o.m_is_bottom), m_alloc(o.m_alloc), m_var_map(o.m_var_map),
-        m_rev_var_map(o.m_rev_var_map), m_base_dom(o.m_base_dom),
-	m_rgn_info_env(o.m_rgn_info_env),
-	m_tag_env(o.m_tag_env),
-        m_alloc_site_dom(o.m_alloc_site_dom),
-        m_rgn_dealloc_dom(o.m_rgn_dealloc_dom) {
+    : m_is_bottom(o.m_is_bottom), m_ghost_var_man(o.m_ghost_var_man),
+      m_base_dom(o.m_base_dom),
+      m_rgn_info_env(o.m_rgn_info_env),
+      m_tag_env(o.m_tag_env),
+      m_alloc_site_dom(o.m_alloc_site_dom),
+      m_rgn_dealloc_dom(o.m_rgn_dealloc_dom) {
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
   }
   region_domain(region_domain_t &&o)
-      : m_is_bottom(o.m_is_bottom), m_alloc(std::move(o.m_alloc)),
-        m_var_map(std::move(o.m_var_map)),
-        m_rev_var_map(std::move(o.m_rev_var_map)),
-        m_base_dom(std::move(o.m_base_dom)),
-	m_rgn_info_env(std::move(o.m_rgn_info_env)),
-	m_tag_env(std::move(o.m_tag_env)),
-        m_alloc_site_dom(std::move(o.m_alloc_site_dom)),
-        m_rgn_dealloc_dom(std::move(o.m_rgn_dealloc_dom)) {
+    : m_is_bottom(o.m_is_bottom), m_ghost_var_man(std::move(o.m_ghost_var_man)),
+      m_base_dom(std::move(o.m_base_dom)),
+      m_rgn_info_env(std::move(o.m_rgn_info_env)),
+      m_tag_env(std::move(o.m_tag_env)),
+      m_alloc_site_dom(std::move(o.m_alloc_site_dom)),
+      m_rgn_dealloc_dom(std::move(o.m_rgn_dealloc_dom)) {
   }
 
   region_domain_t &operator=(const region_domain_t &o) {
@@ -982,9 +630,7 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
     if (this != &o) {
       m_is_bottom = o.m_is_bottom;
-      m_alloc = o.m_alloc;
-      m_var_map = o.m_var_map;
-      m_rev_var_map = o.m_rev_var_map;
+      m_ghost_var_man = o.m_ghost_var_man;
       m_base_dom = o.m_base_dom;
       m_rgn_info_env = o.m_rgn_info_env;
       m_tag_env = o.m_tag_env;      
@@ -997,9 +643,7 @@ public:
   region_domain_t &operator=(region_domain_t &&o) {
     if (this != &o) {
       m_is_bottom = std::move(o.m_is_bottom);
-      m_alloc = std::move(o.m_alloc);
-      m_var_map = std::move(o.m_var_map);
-      m_rev_var_map = std::move(o.m_rev_var_map);
+      m_ghost_var_man = std::move(o.m_ghost_var_man);
       m_base_dom = std::move(o.m_base_dom);      
       m_rgn_info_env = std::move(o.m_rgn_info_env);
       m_tag_env = std::move(o.m_tag_env);      
@@ -1064,39 +708,9 @@ public:
       }
     }
     
-
-    // perform the common renaming
-    base_varname_allocator_t out_alloc(m_alloc, o.m_alloc);
     base_abstract_domain_t left_dom(m_base_dom);
     base_abstract_domain_t right_dom(o.m_base_dom);
-    base_variable_vector_t left_vars, right_vars, out_vars;
-    // upper bound to avoid reallocations
-    size_t num_renamings = m_var_map.size();
-    left_vars.reserve(num_renamings);
-    right_vars.reserve(num_renamings);
-    out_vars.reserve(num_renamings);
-
-    for (auto &kv : m_var_map) {
-      const variable_t &v = kv.first;
-      auto it = o.m_var_map.find(v);
-      if (it != o.m_var_map.end()) {
-        // if we ignore unknown regions, types are the same by construction
-        if (!crab_domain_params_man::get().region_skip_unknown_regions() &&
-	    !kv.second.same_type(it->second)) {
-          CRAB_ERROR(domain_name(), "::operator<= ", " dynamic type of ", v,
-                     " must be the same in both left and right operands");
-        }
-        ghost_variables_t out_gvars(
-            ghost_variables_t::create(out_alloc, kv.second));
-        kv.second.add(left_vars);
-        it->second.add(right_vars);
-        out_gvars.add(out_vars);
-      }
-    }
-    left_dom.forget(out_vars);
-    left_dom.rename(left_vars, out_vars);
-    right_dom.forget(out_vars);
-    right_dom.rename(right_vars, out_vars);
+    m_ghost_var_man.join(o.m_ghost_var_man, left_dom, right_dom);
 
     CRAB_LOG("region-leq", crab::outs()
                                << "Inclusion test (after renaming):\n\t"
@@ -1124,45 +738,45 @@ public:
 
     CRAB_LOG("region", crab::outs() << "Join " << *this << " and " << o << "=");
 
+    if (!crab_domain_params_man::get().region_refine_uninitialized_regions()) {
+      do_join(o);
+      CRAB_LOG("region", crab::outs() << "Result=" << *this << "\n");
+      return;
+    } 
+
+    /// Optional optimization to improve precision although unsound,
+    /// in general.
+    
     variable_vector_t left_regions, right_regions;
-    std::vector<ghost_variables_t> regions_left_base_vars,
-        regions_right_base_vars;
+    bool refine_left =
+      can_propagate_initialized_regions(m_rgn_info_env, o.m_rgn_info_env, left_regions);
+    bool refine_right =
+      can_propagate_initialized_regions(o.m_rgn_info_env, m_rgn_info_env, right_regions);
 
-    bool refine_left = false;
-    bool refine_right = false;
-    if (crab_domain_params_man::get().region_refine_uninitialized_regions()) {
-      refine_left = can_propagate_initialized_regions(
-	  m_rgn_info_env, o.m_var_map, left_regions, regions_right_base_vars);
-      refine_right = can_propagate_initialized_regions(
-	  o.m_rgn_info_env, m_var_map, right_regions, regions_left_base_vars);
-    }
-
-    // The code is complicated to achieve a zero-cost abstraction. If
-    // we cannot improve invariants on the right operand we avoid
-    // making a copy of it.
+    /// The code is complicated to achieve a zero-cost abstraction. If
+    /// we cannot improve invariants on the right operand we avoid
+    /// making a copy of it.
     if (refine_left && !refine_right) {
-      refine_regions(left_regions, regions_right_base_vars, m_var_map,
-                     m_rev_var_map, m_alloc, m_base_dom, o.m_base_dom,
-                     o.m_alloc);
+      m_ghost_var_man.project_and_meet(left_regions, o.m_ghost_var_man, 
+				       m_base_dom, o.m_base_dom);
       do_join(o);
     } else if (!refine_left && refine_right) {
       region_domain_t right(o);
-      refine_regions(right_regions, regions_left_base_vars, right.m_var_map,
-                     right.m_rev_var_map, right.m_alloc, right.m_base_dom,
-                     m_base_dom, m_alloc);
+      right.m_ghost_var_man.project_and_meet(right_regions, m_ghost_var_man, 
+					     right.m_base_dom, m_base_dom);
       do_join(right);
     } else if (refine_left && refine_right) {
       region_domain_t right(o);
-      refine_regions(left_regions, regions_right_base_vars, m_var_map,
-                     m_rev_var_map, m_alloc, m_base_dom, right.m_base_dom,
-                     right.m_alloc);
-      refine_regions(right_regions, regions_left_base_vars, right.m_var_map,
-                     right.m_rev_var_map, right.m_alloc, right.m_base_dom,
-                     m_base_dom, m_alloc);
+      m_ghost_var_man.project_and_meet(left_regions, right.m_ghost_var_man, 
+				       m_base_dom, right.m_base_dom);
+      right.m_ghost_var_man.project_and_meet(right_regions, m_ghost_var_man, 
+					     right.m_base_dom, m_base_dom);
       do_join(right);
     } else {
       do_join(o);
     }
+
+    CRAB_LOG("region", crab::outs() << "Result=" << *this << "\n");
   }
 
   region_domain_t operator|(const region_domain_t &o) const override {
@@ -1185,69 +799,67 @@ public:
     auto base_dom_op = [](const base_abstract_domain_t &v1,
                           const base_abstract_domain_t &v2) { return v1 | v2; };
 
+    if (!crab_domain_params_man::get().region_refine_uninitialized_regions()) {
+      region_domain_t res(std::move(
+	     do_join_or_widening(*this, o, true /*is join*/, base_dom_op)));
+      CRAB_LOG("region", crab::outs() << "Result=" << res << "\n");
+      return res;
+    } 
+
+    /// Optional optimization to improve precision although unsound,
+    /// in general
+    
     variable_vector_t left_regions, right_regions;
-    std::vector<ghost_variables_t> regions_left_base_vars,
-        regions_right_base_vars;
+    bool refine_left = can_propagate_initialized_regions(
+	  m_rgn_info_env, o.m_rgn_info_env, left_regions);
+    bool refine_right = can_propagate_initialized_regions(
+	  o.m_rgn_info_env, m_rgn_info_env, right_regions);
 
-    bool refine_left = false;
-    bool refine_right = false;
-    if (crab_domain_params_man::get().region_refine_uninitialized_regions()) {
-      refine_left = can_propagate_initialized_regions(
-	  m_rgn_info_env, o.m_var_map, left_regions, regions_right_base_vars);
-      refine_right = can_propagate_initialized_regions(
-	  o.m_rgn_info_env, m_var_map, right_regions, regions_left_base_vars);
-    }
-
-    // The code is complicated to achieve a zero-cost abstraction. If
-    // we cannot improve invariants then we try to avoid making copies
-    // of left and/or right operands.
+    /// The code is complicated to achieve a zero-cost abstraction. If
+    /// we cannot improve invariants then we try to avoid making copies
+    /// of left and/or right operands.
 
     if (refine_left && !refine_right) {
-      // Refine left by propagating information from right's regions
+      /// Refine left by propagating information from right's regions
       region_domain_t left(*this);
-      refine_regions(left_regions, regions_right_base_vars, left.m_var_map,
-                     left.m_rev_var_map, left.m_alloc, left.m_base_dom,
-                     o.m_base_dom, o.m_alloc);
+      left.m_ghost_var_man.project_and_meet(left_regions, o.m_ghost_var_man, 
+					    left.m_base_dom, o.m_base_dom);      
       region_domain_t res(std::move(
-          do_join_or_widening(left, o, true /*is join*/, base_dom_op)));
-      CRAB_LOG("region", crab::outs() << res << "\n");
+		  do_join_or_widening(left, o, true /*is join*/, base_dom_op)));
+      CRAB_LOG("region", crab::outs()<< "Result=" << res << "\n");
       return res;
-
     } else if (!refine_left && refine_right) {
-      // Refine right by propagating information from left's regions
+      /// Refine right by propagating information from left's regions
       region_domain_t right(o);
-      refine_regions(right_regions, regions_left_base_vars, right.m_var_map,
-                     right.m_rev_var_map, right.m_alloc, right.m_base_dom,
-                     m_base_dom, m_alloc);
+      right.m_ghost_var_man.project_and_meet(right_regions, m_ghost_var_man, 
+					     right.m_base_dom, m_base_dom);      
       region_domain_t res(std::move(
-          do_join_or_widening(*this, right, true /*is join*/, base_dom_op)));
-      CRAB_LOG("region", crab::outs() << res << "\n");
+  	          do_join_or_widening(*this, right, true /*is join*/, base_dom_op)));
+      CRAB_LOG("region", crab::outs()<< "Result=" << res << "\n");
       return res;
 
     } else if (refine_left && refine_right) {
       // Refine both left and right
       region_domain_t left(*this);
       region_domain_t right(o);
-      refine_regions(left_regions, regions_right_base_vars, left.m_var_map,
-                     left.m_rev_var_map, left.m_alloc, left.m_base_dom,
-                     right.m_base_dom, right.m_alloc);
-      refine_regions(right_regions, regions_left_base_vars, right.m_var_map,
-                     right.m_rev_var_map, right.m_alloc, right.m_base_dom,
-                     left.m_base_dom, left.m_alloc);
+      left.m_ghost_var_man.project_and_meet(left_regions, right.m_ghost_var_man, 
+					    left.m_base_dom, right.m_base_dom);      
+      right.m_ghost_var_man.project_and_meet(right_regions, left.m_ghost_var_man, 
+					     right.m_base_dom, left.m_base_dom);
       region_domain_t res(std::move(
           do_join_or_widening(left, right, true /*is join*/, base_dom_op)));
-      CRAB_LOG("region", crab::outs() << res << "\n");
+      CRAB_LOG("region", crab::outs()<< "Result=" << res << "\n");
       return res;
 
     } else {
       region_domain_t res(std::move(
           do_join_or_widening(*this, o, true /*is join*/, base_dom_op)));
 
-      CRAB_LOG("region", crab::outs() << res << "\n");
+      CRAB_LOG("region", crab::outs()<< "Result=" << res << "\n");
       return res;
     }
   }
-
+  
   region_domain_t operator&(const region_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
@@ -1267,7 +879,7 @@ public:
     region_domain_t res(std::move(
         do_meet_or_narrowing(*this, o, true /*is meet*/, base_dom_op)));
 
-    CRAB_LOG("region", crab::outs() << res << "\n");
+    CRAB_LOG("region", crab::outs()<< "Result=" << res << "\n");
     return res;
   }
 
@@ -1294,7 +906,7 @@ public:
     region_domain_t res(std::move(
         do_join_or_widening(*this, o, false /*is widen*/, base_dom_op)));
 
-    CRAB_LOG("region", crab::outs() << res << "\n");
+    CRAB_LOG("region", crab::outs()<< "Result=" << res << "\n");
     return res;
   }
 
@@ -1324,7 +936,7 @@ public:
     region_domain_t res(std::move(
         do_join_or_widening(*this, o, false /*is widen*/, base_dom_op)));
 
-    CRAB_LOG("region", crab::outs() << res << "\n");
+    CRAB_LOG("region", crab::outs()<< "Result=" << res << "\n");
     return res;
   }
 
@@ -1345,7 +957,7 @@ public:
     region_domain_t res(std::move(
         do_meet_or_narrowing(*this, o, false /*is narrow*/, base_dom_op)));
 
-    CRAB_LOG("region", crab::outs() << res << "\n");
+    CRAB_LOG("region", crab::outs() << "Result=" << res << "\n");
     return res;
   }
 
@@ -1368,12 +980,7 @@ public:
       if (crab_domain_params_man::get().region_tag_analysis()) {
         m_tag_env -= v;
       }
-      auto it = m_var_map.find(v);
-      if (it != m_var_map.end()) {
-        it->second.forget(m_base_dom);
-        it->second.remove_rev_varmap(m_rev_var_map);
-        m_var_map.erase(it);
-      }
+      m_ghost_var_man.forget(v, m_base_dom);
     }
   }
 
@@ -1418,7 +1025,7 @@ public:
 
     if (!(rgn.get_type().is_unknown_region())) {
       // Assign ghost variables to rgn for modeling its content
-      ghost_variables_t::create(m_alloc, rgn.get_type(), __LINE__);
+      get_or_insert_gvars(rgn);
       crab::CrabStats::count(domain_name() +
                              ".count.region_init.typed_regions");
     } else {
@@ -1762,20 +1369,19 @@ public:
       // weak read
       CRAB_LOG("region-load", crab::outs() << "Reading from non-singleton\n";);
       if (auto region_gvars_opt = get_gvars(rgn)) {
-        ghost_variables_t fresh_region_gvars =
-            ghost_variables_t::create(m_alloc, (*region_gvars_opt));
-        (*region_gvars_opt).expand(m_base_dom, fresh_region_gvars);
+        ghost_variables_t fresh_region_gvars = m_ghost_var_man.dup((*region_gvars_opt));
+        (*region_gvars_opt).expand(m_base_dom, fresh_region_gvars);	
         gvars_res.assign(m_base_dom, fresh_region_gvars);
       } else {
         gvars_res.forget(m_base_dom);
       }
     }
 
-    CRAB_LOG("region-load", crab::outs()
-                                << "After " << res << ":="
-                                << "ref_load(" << rgn << ":" << rgn.get_type()
-                                << "," << ref << ":" << ref.get_type()
-                                << ")=" << *this << "\n";);
+    CRAB_LOG("region", crab::outs()
+	     << "After " << res << ":="
+	     << "ref_load(" << rgn << ":" << rgn.get_type()
+	     << "," << ref << ":" << ref.get_type()
+	     << ")=" << *this << "\n";);
   }
 
   // Write the content of val to the address pointed by ref in rgn.
@@ -1882,11 +1488,8 @@ public:
 	    new_rgn_info.init_val() = boolean_value::get_false();
 	    new_rgn_info.type_val() = variable_type::mk_region(val.get_type());
 	    
-            if (boost::optional<ghost_variables_t> gvars = get_gvars(rgn)) {
-              m_var_map.erase(rgn);
-              (*gvars).remove_rev_varmap(m_rev_var_map);
-              (*gvars).forget(m_base_dom);
-            }
+	    m_ghost_var_man.forget(rgn, m_base_dom);
+	    
             CRAB_LOG("region-store",
                      crab::outs() << "Reinterpreting the dynamic type of "
                                   << rgn << " to " << val.get_type() << "\n";);
@@ -1982,7 +1585,7 @@ public:
     }
 
     m_rgn_info_env.set(rgn, new_rgn_info);    
-    CRAB_LOG("region-store",
+    CRAB_LOG("region",
              crab::outs() << "After ref_store(" << rgn << ":" << rgn.get_type()
                           << "," << ref << ":" << ref.get_type() << "," << val
                           << ":" << val.get_type() << ")=" << *this << "\n";);
@@ -2075,115 +1678,20 @@ public:
 
   // Treat memory pointed by ref  as an array and perform an array load.
   void ref_load_from_array(const variable_t &lhs,
-                           const variable_t &ref /*unused*/,
+                           const variable_t &ref,
                            const variable_t &rgn,
                            const linear_expression_t &index,
                            const linear_expression_t &elem_size) override {
-    crab::CrabStats::count(domain_name() + ".count.ref_load_from_array");
-    crab::ScopedCrabStats __st__(domain_name() + ".ref_load_from_array");
-
-    if (is_bottom()) {
-      return;
-    }
-
-    base_variable_t base_lhs = get_or_insert_gvars(lhs).get_var();
-
-    /***
-     * These syntactic checks are only needed if the abstract domain
-     * API is called directly.
-     **/
-    if (!lhs.get_type().is_integer() && !lhs.get_type().is_bool() &&
-        !lhs.get_type().is_real()) {
-      CRAB_LOG("region", CRAB_WARN("region_domain::ref_load_from_array: ", lhs,
-                                   " must be bool/int/real type"););
-      m_base_dom -= base_lhs;
-    }
-
-    if (!rgn.get_type().is_array_region()) {
-      CRAB_LOG("region", CRAB_WARN("region_domain::ref_load_from_array: ", rgn,
-                                   " must be an array region"););
-      m_base_dom -= base_lhs;
-      return;
-    }
-
-    // TODO: check that the array element matches the type of lhs
-    // (bool or int)
-
-    if (boost::optional<ghost_variables_t> arr_gvars_opt = get_gvars(rgn)) {
-      auto rgn_info = m_rgn_info_env.at(rgn);
-      auto num_refs = rgn_info.refcount_val();
-      auto b_elem_size = rename_linear_expr(elem_size);
-      if (num_refs.is_zero() || num_refs.is_one()) {
-        CRAB_LOG("region", crab::outs() << "Reading from singleton\n";);
-        auto b_index = rename_linear_expr(index);
-        m_base_dom.array_load(base_lhs, (*arr_gvars_opt).get_var(), b_elem_size,
-                              b_index);
-      } else {
-        // TODO: get the bitwidth from index
-        base_variable_t unknown_index(m_alloc.next(), crab::INT_TYPE, 32);
-        m_base_dom.array_load(base_lhs, (*arr_gvars_opt).get_var(), b_elem_size,
-                              unknown_index);
-      }
-    } else {
-      m_base_dom -= base_lhs;
-    }
-
-    // TODO: tag analysis
+    CRAB_WARN(domain_name(), "::ref_load_from_array is deprecated");
   }
 
   // Treat region as an array and perform an array store.
-  void ref_store_to_array(const variable_t &ref /*unused*/,
+  void ref_store_to_array(const variable_t &ref,
                           const variable_t &rgn,
                           const linear_expression_t &index,
                           const linear_expression_t &elem_size,
                           const linear_expression_t &val) override {
-    crab::CrabStats::count(domain_name() + ".count.ref_store_to_array");
-    crab::ScopedCrabStats __st__(domain_name() + ".ref_store_to_array");
-
-    if (is_bottom()) {
-      return;
-    }
-
-    /***
-     * These syntactic checks are only needed if the abstract domain
-     * API is called directly.
-     **/
-    if (!rgn.get_type().is_array_region()) {
-      CRAB_LOG("region", CRAB_WARN("region_domain::ref_store_to_array: ", rgn,
-                                   " must be an array region"););
-      return;
-    }
-
-    // We conservatively mark the region as may-initialized
-    auto old_rgn_info = m_rgn_info_env.at(rgn);    
-    m_rgn_info_env.set(rgn,
-      region_domain_impl::region_info(old_rgn_info.refcount_val(),
-				      boolean_value::top(),
-				      old_rgn_info.type_val()));
-
-    // TODO: check that the array element matches the type of val
-    // (bool or integer)
-
-    if (!has_dynamic_type(rgn)) {
-      // cannot call get_or_insert_gvars if unknown region
-      return;
-    }
-    auto num_refs = old_rgn_info.refcount_val();
-    base_variable_t arr_var = get_or_insert_gvars(rgn).get_var();
-    auto b_elem_size = rename_linear_expr(elem_size);
-    auto b_val = rename_linear_expr(val);
-    if (num_refs.is_zero() || num_refs.is_one()) {
-      CRAB_LOG("region", crab::outs() << "Reading from singleton\n";);
-      auto b_index = rename_linear_expr(index);
-      m_base_dom.array_store(arr_var, b_elem_size, b_index, b_val, false);
-
-    } else {
-      // TODO: get the bitwidth from index
-      base_variable_t unknown_index(m_alloc.next(), crab::INT_TYPE, 32);
-      m_base_dom.array_store(arr_var, b_elem_size, unknown_index, b_val, false);
-    }
-
-    // TODO: tag analysis
+    CRAB_WARN(domain_name(), "::ref_store_to_array is deprecated");
   }
 
   void ref_assume(const reference_constraint_t &ref_cst) override {
@@ -2868,8 +2376,6 @@ public:
       return;
     }
 
-    std::vector<base_variable_t> base_vars;
-    base_vars.reserve(variables.size());
     for (auto &v : variables) {
       if (crab_domain_params_man::get().region_allocation_sites()) {
         if (v.get_type().is_reference() || v.get_type().is_region()) {
@@ -2885,14 +2391,9 @@ public:
       if (crab_domain_params_man::get().region_tag_analysis()) {
         m_tag_env -= v;
       }
-      auto it = m_var_map.find(v);
-      if (it != m_var_map.end()) {
-        it->second.add(base_vars);
-        it->second.remove_rev_varmap(m_rev_var_map);
-        m_var_map.erase(it);
-      }
+      
+      m_ghost_var_man.forget(v, m_base_dom);
     }
-    m_base_dom.forget(base_vars);
   }
 
   void project(const variable_vector_t &variables) override {
@@ -2903,44 +2404,17 @@ public:
       return;
     }
 
-    variable_vector_t sorted_variables(variables.begin(), variables.end());
-    std::sort(sorted_variables.begin(), sorted_variables.end());
-
-    // -- project in the base domain
-    std::vector<base_variable_t> base_vars;
-    base_vars.reserve(variables.size());
-    for (auto const &v : variables) {
-      if (v.get_type().is_region() && !is_tracked_region(v)) {
-        continue;
-      }
-      get_or_insert_gvars(v).add(base_vars);
-    }
-    m_base_dom.project(base_vars);
-
-    // -- update m_var_map and m_rev_var_map
-    std::vector<variable_t> var_map_to_remove;
-    var_map_to_remove.reserve(m_var_map.size());
-    for (auto &kv : m_var_map) {
-      if (!std::binary_search(sorted_variables.begin(), sorted_variables.end(),
-                              kv.first)) {
-        var_map_to_remove.push_back(kv.first);
-        kv.second.remove_rev_varmap(m_rev_var_map);
-      }
-    }
-    for (auto &v : var_map_to_remove) {
-      m_var_map.erase(v);
-    }
-
-    m_rgn_info_env.project(sorted_variables);
+    m_ghost_var_man.project(variables, m_base_dom);    
+    m_rgn_info_env.project(variables);
     
     if (crab_domain_params_man::get().region_allocation_sites()) {
-      m_alloc_site_dom.project(sorted_variables);
+      m_alloc_site_dom.project(variables);
     }
     if (crab_domain_params_man::get().region_deallocation()) {
-      m_rgn_dealloc_dom.project(sorted_variables);
+      m_rgn_dealloc_dom.project(variables);
     }
     if (crab_domain_params_man::get().region_tag_analysis()) {
-      m_tag_env.project(sorted_variables);
+      m_tag_env.project(variables);
     }
   }
 
@@ -2970,34 +2444,7 @@ public:
       CRAB_ERROR(domain_name(), "::rename different lengths");
     }
 
-   // 1. update m_var_map and m_rev_var_map
-    base_variable_vector_t old_base_vars, new_base_vars;        
-    for (unsigned i = 0, sz = from.size(); i < sz; ++i) {
-      variable_t old_var = from[i];
-      auto it = m_var_map.find(old_var);
-      if (it == m_var_map.end()) {
-	continue;
-      }
-      // update m_var_map and m_rev_var_map to remove old_var and its
-      // ghost variables      
-      const ghost_variables_t &old_gvars = it->second;
-      old_gvars.add(old_base_vars);
-      old_gvars.remove_rev_varmap(m_rev_var_map);
-      m_var_map.erase(old_var); // add this point don't use old_gvars
-       
-      // update m_var_map and m_rev_var_map to accomodate new_var and its
-      // ghost variables.      
-      variable_t new_var = to[i];
-      if (!new_var.get_type().is_region() || is_tracked_region(new_var)) {
-	const ghost_variables_t &new_gvars = get_or_insert_gvars(new_var);                 
-	new_gvars.add(new_base_vars);
-      }
-    }
-        
-    // 2. Rename the base domain
-    m_base_dom.rename(old_base_vars, new_base_vars);
-    
-    // 3. Rename the rest of subdomains
+    m_ghost_var_man.rename(from, to, m_base_dom);    
     m_rgn_info_env.rename(from, to);
     if (crab_domain_params_man::get().region_allocation_sites()) {
       m_alloc_site_dom.rename(from, to);
@@ -3408,26 +2855,10 @@ public:
           } o
           << ")\n";);
 
-      CRAB_LOG(
-          "region-print2", o << "MapVar={"; for (auto &kv
-                                                 : m_var_map) {
-            o << kv.first << "->" << kv.second << ";";
-          } o << "},"
-              << "BaseDom=" << m_base_dom << ")\n";);
-      std::unordered_map<std::string, std::string> renaming_map;
-      auto get_type_fn = [this](const variable_t &v) -> variable_type {
-        if (has_dynamic_type(v)) {
-          return get_dynamic_type_or_fail(v);
-        } else {
-          return variable_type(variable_type_kind::UNK_TYPE);
-        }
-      };
-      // Assigns a string name to each ghost variable
-      ghost_variables_t::mk_renaming_map(m_rev_var_map, get_type_fn,
-                                         renaming_map);
-      m_alloc.add_renaming_map(renaming_map);
-      o << m_base_dom;
-      m_alloc.clear_renaming_map();
+      CRAB_LOG("region-print2", o << "BaseDom=" << m_base_dom << ")\n";);     
+      // We ask the ghost manager to print the base domain so that it
+      // can rename ghost variables to user-friendly names.      
+      m_ghost_var_man.write(o, m_base_dom);
     }
   }
 }; // class region_domain
