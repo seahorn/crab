@@ -364,35 +364,36 @@ Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 Program 1: forall 0<= i< 10. a[i] = 123456
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
 entry=({}, {})
-bb1=({}, {i -> [0, 10]; smashed(A0) -> [0, 123456]})
-bb1_f=({}, {i -> [0, 10]; smashed(A0) -> [0, 123456]})
-ret=({}, {i -> [10, 10]; smashed(A0) -> [0, 123456]})
-bb1_t=({}, {i -> [0, 10]; smashed(A0) -> [0, 123456]})
-bb2=({}, {i -> [0, 9]; smashed(A0) -> [0, 123456]})
+bb1=({}, {i -> [0, 10]; A0.smashed -> [0, 123456]})
+bb1_f=({}, {i -> [0, 10]; A0.smashed -> [0, 123456]})
+ret=({}, {i -> [10, 10]; A0.smashed -> [0, 123456]})
+bb1_t=({}, {i -> [0, 10]; A0.smashed -> [0, 123456]})
+bb2=({}, {i -> [0, 9]; A0.smashed -> [0, 123456]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 2: forall 0<= i< 10. a[i] = b[i] = x and x = 123456
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
 entry=({}, {})
-bb1=({}, {i -> [0, 10]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
-bb1_f=({}, {i -> [0, 10]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
-ret=({}, {i -> [10, 10]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
-bb1_t=({}, {i -> [0, 10]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
-bb2=({}, {i -> [0, 9]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
+bb1=({}, {i -> [0, 10]; A.smashed -> [0, 123456]; B.smashed -> [0, 123456]})
+bb1_f=({}, {i -> [0, 10]; A.smashed -> [0, 123456]; B.smashed -> [0, 123456]})
+ret=({}, {i -> [10, 10]; A.smashed -> [0, 123456]; B.smashed -> [0, 123456]})
+bb1_t=({}, {i -> [0, 10]; A.smashed -> [0, 123456]; B.smashed -> [0, 123456]})
+bb2=({}, {i -> [0, 9]; A.smashed -> [0, 123456]; B.smashed -> [0, 123456]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 3: forall 0<= i< 10. a[i] = 8 and b[i] = 5
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
 entry=({}, {})
-bb1=({}, {i -> [0, 10]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
-bb1_f=({}, {i -> [0, 10]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
-ret=({}, {i -> [10, 10]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
-bb1_t=({}, {i -> [0, 10]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
-bb2=({}, {i -> [0, 9]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
+bb1=({}, {i -> [0, 10]; A.smashed -> [0, 8]; B.smashed -> [0, 5]})
+bb1_f=({}, {i -> [0, 10]; A.smashed -> [0, 8]; B.smashed -> [0, 5]})
+ret=({}, {i -> [10, 10]; A.smashed -> [0, 8]; B.smashed -> [0, 5]})
+bb1_t=({}, {i -> [0, 10]; A.smashed -> [0, 8]; B.smashed -> [0, 5]})
+bb2=({}, {i -> [0, 9]; A.smashed -> [0, 8]; B.smashed -> [0, 5]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 4: forall 0<= i < n. a[i] = 123456 (unbounded loop)
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+CRAB WARNING: array adaptive store range ignored because upper bound n is not constant
 entry=({}, {})
 bb1=({}, {i -> [0, +oo]; n -> [1, +oo]})
 bb1_f=({}, {i -> [0, +oo]; n -> [1, +oo]})
@@ -404,15 +405,16 @@ Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 Program 5: for all 0<= i< 10. a[i] = 123456 (assume elem size=4 bytes)
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
 entry=({}, {})
-bb1=({}, {i -> [0, 10]; smashed(A) -> [0, 123456]})
-bb1_f=({}, {i -> [0, 10]; smashed(A) -> [0, 123456]})
-ret=({}, {i -> [10, 10]; smashed(A) -> [0, 123456]})
-bb1_t=({}, {i -> [0, 10]; smashed(A) -> [0, 123456]})
-bb2=({}, {i -> [0, 9]; smashed(A) -> [0, 123456]})
+bb1=({}, {i -> [0, 10]; A.smashed -> [0, 123456]})
+bb1_f=({}, {i -> [0, 10]; A.smashed -> [0, 123456]})
+ret=({}, {i -> [10, 10]; A.smashed -> [0, 123456]})
+bb1_t=({}, {i -> [0, 10]; A.smashed -> [0, 123456]})
+bb2=({}, {i -> [0, 9]; A.smashed -> [0, 123456]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+CRAB WARNING: array adaptive store range ignored because upper bound n is not constant
 entry=({}, {})
 bb1=({}, {i -> [1, +oo]; n -> [2, +oo]; val -> [89, 89]})
 bb1_f=({}, {i -> [1, +oo]; n -> [2, +oo]; val -> [89, 89]})
@@ -424,15 +426,16 @@ Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 Program 7: forall 0<= i< 10 and i % 2 = 0. a[i] = 123456
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
 entry=({}, {})
-bb1=({}, {i -> [0, 11]; n -> [1, +oo]; smashed(A) -> [0, 123456]})
-bb1_f=({}, {i -> [0, 11]; n -> [1, +oo]; smashed(A) -> [0, 123456]})
-ret=({}, {i -> [10, 11]; n -> [1, +oo]; smashed(A) -> [0, 123456]})
-bb1_t=({}, {i -> [0, 11]; n -> [1, +oo]; smashed(A) -> [0, 123456]})
-bb2=({}, {i -> [0, 9]; n -> [1, +oo]; smashed(A) -> [0, 123456]})
+bb1=({}, {i -> [0, 11]; n -> [1, +oo]; A.smashed -> [0, 123456]})
+bb1_f=({}, {i -> [0, 11]; n -> [1, +oo]; A.smashed -> [0, 123456]})
+ret=({}, {i -> [10, 11]; n -> [1, +oo]; A.smashed -> [0, 123456]})
+bb1_t=({}, {i -> [0, 11]; n -> [1, +oo]; A.smashed -> [0, 123456]})
+bb2=({}, {i -> [0, 9]; n -> [1, +oo]; A.smashed -> [0, 123456]})
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
 Program 8: forall 0<= i < n. 1 <= a[i] <= 2
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+CRAB WARNING: array adaptive store range ignored because upper bound n is not constant
 entry=({}, {})
 bb1=({}, {i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]})
 bb1_f2=({}, {i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]})
@@ -448,21 +451,21 @@ Abstract trace: entry (bb1 bb1_t bb2 bb2b bb2a)^{3} bb1_f2 bb1_f1 bb1_f ret
 Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
 entry=({}, {})
-bb1=({}, {i -> [-1, 9]; smashed(A) -> [0, 123456]})
-bb1_f=({}, {i -> [-1, 9]; smashed(A) -> [0, 123456]})
-ret=({}, {i -> [-1, -1]; smashed(A) -> [0, 123456]})
-bb1_t=({}, {i -> [-1, 9]; smashed(A) -> [0, 123456]})
-bb2=({}, {i -> [0, 9]; smashed(A) -> [0, 123456]})
+bb1=({}, {i -> [-1, 9]; A.smashed -> [0, 123456]})
+bb1_f=({}, {i -> [-1, 9]; A.smashed -> [0, 123456]})
+ret=({}, {i -> [-1, -1]; A.smashed -> [0, 123456]})
+bb1_t=({}, {i -> [-1, 9]; A.smashed -> [0, 123456]})
+bb2=({}, {i -> [0, 9]; A.smashed -> [0, 123456]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 11: forall 0<= i< 10. a[i] = true and b[i] = false
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
 entry=({}, {})
-bb1=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {i -> [0, 10]})
-bb1_f=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {i -> [0, 10]})
-ret=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {i -> [10, 10]})
-bb1_t=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {i -> [0, 10]})
-bb2=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {i -> [0, 9]})
+bb1=({TRUE -> true; FALSE -> false; A.smashed -> true; B.smashed -> false}, {i -> [0, 10]})
+bb1_f=({TRUE -> true; FALSE -> false; A.smashed -> true; B.smashed -> false}, {i -> [0, 10]})
+ret=({TRUE -> true; FALSE -> false; A.smashed -> true; B.smashed -> false}, {i -> [10, 10]})
+bb1_t=({TRUE -> true; FALSE -> false; A.smashed -> true; B.smashed -> false}, {i -> [0, 10]})
+bb2=({TRUE -> true; FALSE -> false; A.smashed -> true; B.smashed -> false}, {i -> [0, 9]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 === End ./test-bin/array_adaptive1 ===
@@ -616,190 +619,190 @@ user-defined assertion checker
 Program 1: forall 0<= i< 10. a[i] = 123456
 Invariants using ArraySmashing(DisjunctiveIntervals)
 entry={}
-bb1={n1 -> [1, 1]; i -> [0, 10]; A0 -> [0, 0] | [123456, 123456]; A0_prop -> [0, 0]}
-bb1_f={n1 -> [1, 1]; i -> [0, 10]; A0 -> [0, 0] | [123456, 123456]; A0_prop -> [0, 0]}
-ret={n1 -> [1, 1]; i -> [10, 10]; A0 -> [0, 0] | [123456, 123456]; A0_prop -> [0, 0]}
-bb1_t={n1 -> [1, 1]; i -> [0, 10]; A0 -> [0, 0] | [123456, 123456]; A0_prop -> [0, 0]}
-bb2={n1 -> [1, 1]; i -> [0, 9]; A0 -> [0, 0] | [123456, 123456]; A0_prop -> [0, 0]}
+bb1={n1 -> [1, 1]; i -> [0, 10]; A0_prop -> [0, 0]; A0.smashed -> [0, 0] | [123456, 123456]}
+bb1_f={n1 -> [1, 1]; i -> [0, 10]; A0_prop -> [0, 0]; A0.smashed -> [0, 0] | [123456, 123456]}
+ret={n1 -> [1, 1]; i -> [10, 10]; A0_prop -> [0, 0]; A0.smashed -> [0, 0] | [123456, 123456]}
+bb1_t={n1 -> [1, 1]; i -> [0, 10]; A0_prop -> [0, 0]; A0.smashed -> [0, 0] | [123456, 123456]}
+bb2={n1 -> [1, 1]; i -> [0, 9]; A0_prop -> [0, 0]; A0.smashed -> [0, 0] | [123456, 123456]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
 entry={}
-bb1={n1 -> [1, 1], i -> [0, 10], A0 -> [0, 123456], A0_prop -> [0, 0], i-n1<=9, n1-i<=1, A0-i<=123455}
-bb1_f={n1 -> [1, 1], i -> [0, 10], A0 -> [0, 123456], A0_prop -> [0, 0], i-n1<=9, n1-i<=1, A0-i<=123455}
-ret={n1 -> [1, 1], i -> [10, 10], A0 -> [0, 123456], A0_prop -> [0, 0], i-n1<=9, n1-i<=1, A0-i<=123455}
-bb1_t={n1 -> [1, 1], i -> [0, 10], A0 -> [0, 123456], A0_prop -> [0, 0], i-n1<=9, n1-i<=1, A0-i<=123455}
-bb2={n1 -> [1, 1], i -> [0, 9], A0 -> [0, 123456], A0_prop -> [0, 0], i-n1<=9, n1-i<=1, A0-i<=123455}
+bb1={n1 -> [1, 1], i -> [0, 10], A0_prop -> [0, 0], A0.smashed -> [0, 123456], i-n1<=9, n1-i<=1, A0.smashed-i<=123455}
+bb1_f={n1 -> [1, 1], i -> [0, 10], A0_prop -> [0, 0], A0.smashed -> [0, 123456], i-n1<=9, n1-i<=1, A0.smashed-i<=123455}
+ret={n1 -> [1, 1], i -> [10, 10], A0_prop -> [0, 0], A0.smashed -> [0, 123456], i-n1<=9, n1-i<=1, A0.smashed-i<=123455}
+bb1_t={n1 -> [1, 1], i -> [0, 10], A0_prop -> [0, 0], A0.smashed -> [0, 123456], i-n1<=9, n1-i<=1, A0.smashed-i<=123455}
+bb2={n1 -> [1, 1], i -> [0, 9], A0_prop -> [0, 0], A0.smashed -> [0, 123456], i-n1<=9, n1-i<=1, A0.smashed-i<=123455}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 2: forall 0<= i< 10. a[i] = b[i] = x and x = 123456
 Invariants using ArraySmashing(DisjunctiveIntervals)
 entry={}
-bb1={n1 -> [1, 1]; i -> [0, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]; B -> [0, 0] | [123456, 123456]}
-bb1_f={n1 -> [1, 1]; i -> [0, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]; B -> [0, 0] | [123456, 123456]}
-ret={n1 -> [1, 1]; i -> [10, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]; B -> [0, 0] | [123456, 123456]}
-bb1_t={n1 -> [1, 1]; i -> [0, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]; B -> [0, 0] | [123456, 123456]}
-bb2={n1 -> [1, 1]; i -> [0, 9]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]; B -> [0, 0] | [123456, 123456]}
+bb1={n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]; B.smashed -> [0, 0] | [123456, 123456]}
+bb1_f={n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]; B.smashed -> [0, 0] | [123456, 123456]}
+ret={n1 -> [1, 1]; i -> [10, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]; B.smashed -> [0, 0] | [123456, 123456]}
+bb1_t={n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]; B.smashed -> [0, 0] | [123456, 123456]}
+bb2={n1 -> [1, 1]; i -> [0, 9]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]; B.smashed -> [0, 0] | [123456, 123456]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
 entry={}
-bb1={n1 -> [1, 1], i -> [0, 10], A -> [0, 123456], A_p -> [0, 0], B -> [0, 123456], i-n1<=9, n1-i<=1, A-i<=123455, B-i<=123455}
-bb1_f={n1 -> [1, 1], i -> [0, 10], A -> [0, 123456], A_p -> [0, 0], B -> [0, 123456], i-n1<=9, n1-i<=1, A-i<=123455, B-i<=123455}
-ret={n1 -> [1, 1], i -> [10, 10], A -> [0, 123456], A_p -> [0, 0], B -> [0, 123456], i-n1<=9, n1-i<=1, A-i<=123455, B-i<=123455}
-bb1_t={n1 -> [1, 1], i -> [0, 10], A -> [0, 123456], A_p -> [0, 0], B -> [0, 123456], i-n1<=9, n1-i<=1, A-i<=123455, B-i<=123455}
-bb2={n1 -> [1, 1], i -> [0, 9], A -> [0, 123456], A_p -> [0, 0], B -> [0, 123456], i-n1<=9, n1-i<=1, A-i<=123455, B-i<=123455}
+bb1={n1 -> [1, 1], i -> [0, 10], A_p -> [0, 0], A.smashed -> [0, 123456], B.smashed -> [0, 123456], i-n1<=9, n1-i<=1, A.smashed-i<=123455, B.smashed-i<=123455}
+bb1_f={n1 -> [1, 1], i -> [0, 10], A_p -> [0, 0], A.smashed -> [0, 123456], B.smashed -> [0, 123456], i-n1<=9, n1-i<=1, A.smashed-i<=123455, B.smashed-i<=123455}
+ret={n1 -> [1, 1], i -> [10, 10], A_p -> [0, 0], A.smashed -> [0, 123456], B.smashed -> [0, 123456], i-n1<=9, n1-i<=1, A.smashed-i<=123455, B.smashed-i<=123455}
+bb1_t={n1 -> [1, 1], i -> [0, 10], A_p -> [0, 0], A.smashed -> [0, 123456], B.smashed -> [0, 123456], i-n1<=9, n1-i<=1, A.smashed-i<=123455, B.smashed-i<=123455}
+bb2={n1 -> [1, 1], i -> [0, 9], A_p -> [0, 0], A.smashed -> [0, 123456], B.smashed -> [0, 123456], i-n1<=9, n1-i<=1, A.smashed-i<=123455, B.smashed-i<=123455}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 3: forall 0<= i< 10. a[i] = 8 and b[i] = 5
 Invariants using ArraySmashing(DisjunctiveIntervals)
 entry={}
-bb1={n1 -> [1, 1]; i -> [0, 10]; A -> [0, 0] | [8, 8]; A_p -> [0, 0]; B -> [0, 0] | [5, 5]}
-bb1_f={n1 -> [1, 1]; i -> [0, 10]; A -> [0, 0] | [8, 8]; A_p -> [0, 0]; B -> [0, 0] | [5, 5]}
-ret={n1 -> [1, 1]; i -> [10, 10]; A -> [0, 0] | [8, 8]; A_p -> [0, 0]; B -> [0, 0] | [5, 5]}
-bb1_t={n1 -> [1, 1]; i -> [0, 10]; A -> [0, 0] | [8, 8]; A_p -> [0, 0]; B -> [0, 0] | [5, 5]}
-bb2={n1 -> [1, 1]; i -> [0, 9]; A -> [0, 0] | [8, 8]; A_p -> [0, 0]; B -> [0, 0] | [5, 5]}
+bb1={n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [8, 8]; B.smashed -> [0, 0] | [5, 5]}
+bb1_f={n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [8, 8]; B.smashed -> [0, 0] | [5, 5]}
+ret={n1 -> [1, 1]; i -> [10, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [8, 8]; B.smashed -> [0, 0] | [5, 5]}
+bb1_t={n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [8, 8]; B.smashed -> [0, 0] | [5, 5]}
+bb2={n1 -> [1, 1]; i -> [0, 9]; A_p -> [0, 0]; A.smashed -> [0, 0] | [8, 8]; B.smashed -> [0, 0] | [5, 5]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
 entry={}
-bb1={n1 -> [1, 1], i -> [0, 10], A -> [0, 8], A_p -> [0, 0], B -> [0, 5], i-n1<=9, n1-i<=1, A-i<=7, B-i<=4}
-bb1_f={n1 -> [1, 1], i -> [0, 10], A -> [0, 8], A_p -> [0, 0], B -> [0, 5], i-n1<=9, n1-i<=1, A-i<=7, B-i<=4}
-ret={n1 -> [1, 1], i -> [10, 10], A -> [0, 8], A_p -> [0, 0], B -> [0, 5], i-n1<=9, n1-i<=1, A-i<=7, B-i<=4}
-bb1_t={n1 -> [1, 1], i -> [0, 10], A -> [0, 8], A_p -> [0, 0], B -> [0, 5], i-n1<=9, n1-i<=1, A-i<=7, B-i<=4}
-bb2={n1 -> [1, 1], i -> [0, 9], A -> [0, 8], A_p -> [0, 0], B -> [0, 5], i-n1<=9, n1-i<=1, A-i<=7, B-i<=4}
+bb1={n1 -> [1, 1], i -> [0, 10], A_p -> [0, 0], A.smashed -> [0, 8], B.smashed -> [0, 5], i-n1<=9, n1-i<=1, A.smashed-i<=7, B.smashed-i<=4}
+bb1_f={n1 -> [1, 1], i -> [0, 10], A_p -> [0, 0], A.smashed -> [0, 8], B.smashed -> [0, 5], i-n1<=9, n1-i<=1, A.smashed-i<=7, B.smashed-i<=4}
+ret={n1 -> [1, 1], i -> [10, 10], A_p -> [0, 0], A.smashed -> [0, 8], B.smashed -> [0, 5], i-n1<=9, n1-i<=1, A.smashed-i<=7, B.smashed-i<=4}
+bb1_t={n1 -> [1, 1], i -> [0, 10], A_p -> [0, 0], A.smashed -> [0, 8], B.smashed -> [0, 5], i-n1<=9, n1-i<=1, A.smashed-i<=7, B.smashed-i<=4}
+bb2={n1 -> [1, 1], i -> [0, 9], A_p -> [0, 0], A.smashed -> [0, 8], B.smashed -> [0, 5], i-n1<=9, n1-i<=1, A.smashed-i<=7, B.smashed-i<=4}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 4: forall 0<= i < n. a[i] = 123456 (unbounded loop)
 Invariants using ArraySmashing(DisjunctiveIntervals)
 entry={}
-bb1={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb1_f={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-ret={n1 -> [1, 1]; i -> [1, +oo]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb1_t={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb2={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
+bb1={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
+bb1_f={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
+ret={n1 -> [1, 1]; i -> [1, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
+bb1_t={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
+bb2={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
 entry={}
-bb1={n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], n1-i<=1, A-i<=123455, i-n<=0, A-n<=123455}
-bb1_f={n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], n1-i<=1, A-i<=123455, i-n<=0, A-n<=123455}
-ret={n1 -> [1, 1], i -> [1, +oo], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], n1-i<=1, A-i<=123455, n-i<=0, i-n<=0, A-n<=123455}
-bb1_t={n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], n1-i<=1, A-i<=123455, i-n<=0, A-n<=123455}
-bb2={n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], n1-i<=1, A-i<=123455, i-n<=-1, A-n<=123454, n1-n<=0}
+bb1={n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 123456], n1-i<=1, A.smashed-i<=123455, i-n<=0, A.smashed-n<=123455}
+bb1_f={n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 123456], n1-i<=1, A.smashed-i<=123455, i-n<=0, A.smashed-n<=123455}
+ret={n1 -> [1, 1], i -> [1, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 123456], n1-i<=1, A.smashed-i<=123455, n-i<=0, i-n<=0, A.smashed-n<=123455}
+bb1_t={n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 123456], n1-i<=1, A.smashed-i<=123455, i-n<=0, A.smashed-n<=123455}
+bb2={n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 123456], n1-i<=1, A.smashed-i<=123455, i-n<=-1, A.smashed-n<=123454, n1-n<=0}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 5: for all 0<= i< 10. a[i] = 123456 (assume elem size of 4 bytes)
 Invariants using ArraySmashing(DisjunctiveIntervals)
 entry={}
-bb1={i -> [0, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb1_f={i -> [0, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-ret={i -> [10, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb1_t={i -> [0, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb2={i -> [0, 9]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
+bb1={i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
+bb1_f={i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
+ret={i -> [10, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
+bb1_t={i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
+bb2={i -> [0, 9]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
 entry={}
-bb1={i -> [0, 10], A -> [0, 123456], A_p -> [0, 0], A-i<=123455}
-bb1_f={i -> [0, 10], A -> [0, 123456], A_p -> [0, 0], A-i<=123455}
-ret={i -> [10, 10], A -> [0, 123456], A_p -> [0, 0], A-i<=123455}
-bb1_t={i -> [0, 10], A -> [0, 123456], A_p -> [0, 0], A-i<=123455}
-bb2={i -> [0, 9], A -> [0, 123456], A_p -> [0, 0], A-i<=123455}
+bb1={i -> [0, 10], A_p -> [0, 0], A.smashed -> [0, 123456], A.smashed-i<=123455}
+bb1_f={i -> [0, 10], A_p -> [0, 0], A.smashed -> [0, 123456], A.smashed-i<=123455}
+ret={i -> [10, 10], A_p -> [0, 0], A.smashed -> [0, 123456], A.smashed-i<=123455}
+bb1_t={i -> [0, 10], A_p -> [0, 0], A.smashed -> [0, 123456], A.smashed-i<=123455}
+bb2={i -> [0, 9], A_p -> [0, 0], A.smashed -> [0, 123456], A.smashed-i<=123455}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]
 Invariants using ArraySmashing(DisjunctiveIntervals)
 entry={}
-bb1={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A -> [0, 0] | [89, 89]; A_p -> [0, 0]; val -> [89, 89]}
-bb1_f={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A -> [0, 0] | [89, 89]; A_p -> [0, 0]; val -> [89, 89]}
-ret={n1 -> [1, 1]; i -> [2, +oo]; n -> [2, +oo]; A -> [0, 0] | [89, 89]; A_p -> [0, 0]; val -> [89, 89]}
-bb1_t={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A -> [0, 0] | [89, 89]; A_p -> [0, 0]; val -> [89, 89]}
-bb2={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A -> [0, 0] | [89, 89]; A_p -> [0, 0]; val -> [89, 89]}
+bb1={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]; A.smashed -> [0, 0] | [89, 89]}
+bb1_f={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]; A.smashed -> [0, 0] | [89, 89]}
+ret={n1 -> [1, 1]; i -> [2, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]; A.smashed -> [0, 0] | [89, 89]}
+bb1_t={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]; A.smashed -> [0, 0] | [89, 89]}
+bb2={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]; A.smashed -> [0, 0] | [89, 89]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
 entry={}
-bb1={n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], A -> [0, 89], A_p -> [0, 0], val -> [89, 89], n1-i<=0, i-n<=0}
-bb1_f={n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], A -> [0, 89], A_p -> [0, 0], val -> [89, 89], n1-i<=0, i-n<=0}
-ret={n1 -> [1, 1], i -> [2, +oo], n -> [2, +oo], A -> [0, 89], A_p -> [0, 0], val -> [89, 89], n1-i<=0, n-i<=0, i-n<=0}
-bb1_t={n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], A -> [0, 89], A_p -> [0, 0], val -> [89, 89], n1-i<=0, i-n<=0}
-bb2={n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], A -> [0, 89], A_p -> [0, 0], val -> [89, 89], n1-i<=0, i-n<=-1, n1-n<=-1}
+bb1={n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], A_p -> [0, 0], val -> [89, 89], A.smashed -> [0, 89], n1-i<=0, i-n<=0}
+bb1_f={n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], A_p -> [0, 0], val -> [89, 89], A.smashed -> [0, 89], n1-i<=0, i-n<=0}
+ret={n1 -> [1, 1], i -> [2, +oo], n -> [2, +oo], A_p -> [0, 0], val -> [89, 89], A.smashed -> [0, 89], n1-i<=0, n-i<=0, i-n<=0}
+bb1_t={n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], A_p -> [0, 0], val -> [89, 89], A.smashed -> [0, 89], n1-i<=0, i-n<=0}
+bb2={n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], A_p -> [0, 0], val -> [89, 89], A.smashed -> [0, 89], n1-i<=0, i-n<=-1, n1-n<=-1}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 7: forall 0<= i< 10 and i % 2 = 0. a[i] = 123456
 Invariants using ArraySmashing(DisjunctiveIntervals)
 entry={}
-bb1={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 11]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb1_f={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 11]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-ret={n1 -> [1, 1]; n2 -> [2, 2]; i -> [10, 11]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb1_t={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 11]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb2={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 9]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
+bb1={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 11]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
+bb1_f={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 11]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
+ret={n1 -> [1, 1]; n2 -> [2, 2]; i -> [10, 11]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
+bb1_t={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 11]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
+bb2={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 9]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
 entry={}
-bb1={n1 -> [1, 1], n2 -> [2, 2], i -> [0, 11], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], i-n2<=9, n2-i<=2, A-i<=123454}
-bb1_f={n1 -> [1, 1], n2 -> [2, 2], i -> [0, 11], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], i-n2<=9, n2-i<=2, A-i<=123454}
-ret={n1 -> [1, 1], n2 -> [2, 2], i -> [10, 11], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], i-n2<=9, n2-i<=2, A-i<=123454}
-bb1_t={n1 -> [1, 1], n2 -> [2, 2], i -> [0, 11], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], i-n2<=9, n2-i<=2, A-i<=123454}
-bb2={n1 -> [1, 1], n2 -> [2, 2], i -> [0, 9], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], i-n2<=9, n2-i<=2, A-i<=123454}
+bb1={n1 -> [1, 1], n2 -> [2, 2], i -> [0, 11], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 123456], i-n2<=9, n2-i<=2, A.smashed-i<=123454}
+bb1_f={n1 -> [1, 1], n2 -> [2, 2], i -> [0, 11], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 123456], i-n2<=9, n2-i<=2, A.smashed-i<=123454}
+ret={n1 -> [1, 1], n2 -> [2, 2], i -> [10, 11], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 123456], i-n2<=9, n2-i<=2, A.smashed-i<=123454}
+bb1_t={n1 -> [1, 1], n2 -> [2, 2], i -> [0, 11], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 123456], i-n2<=9, n2-i<=2, A.smashed-i<=123454}
+bb2={n1 -> [1, 1], n2 -> [2, 2], i -> [0, 9], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 123456], i-n2<=9, n2-i<=2, A.smashed-i<=123454}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 8: forall 0<= i < n. 1 <= a[i] <= 2
 Invariants using ArraySmashing(DisjunctiveIntervals)
 entry={}
-bb1={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
-bb1_f2={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
-bb1_f={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
-ret={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
-bb1_f1={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
-bb1_t={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
-bb2={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
-bb2b={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
-bb2a={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
+bb1={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 2]}
+bb1_f2={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 2]}
+bb1_f={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 2]}
+ret={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 2]}
+bb1_f1={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 2]}
+bb1_t={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 2]}
+bb2={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 2]}
+bb2b={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 2]}
+bb2a={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 2]}
 Abstract trace: entry (bb1 bb1_t bb2 bb2b bb2a)^{3} bb1_f2 bb1_f1 bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
 entry={}
-bb1={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, A-i2<=1, n1-i2<=1, i1-n<=0, A-n<=1, i2-n<=0, n1-n<=0}
-bb1_f2={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, A-i2<=1, n1-i2<=1, i1-n<=0, A-n<=1, i2-n<=0, n1-n<=0}
-bb1_f={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, A-i2<=1, n1-i2<=1, i1-n<=0, A-n<=1, i2-n<=0, n1-n<=0}
-ret={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, A-i2<=1, n1-i2<=1, i1-n<=0, A-n<=1, i2-n<=0, n1-n<=0}
-bb1_f1={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, A-i2<=1, n1-i2<=1, i1-n<=0, A-n<=1, i2-n<=0, n1-n<=0}
-bb1_t={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, A-i2<=1, n1-i2<=1, i1-n<=0, A-n<=1, i2-n<=0, n1-n<=0}
-bb2={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, A-i2<=1, n1-i2<=1, i1-n<=-1, A-n<=0, i2-n<=-1, n1-n<=0}
-bb2b={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, A-i2<=1, n1-i2<=1, i1-n<=-1, A-n<=0, i2-n<=-1, n1-n<=0}
-bb2a={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, A-i2<=1, n1-i2<=1, i1-n<=-1, A-n<=0, i2-n<=-1, n1-n<=0}
+bb1={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 2], n1-i1<=1, A.smashed-i1<=2, A.smashed-i2<=1, n1-i2<=1, i1-n<=0, A.smashed-n<=1, i2-n<=0, n1-n<=0}
+bb1_f2={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 2], n1-i1<=1, A.smashed-i1<=2, A.smashed-i2<=1, n1-i2<=1, i1-n<=0, A.smashed-n<=1, i2-n<=0, n1-n<=0}
+bb1_f={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 2], n1-i1<=1, A.smashed-i1<=2, A.smashed-i2<=1, n1-i2<=1, i1-n<=0, A.smashed-n<=1, i2-n<=0, n1-n<=0}
+ret={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 2], n1-i1<=1, A.smashed-i1<=2, A.smashed-i2<=1, n1-i2<=1, i1-n<=0, A.smashed-n<=1, i2-n<=0, n1-n<=0}
+bb1_f1={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 2], n1-i1<=1, A.smashed-i1<=2, A.smashed-i2<=1, n1-i2<=1, i1-n<=0, A.smashed-n<=1, i2-n<=0, n1-n<=0}
+bb1_t={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 2], n1-i1<=1, A.smashed-i1<=2, A.smashed-i2<=1, n1-i2<=1, i1-n<=0, A.smashed-n<=1, i2-n<=0, n1-n<=0}
+bb2={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 2], n1-i1<=1, A.smashed-i1<=2, A.smashed-i2<=1, n1-i2<=1, i1-n<=-1, A.smashed-n<=0, i2-n<=-1, n1-n<=0}
+bb2b={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 2], n1-i1<=1, A.smashed-i1<=2, A.smashed-i2<=1, n1-i2<=1, i1-n<=-1, A.smashed-n<=0, i2-n<=-1, n1-n<=0}
+bb2a={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 2], n1-i1<=1, A.smashed-i1<=2, A.smashed-i2<=1, n1-i2<=1, i1-n<=-1, A.smashed-n<=0, i2-n<=-1, n1-n<=0}
 Abstract trace: entry (bb1 bb1_t bb2 bb2b bb2a)^{3} bb1_f2 bb1_f1 bb1_f ret
 
 Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)
 Invariants using ArraySmashing(DisjunctiveIntervals)
 entry={}
-bb1={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb1_f={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-ret={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, -1]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb1_t={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb2={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [0, 9]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
+bb1={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
+bb1_f={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
+ret={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, -1]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
+bb1_t={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
+bb2={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [0, 9]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
 entry={}
-bb1={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [-1, 9], A -> [0, 123456], A_p -> [0, 0]}
-bb1_f={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [-1, 9], A -> [0, 123456], A_p -> [0, 0]}
-ret={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [-1, -1], A -> [0, 123456], A_p -> [0, 0]}
-bb1_t={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [-1, 9], A -> [0, 123456], A_p -> [0, 0]}
-bb2={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [0, 9], A -> [0, 123456], A_p -> [0, 0]}
+bb1={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [-1, 9], A_p -> [0, 0], A.smashed -> [0, 123456]}
+bb1_f={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [-1, 9], A_p -> [0, 0], A.smashed -> [0, 123456]}
+ret={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [-1, -1], A_p -> [0, 0], A.smashed -> [0, 123456]}
+bb1_t={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [-1, 9], A_p -> [0, 0], A.smashed -> [0, 123456]}
+bb2={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [0, 9], A_p -> [0, 0], A.smashed -> [0, 123456]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 10: forall 0<= i< 10. a[i] = true and b[i] = false
 Invariants using ArraySmashing(Product(Boolean,SparseDBM))
 entry=({}, {})
-bb1=({A -> true; B -> false; TRUE -> true; FALSE -> false}, {n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1})
-bb1_f=({A -> true; B -> false; TRUE -> true; FALSE -> false}, {n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1})
-ret=({A -> true; B -> false; TRUE -> true; FALSE -> false}, {n1 -> [1, 1], i -> [10, 10], i-n1<=9, n1-i<=-9})
-bb1_t=({A -> true; B -> false; TRUE -> true; FALSE -> false}, {n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1})
-bb2=({A -> true; B -> false; TRUE -> true; FALSE -> false}, {n1 -> [1, 1], i -> [0, 9], i-n1<=8, n1-i<=1})
+bb1=({TRUE -> true; FALSE -> false; A.smashed -> true; B.smashed -> false}, {n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1})
+bb1_f=({TRUE -> true; FALSE -> false; A.smashed -> true; B.smashed -> false}, {n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1})
+ret=({TRUE -> true; FALSE -> false; A.smashed -> true; B.smashed -> false}, {n1 -> [1, 1], i -> [10, 10], i-n1<=9, n1-i<=-9})
+bb1_t=({TRUE -> true; FALSE -> false; A.smashed -> true; B.smashed -> false}, {n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1})
+bb2=({TRUE -> true; FALSE -> false; A.smashed -> true; B.smashed -> false}, {n1 -> [1, 1], i -> [0, 9], i-n1<=8, n1-i<=1})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 === End ./test-bin/array_smashing ===
@@ -4958,12 +4961,12 @@ Join of
 	{x -> [5, +oo]; y -> [10, +oo]}
 and
 	{x -> [5, +oo]; region_0 -> [34, 34]} =
-	{region_0 -> [34, 34]; x -> [5, +oo]}
+	{x -> [5, +oo]; region_0 -> [34, 34]}
 Join of
 	{x -> [5, +oo]; y -> [10, +oo]}
 and
 	{x -> [5, +oo]; region_0 -> [34, 34]} =
-	{region_0 -> [34, 34]; x -> [5, +oo]}
+	{x -> [5, +oo]; region_0 -> [34, 34]}
 Unit test 1 for select_ref
 entry:
   region_init(rgn1:region(int));
