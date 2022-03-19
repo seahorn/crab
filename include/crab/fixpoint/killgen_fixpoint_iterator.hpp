@@ -12,8 +12,6 @@
 #include <crab/support/stats.hpp>
 
 namespace crab {
-namespace iterators {
-
 // API for a kill-gen analysis operations
 template <class CFG, class Dom> class killgen_operations_api {
 
@@ -224,6 +222,4 @@ public:
     }
   }
 };
-
-} // end namespace iterators
 } // end namespace crab

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <crab/analysis/dataflow/liveness.hpp>
-#include <crab/iterators/wto.hpp>
+#include <crab/fixpoint/wto.hpp>
 #include <unordered_map>
 
 namespace crab {

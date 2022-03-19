@@ -137,7 +137,7 @@ public:
 
   signed_constant_domain_t widening_thresholds(
       const signed_constant_domain_t &other,
-      const iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     return signed_constant_domain_t(
         m_product.widening_thresholds(other.m_product, ts));
   }

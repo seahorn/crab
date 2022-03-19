@@ -52,7 +52,7 @@ public:
   }
   Derived widening_thresholds(
       const Derived &e,
-      const iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     CRAB_ERROR(not_implemented_msg());
   }
   Derived operator&&(const Derived &other) const override {

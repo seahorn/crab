@@ -45,9 +45,9 @@
 
 //#include <crab/cfg/basic_block_traits.hpp>
 #include <crab/cfg/cfg_bgl.hpp> // needed by wto
-#include <crab/iterators/fixpoint_iterators_api.hpp>
-#include <crab/iterators/thresholds.hpp>
-#include <crab/iterators/wto.hpp>
+#include <crab/fixpoint/fixpoint_iterators_api.hpp>
+#include <crab/fixpoint/thresholds.hpp>
+#include <crab/fixpoint/wto.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -93,8 +93,8 @@ private:
       interleaved_fwd_fixpoint_iterator_impl::wto_iterator<CFG, AbstractValue>;
   using wto_processor_t =
       interleaved_fwd_fixpoint_iterator_impl::wto_processor<CFG, AbstractValue>;
-  using thresholds_t = crab::iterators::thresholds<typename CFG::number_t>;
-  using wto_thresholds_t = crab::iterators::wto_thresholds<CFG>;
+  using thresholds_t = crab::thresholds<typename CFG::number_t>;
+  using wto_thresholds_t = crab::wto_thresholds<CFG>;
 
 protected:
   using iterator = typename invariant_table_t::iterator;

@@ -432,7 +432,7 @@ public:
 
   rnc_domain_t widening_thresholds(
       const rnc_domain_t &other,
-      const iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     return rnc_domain_t(m_product.widening_thresholds(other.m_product, ts));
   }
 

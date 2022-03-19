@@ -520,7 +520,7 @@ public:
 
   uf_domain_t widening_thresholds(
       const uf_domain_t &other,
-      const iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     return *this | other;
   }
 

@@ -4,7 +4,7 @@
 
 //#include <crab/cfg/basic_block_traits.hpp>
 #include <crab/domains/discrete_domains.hpp>
-#include <crab/iterators/killgen_fixpoint_iterator.hpp>
+#include <crab/fixpoint/killgen_fixpoint_iterator.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -12,7 +12,6 @@
 #include <unordered_map>
 
 namespace crab {
-
 namespace analyzer {
 
 template <typename V>
@@ -25,7 +24,7 @@ using varset_domain = ikos::discrete_domain<V>;
  **/
 template <class CFG>
 class liveness_analysis_operations
-    : public crab::iterators::killgen_operations_api<
+    : public killgen_operations_api<
           CFG, varset_domain<typename CFG::variable_t>> {
 
 public:
@@ -34,7 +33,7 @@ public:
 
 private:
   using parent_type =
-      crab::iterators::killgen_operations_api<CFG, varset_domain_t>;
+      killgen_operations_api<CFG, varset_domain_t>;
   using binding_t = std::pair<varset_domain_t, varset_domain_t>;
   using liveness_map_t = std::unordered_map<basic_block_label_t, binding_t>;
   
@@ -104,12 +103,12 @@ public:
 
 /** Live variable analysis **/
 template <typename CFG>
-class liveness_analysis : public crab::iterators::killgen_fixpoint_iterator<
+class liveness_analysis : public killgen_fixpoint_iterator<
                               CFG, liveness_analysis_operations<CFG>> {
 
   using liveness_analysis_operations_t = liveness_analysis_operations<CFG>;
   using killgen_fixpoint_iterator_t =
-      crab::iterators::killgen_fixpoint_iterator<
+      killgen_fixpoint_iterator<
           CFG, liveness_analysis_operations_t>;
 
   liveness_analysis(const liveness_analysis<CFG> &other) = delete;

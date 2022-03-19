@@ -194,7 +194,7 @@ public:
 
   interval_domain_t widening_thresholds(
       const interval_domain_t &e,
-      const crab::iterators::thresholds<number_t> &ts) const override {
+      const crab::thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
     return this->_env.widening_thresholds(e._env, ts);

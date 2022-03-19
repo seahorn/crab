@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
     return 0;
   }
   // Simple operations on thresholds
-  crab::iterators::thresholds<ikos::z_number> thresholds;
+  crab::thresholds<ikos::z_number> thresholds;
   thresholds.add(z_bound(-89));
   thresholds.add(z_bound(1000));
   thresholds.add(z_bound(100));
@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
     // Print thresholds
     using z_cfg_ref_t = crab::cfg::cfg_ref<z_cfg_t>;
     using wto_t = ikos::wto<z_cfg_ref_t>;
-    using wto_thresholds_t = crab::iterators::wto_thresholds<z_cfg_ref_t>;
+    using wto_thresholds_t = crab::wto_thresholds<z_cfg_ref_t>;
 
     z_cfg_ref_t cfg_ref(*cfg);
     wto_t wto(cfg_ref);

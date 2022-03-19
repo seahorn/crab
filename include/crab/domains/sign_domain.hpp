@@ -974,7 +974,7 @@ public:
 
   sign_domain_t widening_thresholds(
       const sign_domain_t &o,
-      const crab::iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
     return (m_env | o.m_env);

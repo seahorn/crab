@@ -1903,7 +1903,7 @@ public:
 
   array_adaptive_domain_t widening_thresholds(
       const array_adaptive_domain_t &other,
-      const iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
     if (other.is_bottom()) {

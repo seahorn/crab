@@ -828,7 +828,7 @@ public:
 
   congruence_domain_t widening_thresholds(
       const congruence_domain_t &other,
-      const crab::iterators::thresholds<number_t> &) const override {
+      const crab::thresholds<number_t> &) const override {
     return (*this || other);
   }
 

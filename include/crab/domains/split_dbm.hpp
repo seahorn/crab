@@ -1620,7 +1620,7 @@ public:
 
   DBM_t widening_thresholds(
       const DBM_t &o,
-      const iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     // TODO: use thresholds
     return (*this || o);
   }

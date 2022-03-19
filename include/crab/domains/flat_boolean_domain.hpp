@@ -150,7 +150,7 @@ public:
 
   flat_boolean_domain_t
   widening_thresholds(const flat_boolean_domain_t &o,
-                      const iterators::thresholds<number_t> &) const override {
+                      const thresholds<number_t> &) const override {
 
     flat_boolean_domain_t res(m_env || o.m_env);
     CRAB_LOG("flat-boolean", crab::outs()
@@ -930,7 +930,7 @@ public:
 
   bool_num_domain_t widening_thresholds(
       const bool_num_domain_t &other,
-      const iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     return bool_num_domain_t(m_product.widening_thresholds(other.m_product, ts),
                              m_var_to_lincsts || other.m_var_to_lincsts,
                              m_var_to_refcsts || other.m_var_to_refcsts,			     

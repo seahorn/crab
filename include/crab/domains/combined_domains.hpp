@@ -345,7 +345,7 @@ public:
 
   reduced_domain_product2_t widening_thresholds(
       const reduced_domain_product2_t &other,
-      const iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     bool apply_reduction = false;
     return reduced_domain_product2_t(basic_domain_product2_t(
         std::move(m_product.first().widening_thresholds(
@@ -1170,7 +1170,7 @@ public:
 
   reduced_numerical_domain_product2_t widening_thresholds(
       const reduced_numerical_domain_product2_t &other,
-      const iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     reduced_numerical_domain_product2_t res(
         m_product.widening_thresholds(other.m_product, ts));
     CRAB_LOG("combined-domain",

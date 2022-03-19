@@ -4,7 +4,7 @@
 #include <crab/cfg/cfg.hpp>
 #include <crab/cg/cg_bgl.hpp> // for sccg.hpp
 #include <crab/domains/discrete_domains.hpp>
-#include <crab/iterators/killgen_fixpoint_iterator.hpp>
+#include <crab/fixpoint/killgen_fixpoint_iterator.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 #include <crab/types/indexable.hpp>
@@ -22,7 +22,6 @@
 namespace crab {
 namespace analyzer {
   
-using namespace crab::iterators;
 using namespace crab::domains;
 using namespace crab::cfg;
 
@@ -946,7 +945,7 @@ class inter_assertion_crawler;
  * evaluation depends on the set of variables V.
  **/
 template <class CFG>
-class assertion_crawler : public crab::iterators::killgen_fixpoint_iterator<
+class assertion_crawler : public killgen_fixpoint_iterator<
                               CFG, assertion_crawler_operations<CFG>> {
 
   template<typename T> friend class inter_assertion_crawler;
@@ -956,7 +955,7 @@ public:
 
 private:
   using assertion_crawler_op_t = assertion_crawler_operations<CFG>;
-  using fixpo_t = crab::iterators::killgen_fixpoint_iterator<CFG, assertion_crawler_op_t>; 
+  using fixpo_t = killgen_fixpoint_iterator<CFG, assertion_crawler_op_t>; 
   using basic_block_t = typename CFG::basic_block_t;
 
 public:

@@ -931,10 +931,10 @@ public:
 
   term_domain_t widening_thresholds(
       const term_domain_t &other,
-      const iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
-    WidenWithThresholdsOp<iterators::thresholds<number_t>> op(ts);
+    WidenWithThresholdsOp<thresholds<number_t>> op(ts);
     return widening(other, op);
   }
 

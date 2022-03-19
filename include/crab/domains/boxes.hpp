@@ -869,7 +869,7 @@ public:
 
   boxes_domain_t widening_thresholds(
       const boxes_domain_t &other,
-      const iterators::thresholds<number_t> & /*ts*/) const override {
+      const thresholds<number_t> & /*ts*/) const override {
     // CRAB_WARN(" boxes widening operator with thresholds not implemented");
     return (*this || other);
   }

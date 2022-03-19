@@ -1065,7 +1065,7 @@ public:
 
   elina_lincons0_array_t
   make_thresholds(const elina_domain_t &o,
-                  const iterators::thresholds<number_t> &ts) const {
+                  const thresholds<number_t> &ts) const {
     // TODO: make some constraints using the constants from ts
     elina_lincons0_array_t csts = elina_lincons0_array_make(0);
     return csts;
@@ -1073,7 +1073,7 @@ public:
 
   elina_domain_t widening_thresholds(
       const elina_domain_t &o,
-      const iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 

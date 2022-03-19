@@ -2686,7 +2686,7 @@ public:
 
   split_oct_domain_t widening_thresholds(
       const split_oct_domain_t &o,
-      const iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     return (*this || o);
   }
 

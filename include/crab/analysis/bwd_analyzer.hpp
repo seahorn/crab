@@ -5,7 +5,7 @@
 #include <crab/analysis/fwd_analyzer.hpp>
 #include <crab/analysis/graphs/dominance.hpp>
 //#include <crab/cfg/basic_block_traits.hpp>
-#include <crab/iterators/interleaved_fixpoint_iterator.hpp>
+#include <crab/fixpoint/interleaved_fixpoint_iterator.hpp>
 
 #include <boost/range/iterator_range.hpp>
 

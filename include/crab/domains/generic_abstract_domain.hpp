@@ -72,7 +72,7 @@ private:
     operator&&(const abstract_domain_concept &abs) const = 0;
     virtual std::unique_ptr<abstract_domain_concept> widening_thresholds(
         const abstract_domain_concept &abs,
-        const crab::iterators::thresholds<number_t> &ts) const = 0;
+        const thresholds<number_t> &ts) const = 0;
     virtual void apply(arith_operation_t op, const variable_t &x,
                        const variable_t &y, const variable_t &z) = 0;
     virtual void apply(arith_operation_t op, const variable_t &x,
@@ -315,7 +315,7 @@ private:
     // unsafe: if the underlying domain in abs is not Domain then it will crash
     std::unique_ptr<abstract_domain_concept> widening_thresholds(
         const abstract_domain_concept &abs,
-        const crab::iterators::thresholds<number_t> &ts) const override {
+        const thresholds<number_t> &ts) const override {
       std::unique_ptr<abstract_domain_concept> res(
           new abstract_domain_model(m_inv.widening_thresholds(
               static_cast<const abstract_domain_model *>(&abs)->m_inv, ts)));
@@ -699,7 +699,7 @@ public:
   }
   abstract_domain widening_thresholds(
       const abstract_domain &abs,
-      const crab::iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     return abstract_domain(
         std::move(m_concept->widening_thresholds(*(abs.m_concept), ts)));
   }
@@ -1106,7 +1106,7 @@ public:
 
   abstract_domain_ref widening_thresholds(
       const abstract_domain_ref &o,
-      const crab::iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     return create_base(base().widening_thresholds(o.norm(), ts));
   }
 

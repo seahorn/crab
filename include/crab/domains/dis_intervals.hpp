@@ -1185,7 +1185,7 @@ public:
 
   dis_interval_domain_t widening_thresholds(
       const dis_interval_domain_t &e,
-      const iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 

@@ -259,7 +259,7 @@ public:
 
   array_smashing_t widening_thresholds(
       const array_smashing_t &other,
-      const iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     return array_smashing_t(m_last_access_env.widening_thresholds(other.m_last_access_env, ts),
 			    m_base_dom.widening_thresholds(other.m_base_dom, ts)); 
   }

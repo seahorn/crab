@@ -308,7 +308,7 @@ public:
 
   virtual powerset_domain_t widening_thresholds(
       const powerset_domain_t &other,
-      const crab::iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     Domain left = smash_disjuncts(*this);
     Domain right = smash_disjuncts(other);
     return powerset_domain_t(left.widening_thresholds(right, ts));

@@ -3,7 +3,7 @@
 //#include <crab/cfg/basic_block_traits.hpp>
 #include <crab/cfg/cfg_bgl.hpp> // needed by wto.hpp
 #include <crab/domains/interval.hpp>
-#include <crab/iterators/wto.hpp>
+#include <crab/fixpoint/wto.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/types/linear_constraints.hpp>
 
@@ -14,12 +14,9 @@
 #include <unordered_map>
 
 namespace crab {
-
-namespace iterators {
-
 /**
-    Class that represents a set of thresholds used by the widening operator
-**/
+ * Class that represents a set of thresholds used by the widening operator
+ **/
 template <typename Number> class thresholds {
 
 private:
@@ -143,7 +140,7 @@ public:
   using basic_block_label_t = typename CFG::basic_block_label_t;
   using wto_vertex_t = ikos::wto_vertex<CFG>;
   using wto_cycle_t = ikos::wto_cycle<CFG>;
-  using thresholds_t = crab::iterators::thresholds<typename CFG::number_t>;
+  using thresholds_t = thresholds<typename CFG::number_t>;
   using thresholds_map_t =
       std::unordered_map<basic_block_label_t, thresholds_t>;
 
@@ -289,5 +286,4 @@ inline crab::crab_os &operator<<(crab::crab_os &o,
   return o;
 }
 
-} // end namespace iterators
 } // end namespace crab

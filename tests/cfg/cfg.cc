@@ -1,7 +1,7 @@
 #include "../common.hpp"
 #include "../program_options.hpp"
 #include <crab/analysis/graphs/cdg.hpp>
-#include <crab/iterators/wto.hpp>
+#include <crab/fixpoint/wto.hpp>
 
 using namespace std;
 using namespace crab::analyzer;

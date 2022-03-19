@@ -27,7 +27,7 @@
 #include <crab/analysis/inter/inter_analyzer_api.hpp>
 #include <crab/analysis/inter/inter_params.hpp>
 #include <crab/cg/cg_bgl.hpp> // for wto of callgraphs
-#include <crab/iterators/wto.hpp>
+#include <crab/fixpoint/wto.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 

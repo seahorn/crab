@@ -1447,7 +1447,7 @@ public:
 
   wrapped_interval_domain_t widening_thresholds(
       const wrapped_interval_domain_t &e,
-      const iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
     CRAB_LOG("wrapped-int",
@@ -2332,7 +2332,7 @@ public:
 
   this_type widening_thresholds(
       const this_type &o,
-      const iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     return this_type(_w_int_dom.widening_thresholds(o._w_int_dom, ts),
                      _limit_env || o._limit_env, _init_set || o._init_set);
   }
@@ -3077,7 +3077,7 @@ public:
 
   wrapped_numerical_domain_t widening_thresholds(
       const wrapped_numerical_domain_t &other,
-      const iterators::thresholds<number_t> &ts) const override {
+      const thresholds<number_t> &ts) const override {
     CRAB_LOG("wrapped-num", crab::outs() << "WIDENING " << _product << "and "
                                          << other._product << " = ");
     wrapped_numerical_domain_t res(

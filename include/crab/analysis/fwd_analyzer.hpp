@@ -4,7 +4,7 @@
 #include <crab/analysis/dataflow/liveness.hpp>
 #include <crab/cfg/type_checker.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
-#include <crab/iterators/interleaved_fixpoint_iterator.hpp>
+#include <crab/fixpoint/interleaved_fixpoint_iterator.hpp>
 
 #include <algorithm>
 #include <memory>

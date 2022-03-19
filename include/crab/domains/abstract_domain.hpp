@@ -2,7 +2,7 @@
 
 #include <crab/domains/abstract_domain_operators.hpp>
 #include <crab/domains/boolean.hpp>
-#include <crab/iterators/thresholds.hpp>
+#include <crab/fixpoint/thresholds.hpp>
 #include <crab/types/linear_constraints.hpp>
 #include <crab/types/reference_constraints.hpp>
 #include <crab/types/variable.hpp>
@@ -155,7 +155,7 @@ public:
   // Widening with thresholds: return widening(*this, abs) using thresholds ts
   virtual Dom widening_thresholds(
       const Dom &abs,
-      const crab::iterators::thresholds<number_t> &ts) const = 0;
+      const thresholds<number_t> &ts) const = 0;
 
   /**************************** Numerical operations *************************/
   // x := y op z
