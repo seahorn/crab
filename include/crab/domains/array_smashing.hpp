@@ -7,7 +7,7 @@
  *
  * This domain also assumes that no region or references are passed to
  * it but it doesn't check for it.
- * 
+ *
  * Ghost variables:
  *
  * The array smashing domain creates a ghost scalar variable for each
@@ -56,9 +56,9 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_or_constant_vector_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  using typename abstract_domain_t::variable_or_constant_vector_t;  
   using base_dom_t = BaseNumDomain;
   using interval_t = ikos::interval<number_t>;
 
@@ -72,15 +72,13 @@ private:
   // the base domain
   base_dom_t m_base_dom;
 
-  
-
-  // set last access to array_var to sz bytes  
+  // set last access to array_var to sz bytes
   void set_size(const variable_t &array_var, uint64_t sz) {
     m_last_access_env.set(array_var, sz);
   }
 
   // get the size of the last access to array_var
-  bytes_t get_size(const variable_t& array_var) {
+  bytes_t get_size(const variable_t &array_var) {
     return m_last_access_env.at(array_var);
   }
 
@@ -91,14 +89,14 @@ private:
     }
     return false;
   }
-  
-  variable_t mk_scalar_var(const variable_t &array_var, uint64_t size /*bytes*/) {
-    auto array_ty = array_var.get_type();
-    assert(array_ty.is_bool_array() ||
-	   array_ty.is_integer_array() ||
-	   array_ty.is_real_array());    
 
-    variable_type ghost_ty(INT_TYPE, size*8);
+  variable_t mk_scalar_var(const variable_t &array_var,
+                           uint64_t size /*bytes*/) {
+    auto array_ty = array_var.get_type();
+    assert(array_ty.is_bool_array() || array_ty.is_integer_array() ||
+           array_ty.is_real_array());
+
+    variable_type ghost_ty(INT_TYPE, size * 8);
     if (array_ty.is_bool_array()) {
       ghost_ty = variable_type(BOOL_TYPE);
     } else if (array_ty.is_real_array()) {
@@ -106,20 +104,21 @@ private:
     }
 
     // The variable factory does caching so it returns always the same
-    // variable for the same array variable.    
-    auto &vfac = const_cast<varname_t *>(&(array_var.name()))->get_var_factory();    
+    // variable for the same array variable.
+    auto &vfac =
+        const_cast<varname_t *>(&(array_var.name()))->get_var_factory();
     return variable_t(vfac.get(array_var.name(), ".smashed"), ghost_ty);
   }
 
   // Convert elem_size to an uint64_t
   uint64_t check_and_get_elem_size(const linear_expression_t &elem_size) const {
-    auto to_interval = [this](const linear_expression_t&e) {
+    auto to_interval = [this](const linear_expression_t &e) {
       interval_t r(e.constant());
       for (auto kv : e) {
-	interval_t c(kv.first);
-	r += c * m_base_dom.at(kv.second);
+        interval_t c(kv.first);
+        r += c * m_base_dom.at(kv.second);
       }
-      return r;      
+      return r;
     };
     interval_t i_elem_size = to_interval(elem_size);
     if (boost::optional<number_t> n_bytes = i_elem_size.singleton()) {
@@ -142,15 +141,15 @@ private:
       if (std::all_of(
               cst.expression().variables_begin(),
               cst.expression().variables_end(), [](const variable_t &v) {
-		return (v.name().str().find(".smashed") == std::string::npos);
-	      })) {
+                return (v.name().str().find(".smashed") == std::string::npos);
+              })) {
         res += cst;
       }
     }
     return res;
   }
 
-  // lhs and rhs only involve scalar variables  
+  // lhs and rhs only involve scalar variables
   void do_strong_update(base_dom_t &dom, const variable_t &lhs,
                         const linear_expression_t &rhs) {
     auto ty = lhs.get_type();
@@ -164,10 +163,10 @@ private:
       } else if (auto rhs_v = rhs.get_variable()) {
         dom.assign_bool_var(lhs, (*rhs_v), false);
       }
-    } else { 
+    } else {
       assert(ty.is_integer() || ty.is_real());
       dom.assign(lhs, rhs);
-    } 
+    }
   }
 
   // lhs and rhs only involve scalar variables
@@ -184,14 +183,13 @@ private:
   }
 
   array_smashing(last_access_env_t &&last_access_env, base_dom_t &&base_dom)
-    : m_last_access_env(std::move(last_access_env)), m_base_dom(std::move(base_dom)) {}
-  
+      : m_last_access_env(std::move(last_access_env)),
+        m_base_dom(std::move(base_dom)) {}
+
 public:
   array_smashing() {}
 
-  array_smashing make_top() const override {
-    return array_smashing();
-  }
+  array_smashing make_top() const override { return array_smashing(); }
 
   array_smashing make_bottom() const override {
     array_smashing res;
@@ -201,16 +199,17 @@ public:
 
   void set_to_top() override {
     m_last_access_env = last_access_env_t::top();
-    m_base_dom.set_to_top();   
+    m_base_dom.set_to_top();
   }
 
   void set_to_bottom() override {
     m_last_access_env.set_to_bottom();
-    m_base_dom.set_to_bottom();    
+    m_base_dom.set_to_bottom();
   }
 
   array_smashing(const array_smashing_t &other)
-    : m_last_access_env(other.m_last_access_env), m_base_dom(other.m_base_dom) {
+      : m_last_access_env(other.m_last_access_env),
+        m_base_dom(other.m_base_dom) {
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
   }
@@ -222,7 +221,7 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
     if (this != &other) {
       m_last_access_env = other.m_last_access_env;
-      m_base_dom = other.m_base_dom;     
+      m_base_dom = other.m_base_dom;
     }
     return *this;
   }
@@ -238,35 +237,36 @@ public:
   }
 
   void operator|=(const array_smashing_t &other) override {
-    m_last_access_env = m_last_access_env | other.m_last_access_env;    
-    m_base_dom |= other.m_base_dom;  
+    m_last_access_env = m_last_access_env | other.m_last_access_env;
+    m_base_dom |= other.m_base_dom;
   }
 
   array_smashing_t operator|(const array_smashing_t &other) const override {
     return array_smashing_t(m_last_access_env | other.m_last_access_env,
-			    m_base_dom | other.m_base_dom) ;			    
+                            m_base_dom | other.m_base_dom);
   }
 
   array_smashing_t operator&(const array_smashing_t &other) const override {
     return array_smashing_t(m_last_access_env & other.m_last_access_env,
-			    m_base_dom & other.m_base_dom);			    
+                            m_base_dom & other.m_base_dom);
   }
 
   array_smashing_t operator||(const array_smashing_t &other) const override {
     return array_smashing_t(m_last_access_env || other.m_last_access_env,
-			    m_base_dom || other.m_base_dom);			    
+                            m_base_dom || other.m_base_dom);
   }
 
-  array_smashing_t widening_thresholds(
-      const array_smashing_t &other,
-      const thresholds<number_t> &ts) const override {
-    return array_smashing_t(m_last_access_env.widening_thresholds(other.m_last_access_env, ts),
-			    m_base_dom.widening_thresholds(other.m_base_dom, ts)); 
+  array_smashing_t
+  widening_thresholds(const array_smashing_t &other,
+                      const thresholds<number_t> &ts) const override {
+    return array_smashing_t(
+        m_last_access_env.widening_thresholds(other.m_last_access_env, ts),
+        m_base_dom.widening_thresholds(other.m_base_dom, ts));
   }
 
   array_smashing_t operator&&(const array_smashing_t &other) const override {
     return array_smashing_t(m_last_access_env && other.m_last_access_env,
-			    m_base_dom && other.m_base_dom);			    
+                            m_base_dom && other.m_base_dom);
   }
 
   virtual interval_t operator[](const variable_t &v) override {
@@ -279,15 +279,15 @@ public:
 
   void forget(const variable_vector_t &variables) override {
     variable_vector_t remove_vars;
-    for (auto v: variables) {
+    for (auto v : variables) {
       if (v.get_type().is_array()) {
-	bytes_t size = get_size(v);
-	if (size.is_constant()) {
-	  remove_vars.push_back(mk_scalar_var(v, size.get_constant()));
-	  m_last_access_env -= v;
-	}
+        bytes_t size = get_size(v);
+        if (size.is_constant()) {
+          remove_vars.push_back(mk_scalar_var(v, size.get_constant()));
+          m_last_access_env -= v;
+        }
       } else {
-	remove_vars.push_back(v);
+        remove_vars.push_back(v);
       }
     }
     // No array variables should go to m_base_dom
@@ -296,16 +296,16 @@ public:
 
   void project(const variable_vector_t &variables) override {
     variable_vector_t keep_vars, keep_array_vars;
-    for (auto v: variables) {
+    for (auto v : variables) {
       if (v.get_type().is_array()) {
-	bytes_t size = get_size(v);
-	if (size.is_constant()) {
-	  variable_t gvar(mk_scalar_var(v, size.get_constant()));
-	  keep_vars.push_back(gvar);
-	  keep_array_vars.push_back(v);
-	}
+        bytes_t size = get_size(v);
+        if (size.is_constant()) {
+          variable_t gvar(mk_scalar_var(v, size.get_constant()));
+          keep_vars.push_back(gvar);
+          keep_array_vars.push_back(v);
+        }
       } else {
-	keep_vars.push_back(v);
+        keep_vars.push_back(v);
       }
     }
     // No array variables should go to m_base_dom
@@ -317,15 +317,15 @@ public:
     if (var.get_type() != new_var.get_type()) {
       CRAB_ERROR(domain_name(), "::expand must preserve the same type");
     }
-    
+
     if (var.get_type().is_array()) {
       bytes_t size = get_size(var);
       if (size.is_constant()) {
-	variable_t gvar(mk_scalar_var(var, size.get_constant()));
-	variable_t gnew_var(mk_scalar_var(new_var, size.get_constant()));
-	// No array variables should go to m_base_dom
-	m_base_dom.expand(gvar, gnew_var);
-	set_size(new_var, size.get_constant());
+        variable_t gvar(mk_scalar_var(var, size.get_constant()));
+        variable_t gnew_var(mk_scalar_var(new_var, size.get_constant()));
+        // No array variables should go to m_base_dom
+        m_base_dom.expand(gvar, gnew_var);
+        set_size(new_var, size.get_constant());
       }
     } else {
       m_base_dom.expand(var, new_var);
@@ -344,11 +344,11 @@ public:
     if (var.get_type().is_array()) {
       bytes_t size = get_size(var);
       if (size.is_constant()) {
-	variable_t gvar(mk_scalar_var(var, size.get_constant()));
-	// No array variable should go to m_base_dom
-	m_base_dom -= gvar;
-	m_last_access_env -= var;
-      }      
+        variable_t gvar(mk_scalar_var(var, size.get_constant()));
+        // No array variable should go to m_base_dom
+        m_base_dom -= gvar;
+        m_last_access_env -= var;
+      }
     } else {
       m_base_dom -= var;
     }
@@ -378,10 +378,11 @@ public:
   }
 
   void select(const variable_t &lhs, const linear_constraint_t &cond,
-	      const linear_expression_t &e1,  const linear_expression_t &e2) override {
+              const linear_expression_t &e1,
+              const linear_expression_t &e2) override {
     m_base_dom.select(lhs, cond, e1, e2);
   }
-  
+
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const array_smashing_t &inv) override {
     m_base_dom.backward_assign(x, e, inv.m_base_dom);
@@ -447,10 +448,11 @@ public:
   }
 
   virtual void select_bool(const variable_t &lhs, const variable_t &cond,
-			   const variable_t &b1, const variable_t &b2) override {
+                           const variable_t &b1,
+                           const variable_t &b2) override {
     m_base_dom.select_bool(lhs, cond, b1, b2);
   }
-  
+
   // backward boolean operators
   virtual void backward_assign_bool_cst(const variable_t &lhs,
                                         const linear_constraint_t &rhs,
@@ -490,14 +492,16 @@ public:
     uint64_t size = check_and_get_elem_size(elem_size);
     set_size(a, size);
     variable_t scalar_var(mk_scalar_var(a, size));
-    
+
     auto ty = scalar_var.get_type();
     if (ty.is_bool()) {
       if (val.is_constant()) {
         if (val.constant() >= number_t(1)) {
-          m_base_dom.assign_bool_cst(scalar_var, linear_constraint_t::get_true());
+          m_base_dom.assign_bool_cst(scalar_var,
+                                     linear_constraint_t::get_true());
         } else {
-          m_base_dom.assign_bool_cst(scalar_var, linear_constraint_t::get_false());
+          m_base_dom.assign_bool_cst(scalar_var,
+                                     linear_constraint_t::get_false());
         }
       } else if (auto var = val.get_variable()) {
         m_base_dom.assign_bool_var(scalar_var, (*var), false);
@@ -511,7 +515,7 @@ public:
   }
 
   virtual void array_load(const variable_t &lhs, const variable_t &a,
-                          const linear_expression_t &elem_size/*bytes*/,
+                          const linear_expression_t &elem_size /*bytes*/,
                           const linear_expression_t &i) override {
     crab::CrabStats::count(domain_name() + ".count.load");
     crab::ScopedCrabStats __st__(domain_name() + ".load");
@@ -519,20 +523,20 @@ public:
     uint64_t size = check_and_get_elem_size(elem_size);
     if (equal_size(a, size)) {
       variable_t scalar_var(mk_scalar_var(a, size));
-      
+
       // We need to be careful when assigning a summarized variable a
       // into a non-summarized variable lhs. Simply m_base_dom.assign(lhs,a)
       // is not sound.
       auto &vfac = const_cast<varname_t *>(&(a.name()))->get_var_factory();
       variable_t copy_scalar_var(vfac.get(scalar_var.name(), ".copy"),
-				 scalar_var.get_type());
+                                 scalar_var.get_type());
       m_base_dom.expand(scalar_var, copy_scalar_var);
       auto ty = scalar_var.get_type();
       if (ty.is_bool()) {
-	m_base_dom.assign_bool_var(lhs, copy_scalar_var, false);
+        m_base_dom.assign_bool_var(lhs, copy_scalar_var, false);
       } else {
-	assert(ty.is_integer() || ty.is_real());      
-      m_base_dom.assign(lhs, copy_scalar_var);
+        assert(ty.is_integer() || ty.is_real());
+        m_base_dom.assign(lhs, copy_scalar_var);
       }
       m_base_dom -= copy_scalar_var;
     } else {
@@ -559,9 +563,9 @@ public:
     if (equal_size(a, size)) {
       variable_t scalar_var(mk_scalar_var(a, size));
       if (is_strong_update) {
-	do_strong_update(scalar_var, val);
+        do_strong_update(scalar_var, val);
       } else {
-	do_weak_update(scalar_var, val);
+        do_weak_update(scalar_var, val);
       }
     }
 
@@ -579,7 +583,7 @@ public:
 
     uint64_t size = check_and_get_elem_size(elem_size);
     if (equal_size(a, size)) {
-      variable_t scalar_var(mk_scalar_var(a, size));    
+      variable_t scalar_var(mk_scalar_var(a, size));
       do_weak_update(scalar_var, val);
     }
     CRAB_LOG("smashing", crab::outs() << a << "[" << i << ".." << j << "]:="
@@ -593,14 +597,14 @@ public:
     if (size.is_constant()) {
       set_size(lhs, size.get_constant());
       variable_t scalar_lhs(mk_scalar_var(lhs, size.get_constant()));
-      variable_t scalar_rhs(mk_scalar_var(rhs, size.get_constant()));    
-      
+      variable_t scalar_rhs(mk_scalar_var(rhs, size.get_constant()));
+
       auto ty = scalar_lhs.get_type();
       if (ty.is_bool()) {
-	m_base_dom.assign_bool_var(scalar_lhs, scalar_rhs, false);
+        m_base_dom.assign_bool_var(scalar_lhs, scalar_rhs, false);
       } else {
-	assert(ty.is_integer() || ty.is_real());      
-	m_base_dom.assign(scalar_lhs, scalar_rhs);
+        assert(ty.is_integer() || ty.is_real());
+        m_base_dom.assign(scalar_lhs, scalar_rhs);
       }
     }
   }
@@ -670,14 +674,13 @@ public:
   const base_dom_t &get_content_domain() const { return m_base_dom; }
 
   /* begin intrinsics operations */
-  void intrinsic(std::string name,
-		 const variable_or_constant_vector_t &inputs,
+  void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     m_base_dom.intrinsic(name, inputs, outputs);
   }
 
   void backward_intrinsic(std::string name,
-			  const variable_or_constant_vector_t &inputs,
+                          const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const array_smashing_t &invariant) override {
     m_base_dom.backward_intrinsic(name, inputs, outputs, invariant.m_base_dom);
@@ -689,7 +692,7 @@ public:
     if (from.size() != to.size()) {
       CRAB_ERROR(domain_name(), "::rename expects vectors same sizes");
     }
-    
+
     variable_vector_t old_vars, new_vars;
     for (unsigned i = 0, sz = from.size(); i < sz; ++i) {
       if (from[i].get_type() != to[i].get_type()) {
@@ -697,20 +700,20 @@ public:
       }
       const variable_t &old_var = from[i];
       const variable_t &new_var = to[i];
-      
+
       if (old_var.get_type().is_array()) {
-	bytes_t size = get_size(old_var);
-	if (size.is_constant()) {
-	  set_size(new_var, size.get_constant());
-	  variable_t gold_var(mk_scalar_var(old_var, size.get_constant()));
-	  variable_t gnew_var(mk_scalar_var(new_var, size.get_constant()));
-	  old_vars.push_back(gold_var);
-	  new_vars.push_back(gnew_var);
-	}	
+        bytes_t size = get_size(old_var);
+        if (size.is_constant()) {
+          set_size(new_var, size.get_constant());
+          variable_t gold_var(mk_scalar_var(old_var, size.get_constant()));
+          variable_t gnew_var(mk_scalar_var(new_var, size.get_constant()));
+          old_vars.push_back(gold_var);
+          new_vars.push_back(gnew_var);
+        }
       } else {
-	old_vars.push_back(old_var);
-	new_vars.push_back(new_var);
-      }      
+        old_vars.push_back(old_var);
+        new_vars.push_back(new_var);
+      }
     }
     // No array variables should go to m_base_dom
     m_base_dom.rename(old_vars, new_vars);
