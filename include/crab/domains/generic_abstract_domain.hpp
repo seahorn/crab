@@ -134,16 +134,6 @@ private:
     virtual void ref_gep(const variable_t &ref1, const variable_t &reg1,
                          const variable_t &ref2, const variable_t &reg2,
                          const linear_expression_t &offset) = 0;
-    virtual void ref_load_from_array(const variable_t &lhs,
-                                     const variable_t &ref,
-                                     const variable_t &region,
-                                     const linear_expression_t &index,
-                                     const linear_expression_t &elem_size) = 0;
-    virtual void ref_store_to_array(const variable_t &ref,
-                                    const variable_t &region,
-                                    const linear_expression_t &index,
-                                    const linear_expression_t &elem_size,
-                                    const linear_expression_t &val) = 0;
     virtual void ref_assume(const reference_constraint_t &cst) = 0;
     virtual void ref_to_int(const variable_t &reg, const variable_t &ref_var,
                             const variable_t &int_var) = 0;
@@ -431,18 +421,6 @@ private:
                  const variable_t &ref2, const variable_t &reg2,
                  const linear_expression_t &offset) override {
       m_inv.ref_gep(ref1, reg1, ref2, reg2, offset);
-    }
-    void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                             const variable_t &region,
-                             const linear_expression_t &index,
-                             const linear_expression_t &elem_size) override {
-      m_inv.ref_load_from_array(lhs, ref, region, index, elem_size);
-    }
-    void ref_store_to_array(const variable_t &ref, const variable_t &region,
-                            const linear_expression_t &index,
-                            const linear_expression_t &elem_size,
-                            const linear_expression_t &val) override {
-      m_inv.ref_store_to_array(ref, region, index, elem_size, val);
     }
     void ref_assume(const reference_constraint_t &cst) override {
       m_inv.ref_assume(cst);
@@ -814,18 +792,6 @@ public:
                const variable_t &ref2, const variable_t &reg2,
                const linear_expression_t &offset) override {
     m_concept->ref_gep(ref1, reg1, ref2, reg2, offset);
-  }
-  void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                           const variable_t &region,
-                           const linear_expression_t &index,
-                           const linear_expression_t &elem_size) override {
-    m_concept->ref_load_from_array(lhs, ref, region, index, elem_size);
-  }
-  void ref_store_to_array(const variable_t &ref, const variable_t &region,
-                          const linear_expression_t &index,
-                          const linear_expression_t &elem_size,
-                          const linear_expression_t &val) override {
-    m_concept->ref_store_to_array(ref, region, index, elem_size, val);
   }
   void ref_assume(const reference_constraint_t &cst) override {
     m_concept->ref_assume(cst);
@@ -1271,21 +1237,6 @@ public:
     norm().ref_gep(ref1, reg1, ref2, reg2, offset);
   }
 
-  void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                           const variable_t &region,
-                           const linear_expression_t &index,
-                           const linear_expression_t &elem_size) override {
-    detach();
-    norm().ref_load_from_array(lhs, ref, region, index, elem_size);
-  }
-
-  void ref_store_to_array(const variable_t &ref, const variable_t &region,
-                          const linear_expression_t &index,
-                          const linear_expression_t &elem_size,
-                          const linear_expression_t &val) override {
-    detach();
-    norm().ref_store_to_array(ref, region, index, elem_size, val);
-  }
 
   void ref_assume(const reference_constraint_t &cst) override {
     detach();

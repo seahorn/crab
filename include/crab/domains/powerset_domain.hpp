@@ -608,30 +608,6 @@ public:
     }
   }
 
-  virtual void
-  ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                      const variable_t &region,
-                      const linear_expression_t &index,
-                      const linear_expression_t &elem_size) override {
-    if (!is_bottom()) {
-      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
-        m_disjuncts[i].ref_load_from_array(lhs, ref, region, index, elem_size);
-      }
-    }
-  }
-
-  virtual void ref_store_to_array(const variable_t &ref,
-                                  const variable_t &region,
-                                  const linear_expression_t &index,
-                                  const linear_expression_t &elem_size,
-                                  const linear_expression_t &val) override {
-    if (!is_bottom()) {
-      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
-        m_disjuncts[i].ref_store_to_array(ref, region, index, elem_size, val);
-      }
-    }
-  }
-
   virtual void ref_assume(const reference_constraint_t &cst) override {
     if (!is_bottom()) {
       base_dom_vector vec;

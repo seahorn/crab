@@ -262,18 +262,7 @@ public:
   // The reference ref2 is created by adding offset to ref1.
   virtual void ref_gep(const variable_t &ref1, const variable_t &reg1,
                        const variable_t &ref2, const variable_t &reg2,
-                       const linear_expression_t &offset) = 0;
-  // Treat memory pointed by ref  as an array and perform an array load.
-  virtual void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                                   const variable_t &region,
-                                   const linear_expression_t &index,
-                                   const linear_expression_t &elem_size) = 0;
-  // Treat region as an array and perform an array store.
-  virtual void ref_store_to_array(const variable_t &ref,
-                                  const variable_t &region,
-                                  const linear_expression_t &index,
-                                  const linear_expression_t &elem_size,
-                                  const linear_expression_t &val) = 0;
+                       const linear_expression_t &offset) = 0; 
   // Add constraints between references
   virtual void ref_assume(const reference_constraint_t &cst) = 0;
   // Convert a reference to an integer variable
@@ -543,14 +532,6 @@ public:
   virtual void ref_gep(const variable_t &ref1, const variable_t &reg1,         \
                        const variable_t &ref2, const variable_t &reg2,         \
                        const linear_expression_t &offset) override {}          \
-  virtual void ref_load_from_array(                                            \
-      const variable_t &lhs, const variable_t &ref, const variable_t &region,  \
-      const linear_expression_t &index, const linear_expression_t &elem_size)  \
-      override {}                                                              \
-  virtual void ref_store_to_array(                                             \
-      const variable_t &ref, const variable_t &region,                         \
-      const linear_expression_t &index, const linear_expression_t &elem_size,  \
-      const linear_expression_t &val) override {}                              \
   virtual void ref_assume(const reference_constraint_t &cst) override {}       \
   virtual void ref_to_int(const variable_t &reg, const variable_t &ref,        \
                           const variable_t &int_var) override {}               \

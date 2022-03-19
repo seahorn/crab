@@ -1721,22 +1721,6 @@ public:
                            << offset << ")=" << *this << "\n";);
   }
 
-  // Treat memory pointed by ref  as an array and perform an array load.
-  void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                           const variable_t &rgn,
-                           const linear_expression_t &index,
-                           const linear_expression_t &elem_size) override {
-    CRAB_WARN(domain_name(), "::ref_load_from_array is deprecated");
-  }
-
-  // Treat region as an array and perform an array store.
-  void ref_store_to_array(const variable_t &ref, const variable_t &rgn,
-                          const linear_expression_t &index,
-                          const linear_expression_t &elem_size,
-                          const linear_expression_t &val) override {
-    CRAB_WARN(domain_name(), "::ref_store_to_array is deprecated");
-  }
-
   void ref_assume(const reference_constraint_t &ref_cst) override {
     crab::CrabStats::count(domain_name() + ".count.ref_assume");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_assume");
