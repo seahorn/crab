@@ -95,10 +95,6 @@ public:
   using store_to_ref_t =
       crab::cfg::store_to_ref_stmt<bb_label_t, number_t, varname_t>;
   using gep_ref_t = crab::cfg::gep_ref_stmt<bb_label_t, number_t, varname_t>;
-  using load_from_arr_ref_t =
-      crab::cfg::load_from_arr_ref_stmt<bb_label_t, number_t, varname_t>;
-  using store_to_arr_ref_t =
-      crab::cfg::store_to_arr_ref_stmt<bb_label_t, number_t, varname_t>;
   using assume_ref_t =
       crab::cfg::assume_ref_stmt<bb_label_t, number_t, varname_t>;
   using assert_ref_t =
@@ -145,8 +141,6 @@ protected:
   virtual void exec(load_from_ref_t &) {}
   virtual void exec(store_to_ref_t &) {}
   virtual void exec(gep_ref_t &) {}
-  virtual void exec(load_from_arr_ref_t &) {}
-  virtual void exec(store_to_arr_ref_t &) {}
   virtual void exec(assume_ref_t &) {}
   virtual void exec(assert_ref_t &) {}
   virtual void exec(select_ref_t &) {}
@@ -182,8 +176,6 @@ public: /* visitor api */
   virtual void visit(load_from_ref_t &s) override { exec(s); }
   virtual void visit(store_to_ref_t &s) override { exec(s); }
   virtual void visit(gep_ref_t &s) override { exec(s); }
-  virtual void visit(load_from_arr_ref_t &s) override { exec(s); }
-  virtual void visit(store_to_arr_ref_t &s) override { exec(s); }
   virtual void visit(assume_ref_t &s) override { exec(s); }
   virtual void visit(assert_ref_t &s) override { exec(s); }
   virtual void visit(select_ref_t &s) override { exec(s); }
@@ -339,7 +331,6 @@ public:
   using typename abs_transform_api_t::int_cast_t;
   using typename abs_transform_api_t::int_to_ref_t;
   using typename abs_transform_api_t::intrinsic_t;
-  using typename abs_transform_api_t::load_from_arr_ref_t;
   using typename abs_transform_api_t::load_from_ref_t;
   using typename abs_transform_api_t::make_ref_t;
   using typename abs_transform_api_t::remove_ref_t;  
@@ -349,7 +340,6 @@ public:
   using typename abs_transform_api_t::region_init_t;
   using typename abs_transform_api_t::select_ref_t;
   using typename abs_transform_api_t::select_t;
-  using typename abs_transform_api_t::store_to_arr_ref_t;
   using typename abs_transform_api_t::store_to_ref_t;
   using typename abs_transform_api_t::unreach_t;
 
@@ -817,46 +807,6 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(load_from_arr_ref_t &stmt) override {
-    bool pre_bot = false;
-    if (::crab::CrabSanityCheckFlag) {
-      pre_bot = m_inv.is_bottom();
-    }
-
-    m_inv.ref_load_from_array(stmt.lhs(), stmt.ref(), stmt.region(),
-                              stmt.index(), stmt.elem_size());
-
-    if (::crab::CrabSanityCheckFlag) {
-      bool post_bot = m_inv.is_bottom();
-      if (!(pre_bot || !post_bot)) {
-        CRAB_ERROR("Invariant became bottom after ", stmt);
-      }
-    }
-    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
-  }
-
-  virtual void exec(store_to_arr_ref_t &stmt) override {
-    bool pre_bot = false;
-    if (::crab::CrabSanityCheckFlag) {
-      pre_bot = m_inv.is_bottom();
-    }
-
-    if (stmt.lb_index().equal(stmt.ub_index())) {
-      m_inv.ref_store_to_array(stmt.ref(), stmt.region(), stmt.lb_index(),
-                               stmt.elem_size(), stmt.value());
-    } else {
-      CRAB_ERROR("TODO store_to_array_ref for ranges");
-    }
-
-    if (::crab::CrabSanityCheckFlag) {
-      bool post_bot = m_inv.is_bottom();
-      if (!(pre_bot || !post_bot)) {
-        CRAB_ERROR("Invariant became bottom after ", stmt);
-      }
-    }
-    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
-  }
-
   virtual void exec(assume_ref_t &stmt) override {
     m_inv.ref_assume(stmt.constraint());
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
@@ -1016,7 +966,6 @@ public:
   using typename abs_transform_api_t::lin_cst_sys_t;
   using typename abs_transform_api_t::lin_cst_t;
   using typename abs_transform_api_t::lin_exp_t;
-  using typename abs_transform_api_t::load_from_arr_ref_t;
   using typename abs_transform_api_t::load_from_ref_t;
   using typename abs_transform_api_t::make_ref_t;
   using typename abs_transform_api_t::remove_ref_t;  
@@ -1026,7 +975,6 @@ public:
   using typename abs_transform_api_t::region_init_t;
   using typename abs_transform_api_t::select_ref_t;
   using typename abs_transform_api_t::select_t;
-  using typename abs_transform_api_t::store_to_arr_ref_t;
   using typename abs_transform_api_t::store_to_ref_t;
   using typename abs_transform_api_t::unreach_t;
   using typename abs_transform_api_t::var_t;
@@ -1322,8 +1270,6 @@ public:
   virtual void exec(load_from_ref_t &stmt) override {}
   virtual void exec(store_to_ref_t &stmt) override {}
   virtual void exec(gep_ref_t &stmt) override {}
-  virtual void exec(load_from_arr_ref_t &stmt) override {}
-  virtual void exec(store_to_arr_ref_t &stmt) override {}
   virtual void exec(assume_ref_t &stmt) override {}
   virtual void exec(assert_ref_t &stmt) override {}
   virtual void exec(select_ref_t &stmt) override {}

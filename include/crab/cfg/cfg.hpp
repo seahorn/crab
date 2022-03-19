@@ -134,17 +134,15 @@ enum stmt_code {
   REF_LOAD = 41,
   REF_STORE = 42,
   REF_GEP = 43,
-  REF_ARR_STORE = 44,
-  REF_ARR_LOAD = 45,
-  REF_ASSUME = 46,
-  REF_ASSERT = 47,
-  REF_SELECT = 48,
-  REGION_INIT = 49,
-  REF_TO_INT = 50,
-  INT_TO_REF = 51,
-  REGION_COPY = 52,
-  REGION_CAST = 53,  
-  REF_REMOVE = 54,
+  REF_ASSUME = 44,
+  REF_ASSERT = 45,
+  REF_SELECT = 46,
+  REGION_INIT = 47,
+  REF_TO_INT = 48,
+  INT_TO_REF = 49,
+  REGION_COPY = 50,
+  REGION_CAST = 51,  
+  REF_REMOVE = 52,
   // functions calls
   CALLSITE = 60,
   CRAB_INTRINSIC = 61,
@@ -324,8 +322,6 @@ public:
   bool is_ref_load() const { return m_stmt_code == REF_LOAD; }
   bool is_ref_store() const { return m_stmt_code == REF_STORE; }
   bool is_ref_gep() const { return m_stmt_code == REF_GEP; }
-  bool is_ref_arr_load() const { return m_stmt_code == REF_ARR_LOAD; }
-  bool is_ref_arr_store() const { return m_stmt_code == REF_ARR_STORE; }
   bool is_ref_assume() const { return (m_stmt_code == REF_ASSUME); }
   bool is_ref_assert() const { return (m_stmt_code == REF_ASSERT); }
   bool is_ref_select() const { return (m_stmt_code == REF_SELECT); }
@@ -1399,172 +1395,6 @@ private:
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class load_from_arr_ref_stmt
-    : public statement<BasicBlockLabel, Number, VariableName> {
-  // lhs := load_from_arr_ref(ref, region, index, elem_size)
-  using this_type =
-      load_from_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
-
-public:
-  using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;
-  using linear_expression_t = ikos::linear_expression<Number, VariableName>;
-  using variable_t = variable<Number, VariableName>;
-  using type_t = typename variable_t::type_t;
-
-  load_from_arr_ref_stmt(variable_t lhs, variable_t ref, variable_t region,
-                         linear_expression_t index,
-                         linear_expression_t elem_size, basic_block_t *parent,
-                         debug_info dbg_info = debug_info())
-      : statement_t(REF_ARR_LOAD, parent, dbg_info), m_lhs(lhs), m_ref(ref),
-        m_region(region), m_index(index), m_elem_size(elem_size) {
-
-    this->m_live.add_def(m_lhs);
-    this->m_live.add_use(m_region);
-    this->m_live.add_use(m_ref);
-    for (auto const &v : m_elem_size.variables()) {
-      this->m_live.add_use(v);
-    }
-    for (auto const &v : m_index.variables()) {
-      this->m_live.add_use(v);
-    }
-  }
-
-  const variable_t &lhs() const { return m_lhs; }
-
-  const variable_t &ref() const { return m_ref; }
-
-  const linear_expression_t &index() const { return m_index; }
-
-  const linear_expression_t &elem_size() const { return m_elem_size; }
-
-  const variable_t &region() const { return m_region; }
-
-  virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
-    v->visit(*this);
-  }
-
-  virtual statement_t *clone(basic_block_t *parent) const override {
-    return new this_type(m_lhs, m_ref, m_region, m_index, m_elem_size, parent,
-                         this->m_dbg_info);
-  }
-
-  virtual void write(crab_os &o) const override {
-    o << m_lhs << ":" << m_lhs.get_type() << " = "
-      << "load_from_arr_ref(" << m_region << ":" << m_region.get_type() << ","
-      << m_ref << ":" << m_ref.get_type() << "," << m_index << ",sz "
-      << m_elem_size << ")";
-  }
-
-private:
-  variable_t m_lhs;
-  variable_t m_ref;
-  variable_t m_region;
-  linear_expression_t m_index;
-  linear_expression_t m_elem_size; //! size in bytes
-};
-
-template <class BasicBlockLabel, class Number, class VariableName>
-class store_to_arr_ref_stmt
-    : public statement<BasicBlockLabel, Number, VariableName> {
-  // store_to_arr_ref(ref, region, lb, ub, value, elem_size)
-  using this_type =
-      store_to_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
-
-public:
-  using statement_t = statement<BasicBlockLabel, Number, VariableName>;
-  using basic_block_t = typename statement_t::basic_block_t;
-  using linear_expression_t = ikos::linear_expression<Number, VariableName>;
-  using variable_t = variable<Number, VariableName>;
-  using type_t = typename variable_t::type_t;
-
-  store_to_arr_ref_stmt(variable_t ref, variable_t region,
-                        linear_expression_t lb, linear_expression_t ub,
-                        linear_expression_t value,
-                        linear_expression_t elem_size, bool is_strong_update,
-                        basic_block_t *parent,
-                        debug_info dbg_info = debug_info())
-      : statement_t(REF_ARR_STORE, parent, dbg_info), m_ref(ref),
-        m_region(region), m_lb(lb), m_ub(ub), m_value(value),
-        m_elem_size(elem_size), m_is_strong_update(is_strong_update) {
-
-    this->m_live.add_use(m_region);
-    this->m_live.add_def(m_region);
-
-    this->m_live.add_use(m_ref);
-    
-    for (auto const &v : m_elem_size.variables()) {
-      this->m_live.add_use(v);
-    }
-    for (auto const &v : m_lb.variables()) {
-      this->m_live.add_use(v);
-    }
-    for (auto const &v : m_ub.variables()) {
-      this->m_live.add_use(v);
-    }
-    for (auto const &v : m_value.variables()) {
-      this->m_live.add_use(v);
-    }
-  }
-
-  const variable_t &ref() const { return m_ref; }
-
-  const variable_t &region() const { return m_region; }
-
-  const linear_expression_t &lb_index() const { return m_lb; }
-
-  const linear_expression_t &ub_index() const { return m_ub; }
-
-  const linear_expression_t &value() const { return m_value; }
-
-  const linear_expression_t &elem_size() const { return m_elem_size; }
-
-  bool is_strong_update() const { return m_is_strong_update; }
-
-  virtual void
-  accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
-    v->visit(*this);
-  }
-
-  virtual statement_t *clone(basic_block_t *parent) const override {
-    return new this_type(m_ref, m_region, m_lb, m_ub, m_value, m_elem_size,
-                         m_is_strong_update, parent, this->m_dbg_info);
-  }
-
-  virtual void write(crab_os &o) const override {
-    o << "store_to_arr_ref(" << m_region << ":" << m_region.get_type() << ","
-      << m_ref << ":" << m_ref.get_type();
-    if (m_lb.equal(m_ub)) {
-      o << "," << m_lb << "," << m_value << ",sz " << m_elem_size;
-    } else {
-      o << "," << m_lb << ".." << m_ub << "," << m_value << ",sz "
-        << m_elem_size;
-    }
-    o << ")";
-  }
-
-private:
-  // reference
-  variable_t m_ref;
-  // region
-  variable_t m_region;
-  // smallest array index
-  linear_expression_t m_lb;
-  // largest array index
-  linear_expression_t m_ub;
-  // value stored in the array
-  linear_expression_t m_value;
-  // the size of the array element
-  linear_expression_t m_elem_size; //! size in bytes
-
-  // whether the store is a strong update. This might help the
-  // abstract domain. If unknown set to false.  Only makes sense
-  // if m_lb is equal to m_ub.
-  bool m_is_strong_update;
-};
-
-template <class BasicBlockLabel, class Number, class VariableName>
 class assume_ref_stmt
     : public statement<BasicBlockLabel, Number, VariableName> {
   using this_type = assume_ref_stmt<BasicBlockLabel, Number, VariableName>;
@@ -2469,10 +2299,6 @@ public:
   using store_to_ref_t =
       store_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using gep_ref_t = gep_ref_stmt<BasicBlockLabel, Number, VariableName>;
-  using load_from_arr_ref_t =
-      load_from_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
-  using store_to_arr_ref_t =
-      store_to_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assume_ref_t = assume_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assert_ref_t = assert_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using ref_select_t = ref_select_stmt<BasicBlockLabel, Number, VariableName>;
@@ -2977,21 +2803,6 @@ public:
         new gep_ref_t(lhs_ref, lhs_region, rhs_ref, rhs_region, offset, this));
   }
 
-  const statement_t *load_from_arr_ref(variable_t lhs, variable_t ref,
-                                       variable_t region, lin_exp_t index,
-                                       lin_exp_t elem_size) {
-    return insert(
-        new load_from_arr_ref_t(lhs, ref, region, index, elem_size, this));
-  }
-
-  const statement_t *store_to_arr_ref(variable_t ref, variable_t region,
-                                      lin_exp_t lb_index, lin_exp_t ub_index,
-                                      lin_exp_t val, lin_exp_t elem_size,
-                                      bool is_strong_update) {
-    return insert(new store_to_arr_ref_t(ref, region, lb_index, ub_index, val,
-                                         elem_size, is_strong_update, this));
-  }
-
   const statement_t *assume_ref(ref_cst_t cst) {
     return insert(new assume_ref_t(cst, this));
   }
@@ -3210,10 +3021,6 @@ struct statement_visitor {
   using store_to_ref_t =
       store_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using gep_ref_t = gep_ref_stmt<BasicBlockLabel, Number, VariableName>;
-  using load_from_arr_ref_t =
-      load_from_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
-  using store_to_arr_ref_t =
-      store_to_arr_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assume_ref_t = assume_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assert_ref_t = assert_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using select_ref_t = ref_select_stmt<BasicBlockLabel, Number, VariableName>;
@@ -3250,8 +3057,6 @@ struct statement_visitor {
   virtual void visit(load_from_ref_t &) {}
   virtual void visit(store_to_ref_t &) {}
   virtual void visit(gep_ref_t &) {}
-  virtual void visit(load_from_arr_ref_t &) {}
-  virtual void visit(store_to_arr_ref_t &) {}
   virtual void visit(assume_ref_t &){};
   virtual void visit(assert_ref_t &){};
   virtual void visit(select_ref_t &){};

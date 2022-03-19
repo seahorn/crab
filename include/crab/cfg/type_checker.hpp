@@ -79,10 +79,6 @@ class type_checker_visitor
   using load_from_ref_t = typename statement_visitor<B, N, V>::load_from_ref_t;
   using store_to_ref_t = typename statement_visitor<B, N, V>::store_to_ref_t;
   using gep_ref_t = typename statement_visitor<B, N, V>::gep_ref_t;
-  using load_from_arr_ref_t =
-      typename statement_visitor<B, N, V>::load_from_arr_ref_t;
-  using store_to_arr_ref_t =
-      typename statement_visitor<B, N, V>::store_to_arr_ref_t;
   using assume_ref_t = typename statement_visitor<B, N, V>::assume_ref_t;
   using assert_ref_t = typename statement_visitor<B, N, V>::assert_ref_t;
   using select_ref_t = typename statement_visitor<B, N, V>::select_ref_t;
@@ -665,14 +661,6 @@ public:
     check_region(s.rhs_region(), s);
     check_ref(s.lhs(), "", s);
     check_ref(s.rhs(), "", s);
-  }
-
-  virtual void visit(load_from_arr_ref_t &s) override {
-    // TODO
-  }
-
-  virtual void visit(store_to_arr_ref_t &s) override {
-    // TODO
   }
 
   virtual void visit(assume_ref_t &s) override {}

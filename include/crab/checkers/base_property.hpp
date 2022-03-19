@@ -223,12 +223,6 @@ public:
       crab::cfg::store_to_ref_stmt<basic_block_label_t, number_t, varname_t>;
   using gep_ref_t =
       crab::cfg::gep_ref_stmt<basic_block_label_t, number_t, varname_t>;
-  using load_from_arr_ref_t =
-      crab::cfg::load_from_arr_ref_stmt<basic_block_label_t, number_t,
-                                        varname_t>;
-  using store_to_arr_ref_t =
-      crab::cfg::store_to_arr_ref_stmt<basic_block_label_t, number_t,
-                                       varname_t>;
   using assume_ref_t =
       crab::cfg::assume_ref_stmt<basic_block_label_t, number_t, varname_t>;
   using assert_ref_t =
@@ -440,18 +434,6 @@ protected:
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(load_from_arr_ref_t &s) {
-    if (!this->m_abs_tr)
-      return;
-    s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
-  }
-
-  virtual void check(store_to_arr_ref_t &s) {
-    if (!this->m_abs_tr)
-      return;
-    s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
-  }
-
   virtual void check(assume_ref_t &s) {
     if (!this->m_abs_tr)
       return;
@@ -542,8 +524,6 @@ public:
   virtual void visit(load_from_ref_t &s) override { check(s); }
   virtual void visit(store_to_ref_t &s) override { check(s); }
   virtual void visit(gep_ref_t &s) override { check(s); }
-  virtual void visit(load_from_arr_ref_t &s) override { check(s); }
-  virtual void visit(store_to_arr_ref_t &s) override { check(s); }
   virtual void visit(assume_ref_t &s) override { check(s); }
   virtual void visit(assert_ref_t &s) override { check(s); }
   virtual void visit(select_ref_t &s) override { check(s); }
