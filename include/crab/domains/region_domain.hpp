@@ -1399,6 +1399,13 @@ public:
 
     const small_range &num_refs = rgn_info.refcount_val();
     if (num_refs.is_zero() || num_refs.is_one()) {
+      if (num_refs.is_zero()) {
+	// We consider that if the region has a zero refcounter then
+	// we can perform strong read. This might be unsound so at
+	// least we print a warning.	
+	CRAB_WARN(domain_name(), "::ref_load from a region with zero refcounter. "
+		  "Perhaps region objects are allocated outside the code under analysis."); 
+      }
       // strong read
       CRAB_LOG("region-load", crab::outs() << "Reading from singleton\n";);
       if (auto region_gvars_opt = get_gvars(rgn)) {
@@ -1577,6 +1584,14 @@ public:
     //   store_ref(R, r2, v2);
     //
     if (is_uninitialized_rgn || num_refs.is_zero() || num_refs.is_one()) {
+      if (num_refs.is_zero()) {
+	// We consider that if the region has a zero refcounter then
+	// we can perform strong update. This might be unsound so at
+	// least we print a warning.	
+	CRAB_WARN(domain_name(), "::ref_store from a region with zero refcounter. "
+		  "Perhaps region objects are allocated outside the code under analysis."); 
+      }
+      
       /* strong update */
       CRAB_LOG("region-store", crab::outs() << "Performing strong update\n";);
 
@@ -2870,7 +2885,8 @@ public:
       o << "{}";
     } else {
       CRAB_LOG(
-          "region-print", o << "(" << m_rgn_info_env;
+          "region-print",
+	  o << "(" << "RegionInfo=" << m_rgn_info_env;
           if (crab_domain_params_man::get().region_allocation_sites()) {
             o << ","
               << "AllocSites=" << m_alloc_site_dom;
@@ -2880,10 +2896,34 @@ public:
           } if (crab_domain_params_man::get().region_tag_analysis()) {
             o << ","
               << "Tags=" << m_tag_env;
-          } o
-          << ")\n";);
+	  }
+	  o << "," << "BaseDom=" << m_base_dom  << ")\n";
+	  return;
+	       );	       
+	  
+      CRAB_LOG(
+	  "region-print-debug",	       
+	  /// This format is understood by Clam debugging scripts such
+	  /// as read_assertions.py.
+	  o << "(" 
+	  << "RgnCounter="
+	  << "{";
+	  for(auto it = m_rgn_info_env.begin(), et = m_rgn_info_env.end(); it!=et;) {
+	    o << it->first  << " -> " << it->second.refcount_val();
+	    ++it;
+	    if (it != et) {
+	      o << ";";
+	    }	  
+	  }
+	  o << "}," << "BaseDom=";
+	  
+	  // We ask the ghost manager to print the base domain so that it
+	  // can rename ghost variables to user-friendly names.
+	  m_ghost_var_man.write(o, m_base_dom);
+	  o << ")";
+	  return;
+	       );      
 
-      CRAB_LOG("region-print2", o << "BaseDom=" << m_base_dom << ")\n";);
       // We ask the ghost manager to print the base domain so that it
       // can rename ghost variables to user-friendly names.
       m_ghost_var_man.write(o, m_base_dom);
