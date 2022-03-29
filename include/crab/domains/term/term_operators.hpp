@@ -54,6 +54,13 @@ term_operator_t conv2termop(bool_operation_t op);
 boost::optional<arith_operation_t> conv2arith(term_operator_t op);
 boost::optional<bitwise_operation_t> conv2bitwise(term_operator_t op);
 boost::optional<bool_operation_t> conv2bool(term_operator_t op);
+
+class term_op_val_generator_t {
+private:
+  static uint32_t m_next_val;
+public:
+  static uint32_t get_next_val() { return m_next_val ++; }
+};
 } // end namespace term
 } // end namespace domains
 } // end namespace crab
