@@ -9,12 +9,12 @@
 namespace crab {
 namespace domains {
 
-template<typename Number>  
+template <typename Number>
 sign<Number> sign<Number>::shiftOp(const sign<Number> &o) const {
   // The shift operation is shl, lshr, or ashr
   // zero is special
   if (is_bottom() || o.is_bottom()) {
-      return bottom();
+    return bottom();
   } else {
     if (equal_zero() || o.equal_zero()) {
       return *this;
@@ -23,50 +23,50 @@ sign<Number> sign<Number>::shiftOp(const sign<Number> &o) const {
     }
   }
 }
-  
-template<typename Number>    
+
+template <typename Number>
 sign<Number> sign<Number>::defaultOp(const sign<Number> &o) const {
   if (is_bottom() || o.is_bottom()) {
     return bottom();
   } else {
     return top();
-    }
+  }
 }
 
-template<typename Number>    
-sign<Number>::sign(sign_interval s) : m_sign(s) {}
+template <typename Number> sign<Number>::sign(sign_interval s) : m_sign(s) {}
 
-
-template<typename Number>    
+template <typename Number>
 sign<Number>::sign(bool is_bottom)
-  : m_sign(is_bottom ? sign_interval::BOT : sign_interval::TOP) {}
-  
-template<typename Number>      
+    : m_sign(is_bottom ? sign_interval::BOT : sign_interval::TOP) {}
+
+template <typename Number>
 sign<Number>::sign(Number c) : m_sign(sign_interval::TOP) {
   Number zero(get_zero());
   if (c == zero) {
     m_sign = sign_interval::EQZ;
   } else if (c < zero) {
-      m_sign = sign_interval::LTZ;
+    m_sign = sign_interval::LTZ;
   } else /* (c > zero) */ {
     m_sign = sign_interval::GTZ;
   }
 }
-  
+
 /* MODIFY HERE if not integers */
-template<typename Number>        
-sign<Number> sign<Number>::from_interval(const ikos::interval<Number> &i) const {
+template <typename Number>
+sign<Number>
+sign<Number>::from_interval(const ikos::interval<Number> &i) const {
   Number zero(get_zero());
   Number plus_one(get_plus_one());
   Number minus_one(get_minus_one());
   if (i.is_bottom()) {
-      return sign<Number>::bottom();
+    return sign<Number>::bottom();
   } else if (i.is_top()) {
     return sign<Number>::top();
   } else if (i <= ikos::interval<Number>(zero, zero)) {
     return sign<Number>(sign_interval::EQZ);
-  } else if (i <= ikos::interval<Number>(bound_t::minus_infinity(), minus_one)) {
-      return sign<Number>(sign_interval::LTZ);
+  } else if (i <=
+             ikos::interval<Number>(bound_t::minus_infinity(), minus_one)) {
+    return sign<Number>(sign_interval::LTZ);
   } else if (i <= ikos::interval<Number>(bound_t::minus_infinity(), zero)) {
     return sign<Number>(sign_interval::LEZ);
   } else if (i <= ikos::interval<Number>(plus_one, bound_t::plus_infinity())) {
@@ -80,7 +80,7 @@ sign<Number> sign<Number>::from_interval(const ikos::interval<Number> &i) const 
 }
 
 /* MODIFY HERE if not integers */
-template<typename Number>          
+template <typename Number>
 ikos::interval<Number> sign<Number>::to_interval() const {
   Number zero(get_zero());
   Number plus_one(get_plus_one());
@@ -105,77 +105,90 @@ ikos::interval<Number> sign<Number>::to_interval() const {
   }
 }
 
-template<typename Number>  
-sign<Number> sign<Number>::bottom() { return sign(true); }
+template <typename Number> sign<Number> sign<Number>::bottom() {
+  return sign(true);
+}
 
-template<typename Number>    
-sign<Number> sign<Number>::top() { return sign(false); }
+template <typename Number> sign<Number> sign<Number>::top() {
+  return sign(false);
+}
 
-template<typename Number>    
-sign<Number> sign<Number>::mk_equal_zero() { return sign<Number>(sign_interval::EQZ); }
+template <typename Number> sign<Number> sign<Number>::mk_equal_zero() {
+  return sign<Number>(sign_interval::EQZ);
+}
 
-template<typename Number>    
-sign<Number> sign<Number>::mk_less_than_zero() { return sign<Number>(sign_interval::LTZ); }
+template <typename Number> sign<Number> sign<Number>::mk_less_than_zero() {
+  return sign<Number>(sign_interval::LTZ);
+}
 
-template<typename Number>    
-sign<Number> sign<Number>::mk_greater_than_zero() { return sign<Number>(sign_interval::GTZ); }
+template <typename Number> sign<Number> sign<Number>::mk_greater_than_zero() {
+  return sign<Number>(sign_interval::GTZ);
+}
 
-template<typename Number>  
+template <typename Number>
 sign<Number> sign<Number>::mk_less_or_equal_than_zero() {
   return sign<Number>(sign_interval::LEZ);
 }
-  
-template<typename Number>    
+
+template <typename Number>
 sign<Number> sign<Number>::mk_greater_or_equal_than_zero() {
   return sign<Number>(sign_interval::GEZ);
 }
 
-template<typename Number>    
-sign<Number> sign<Number>::mk_not_equal_zero() { return sign<Number>(sign_interval::NEZ); }
+template <typename Number> sign<Number> sign<Number>::mk_not_equal_zero() {
+  return sign<Number>(sign_interval::NEZ);
+}
 
-template<typename Number>    
-bool sign<Number>::is_bottom() const { return m_sign == sign_interval::BOT; }
+template <typename Number> bool sign<Number>::is_bottom() const {
+  return m_sign == sign_interval::BOT;
+}
 
-template<typename Number>    
-bool sign<Number>::is_top() const { return m_sign == sign_interval::TOP; }
+template <typename Number> bool sign<Number>::is_top() const {
+  return m_sign == sign_interval::TOP;
+}
 
-template<typename Number>    
-bool sign<Number>::equal_zero() const { return m_sign == sign_interval::EQZ; }
+template <typename Number> bool sign<Number>::equal_zero() const {
+  return m_sign == sign_interval::EQZ;
+}
 
-template<typename Number>    
-bool sign<Number>::less_than_zero() const { return m_sign == sign_interval::LTZ; }
+template <typename Number> bool sign<Number>::less_than_zero() const {
+  return m_sign == sign_interval::LTZ;
+}
 
-template<typename Number>    
-bool sign<Number>::greater_than_zero() const { return m_sign == sign_interval::GTZ; }
+template <typename Number> bool sign<Number>::greater_than_zero() const {
+  return m_sign == sign_interval::GTZ;
+}
 
-template<typename Number>    
-bool sign<Number>::less_or_equal_than_zero() const { return m_sign == sign_interval::LEZ; }
+template <typename Number> bool sign<Number>::less_or_equal_than_zero() const {
+  return m_sign == sign_interval::LEZ;
+}
 
-template<typename Number>    
+template <typename Number>
 bool sign<Number>::greater_or_equal_than_zero() const {
   return m_sign == sign_interval::GEZ;
 }
 
-template<typename Number>    
-bool sign<Number>::not_equal_zero() const { return m_sign == sign_interval::NEZ; }
+template <typename Number> bool sign<Number>::not_equal_zero() const {
+  return m_sign == sign_interval::NEZ;
+}
 
-template<typename Number>    
+template <typename Number>
 bool sign<Number>::operator<=(const sign<Number> &o) const {
   if (is_bottom() || o.is_top()) {
     return true;
   } else if (o.is_bottom() || is_top()) {
     return false;
-    } else {
+  } else {
     // operands are not either top or bottom
     if (m_sign == sign_interval::LTZ) {
       return o.m_sign == m_sign || o.m_sign == sign_interval::LEZ ||
-	o.m_sign == sign_interval::NEZ;
+             o.m_sign == sign_interval::NEZ;
     } else if (m_sign == sign_interval::GTZ) {
       return o.m_sign == m_sign || o.m_sign == sign_interval::GEZ ||
-	o.m_sign == sign_interval::NEZ;
+             o.m_sign == sign_interval::NEZ;
     } else if (m_sign == sign_interval::EQZ) {
-	return o.m_sign == m_sign || o.m_sign == sign_interval::LEZ ||
-	  o.m_sign == sign_interval::GEZ;
+      return o.m_sign == m_sign || o.m_sign == sign_interval::LEZ ||
+             o.m_sign == sign_interval::GEZ;
     } else {
       /* m_sign == sign_interval::LEZ || m_sign == sign_interval::GEZ m_sign
        * == sign_interval::NEZ */
@@ -183,108 +196,110 @@ bool sign<Number>::operator<=(const sign<Number> &o) const {
     }
   }
 }
-  
-template<typename Number>    
-bool sign<Number>::operator==(const sign<Number> &o) const { return (m_sign == o.m_sign); }
 
-template<typename Number>    
+template <typename Number>
+bool sign<Number>::operator==(const sign<Number> &o) const {
+  return (m_sign == o.m_sign);
+}
+
+template <typename Number>
 sign<Number> sign<Number>::operator|(const sign<Number> &o) const {
   if (is_bottom() || o.is_top()) {
     return o;
   } else if (is_top() || o.is_bottom()) {
     return *this;
-    } else {
+  } else {
     // operands are not either top or bottom
     if (m_sign == sign_interval::LTZ) {
       switch (o.m_sign) {
       case sign_interval::LTZ:
-	return *this;
+        return *this;
       case sign_interval::GTZ:
       case sign_interval::NEZ:
-	return sign<Number>(sign_interval::NEZ);
+        return sign<Number>(sign_interval::NEZ);
       case sign_interval::EQZ:
       case sign_interval::LEZ:
-	return sign<Number>(sign_interval::LEZ);
+        return sign<Number>(sign_interval::LEZ);
       case sign_interval::GEZ:
-	return sign<Number>(sign_interval::TOP);
+        return sign<Number>(sign_interval::TOP);
       default:
-	CRAB_ERROR("sign::operator| unreachable 1");
-	}
+        CRAB_ERROR("sign::operator| unreachable 1");
+      }
     } else if (m_sign == sign_interval::GTZ) {
       switch (o.m_sign) {
       case sign_interval::GTZ:
-	return *this;
+        return *this;
       case sign_interval::LTZ:
       case sign_interval::NEZ:
-	return sign<Number>(sign_interval::NEZ);
+        return sign<Number>(sign_interval::NEZ);
       case sign_interval::EQZ:
       case sign_interval::GEZ:
-	return sign<Number>(sign_interval::GEZ);
+        return sign<Number>(sign_interval::GEZ);
       case sign_interval::LEZ:
-	return sign<Number>(sign_interval::TOP);
+        return sign<Number>(sign_interval::TOP);
       default:
-	CRAB_ERROR("sign::operator| unreachable 2");
+        CRAB_ERROR("sign::operator| unreachable 2");
       }
     } else if (m_sign == sign_interval::EQZ) {
       switch (o.m_sign) {
       case sign_interval::LTZ:
       case sign_interval::LEZ:
-	return sign<Number>(sign_interval::LEZ);
+        return sign<Number>(sign_interval::LEZ);
       case sign_interval::GTZ:
       case sign_interval::GEZ:
-	return sign<Number>(sign_interval::GEZ);
+        return sign<Number>(sign_interval::GEZ);
       case sign_interval::EQZ:
-	return *this;
+        return *this;
       case sign_interval::NEZ:
-	  return top();
+        return top();
       default:
-	CRAB_ERROR("sign::operator| unreachable 3");
+        CRAB_ERROR("sign::operator| unreachable 3");
       }
     } else if (m_sign == sign_interval::LEZ) {
       switch (o.m_sign) {
       case sign_interval::LTZ:
       case sign_interval::EQZ:
       case sign_interval::LEZ:
-	return *this;
+        return *this;
       case sign_interval::GTZ:
       case sign_interval::NEZ:
-	case sign_interval::GEZ:
-	return top();
+      case sign_interval::GEZ:
+        return top();
       default:
-	CRAB_ERROR("sign::operator| unreachable 4");
-	}
+        CRAB_ERROR("sign::operator| unreachable 4");
+      }
     } else if (m_sign == sign_interval::NEZ) {
       switch (o.m_sign) {
       case sign_interval::LTZ:
       case sign_interval::GTZ:
       case sign_interval::NEZ:
-	return *this;
+        return *this;
       case sign_interval::EQZ:
       case sign_interval::LEZ:
       case sign_interval::GEZ:
-	return top();
+        return top();
       default:
-	CRAB_ERROR("sign::operator| unreachable 5");
-	}
+        CRAB_ERROR("sign::operator| unreachable 5");
+      }
     } else if (m_sign == sign_interval::GEZ) {
       switch (o.m_sign) {
       case sign_interval::EQZ:
       case sign_interval::GTZ:
       case sign_interval::GEZ:
-	return *this;
+        return *this;
       case sign_interval::LTZ:
       case sign_interval::LEZ:
-	case sign_interval::NEZ:
-	return top();
+      case sign_interval::NEZ:
+        return top();
       default:
-	CRAB_ERROR("sign::operator| unreachable 6");
+        CRAB_ERROR("sign::operator| unreachable 6");
       }
     }
   }
   CRAB_ERROR("sign::operator| unreachable 7");
 }
-  
-template<typename Number>    
+
+template <typename Number>
 sign<Number> sign<Number>::operator&(const sign<Number> &o) const {
   if (is_bottom() || o.is_top())
     return *this;
@@ -295,88 +310,88 @@ sign<Number> sign<Number>::operator&(const sign<Number> &o) const {
     if (m_sign == sign_interval::LTZ) {
       switch (o.m_sign) {
       case sign_interval::LTZ:
-	return *this;
+        return *this;
       case sign_interval::GTZ:
       case sign_interval::EQZ:
       case sign_interval::GEZ:
-	return bottom();
+        return bottom();
       case sign_interval::LEZ:
       case sign_interval::NEZ:
-	return sign<Number>(sign_interval::LTZ);
+        return sign<Number>(sign_interval::LTZ);
       default:
-	CRAB_ERROR("sign::operator& unreachable 1");
+        CRAB_ERROR("sign::operator& unreachable 1");
       }
     } else if (m_sign == sign_interval::GTZ) {
       switch (o.m_sign) {
       case sign_interval::GTZ:
-	return *this;
+        return *this;
       case sign_interval::LTZ:
       case sign_interval::EQZ:
       case sign_interval::LEZ:
-	return bottom();
+        return bottom();
       case sign_interval::GEZ:
       case sign_interval::NEZ:
-	return sign<Number>(sign_interval::GTZ);
+        return sign<Number>(sign_interval::GTZ);
       default:
-	CRAB_ERROR("sign::operator& unreachable 2");
+        CRAB_ERROR("sign::operator& unreachable 2");
       }
     } else if (m_sign == sign_interval::EQZ) {
       switch (o.m_sign) {
       case sign_interval::LTZ:
       case sign_interval::GTZ:
       case sign_interval::NEZ:
-	return bottom();
+        return bottom();
       case sign_interval::GEZ:
       case sign_interval::LEZ:
       case sign_interval::EQZ:
-	return *this;
+        return *this;
       default:
-	CRAB_ERROR("sign::operator& unreachable 3");
+        CRAB_ERROR("sign::operator& unreachable 3");
       }
     } else if (m_sign == sign_interval::LEZ) {
       switch (o.m_sign) {
       case sign_interval::LTZ:
       case sign_interval::EQZ:
       case sign_interval::LEZ:
-	return o;
+        return o;
       case sign_interval::NEZ:
-	return sign<Number>(sign_interval::LTZ);
+        return sign<Number>(sign_interval::LTZ);
       case sign_interval::GTZ:
-	return bottom();
+        return bottom();
       case sign_interval::GEZ:
-	return sign<Number>(sign_interval::EQZ);
+        return sign<Number>(sign_interval::EQZ);
       default:
-	CRAB_ERROR("sign::operator& unreachable 4");
+        CRAB_ERROR("sign::operator& unreachable 4");
       }
     } else if (m_sign == sign_interval::GEZ) {
       switch (o.m_sign) {
       case sign_interval::EQZ:
       case sign_interval::GTZ:
       case sign_interval::GEZ:
-	return o;
+        return o;
       case sign_interval::LTZ:
-	return bottom();
+        return bottom();
       case sign_interval::LEZ:
-	return sign<Number>(sign_interval::EQZ);
+        return sign<Number>(sign_interval::EQZ);
       case sign_interval::NEZ:
-	return sign<Number>(sign_interval::GTZ);
+        return sign<Number>(sign_interval::GTZ);
       default:
-	CRAB_ERROR("sign::operator& unreachable 5");
+        CRAB_ERROR("sign::operator& unreachable 5");
       }
     } else if (m_sign == sign_interval::NEZ) {
       switch (o.m_sign) {
       case sign_interval::LTZ:
       case sign_interval::GTZ:
       case sign_interval::NEZ:
-	return o;
+        return o;
       case sign_interval::LEZ:
-	return sign<Number>(sign_interval::LTZ);
+        return sign<Number>(sign_interval::LTZ);
       case sign_interval::GEZ:
-	return sign<Number>(sign_interval::GTZ);
+        return sign<Number>(sign_interval::GTZ);
       case sign_interval::EQZ:
-	return bottom();
+        return bottom();
       default:
-	CRAB_ERROR("sign::operator& unreachable 6");
+        CRAB_ERROR("sign::operator& unreachable 6");
       }
     }
   }
@@ -384,7 +399,7 @@ sign<Number> sign<Number>::operator&(const sign<Number> &o) const {
 }
 
 // addition
-template<typename Number>    
+template <typename Number>
 sign<Number> sign<Number>::operator+(const sign<Number> &o) const {
   if (is_bottom() || o.is_bottom()) {
     return bottom();
@@ -397,52 +412,52 @@ sign<Number> sign<Number>::operator+(const sign<Number> &o) const {
       case sign_interval::LTZ:
       case sign_interval::EQZ:
       case sign_interval::LEZ:
-	return *this;
+        return *this;
       case sign_interval::GTZ:
       case sign_interval::NEZ:
       case sign_interval::GEZ:
-	return top();
+        return top();
       default:
-	CRAB_ERROR("sign::operator+ unreachable 1");
+        CRAB_ERROR("sign::operator+ unreachable 1");
       }
     } else if (m_sign == sign_interval::GTZ) {
       switch (o.m_sign) {
       case sign_interval::GTZ:
       case sign_interval::EQZ:
       case sign_interval::GEZ:
-	return *this;
+        return *this;
       case sign_interval::LTZ:
       case sign_interval::LEZ:
       case sign_interval::NEZ:
-	return top();
+        return top();
       default:
-	CRAB_ERROR("sign::operator+ unreachable 2");
+        CRAB_ERROR("sign::operator+ unreachable 2");
       }
     } else if (m_sign == sign_interval::LEZ) {
       switch (o.m_sign) {
       case sign_interval::LTZ:
       case sign_interval::EQZ:
       case sign_interval::LEZ:
-	return *this;
+        return *this;
       case sign_interval::GTZ:
       case sign_interval::NEZ:
       case sign_interval::GEZ:
-	return top();
+        return top();
       default:
-	CRAB_ERROR("sign::operator+ unreachable 2");
+        CRAB_ERROR("sign::operator+ unreachable 2");
       }
     } else if (m_sign == sign_interval::GEZ) {
       switch (o.m_sign) {
       case sign_interval::GTZ:
       case sign_interval::GEZ:
       case sign_interval::EQZ:
-	return *this;
+        return *this;
       case sign_interval::LTZ:
       case sign_interval::LEZ:
       case sign_interval::NEZ:
-	return top();
+        return top();
       default:
-	CRAB_ERROR("sign::operator+ unreachable 2");
+        CRAB_ERROR("sign::operator+ unreachable 2");
       }
     } else if (m_sign == sign_interval::EQZ) {
       return o;
@@ -453,7 +468,7 @@ sign<Number> sign<Number>::operator+(const sign<Number> &o) const {
 }
 
 // subtraction
-template<typename Number>    
+template <typename Number>
 sign<Number> sign<Number>::operator-(const sign<Number> &o) const {
   if (is_bottom() || o.is_bottom()) {
     return bottom();
@@ -478,7 +493,7 @@ sign<Number> sign<Number>::operator-(const sign<Number> &o) const {
 }
 
 // multiplication
-template<typename Number>    
+template <typename Number>
 sign<Number> sign<Number>::operator*(const sign<Number> &o) const {
   if (is_bottom() || o.is_bottom()) {
     return bottom();
@@ -493,15 +508,15 @@ sign<Number> sign<Number>::operator*(const sign<Number> &o) const {
     if (m_sign == sign_interval::LTZ) {
       switch (o.m_sign) {
       case sign_interval::LTZ:
-	return sign<Number>(sign_interval::GTZ);
+        return sign<Number>(sign_interval::GTZ);
       case sign_interval::LEZ:
-	return sign<Number>(sign_interval::GEZ);
+        return sign<Number>(sign_interval::GEZ);
       case sign_interval::GTZ:
-	return sign<Number>(sign_interval::LTZ);
+        return sign<Number>(sign_interval::LTZ);
       case sign_interval::GEZ:
-	return sign<Number>(sign_interval::LEZ);
+        return sign<Number>(sign_interval::LEZ);
       default:
-	CRAB_ERROR("sign::operator* unreachable 1");
+        CRAB_ERROR("sign::operator* unreachable 1");
       }
     } else if (m_sign == sign_interval::GTZ) {
       return o;
@@ -509,23 +524,23 @@ sign<Number> sign<Number>::operator*(const sign<Number> &o) const {
       switch (o.m_sign) {
       case sign_interval::LTZ:
       case sign_interval::LEZ:
-	return sign<Number>(sign_interval::GEZ);
+        return sign<Number>(sign_interval::GEZ);
       case sign_interval::GTZ:
       case sign_interval::GEZ:
-	return sign<Number>(sign_interval::LEZ);
+        return sign<Number>(sign_interval::LEZ);
       default:
-	CRAB_ERROR("sign::operator* unreachable 2");
+        CRAB_ERROR("sign::operator* unreachable 2");
       }
     } else if (m_sign == sign_interval::GEZ) {
       switch (o.m_sign) {
       case sign_interval::GTZ:
       case sign_interval::GEZ:
-	return sign<Number>(sign_interval::GEZ);
+        return sign<Number>(sign_interval::GEZ);
       case sign_interval::LTZ:
       case sign_interval::LEZ:
-	return sign<Number>(sign_interval::LEZ);
+        return sign<Number>(sign_interval::LEZ);
       default:
-	CRAB_ERROR("sign::operator* unreachable 3");
+        CRAB_ERROR("sign::operator* unreachable 3");
       }
     }
   }
@@ -533,7 +548,7 @@ sign<Number> sign<Number>::operator*(const sign<Number> &o) const {
 }
 
 // signed division
-template<typename Number>    
+template <typename Number>
 sign<Number> sign<Number>::operator/(const sign<Number> &o) const {
   if (is_bottom() || o.is_bottom()) {
     return bottom();
@@ -554,17 +569,23 @@ sign<Number> sign<Number>::operator/(const sign<Number> &o) const {
 
 // division and remainder operations
 
-template<typename Number>    
-sign<Number> sign<Number>::UDiv(const sign<Number> &o) const { return defaultOp(o); }
+template <typename Number>
+sign<Number> sign<Number>::UDiv(const sign<Number> &o) const {
+  return defaultOp(o);
+}
 
-template<typename Number>    
-sign<Number> sign<Number>::SRem(const sign<Number> &o) const { return defaultOp(o); }
+template <typename Number>
+sign<Number> sign<Number>::SRem(const sign<Number> &o) const {
+  return defaultOp(o);
+}
 
-template<typename Number>    
-sign<Number> sign<Number>::URem(const sign<Number> &o) const { return defaultOp(o); }
+template <typename Number>
+sign<Number> sign<Number>::URem(const sign<Number> &o) const {
+  return defaultOp(o);
+}
 
 // bitwise operations
-template<typename Number>    
+template <typename Number>
 sign<Number> sign<Number>::And(const sign<Number> &o) const {
   // zero is special
   if (is_bottom() || o.is_bottom()) {
@@ -578,7 +599,7 @@ sign<Number> sign<Number>::And(const sign<Number> &o) const {
   }
 }
 
-template<typename Number>    
+template <typename Number>
 sign<Number> sign<Number>::Or(const sign<Number> &o) const {
   // zero is special
   if (is_bottom() || o.is_bottom()) {
@@ -594,20 +615,27 @@ sign<Number> sign<Number>::Or(const sign<Number> &o) const {
   }
 }
 
-template<typename Number>    
-sign<Number> sign<Number>::Xor(const sign<Number> &o) const { return Or(o); }
+template <typename Number>
+sign<Number> sign<Number>::Xor(const sign<Number> &o) const {
+  return Or(o);
+}
 
-template<typename Number>    
-sign<Number> sign<Number>::Shl(const sign<Number> &o) const { return shiftOp(o); }
+template <typename Number>
+sign<Number> sign<Number>::Shl(const sign<Number> &o) const {
+  return shiftOp(o);
+}
 
-template<typename Number>    
-sign<Number> sign<Number>::LShr(const sign<Number> &o) const { return shiftOp(o); }
+template <typename Number>
+sign<Number> sign<Number>::LShr(const sign<Number> &o) const {
+  return shiftOp(o);
+}
 
-template<typename Number>    
-sign<Number> sign<Number>::AShr(const sign<Number> &o) const { return shiftOp(o); }
+template <typename Number>
+sign<Number> sign<Number>::AShr(const sign<Number> &o) const {
+  return shiftOp(o);
+}
 
-template<typename Number>    
-void sign<Number>::write(crab::crab_os &o) const {
+template <typename Number> void sign<Number>::write(crab::crab_os &o) const {
   switch (m_sign) {
   case sign_interval::BOT:
     o << "_|_";

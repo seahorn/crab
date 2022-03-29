@@ -37,9 +37,9 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_or_constant_vector_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  using typename abstract_domain_t::variable_or_constant_vector_t;
   using constant_t = constant<Number>;
   using number_t = Number;
   using varname_t = VariableName;
@@ -55,83 +55,85 @@ private:
   constant_t eval(const linear_expression_t &expr) const {
     assert(!is_bottom());
     constant_t r(expr.constant());
-    for (auto const&kv : expr) {
+    for (auto const &kv : expr) {
       constant_t c(kv.first);
-      r  = r.Add(c.Mul(m_env.at(kv.second)));
+      r = r.Add(c.Mul(m_env.at(kv.second)));
       if (r.is_top()) {
-	break;
+        break;
       }
     }
     return r;
   }
-  
-  constant_t compute_residual(const linear_constraint_t &cst, const variable_t &pivot) const {
+
+  constant_t compute_residual(const linear_constraint_t &cst,
+                              const variable_t &pivot) const {
     constant_t residual(cst.constant());
-    for (auto const&kv: cst) {
+    for (auto const &kv : cst) {
       constant_t c(kv.first);
       const variable_t &v = kv.second;
       if (!(v == pivot)) {
-	residual = residual.Sub(c.Mul(m_env.at(v)));
-	if (residual.is_top()) {
-	  break;
-	}
+        residual = residual.Sub(c.Mul(m_env.at(v)));
+        if (residual.is_top()) {
+          break;
+        }
       }
     }
     return residual;
   }
-  
-  void propagate(const linear_constraint_t &cst){
+
+  void propagate(const linear_constraint_t &cst) {
     if (is_bottom()) {
       return;
     }
-    
-    if (cst.is_inequality() || cst.is_strict_inequality() || cst.is_disequation()) {
+
+    if (cst.is_inequality() || cst.is_strict_inequality() ||
+        cst.is_disequation()) {
       constant_t e = eval(cst.expression());
       if (e.is_constant()) {
-	if (cst.is_inequality()) {
-	  if (!(e.get_constant() <= number_t(0))) {
-	    set_to_bottom();
-	    return;
-	  }
-	} else if (cst.is_disequation()) {
-	  if (!(e.get_constant() != number_t(0))) {
-	    set_to_bottom();
-	    return;
-	  }
-	} else if (cst.is_strict_inequality()) {
-	  if (!(e.get_constant() < number_t(0))) {
-	    set_to_bottom();
-	    return;
-	  }
-	} 
+        if (cst.is_inequality()) {
+          if (!(e.get_constant() <= number_t(0))) {
+            set_to_bottom();
+            return;
+          }
+        } else if (cst.is_disequation()) {
+          if (!(e.get_constant() != number_t(0))) {
+            set_to_bottom();
+            return;
+          }
+        } else if (cst.is_strict_inequality()) {
+          if (!(e.get_constant() < number_t(0))) {
+            set_to_bottom();
+            return;
+          }
+        }
       }
     } else if (cst.is_equality()) {
       for (auto kv : cst) {
-	number_t c = kv.first;
-	const variable_t &pivot = kv.second;
-	constant_t new_c = compute_residual(cst, pivot).SDiv(c);
-	if (!new_c.is_top()) {
-	  m_env.set(pivot, m_env.at(pivot) & new_c);
-	}
+        number_t c = kv.first;
+        const variable_t &pivot = kv.second;
+        constant_t new_c = compute_residual(cst, pivot).SDiv(c);
+        if (!new_c.is_top()) {
+          m_env.set(pivot, m_env.at(pivot) & new_c);
+        }
       }
     }
   }
-  
+
   void solve_constraints(const linear_constraint_system_t &csts) {
     for (auto const &c : csts) {
       if (is_bottom()) {
-	return;
+        return;
       }
       if (c.is_inequality() && c.is_unsigned()) {
-	// we don't handle unsigned constraints
-	continue;
+        // we don't handle unsigned constraints
+        continue;
       }
       if (c.is_tautology()) {
-	continue;
+        continue;
       }
       if (c.is_contradiction()) {
-	set_to_bottom();
-	return;
+        set_to_bottom();
+        return;
       }
       propagate(c);
     }
@@ -181,14 +183,10 @@ public:
     return *this;
   }
 
-  constant_t get_constant(const variable_t &v) const {
-    return m_env.at(v);
-  }
+  constant_t get_constant(const variable_t &v) const { return m_env.at(v); }
 
-  void set_constant(const variable_t &v, constant_t c) {
-    m_env.set(v, c);
-  }
-  
+  void set_constant(const variable_t &v, constant_t c) { m_env.set(v, c); }
+
   bool is_bottom() const override { return m_env.is_bottom(); }
 
   bool is_top() const override { return m_env.is_top(); }
@@ -226,9 +224,9 @@ public:
     return (m_env || o.m_env);
   }
 
-  constant_domain_t widening_thresholds(
-      const constant_domain_t &o,
-      const thresholds<number_t> &ts) const override {
+  constant_domain_t
+  widening_thresholds(const constant_domain_t &o,
+                      const thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
     return m_env.widening_thresholds(o.m_env, ts);
@@ -246,9 +244,7 @@ public:
     m_env -= v;
   }
 
-  interval_t operator[](const variable_t &v) override {
-    return at(v);
-  }
+  interval_t operator[](const variable_t &v) override { return at(v); }
 
   interval_t at(const variable_t &v) const override {
     constant_t c = m_env.at(v);
@@ -289,33 +285,33 @@ public:
       constant_t xc = constant_t::top();
       switch (op) {
       case crab::domains::OP_ADDITION:
-	xc = yc.Add(zc);
-	break;
+        xc = yc.Add(zc);
+        break;
       case crab::domains::OP_SUBTRACTION:
-	xc = yc.Sub(zc);
-	break;
+        xc = yc.Sub(zc);
+        break;
       case crab::domains::OP_MULTIPLICATION:
-	xc = yc.Mul(zc);
-	break;
+        xc = yc.Mul(zc);
+        break;
       case crab::domains::OP_SDIV:
-	xc = yc.SDiv(zc);      
-	break;
+        xc = yc.SDiv(zc);
+        break;
       case crab::domains::OP_SREM:
-	xc = yc.SRem(zc);            
-	break;
+        xc = yc.SRem(zc);
+        break;
       case crab::domains::OP_UDIV:
-	xc = yc.UDiv(zc);      
-	break;
+        xc = yc.UDiv(zc);
+        break;
       case crab::domains::OP_UREM:
-	xc = yc.URem(zc);            
-	break;
+        xc = yc.URem(zc);
+        break;
       default:
-	CRAB_ERROR("Operation ", op, " not supported");
+        CRAB_ERROR("Operation ", op, " not supported");
       }
       m_env.set(x, xc);
     }
   }
-  
+
   void apply(crab::domains::arith_operation_t op, const variable_t &x,
              const variable_t &y, number_t k) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
@@ -327,43 +323,41 @@ public:
       constant_t xc = constant_t::top();
       switch (op) {
       case crab::domains::OP_ADDITION:
-	xc = yc.Add(zc);
-	break;
+        xc = yc.Add(zc);
+        break;
       case crab::domains::OP_SUBTRACTION:
-	xc = yc.Sub(zc);
-	break;
+        xc = yc.Sub(zc);
+        break;
       case crab::domains::OP_MULTIPLICATION:
-	xc = yc.Mul(zc);
-	break;
+        xc = yc.Mul(zc);
+        break;
       case crab::domains::OP_SDIV:
-	xc = yc.SDiv(zc);      
-	break;
+        xc = yc.SDiv(zc);
+        break;
       case crab::domains::OP_SREM:
-	xc = yc.SRem(zc);            
-	break;
+        xc = yc.SRem(zc);
+        break;
       case crab::domains::OP_UDIV:
-	xc = yc.UDiv(zc);      
-	break;
+        xc = yc.UDiv(zc);
+        break;
       case crab::domains::OP_UREM:
-	xc = yc.URem(zc);            
-	break;
+        xc = yc.URem(zc);
+        break;
       default:
-	CRAB_ERROR("Operation ", op, " not supported");
+        CRAB_ERROR("Operation ", op, " not supported");
       }
       m_env.set(x, xc);
     }
-    
   }
 
   // intrinsics operations
-  void intrinsic(std::string name,
-		 const variable_or_constant_vector_t &inputs,
+  void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
   void backward_intrinsic(std::string name,
-			  const variable_or_constant_vector_t &inputs,
+                          const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const constant_domain_t &invariant) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
@@ -412,26 +406,26 @@ public:
       constant_t xc = constant_t::top();
       switch (op) {
       case crab::domains::OP_AND:
-	xc = yc.BitwiseAnd(zc);
-	break;
+        xc = yc.BitwiseAnd(zc);
+        break;
       case crab::domains::OP_OR:
-	xc = yc.BitwiseOr(zc);
-	break;
+        xc = yc.BitwiseOr(zc);
+        break;
       case crab::domains::OP_XOR:
-	xc = yc.BitwiseXor(zc);
-	break;
+        xc = yc.BitwiseXor(zc);
+        break;
       case crab::domains::OP_SHL:
-	xc = yc.BitwiseShl(zc);      
-	break;
+        xc = yc.BitwiseShl(zc);
+        break;
       case crab::domains::OP_LSHR:
-	xc = yc.BitwiseLShr(zc);            
-	break;
+        xc = yc.BitwiseLShr(zc);
+        break;
       case crab::domains::OP_ASHR: {
-	xc = yc.BitwiseAShr(zc);                  
-	break;
+        xc = yc.BitwiseAShr(zc);
+        break;
       }
       default:
-	CRAB_ERROR("Operation ", op, " not supported");
+        CRAB_ERROR("Operation ", op, " not supported");
       }
       m_env.set(x, xc);
     }
@@ -448,30 +442,29 @@ public:
       constant_t xc = constant_t::top();
       switch (op) {
       case crab::domains::OP_AND:
-	xc = yc.BitwiseAnd(zc);
-	break;
+        xc = yc.BitwiseAnd(zc);
+        break;
       case crab::domains::OP_OR:
-	xc = yc.BitwiseOr(zc);
-	break;
+        xc = yc.BitwiseOr(zc);
+        break;
       case crab::domains::OP_XOR:
-	xc = yc.BitwiseXor(zc);
-	break;
+        xc = yc.BitwiseXor(zc);
+        break;
       case crab::domains::OP_SHL:
-	xc = yc.BitwiseShl(zc);      
-	break;
+        xc = yc.BitwiseShl(zc);
+        break;
       case crab::domains::OP_LSHR:
-	xc = yc.BitwiseLShr(zc);            
-	break;
+        xc = yc.BitwiseLShr(zc);
+        break;
       case crab::domains::OP_ASHR: {
-	xc = yc.BitwiseAShr(zc);                  
-	break;
+        xc = yc.BitwiseAShr(zc);
+        break;
       }
       default:
-	CRAB_ERROR("Operation ", op, " not supported");
+        CRAB_ERROR("Operation ", op, " not supported");
       }
       m_env.set(x, xc);
     }
-    
   }
 
   virtual void select(const variable_t &lhs, const linear_constraint_t &cond,

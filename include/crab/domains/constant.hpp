@@ -65,6 +65,6 @@ public:
     return o;
   }
 };
-  
+
 } // namespace domains
 } // namespace crab

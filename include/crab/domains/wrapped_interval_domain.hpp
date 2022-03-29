@@ -40,9 +40,9 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_or_constant_vector_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  using typename abstract_domain_t::variable_or_constant_vector_t;    
   using number_t = Number;
   using varname_t = VariableName;
   using wrapped_interval_t = wrapped_interval<number_t>;
@@ -179,9 +179,9 @@ public:
     return res;
   }
 
-  wrapped_interval_domain_t widening_thresholds(
-      const wrapped_interval_domain_t &e,
-      const thresholds<number_t> &ts) const override {
+  wrapped_interval_domain_t
+  widening_thresholds(const wrapped_interval_domain_t &e,
+                      const thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
     CRAB_LOG("wrapped-int",
@@ -209,7 +209,7 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
     this->_env.set(v, i);
     CRAB_LOG("wrapped-int", crab::outs()
-	     << v << ":=" << i << "=" << _env.at(v) << "\n");
+                                << v << ":=" << i << "=" << _env.at(v) << "\n");
   }
 
   void set(const variable_t &v, interval_t i) {
@@ -221,8 +221,8 @@ public:
 					 v.get_type().is_integer() ?
 					 v.get_type().get_integer_bitwidth() : 0);
       this->_env.set(v, rhs);
-      CRAB_LOG("wrapped-int", crab::outs()
-	       << v << ":=" << i << "=" << _env.at(v) << "\n");
+      CRAB_LOG("wrapped-int",
+               crab::outs() << v << ":=" << i << "=" << _env.at(v) << "\n");
     } else {
       CRAB_WARN(
           "ignored assignment of an open interval in wrapped interval domain");
@@ -237,18 +237,16 @@ public:
 						       v.get_type().is_integer() ?
 						       v.get_type().get_integer_bitwidth() : 0));
     CRAB_LOG("wrapped-int", crab::outs()
-	     << v << ":=" << n << "=" << _env.at(v) << "\n");
+                                << v << ":=" << n << "=" << _env.at(v) << "\n");
   }
 
   // Return unlimited interval
-  virtual interval_t operator[](const variable_t &v) override {
-    return at(v);
-  }
+  virtual interval_t operator[](const variable_t &v) override { return at(v); }
 
   virtual interval_t at(const variable_t &v) const override {
     wrapped_interval_t w_i = this->_env.at(v);
     return w_i.to_interval();
-  }  
+  }
 
   // Return wrapped interval
   wrapped_interval_t get_wrapped_interval(const variable_t &v) const {
@@ -267,7 +265,7 @@ public:
       this->_env.set(x, r);
     }
     CRAB_LOG("wrapped-int", crab::outs()
-	     << x << ":=" << e << "=" << _env.at(x) << "\n");
+                                << x << ":=" << e << "=" << _env.at(x) << "\n");
   }
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
@@ -306,7 +304,7 @@ public:
     }
     this->_env.set(x, xi);
     CRAB_LOG("wrapped-int", crab::outs() << x << ":=" << y << " " << op << " "
-	     << z << "=" << _env.at(x) << "\n");
+                                         << z << "=" << _env.at(x) << "\n");
   }
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
@@ -347,7 +345,7 @@ public:
     }
     this->_env.set(x, xi);
     CRAB_LOG("wrapped-int", crab::outs() << x << ":=" << y << " " << op << " "
-	     << k << "=" << _env.at(x) << "\n");
+                                         << k << "=" << _env.at(x) << "\n");
   }
 
   // cast operations
@@ -525,7 +523,7 @@ public:
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
   DEFAULT_SELECT(wrapped_interval_domain_t)
-  
+
   void forget(const variable_vector_t &variables) override {
     if (is_bottom() || is_top()) {
       return;
@@ -566,14 +564,13 @@ public:
   }
 
   /* begin intrinsics operations */
-  void intrinsic(std::string name,
-		 const variable_or_constant_vector_t &inputs,
+  void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
   void backward_intrinsic(std::string name,
-			  const variable_or_constant_vector_t &inputs,
+                          const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const wrapped_interval_domain_t &invariant) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
@@ -2262,4 +2259,4 @@ public:
 
 } // namespace domains
 } // namespace crab
-#endif 
+#endif

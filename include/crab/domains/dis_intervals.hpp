@@ -679,7 +679,8 @@ public:
 
   // pre: *this and o are normalized
   template <typename Thresholds>
-  dis_interval_t widening_thresholds(const dis_interval_t &o, const Thresholds &ts) const {
+  dis_interval_t widening_thresholds(const dis_interval_t &o,
+                                     const Thresholds &ts) const {
     WidenWithThresholdsOp<Thresholds> op(ts);
     return widening(o, op);
   }
@@ -693,8 +694,8 @@ public:
 private:
   // pre: x and y are normalized
   template <typename BinOp>
-  dis_interval_t apply_bin_op(const dis_interval_t &x, const dis_interval_t &y, BinOp op,
-                              bool shortcut_top) const {
+  dis_interval_t apply_bin_op(const dis_interval_t &x, const dis_interval_t &y,
+                              BinOp op, bool shortcut_top) const {
 
     // if shortcut_top is true then the result is top if one of the
     // operands is top
@@ -989,9 +990,10 @@ namespace linear_interval_solver_impl {
 using dis_z_interval_t = crab::domains::dis_interval<z_number>;
 using dis_q_interval_t = crab::domains::dis_interval<q_number>;
 using z_interval_t = ikos::interval<z_number>;
-  
+
 template <>
-inline dis_z_interval_t trim_interval(const dis_z_interval_t &x, const dis_z_interval_t &y) {
+inline dis_z_interval_t trim_interval(const dis_z_interval_t &x,
+                                      const dis_z_interval_t &y) {
   if (x.is_bottom())
     return x;
 
@@ -1027,7 +1029,7 @@ inline dis_z_interval_t trim_interval(const dis_z_interval_t &x, const dis_z_int
 
 template <>
 inline dis_q_interval_t trim_interval(const dis_q_interval_t &i,
-                                      const dis_q_interval_t &/* j */) {
+                                      const dis_q_interval_t & /* j */) {
   // No refinement possible for disequations over rational numbers
   return i;
 }
@@ -1076,9 +1078,9 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_or_constant_vector_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  using typename abstract_domain_t::variable_or_constant_vector_t;  
   using number_t = Number;
   using varname_t = VariableName;
   using interval_domain_t = ikos::interval_domain<number_t, varname_t>;
@@ -1186,9 +1188,9 @@ public:
     return res;
   }
 
-  dis_interval_domain_t widening_thresholds(
-      const dis_interval_domain_t &e,
-      const thresholds<number_t> &ts) const override {
+  dis_interval_domain_t
+  widening_thresholds(const dis_interval_domain_t &e,
+                      const thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
@@ -1217,9 +1219,7 @@ public:
     this->_env -= v;
   }
 
-  interval_t operator[](const variable_t &v) override {
-    return at(v);
-  }
+  interval_t operator[](const variable_t &v) override { return at(v); }
 
   interval_t at(const variable_t &v) const override {
     crab::CrabStats::count(domain_name() + ".count.to_intervals");
@@ -1231,7 +1231,7 @@ public:
       dis_interval_t x = this->_env.at(v);
       return x.approx();
     }
-  }  
+  }
 
   void set(const variable_t &v, interval_t intv) {
     crab::CrabStats::count(domain_name() + ".count.assign");
@@ -1442,14 +1442,13 @@ public:
   }
 
   DEFAULT_SELECT(dis_interval_domain_t)
-  
+
   /// dis_interval_domain implements only standard abstract operations
   /// of a numerical domain so it is intended to be used as a leaf
   /// domain in the hierarchy of domains.
   BOOL_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
-  
 
   void expand(const variable_t &x, const variable_t &new_x) override {
     crab::CrabStats::count(domain_name() + ".count.expand");
@@ -1495,14 +1494,13 @@ public:
   void minimize() override {}
 
   /* begin intrinsics operations */
-  void intrinsic(std::string name,
-		 const variable_or_constant_vector_t &inputs,
+  void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
   void backward_intrinsic(std::string name,
-			  const variable_or_constant_vector_t &inputs,
+                          const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const dis_interval_domain_t &invariant) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());

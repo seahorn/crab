@@ -3,8 +3,8 @@
 #include <crab/domains/interval.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
 #include <crab/fixpoint/thresholds.hpp>
-#include <crab/numbers/wrapint.hpp>
 #include <crab/numbers/bignums.hpp>
+#include <crab/numbers/wrapint.hpp>
 #include <crab/support/os.hpp>
 
 /**
@@ -53,7 +53,7 @@ template <typename Number> class wrapped_interval {
 public:
   using bitwidth_t = wrapint::bitwidth_t;
 
-  wrapped_interval();  
+  wrapped_interval();
   wrapped_interval(wrapint n);
   wrapped_interval(wrapint start, wrapint stop);
 
@@ -72,7 +72,7 @@ public:
   // return interval [1111...1, 0000....0]
   // In the APLAS'12 paper "unsigned limit" corresponds to "south pole".
   static wrapped_interval_t unsigned_limit(bitwidth_t b);
-  
+
   bool cross_signed_limit() const;
   bool cross_unsigned_limit() const;
 
@@ -107,14 +107,14 @@ public:
   wrapped_interval_t operator||(const wrapped_interval_t &x) const;
   wrapped_interval_t widening_thresholds(const wrapped_interval_t &x,
                                          const thresholds<Number> &ts) const;
-  wrapped_interval_t operator&&(const wrapped_interval_t &x) const; 
+  wrapped_interval_t operator&&(const wrapped_interval_t &x) const;
 
   wrapped_interval_t operator+(const wrapped_interval_t &x) const;
   wrapped_interval_t &operator+=(const wrapped_interval_t &x);
   wrapped_interval_t operator-() const;
-  wrapped_interval_t operator-(const wrapped_interval_t &x) const; 
+  wrapped_interval_t operator-(const wrapped_interval_t &x) const;
   wrapped_interval_t &operator-=(const wrapped_interval_t &x);
-  wrapped_interval_t operator*(const wrapped_interval_t &x) const; 
+  wrapped_interval_t operator*(const wrapped_interval_t &x) const;
   wrapped_interval_t &operator*=(const wrapped_interval_t &x);
   wrapped_interval_t operator/(const wrapped_interval_t &x) const {
     return SDiv(x);
@@ -123,13 +123,13 @@ public:
     return this->operator=(this->operator/(x));
   }
 
-  wrapped_interval_t SDiv(const wrapped_interval_t &x) const; 
-  wrapped_interval_t UDiv(const wrapped_interval_t &x) const; 
+  wrapped_interval_t SDiv(const wrapped_interval_t &x) const;
+  wrapped_interval_t UDiv(const wrapped_interval_t &x) const;
   wrapped_interval_t SRem(const wrapped_interval_t &x) const;
   wrapped_interval_t URem(const wrapped_interval_t &x) const;
 
   wrapped_interval_t ZExt(unsigned bits_to_add) const;
-  wrapped_interval_t SExt(unsigned bits_to_add) const; 
+  wrapped_interval_t SExt(unsigned bits_to_add) const;
   wrapped_interval_t Trunc(unsigned bits_to_keep) const;
   wrapped_interval_t Shl(const wrapped_interval_t &x) const;
   wrapped_interval_t LShr(const wrapped_interval_t &x) const;
@@ -140,7 +140,7 @@ public:
 
   void write(crab::crab_os &o) const;
   friend crab::crab_os &operator<<(crab::crab_os &o,
-				   const wrapped_interval<Number> &i) {
+                                   const wrapped_interval<Number> &i) {
     i.write(o);
     return o;
   }
@@ -161,28 +161,31 @@ mk_interval(ikos::q_number c, typename crab::wrapint::bitwidth_t w);
 template <>
 crab::domains::wrapped_interval<ikos::z_number>
 trim_interval(const crab::domains::wrapped_interval<ikos::z_number> &i,
-	      const crab::domains::wrapped_interval<ikos::z_number> &j);
+              const crab::domains::wrapped_interval<ikos::z_number> &j);
 
 template <>
 crab::domains::wrapped_interval<ikos::q_number>
 trim_interval(const crab::domains::wrapped_interval<ikos::q_number> &i,
-	      const crab::domains::wrapped_interval<ikos::q_number> &j);
+              const crab::domains::wrapped_interval<ikos::q_number> &j);
 
 template <>
 crab::domains::wrapped_interval<ikos::z_number>
-lower_half_line(const crab::domains::wrapped_interval<ikos::z_number> &i, bool is_signed);
-  
+lower_half_line(const crab::domains::wrapped_interval<ikos::z_number> &i,
+                bool is_signed);
+
 template <>
 crab::domains::wrapped_interval<ikos::q_number>
-lower_half_line(const crab::domains::wrapped_interval<ikos::q_number> &i, bool is_signed);
+lower_half_line(const crab::domains::wrapped_interval<ikos::q_number> &i,
+                bool is_signed);
 
 template <>
 crab::domains::wrapped_interval<ikos::z_number>
-upper_half_line(const crab::domains::wrapped_interval<ikos::z_number> &i, bool is_signed);
+upper_half_line(const crab::domains::wrapped_interval<ikos::z_number> &i,
+                bool is_signed);
 
 template <>
 crab::domains::wrapped_interval<ikos::q_number>
-upper_half_line(const crab::domains::wrapped_interval<ikos::q_number> &i, bool is_signed);
+upper_half_line(const crab::domains::wrapped_interval<ikos::q_number> &i,
+                bool is_signed);
 } // namespace linear_interval_solver_impl
 } // end namespace ikos
-

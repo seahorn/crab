@@ -275,7 +275,6 @@ inline interval<Number> operator-(const interval<Number> &x, Number c) {
   return x - interval<Number>(c);
 }
 
-
 namespace bounds_impl {
 void convert_bounds(bound<z_number> b1, bound<z_number> &b2);
 void convert_bounds(bound<q_number> b1, bound<q_number> &b2);

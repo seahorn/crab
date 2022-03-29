@@ -33,9 +33,9 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_or_constant_t;
+  using typename abstract_domain_t::variable_or_constant_vector_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  using typename abstract_domain_t::variable_or_constant_vector_t;    
   using sign_t = sign<Number>;
   using number_t = Number;
   using varname_t = VariableName;
@@ -51,74 +51,78 @@ private:
   void solve_constraints(const linear_constraint_system_t &csts) {
 
     // Solve < and > constraints
-    auto solve_strict_inequality = [this](const variable_t &v, sign_t rhs, bool is_less_than) {
+    auto solve_strict_inequality = [this](const variable_t &v, sign_t rhs,
+                                          bool is_less_than) {
       sign_t lhs = m_env.at(v);
-	  CRAB_LOG("sign-domain",
-		   crab::outs() << v << "=" << lhs;
-		   if (is_less_than) {
-		     crab::outs() << " < ";
-		   } else {
-		     crab::outs() << " > ";
-		   }
-		   crab::outs() << rhs << "\n";);
-	  
-	  if (rhs.equal_zero()) {
-	    m_env.set(v, m_env.at(v) & (is_less_than ?
-				     sign_t::mk_less_than_zero():
-				     sign_t::mk_greater_than_zero()));
-	    CRAB_LOG("sign-domain",
-		     crab::outs() << "\t" << "Refined " << v  << "=" << m_env.at(v) << "\n";);
-	    if (is_bottom()) return;	    
-	  } else {
-	    if (!is_less_than) {
-	      std::swap(lhs, rhs);
-	    }
-	    if ((lhs.greater_than_zero() || lhs.greater_or_equal_than_zero()) &&
-		(rhs.less_than_zero() || rhs.less_or_equal_than_zero())) {
-	      set_to_bottom();
-	      CRAB_LOG("sign-domain",
-		       crab::outs() << "\t" << "Refined _|_\n";);
-	      return;
-	    }
-	  }};
+      CRAB_LOG(
+          "sign-domain", crab::outs() << v << "=" << lhs; if (is_less_than) {
+            crab::outs() << " < ";
+          } else { crab::outs() << " > "; } crab::outs() << rhs
+                                                         << "\n";);
+
+      if (rhs.equal_zero()) {
+        m_env.set(v, m_env.at(v) &
+                         (is_less_than ? sign_t::mk_less_than_zero()
+                                       : sign_t::mk_greater_than_zero()));
+        CRAB_LOG("sign-domain", crab::outs() << "\t"
+                                             << "Refined " << v << "="
+                                             << m_env.at(v) << "\n";);
+        if (is_bottom())
+          return;
+      } else {
+        if (!is_less_than) {
+          std::swap(lhs, rhs);
+        }
+        if ((lhs.greater_than_zero() || lhs.greater_or_equal_than_zero()) &&
+            (rhs.less_than_zero() || rhs.less_or_equal_than_zero())) {
+          set_to_bottom();
+          CRAB_LOG("sign-domain", crab::outs() << "\t"
+                                               << "Refined _|_\n";);
+          return;
+        }
+      }
+    };
 
     // Solve <= and >= constraints
-    auto solve_inequality = [this](const variable_t &v, sign_t rhs, bool is_less_equal) {
+    auto solve_inequality = [this](const variable_t &v, sign_t rhs,
+                                   bool is_less_equal) {
       sign_t lhs = m_env.at(v);
-	  CRAB_LOG("sign-domain",
-		   crab::outs() << v << "=" << lhs;
-		   if (is_less_equal) {
-		     crab::outs() << " <= ";
-		   } else {
-		     crab::outs() << " >= ";		     
-		   }
-		   crab::outs() << rhs << "\n";);
-	  
-	  if (rhs.equal_zero()) {
-	    m_env.set(v, m_env.at(v) & (is_less_equal ?
-				     sign_t::mk_less_or_equal_than_zero():
-				     sign_t::mk_greater_or_equal_than_zero()));
-	    CRAB_LOG("sign-domain",
-		     crab::outs() << "\t" << "Refined " << v  << "=" << m_env.at(v) << "\n";);
-	    if (is_bottom()) return;
-	  } else {
-	    if (!is_less_equal) {
-	      std::swap(lhs, rhs);
-	    }
-	    if (lhs.greater_or_equal_than_zero() && rhs.less_than_zero()) {
-	      set_to_bottom();
-	      CRAB_LOG("sign-domain",
-		       crab::outs() << "\t" << "Refined _|_\n";);	      
-	      return;
-	    }
-	    if (lhs.greater_than_zero() && (rhs.less_than_zero() || rhs.less_or_equal_than_zero())) {
-	      set_to_bottom();
-	      CRAB_LOG("sign-domain",
-		       crab::outs() << "\t" << "Refined _|_\n";);
-	      return;
-	    }
-	  }};
-    
+      CRAB_LOG(
+          "sign-domain", crab::outs() << v << "=" << lhs; if (is_less_equal) {
+            crab::outs() << " <= ";
+          } else { crab::outs() << " >= "; } crab::outs() << rhs
+                                                          << "\n";);
+
+      if (rhs.equal_zero()) {
+        m_env.set(v, m_env.at(v) &
+                         (is_less_equal
+                              ? sign_t::mk_less_or_equal_than_zero()
+                              : sign_t::mk_greater_or_equal_than_zero()));
+        CRAB_LOG("sign-domain", crab::outs() << "\t"
+                                             << "Refined " << v << "="
+                                             << m_env.at(v) << "\n";);
+        if (is_bottom())
+          return;
+      } else {
+        if (!is_less_equal) {
+          std::swap(lhs, rhs);
+        }
+        if (lhs.greater_or_equal_than_zero() && rhs.less_than_zero()) {
+          set_to_bottom();
+          CRAB_LOG("sign-domain", crab::outs() << "\t"
+                                               << "Refined _|_\n";);
+          return;
+        }
+        if (lhs.greater_than_zero() &&
+            (rhs.less_than_zero() || rhs.less_or_equal_than_zero())) {
+          set_to_bottom();
+          CRAB_LOG("sign-domain", crab::outs() << "\t"
+                                               << "Refined _|_\n";);
+          return;
+        }
+      }
+    };
+
     if (!is_bottom()) {
       for (auto const &c : csts) {
         if (c.is_inequality() && c.is_unsigned()) {
@@ -132,101 +136,107 @@ private:
           return;
         }
 
-	std::vector<std::pair<variable_t, sign_t>> less_than, less_equal;
-	std::vector<std::pair<variable_t, sign_t>> greater_than, greater_equal;
-	std::vector<std::pair<variable_t, sign_t>> equal, not_equal;
-	
-        extract_sign_constraints(c, less_than, less_equal,
-				 greater_than, greater_equal, equal, not_equal);
+        std::vector<std::pair<variable_t, sign_t>> less_than, less_equal;
+        std::vector<std::pair<variable_t, sign_t>> greater_than, greater_equal;
+        std::vector<std::pair<variable_t, sign_t>> equal, not_equal;
 
-	CRAB_LOG("sign-domain",
-		 crab::outs() << "Adding " << c << "\n";);
+        extract_sign_constraints(c, less_than, less_equal, greater_than,
+                                 greater_equal, equal, not_equal);
 
-	for (auto kv: less_than) {
-	  solve_strict_inequality(kv.first, kv.second, true /*less_than*/);
-	}
-	for (auto kv: greater_than) {
-	  solve_strict_inequality(kv.first, kv.second, false /*greater_than*/);
-	}
+        CRAB_LOG("sign-domain", crab::outs() << "Adding " << c << "\n";);
 
-	for (auto kv: less_equal) {
-	  solve_inequality(kv.first, kv.second, true /*less_equal_than*/);	  
-	}
+        for (auto kv : less_than) {
+          solve_strict_inequality(kv.first, kv.second, true /*less_than*/);
+        }
+        for (auto kv : greater_than) {
+          solve_strict_inequality(kv.first, kv.second, false /*greater_than*/);
+        }
 
-	for (auto kv: greater_equal) {
-	  solve_inequality(kv.first, kv.second, false /*greater_equal_than*/);	  
-	}
-		
-	for (auto kv: equal) {
+        for (auto kv : less_equal) {
+          solve_inequality(kv.first, kv.second, true /*less_equal_than*/);
+        }
+
+        for (auto kv : greater_equal) {
+          solve_inequality(kv.first, kv.second, false /*greater_equal_than*/);
+        }
+
+        for (auto kv : equal) {
           sign_t lhs = m_env.at(kv.first);
           sign_t rhs = kv.second;
-	  CRAB_LOG("sign-domain",
-		   crab::outs() << kv.first << "=" << lhs << " == " << rhs << "\n";);
-	  m_env.set(kv.first, m_env.at(kv.first) & rhs);
-	  CRAB_LOG("sign-domain",
-		   crab::outs() << "\t" << "Refined " << kv.first  << "=" << m_env.at(kv.first) << "\n";);
-	  if (is_bottom()) return;	  
-	}
+          CRAB_LOG("sign-domain", crab::outs() << kv.first << "=" << lhs
+                                               << " == " << rhs << "\n";);
+          m_env.set(kv.first, m_env.at(kv.first) & rhs);
+          CRAB_LOG("sign-domain", crab::outs() << "\t"
+                                               << "Refined " << kv.first << "="
+                                               << m_env.at(kv.first) << "\n";);
+          if (is_bottom())
+            return;
+        }
 
-	for (auto kv: not_equal) {
+        for (auto kv : not_equal) {
           sign_t lhs = m_env.at(kv.first);
           sign_t rhs = kv.second;
-	  CRAB_LOG("sign-domain",
-		   crab::outs() << kv.first << "=" << lhs << " != " << rhs << "\n";);
-	  if (rhs.equal_zero()) {
-	    m_env.set(kv.first,
-		      m_env.at(kv.first) & sign_t::mk_not_equal_zero());
-	    CRAB_LOG("sign-domain",
-		     crab::outs() << "\t" << "Refined " << kv.first  << "="
-		     << m_env.at(kv.first) << "\n";);
-	    if (is_bottom()) return;	    
-	  } else if (rhs.not_equal_zero()) {
-	    m_env.set(kv.first, m_env.at(kv.first) & sign_t::mk_equal_zero());
-	    CRAB_LOG("sign-domain",
-		     crab::outs() << "\t" << "Refined " << kv.first  << "="
-		     << m_env.at(kv.first) << "\n";);
-	    if (is_bottom()) return;	    
-	  }
-	}
+          CRAB_LOG("sign-domain", crab::outs() << kv.first << "=" << lhs
+                                               << " != " << rhs << "\n";);
+          if (rhs.equal_zero()) {
+            m_env.set(kv.first,
+                      m_env.at(kv.first) & sign_t::mk_not_equal_zero());
+            CRAB_LOG("sign-domain", crab::outs()
+                                        << "\t"
+                                        << "Refined " << kv.first << "="
+                                        << m_env.at(kv.first) << "\n";);
+            if (is_bottom())
+              return;
+          } else if (rhs.not_equal_zero()) {
+            m_env.set(kv.first, m_env.at(kv.first) & sign_t::mk_equal_zero());
+            CRAB_LOG("sign-domain", crab::outs()
+                                        << "\t"
+                                        << "Refined " << kv.first << "="
+                                        << m_env.at(kv.first) << "\n";);
+            if (is_bottom())
+              return;
+          }
+        }
       }
     }
   }
 
-  // Extract constraints of the form v OP sign where OP = {<, <=, >, >=, ==, != }
-  void
-  extract_sign_constraints(const linear_constraint_t &c,
-			   std::vector<std::pair<variable_t, sign_t>> &less_than,
-                           std::vector<std::pair<variable_t, sign_t>> &less_equal,
-			   std::vector<std::pair<variable_t, sign_t>> &greater_than,
-                           std::vector<std::pair<variable_t, sign_t>> &greater_equal,
-			   std::vector<std::pair<variable_t, sign_t>> &equal,
-			   std::vector<std::pair<variable_t, sign_t>> &not_equal) {
+  // Extract constraints of the form v OP sign where OP = {<, <=, >, >=, ==, !=
+  // }
+  void extract_sign_constraints(
+      const linear_constraint_t &c,
+      std::vector<std::pair<variable_t, sign_t>> &less_than,
+      std::vector<std::pair<variable_t, sign_t>> &less_equal,
+      std::vector<std::pair<variable_t, sign_t>> &greater_than,
+      std::vector<std::pair<variable_t, sign_t>> &greater_equal,
+      std::vector<std::pair<variable_t, sign_t>> &equal,
+      std::vector<std::pair<variable_t, sign_t>> &not_equal) {
     auto e = c.expression();
     for (auto kv : e) {
       variable_t pivot = kv.second;
       sign_t res = compute_residual(e, pivot) / sign_t(kv.first);
       if (res.is_bottom()) {
-	// this shouldn't happen
-	continue;
+        // this shouldn't happen
+        continue;
       }
       if (!res.is_top()) {
-	if (c.is_strict_inequality()) {
-	  if (kv.first < number_t(0)) {
-	    greater_than.push_back({pivot,res});
-	  } else {
-	    less_than.push_back({pivot,res});
-	  } 
-	} else if (c.is_inequality()) {
-	  if (kv.first < number_t(0)) {
-	    greater_equal.push_back({pivot,res});
-	  } else {
-	    less_equal.push_back({pivot,res});
-	  } 
-	} else if (c.is_equality()) {
-	  equal.push_back({pivot,res});	  	  
-	} else if (c.is_disequation()) {
-	  not_equal.push_back({pivot,res});	  
-	}
+        if (c.is_strict_inequality()) {
+          if (kv.first < number_t(0)) {
+            greater_than.push_back({pivot, res});
+          } else {
+            less_than.push_back({pivot, res});
+          }
+        } else if (c.is_inequality()) {
+          if (kv.first < number_t(0)) {
+            greater_equal.push_back({pivot, res});
+          } else {
+            less_equal.push_back({pivot, res});
+          }
+        } else if (c.is_equality()) {
+          equal.push_back({pivot, res});
+        } else if (c.is_disequation()) {
+          not_equal.push_back({pivot, res});
+        }
       }
     }
   }
@@ -245,7 +255,7 @@ private:
   sign_t eval_expr(const linear_expression_t &expr) const {
     if (is_bottom())
       return sign_t::bottom();
-    
+
     sign_t r(expr.constant());
     for (auto kv : expr) {
       sign_t c(kv.first);
@@ -273,14 +283,10 @@ public:
     std::swap(*this, abs);
   }
 
-  sign_t get_sign(const variable_t &v) const {
-    return m_env.at(v);
-  }
+  sign_t get_sign(const variable_t &v) const { return m_env.at(v); }
 
-  void set_sign(const variable_t &v, sign_t s) {
-    m_env.set(v, s);
-  }
-  
+  void set_sign(const variable_t &v, sign_t s) { m_env.set(v, s); }
+
   sign_domain() : m_env(separate_domain_t::top()) {}
 
   sign_domain(const sign_domain_t &e) : m_env(e.m_env) {
@@ -343,9 +349,9 @@ public:
     return (m_env | o.m_env);
   }
 
-  sign_domain_t widening_thresholds(
-      const sign_domain_t &o,
-      const thresholds<number_t> &ts) const override {
+  sign_domain_t
+  widening_thresholds(const sign_domain_t &o,
+                      const thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
     return (m_env | o.m_env);
@@ -363,9 +369,7 @@ public:
     m_env -= v;
   }
 
-  interval_t operator[](const variable_t &v) override {
-    return at(v);
-  }
+  interval_t operator[](const variable_t &v) override { return at(v); }
 
   interval_t at(const variable_t &v) const override {
     return m_env.at(v).to_interval();
@@ -380,15 +384,13 @@ public:
   void assign(const variable_t &x, const linear_expression_t &e) override {
     crab::CrabStats::count(domain_name() + ".count.assign");
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
-    CRAB_LOG("sign-domain",
-	     crab::outs() << x << " := " << e << "\n";);
+    CRAB_LOG("sign-domain", crab::outs() << x << " := " << e << "\n";);
     if (boost::optional<variable_t> v = e.get_variable()) {
       m_env.set(x, m_env.at(*v));
     } else {
       m_env.set(x, eval_expr(e));
     }
-    CRAB_LOG("sign-domain",
-	     crab::outs() << "RES=" << m_env.at(x) << "\n";);
+    CRAB_LOG("sign-domain", crab::outs() << "RES=" << m_env.at(x) << "\n";);
   }
 
   void apply(crab::domains::arith_operation_t op, const variable_t &x,
@@ -466,14 +468,13 @@ public:
   }
 
   // intrinsics operations
-  void intrinsic(std::string name,
-		 const variable_or_constant_vector_t &inputs,
+  void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
   void backward_intrinsic(std::string name,
-			  const variable_or_constant_vector_t &inputs,
+                          const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const sign_domain_t &invariant) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
