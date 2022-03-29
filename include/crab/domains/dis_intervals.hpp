@@ -988,7 +988,8 @@ namespace linear_interval_solver_impl {
 
 using dis_z_interval_t = crab::domains::dis_interval<z_number>;
 using dis_q_interval_t = crab::domains::dis_interval<q_number>;
-
+using z_interval_t = ikos::interval<z_number>;
+  
 template <>
 inline dis_z_interval_t trim_interval(const dis_z_interval_t &x, const dis_z_interval_t &y) {
   if (x.is_bottom())
@@ -1001,22 +1002,22 @@ inline dis_z_interval_t trim_interval(const dis_z_interval_t &x, const dis_z_int
 
   dis_z_interval_t res = dis_z_interval_t::bottom();
   if (x.is_top()) {
-    res = res | dis_z_interval_t(z_interval(c - 1).lower_half_line());
-    res = res | dis_z_interval_t(z_interval(c + 1).upper_half_line());
+    res = res | dis_z_interval_t(z_interval_t(c - 1).lower_half_line());
+    res = res | dis_z_interval_t(z_interval_t(c + 1).upper_half_line());
   } else {
     for (auto i : boost::make_iterator_range(x.begin(), x.end())) {
-      if (!(z_interval(c) <= i)) {
+      if (!(z_interval_t(c) <= i)) {
         res = res | i;
         continue;
       }
 
       if (i.lb() == c) {
-        res = res | dis_z_interval_t(z_interval(c + 1, i.ub()));
+        res = res | dis_z_interval_t(z_interval_t(c + 1, i.ub()));
       } else if (i.ub() == c) {
-        res = res | dis_z_interval_t(z_interval(i.lb(), c - 1));
+        res = res | dis_z_interval_t(z_interval_t(i.lb(), c - 1));
       } else {
-        res = res | dis_z_interval_t(z_interval(i.lb(), c - 1));
-        res = res | dis_z_interval_t(z_interval(c + 1, i.ub()));
+        res = res | dis_z_interval_t(z_interval_t(i.lb(), c - 1));
+        res = res | dis_z_interval_t(z_interval_t(c + 1, i.ub()));
       }
     }
   }

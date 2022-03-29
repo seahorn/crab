@@ -124,33 +124,34 @@ int main(int argc, char **argv) {
   }
   // Simple operations on thresholds
   crab::thresholds<ikos::z_number> thresholds;
-  thresholds.add(z_bound(-89));
-  thresholds.add(z_bound(1000));
-  thresholds.add(z_bound(100));
-  thresholds.add(z_bound(-999));
-  thresholds.add(z_bound(5));
-  thresholds.add(z_bound(10));
-  thresholds.add(z_bound(-10));
+  using z_bound_t = ikos::bound<ikos::z_number>;
+  thresholds.add(z_bound_t(-89));
+  thresholds.add(z_bound_t(1000));
+  thresholds.add(z_bound_t(100));
+  thresholds.add(z_bound_t(-999));
+  thresholds.add(z_bound_t(5));
+  thresholds.add(z_bound_t(10));
+  thresholds.add(z_bound_t(-10));
 
   crab::outs() << "Thresholds= " << thresholds << "\n";
 
-  auto t1 = thresholds.get_next(z_bound(3));
+  auto t1 = thresholds.get_next(z_bound_t(3));
   crab::outs() << "next threshold for 3:" << t1 << "\n";
-  auto t2 = thresholds.get_next(z_bound(8));
+  auto t2 = thresholds.get_next(z_bound_t(8));
   crab::outs() << "next threshold for 8: " << t2 << "\n";
-  auto t3 = thresholds.get_next(z_bound(100));
+  auto t3 = thresholds.get_next(z_bound_t(100));
   crab::outs() << "next threshold for 100: " << t3 << "\n";
-  auto t4 = thresholds.get_next(z_bound(500));
+  auto t4 = thresholds.get_next(z_bound_t(500));
   crab::outs() << "next threshold for 500: " << t4 << "\n";
-  auto t5 = thresholds.get_next(z_bound(10000));
+  auto t5 = thresholds.get_next(z_bound_t(10000));
   crab::outs() << "next threshold for 10000: " << t5 << "\n";
-  auto t6 = thresholds.get_next(z_bound(-4));
+  auto t6 = thresholds.get_next(z_bound_t(-4));
   crab::outs() << "next threshold for -4: " << t6 << "\n";
-  auto t7 = thresholds.get_prev(z_bound(-4));
+  auto t7 = thresholds.get_prev(z_bound_t(-4));
   crab::outs() << "prev threshold for -4:" << t7 << "\n";
-  auto t8 = thresholds.get_prev(z_bound(-78));
+  auto t8 = thresholds.get_prev(z_bound_t(-78));
   crab::outs() << "prev threshold for -78:" << t8 << "\n";
-  auto t9 = thresholds.get_prev(z_bound(-10000));
+  auto t9 = thresholds.get_prev(z_bound_t(-10000));
   crab::outs() << "prev threshold for -10000:" << t9 << "\n";
 
   { // Example where widening with thresholds is better than narrowing

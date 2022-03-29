@@ -27,7 +27,7 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
-#include <crab/domains/constant_domain.hpp>
+#include <crab/domains/constant.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>

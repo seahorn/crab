@@ -45,7 +45,7 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
-#include <crab/domains/interval.hpp>
+#include <crab/domains/congruence.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -55,664 +55,9 @@
 
 namespace ikos {
 
-template <typename Number> class congruence {
-  using interval_t = interval<Number>;
-
-public:
-  using congruence_t = congruence<Number>;
-
-private:
-  bool _is_bottom;
-
-  /// A congruence is denoted by aZ + b, where b \in Z and a \in N.
-  /// The abstract state aZ + b represents all numbers that are
-  /// congruent to b modulo a.
-  Number _a; // modulo
-  Number _b; // remainder
-
-  // Notes about the % operator
-  //
-  // The semantics of r = n % d is to set r to "n mod d". The sign of
-  // the d is ignored and r is always non-negative.
-  //
-  // We assume that n % d (also n /d) raises a runtime error if d==0.
-
-  void normalize(void) {
-    // Set to standard form: 0 <= b < a for a != 0
-    if (_a != 0) {
-      _b = _b % _a;
-    }
-  }
-
-  // if true then top (1Z + 0) else bottom
-  congruence(bool b) : _is_bottom(!b), _a(1), _b(0) {}
-
-  congruence(int n) : _is_bottom(false), _a(0), _b(n) {}
-
-  congruence(Number a, Number b) : _is_bottom(false), _a(a), _b(b) {
-    normalize();
-  }
-
-  Number abs(Number x) const { return x < 0 ? -x : x; }
-
-  Number max(Number x, Number y) const { return x.operator<=(y) ? y : x; }
-
-  Number min(Number x, Number y) const { return x.operator<(y) ? x : y; }
-
-  Number gcd(Number x, Number y, Number z) const { return gcd(x, gcd(y, z)); }
-  // Not to be called explicitly outside of gcd
-  Number gcd_helper(Number x, Number y) const {
-    return (y == 0) ? x : gcd_helper(y, x % y);
-  }
-  Number gcd(Number x, Number y) const { return gcd_helper(abs(x), abs(y)); }
-
-  Number lcm(Number x, Number y) const {
-    Number tmp = gcd(x, y);
-    return abs(x * y) / tmp;
-  }
-
-  bool is_zero() const { return !is_bottom() && _a == 0 && _b == 0; }
-
-  bool all_ones() const { return !is_bottom() && _a == 0 && _b == -1; }
-
-  interval_t to_interval() const {
-    assert(singleton());
-    return interval_t(*(singleton()));
-  }
-
-public:
-  static congruence_t top() { return congruence(true); }
-
-  static congruence_t bottom() { return congruence(false); }
-
-  congruence() : _is_bottom(false), _a(1), _b(0) {}
-
-  congruence(Number n) : _is_bottom(false), _a(0), _b(n) {}
-
-  congruence(const congruence_t &o)
-      : _is_bottom(o._is_bottom), _a(o._a), _b(o._b) {}
-
-  congruence_t operator=(congruence_t o) {
-    _is_bottom = o._is_bottom;
-    _a = o._a;
-    _b = o._b;
-    return *this;
-  }
-
-  bool is_bottom() const { return _is_bottom; }
-
-  bool is_top() const { return _a == 1; }
-
-  boost::optional<Number> singleton() const {
-    if (!this->is_bottom() && _a == 0) {
-      return boost::optional<Number>(_b);
-    } else {
-      return boost::optional<Number>();
-    }
-  }
-
-  Number get_modulo() const { return _a; }
-
-  Number get_remainder() const { return _b; }
-
-  bool operator==(const congruence_t &o) const {
-    return (is_bottom() == o.is_bottom() && _a == o._a && _b == o._b);
-  }
-
-  bool operator!=(const congruence_t &x) const { return !this->operator==(x); }
-
-  /** Lattice Operations **/
-
-  bool operator<=(const congruence_t &o) const {
-    if (is_bottom()) {
-      return true;
-    } else if (o.is_bottom()) {
-      return false;
-    } else if (_a == 0 && o._a == 0) {
-      return (_b == o._b);
-    } else if (_a == 0) {
-      if ((_b % o._a) == (o._b % o._a)) {
-        return true;
-      }
-    } else if (o._a == 0) {
-      if (_b % _a == (o._b % _a)) {
-        return false;
-      }
-    }
-    return (_a % o._a == 0) && (_b % o._a == o._b % o._a);
-  }
-
-  congruence_t operator|(const congruence_t &o) const {
-    if (is_bottom()) {
-      return o;
-    } else if (o.is_bottom()) {
-      return *this;
-    } else if (is_top() || o.is_top()) {
-      return top();
-    } else {
-      return congruence_t(gcd(_a, o._a, abs(_b - o._b)), min(_b, o._b));
-    }
-  }
-
-  congruence_t operator&(const congruence_t &o) const {
-    if (is_bottom() || o.is_bottom()) {
-      return bottom();
-    }
-
-    // lcm has meaning only if both a and o.a are not 0
-    if (_a == 0 && o._a == 0) {
-      if (_b == o._b) {
-        return *this;
-      } else {
-        return bottom();
-      }
-    } else if (_a == 0) {
-      // b & a'Z + b' iff \exists k such that a'*k + b' = b iff ((b - b') %a' ==
-      // 0)
-      if ((_b - o._b) % o._a == 0) {
-        return *this;
-      } else {
-        return bottom();
-      }
-    } else if (o._a == 0) {
-      // aZ+b & b' iff \exists k such that a*k+b  = b' iff ((b'-b %a) == 0)
-      if ((o._b - _b) % _a == 0) {
-        return o;
-      } else {
-        return bottom();
-      }
-    } else {
-      // pre: a and o.a != 0
-      Number x = gcd(_a, o._a);
-      if (_b % x == (o._b % x)) {
-        // the part max(b,o.b) needs to be verified. What we really
-        // want is to find b'' such that
-        // 1) b'' % lcm(a,a') == b  % lcm(a,a'), and
-        // 2) b'' % lcm(a,a') == b' % lcm(a,a').
-        // An algorithm for that is provided in Granger'89.
-        return congruence_t(lcm(_a, o._a), max(_b, o._b));
-      } else {
-        return congruence_t::bottom();
-      }
-    }
-  }
-
-  congruence_t operator||(const congruence_t &o) const {
-    // Equivalent to join, domain is flat
-    return *this | o;
-  }
-
-  congruence_t operator&&(const congruence_t &o) const {
-    // Simply refines top element
-    return (is_top()) ? o : *this;
-  }
-
-  /** Arithmetic Operators **/
-
-  congruence_t operator+(const congruence_t &o) const {
-    if (this->is_bottom() || o.is_bottom())
-      return congruence_t::bottom();
-    else if (this->is_top() || o.is_top())
-      return congruence_t::top();
-    else
-      return congruence_t(gcd(_a, o._a), _b + o._b);
-  }
-
-  congruence_t operator-(const congruence_t &o) const {
-    if (this->is_bottom() || o.is_bottom())
-      return congruence_t::bottom();
-    else if (this->is_top() || o.is_top())
-      return congruence_t::top();
-    else
-      return congruence_t(gcd(_a, o._a), _b - o._b);
-  }
-
-  congruence_t operator-() const {
-    if (this->is_bottom() || this->is_top())
-      return *this;
-    else
-      return congruence_t(_a, -_b + _a);
-  }
-
-  congruence_t operator*(const congruence_t &o) const {
-    if (this->is_bottom() || o.is_bottom())
-      return congruence_t::bottom();
-    else if ((this->is_top() || o.is_top()) && _a != 0 && o._a != 0)
-      return congruence_t::top();
-    else
-      return congruence_t(gcd(_a * o._a, _a * o._b, o._a * _b), _b * o._b);
-  }
-
-  // signed division
-  congruence_t operator/(const congruence_t &o) const {
-    if (this->is_bottom() || o.is_bottom())
-      return congruence_t::bottom();
-    else if (o == congruence(0))
-      return congruence_t::bottom();
-    else if (this->is_top() || o.is_top())
-      return congruence_t::top();
-    else {
-
-      /*
-         aZ+b / 0Z+b':
-            if b'|a then  (a/b')Z + b/b'
-            else          top
-      */
-      if (o._a == 0) {
-        if (_a % o._b == 0)
-          return congruence_t(_a / o._b, _b / o._b);
-        else
-          return congruence_t::top();
-      }
-
-      /*
-         0Z+b / a'Z+b':
-            if N>0   (b div N)Z + 0
-            else     0Z + 0
-
-           where N = a'((b-b') div a') + b'
-      */
-      if (_a == 0) {
-        Number n(o._a * (((_b - o._b) / o._a) + o._b));
-        if (n > 0) {
-          return congruence_t(_b / n, 0);
-        } else {
-          return congruence_t(0, 0);
-        }
-      }
-
-      /*
-        General case: no singleton
-      */
-      return congruence_t::top();
-    }
-  }
-
-  // signed remainder operator
-  congruence_t operator%(const congruence_t &o) const {
-    if (this->is_bottom() || o.is_bottom())
-      return congruence_t::bottom();
-    else if (o == congruence(0))
-      return congruence_t::bottom();
-    else if (this->is_top() || o.is_top())
-      return congruence_t::top();
-    else {
-      /*
-         aZ+b mod 0Z+b':
-             if b'|a then  (a/b')Z + b/b'
-             else          top
-      */
-      if (o._a == 0) {
-        if (_a % o._b == 0) {
-          return congruence_t(0, _b % o._b);
-        } else {
-          return congruence_t(gcd(_a, o._b), _b);
-        }
-      }
-
-      /*
-          0Z+b mod a'Z+b':
-           if N<=0           then 0Z+b
-           if (b div N) == 1 then gcd(b',a')Z + b
-           if (b div N) >= 2 then N(b div N)Z  + b
-
-         where N = a'((b-b') div a') + b'
-      */
-      if (_a == 0) {
-        Number n(o._a * (((_b - o._b) / o._a) + o._b));
-        if (n <= 0) {
-          return congruence_t(_a, _b);
-        } else if (_b == n) {
-          return congruence_t(gcd(o._b, o._a), _b);
-        } else if ((_b / n) >= 2) {
-          return congruence_t(_b, _b);
-        } else {
-          CRAB_ERROR("unreachable");
-        }
-      }
-
-      /*
-          general case: no singleton
-      */
-      return congruence_t(gcd(_a, o._a, o._b), _b);
-    }
-  }
-
-  /**
-      Bitwise operators.
-      They are very imprecise because we ignore bitwidth.
-
-      Bitwise operation can be implemented more precisely based on
-      Stefan Bygde's paper: Static WCET analysis based on abstract
-      interpretation and counting of elements, Vasteras : School of
-      Innovation, Design and Engineering, Malardalen University (2010).
-   **/
-
-  congruence_t And(const congruence_t &o) const {
-    if (this->is_bottom() || o.is_bottom())
-      return congruence_t::bottom();
-    else if (this->is_top() || o.is_top())
-      return congruence_t::top();
-    else {
-      if (is_zero() || o.is_zero()) {
-        return congruence_t(0);
-      } else if (all_ones()) {
-        return o;
-      } else if (o.all_ones()) {
-        return *this;
-      } else if (_a == 0 && o._a == 0) {
-        return congruence_t(_b & o._b);
-      } else {
-        return top();
-      }
-    }
-  }
-
-  congruence_t Or(const congruence_t &o) const {
-    if (this->is_bottom() || o.is_bottom())
-      return congruence_t::bottom();
-    else if (this->is_top() || o.is_top())
-      return congruence_t::top();
-    else {
-      if (all_ones() || o.all_ones()) {
-        return congruence_t(-1);
-      } else if (is_zero()) {
-        return o;
-      } else if (o.is_zero()) {
-        return *this;
-      } else if (_a == 0 && o._a == 0) {
-        return congruence_t(_b | o._b);
-      } else {
-        return top();
-      }
-    }
-  }
-
-  congruence_t Xor(const congruence_t &o) const {
-    if (this->is_bottom() || o.is_bottom())
-      return congruence_t::bottom();
-    else if (this->is_top() || o.is_top())
-      return congruence_t::top();
-    else {
-      if (is_zero()) {
-        return o;
-      } else if (o.is_zero()) {
-        return *this;
-      } else if (_a == 0 && o._a == 0) {
-        return congruence_t(_b ^ o._b);
-      } else {
-        return top();
-      }
-    }
-  }
-
-  congruence_t Shl(const congruence_t &o) const {
-    if (this->is_bottom() || o.is_bottom())
-      return congruence_t::bottom();
-    else if (this->is_top() || o.is_top())
-      return congruence_t::top();
-    else {
-
-      if (o._a == 0) { // singleton
-
-        if (o._b < 0) {
-          return bottom();
-        }
-
-        // aZ + b << 0Z + b'  = (a*2^b')Z + b*2^b'
-        Number x = Number(1) << o._b;
-        return congruence_t(_a * x, _b * x);
-      } else {
-
-        Number x = Number(1) << o._b;
-        Number y = Number(1) << o._a;
-        // aZ + b << a'Z + b' = (gcd(a, b * (2^a' - 1)))*(2^b')Z + b*(2^b')
-        return congruence_t(gcd(_a, _b * (y - 1)) * x, _b * x);
-      }
-    }
-  }
-
-  congruence_t AShr(const congruence_t &o) const {
-    if (this->is_bottom() || o.is_bottom())
-      return congruence_t::bottom();
-    else if (this->is_top() || o.is_top())
-      return congruence_t::top();
-    else {
-
-      if (o._a == 0) { // singleton
-        // aZ + b >> 0Z + b'
-        if (o._b < 0) {
-          return congruence_t::bottom();
-        }
-      }
-
-      if (singleton() && o.singleton()) {
-        interval_t res = to_interval().AShr(o.to_interval());
-        if (boost::optional<Number> n = res.singleton()) {
-          return congruence(*n);
-        }
-      }
-
-      return congruence_t::top();
-    }
-  }
-
-  congruence_t LShr(const congruence_t &o) const {
-    if (this->is_bottom() || o.is_bottom())
-      return congruence_t::bottom();
-    else if (this->is_top() || o.is_top())
-      return congruence_t::top();
-    else {
-
-      if (o._a == 0) {
-        // aZ + b >> 0Z + b'
-        if (o._b < 0) {
-          return congruence_t::bottom();
-        }
-      }
-
-      if (singleton() && o.singleton()) {
-        interval_t res = to_interval().LShr(o.to_interval());
-        if (boost::optional<Number> n = res.singleton()) {
-          return congruence(*n);
-        }
-      }
-
-      return congruence_t::top();
-    }
-  }
-
-  // division and remainder operations
-
-  congruence_t SDiv(const congruence_t &x) const { return this->operator/(x); }
-
-  congruence_t UDiv(const congruence_t &x) const { return congruence_t::top(); }
-
-  congruence_t SRem(const congruence_t &x) const { return this->operator%(x); }
-
-  congruence_t URem(const congruence_t &x) const { return congruence_t::top(); }
-
-  void write(crab::crab_os &o) const {
-    if (is_bottom()) {
-      o << "_|_";
-      return;
-    }
-
-    if (_a == 0) {
-      o << _b;
-      return;
-    }
-
-    o << _a << "Z+" << _b;
-  }
-}; // end class congruence
-
-template <typename Number>
-inline crab::crab_os &operator<<(crab::crab_os &o,
-                                 const congruence<Number> &c) {
-  c.write(o);
-  return o;
-}
-
-template <typename Number>
-inline congruence<Number> operator+(Number c, const congruence<Number> &x) {
-  return congruence<Number>(c) + x;
-}
-
-template <typename Number>
-inline congruence<Number> operator+(const congruence<Number> &x, Number c) {
-  return x + congruence<Number>(c);
-}
-
-template <typename Number>
-inline congruence<Number> operator*(Number c, const congruence<Number> &x) {
-  return congruence<Number>(c) * x;
-}
-
-template <typename Number>
-inline congruence<Number> operator*(const congruence<Number> &x, Number c) {
-  return x * congruence<Number>(c);
-}
-
-template <typename Number>
-inline congruence<Number> operator/(Number c, const congruence<Number> &x) {
-  return congruence<Number>(c) / x;
-}
-
-template <typename Number>
-inline congruence<Number> operator/(const congruence<Number> &x, Number c) {
-  return x / congruence<Number>(c);
-}
-
-template <typename Number>
-inline congruence<Number> operator-(Number c, const congruence<Number> &x) {
-  return congruence<Number>(c) - x;
-}
-
-template <typename Number>
-inline congruence<Number> operator-(const congruence<Number> &x, Number c) {
-  return x - congruence<Number>(c);
-}
-
 template <typename Number, typename VariableName, typename CongruenceCollection>
-class equality_congruence_solver {
-  // TODO: check correctness of the solver. Granger provides a sound
-  // and more precise solver for equality linear congruences (see
-  // Theorem 4.4).
-private:
-  using congruence_t = congruence<Number>;
-  using variable_t = crab::variable<Number, VariableName>;
-  using linear_expression_t = linear_expression<Number, VariableName>;
-  using linear_constraint_t = linear_constraint<Number, VariableName>;
-  using linear_constraint_system_t =
-      linear_constraint_system<Number, VariableName>;
-
-  using cst_table_t = std::vector<linear_constraint_t>;
-  using variable_set_t = std::set<variable_t>;
-
-  std::size_t m_max_cycles;
-  bool m_is_contradiction;
-  cst_table_t m_cst_table;
-  variable_set_t m_refined_variables;
-  std::size_t m_op_count;
-
-private:
-  bool refine(const variable_t &v, congruence_t i, CongruenceCollection &env) {
-    congruence_t old_i = env.at(v);
-    congruence_t new_i = old_i & i;
-    if (new_i.is_bottom()) {
-      return true;
-    }
-    if (old_i != new_i) {
-      env.set(v, new_i);
-      m_refined_variables.insert(v);
-      ++(m_op_count);
-    }
-    return false;
-  }
-
-  congruence_t compute_residual(const linear_constraint_t &cst,
-                                const variable_t &pivot,
-                                CongruenceCollection &env) {
-    congruence_t residual(cst.constant());
-    for (auto kv : cst) {
-      const variable_t &v = kv.second;
-      if (!(v == pivot)) {
-        residual = residual - (kv.first * env.at(v));
-        ++(m_op_count);
-      }
-    }
-    return residual;
-  }
-
-  bool propagate(const linear_constraint_t &cst, CongruenceCollection &env) {
-    for (auto kv : cst) {
-      Number c = kv.first;
-      const variable_t &pivot = kv.second;
-      congruence_t rhs = compute_residual(cst, pivot, env) / congruence_t(c);
-
-      if (cst.is_equality()) {
-        if (refine(pivot, rhs, env)) {
-          return true;
-        }
-      } else if (cst.is_inequality() || cst.is_strict_inequality()) {
-        // Inequations (>=, <=, >, and <) do not work well with
-        // congruences because for any number n there is always x and y
-        // \in gamma(aZ+b) such that n < x and n > y.
-        //
-        // The only cases we can catch is when all the expressions
-        // are constants. We do not bother because any product
-        // with intervals or constants should get those cases.
-        continue;
-      } else {
-        // TODO: cst is a disequation
-      }
-    }
-    return false;
-  }
-
-  bool solve_system(CongruenceCollection &env) {
-    std::size_t cycle = 0;
-    do {
-      ++cycle;
-      m_refined_variables.clear();
-      for (const linear_constraint_t &cst : m_cst_table) {
-        if (propagate(cst, env)) {
-          return true;
-        }
-      }
-    } while (m_refined_variables.size() > 0 && cycle <= m_max_cycles);
-    return false;
-  }
-
-public:
-  equality_congruence_solver(const linear_constraint_system_t &csts,
-                             std::size_t max_cycles)
-      : m_max_cycles(max_cycles), m_is_contradiction(false) {
-    for (auto const &cst : csts) {
-      if (cst.is_contradiction()) {
-        m_is_contradiction = true;
-        return;
-      } else if (cst.is_tautology()) {
-        continue;
-      } else {
-        m_cst_table.push_back(cst);
-      }
-    }
-  }
-
-  void run(CongruenceCollection &env) {
-    if (m_is_contradiction) {
-      env.set_to_bottom();
-    } else {
-      if (solve_system(env)) {
-        env.set_to_bottom();
-      }
-    }
-  }
-
-}; // class equality_congruence_solver
-
+class equality_congruence_solver;
+   
 template <typename Number, typename VariableName>
 class congruence_domain final : public crab::domains::abstract_domain_api<
                                     congruence_domain<Number, VariableName>> {
@@ -1199,6 +544,124 @@ public:
 
 }; // class congruence_domain
 
+template <typename Number, typename VariableName, typename CongruenceCollection>
+class equality_congruence_solver {
+  // TODO: check correctness of the solver. Granger provides a sound
+  // and more precise solver for equality linear congruences (see
+  // Theorem 4.4).
+private:
+  using congruence_t = congruence<Number>;
+  using variable_t = crab::variable<Number, VariableName>;
+  using linear_expression_t = linear_expression<Number, VariableName>;
+  using linear_constraint_t = linear_constraint<Number, VariableName>;
+  using linear_constraint_system_t =
+      linear_constraint_system<Number, VariableName>;
+
+  using cst_table_t = std::vector<linear_constraint_t>;
+  using variable_set_t = std::set<variable_t>;
+
+  std::size_t m_max_cycles;
+  bool m_is_contradiction;
+  cst_table_t m_cst_table;
+  variable_set_t m_refined_variables;
+  std::size_t m_op_count;
+
+private:
+  bool refine(const variable_t &v, congruence_t i, CongruenceCollection &env) {
+    congruence_t old_i = env.at(v);
+    congruence_t new_i = old_i & i;
+    if (new_i.is_bottom()) {
+      return true;
+    }
+    if (old_i != new_i) {
+      env.set(v, new_i);
+      m_refined_variables.insert(v);
+      ++(m_op_count);
+    }
+    return false;
+  }
+
+  congruence_t compute_residual(const linear_constraint_t &cst,
+                                const variable_t &pivot,
+                                CongruenceCollection &env) {
+    congruence_t residual(cst.constant());
+    for (auto kv : cst) {
+      const variable_t &v = kv.second;
+      if (!(v == pivot)) {
+        residual = residual - (kv.first * env.at(v));
+        ++(m_op_count);
+      }
+    }
+    return residual;
+  }
+
+  bool propagate(const linear_constraint_t &cst, CongruenceCollection &env) {
+    for (auto kv : cst) {
+      Number c = kv.first;
+      const variable_t &pivot = kv.second;
+      congruence_t rhs = compute_residual(cst, pivot, env) / congruence_t(c);
+
+      if (cst.is_equality()) {
+        if (refine(pivot, rhs, env)) {
+          return true;
+        }
+      } else if (cst.is_inequality() || cst.is_strict_inequality()) {
+        // Inequations (>=, <=, >, and <) do not work well with
+        // congruences because for any number n there is always x and y
+        // \in gamma(aZ+b) such that n < x and n > y.
+        //
+        // The only cases we can catch is when all the expressions
+        // are constants. We do not bother because any product
+        // with intervals or constants should get those cases.
+        continue;
+      } else {
+        // TODO: cst is a disequation
+      }
+    }
+    return false;
+  }
+
+  bool solve_system(CongruenceCollection &env) {
+    std::size_t cycle = 0;
+    do {
+      ++cycle;
+      m_refined_variables.clear();
+      for (const linear_constraint_t &cst : m_cst_table) {
+        if (propagate(cst, env)) {
+          return true;
+        }
+      }
+    } while (m_refined_variables.size() > 0 && cycle <= m_max_cycles);
+    return false;
+  }
+
+public:
+  equality_congruence_solver(const linear_constraint_system_t &csts,
+                             std::size_t max_cycles)
+      : m_max_cycles(max_cycles), m_is_contradiction(false) {
+    for (auto const &cst : csts) {
+      if (cst.is_contradiction()) {
+        m_is_contradiction = true;
+        return;
+      } else if (cst.is_tautology()) {
+        continue;
+      } else {
+        m_cst_table.push_back(cst);
+      }
+    }
+  }
+
+  void run(CongruenceCollection &env) {
+    if (m_is_contradiction) {
+      env.set_to_bottom();
+    } else {
+      if (solve_system(env)) {
+        env.set_to_bottom();
+      }
+    }
+  }
+
+}; // class equality_congruence_solver  
 } // namespace ikos
 
 namespace crab {
