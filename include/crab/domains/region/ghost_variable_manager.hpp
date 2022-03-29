@@ -135,13 +135,14 @@ public:
   }
 
   // left_val = meet(left_val, project(right_val, variables))
-  void project_and_meet(const variable_vector_t &variables,
-                        const ghost_var_manager_t &, GhostDomain &left_val,
-                        const GhostDomain &right_val) {
+  void merge(const variable_vector_t &variables,
+	     const ghost_var_manager_t &, GhostDomain &left_val,
+	     const GhostDomain &right_val) {
 
     if (!variables.empty()) {
       GhostDomain copy_right(right_val);
       copy_right.project(variables);
+      left_val.forget(variables);
       left_val = left_val & copy_right;
     }
   }
@@ -618,9 +619,9 @@ public:
   }
 
   // left_val = meet(left_val, project(right_val, variables))
-  void project_and_meet(const variable_vector_t &variables,
-                        const ghost_var_manager_t &right_man,
-                        GhostDomain &left_val, const GhostDomain &right_val) {
+  void merge(const variable_vector_t &variables,
+	     const ghost_var_manager_t &right_man,
+	     GhostDomain &left_val, const GhostDomain &right_val) {
 
     if (variables.empty()) {
       return;
