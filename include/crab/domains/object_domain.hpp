@@ -6,14 +6,16 @@
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/boolean.hpp>
+#include <crab/domains/combined_domains.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/small_range.hpp>
+#include <crab/domains/uf_domain.hpp>
 #include <crab/domains/union_find_domain.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 #include <crab/types/varname_factory.hpp>
 
-#include "region/region_info.hpp"
+#include "object/object_info.hpp"
 #include "region/tags.hpp"
 
 #include <unordered_map>
@@ -54,6 +56,23 @@ template <class AbsDom> struct object_equal_to {
     return &v1 == &v2;
   }
 };
+
+template <class EUFDom> term::term_operator_t make_fresh_symbol(EUFDom &dom) {
+  term::term_operator_t t =
+      dom.make_uf(term::term_op_val_generator_t::get_next_val());
+  return t;
+}
+
+template <class EUFDom>
+term::term_operator_t
+get_or_make_term_symbol(EUFDom &dom, const typename EUFDom::variable_t &v) {
+  using term_t = typename EUFDom::term_t;
+  const term_t *t = dom.get_term(v);
+  if (t != nullptr && t->kind() == term::term_kind::TERM_APP) {
+    return term::term_ftor(t);
+  }
+  return make_fresh_symbol(dom);
+}
 } // end namespace object_domain_impl
 
 template <typename Params>
@@ -108,45 +127,84 @@ private:
       typename field_abstract_domain_t::linear_constraint_system_t;
   using flds_dom_varname_allocator_t = typename Params::varname_allocator_t;
 
+  // type name for address and register domains
+  using uf_domain_t = uf_domain<number_t, varname_t>;
+  using usymb_t = typename uf_domain_t::term_t;
+  using address_abstract_domain_t = uf_domain_t;
+  using uf_register_abstract_domain_t = uf_domain_t;
+  using uf_fields_abstract_domain_t = uf_domain_t;
+
+  using object_info_t = typename object_domain_impl::object_info;
+
   // FIXME: the current solution does not support different dom operations
   static_assert(
       std::is_same<base_abstract_domain_t, field_abstract_domain_t>::value,
       "base_abstract_domain_t and field_abstract_domain_t must be the same");
 
+  static_assert(std::is_same<uf_register_abstract_domain_t,
+                             uf_fields_abstract_domain_t>::value,
+                "uf_register_abstract_domain_t and uf_fields_abstract_domain_t "
+                "must be the same");
+
   /**------------------ Begin type definitions ------------------**/
+  // This domain is based on the region based memory model,
+  // an object, more specifically an abstract object, is an object represents
+  // a number of concrete objects with the same pattern.
+  // An object is spawn from a set of fields (or regions).
+  // In addition, we model the memory architecture with a cache.
+  // The cache tracks the most recently used (MRU) object by memory load / store
+  // where the MRU object is one of the summarzied concrete objects.
+  // The operations such as memory load or store are precisely abstracted
+  // if the requested properties can be found in the cache.
 
   // Object identifier / object id
   using obj_id_t = variable_t;
 
-  // ODI map
+  // ODI: <DOM1, DOM2, uf_DOM>
+  // A product domain tracks the followings:
+  // Summary domain: An domain keeps properties for all summarized objects
+  // Cache domain: An domain for most recetnly used object
+  // uf fields domain:
+  //    keeps what uninterpreted symbols assign to fields
+  //    NOTE that: we could keep a map from each field to
+  //               an uninterpreted symbol
+  using odi_domain_product_t =
+      basic_domain_product2<field_abstract_domain_t,
+                            basic_domain_product2<field_abstract_domain_t,
+                                                  uf_fields_abstract_domain_t>>;
+
+  // ODI map: object id -> ODI
   // Map from an object id to object's abstract value.
   // An object id indicates which kinds of object is.
   // the two domains must maintain the same id before the lattice
   // operations
   using odi_map_t = ikos::separate_domain<
-      obj_id_t, field_abstract_domain_t,
-      object_domain_impl::object_equal_to<field_abstract_domain_t>>;
+      obj_id_t, odi_domain_product_t,
+      object_domain_impl::object_equal_to<odi_domain_product_t>>;
 
-  // Object infos
+  // Object infos: object id -> <small range, boolean value, boolean value>
   // Map an object id to finite reduced product domains
   // for inferring object info:
-  //  object counting, object initial flag, <unused>
+  //  object counting, object cache used, object cache dirty
   using obj_info_env_t =
-      ikos::separate_domain<obj_id_t, region_domain_impl::region_info>;
+      ikos::separate_domain<obj_id_t, object_domain_impl::object_info>;
 
   // Object fields to id map
   // Map region variables to object's id
   // This map is constructed during intrinsic call and share in common
   using obj_flds_id_map_t =
       std::shared_ptr<std::unordered_map<variable_t, obj_id_t>>;
+
+  // References to corresponding base addresses
+  // Map reference variables to variables used in EUF domain
+  // This map is constructued for address domain, we keep track
+  // the variables created for references.
+  // The map is constructed dynamically but share accress all states
+  using refs_base_addrs_map_t =
+      std::shared_ptr<std::unordered_map<variable_t, variable_t>>;
   /**------------------ End type definitions ------------------**/
 
   /**------------------ Begin class field definitions ------------------**/
-  // This domain is based on region based memory model, an abstract memory
-  // object is spawn from a set of regions.
-  // In addition, we model the memory architecture with a cache.
-  // The operation such as memory load or store are precisely abstracted
-  // if the requested properties can be found in the cache.
 
   // a special symbol to represent bottom state of the object domain
   // object domain is bottom if this flag is set or all subdomains are bottom.
@@ -160,6 +218,13 @@ private:
   // A map from each region variable to corresponding object domain
   odi_map_t m_odi_map;
 
+  // A domain to keep equalities over base addresses of objects.
+  address_abstract_domain_t m_addrs_dom;
+
+  // A domain to keep what uninterpreted symbols assign to registers if those
+  // are equal to some objects' fields
+  uf_register_abstract_domain_t m_uf_regs_dom;
+
   // Map object ids to a tuple of (Count,Init,Type)
   // In addition, any regions are not part of an object treat introduced by
   // the intrinsic method, we treat them as objects with single field.
@@ -169,9 +234,9 @@ private:
   // This allows us to decide when only if one address per object
   // (i.e., singleton object).
   //
-  // Init: unused.
+  // Used: indicate whether the cache domain is used.
   //
-  // Type: unused.
+  // Dirty: indicate whether the cache domain is dirty.
   obj_info_env_t m_obj_info_env;
 
   // Map region variables to an object id for an abstract object
@@ -181,15 +246,25 @@ private:
   // into this method during the evaluation of make_ref.
   // TODO: for now, we did not cover unknown regions.
   obj_flds_id_map_t m_flds_id_map;
+
+  // Map reference variables to base addresses variables
+  // The base addresses
+  // In addition, each cache that used for an abstract object
+  // has a special base address variable for the MRU object
+  refs_base_addrs_map_t m_refs_base_addrs_map;
   /**------------------ End class field definitions ------------------**/
 
   /**------------------ Begin helper method definitions ------------------**/
   // Constructor Definition
   object_domain(base_abstract_domain_t &&base_dom, odi_map_t &&odi_map,
-                obj_info_env_t &&obj_info_env, obj_flds_id_map_t &&flds_id_map)
+                address_abstract_domain_t &&addrs_dom,
+                uf_register_abstract_domain_t &&uf_regs_dom,
+                obj_info_env_t &&obj_info_env, obj_flds_id_map_t &&flds_id_map,
+                refs_base_addrs_map_t &&refs_base_addrs_map)
       : m_is_bottom(base_dom.is_bottom()), m_base_dom(base_dom),
-        m_odi_map(odi_map), m_obj_info_env(obj_info_env),
-        m_flds_id_map(flds_id_map) {}
+        m_odi_map(odi_map), m_addrs_dom(addrs_dom), m_uf_regs_dom(uf_regs_dom),
+        m_obj_info_env(obj_info_env), m_flds_id_map(flds_id_map),
+        m_refs_base_addrs_map(refs_base_addrs_map) {}
 
   // Self join
   // Perform *this = join(*this, right)
@@ -267,43 +342,94 @@ private:
     // into odi map. Other cases require join operation on each subdomain as
     // before.
 
-    // 1. join the parts of each state that do not require common renaming
+    // 1. join the parts of each state that can use default join operation
     obj_info_env_t out_obj_info_env(m_obj_info_env | right.m_obj_info_env);
+    address_abstract_domain_t out_addrs_dom(m_addrs_dom | right.m_addrs_dom);
 
-    // 2. join the subdomain for base and objects
-    // 2.1 join the base domain
-    base_abstract_domain_t out_base_dom =
-        base_abstract_domain_t(m_base_dom | right.m_base_dom);
+    // m_flds_id_map and m_refs_base_addrs_map do not require join,
+    // they share accross all states. No need to update
+    assert(m_flds_id_map == right.m_flds_id_map);
+    assert(m_refs_base_addrs_map == right.m_refs_base_addrs_map);
 
-    // 2.2 join the objects' domain over odi map
-    odi_map_t out_odi_map(m_odi_map | right.m_odi_map);
-
-    // Handle case 3
+    // 2. join the odi map
+    base_abstract_domain_t &l_base_dom = m_base_dom;
+    base_abstract_domain_t r_base_dom = right.m_base_dom;
+    odi_map_t out_odi_map;
     for (auto kv : m_obj_info_env) {
       const obj_id_t &id = kv.first;
-      const small_range &l_num_refs = kv.second.refcount_val();
+      const object_info_t &l_obj_info = kv.second;
+      const small_range &l_num_refs = l_obj_info.refcount_val();
       auto r_obj_info_ref = right.m_obj_info_env.find(id);
       if (!r_obj_info_ref) {
         continue;
       }
-      const small_range &r_num_refs = (*r_obj_info_ref).refcount_val();
-      if (l_num_refs.is_one() && r_num_refs == small_range::oneOrMore()) {
+      const object_info_t &r_obj_info = (*r_obj_info_ref);
+      const small_range &r_num_refs = r_obj_info.refcount_val();
+      const odi_domain_product_t *l_prod_ref = m_odi_map.find(id);
+      const odi_domain_product_t *r_prod_ref = right.m_odi_map.find(id);
+      // Step 1. Join the odi map if the object is non-singleton in both states
+      // For current abstract object, when both states refer odi maps,
+      // We need to check if cache(s) is (are) used before:
+      // (1) for summary domain, we just perform the join.
+      // (2) for cache domain, we can join them if both caches
+      //     refer the same memory object
+      // if yes, we perform the join;
+      // otherwise, we have to commit cache(s) before (1) and (2).
+      // To determine whether both caches refer the same object, we can only
+      // know if those caches are loaded from the common state.
+      // In current implementation, we determine it by checking whether
+      // uninterpreted symbols of the mru object are the same.
+      if (l_num_refs == small_range::oneOrMore() &&
+          r_num_refs == small_range::oneOrMore()) {
+        const boolean_value l_used = l_obj_info.cacheused_val();
+        const boolean_value r_used = r_obj_info.cacheused_val();
+        odi_domain_product_t l_prod = (*l_prod_ref);
+        odi_domain_product_t r_prod = (*r_prod_ref);
+        if (l_used.is_true() && r_used.is_true()) {
+          if (mru_refer_same_object(id, m_addrs_dom, right.m_addrs_dom) ==
+              false) {
+            commit_cache_if_dirty(l_base_dom, m_uf_regs_dom, l_prod,
+                                  &l_obj_info, id);
+            commit_cache_if_dirty(r_base_dom, right.m_uf_regs_dom, r_prod,
+                                  &r_obj_info, id);
+          }
+        } else if (l_used.is_true()) {
+          commit_cache_if_dirty(l_base_dom, m_uf_regs_dom, l_prod, &l_obj_info,
+                                id);
+        } else if (r_used.is_true()) {
+          commit_cache_if_dirty(r_base_dom, right.m_uf_regs_dom, r_prod,
+                                &r_obj_info, id);
+        }
+        // join the summary, cache and flds part
+        odi_domain_product_t o_prod = l_prod | r_prod;
+        out_odi_map.set(id, o_prod);
+      }
+      // Step 2. Handle the case for joining singleton with non-singleton
+      // In this case, we need to commit the cache if the cache is used
+      // before joining singleton with non-singleton.
+      else if (l_num_refs.is_one() && r_num_refs == small_range::oneOrMore()) {
         // left state: singleton
         // right state: non-singleton
         join_or_widen_singleton_with_non_singleton(
-            id, *this, right, out_odi_map, true /* is_join*/);
+            id, *this, right, r_base_dom, out_odi_map, true /* is_join*/);
       } else if (r_num_refs.is_one() &&
                  l_num_refs == small_range::oneOrMore()) {
         join_or_widen_singleton_with_non_singleton(
-            id, right, *this, out_odi_map, true /* is_join*/);
+            id, right, *this, l_base_dom, out_odi_map, true /* is_join*/);
       }
     }
 
-    // m_flds_id_map is fixed after intrinsic calls. No need to update
-    assert(m_flds_id_map == right.m_flds_id_map);
+    // 3. join the base domain
+    base_abstract_domain_t out_base_dom(l_base_dom | r_base_dom);
+
+    // 4. join the regs domain
+    uf_register_abstract_domain_t out_uf_regs_dom(m_uf_regs_dom |
+                                                  right.m_uf_regs_dom);
 
     // update current state
     std::swap(m_obj_info_env, out_obj_info_env);
+    std::swap(m_addrs_dom, out_addrs_dom);
+    std::swap(m_uf_regs_dom, out_uf_regs_dom);
     std::swap(m_base_dom, out_base_dom);
     std::swap(m_odi_map, out_odi_map);
   }
@@ -313,54 +439,92 @@ private:
                                    const object_domain_t &right,
                                    const bool is_join) const {
 
-    // 1. join / widening the parts of each state that do not require common
-    // renaming
+    // 1. join the parts of each state that can use default join operation
     obj_info_env_t out_obj_info_env(
         is_join ? left.m_obj_info_env | right.m_obj_info_env
                 : left.m_obj_info_env || right.m_obj_info_env);
+    address_abstract_domain_t out_addrs_dom(
+        is_join ? left.m_addrs_dom | right.m_addrs_dom
+                : left.m_addrs_dom || right.m_addrs_dom);
 
-    // 2. join / widening the subdomain for base and objects
-    // 2.1 join / widening the base domain
-    base_abstract_domain_t out_base_dom =
-        base_abstract_domain_t(is_join ? left.m_base_dom | right.m_base_dom
-                                       : left.m_base_dom || right.m_base_dom);
+    // m_flds_id_map and m_refs_base_addrs_map do not require join,
+    // they share accross all states. No need to update
+    assert(left.m_flds_id_map == right.m_flds_id_map);
+    assert(left.m_refs_base_addrs_map == right.m_refs_base_addrs_map);
 
-    // 2.2 join / widening the objects' domain over odi map
-    // In the real operation,
-    // the following operates on two odi maps containg the same keys
-    // even if it can performed without such assumption.
-    odi_map_t out_odi_map(is_join ? left.m_odi_map | right.m_odi_map
-                                  : left.m_odi_map || right.m_odi_map);
-
-    // Handle case 3, see comments on self_join method.
+    // 2. join the odi map
+    // We only perform the common join
+    base_abstract_domain_t l_base_dom = left.m_base_dom;
+    base_abstract_domain_t r_base_dom = right.m_base_dom;
+    odi_map_t out_odi_map;
     for (auto kv : left.m_obj_info_env) {
       const obj_id_t &id = kv.first;
-      const small_range &l_num_refs = kv.second.refcount_val();
+      const object_info_t &l_obj_info = kv.second;
+      const small_range &l_num_refs = l_obj_info.refcount_val();
       auto r_obj_info_ref = right.m_obj_info_env.find(id);
       if (!r_obj_info_ref) {
         continue;
       }
-      const small_range &r_num_refs = (*r_obj_info_ref).refcount_val();
-      if (l_num_refs.is_one() && r_num_refs == small_range::oneOrMore()) {
+      const object_info_t &r_obj_info = (*r_obj_info_ref);
+      const small_range &r_num_refs = r_obj_info.refcount_val();
+      const odi_domain_product_t *l_prod_ref = left.m_odi_map.find(id);
+      const odi_domain_product_t *r_prod_ref = right.m_odi_map.find(id);
+      // Step 1. Join the odi map if the object is non-singleton in both states
+      if (l_num_refs == small_range::oneOrMore() &&
+          r_num_refs == small_range::oneOrMore()) {
+        const boolean_value l_used = l_obj_info.cacheused_val();
+        const boolean_value r_used = r_obj_info.cacheused_val();
+        odi_domain_product_t l_prod = (*l_prod_ref);
+        odi_domain_product_t r_prod = (*r_prod_ref);
+        if (l_used.is_true() && r_used.is_true()) {
+          if (mru_refer_same_object(id, left.m_addrs_dom, right.m_addrs_dom) ==
+              false) {
+            commit_cache_if_dirty(l_base_dom, left.m_uf_regs_dom, l_prod,
+                                  &l_obj_info, id);
+            commit_cache_if_dirty(r_base_dom, right.m_uf_regs_dom, r_prod,
+                                  &r_obj_info, id);
+          }
+        } else if (l_used.is_true()) {
+          commit_cache_if_dirty(l_base_dom, left.m_uf_regs_dom, l_prod,
+                                &l_obj_info, id);
+        } else if (r_used.is_true()) {
+          commit_cache_if_dirty(r_base_dom, right.m_uf_regs_dom, r_prod,
+                                &r_obj_info, id);
+        }
+        // join the summary, cache and flds part
+        odi_domain_product_t o_prod =
+            is_join ? l_prod | r_prod : l_prod || r_prod;
+        out_odi_map.set(id, o_prod);
+      }
+      // Step 2. Handle the case for joining singleton with non-singleton
+      else if (l_num_refs.is_one() && r_num_refs == small_range::oneOrMore()) {
         // left state: singleton
         // right state: non-singleton
-        join_or_widen_singleton_with_non_singleton(id, left, right, out_odi_map,
-                                                   is_join);
+        join_or_widen_singleton_with_non_singleton(id, left, right, r_base_dom,
+                                                   out_odi_map, is_join);
       } else if (r_num_refs.is_one() &&
                  l_num_refs == small_range::oneOrMore()) {
-        join_or_widen_singleton_with_non_singleton(id, right, left, out_odi_map,
-                                                   is_join);
+        join_or_widen_singleton_with_non_singleton(id, right, left, l_base_dom,
+                                                   out_odi_map, is_join);
       }
     }
 
-    // m_flds_id_map is fixed after intrinsic calls. No need to update
-    assert(left.m_flds_id_map == right.m_flds_id_map);
+    // 3. join the base domain
+    base_abstract_domain_t out_base_dom(is_join ? l_base_dom | r_base_dom
+                                                : l_base_dom || r_base_dom);
+
+    // 4. join the regs domain
+    uf_register_abstract_domain_t out_uf_regs_dom(
+        is_join ? left.m_uf_regs_dom | right.m_uf_regs_dom
+                : left.m_uf_regs_dom || right.m_uf_regs_dom);
 
     obj_flds_id_map_t out_flds_id_map = left.m_flds_id_map;
+    refs_base_addrs_map_t out_refs_base_addrs_map = left.m_refs_base_addrs_map;
 
     object_domain_t res(std::move(out_base_dom), std::move(out_odi_map),
-                        std::move(out_obj_info_env),
-                        std::move(out_flds_id_map));
+                        std::move(out_addrs_dom), std::move(out_uf_regs_dom),
+                        std::move(out_obj_info_env), std::move(out_flds_id_map),
+                        std::move(out_refs_base_addrs_map));
     return res;
   }
 
@@ -428,57 +592,111 @@ private:
     //   Base = Base^s1 meet Base^s2,
     //   Object (V_1, V_2) = { V_1 <= V_2, V_2 <= 5 }
 
-    // 1. meet / narrowing the parts of each state that do not require common
-    // renaming
+    // 1. meet the parts of each state that can use default meet operation
     obj_info_env_t out_obj_info_env(
         is_meet ? left.m_obj_info_env & right.m_obj_info_env
                 : left.m_obj_info_env && right.m_obj_info_env);
-    // 2. meet / narrowing the subdomain for base and objects
-    // 2.1 meet / narrowing the base subdomain
-    base_abstract_domain_t out_base_dom =
-        base_abstract_domain_t(is_meet ? left.m_base_dom & right.m_base_dom
-                                       : left.m_base_dom && right.m_base_dom);
+    address_abstract_domain_t out_addrs_dom(
+        is_meet ? left.m_addrs_dom & right.m_addrs_dom
+                : left.m_addrs_dom && right.m_addrs_dom);
 
-    // 2.2 meet / narrowing the objects' domain over odi map
-    // In the real operation,
-    // the following operates on two odi maps containg the same keys
-    // even if it can performed without such assumption.
-    odi_map_t out_odi_map(is_meet ? left.m_odi_map & right.m_odi_map
-                                  : left.m_odi_map && right.m_odi_map);
+    // m_flds_id_map and m_refs_base_addrs_map do not require meet,
+    // they share accross all states. No need to update
+    assert(m_flds_id_map == right.m_flds_id_map);
+    assert(m_refs_base_addrs_map == right.m_refs_base_addrs_map);
 
-    // Handle case 3
+    // 2. meet the odi map
+    base_abstract_domain_t l_base_dom = left.m_base_dom;
+    base_abstract_domain_t r_base_dom = right.m_base_dom;
+    odi_map_t out_odi_map;
     for (auto kv : left.m_obj_info_env) {
       const obj_id_t &id = kv.first;
-      const small_range &l_num_refs = kv.second.refcount_val();
+      const object_info_t &l_obj_info = kv.second;
+      const small_range &l_num_refs = l_obj_info.refcount_val();
       auto r_obj_info_ref = right.m_obj_info_env.find(id);
-      if (!r_obj_info_ref) {
+      if (!r_obj_info_ref) { // only on left
+        const odi_domain_product_t *l_prod_ref = left.m_odi_map.find(id);
+        if (l_prod_ref) {
+          out_odi_map.set(id, (*l_prod_ref));
+        }
         continue;
       }
-      const small_range &r_num_refs = (*r_obj_info_ref).refcount_val();
+      const object_info_t &r_obj_info = (*r_obj_info_ref);
+      const small_range &r_num_refs = r_obj_info.refcount_val();
+      const odi_domain_product_t *l_prod_ref = left.m_odi_map.find(id);
+      const odi_domain_product_t *r_prod_ref = right.m_odi_map.find(id);
+      // Step 1. Join the odi map if the object is non-singleton in both states
+      if (l_num_refs == small_range::oneOrMore() &&
+          r_num_refs == small_range::oneOrMore()) {
+        const boolean_value l_used = l_obj_info.cacheused_val();
+        const boolean_value r_used = r_obj_info.cacheused_val();
+        odi_domain_product_t l_prod = (*l_prod_ref);
+        odi_domain_product_t r_prod = (*r_prod_ref);
+        if (l_used.is_true() && r_used.is_true()) {
+          if (mru_refer_same_object(id, left.m_addrs_dom, right.m_addrs_dom) ==
+              false) {
+            commit_cache_if_dirty(l_base_dom, left.m_uf_regs_dom, l_prod,
+                                  &l_obj_info, id);
+            commit_cache_if_dirty(r_base_dom, right.m_uf_regs_dom, r_prod,
+                                  &r_obj_info, id);
+          }
+        } else if (l_used.is_true()) {
+          commit_cache_if_dirty(l_base_dom, left.m_uf_regs_dom, l_prod,
+                                &l_obj_info, id);
+        } else if (r_used.is_true()) {
+          commit_cache_if_dirty(r_base_dom, right.m_uf_regs_dom, r_prod,
+                                &r_obj_info, id);
+        }
+        // join the summary, cache and flds part
+        odi_domain_product_t o_prod =
+            is_meet ? l_prod & r_prod : l_prod && r_prod;
+        out_odi_map.set(id, o_prod);
+      }
       if (l_num_refs.is_one() && r_num_refs == small_range::oneOrMore()) {
         // left state: singleton
         // right state: non-singleton
-        meet_or_narrow_non_singleton_with_singleton(id, out_base_dom,
-                                                    right.m_odi_map, is_meet);
+        meet_or_narrow_non_singleton_with_singleton(id, l_base_dom, right,
+                                                    r_base_dom, is_meet);
         out_odi_map -= id; // remove non singleton in odi map since meet in odi
                            // map will keep that
       } else if (r_num_refs.is_one() &&
                  l_num_refs == small_range::oneOrMore()) {
-        meet_or_narrow_non_singleton_with_singleton(id, out_base_dom,
-                                                    left.m_odi_map, is_meet);
+        meet_or_narrow_non_singleton_with_singleton(id, r_base_dom, left,
+                                                    l_base_dom, is_meet);
         out_odi_map -= id; // remove non singleton in odi map since meet in odi
                            // map will keep that
       }
     }
 
-    // m_flds_id_map is fixed after intrinsic calls. No need to update
-    assert(left.m_flds_id_map == right.m_flds_id_map);
+    // add missing odi maps from the right state
+    for (auto kv : right.m_obj_info_env) {
+      const obj_id_t &id = kv.first;
+      auto l_obj_info_ref = left.m_obj_info_env.find(id);
+      if (!l_obj_info_ref) { // only on right
+        const odi_domain_product_t *r_prod_ref = right.m_odi_map.find(id);
+        if (r_prod_ref) {
+          out_odi_map.set(id, (*r_prod_ref));
+        }
+      }
+    }
+
+    // 3. meet the base domain
+    base_abstract_domain_t out_base_dom(is_meet ? l_base_dom & r_base_dom
+                                                : l_base_dom && l_base_dom);
+
+    // 4. meet the regs domain
+    uf_register_abstract_domain_t out_uf_regs_dom(
+        is_meet ? left.m_uf_regs_dom & right.m_uf_regs_dom
+                : left.m_uf_regs_dom && right.m_uf_regs_dom);
 
     obj_flds_id_map_t out_flds_id_map = left.m_flds_id_map;
 
+    refs_base_addrs_map_t out_refs_base_addrs_map = left.m_refs_base_addrs_map;
+
     object_domain_t res(std::move(out_base_dom), std::move(out_odi_map),
-                        std::move(out_obj_info_env),
-                        std::move(out_flds_id_map));
+                        std::move(out_addrs_dom), std::move(out_uf_regs_dom),
+                        std::move(out_obj_info_env), std::move(out_flds_id_map),
+                        std::move(out_refs_base_addrs_map));
     return res;
   }
 
@@ -495,8 +713,13 @@ private:
     CRAB_LOG("object", crab::outs() << "Result4=" << res << "\n";);
 
     res &= (left.m_odi_map <= right.m_odi_map);
-
     CRAB_LOG("object", crab::outs() << "Result5=" << res << "\n";);
+
+    res &= (left.m_addrs_dom <= right.m_addrs_dom);
+    CRAB_LOG("object", crab::outs() << "Result6=" << res << "\n";);
+
+    res &= (left.m_uf_regs_dom <= right.m_uf_regs_dom);
+    CRAB_LOG("object", crab::outs() << "Result7=" << res << "\n";);
     return res;
   }
 
@@ -624,31 +847,72 @@ private:
 
   bool is_rgn_obj_id(variable_t rgn, obj_id_t id) { return id == rgn; }
 
-  void object_write(crab_os &o) const { // a special output for object domain
-    // not using api from seperate domain
-    if (m_odi_map.is_bottom()) {
-      o << "Object = _|_";
-    } else if (m_odi_map.is_top()) {
-      o << "Object = {}";
-    } else {
-      for (auto it = m_odi_map.begin(); it != m_odi_map.end();) {
-        o << "Object( ";
-        obj_id_t id = it->first;
-        variable_vector_t vars;
-        get_obj_flds(id, vars);
-        std::sort(vars.begin(), vars.end());
-        for (auto &v : vars)
-          o << v << " ";
-        o << ") = ";
-        auto dom = it->second;
-        dom.write(o);
-        ++it;
-        if (it != m_odi_map.end()) {
-          o << "; ";
-        }
-        o << "\n";
-      }
+  /***************** Base address operations *****************/
+  // get or create a variable representing the base address by given a reference
+  // this also works for base address of mru object.
+  // For mru object, we use a variable named `<obj_id>_mru_base`.
+  variable_t get_or_insert_base_addr(const variable_t &v) {
+    // if v is a reference variable,
+    assert(v.get_type().is_reference() || v.get_type().is_region());
+    if (!m_refs_base_addrs_map) { // create a ref - base addr map if it is null
+      m_refs_base_addrs_map =
+          std::make_shared<std::unordered_map<variable_t, variable_t>>();
     }
+    auto it = (*m_refs_base_addrs_map).find(v);
+    if (it != (*m_refs_base_addrs_map).end()) {
+      return it->second;
+    }
+    varname_t v_var_name = v.name();
+    std::string str_base_name =
+        v.get_type().is_reference() ? "_base" : "_mru_base";
+    varname_t base_name =
+        v_var_name.get_var_factory().get(v_var_name, str_base_name);
+    variable_t v_base(base_name, crab::INT_TYPE, 32);
+    (*m_refs_base_addrs_map).insert({v, v_base});
+    return v_base;
+  }
+
+  variable_t get_base_addr_or_fail(const variable_t &v) const {
+    assert(v.get_type().is_reference() || v.get_type().is_region());
+    if (!m_refs_base_addrs_map) {
+      CRAB_ERROR(domain_name(),
+                 "::get_base_addr_or_fail: base address map is not created");
+    }
+    auto it = (*m_refs_base_addrs_map).find(v);
+    if (it == (*m_refs_base_addrs_map).end()) {
+      CRAB_ERROR(domain_name(), "::get_base_addr_or_fail: ", v, "not found");
+    }
+    return it->second;
+  }
+
+  // check whether mru object in the left state refers the same as the mru
+  // object in the right state
+  bool
+  mru_refer_same_object(const obj_id_t &id,
+                        const address_abstract_domain_t &l_addrs_dom,
+                        const address_abstract_domain_t &r_addrs_dom) const {
+    variable_t mru_base = get_base_addr_or_fail(id);
+    const usymb_t *l_term_ptr = l_addrs_dom.get_term(mru_base);
+    const usymb_t *r_term_ptr = r_addrs_dom.get_term(mru_base);
+    if (l_term_ptr && r_term_ptr) {
+      bool res = ((*l_term_ptr) < (*r_term_ptr)) == false;
+      res &= ((*r_term_ptr) < (*l_term_ptr)) == false;
+      return res;
+    }
+    return false;
+  }
+
+  bool test_two_addrs_equality(const variable_t &x, const variable_t &y) {
+    const usymb_t *x_term_ptr =
+        m_addrs_dom.get_term(get_or_insert_base_addr(x));
+    const usymb_t *y_term_ptr =
+        m_addrs_dom.get_term(get_or_insert_base_addr(y));
+    if (x_term_ptr && y_term_ptr) {
+      bool res = ((*x_term_ptr) < (*y_term_ptr)) == false;
+      res &= ((*y_term_ptr) < (*x_term_ptr)) == false;
+      return res;
+    }
+    return false;
   }
 
   /***************** ODI map operations *****************/
@@ -659,22 +923,23 @@ private:
     base_abstract_domain_t singleton_base(m_base_dom);
     singleton_base.project(flds_vec);
 
-    field_abstract_domain_t res_obj_dom;
-    const field_abstract_domain_t *obj_dom_ref = m_odi_map.find(id);
+    odi_domain_product_t res_prod; // initial value is top
+    const odi_domain_product_t *prod_ref = m_odi_map.find(id);
     // In this case, the odi map must not exist that object domain
-    assert(!obj_dom_ref);
+    assert(!prod_ref);
 
     // Be careful of the following operation if type of base dom and object dom
     // are different
-    res_obj_dom = singleton_base;
+    res_prod.first() = singleton_base;
 
-    m_odi_map.set(id, res_obj_dom);
+    m_odi_map.set(id, res_prod);
     m_base_dom.forget(flds_vec);
   }
 
   void join_or_widen_singleton_with_non_singleton(
       const obj_id_t &id, const object_domain_t &s_single,
-      const object_domain_t &s_non_single, odi_map_t &odi_map,
+      const object_domain_t &s_non_single,
+      base_abstract_domain_t &non_single_base, odi_map_t &odi_map,
       const bool is_join) const {
     variable_vector_t flds_vec;
     s_single.get_obj_flds(id, flds_vec);
@@ -682,34 +947,191 @@ private:
     base_abstract_domain_t singleton_base(s_single.m_base_dom);
     singleton_base.project(flds_vec);
 
-    field_abstract_domain_t res_obj_dom; // initial value is top
-    const field_abstract_domain_t *obj_dom_ref =
-        s_non_single.m_odi_map.find(id);
+    odi_domain_product_t res_prod; // initial value is top
+    const odi_domain_product_t *prod_ref = s_non_single.m_odi_map.find(id);
 
-    // Be careful of the following operation if type of base dom and object dom
-    // are different
-    if (obj_dom_ref) {
-      res_obj_dom = is_join ? singleton_base | *obj_dom_ref
-                            : singleton_base || *obj_dom_ref;
+    const object_info_t *obj_info_ref = s_non_single.m_obj_info_env.find(id);
+    assert(obj_info_ref);
+    // Be careful of the following operation if type of base dom and object
+    // dom are different
+    if (prod_ref) {
+      res_prod = (*prod_ref);
+      boolean_value c_used = (*obj_info_ref).cacheused_val();
+      if (c_used.is_true()) { // commit cache if dirty
+        commit_cache_if_dirty(non_single_base, s_non_single.m_uf_regs_dom,
+                              res_prod, obj_info_ref, id);
+      }
+      if (is_join) {
+        res_prod.first() |= singleton_base;
+      } else {
+        res_prod.first() = res_prod.first() || singleton_base;
+      }
     }
 
-    odi_map.set(id, res_obj_dom);
+    odi_map.set(id, res_prod);
   }
 
   void meet_or_narrow_non_singleton_with_singleton(
-      const obj_id_t &id, base_abstract_domain_t &base_dom,
-      const odi_map_t &odi_map, const bool is_meet) const {
+      const obj_id_t &id, base_abstract_domain_t &single_base,
+      const object_domain_t &s_non_single,
+      base_abstract_domain_t &non_single_base, const bool is_meet) const {
 
-    const field_abstract_domain_t *obj_dom_ref = odi_map.find(id);
+    const odi_domain_product_t *prod_ref = s_non_single.m_odi_map.find(id);
+
+    const object_info_t *obj_info_ref = s_non_single.m_obj_info_env.find(id);
+    assert(obj_info_ref);
 
     // Be careful of the following operation if type of base dom and object dom
     // are different
-    if (obj_dom_ref) {
-      base_dom = is_meet ? base_dom & *obj_dom_ref : base_dom && *obj_dom_ref;
+    if (prod_ref) {
+      odi_domain_product_t res_prod = (*prod_ref);
+      boolean_value c_used = (*obj_info_ref).cacheused_val();
+      if (c_used.is_true()) { // commit cache if dirty
+        commit_cache_if_dirty(non_single_base, s_non_single.m_uf_regs_dom,
+                              res_prod, obj_info_ref, id);
+      }
+      base_abstract_domain_t &summary = res_prod.first();
+      single_base = is_meet ? single_base & summary : single_base && summary;
     }
   }
 
-  /***************** Debug operations *****************/
+  /***************** Cache operations *****************/
+  term::term_operator_t invalidate_cache_if_miss(obj_id_t &id,
+                                                 const variable_t &ref,
+                                                 const variable_t &rgn) {
+    variable_t mru_obj_base = get_or_insert_base_addr(id);
+    // retrieve an abstract object info
+    auto obj_info_ref = m_obj_info_env.find(id);
+    assert(obj_info_ref); // The object info must exsits
+    boolean_value cache_used = (*obj_info_ref).cacheused_val();
+    const odi_domain_product_t *prod_ref = m_odi_map.find(id);
+    odi_domain_product_t out_prod =
+        prod_ref ? (*prod_ref) : odi_domain_product_t();
+    CRAB_LOG("object-entailment",
+             crab::outs() << mru_obj_base
+                          << " == " << get_or_insert_base_addr(ref) << "?\n"
+                          << "Addrs = " << m_addrs_dom << "\n"
+                          << "Is mru cached? "
+                          << test_two_addrs_equality(id, ref) << "\n";);
+    if (cache_used.is_false() || test_two_addrs_equality(id, ref) == false) {
+      /* Cache missed condition:
+         cache is empty or current ref does not refer to the mru object */
+      // Step1: commit cache if the cache is dirty
+      commit_cache_if_dirty(m_base_dom, m_uf_regs_dom, out_prod, obj_info_ref,
+                            id);
+      // Step2: update cache for new MRU object
+      update_cache(out_prod.first(), out_prod.second().first());
+      // Step3: update address dom and object info
+      m_addrs_dom.assign(mru_obj_base, get_or_insert_base_addr(ref));
+      m_obj_info_env.set(
+          id, object_domain_impl::object_info((*obj_info_ref).refcount_val(),
+                                              // Cache is used
+                                              boolean_value::get_true(),
+                                              // Cache is not dirty
+                                              boolean_value::get_false()));
+    }
+    // Step4: update cache_reg if a field equals to some register
+    term::term_operator_t symb = object_domain_impl::get_or_make_term_symbol(
+        out_prod.second().second(), rgn);
+    out_prod.second().second().set(rgn, symb);
+    // Step5: update odi map
+    m_odi_map.set(id, out_prod);
+    return symb;
+  }
+
+  // transfer regs-flds' constriants between MRU and base
+  void reduce_regs_flds_between_cache_and_base(
+      base_abstract_domain_t &base_dom,
+      const uf_register_abstract_domain_t &uf_regs_dom,
+      odi_domain_product_t &prod, const variable_vector_t &obj_flds) const {
+    // The following reduction is performed the followings:
+    // a. get equalities constraints from uf_regs_dom and uf domain for fields
+    // b. meet cache domain with base domain
+    // c. add those constraints
+    // d. get new base domain by forgetting fields
+    // e. get new cache domain by projecting fields
+    // E.g.
+    // pre state:
+    //      uf_regs_dom = { x == t1 ; z == t2; k = t3 }
+    //      base_dom = { 2 <= z; z <= 3; k = 0; }
+    //      Object = (
+    //                cache_dom = { 0 <= y; y <= 10 },
+    //                uf_flds_dom = { y == t1; w == t2 }
+    //               )
+    // After reduction:
+    //      uf_regs_dom = { x == t1 ; z == t2; k = t3 }
+    //      base_dom = { k = 0; 2 <= z; z <= 3; 0 <= x; x <= 10; }
+    //      Object = (
+    //                cache_dom = { 0 <= y; y <= 10; 2 <= w; w <= 3; },
+    //                uf_flds_dom = { y == t1; w == t2 }
+    //               )
+    crab::CrabStats::count(domain_name() + ".count.reduction");
+    crab::ScopedCrabStats __st__(domain_name() + ".reduction");
+
+    CRAB_LOG("object-reduce", crab::outs() << "Before Reduction:\n"
+                                           << "base = " << base_dom << "\n"
+                                           << "odi = ";
+             odi_write(crab::outs(), prod); crab::outs() << "\n";);
+
+    const uf_fields_abstract_domain_t &uf_flds_dom = prod.second().second();
+    CRAB_LOG("object-reduce", crab::outs()
+                                  << "UF Doms:\n"
+                                  << "regs = " << uf_regs_dom << "\n"
+                                  << "flds = " << uf_flds_dom << "\n";);
+    uf_register_abstract_domain_t flds_regs = uf_regs_dom & uf_flds_dom;
+    linear_constraint_system_t lin_cons_sys =
+        flds_regs.to_linear_constraint_system();
+    field_abstract_domain_t &cache = prod.second().first();
+    base_abstract_domain_t cache_base = base_dom & cache;
+    cache_base += lin_cons_sys;
+    base_dom = cache_base;
+    base_dom.forget(obj_flds);
+    cache = cache_base;
+    cache.project(obj_flds);
+    CRAB_LOG("object-reduce", crab::outs() << "After Reduction:\n"
+                                           << "base = " << base_dom << "\n"
+                                           << "odi = ";
+             odi_write(crab::outs(), prod); crab::outs() << "\n";);
+  }
+
+  // commit cache contents into summary if cache is dirty
+  // reset cache:
+  //  (1) perform reduction by transfering regs-flds' constriants between cache
+  //  domain and base domain (2) clear UF field domain (3) clear cache domain
+  void
+  commit_cache_if_dirty(base_abstract_domain_t &base_dom,
+                        const uf_register_abstract_domain_t &uf_regs_dom,
+                        odi_domain_product_t &prod,
+                        const object_domain_impl::object_info *obj_info_ref,
+                        const obj_id_t &id) const {
+    assert(obj_info_ref);
+    if ((*obj_info_ref).cachedirty_val().is_true()) {
+      // commit cache if the cache is dirty
+      commit_cache(prod.first(), prod.second().first());
+    }
+    variable_vector_t obj_flds;
+    get_obj_flds(id, obj_flds);
+    reduce_regs_flds_between_cache_and_base(base_dom, uf_regs_dom, prod,
+                                            obj_flds);
+    prod.second().first().set_to_top();
+    prod.second().second().set_to_top();
+  }
+
+  // commit cache contents into summary
+  void commit_cache(field_abstract_domain_t &summary,
+                    field_abstract_domain_t &cache) const {
+    // join summary with cache
+    summary |= cache;
+  }
+
+  // update cache contents from summary to cache
+  void update_cache(field_abstract_domain_t &summary,
+                    field_abstract_domain_t &cache) const {
+    // copy summary to cache
+    cache = summary;
+  }
+
+  /***************** Print operations *****************/
   void print_flds_id_map(crab_os &o) const {
     o << "Fields -> id map: ";
     if (!m_flds_id_map) {
@@ -741,6 +1163,44 @@ private:
     }
   }
 
+  void odi_write(crab_os &o, const odi_domain_product_t &prod) const {
+    o << "(";
+    o << "summary: ";
+    prod.first().write(o);
+    o << ", cache: ";
+    prod.second().first().write(o);
+    o << ", uf_fields: ";
+    prod.second().second().write(o);
+    o << ")";
+  }
+
+  void object_write(crab_os &o) const { // a special output for object domain
+    // not using api from seperate domain
+    if (m_odi_map.is_bottom()) {
+      o << "Object = _|_";
+    } else if (m_odi_map.is_top()) {
+      o << "Object = {}";
+    } else {
+      for (auto it = m_odi_map.begin(); it != m_odi_map.end();) {
+        o << "Object( ";
+        obj_id_t id = it->first;
+        variable_vector_t vars;
+        get_obj_flds(id, vars);
+        std::sort(vars.begin(), vars.end());
+        for (auto &v : vars)
+          o << v << " ";
+        o << ") = ";
+        auto prod = it->second;
+        odi_write(o, prod);
+        ++it;
+        if (it != m_odi_map.end()) {
+          o << "; ";
+        }
+        o << "\n";
+      }
+    }
+  }
+
   /**------------------ End helper method definitions ------------------**/
 
 public:
@@ -765,8 +1225,10 @@ public:
 
   object_domain(const object_domain_t &o)
       : m_is_bottom(o.m_is_bottom), m_base_dom(o.m_base_dom),
-        m_odi_map(o.m_odi_map), m_obj_info_env(o.m_obj_info_env),
-        m_flds_id_map(o.m_flds_id_map) {
+        m_odi_map(o.m_odi_map), m_addrs_dom(o.m_addrs_dom),
+        m_uf_regs_dom(o.m_uf_regs_dom), m_obj_info_env(o.m_obj_info_env),
+        m_flds_id_map(o.m_flds_id_map),
+        m_refs_base_addrs_map(o.m_refs_base_addrs_map) {
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
   }
@@ -774,8 +1236,11 @@ public:
   object_domain(object_domain_t &&o)
       : m_is_bottom(o.m_is_bottom), m_base_dom(std::move(o.m_base_dom)),
         m_odi_map(std::move(o.m_odi_map)),
+        m_addrs_dom(std::move(o.m_addrs_dom)),
+        m_uf_regs_dom(std::move(o.m_uf_regs_dom)),
         m_obj_info_env(std::move(o.m_obj_info_env)),
-        m_flds_id_map(std::move(o.m_flds_id_map)) {}
+        m_flds_id_map(std::move(o.m_flds_id_map)),
+        m_refs_base_addrs_map(std::move(o.m_refs_base_addrs_map)) {}
 
   object_domain_t &operator=(const object_domain_t &o) {
     crab::CrabStats::count(domain_name() + ".count.copy");
@@ -784,8 +1249,11 @@ public:
       m_is_bottom = o.m_is_bottom;
       m_base_dom = o.m_base_dom;
       m_odi_map = o.m_odi_map;
+      m_addrs_dom = o.m_addrs_dom;
+      m_uf_regs_dom = o.m_uf_regs_dom;
       m_obj_info_env = o.m_obj_info_env;
       m_flds_id_map = o.m_flds_id_map;
+      m_refs_base_addrs_map = o.m_refs_base_addrs_map;
     }
     return *this;
   }
@@ -795,8 +1263,11 @@ public:
       m_is_bottom = std::move(o.m_is_bottom);
       m_base_dom = std::move(o.m_base_dom);
       m_odi_map = std::move(o.m_odi_map);
+      m_addrs_dom = std::move(o.m_addrs_dom);
+      m_uf_regs_dom = std::move(o.m_uf_regs_dom);
       m_obj_info_env = std::move(o.m_obj_info_env);
       m_flds_id_map = std::move(o.m_flds_id_map);
+      m_refs_base_addrs_map = std::move(o.m_refs_base_addrs_map);
     };
     return *this;
   }
@@ -975,18 +1446,17 @@ public:
       // treat region as a field, as well as an object id
       update_fields_id_map(rgn, rgn);
       // initialize information for an abstract object for object
-      m_obj_info_env.set(rgn, region_domain_impl::region_info(
+      m_obj_info_env.set(rgn, object_domain_impl::object_info(
                                   // No references owned by the object
                                   small_range::zero(),
-                                  // unused
+                                  // Cache is not used
                                   boolean_value::get_false(),
-                                  // unused
-                                  rgn.get_type()));
+                                  // Cache is not dirty
+                                  boolean_value::get_false()));
     }
 
-    CRAB_LOG("object", crab::outs()
-                           << "After region_init(" << rgn << ":"
-                           << rgn.get_type() << ")=" << *this << "\n";);
+    CRAB_LOG("object", crab::outs() << "After region_init(" << rgn
+                                    << ")=" << *this << "\n";);
   }
 
   // Create a new reference ref associated with as within region
@@ -1026,11 +1496,15 @@ public:
         // need to move fields' properties into odi map
         move_singleton_to_odi_map(*id_opt);
       }
+      // create a fresh symbol to represent a base address
+      // at current allocation site
+      m_addrs_dom.set(get_or_insert_base_addr(ref),
+                      object_domain_impl::make_fresh_symbol(m_addrs_dom));
 
-      m_obj_info_env.set(*id_opt,
-                         region_domain_impl::region_info(
-                             old_obj_info.refcount_val().increment(),
-                             old_obj_info.init_val(), old_obj_info.type_val()));
+      m_obj_info_env.set(*id_opt, object_domain_impl::object_info(
+                                      old_obj_info.refcount_val().increment(),
+                                      old_obj_info.cacheused_val(),
+                                      old_obj_info.cachedirty_val()));
     }
 
     CRAB_LOG("object", crab::outs() << "After ref_make(" << ref << "," << rgn
@@ -1118,18 +1592,21 @@ public:
         // the requirment 3.1 is satisfied
       } else { // num_refs > 1, use odi map
         // read from odi map
-        const field_abstract_domain_t *obj_dom_ref = m_odi_map.find(*id_opt);
-        if (!obj_dom_ref) {  // not found in odi map, means object domain is top
-          m_base_dom -= res; // forget res means res == top
-          // the requirment 3.2 is satisfied
-        } else {
-          interval_t ival = (*obj_dom_ref).at(rgn);
-          object_domain_impl::assign_interval(m_base_dom, res,
-                                              ival); // res := ival
-          // the requirment 3.3 is satisfied
+        const odi_domain_product_t *prod_ref = m_odi_map.find((*id_opt));
+        if (prod_ref != nullptr) {
+          term::term_operator_t symb =
+              invalidate_cache_if_miss((*id_opt), ref, rgn);
+          if (res.get_type().is_reference()) {
+            // res is a reference, assign a fresh symbol into address dom
+            // create a fresh symbol to represent a base address
+            m_addrs_dom.set(get_or_insert_base_addr(res),
+                            object_domain_impl::make_fresh_symbol(m_addrs_dom));
+          }
+          // assigning register with symbol
+          m_uf_regs_dom.set(res, symb);
         }
+        m_base_dom -= res;
       }
-
       // post condition meets
     }
 
@@ -1223,25 +1700,32 @@ public:
         if (val.is_constant()) {
           m_base_dom.assign(rgn, val.get_constant());
         } else {
+          // TODO: need reduction
           m_base_dom.assign(rgn, val.get_variable());
         }
       } else { // num_refs > 1, use odi map
         // read from odi map
-        auto obj_dom_ptr = m_odi_map.find(*id_opt);
-        // if not found, it means that domain is top, no need to update
-
-        if (obj_dom_ptr) {
-          field_abstract_domain_t res_obj_dom =
-              field_abstract_domain_t((*obj_dom_ptr));
+        const odi_domain_product_t *prod_ref = m_odi_map.find((*id_opt));
+        if (prod_ref != nullptr) {
+          term::term_operator_t symb =
+              invalidate_cache_if_miss((*id_opt), ref, rgn);
+          prod_ref = m_odi_map.find((*id_opt));
+          odi_domain_product_t out_prod = (*prod_ref);
           if (val.is_constant()) {
-            res_obj_dom.assign(rgn, val.get_constant());
-          } else { // val is a variable
-            interval_t ival = m_base_dom[val.get_variable()];
-            object_domain_impl::assign_interval(res_obj_dom, rgn, ival);
+            out_prod.second().first().assign(rgn, val.get_constant());
+          } else { // val is a variable (i.e. register)
+            // assigning register with symbol
+            m_uf_regs_dom.set(val.get_variable(), symb);
           }
-
-          res_obj_dom |= *obj_dom_ptr; // perform a weak update
-          m_odi_map.set(*id_opt, res_obj_dom);
+          // update object info
+          m_obj_info_env.set(*id_opt, object_domain_impl::object_info(
+                                          (*obj_info_ref).refcount_val(),
+                                          // Cache is used
+                                          boolean_value::get_true(),
+                                          // Cache is dirty
+                                          boolean_value::get_true()));
+          // update odi map
+          m_odi_map.set(*id_opt, out_prod);
         }
       }
 
@@ -1275,6 +1759,16 @@ public:
     // abstract object
     if (is_unknown_region(rgn1) || is_unknown_region(rgn2)) {
       return;
+    }
+
+    if (auto id1_opt = get_obj_id(rgn1)) {
+      if (auto id2_opt = get_obj_id(rgn2)) {
+        if ((*id1_opt) == (*id2_opt)) { // both regions refer the same object
+          // assign equality: ref2 == ref1
+          m_addrs_dom.assign(get_or_insert_base_addr(ref2),
+                             get_or_insert_base_addr(ref1));
+        }
+      }
     }
 
     m_base_dom.assign(ref2, ref1 + offset);
@@ -1478,9 +1972,10 @@ public:
   void operator+=(const linear_constraint_system_t &csts) override {
     crab::CrabStats::count(domain_name() + ".count.add_constraints");
     crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
-
+    // TODO: might need reduction here because entailment
     if (!is_bottom()) {
       m_base_dom += csts;
+      m_is_bottom = m_base_dom.is_bottom();
     }
   }
 
@@ -1669,11 +2164,13 @@ public:
           if (num_refs.is_one()) { // singleton object
             m_base_dom -= v;
           } else if (num_refs == small_range::oneOrMore()) { // non-singleton
-            auto obj_dom_ref = m_odi_map.find(*id_opt);
-            if (obj_dom_ref) {
-              field_abstract_domain_t res_obj_dom = *obj_dom_ref;
-              res_obj_dom -= v;
-              m_odi_map.set(*id_opt, res_obj_dom);
+            const odi_domain_product_t *prod_ref = m_odi_map.find(*id_opt);
+            if (prod_ref) {
+              odi_domain_product_t out_prod = *prod_ref;
+              out_prod.first() -= v;
+              out_prod.second().first() -= v;
+              out_prod.second().second() -= v;
+              m_odi_map.set(*id_opt, out_prod);
             }
           }
         }
@@ -1808,15 +2305,15 @@ public:
       }
 
       // initialize information for an abstract object for object
-      m_obj_info_env.set(obj_id, region_domain_impl::region_info(
+      m_obj_info_env.set(obj_id, object_domain_impl::object_info(
                                      // No references owned by the object
                                      small_range::zero(),
-                                     // unused
+                                     // Cache is not used
                                      boolean_value::get_false(),
-                                     // unused
-                                     obj_id.get_type()));
+                                     // Cache is not dirty
+                                     boolean_value::get_false()));
       // No need to update odi map
-      // because top for an abstract object in seperate domain is not exists
+      // because top for an abstract object in seperate domain means not exist
     }
   }
 
@@ -1847,8 +2344,9 @@ public:
 
   std::string domain_name() const override {
     field_abstract_domain_t fld_dom;
-    return "ObjectDomain(Regs:" + m_base_dom.domain_name() +
-           ", Object:" + fld_dom.domain_name() + ")";
+    return "ObjectDomain(Base:" + m_base_dom.domain_name() +
+           ", Object:" + fld_dom.domain_name() +
+           ", Addrs:" + m_addrs_dom.domain_name() + ")";
   }
 
   void write(crab_os &o) const override {
@@ -1859,7 +2357,11 @@ public:
     } else {
       o << "Base = ";
       m_base_dom.write(o);
-      o << ", ";
+      o << ",\nuf_addrs = ";
+      m_addrs_dom.write(o);
+      o << ",\nuf_regs = ";
+      m_uf_regs_dom.write(o);
+      o << ",\n";
       object_write(o);
     }
   }
