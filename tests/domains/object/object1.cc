@@ -88,16 +88,16 @@ z_cfg_t *prog(variable_factory_t &vfac) {
   // adding statements
 
   // Intialization of memory regions
-  entry.intrinsic("regions_from_memory_object", {}, obj1);
-  entry.intrinsic("regions_from_memory_object", {}, obj2);
   entry.region_init(rgn1);
   entry.region_init(rgn2);
   entry.region_init(rgn3);
   entry.region_init(rgn4);
   entry.region_init(rgn5);
+  entry.intrinsic("regions_from_memory_object", {}, obj1);
+  entry.intrinsic("regions_from_memory_object", {}, obj2);
   // Create object
   entry.make_ref(A, rgn1, size12, as_man.mk_tag());
-  entry.make_ref(B, rgn3, size8, as_man.mk_tag());
+  entry.make_ref(B, rgn4, size8, as_man.mk_tag());
   bb1.gep_ref(r, rgn2, A, rgn1, z_number(4)); // V_b, p = gep_ref(V_a, &A, 4)
 
   bb1.load_from_ref(x, r, rgn2); // x = load_ref(V_b, p)

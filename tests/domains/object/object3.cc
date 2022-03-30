@@ -95,11 +95,11 @@ z_cfg_t *prog(variable_factory_t &vfac) {
   // === Adding statements
 
   // Intialization of memory regions
-  entry.intrinsic("regions_from_memory_object", {}, obj1);
-  entry.intrinsic("regions_from_memory_object", {}, obj2);
   entry.region_init(rgn_i);
   entry.region_init(rgn_j);
   entry.region_init(rgn_x);
+  entry.intrinsic("regions_from_memory_object", {}, obj1);
+  entry.intrinsic("regions_from_memory_object", {}, obj2);
 
   //// Create references
   entry.make_ref(A, rgn_i, size4, as_man.mk_tag());
@@ -147,11 +147,11 @@ int main(int argc, char **argv) {
 
   {
     z_obj_zones_t init;
-    run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    run_and_check(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
   }
   {
     z_obj_zones_t init;
-    run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    run_and_check(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
   }
 
   delete cfg;

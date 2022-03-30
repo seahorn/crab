@@ -91,11 +91,11 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
   z_var_or_cst_t size12(z_number(12), crab::variable_type(crab::INT_TYPE, 32));
 
   // Intialization of memory regions
-  entry.intrinsic("regions_from_memory_object", {}, obj1);
-  // entry.intrinsic("regions_from_memory_object", {}, obj2);
   entry.region_init(rgn_i);
   entry.region_init(rgn_x);
   entry.region_init(rgn_y);
+  entry.intrinsic("regions_from_memory_object", {}, obj1);
+  // entry.intrinsic("regions_from_memory_object", {}, obj2);
 
   //// Create references
   entry.make_ref(A, rgn_i, size12, as_man.mk_tag());
@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
   z_cfg_t *cfg = cfg1(vfac);
   crab::outs() << *cfg << "\n";
 
-  run(cfg, cfg->entry(), init, false, 2, 2, 20, stats_enabled);
+  run_and_check(cfg, cfg->entry(), init, false, 2, 2, 20, stats_enabled);
 
   return 0;
 }
