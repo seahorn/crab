@@ -383,8 +383,10 @@ private:
           r_num_refs == small_range::oneOrMore()) {
         const boolean_value l_used = l_obj_info.cacheused_val();
         const boolean_value r_used = r_obj_info.cacheused_val();
-        odi_domain_product_t l_prod = (*l_prod_ref);
-        odi_domain_product_t r_prod = (*r_prod_ref);
+        odi_domain_product_t l_prod =
+            l_prod_ref ? (*l_prod_ref) : odi_domain_product_t();
+        odi_domain_product_t r_prod =
+            r_prod_ref ? (*r_prod_ref) : odi_domain_product_t();
         if (l_used.is_true() && r_used.is_true()) {
           if (mru_refer_same_object(id, m_addrs_dom, right.m_addrs_dom) ==
               false) {
@@ -474,8 +476,10 @@ private:
           r_num_refs == small_range::oneOrMore()) {
         const boolean_value l_used = l_obj_info.cacheused_val();
         const boolean_value r_used = r_obj_info.cacheused_val();
-        odi_domain_product_t l_prod = (*l_prod_ref);
-        odi_domain_product_t r_prod = (*r_prod_ref);
+        odi_domain_product_t l_prod =
+            l_prod_ref ? (*l_prod_ref) : odi_domain_product_t();
+        odi_domain_product_t r_prod =
+            r_prod_ref ? (*r_prod_ref) : odi_domain_product_t();
         if (l_used.is_true() && r_used.is_true()) {
           if (mru_refer_same_object(id, left.m_addrs_dom, right.m_addrs_dom) ==
               false) {
@@ -630,8 +634,10 @@ private:
           r_num_refs == small_range::oneOrMore()) {
         const boolean_value l_used = l_obj_info.cacheused_val();
         const boolean_value r_used = r_obj_info.cacheused_val();
-        odi_domain_product_t l_prod = (*l_prod_ref);
-        odi_domain_product_t r_prod = (*r_prod_ref);
+        odi_domain_product_t l_prod =
+            l_prod_ref ? (*l_prod_ref) : odi_domain_product_t();
+        odi_domain_product_t r_prod =
+            r_prod_ref ? (*r_prod_ref) : odi_domain_product_t();
         if (l_used.is_true() && r_used.is_true()) {
           if (mru_refer_same_object(id, left.m_addrs_dom, right.m_addrs_dom) ==
               false) {
@@ -1706,27 +1712,25 @@ public:
       } else { // num_refs > 1, use odi map
         // read from odi map
         const odi_domain_product_t *prod_ref = m_odi_map.find((*id_opt));
-        if (prod_ref != nullptr) {
-          term::term_operator_t symb =
-              invalidate_cache_if_miss((*id_opt), ref, rgn);
-          prod_ref = m_odi_map.find((*id_opt));
-          odi_domain_product_t out_prod = (*prod_ref);
-          if (val.is_constant()) {
-            out_prod.second().first().assign(rgn, val.get_constant());
-          } else { // val is a variable (i.e. register)
-            // assigning register with symbol
-            m_uf_regs_dom.set(val.get_variable(), symb);
-          }
-          // update object info
-          m_obj_info_env.set(*id_opt, object_domain_impl::object_info(
-                                          (*obj_info_ref).refcount_val(),
-                                          // Cache is used
-                                          boolean_value::get_true(),
-                                          // Cache is dirty
-                                          boolean_value::get_true()));
-          // update odi map
-          m_odi_map.set(*id_opt, out_prod);
+        term::term_operator_t symb =
+            invalidate_cache_if_miss((*id_opt), ref, rgn);
+        prod_ref = m_odi_map.find((*id_opt));
+        odi_domain_product_t out_prod = (*prod_ref);
+        if (val.is_constant()) {
+          out_prod.second().first().assign(rgn, val.get_constant());
+        } else { // val is a variable (i.e. register)
+          // assigning register with symbol
+          m_uf_regs_dom.set(val.get_variable(), symb);
         }
+        // update object info
+        m_obj_info_env.set(*id_opt, object_domain_impl::object_info(
+                                        (*obj_info_ref).refcount_val(),
+                                        // Cache is used
+                                        boolean_value::get_true(),
+                                        // Cache is dirty
+                                        boolean_value::get_true()));
+        // update odi map
+        m_odi_map.set(*id_opt, out_prod);
       }
 
       // post condition meets
