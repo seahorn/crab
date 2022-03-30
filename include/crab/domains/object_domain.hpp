@@ -1384,9 +1384,8 @@ public:
     return res;
   }
 
-  object_domain_t widening_thresholds(
-      const object_domain_t &o,
-      const iterators::thresholds<number_t> &thresholds) const override {
+  object_domain_t widening_thresholds(const object_domain_t &o,
+      const thresholds<number_t> &thresholds) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
@@ -1877,16 +1876,6 @@ public:
 
   // Remove a reference ref within region reg
   void ref_free(const variable_t &reg, const variable_t &ref) override {}
-  // Treat memory pointed by ref  as an array and perform an array load.
-  void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
-                           const variable_t &region,
-                           const linear_expression_t &index,
-                           const linear_expression_t &elem_size) override {}
-  // Treat region as an array and perform an array store.
-  void ref_store_to_array(const variable_t &ref, const variable_t &region,
-                          const linear_expression_t &index,
-                          const linear_expression_t &elem_size,
-                          const linear_expression_t &val) override {}
 
   // This default implementation is expensive because it will call the
   // join.
