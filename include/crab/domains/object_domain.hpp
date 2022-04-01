@@ -1104,8 +1104,7 @@ private:
   // reset cache:
   //  (1) perform reduction by transfering regs-flds' constriants between cache
   //  domain and base domain (2) clear UF field domain (3) clear cache domain
-  void
-  commit_cache_if_dirty(base_abstract_domain_t &base_dom,
+  void commit_cache_if_dirty(base_abstract_domain_t &base_dom,
                         const uf_register_abstract_domain_t &uf_regs_dom,
                         odi_domain_product_t &prod,
                         const object_domain_impl::object_info *obj_info_ref,
@@ -1603,7 +1602,7 @@ public:
               invalidate_cache_if_miss((*id_opt), ref, rgn);
           if (res.get_type().is_reference()) {
             // res is a reference, assign a fresh symbol into address dom
-            // create a fresh symbol to represent a base address
+            // create a fresh symbol to represent its base address
             m_addrs_dom.set(get_or_insert_base_addr(res),
                             object_domain_impl::make_fresh_symbol(m_addrs_dom));
           }
@@ -1657,6 +1656,7 @@ public:
     //  if object domain exists, create a new one by copying old one
     //
     //  post condition: the odi map is updated, the base domain is not changed
+    // TODO: need reduction if val is a variable and it is not reduced
 
     ERROR_IF_NOT_REGION(rgn, __LINE__);
     ERROR_IF_ARRAY_REGION(rgn, __LINE__);
@@ -1705,7 +1705,6 @@ public:
         if (val.is_constant()) {
           m_base_dom.assign(rgn, val.get_constant());
         } else {
-          // TODO: need reduction
           m_base_dom.assign(rgn, val.get_variable());
         }
       } else { // num_refs > 1, use odi map
@@ -1720,6 +1719,7 @@ public:
         } else { // val is a variable (i.e. register)
           // assigning register with symbol
           m_uf_regs_dom.set(val.get_variable(), symb);
+          out_prod.second().first() -= rgn;
         }
         // update object info
         m_obj_info_env.set(*id_opt, object_domain_impl::object_info(
@@ -1818,6 +1818,7 @@ public:
     if (!is_bottom()) {
       // We represent reference as numerical in domain
       m_base_dom.assign(int_var, ref_var);
+      m_addrs_dom -= ref_var;
     }
   }
 
@@ -1832,6 +1833,10 @@ public:
 
     if (!is_bottom()) {
       m_base_dom.assign(ref_var, int_var);
+      // ref_var is a reference, assign a fresh symbol into address dom
+      // create a fresh symbol to represent its base address
+      m_addrs_dom.set(get_or_insert_base_addr(ref_var),
+                      object_domain_impl::make_fresh_symbol(m_addrs_dom));
     }
   }
 
@@ -1882,6 +1887,7 @@ public:
   DEFAULT_SELECT_REF(object_domain_t)
 
   /**************************** Numerical operations *************************/
+  // x := y op z
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
 
