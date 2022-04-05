@@ -901,8 +901,17 @@ private:
     const usymb_t *l_term_ptr = l_addrs_dom.get_term(mru_base);
     const usymb_t *r_term_ptr = r_addrs_dom.get_term(mru_base);
     if (l_term_ptr && r_term_ptr) {
-      bool res = ((*l_term_ptr) < (*r_term_ptr)) == false;
-      res &= ((*r_term_ptr) < (*l_term_ptr)) == false;
+      // TODO: so far we use term operator as a constant uninterpreted symbol.
+      // This is different from the constant term in crab's uf term.
+      // For now, two caches from two states refer the same MRU object 
+      // if the base addresses of caches refer the same symbol in the uf domain
+      // So the way to check two symbols are same is finding operator values
+      // Check term/term_operator.hpp for more details.
+      assert(l_term_ptr->kind() == term::term_kind::TERM_APP);
+      assert(r_term_ptr->kind() == term::term_kind::TERM_APP);
+      term::term_operator_t l_t_op = term::term_ftor(l_term_ptr);
+      term::term_operator_t r_t_op = term::term_ftor(l_term_ptr);
+      bool res = l_t_op.value() == r_t_op.value();
       return res;
     }
     return false;
@@ -928,6 +937,8 @@ private:
 
     base_abstract_domain_t singleton_base(m_base_dom);
     singleton_base.project(flds_vec);
+    // TODO: performance may matter if base dom contains huge dimensions
+    // Might need a projection that only copies flds_vec.
 
     odi_domain_product_t res_prod; // initial value is top
     const odi_domain_product_t *prod_ref = m_odi_map.find(id);
