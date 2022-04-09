@@ -15,6 +15,7 @@ using namespace ikos;
 
 // A variable factory based on strings
 using variable_factory_t = var_factory_impl::str_variable_factory;
+namespace crab {
 template<>
 class variable_name_traits<std::string> {
 public:
@@ -22,6 +23,7 @@ public:
     return varname;
   }
 };
+} // end namespace crab  
 // Expressions
 using varname_t = typename variable_factory_t::varname_t;
 using var_t = variable<z_number, varname_t>;

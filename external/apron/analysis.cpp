@@ -21,6 +21,7 @@ using namespace ikos;
 // A variable factory based on strings
 using variable_factory_t = crab::var_factory_impl::str_variable_factory;
 using varname_t = typename variable_factory_t::varname_t;
+namespace crab {
 template<>
 class variable_name_traits<std::string> {
 public:
@@ -28,6 +29,7 @@ public:
     return varname;
   }
 };
+} // end namespace crab
 // CFG basic block labels
 using basic_block_label_t = std::string;
 /// To define CFG over integers
@@ -38,6 +40,7 @@ using var_t = crab::variable<z_number, varname_t>;
 using lin_exp_t = linear_expression<z_number, varname_t>;
 using lin_cst_t = linear_constraint<z_number, varname_t> ;
 using lin_cst_sys_t = linear_constraint_system<z_number, varname_t> ;
+namespace crab {
 template<>
 class basic_block_traits<basic_block_t> {
 public:
@@ -46,6 +49,7 @@ public:
     return bbl;
   }
 };
+} // end namespace crab
 //// To define CFG over integers
 using cfg_t = cfg::cfg<basic_block_label_t, varname_t, z_number>;
 using cfg_ref_t = cfg::cfg_ref<cfg_t>;

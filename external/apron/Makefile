@@ -1,16 +1,15 @@
 #------------------------------------------------------------------------------------#
 #                                  INSTRUCTIONS
 #------------------------------------------------------------------------------------#
-#  1. Type `make crab_install`
+#  0. Define variables BOOST_ROOT, GMP_DIR in Makefile.config and MPFR_DIR
+#  1. Type `make crab_apron_ldd_install`
 #  2. Type `make all`
 #  3. Type `./domain` or `./analysis`
 #------------------------------------------------------------------------------------#
 
-PWD=$(shell pwd)
-CRAB_INSTALL=${PWD}/crab-install
+include ../Makefile.config
 
-UNAME := $(shell uname)
-CRAB_LIBS = $(CRAB_INSTALL)/crab/lib/libCrab.a
+MPFR_DIR=
 
 LDD_LIBS := \
     $(CRAB_INSTALL)/ldd/lib/libldd.a \
@@ -30,52 +29,37 @@ APRON_LIBS := \
     $(CRAB_INSTALL)/apron/lib/libboxMPQ.a \
     $(CRAB_INSTALL)/apron/lib/libitvMPQ.a
 
-LDLIBS := \
-     $(CRAB_LIBS) $(LDD_LIBS) $(APRON_LIBS) \
-     -lmpfr -lgmp -lm -lstdc++ 
-
-CXXFLAGS := \
-     -Wall -Werror -Wfatal-errors \
-     -Wno-unused-local-typedefs -Wno-inconsistent-missing-override -Wno-unused-const-variable \
-     -Wno-uninitialized -Wno-deprecated \
-     -DBSD -DHAVE_IEEE_754 -DSIZEOF_VOID_P=8 -DSIZEOF_LONG=8 \
-     -I $(CRAB_INSTALL)/crab/include \
+CXXFLAGS += \
+     -I $(MPFR_DIR)/include \
      -I $(CRAB_INSTALL)/ldd/include/ldd \
-     -I $(CRAB_INSTALL)/apron/include \
-     -O2 -g -std=c++11
+     -I $(CRAB_INSTALL)/apron/include 
 
-ifeq ($(UNAME),Darwin)
-## For Mojave
-CXXFLAGS += -Wno-nullability-completeness
-CXXFLAGS += -isystem /usr/local/include 
-CXXFLAGS += -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk
-endif
+LDFLAGS += $(LDD_LIBS) $(APRON_LIBS)
+LDFLAGS += -L$(MPFR_DIR)/lib -lmpfr
 
-# Lookup paths for crab shared libraries
-#LDFLAGS := -Wl,-rpath,$(CRAB_INSTALL)/crab/lib/
-# For gmp library (you might need to adapt this)
-LDFLAGS := -L/usr/local/lib
 
 all: domain analysis
 
 %.o:  $(CXX) $(CXXFLAGS) $< -c -o $@
 
 domain: domain.o
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) domain.o $(LDLIBS) -o domain
+	$(CXX) domain.o $(LDFLAGS) -o domain
 
 analysis: analysis.o
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) analysis.o $(LDLIBS) -o analysis
+	$(CXX) analysis.o $(LDFLAGS) -o analysis
 
 clean:
 	rm -f domain analysis  *.a *.o
 
-crab_install:
+.PHONY: crab_apron_ldd_install
+crab_apron_ldd_install:
 	git clone https://github.com/seahorn/crab.git crab
 	mkdir -p crab/build
-	@echo "Installing crab in ${CRAB_INSTALL} ... "
+	@echo "Installing crab+apron+ldd in ${CRAB_INSTALL} ... "
 	cd crab/build \
 	     && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL) -DCRAB_BUILD_LIBS_SHARED=OFF \
 	              -DCRAB_USE_LDD=ON -DCRAB_USE_APRON=ON ../ \
 	     && cmake --build . --target ldd && cmake ../ \
 	     && cmake --build . --target apron && cmake ../ \
 	     && cmake --build . --target install
+
