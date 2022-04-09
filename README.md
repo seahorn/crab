@@ -143,4 +143,4 @@ And then link your executable with `${CRAB_LIBS}`
 ## Make ## 
 
 If your project uses `make`, read this
-sample [Makefile](https://github.com/seahorn/crab/blob/master/external/Makefile).
+sample [Makefile](https://github.com/seahorn/crab/blob/master/make/Makefile).

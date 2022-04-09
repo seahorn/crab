@@ -1,4 +1,4 @@
-# How to use Crab as an external library via Makefile #
+# How to use Crab via Makefile #
 
 This directory contains a sample `Makefile` and two programs:
 
