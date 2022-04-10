@@ -53,53 +53,7 @@ template <class Number, class VariableName> class abstract_domain_results_api;
  * 
  * Where forward (backward) means forward (backward) semantics. The
  * abstract_domain_api API doesn't provide backward versions for (4)
- * but it should.
- * 
- * ===== Enforcing correct types in abstract operations ======
- *
- * Crab has a simple algorithm that checks whether a CFG is
- * well-typed.  However, the CFG type-checker is bypassed when either
- * an user calls directly abstract operations via the C++ API or when
- * an abstract domain calls another abstract domain.
- * 
- * For instance, the abstract operation apply(op, x, y, z) performs
- * the arithmetic operation "y op z" and stores the result in
- * x. Therefore, the interpretation of x, y, z is always either
- * integers or reals (remember that we don't allow to mix integers
- * with reals). However, abstract domains do not check that x,y,z are
- * numbers. I explain next the motivation for that.
- *
- * When an abstract domain consists of a hierarchy of abstract domains
- * (e.g., the region domain), the domain at the top should model
- * top-level variables (such as regions and references) with only
- * variables understood by the leaf domains (e.g., a reference
- * variable is modeled as an integer and its value is tracked by a
- * numerical domain). This can be done by adding *ghost*
- * variables. For instance, given a region variable that contains
- * integers we can add a ghost variable of integer type to keep track
- * of the values of the region, and the region domain decides e.g.,
- * the assignment semantics for the ghost variable (strong vs weak
- * update). This is conceptually simple and a clean
- * solution. Unfortunately, the use of ghost variables is expensive
- * because the join/meet/widening/narrowing operators need to compute
- * a common renaming of the ghost variables. Sometimes, the use of
- * ghost variables cannot be avoided. For instance, if a CFG variable
- * needs to be shadowed by two or more ghost variables (e.g., an array
- * variable is modeled by many scalar variables). However, in cases
- * where we only add one ghost variable per CFG variable the use of
- * ghost variables can be avoided by allowing top-level domains to
- * pass directly variables of types that are not necessarily the
- * expected ones by the lower-level abstract domain as long as the
- * abstract domain knows what to do with that unexpected type. This is
- * not ideal in my opinion but it can be useful in practice although
- * you need to know what you are doing.
- * 
- * Currently, array domains pass variables of unexpected types to
- * subdomains (e.g., a variable of array type that is interpreted as
- * an integer variable by the subdomain) but it's fine because the
- * subdomains know what to do with those variables (e.g., they are
- * passed to the apply operation and therefore, they are interpreted
- * as integers by the numerical domain).
+ * but it should. 
  **/
 template <class Dom> class abstract_domain_api:
   public lattice_domain_api<Dom>,
