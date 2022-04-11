@@ -669,7 +669,6 @@ public:
   using varname_t = VariableName;
 
 private:
-  using interval_domain_t = ikos::interval_domain<number_t, varname_t>;
   using separate_domain_t = ikos::separate_domain<variable_t, sign_t>;
 
 private:
