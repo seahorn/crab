@@ -1481,9 +1481,11 @@ public:
   void set(const variable_t &v, interval_t i) {
     crab::CrabStats::count(domain_name() + ".count.assign");
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
-    if (i.lb().is_finite() && i.ub.is_finite()) {
+    if (i.lb().is_finite() && i.ub().is_finite()) {
       wrapped_interval_t rhs =
-          wrapped_interval_t::mk_winterval(i.lb(), i.ub(), v.get_bitwidth());
+	wrapped_interval_t::mk_winterval(*(i.lb().number()), *(i.ub().number()),
+					 v.get_type().is_integer() ?
+					 v.get_type().get_integer_bitwidth() : 0);
       this->_env.set(v, rhs);
       CRAB_LOG("wrapped-int", crab::outs()
 	       << v << ":=" << i << "=" << _env.at(v) << "\n");
@@ -1497,7 +1499,9 @@ public:
   void set(const variable_t &v, number_t n) {
     crab::CrabStats::count(domain_name() + ".count.assign");
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
-    this->_env.set(v, wrapped_interval_t::mk_winterval(n, v.get_bitwidth()));
+    this->_env.set(v, wrapped_interval_t::mk_winterval(n,
+						       v.get_type().is_integer() ?
+						       v.get_type().get_integer_bitwidth() : 0));
     CRAB_LOG("wrapped-int", crab::outs()
 	     << v << ":=" << n << "=" << _env.at(v) << "\n");
   }
