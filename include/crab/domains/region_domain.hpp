@@ -1965,7 +1965,8 @@ public:
     }
   }
 
-  // not part of the numerical_domains api but it should be
+  #if 0
+  // not part of the numerical_domains api but it should be  
   void set(const variable_t &x, interval_t intv) {
     crab::CrabStats::count(domain_name() + ".count.assign");
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
@@ -1982,7 +1983,8 @@ public:
       }
     }
   }
-
+  #endif
+  
   interval_t operator[](const variable_t &x) override {
     if (is_bottom()) {
       return interval_t::bottom();
