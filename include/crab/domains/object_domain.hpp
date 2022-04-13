@@ -1735,6 +1735,9 @@ public:
       return;
     }
 
+    // REDUCTION: perform reduction
+    perform_reduction();
+
     if (get_obj_id(rgn) == boost::none) {
       // if a region does not belong to an object, treat it as an object
       // treat region as a field, as well as an object id
@@ -1773,6 +1776,9 @@ public:
     if (is_unknown_region(rgn)) {
       return;
     }
+
+    // REDUCTION: perform reduction
+    perform_reduction();
 
     if (auto id_opt = get_obj_id(rgn)) {
       // the object id must exist for each region if the
@@ -1854,6 +1860,9 @@ public:
     if (is_unknown_region(rgn)) {
       return;
     }
+
+    // REDUCTION: perform reduction
+    perform_reduction();
 
     if (is_null_ref(ref).is_true()) {
       CRAB_LOG("object", CRAB_WARN(domain_name(), "::ref_load: reference ", ref,
@@ -1980,6 +1989,9 @@ public:
       return;
     }
 
+    // REDUCTION: perform reduction
+    perform_reduction();
+
     if (auto id_opt = get_obj_id(rgn)) {
       // the object id must exist for each region if the
       // region belongs to an abstract object.
@@ -2059,6 +2071,9 @@ public:
       return;
     }
 
+    // REDUCTION: perform reduction
+    perform_reduction();
+
     if (auto id1_opt = get_obj_id(rgn1)) {
       if (auto id2_opt = get_obj_id(rgn2)) {
         if ((*id1_opt) == (*id2_opt)) { // both regions refer the same object
@@ -2091,6 +2106,9 @@ public:
         return;
       }
 
+      // REDUCTION: perform reduction
+      perform_reduction();
+
       auto lin_cst = convert_ref_cst_to_linear_cst(ref_cst);
       m_base_dom += lin_cst;
       m_is_bottom = m_base_dom.is_bottom();
@@ -2111,6 +2129,9 @@ public:
     ERROR_IF_NOT_INT(int_var, __LINE__);
 
     if (!is_bottom()) {
+      // REDUCTION: perform reduction
+      perform_reduction();
+
       // We represent reference as numerical in domain
       m_base_dom.assign(int_var, ref_var);
       m_addrs_dom -= ref_var;
@@ -2127,6 +2148,9 @@ public:
     ERROR_IF_NOT_INT(int_var, __LINE__);
 
     if (!is_bottom()) {
+      // REDUCTION: perform reduction
+      perform_reduction();
+
       m_base_dom.assign(ref_var, int_var);
       // ref_var is a reference, assign a fresh symbol into address dom
       // create a fresh symbol to represent its base address
@@ -2188,6 +2212,8 @@ public:
     crab::CrabStats::count(domain_name() + ".count.select_ref");
     crab::ScopedCrabStats __st__(domain_name() + ".select_ref");
     if (!is_bottom()) {
+      // REDUCTION: perform reduction
+      perform_reduction();
 
       m_base_dom.select_ref(lhs_ref, lhs_rgn, cond, ref1, rgn1, ref2, rgn2);
       // ref_var is a reference, assign a fresh symbol into address dom
@@ -2206,6 +2232,9 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     if (!is_bottom()) {
+      // REDUCTION: perform reduction
+      perform_reduction();
+
       m_base_dom.apply(op, x, y, z);
     }
   }
@@ -2218,6 +2247,9 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     if (!is_bottom()) {
+      // REDUCTION: perform reduction
+      perform_reduction();
+
       m_base_dom.apply(op, x, y, k);
     }
   }
@@ -2230,6 +2262,9 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     if (!is_bottom()) {
+      // REDUCTION: perform reduction
+      perform_reduction();
+
       m_base_dom.apply(op, x, y, z);
     }
   }
@@ -2242,6 +2277,9 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     if (!is_bottom()) {
+      // REDUCTION: perform reduction
+      perform_reduction();
+
       m_base_dom.apply(op, x, y, k);
     }
   }
@@ -2254,6 +2292,9 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     if (!is_bottom()) {
+      // REDUCTION: perform reduction
+      perform_reduction();
+
       m_base_dom.apply(op, dst, src);
     }
   }
@@ -2264,6 +2305,9 @@ public:
               const linear_expression_t &e2) override {
 
     if (!is_bottom()) {
+      // REDUCTION: perform reduction
+      perform_reduction();
+
       m_base_dom.select(lhs, cond, e1, e2);
     }
   }
@@ -2274,6 +2318,9 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
 
     if (!is_bottom()) {
+      // REDUCTION: perform reduction
+      perform_reduction();
+
       m_base_dom.assign(x, e);
     }
   }
@@ -2282,8 +2329,11 @@ public:
   void operator+=(const linear_constraint_system_t &csts) override {
     crab::CrabStats::count(domain_name() + ".count.add_constraints");
     crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
-    // TODO: might need reduction here because entailment
+
     if (!is_bottom()) {
+      // REDUCTION: perform reduction
+      perform_reduction();
+
       m_base_dom += csts;
       m_is_bottom = m_base_dom.is_bottom();
     }
@@ -2298,6 +2348,9 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst");
 
     if (!is_bottom()) {
+      // REDUCTION: perform reduction
+      perform_reduction();
+
       m_base_dom.assign_bool_cst(lhs, rhs);
     }
   }
@@ -2311,6 +2364,9 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_var");
 
     if (!is_bottom()) {
+      // REDUCTION: perform reduction
+      perform_reduction();
+
       m_base_dom.assign_bool_var(lhs, rhs, is_not_rhs);
     }
   }
@@ -2322,6 +2378,9 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".apply_binary_bool");
 
     if (!is_bottom()) {
+      // REDUCTION: perform reduction
+      perform_reduction();
+
       m_base_dom.apply_binary_bool(op, x, y, z);
     }
   }
@@ -2333,6 +2392,9 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".assume_bool");
 
     if (!is_bottom()) {
+      // REDUCTION: perform reduction
+      perform_reduction();
+
       m_base_dom.assume_bool(v, is_negated);
       m_is_bottom = m_base_dom.is_bottom();
     }
@@ -2344,6 +2406,9 @@ public:
                    const variable_t &b1, const variable_t &b2) override {
 
     if (!is_bottom()) {
+      // REDUCTION: perform reduction
+      perform_reduction();
+
       m_base_dom.select_bool(lhs, cond, b1, b2);
     }
   }
@@ -2355,6 +2420,9 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst");
 
     if (!is_bottom()) {
+      // REDUCTION: perform reduction
+      perform_reduction();
+
       auto rhs_lin_cst = convert_ref_cst_to_linear_cst(rhs);
       m_base_dom.assign_bool_cst(lhs, rhs_lin_cst);
     }
