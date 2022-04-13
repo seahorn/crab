@@ -2566,11 +2566,27 @@ public:
     //      same memory object. The intrinstic is added only if object
     //      has more than one field.
     // TODO: need to support other analysis
+    auto error_if_not_variable = [&name](const variable_or_constant_t &vc) {
+      if (!vc.is_variable()) {
+        CRAB_ERROR("Intrinsics ", name, " expected a variable input");
+      }
+    };
+    auto error_if_not_constant = [&name](const variable_or_constant_t &vc) {
+      if (!vc.is_constant()) {
+        CRAB_ERROR("Intrinsics ", name, " expected a constant input");
+      }
+    };
     auto error_if_not_rgn = [&name](const variable_or_constant_t &x) {
       if (!x.is_variable() || !x.get_type().is_region()) {
         // the input vector should only contains region variables
         CRAB_ERROR("Intrinsics ", name, " parameter ", x,
                    " should be a region");
+      }
+    };
+    auto error_if_not_ref = [&name](const variable_t &var) {
+      if (!var.get_type().is_reference()) {
+        CRAB_ERROR("Intrinsics ", name, " parameter ", var,
+                   " should be a reference");
       }
     };
 
@@ -2608,6 +2624,20 @@ public:
                                      boolean_value::get_false()));
       // No need to update odi map
       // because top for an abstract object in seperate domain means not exist
+    } else if (name == "do_reduction") {
+      assert(inputs.size() == 3);
+      error_if_not_variable(inputs[0]);
+      error_if_not_variable(inputs[1]);
+      error_if_not_constant(inputs[2]);
+      variable_t rgn = inputs[0].get_variable();
+      variable_t ref = inputs[1].get_variable();
+      bool reduce_direction = inputs[2].is_bool_true();
+      if (auto id_opt = get_obj_id(rgn)) {
+        if (test_ref_refer_mru_object(ref, *id_opt)) {
+          // current reference refers mru object
+          perform_reduction_by_object(*id_opt, reduce_direction);
+        }
+      }
     }
   }
 
