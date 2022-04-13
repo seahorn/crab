@@ -57,10 +57,27 @@ template <class AbsDom> struct object_equal_to {
   }
 };
 
+struct term_op_hash {
+  std::size_t operator()(const term::term_operator_t &k) const {
+    return std::hash<uint32_t>()(k.value());
+  }
+};
+
 template <class EUFDom> term::term_operator_t make_fresh_symbol(EUFDom &dom) {
   term::term_operator_t t =
       dom.make_uf(term::term_op_val_generator_t::get_next_val());
   return t;
+}
+
+template <class Num, class Ftor>
+boost::optional<Ftor>
+extract_uf_symbol_from_term(const term::term<Num, Ftor> *t) {
+  if (t && t->kind() == term::term_kind::TERM_APP) {
+    auto fterm = static_cast<const term::ftor_term<Num, Ftor> *>(t);
+    if (fterm->args.empty())
+      return term::term_ftor(t);
+  }
+  return boost::none;
 }
 
 template <class EUFDom>
@@ -72,6 +89,23 @@ get_or_make_term_symbol(EUFDom &dom, const typename EUFDom::variable_t &v) {
     return term::term_ftor(t);
   }
   return make_fresh_symbol(dom);
+}
+
+template <class Var, class Num, class Ftor>
+bool is_two_vars_have_same_term(const Var &v1,
+                                const term::term<Num, Ftor> *t1_ptr,
+                                const Var &v2,
+                                const term::term<Num, Ftor> *t2_ptr) {
+  using term_op_opt_t = boost::optional<term::term_operator_t>;
+  if (!t1_ptr || !t2_ptr) {
+    return false;
+  }
+  term_op_opt_t top1_opt = extract_uf_symbol_from_term(t1_ptr);
+  term_op_opt_t top2_opt = extract_uf_symbol_from_term(t2_ptr);
+  if (top1_opt == boost::none || top1_opt == boost::none) {
+    return false;
+  }
+  return (*top1_opt).value() == (*top2_opt).value();
 }
 } // end namespace object_domain_impl
 
@@ -135,6 +169,10 @@ private:
   using uf_fields_abstract_domain_t = uf_domain_t;
 
   using object_info_t = typename object_domain_impl::object_info;
+  using symb_flds_regs_map_t =
+      std::unordered_map<term::term_operator_t,
+                         std::pair<variable_vector_t, variable_vector_t>,
+                         object_domain_impl::term_op_hash>;
 
   // FIXME: the current solution does not support different dom operations
   static_assert(
@@ -903,7 +941,7 @@ private:
     if (l_term_ptr && r_term_ptr) {
       // TODO: so far we use term operator as a constant uninterpreted symbol.
       // This is different from the constant term in crab's uf term.
-      // For now, two caches from two states refer the same MRU object 
+      // For now, two caches from two states refer the same MRU object
       // if the base addresses of caches refer the same symbol in the uf domain
       // So the way to check two symbols are same is finding operator values
       // Check term/term_operator.hpp for more details.
@@ -928,6 +966,10 @@ private:
       return res;
     }
     return false;
+  }
+
+  bool test_ref_refer_mru_object(const variable_t &ref, const obj_id_t &id) {
+    return test_two_addrs_equality(ref, id);
   }
 
   /***************** ODI map operations *****************/
@@ -1013,9 +1055,10 @@ private:
   }
 
   /***************** Cache operations *****************/
-  term::term_operator_t invalidate_cache_if_miss(obj_id_t &id,
-                                                 const variable_t &ref,
-                                                 const variable_t &rgn) {
+  term::term_operator_t
+  invalidate_cache_if_miss(obj_id_t &id, const variable_t &ref,
+                           const variable_t &rgn,
+                           boost::optional<term::term_operator_t> reg_symb) {
     variable_t mru_obj_base = get_or_insert_base_addr(id);
     // retrieve an abstract object info
     auto obj_info_ref = m_obj_info_env.find(id);
@@ -1048,9 +1091,12 @@ private:
                                               boolean_value::get_false()));
     }
     // Step4: update cache_reg if a field equals to some register
-    term::term_operator_t symb = object_domain_impl::get_or_make_term_symbol(
-        out_prod.second().second(), rgn);
-    out_prod.second().second().set(rgn, symb);
+    uf_fields_abstract_domain_t &uf_flds_dom = out_prod.second().second();
+    term::term_operator_t symb =
+        reg_symb != boost::none
+            ? *reg_symb
+            : object_domain_impl::get_or_make_term_symbol(uf_flds_dom, rgn);
+    uf_flds_dom.set(rgn, symb);
     // Step5: update odi map
     m_odi_map.set(id, out_prod);
     return symb;
@@ -1061,12 +1107,6 @@ private:
       base_abstract_domain_t &base_dom,
       const uf_register_abstract_domain_t &uf_regs_dom,
       odi_domain_product_t &prod, const variable_vector_t &obj_flds) const {
-    // The following reduction is performed the followings:
-    // a. get equalities constraints from uf_regs_dom and uf domain for fields
-    // b. meet cache domain with base domain
-    // c. add those constraints
-    // d. get new base domain by forgetting fields
-    // e. get new cache domain by projecting fields
     // E.g.
     // pre state:
     //      uf_regs_dom = { x == t1 ; z == t2; k = t3 }
@@ -1082,32 +1122,269 @@ private:
     //                cache_dom = { 0 <= y; y <= 10; 2 <= w; w <= 3; },
     //                uf_flds_dom = { y == t1; w == t2 }
     //               )
+    reduce_regs_from_cache_to_base(base_dom, uf_regs_dom, prod, obj_flds);
+    reduce_flds_from_base_to_cache(base_dom, uf_regs_dom, prod, obj_flds);
+  }
+
+  void perform_reduction() {
+    CRAB_LOG("object-reduction", crab::outs() << "State Before Reduction:\n"
+                                              << *this << "\n";);
+    for (auto kv : m_obj_info_env) {
+      const obj_id_t &id = kv.first;
+      variable_vector_t flds_vec;
+      get_obj_flds(id, flds_vec);
+      const object_info_t &obj_info = kv.second;
+      const small_range &num_refs = obj_info.refcount_val();
+      if (num_refs == small_range::oneOrMore()) {
+        const odi_domain_product_t *prod_ref = m_odi_map.find(id);
+        if (prod_ref) {
+          reduce_regs_from_cache_to_base(m_base_dom, m_uf_regs_dom, *prod_ref,
+                                         flds_vec);
+        }
+        // m_odi_map.set(id, (out_prod));
+      }
+    }
+
+    for (auto kv : m_obj_info_env) {
+      const obj_id_t &id = kv.first;
+      variable_vector_t flds_vec;
+      get_obj_flds(id, flds_vec);
+      const object_info_t &obj_info = kv.second;
+      const small_range &num_refs = obj_info.refcount_val();
+      if (num_refs == small_range::oneOrMore()) {
+        const odi_domain_product_t *prod_ref = m_odi_map.find(id);
+        if (prod_ref) {
+          odi_domain_product_t out_prod = *prod_ref;
+          reduce_flds_from_base_to_cache(m_base_dom, m_uf_regs_dom, out_prod,
+                                         flds_vec);
+          m_odi_map.set(id, (out_prod));
+        }
+      }
+    }
+    CRAB_LOG("object-reduction", crab::outs() << "State After Reduction:\n"
+                                              << *this << "\n";);
+  }
+
+  void perform_reduction_by_object(const obj_id_t &id,
+                                   bool is_from_cache_to_base) {
+    variable_vector_t flds_vec;
+    get_obj_flds(id, flds_vec);
+    auto obj_info_ref = m_obj_info_env.find(id);
+    if (obj_info_ref) {
+      const object_info_t &obj_info = *obj_info_ref;
+      const small_range &num_refs = obj_info.refcount_val();
+      if (num_refs == small_range::oneOrMore()) {
+        const odi_domain_product_t *prod_ref = m_odi_map.find(id);
+        if (prod_ref) {
+          if (is_from_cache_to_base) {
+            // reduce from cache to base
+            reduce_regs_from_cache_to_base(m_base_dom, m_uf_regs_dom, *prod_ref,
+                                           flds_vec);
+          } else {
+            // reduce from base to cache
+            odi_domain_product_t out_prod = *prod_ref;
+            reduce_flds_from_base_to_cache(m_base_dom, m_uf_regs_dom, out_prod,
+                                           flds_vec);
+            m_odi_map.set(id, (out_prod));
+          }
+        }
+      }
+    }
+  }
+
+  void build_map(symb_flds_regs_map_t &map,
+                 const uf_register_abstract_domain_t &uf_regs_dom,
+                 const uf_fields_abstract_domain_t &uf_flds_dom,
+                 const variable_vector_t &flds) const {
+    // it is not allowed to pass a term pointer to different
+    // domain value because they use different term managers.
+    // Worst case about performance is O(mn) where m and n
+    // are number of variables in each domain.
+    for (auto &v : flds) {
+      const usymb_t *t_ptr = uf_flds_dom.get_term(v);
+      auto symb_opt = object_domain_impl::extract_uf_symbol_from_term(t_ptr);
+      if (symb_opt == boost::none) {
+        continue;
+      }
+      auto it = map.find(*symb_opt);
+      if (it == map.end()) {
+        for (auto it_regs = uf_regs_dom.begin(); it_regs != uf_regs_dom.end();
+             ++it_regs) {
+          if (object_domain_impl::is_two_vars_have_same_term(
+                  v, t_ptr, it_regs->first, it_regs->second)) {
+            if (it != map.end()) {
+              std::get<1>(it->second).push_back(it_regs->first);
+            } else {
+              map.insert({*symb_opt, {{}, {it_regs->first}}});
+            }
+          }
+        }
+      }
+      auto it_2 = map.find(*symb_opt);
+      if (it_2 != map.end()) {
+        std::get<0>(it_2->second).push_back(v);
+      }
+    }
+  }
+
+  // Reduce equalities between registers and fields from base to cache
+  void reduce_regs_from_cache_to_base(
+      base_abstract_domain_t &base_dom,
+      const uf_register_abstract_domain_t &uf_regs_dom,
+      const odi_domain_product_t &prod,
+      const variable_vector_t &obj_flds) const {
+
     crab::CrabStats::count(domain_name() + ".count.reduction");
     crab::ScopedCrabStats __st__(domain_name() + ".reduction");
-
-    CRAB_LOG("object-reduce", crab::outs() << "Before Reduction:\n"
-                                           << "base = " << base_dom << "\n"
-                                           << "odi = ";
-             odi_write(crab::outs(), prod); crab::outs() << "\n";);
-
-    const uf_fields_abstract_domain_t &uf_flds_dom = prod.second().second();
+    // The following reduction is performed the followings:
+    // a. get equalities constraints from uf_regs_dom and uf domain for fields
+    // b. rename a field from cache domain with a register if there is
+    // a register equals to the same symbol as that field;
+    // if there are multiple fields equal to a field, add equality constriants
+    // into cache domain.
+    // c. forget all fields in cache domain.
+    // d. meet reduced and renamed cache domain with base domain
+    // E.g.
+    // pre state:
+    //      uf_regs_dom = { k == t1; w == t2; v == t4; m == t2 }
+    //      base_dom = { 3 <= a }
+    //      Object = (
+    //                summary_dom = {...},
+    //                cache_dom = { x <= y; y == z },
+    //                uf_flds_dom = { x == t1 ; y == t2; z = t3 }
+    //               )
+    // After reduction:
+    //      uf_regs_dom = { k == t1; w == t2; v == t4; m == t2 }
+    //      base_dom = { 3 <= a; k <= w; w == m; }
+    //      Object = (
+    //                cache_dom = { x <= y; y == z },
+    //                uf_flds_dom = { x == t1 ; y == t2; z = t3 }
+    //               )
     CRAB_LOG("object-reduce", crab::outs()
-                                  << "UF Doms:\n"
-                                  << "regs = " << uf_regs_dom << "\n"
-                                  << "flds = " << uf_flds_dom << "\n";);
-    uf_register_abstract_domain_t flds_regs = uf_regs_dom & uf_flds_dom;
-    linear_constraint_system_t lin_cons_sys =
-        flds_regs.to_linear_constraint_system();
-    field_abstract_domain_t &cache = prod.second().first();
-    base_abstract_domain_t cache_base = base_dom & cache;
-    cache_base += lin_cons_sys;
-    base_dom = cache_base;
-    base_dom.forget(obj_flds);
-    cache = cache_base;
-    cache.project(obj_flds);
-    CRAB_LOG("object-reduce", crab::outs() << "After Reduction:\n"
-                                           << "base = " << base_dom << "\n"
-                                           << "odi = ";
+                                  << "Before Reduction from cache to base:\n"
+                                  << "base = " << base_dom << "\n"
+                                  << "uf_regs = " << uf_regs_dom << "\n"
+                                  << "odi = ";
+             odi_write(crab::outs(), prod); crab::outs() << "\n";);
+    const uf_fields_abstract_domain_t &uf_flds_dom = prod.second().second();
+    const base_abstract_domain_t &cache_dom = prod.second().first();
+    base_abstract_domain_t reduced_cache = cache_dom;
+
+    symb_flds_regs_map_t map;
+    build_map(map, uf_regs_dom, uf_flds_dom, obj_flds);
+
+    for (auto it = map.begin(); it != map.end(); ++it) {
+      const variable_vector_t flds = std::get<0>(it->second);
+      const variable_vector_t regs = std::get<1>(it->second);
+      assert(flds.size() > 0);
+      assert(regs.size() > 0);
+      variable_t fld = flds[0];
+      if (regs.size() == 1) {
+        reduced_cache += ikos::operator==(fld, regs[0]);
+        // reduced_cache.rename(flds, regs);
+      } else { // regs.size() > 1
+        auto it_regs = regs.begin();
+        variable_t var = *it_regs;
+        while (it_regs != regs.end()) {
+          if (it_regs == regs.begin()) {
+            reduced_cache += ikos::operator==(fld, var);
+          } else {
+            reduced_cache += ikos::operator==(var, (*it_regs));
+          }
+          ++it_regs;
+        }
+      }
+    }
+    map.clear();
+    reduced_cache.forget(obj_flds);
+    base_dom = base_dom & reduced_cache;
+    CRAB_LOG("object-reduce", crab::outs()
+                                  << "After Reduction:\n"
+                                  << "base = " << base_dom << "\n"
+                                  << "uf_regs = " << uf_regs_dom << "\n"
+                                  << "odi = ";
+             odi_write(crab::outs(), prod); crab::outs() << "\n";);
+  }
+
+  // Precondition: if register(s) equal to some field,
+  //  the register(s) are reduced from cache to base
+  void reduce_flds_from_base_to_cache(
+      const base_abstract_domain_t &base_dom,
+      const uf_register_abstract_domain_t &uf_regs_dom,
+      odi_domain_product_t &prod, const variable_vector_t &obj_flds) const {
+
+    crab::CrabStats::count(domain_name() + ".count.reduction");
+    crab::ScopedCrabStats __st__(domain_name() + ".reduction");
+    // The following reduction is performed the followings:
+    // a. get equalities constraints from uf_regs_dom and uf domain for fields
+    // b. rename register(s) from base domain with a field if they equal to
+    // the same symbol as that field;
+    // c. project those regs in base domain.
+    // d. meet reduced and renamed base domain with cache domain
+    // E.g.
+    // pre state:
+    //      uf_regs_dom = { k == t1; w == t2; v == t4; m == t2; }
+    //      base_dom = { 3 <= a; k <= w; w == m; }
+    //      Object = (
+    //                cache_dom = { z = 3 },
+    //                uf_flds_dom = { x == t1 ; y == t2; }
+    //               )
+    // After reduction:
+    //      uf_regs_dom = { k == t1; w == t2; v == t4; m == t2; }
+    //      base_dom = { 3 <= a; k <= w; w == m; }
+    //      Object = (
+    //                cache_dom = { z = 3, x <= y },
+    //                uf_flds_dom = { x == t1 ; y == t2; }
+    //               )
+    CRAB_LOG("object-reduce", crab::outs()
+                                  << "Before Reduction from base to cache:\n"
+                                  << "base = " << base_dom << "\n"
+                                  << "uf_regs = " << uf_regs_dom << "\n"
+                                  << "odi = ";
+             odi_write(crab::outs(), prod); crab::outs() << "\n";);
+    const uf_fields_abstract_domain_t &uf_flds_dom = prod.second().second();
+    base_abstract_domain_t &cache_dom = prod.second().first();
+    variable_vector_t remained_regs;
+    variable_vector_t renamed_flds;
+
+    symb_flds_regs_map_t map;
+    build_map(map, uf_regs_dom, uf_flds_dom, obj_flds);
+
+    // Note that, the regs-flds equalities are one-to-many
+    // A field could equal to multiple registers but
+    // multiple fields cannot equal to a single register
+
+    base_abstract_domain_t reduced_base = base_dom;
+
+    for (auto it = map.begin(); it != map.end(); ++it) {
+      const variable_vector_t flds = std::get<0>(it->second);
+      const variable_vector_t regs = std::get<1>(it->second);
+      assert(flds.size() > 0);
+      assert(regs.size() > 0);
+      variable_t reg = regs[0];
+      if (flds.size() == 1) {
+        reduced_base += ikos::operator==(reg, flds[0]);
+        // reduced_base.rename(regs, flds);
+      } else { // flds.size() > 1
+        auto it_flds = flds.begin();
+        variable_t var = *it_flds;
+        while (it_flds != flds.end()) {
+          if (it_flds == flds.begin()) {
+            reduced_base += ikos::operator==(var, reg);
+          } else {
+            reduced_base += ikos::operator==(var, (*it_flds));
+          }
+          ++it_flds;
+        }
+      }
+    }
+    reduced_base.project(obj_flds);
+    cache_dom = cache_dom & reduced_base;
+    CRAB_LOG("object-reduce", crab::outs()
+                                  << "After Reduction:\n"
+                                  << "base = " << base_dom << "\n"
+                                  << "uf_regs = " << uf_regs_dom << "\n"
+                                  << "odi = ";
              odi_write(crab::outs(), prod); crab::outs() << "\n";);
   }
 
@@ -1115,20 +1392,21 @@ private:
   // reset cache:
   //  (1) perform reduction by transfering regs-flds' constriants between cache
   //  domain and base domain (2) clear UF field domain (3) clear cache domain
-  void commit_cache_if_dirty(base_abstract_domain_t &base_dom,
+  void
+  commit_cache_if_dirty(base_abstract_domain_t &base_dom,
                         const uf_register_abstract_domain_t &uf_regs_dom,
                         odi_domain_product_t &prod,
                         const object_domain_impl::object_info *obj_info_ref,
                         const obj_id_t &id) const {
     assert(obj_info_ref);
-    if ((*obj_info_ref).cachedirty_val().is_true()) {
-      // commit cache if the cache is dirty
-      commit_cache(prod.first(), prod.second().first());
-    }
     variable_vector_t obj_flds;
     get_obj_flds(id, obj_flds);
     reduce_regs_flds_between_cache_and_base(base_dom, uf_regs_dom, prod,
                                             obj_flds);
+    if ((*obj_info_ref).cachedirty_val().is_true()) {
+      // commit cache if the cache is dirty
+      commit_cache(prod.first(), prod.second().first());
+    }
     prod.second().first().set_to_top();
     prod.second().second().set_to_top();
   }
@@ -1394,8 +1672,9 @@ public:
     return res;
   }
 
-  object_domain_t widening_thresholds(const object_domain_t &o,
-      const thresholds<number_t> &thresholds) const override {
+  object_domain_t
+  widening_thresholds(const object_domain_t &o,
+                      const thresholds<number_t> &thresholds) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
@@ -1610,7 +1889,7 @@ public:
         const odi_domain_product_t *prod_ref = m_odi_map.find((*id_opt));
         if (prod_ref != nullptr) {
           term::term_operator_t symb =
-              invalidate_cache_if_miss((*id_opt), ref, rgn);
+              invalidate_cache_if_miss((*id_opt), ref, rgn, boost::none);
           if (res.get_type().is_reference()) {
             // res is a reference, assign a fresh symbol into address dom
             // create a fresh symbol to represent its base address
@@ -1721,8 +2000,13 @@ public:
       } else { // num_refs > 1, use odi map
         // read from odi map
         const odi_domain_product_t *prod_ref = m_odi_map.find((*id_opt));
+        boost::optional<term::term_operator_t> reg_symb = boost::none;
+        if (val.is_variable()) {
+          reg_symb = object_domain_impl::get_or_make_term_symbol(
+              m_uf_regs_dom, val.get_variable());
+        }
         term::term_operator_t symb =
-            invalidate_cache_if_miss((*id_opt), ref, rgn);
+            invalidate_cache_if_miss((*id_opt), ref, rgn, reg_symb);
         prod_ref = m_odi_map.find((*id_opt));
         odi_domain_product_t out_prod = (*prod_ref);
         if (val.is_constant()) {
