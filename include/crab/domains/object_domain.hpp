@@ -2179,7 +2179,23 @@ public:
 
   // This default implementation is expensive because it will call the
   // join.
-  DEFAULT_SELECT_REF(object_domain_t)
+  // DEFAULT_SELECT_REF(object_domain_t)
+  void select_ref(const variable_t &lhs_ref, const variable_t &lhs_rgn,
+                  const variable_t &cond, const variable_or_constant_t &ref1,
+                  const boost::optional<variable_t> &rgn1,
+                  const variable_or_constant_t &ref2,
+                  const boost::optional<variable_t> &rgn2) override {
+    crab::CrabStats::count(domain_name() + ".count.select_ref");
+    crab::ScopedCrabStats __st__(domain_name() + ".select_ref");
+    if (!is_bottom()) {
+
+      m_base_dom.select_ref(lhs_ref, lhs_rgn, cond, ref1, rgn1, ref2, rgn2);
+      // ref_var is a reference, assign a fresh symbol into address dom
+      // create a fresh symbol to represent its base address
+      m_addrs_dom.set(get_or_insert_base_addr(lhs_ref),
+                      object_domain_impl::make_fresh_symbol(m_addrs_dom));
+    }
+  }
 
   /**************************** Numerical operations *************************/
   // x := y op z
