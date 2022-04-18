@@ -938,21 +938,14 @@ private:
     variable_t mru_base = get_base_addr_or_fail(id);
     const usymb_t *l_term_ptr = l_addrs_dom.get_term(mru_base);
     const usymb_t *r_term_ptr = r_addrs_dom.get_term(mru_base);
-    if (l_term_ptr && r_term_ptr) {
-      // TODO: so far we use term operator as a constant uninterpreted symbol.
-      // This is different from the constant term in crab's uf term.
-      // For now, two caches from two states refer the same MRU object
-      // if the base addresses of caches refer the same symbol in the uf domain
-      // So the way to check two symbols are same is finding operator values
-      // Check term/term_operator.hpp for more details.
-      assert(l_term_ptr->kind() == term::term_kind::TERM_APP);
-      assert(r_term_ptr->kind() == term::term_kind::TERM_APP);
-      term::term_operator_t l_t_op = term::term_ftor(l_term_ptr);
-      term::term_operator_t r_t_op = term::term_ftor(l_term_ptr);
-      bool res = l_t_op.value() == r_t_op.value();
-      return res;
-    }
-    return false;
+    // TODO: so far we use term operator as a constant uninterpreted symbol.
+    // This is different from the constant term in crab's uf term.
+    // For now, two caches from two states refer the same MRU object
+    // if the base addresses of caches refer the same symbol in the uf domain
+    // So the way to check two symbols are same is finding operator values
+    // Check term/term_operator.hpp for more details.
+    return object_domain_impl::is_two_vars_have_same_term(id, l_term_ptr, id,
+                                                          r_term_ptr);
   }
 
   bool test_two_addrs_equality(const variable_t &x, const variable_t &y) {
@@ -2710,8 +2703,9 @@ public:
       // because top for an abstract object in seperate domain means not exist
     } else if (name == "do_reduction") {
       assert(inputs.size() == 3);
-      error_if_not_variable(inputs[0]);
+      error_if_not_rgn(inputs[0]);
       error_if_not_variable(inputs[1]);
+      error_if_not_ref(inputs[1].get_variable());
       error_if_not_constant(inputs[2]);
       variable_t rgn = inputs[0].get_variable();
       variable_t ref = inputs[1].get_variable();
