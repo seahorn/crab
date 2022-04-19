@@ -387,7 +387,9 @@ private:
     // m_flds_id_map and m_refs_base_addrs_map do not require join,
     // they share accross all states. No need to update
     assert(m_flds_id_map == right.m_flds_id_map);
-    assert(m_refs_base_addrs_map == right.m_refs_base_addrs_map);
+    if (right.m_refs_base_addrs_map && !m_refs_base_addrs_map) {
+      m_refs_base_addrs_map = right.m_refs_base_addrs_map;
+    }
 
     // 2. join the odi map
     base_abstract_domain_t &l_base_dom = m_base_dom;
@@ -490,7 +492,6 @@ private:
     // m_flds_id_map and m_refs_base_addrs_map do not require join,
     // they share accross all states. No need to update
     assert(left.m_flds_id_map == right.m_flds_id_map);
-    assert(left.m_refs_base_addrs_map == right.m_refs_base_addrs_map);
 
     // 2. join the odi map
     // We only perform the common join
@@ -561,7 +562,9 @@ private:
                 : left.m_uf_regs_dom || right.m_uf_regs_dom);
 
     obj_flds_id_map_t out_flds_id_map = left.m_flds_id_map;
-    refs_base_addrs_map_t out_refs_base_addrs_map = left.m_refs_base_addrs_map;
+    refs_base_addrs_map_t out_refs_base_addrs_map =
+        left.m_refs_base_addrs_map ? left.m_refs_base_addrs_map
+                                   : right.m_refs_base_addrs_map;
 
     object_domain_t res(std::move(out_base_dom), std::move(out_odi_map),
                         std::move(out_addrs_dom), std::move(out_uf_regs_dom),
@@ -645,7 +648,6 @@ private:
     // m_flds_id_map and m_refs_base_addrs_map do not require meet,
     // they share accross all states. No need to update
     assert(m_flds_id_map == right.m_flds_id_map);
-    assert(m_refs_base_addrs_map == right.m_refs_base_addrs_map);
 
     // 2. meet the odi map
     base_abstract_domain_t l_base_dom = left.m_base_dom;
@@ -735,7 +737,9 @@ private:
 
     obj_flds_id_map_t out_flds_id_map = left.m_flds_id_map;
 
-    refs_base_addrs_map_t out_refs_base_addrs_map = left.m_refs_base_addrs_map;
+    refs_base_addrs_map_t out_refs_base_addrs_map =
+        left.m_refs_base_addrs_map ? left.m_refs_base_addrs_map
+                                   : right.m_refs_base_addrs_map;
 
     object_domain_t res(std::move(out_base_dom), std::move(out_odi_map),
                         std::move(out_addrs_dom), std::move(out_uf_regs_dom),
@@ -1778,7 +1782,11 @@ public:
       // region belongs to an abstract object.
 
       // retrieve an abstract object info
-      auto old_obj_info = m_obj_info_env.at(*id_opt);
+      auto obj_info_ref = m_obj_info_env.find(*id_opt);
+      if (!obj_info_ref) { // object goes to top
+        return;
+      }
+      auto old_obj_info = *obj_info_ref;
 
       const small_range &num_refs = old_obj_info.refcount_val();
 
@@ -1874,6 +1882,9 @@ public:
 
       // retrieve an abstract object info
       auto obj_info_ref = m_obj_info_env.find(*id_opt);
+      if (!obj_info_ref) { // object goes to top
+        return;
+      }
       assert(obj_info_ref); // The object info must exsits
 
       const small_range &num_refs = (*obj_info_ref).refcount_val();
@@ -1948,7 +1959,6 @@ public:
     //  if object domain exists, create a new one by copying old one
     //
     //  post condition: the odi map is updated, the base domain is not changed
-    // TODO: need reduction if val is a variable and it is not reduced
 
     ERROR_IF_NOT_REGION(rgn, __LINE__);
     ERROR_IF_ARRAY_REGION(rgn, __LINE__);
@@ -1991,6 +2001,9 @@ public:
 
       // retrieve an abstract object info
       auto obj_info_ref = m_obj_info_env.find(*id_opt);
+      if (!obj_info_ref) { // object goes to top
+        return;
+      }
       assert(obj_info_ref); // The object info must exsits
 
       const small_range &num_refs = (*obj_info_ref).refcount_val();
