@@ -2782,6 +2782,15 @@ public:
     } else if (is_top()) {
       o << "{}";
     } else {
+      CRAB_LOG("object-print", o << "("
+                                 << "ObjectInfo=" << m_obj_info_env;
+               o << ","
+                 << "BaseDom=" << m_base_dom;
+               o << ","
+                 << "Addrs=" << m_addrs_dom;
+               o << ","
+                 << "Regs=" << m_uf_regs_dom;
+               o << ","; object_write(o); o << ")\n"; return;);
       o << "Base = ";
       m_base_dom.write(o);
       o << ",\nuf_addrs = ";
