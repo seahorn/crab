@@ -2242,6 +2242,7 @@ public:
       perform_reduction();
 
       m_base_dom.apply(op, x, y, z);
+      m_uf_regs_dom -= x;
     }
   }
 
@@ -2257,6 +2258,7 @@ public:
       perform_reduction();
 
       m_base_dom.apply(op, x, y, k);
+      m_uf_regs_dom -= x;
     }
   }
 
@@ -2287,6 +2289,7 @@ public:
       perform_reduction();
 
       m_base_dom.apply(op, x, y, k);
+      m_uf_regs_dom -= x;
     }
   }
 
@@ -2302,6 +2305,7 @@ public:
       perform_reduction();
 
       m_base_dom.apply(op, dst, src);
+      m_uf_regs_dom -= dst;
     }
   }
 
@@ -2315,10 +2319,11 @@ public:
       perform_reduction();
 
       m_base_dom.select(lhs, cond, e1, e2);
+      m_uf_regs_dom -= lhs;
     }
   }
 
-  // x := e operates on register dom
+  // x := e
   void assign(const variable_t &x, const linear_expression_t &e) override {
     crab::CrabStats::count(domain_name() + ".count.assign");
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
@@ -2328,6 +2333,7 @@ public:
       perform_reduction();
 
       m_base_dom.assign(x, e);
+      m_uf_regs_dom -= x;
     }
   }
 
@@ -2358,6 +2364,7 @@ public:
       perform_reduction();
 
       m_base_dom.assign_bool_cst(lhs, rhs);
+      m_uf_regs_dom -= lhs;
     }
   }
 
@@ -2374,6 +2381,7 @@ public:
       perform_reduction();
 
       m_base_dom.assign_bool_var(lhs, rhs, is_not_rhs);
+      m_uf_regs_dom -= lhs;
     }
   }
 
@@ -2388,6 +2396,7 @@ public:
       perform_reduction();
 
       m_base_dom.apply_binary_bool(op, x, y, z);
+      m_uf_regs_dom -= x;
     }
   }
 
@@ -2403,6 +2412,7 @@ public:
 
       m_base_dom.assume_bool(v, is_negated);
       m_is_bottom = m_base_dom.is_bottom();
+      m_uf_regs_dom -= v;
     }
   }
 
@@ -2416,6 +2426,7 @@ public:
       perform_reduction();
 
       m_base_dom.select_bool(lhs, cond, b1, b2);
+      m_uf_regs_dom -= lhs;
     }
   }
 
@@ -2431,6 +2442,7 @@ public:
 
       auto rhs_lin_cst = convert_ref_cst_to_linear_cst(rhs);
       m_base_dom.assign_bool_cst(lhs, rhs_lin_cst);
+      m_uf_regs_dom -= lhs;
     }
   }
 
