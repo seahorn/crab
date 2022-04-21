@@ -149,13 +149,13 @@ public:
     }
   }
 
-  void forget(const variable_t &var, GhostDomain &val) {
+  void forget(const variable_t &var, GhostDomain &val) const {
     if (boost::optional<ghost_variables_t> gvars = get(var)) {
       (*gvars).forget(val);
     }
   }
 
-  void project(const variable_vector_t &vars, GhostDomain &val) {
+  void project(const variable_vector_t &vars, GhostDomain &val) const {
     ghost_variable_vector_t gvars_vec;
     for (auto const &v : vars) {
       if (boost::optional<ghost_variables_t> gvars = get(v)) {
