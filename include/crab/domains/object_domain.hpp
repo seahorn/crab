@@ -15,8 +15,9 @@
 #include <crab/support/stats.hpp>
 #include <crab/types/varname_factory.hpp>
 
-#include "object/object_info.hpp"
-#include "region/tags.hpp"
+#include <crab/domains/object/object_info.hpp>
+#include <crab/domains/region/ghost_variable_manager.hpp>
+#include <crab/domains/region/tags.hpp>
 
 #include <unordered_map>
 
@@ -107,6 +108,18 @@ bool is_two_vars_have_same_term(const Var &v1,
   }
   return (*top1_opt).value() == (*top2_opt).value();
 }
+
+template <typename TType>
+void print_vector(crab::crab_os &o, const std::vector<TType> &vec) {
+  typename std::vector<TType>::const_iterator it;
+  o << "[";
+  for (it = vec.begin(); it != vec.end(); it++) {
+    if (it != vec.begin())
+      o << ",";
+    o << (*it);
+  }
+  o << "]\n";
+}
 } // end namespace object_domain_impl
 
 template <typename Params>
@@ -169,10 +182,10 @@ private:
   using uf_fields_abstract_domain_t = uf_domain_t;
 
   using object_info_t = typename object_domain_impl::object_info;
-  using symb_flds_regs_map_t =
-      std::unordered_map<term::term_operator_t,
-                         std::pair<variable_vector_t, variable_vector_t>,
-                         object_domain_impl::term_op_hash>;
+  using symb_flds_regs_map_t = std::unordered_map<
+      term::term_operator_t,
+      std::pair<base_dom_variable_vector_t, base_dom_variable_vector_t>,
+      object_domain_impl::term_op_hash>;
 
   // FIXME: the current solution does not support different dom operations
   static_assert(
@@ -240,6 +253,21 @@ private:
   // The map is constructed dynamically but share accress all states
   using refs_base_addrs_map_t =
       std::shared_ptr<std::unordered_map<variable_t, variable_t>>;
+
+  // Management of ghost variables
+  // We model two types of variables in object domain
+  // One is for region variable, another is for reference variable.
+  // The former one is used to perform the reduction between region and register
+  // , the later one is used to infer sea.is_deref.
+  // Note that, we are using fixed naming where
+  // variable_t and subdomain::variable_t have the same type
+  // TODO: if the type of the domain for object is different from
+  // the type for base domain, the ghost variable manager should split into two.
+  using ghost_var_man_t =
+      typename region_domain_impl::ghost_variable_manager_with_fixed_naming<
+          object_domain_t, base_abstract_domain_t>;
+  using ghost_variables_t = typename ghost_var_man_t::ghost_variables_t;
+  using ghost_variable_vector_t = typename std::vector<ghost_variables_t>;
   /**------------------ End type definitions ------------------**/
 
   /**------------------ Begin class field definitions ------------------**/
@@ -290,6 +318,19 @@ private:
   // In addition, each cache that used for an abstract object
   // has a special base address variable for the MRU object
   refs_base_addrs_map_t m_refs_base_addrs_map;
+
+  // A ghost variable manager to create / get ghost variable for
+  // each variable
+  // This is required if subdomain is any array domain
+  // (array_smashing or array_adaptive) or
+  // logical-numerical (flat_boolean_domain) or
+  // numerical (zones, octagons, pk, etc).
+  // They should use only array, integer or boolean variables.
+  // So in object domain, we takes typed variable (e.g. region, reference)
+  // but in subdomain like base domain, odi map,
+  // we only keep array, integer or boolean variables
+  // Details: https://github.com/seahorn/crab/wiki/IndexedNamesAndTypedVariables
+  ghost_var_man_t m_ghost_var_man;
   /**------------------ End class field definitions ------------------**/
 
   /**------------------ Begin helper method definitions ------------------**/
@@ -298,11 +339,66 @@ private:
                 address_abstract_domain_t &&addrs_dom,
                 uf_register_abstract_domain_t &&uf_regs_dom,
                 obj_info_env_t &&obj_info_env, obj_flds_id_map_t &&flds_id_map,
-                refs_base_addrs_map_t &&refs_base_addrs_map)
+                refs_base_addrs_map_t &&refs_base_addrs_map,
+                ghost_var_man_t &&ghost_var_man)
       : m_is_bottom(base_dom.is_bottom()), m_base_dom(base_dom),
         m_odi_map(odi_map), m_addrs_dom(addrs_dom), m_uf_regs_dom(uf_regs_dom),
         m_obj_info_env(obj_info_env), m_flds_id_map(flds_id_map),
-        m_refs_base_addrs_map(refs_base_addrs_map) {}
+        m_refs_base_addrs_map(refs_base_addrs_map),
+        m_ghost_var_man(ghost_var_man) {}
+
+  std::function<variable_type(const variable_t &)> get_type() const {
+    auto fn = [this](const variable_t &v) { return v.get_type(); };
+    return fn;
+  }
+
+  ghost_variables_t get_or_insert_gvars(const variable_t &v) {
+    return m_ghost_var_man.get_or_insert(v);
+  }
+
+  boost::optional<ghost_variables_t> get_gvars(const variable_t &v) const {
+    return m_ghost_var_man.get(v);
+  }
+
+  base_dom_variable_or_constant_t
+  rename_variable_or_constant(const variable_or_constant_t &v) {
+    if (v.is_constant()) {
+      return base_dom_variable_or_constant_t(v.get_constant(), v.get_type());
+    } else {
+      auto v_gvars = get_or_insert_gvars(v.get_variable());
+      return base_dom_variable_or_constant_t(v_gvars.get_var());
+    }
+  }
+
+  boost::optional<base_dom_variable_t>
+  rename_variable_optional(boost::optional<variable_t> v_opt) {
+    if (v_opt == boost::none) {
+      return boost::none;
+    } else {
+      ghost_variables_t v_gvars = get_or_insert_gvars(*v_opt);
+      return v_gvars.get_var();
+    }
+  }
+
+  base_dom_linear_expression_t
+  rename_linear_expr(const linear_expression_t &e) {
+    return m_ghost_var_man.rename_linear_expr(e);
+  }
+
+  base_dom_linear_constraint_t
+  rename_linear_cst(const linear_constraint_t &cst) {
+    return m_ghost_var_man.rename_linear_cst(cst);
+  }
+
+  base_dom_linear_constraint_system_t
+  rename_linear_cst_sys(const linear_constraint_system_t &csts) {
+    return m_ghost_var_man.rename_linear_cst_sys(csts);
+  }
+
+  base_dom_linear_constraint_t
+  convert_ref_cst_to_linear_cst(const reference_constraint_t &ref_cst) {
+    return m_ghost_var_man.ghosting_ref_cst_to_linear_cst(ref_cst);
+  }
 
   // Self join
   // Perform *this = join(*this, right)
@@ -565,11 +661,13 @@ private:
     refs_base_addrs_map_t out_refs_base_addrs_map =
         left.m_refs_base_addrs_map ? left.m_refs_base_addrs_map
                                    : right.m_refs_base_addrs_map;
+    ghost_var_man_t out_ghost_var_man(left.m_ghost_var_man);
 
     object_domain_t res(std::move(out_base_dom), std::move(out_odi_map),
                         std::move(out_addrs_dom), std::move(out_uf_regs_dom),
                         std::move(out_obj_info_env), std::move(out_flds_id_map),
-                        std::move(out_refs_base_addrs_map));
+                        std::move(out_refs_base_addrs_map),
+                        std::move(out_ghost_var_man));
     return res;
   }
 
@@ -741,10 +839,13 @@ private:
         left.m_refs_base_addrs_map ? left.m_refs_base_addrs_map
                                    : right.m_refs_base_addrs_map;
 
+    ghost_var_man_t out_ghost_var_man(left.m_ghost_var_man);
+
     object_domain_t res(std::move(out_base_dom), std::move(out_odi_map),
                         std::move(out_addrs_dom), std::move(out_uf_regs_dom),
                         std::move(out_obj_info_env), std::move(out_flds_id_map),
-                        std::move(out_refs_base_addrs_map));
+                        std::move(out_refs_base_addrs_map),
+                        std::move(out_ghost_var_man));
     return res;
   }
 
@@ -769,53 +870,6 @@ private:
     res &= (left.m_uf_regs_dom <= right.m_uf_regs_dom);
     CRAB_LOG("object", crab::outs() << "Result7=" << res << "\n";);
     return res;
-  }
-
-  linear_constraint_t
-  convert_ref_cst_to_linear_cst(const reference_constraint_t &ref_cst) {
-    if (ref_cst.is_tautology()) {
-      return linear_constraint_t::get_true();
-    } else if (ref_cst.is_contradiction()) {
-      return linear_constraint_t::get_false();
-    } else {
-      if (ref_cst.is_unary()) {
-        assert(ref_cst.lhs().get_type().is_reference());
-        variable_t x = ref_cst.lhs();
-        if (ref_cst.is_equality()) {
-          return linear_constraint_t(x == number_t(0));
-        } else if (ref_cst.is_disequality()) {
-          return linear_constraint_t(x != number_t(0));
-        } else if (ref_cst.is_less_or_equal_than()) {
-          return linear_constraint_t(x <= number_t(0));
-        } else if (ref_cst.is_less_than()) {
-          return linear_constraint_t(x < number_t(0));
-        } else if (ref_cst.is_greater_or_equal_than()) {
-          return linear_constraint_t(x >= number_t(0));
-        } else if (ref_cst.is_greater_than()) {
-          return linear_constraint_t(x > number_t(0));
-        }
-      } else {
-        assert(ref_cst.lhs().get_type().is_reference());
-        assert(ref_cst.rhs().get_type().is_reference());
-        variable_t x = ref_cst.lhs();
-        variable_t y = ref_cst.rhs();
-        number_t offset = ref_cst.offset();
-        if (ref_cst.is_equality()) {
-          return linear_constraint_t(x == y + offset);
-        } else if (ref_cst.is_disequality()) {
-          return linear_constraint_t(x != y + offset);
-        } else if (ref_cst.is_less_or_equal_than()) {
-          return linear_constraint_t(x <= y + offset);
-        } else if (ref_cst.is_less_than()) {
-          return linear_constraint_t(x < y + offset);
-        } else if (ref_cst.is_greater_or_equal_than()) {
-          return linear_constraint_t(x >= y + offset);
-        } else if (ref_cst.is_greater_than()) {
-          return linear_constraint_t(x > y + offset);
-        }
-      }
-    }
-    CRAB_ERROR("unexpected reference constraint");
   }
 
   bool is_unknown_region(const variable_t &v) {
@@ -876,6 +930,29 @@ private:
       if (kv.second == id) {
         obj_flds.push_back(kv.first);
       }
+    }
+  }
+
+  void get_obj_ghost_flds(const obj_id_t &id,
+                          ghost_variable_vector_t &obj_ghost_flds) const {
+    variable_vector_t obj_flds;
+    get_obj_flds(id, obj_flds);
+    for (auto v : obj_flds) {
+      auto gvars_opt = get_gvars(v);
+      obj_ghost_flds.push_back(*gvars_opt);
+    }
+  }
+
+  void get_obj_dom_flds(const obj_id_t &id,
+                        base_dom_variable_vector_t &obj_dom_flds) const {
+    ghost_variable_vector_t obj_ghost_flds;
+    get_obj_ghost_flds(id, obj_ghost_flds);
+    for (auto v : obj_ghost_flds) {
+      if (v.has_offset_and_size()) {
+        obj_dom_flds.push_back(v.get_offset_and_size().get_offset());
+        obj_dom_flds.push_back(v.get_offset_and_size().get_size());
+      }
+      obj_dom_flds.push_back(v.get_var());
     }
   }
 
@@ -971,8 +1048,10 @@ private:
 
   /***************** ODI map operations *****************/
   void move_singleton_to_odi_map(const obj_id_t &id) {
-    variable_vector_t flds_vec;
-    get_obj_flds(id, flds_vec);
+    base_dom_variable_vector_t flds_vec;
+    get_obj_dom_flds(id, flds_vec);
+
+    object_domain_impl::print_vector(crab::outs(), flds_vec);
 
     base_abstract_domain_t singleton_base(m_base_dom);
     singleton_base.project(flds_vec);
@@ -990,6 +1069,7 @@ private:
 
     m_odi_map.set(id, res_prod);
     m_base_dom.forget(flds_vec);
+    // m_base_dom.forget(flds_vec);
   }
 
   void join_or_widen_singleton_with_non_singleton(
@@ -997,11 +1077,13 @@ private:
       const object_domain_t &s_non_single,
       base_abstract_domain_t &non_single_base, odi_map_t &odi_map,
       const bool is_join) const {
-    variable_vector_t flds_vec;
-    s_single.get_obj_flds(id, flds_vec);
+    // variable_vector_t flds_vec;
+    base_dom_variable_vector_t flds_vec;
+    s_single.get_obj_dom_flds(id, flds_vec);
 
     base_abstract_domain_t singleton_base(s_single.m_base_dom);
     singleton_base.project(flds_vec);
+    // singleton_base.project(flds_vec);
 
     odi_domain_product_t res_prod; // initial value is top
     const odi_domain_product_t *prod_ref = s_non_single.m_odi_map.find(id);
@@ -1052,10 +1134,11 @@ private:
   }
 
   /***************** Cache operations *****************/
-  term::term_operator_t
-  invalidate_cache_if_miss(obj_id_t &id, const variable_t &ref,
-                           const variable_t &rgn,
-                           boost::optional<term::term_operator_t> reg_symb) {
+  void invalidate_cache_if_miss(
+      obj_id_t &id, const variable_t &ref, const variable_t &rgn,
+      boost::optional<term::term_operator_t> &reg_symb,
+      boost::optional<std::pair<term::term_operator_t, term::term_operator_t>>
+          &offset_size_symb) {
     variable_t mru_obj_base = get_or_insert_base_addr(id);
     // retrieve an abstract object info
     auto obj_info_ref = m_obj_info_env.find(id);
@@ -1088,22 +1171,37 @@ private:
                                               boolean_value::get_false()));
     }
     // Step4: update cache_reg if a field equals to some register
+    ghost_variables_t rgn_gvars = get_or_insert_gvars(rgn);
     uf_fields_abstract_domain_t &uf_flds_dom = out_prod.second().second();
-    term::term_operator_t symb =
-        reg_symb != boost::none
-            ? *reg_symb
-            : object_domain_impl::get_or_make_term_symbol(uf_flds_dom, rgn);
-    uf_flds_dom.set(rgn, symb);
+    if (reg_symb == boost::none) {
+      reg_symb = object_domain_impl::get_or_make_term_symbol(
+          uf_flds_dom, rgn_gvars.get_var());
+    }
+    uf_flds_dom.set(rgn_gvars.get_var(), *reg_symb);
+    if (rgn_gvars.has_offset_and_size()) {
+      if (offset_size_symb == boost::none) {
+        offset_size_symb = std::make_pair(
+            object_domain_impl::get_or_make_term_symbol(
+                uf_flds_dom, rgn_gvars.get_offset_and_size().get_offset()),
+            object_domain_impl::get_or_make_term_symbol(
+                uf_flds_dom, rgn_gvars.get_offset_and_size().get_size()));
+      }
+      uf_flds_dom.set(rgn_gvars.get_offset_and_size().get_offset(),
+                      std::get<0>(*offset_size_symb));
+      uf_flds_dom.set(rgn_gvars.get_offset_and_size().get_size(),
+                      std::get<1>(*offset_size_symb));
+    }
+
     // Step5: update odi map
     m_odi_map.set(id, out_prod);
-    return symb;
   }
 
   // transfer regs-flds' constriants between MRU and base
   void reduce_regs_flds_between_cache_and_base(
       base_abstract_domain_t &base_dom,
       const uf_register_abstract_domain_t &uf_regs_dom,
-      odi_domain_product_t &prod, const variable_vector_t &obj_flds) const {
+      odi_domain_product_t &prod,
+      const base_dom_variable_vector_t &obj_flds) const {
     // E.g.
     // pre state:
     //      uf_regs_dom = { x == t1 ; z == t2; k = t3 }
@@ -1128,8 +1226,8 @@ private:
                                               << *this << "\n";);
     for (auto kv : m_obj_info_env) {
       const obj_id_t &id = kv.first;
-      variable_vector_t flds_vec;
-      get_obj_flds(id, flds_vec);
+      base_dom_variable_vector_t flds_vec;
+      get_obj_dom_flds(id, flds_vec);
       const object_info_t &obj_info = kv.second;
       const small_range &num_refs = obj_info.refcount_val();
       if (num_refs == small_range::oneOrMore()) {
@@ -1144,8 +1242,8 @@ private:
 
     for (auto kv : m_obj_info_env) {
       const obj_id_t &id = kv.first;
-      variable_vector_t flds_vec;
-      get_obj_flds(id, flds_vec);
+      base_dom_variable_vector_t flds_vec;
+      get_obj_dom_flds(id, flds_vec);
       const object_info_t &obj_info = kv.second;
       const small_range &num_refs = obj_info.refcount_val();
       if (num_refs == small_range::oneOrMore()) {
@@ -1164,8 +1262,8 @@ private:
 
   void perform_reduction_by_object(const obj_id_t &id,
                                    bool is_from_cache_to_base) {
-    variable_vector_t flds_vec;
-    get_obj_flds(id, flds_vec);
+    base_dom_variable_vector_t flds_vec;
+    get_obj_dom_flds(id, flds_vec);
     auto obj_info_ref = m_obj_info_env.find(id);
     if (obj_info_ref) {
       const object_info_t &obj_info = *obj_info_ref;
@@ -1192,7 +1290,7 @@ private:
   void build_map(symb_flds_regs_map_t &map,
                  const uf_register_abstract_domain_t &uf_regs_dom,
                  const uf_fields_abstract_domain_t &uf_flds_dom,
-                 const variable_vector_t &flds) const {
+                 const base_dom_variable_vector_t &flds) const {
     // it is not allowed to pass a term pointer to different
     // domain value because they use different term managers.
     // Worst case about performance is O(mn) where m and n
@@ -1229,7 +1327,7 @@ private:
       base_abstract_domain_t &base_dom,
       const uf_register_abstract_domain_t &uf_regs_dom,
       const odi_domain_product_t &prod,
-      const variable_vector_t &obj_flds) const {
+      const base_dom_variable_vector_t &obj_flds) const {
 
     crab::CrabStats::count(domain_name() + ".count.reduction");
     crab::ScopedCrabStats __st__(domain_name() + ".reduction");
@@ -1271,22 +1369,22 @@ private:
     build_map(map, uf_regs_dom, uf_flds_dom, obj_flds);
 
     for (auto it = map.begin(); it != map.end(); ++it) {
-      const variable_vector_t flds = std::get<0>(it->second);
-      const variable_vector_t regs = std::get<1>(it->second);
+      const base_dom_variable_vector_t flds = std::get<0>(it->second);
+      const base_dom_variable_vector_t regs = std::get<1>(it->second);
       assert(flds.size() > 0);
       assert(regs.size() > 0);
-      variable_t fld = flds[0];
+      const base_dom_variable_t &fld = flds[0];
       if (regs.size() == 1) {
-        reduced_cache += ikos::operator==(fld, regs[0]);
-        // reduced_cache.rename(flds, regs);
+        // reduced_cache += ikos::operator==(fld, regs[0]);
+        reduced_cache.rename({fld}, {regs[0]});
       } else { // regs.size() > 1
         auto it_regs = regs.begin();
-        variable_t var = *it_regs;
+        const base_dom_variable_t &var = *it_regs;
         while (it_regs != regs.end()) {
           if (it_regs == regs.begin()) {
-            reduced_cache += ikos::operator==(fld, var);
+            reduced_cache.rename({fld}, {var});
           } else {
-            reduced_cache += ikos::operator==(var, (*it_regs));
+            reduced_cache += ikos::operator==(var, *it_regs);
           }
           ++it_regs;
         }
@@ -1303,12 +1401,18 @@ private:
              odi_write(crab::outs(), prod); crab::outs() << "\n";);
   }
 
+  // void translate(const variable_t &rgn_var, const variable_t &reg_var) const
+  // {
+  //   ghost_variables_t rgn_gvars = get_or_insert_gvars(rgn_var);
+  // }
+
   // Precondition: if register(s) equal to some field,
   //  the register(s) are reduced from cache to base
   void reduce_flds_from_base_to_cache(
       const base_abstract_domain_t &base_dom,
       const uf_register_abstract_domain_t &uf_regs_dom,
-      odi_domain_product_t &prod, const variable_vector_t &obj_flds) const {
+      odi_domain_product_t &prod,
+      const base_dom_variable_vector_t &obj_flds) const {
 
     crab::CrabStats::count(domain_name() + ".count.reduction");
     crab::ScopedCrabStats __st__(domain_name() + ".reduction");
@@ -1354,27 +1458,29 @@ private:
     base_abstract_domain_t reduced_base = base_dom;
 
     for (auto it = map.begin(); it != map.end(); ++it) {
-      const variable_vector_t flds = std::get<0>(it->second);
-      const variable_vector_t regs = std::get<1>(it->second);
+      const base_dom_variable_vector_t flds = std::get<0>(it->second);
+      const base_dom_variable_vector_t regs = std::get<1>(it->second);
       assert(flds.size() > 0);
       assert(regs.size() > 0);
-      variable_t reg = regs[0];
+      const base_dom_variable_t &reg = regs[0];
       if (flds.size() == 1) {
-        reduced_base += ikos::operator==(reg, flds[0]);
-        // reduced_base.rename(regs, flds);
+        // reduced_base += ikos::operator==(reg, flds[0]);
+        reduced_base.rename({reg}, {flds[0]});
       } else { // flds.size() > 1
         auto it_flds = flds.begin();
-        variable_t var = *it_flds;
+        const base_dom_variable_t &var = *it_flds;
         while (it_flds != flds.end()) {
           if (it_flds == flds.begin()) {
-            reduced_base += ikos::operator==(var, reg);
+            reduced_base.rename({reg}, {var});
+            // reduced_base += ikos::operator==(var, reg);
           } else {
-            reduced_base += ikos::operator==(var, (*it_flds));
+            reduced_base += ikos::operator==(var, *it_flds);
           }
           ++it_flds;
         }
       }
     }
+    // reduced_base.project(obj_flds);
     reduced_base.project(obj_flds);
     cache_dom = cache_dom & reduced_base;
     CRAB_LOG("object-reduce", crab::outs()
@@ -1396,8 +1502,8 @@ private:
                         const object_domain_impl::object_info *obj_info_ref,
                         const obj_id_t &id) const {
     assert(obj_info_ref);
-    variable_vector_t obj_flds;
-    get_obj_flds(id, obj_flds);
+    base_dom_variable_vector_t obj_flds;
+    get_obj_dom_flds(id, obj_flds);
     reduce_regs_flds_between_cache_and_base(base_dom, uf_regs_dom, prod,
                                             obj_flds);
     if ((*obj_info_ref).cachedirty_val().is_true()) {
@@ -1512,14 +1618,16 @@ public:
     std::swap(*this, abs);
   }
 
-  object_domain(bool is_top = true) : m_is_bottom(!is_top) {}
+  object_domain(bool is_top = true)
+      : m_is_bottom(!is_top), m_ghost_var_man(get_type()) {}
 
   object_domain(const object_domain_t &o)
       : m_is_bottom(o.m_is_bottom), m_base_dom(o.m_base_dom),
         m_odi_map(o.m_odi_map), m_addrs_dom(o.m_addrs_dom),
         m_uf_regs_dom(o.m_uf_regs_dom), m_obj_info_env(o.m_obj_info_env),
         m_flds_id_map(o.m_flds_id_map),
-        m_refs_base_addrs_map(o.m_refs_base_addrs_map) {
+        m_refs_base_addrs_map(o.m_refs_base_addrs_map),
+        m_ghost_var_man(o.m_ghost_var_man) {
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
   }
@@ -1531,7 +1639,8 @@ public:
         m_uf_regs_dom(std::move(o.m_uf_regs_dom)),
         m_obj_info_env(std::move(o.m_obj_info_env)),
         m_flds_id_map(std::move(o.m_flds_id_map)),
-        m_refs_base_addrs_map(std::move(o.m_refs_base_addrs_map)) {}
+        m_refs_base_addrs_map(std::move(o.m_refs_base_addrs_map)),
+        m_ghost_var_man(std::move(o.m_ghost_var_man)) {}
 
   object_domain_t &operator=(const object_domain_t &o) {
     crab::CrabStats::count(domain_name() + ".count.copy");
@@ -1545,6 +1654,7 @@ public:
       m_obj_info_env = o.m_obj_info_env;
       m_flds_id_map = o.m_flds_id_map;
       m_refs_base_addrs_map = o.m_refs_base_addrs_map;
+      m_ghost_var_man = o.m_ghost_var_man;
     }
     return *this;
   }
@@ -1559,6 +1669,7 @@ public:
       m_obj_info_env = std::move(o.m_obj_info_env);
       m_flds_id_map = std::move(o.m_flds_id_map);
       m_refs_base_addrs_map = std::move(o.m_refs_base_addrs_map);
+      m_ghost_var_man = std::move(o.m_ghost_var_man);
     };
     return *this;
   }
@@ -1748,6 +1859,8 @@ public:
                                   // Cache is not dirty
                                   boolean_value::get_false()));
     }
+    // Assign ghost variables to rgn for modeling its content
+    get_or_insert_gvars(rgn);
 
     CRAB_LOG("object", crab::outs() << "After region_init(" << rgn
                                     << ")=" << *this << "\n";);
@@ -1770,12 +1883,22 @@ public:
     }
 
     // for now skip analysis for unknown region
-    if (is_unknown_region(rgn)) {
-      return;
-    }
+    // if (is_unknown_region(rgn)) {
+    //   return;
+    // }
 
     // REDUCTION: perform reduction
     perform_reduction();
+
+    // Assign ghost variables to ref
+    ghost_variables_t ref_gvars = get_or_insert_gvars(ref);
+    // Initialize ghost variables
+    // If we model reference's offset and size
+    // then, ref.offset = 0 and ref.size = size
+    if (ref_gvars.has_offset_and_size()) {
+      ref_gvars.get_offset_and_size().init(m_base_dom,
+                                           rename_variable_or_constant(size));
+    }
 
     if (auto id_opt = get_obj_id(rgn)) {
       // the object id must exist for each region if the
@@ -1865,6 +1988,10 @@ public:
     // REDUCTION: perform reduction
     perform_reduction();
 
+    const ghost_variables_t &res_gvars = get_or_insert_gvars(res);
+    // use ghost variable for field
+    ghost_variables_t rgn_gvars = get_or_insert_gvars(rgn);
+
     if (is_null_ref(ref).is_true()) {
       CRAB_LOG("object", CRAB_WARN(domain_name(), "::ref_load: reference ", ref,
                                    " is null."););
@@ -1895,14 +2022,25 @@ public:
       assert(!num_refs.is_zero());
 
       if (num_refs.is_one()) { // singleton object
-        m_base_dom.assign(res, rgn);
+        // m_base_dom.assign(res, rgn);
+        res_gvars.assign(m_base_dom, rgn_gvars);
+        if (rgn_gvars.has_offset_and_size() &&
+            res_gvars.has_offset_and_size()) {
+          rgn_gvars.get_offset_and_size().assign(
+              m_base_dom, res_gvars.get_offset_and_size());
+        } else if (rgn_gvars.has_offset_and_size()) {
+          rgn_gvars.get_offset_and_size().forget(m_base_dom);
+        }
         // the requirment 3.1 is satisfied
       } else { // num_refs > 1, use odi map
+        boost::optional<term::term_operator_t> reg_symb = boost::none;
+        boost::optional<std::pair<term::term_operator_t, term::term_operator_t>>
+            reg_offset_size_symb = boost::none;
         // read from odi map
         const odi_domain_product_t *prod_ref = m_odi_map.find((*id_opt));
         if (prod_ref != nullptr) {
-          term::term_operator_t symb =
-              invalidate_cache_if_miss((*id_opt), ref, rgn, boost::none);
+          invalidate_cache_if_miss((*id_opt), ref, rgn, reg_symb,
+                                   reg_offset_size_symb);
           if (res.get_type().is_reference()) {
             // res is a reference, assign a fresh symbol into address dom
             // create a fresh symbol to represent its base address
@@ -1910,7 +2048,13 @@ public:
                             object_domain_impl::make_fresh_symbol(m_addrs_dom));
           }
           // assigning register with symbol
-          m_uf_regs_dom.set(res, symb);
+          m_uf_regs_dom.set(res_gvars.get_var(), *reg_symb);
+          if (res_gvars.has_offset_and_size()) {
+            m_uf_regs_dom.set(res_gvars.get_offset_and_size().get_offset(),
+                              std::get<0>(*reg_offset_size_symb));
+            m_uf_regs_dom.set(res_gvars.get_offset_and_size().get_size(),
+                              std::get<1>(*reg_offset_size_symb));
+          }
         }
         m_base_dom -= res;
       }
@@ -2008,31 +2152,63 @@ public:
 
       const small_range &num_refs = (*obj_info_ref).refcount_val();
       assert(!num_refs.is_zero());
+      // use ghost variable for field
+      ghost_variables_t rgn_gvars = get_or_insert_gvars(rgn);
 
       if (num_refs.is_one()) { // singleton object, perform a strong update
         if (val.is_constant()) {
-          m_base_dom.assign(rgn, val.get_constant());
+          m_base_dom.assign(rgn_gvars.get_var(), val.get_constant());
         } else {
-          m_base_dom.assign(rgn, val.get_variable());
+          ghost_variables_t val_gvars = get_or_insert_gvars(val.get_variable());
+          rgn_gvars.assign(m_base_dom, val_gvars);
+          if (rgn_gvars.has_offset_and_size() &&
+              val_gvars.has_offset_and_size()) {
+            rgn_gvars.get_offset_and_size().assign(
+                m_base_dom, val_gvars.get_offset_and_size());
+          } else if (rgn_gvars.has_offset_and_size()) {
+            rgn_gvars.get_offset_and_size().forget(m_base_dom);
+          }
+          // m_base_dom.assign(rgn_gvars.get_var(), val.get_variable());
         }
       } else { // num_refs > 1, use odi map
         // read from odi map
         const odi_domain_product_t *prod_ref = m_odi_map.find((*id_opt));
         boost::optional<term::term_operator_t> reg_symb = boost::none;
+        boost::optional<std::pair<term::term_operator_t, term::term_operator_t>>
+            reg_offset_size_symb = boost::none;
         if (val.is_variable()) {
+          ghost_variables_t val_gvars = get_or_insert_gvars(val.get_variable());
           reg_symb = object_domain_impl::get_or_make_term_symbol(
-              m_uf_regs_dom, val.get_variable());
+              m_uf_regs_dom, val_gvars.get_var());
+          if (val_gvars.has_offset_and_size()) {
+            reg_offset_size_symb = std::make_pair(
+                object_domain_impl::get_or_make_term_symbol(
+                    m_uf_regs_dom,
+                    val_gvars.get_offset_and_size().get_offset()),
+                object_domain_impl::get_or_make_term_symbol(
+                    m_uf_regs_dom, val_gvars.get_offset_and_size().get_size()));
+          }
         }
-        term::term_operator_t symb =
-            invalidate_cache_if_miss((*id_opt), ref, rgn, reg_symb);
+        invalidate_cache_if_miss((*id_opt), ref, rgn, reg_symb,
+                                 reg_offset_size_symb);
         prod_ref = m_odi_map.find((*id_opt));
         odi_domain_product_t out_prod = (*prod_ref);
         if (val.is_constant()) {
-          out_prod.second().first().assign(rgn, val.get_constant());
+          out_prod.second().first().assign(rgn_gvars.get_var(),
+                                           val.get_constant());
         } else { // val is a variable (i.e. register)
+          ghost_variables_t val_gvars = get_or_insert_gvars(val.get_variable());
           // assigning register with symbol
-          m_uf_regs_dom.set(val.get_variable(), symb);
-          out_prod.second().first() -= rgn;
+          m_uf_regs_dom.set(val_gvars.get_var(), *reg_symb);
+          out_prod.second().first() -= rgn_gvars.get_var();
+          if (rgn_gvars.has_offset_and_size() &&
+              val_gvars.has_offset_and_size()) {
+            m_uf_regs_dom.set(val_gvars.get_offset_and_size().get_offset(),
+                              std::get<0>(*reg_offset_size_symb));
+            m_uf_regs_dom.set(val_gvars.get_offset_and_size().get_size(),
+                              std::get<1>(*reg_offset_size_symb));
+          }
+          rgn_gvars.forget(out_prod.second().first());
         }
         // update object info
         m_obj_info_env.set(*id_opt, object_domain_impl::object_info(
@@ -2073,12 +2249,22 @@ public:
 
     // for now skip analysis for unknown region or a region not belonging to an
     // abstract object
-    if (is_unknown_region(rgn1) || is_unknown_region(rgn2)) {
-      return;
-    }
+    // if (is_unknown_region(rgn1) || is_unknown_region(rgn2)) {
+    //   return;
+    // }
 
     // REDUCTION: perform reduction
     perform_reduction();
+
+    ghost_variables_t ref1_gvars = get_or_insert_gvars(ref1);
+    ghost_variables_t ref2_gvars = get_or_insert_gvars(ref2);
+
+    if (ref1_gvars.has_offset_and_size() && ref2_gvars.has_offset_and_size()) {
+      ref2_gvars.get_offset_and_size().assign(
+          m_base_dom, ref1_gvars.get_offset_and_size(), offset);
+    } else if (ref2_gvars.has_offset_and_size()) {
+      ref2_gvars.get_offset_and_size().forget(m_base_dom);
+    }
 
     if (auto id1_opt = get_obj_id(rgn1)) {
       if (auto id2_opt = get_obj_id(rgn2)) {
@@ -2090,7 +2276,7 @@ public:
       }
     }
 
-    m_base_dom.assign(ref2, ref1 + offset);
+    m_base_dom.assign(ref2_gvars.get_var(), ref1_gvars.get_var() + offset);
 
     CRAB_LOG("object", crab::outs()
                            << "After (" << rgn2 << "," << ref2
@@ -2140,7 +2326,7 @@ public:
 
       // We represent reference as numerical in domain
       m_base_dom.assign(int_var, ref_var);
-      m_addrs_dom -= ref_var;
+      m_addrs_dom -= get_or_insert_base_addr(ref_var);
     }
   }
 
@@ -2157,7 +2343,14 @@ public:
       // REDUCTION: perform reduction
       perform_reduction();
 
-      m_base_dom.assign(ref_var, int_var);
+      ghost_variables_t ref_gvars = get_or_insert_gvars(ref_var);
+      ghost_variables_t int_gvars = get_or_insert_gvars(int_var);
+      // TODO: did not get this one
+      if (ref_gvars.has_offset_and_size()) {
+        ref_gvars.get_offset_and_size().forget(m_base_dom);
+      }
+
+      ref_gvars.assign(m_base_dom, int_gvars);
       // ref_var is a reference, assign a fresh symbol into address dom
       // create a fresh symbol to represent its base address
       m_addrs_dom.set(get_or_insert_base_addr(ref_var),
@@ -2221,7 +2414,20 @@ public:
       // REDUCTION: perform reduction
       perform_reduction();
 
-      m_base_dom.select_ref(lhs_ref, lhs_rgn, cond, ref1, rgn1, ref2, rgn2);
+      ghost_variables_t lhs_ref_gvars = get_or_insert_gvars(lhs_ref);
+      ghost_variables_t lhs_rgn_gvars = get_or_insert_gvars(lhs_rgn);
+      ghost_variables_t cond_gvars = get_or_insert_gvars(cond);
+      base_dom_variable_or_constant_t b_ref1 =
+          rename_variable_or_constant(ref1);
+      base_dom_variable_or_constant_t b_ref2 =
+          rename_variable_or_constant(ref2);
+      boost::optional<base_dom_variable_t> b_rgn1 =
+          rename_variable_optional(rgn1);
+      boost::optional<base_dom_variable_t> b_rgn2 =
+          rename_variable_optional(rgn2);
+
+      m_base_dom.select_ref(lhs_ref_gvars.get_var(), lhs_rgn_gvars.get_var(),
+                            cond, b_ref1, b_rgn1, b_ref2, b_rgn2);
       // ref_var is a reference, assign a fresh symbol into address dom
       // create a fresh symbol to represent its base address
       m_addrs_dom.set(get_or_insert_base_addr(lhs_ref),
@@ -2241,7 +2447,9 @@ public:
       // REDUCTION: perform reduction
       perform_reduction();
 
-      m_base_dom.apply(op, x, y, z);
+      m_base_dom.apply(op, get_or_insert_gvars(x).get_var(),
+                       get_or_insert_gvars(y).get_var(),
+                       get_or_insert_gvars(z).get_var());
       m_uf_regs_dom -= x;
     }
   }
@@ -2257,7 +2465,8 @@ public:
       // REDUCTION: perform reduction
       perform_reduction();
 
-      m_base_dom.apply(op, x, y, k);
+      m_base_dom.apply(op, get_or_insert_gvars(x).get_var(),
+                       get_or_insert_gvars(y).get_var(), k);
       m_uf_regs_dom -= x;
     }
   }
@@ -2273,7 +2482,9 @@ public:
       // REDUCTION: perform reduction
       perform_reduction();
 
-      m_base_dom.apply(op, x, y, z);
+      m_base_dom.apply(op, get_or_insert_gvars(x).get_var(),
+                       get_or_insert_gvars(y).get_var(),
+                       get_or_insert_gvars(z).get_var());
     }
   }
 
@@ -2288,7 +2499,8 @@ public:
       // REDUCTION: perform reduction
       perform_reduction();
 
-      m_base_dom.apply(op, x, y, k);
+      m_base_dom.apply(op, get_or_insert_gvars(x).get_var(),
+                       get_or_insert_gvars(y).get_var(), k);
       m_uf_regs_dom -= x;
     }
   }
@@ -2304,7 +2516,8 @@ public:
       // REDUCTION: perform reduction
       perform_reduction();
 
-      m_base_dom.apply(op, dst, src);
+      m_base_dom.apply(op, get_or_insert_gvars(dst).get_var(),
+                       get_or_insert_gvars(src).get_var());
       m_uf_regs_dom -= dst;
     }
   }
@@ -2318,7 +2531,10 @@ public:
       // REDUCTION: perform reduction
       perform_reduction();
 
-      m_base_dom.select(lhs, cond, e1, e2);
+      auto b_e1 = rename_linear_expr(e1);
+      auto b_e2 = rename_linear_expr(e2);
+      auto b_cond = rename_linear_cst(cond);
+      m_base_dom.select(get_or_insert_gvars(lhs).get_var(), b_cond, b_e1, b_e2);
       m_uf_regs_dom -= lhs;
     }
   }
@@ -2332,7 +2548,8 @@ public:
       // REDUCTION: perform reduction
       perform_reduction();
 
-      m_base_dom.assign(x, e);
+      auto b_e = rename_linear_expr(e);
+      m_base_dom.assign(get_or_insert_gvars(x).get_var(), b_e);
       m_uf_regs_dom -= x;
     }
   }
@@ -2346,7 +2563,8 @@ public:
       // REDUCTION: perform reduction
       perform_reduction();
 
-      m_base_dom += csts;
+      auto b_csts = rename_linear_cst_sys(csts);
+      m_base_dom += b_csts;
       m_is_bottom = m_base_dom.is_bottom();
     }
   }
@@ -2363,7 +2581,8 @@ public:
       // REDUCTION: perform reduction
       perform_reduction();
 
-      m_base_dom.assign_bool_cst(lhs, rhs);
+      auto b_rhs = rename_linear_cst(rhs);
+      m_base_dom.assign_bool_cst(get_or_insert_gvars(lhs).get_var(), b_rhs);
       m_uf_regs_dom -= lhs;
     }
   }
@@ -2380,7 +2599,9 @@ public:
       // REDUCTION: perform reduction
       perform_reduction();
 
-      m_base_dom.assign_bool_var(lhs, rhs, is_not_rhs);
+      m_base_dom.assign_bool_var(get_or_insert_gvars(lhs).get_var(),
+                                 get_or_insert_gvars(rhs).get_var(),
+                                 is_not_rhs);
       m_uf_regs_dom -= lhs;
     }
   }
@@ -2395,7 +2616,9 @@ public:
       // REDUCTION: perform reduction
       perform_reduction();
 
-      m_base_dom.apply_binary_bool(op, x, y, z);
+      m_base_dom.apply_binary_bool(op, get_or_insert_gvars(x).get_var(),
+                                   get_or_insert_gvars(y).get_var(),
+                                   get_or_insert_gvars(z).get_var());
       m_uf_regs_dom -= x;
     }
   }
@@ -2410,7 +2633,7 @@ public:
       // REDUCTION: perform reduction
       perform_reduction();
 
-      m_base_dom.assume_bool(v, is_negated);
+      m_base_dom.assume_bool(get_or_insert_gvars(v).get_var(), is_negated);
       m_is_bottom = m_base_dom.is_bottom();
       m_uf_regs_dom -= v;
     }
@@ -2425,7 +2648,10 @@ public:
       // REDUCTION: perform reduction
       perform_reduction();
 
-      m_base_dom.select_bool(lhs, cond, b1, b2);
+      m_base_dom.select_bool(get_or_insert_gvars(lhs).get_var(),
+                             get_or_insert_gvars(cond).get_var(),
+                             get_or_insert_gvars(b1).get_var(),
+                             get_or_insert_gvars(b2).get_var());
       m_uf_regs_dom -= lhs;
     }
   }
@@ -2678,6 +2904,11 @@ public:
         CRAB_ERROR("Intrinsics ", name, " expected a constant input");
       }
     };
+    auto error_if_not_bool = [&name](const variable_t &var) {
+      if (!var.get_type().is_bool()) {
+        CRAB_ERROR("Intrinsics ", name, " parameter ", var, " should be Bool");
+      }
+    };
     auto error_if_not_rgn = [&name](const variable_or_constant_t &x) {
       if (!x.is_variable() || !x.get_type().is_region()) {
         // the input vector should only contains region variables
@@ -2690,6 +2921,12 @@ public:
         CRAB_ERROR("Intrinsics ", name, " parameter ", var,
                    " should be a reference");
       }
+    };
+
+    auto set_bool_var_to_true = [this](const variable_t &bool_var) {
+      /// Require that the base domain can reason about booleans
+      operator-=(bool_var);
+      assume_bool(bool_var, false /*not negated*/);
     };
 
     if (is_bottom()) {
@@ -2741,6 +2978,42 @@ public:
           perform_reduction_by_object(*id_opt, reduce_direction);
         }
       }
+    } else if (name == "is_dereferenceable") {
+      if (crab_domain_params_man::get().region_is_dereferenceable()) {
+        assert(inputs.size() == 3);
+        assert(outputs.size() == 1);
+        // ignore region variable (inputs[0])
+        error_if_not_variable(inputs[1]);
+        error_if_not_bool(outputs[0]);
+        variable_t bv = outputs[0];
+        variable_t ref = inputs[1].get_variable();
+        CRAB_LOG("object-is-deref",
+                 crab::outs() << bv << ":= is_dereferenceable(" << inputs[0]
+                              << "," << inputs[1] << "," << inputs[2] << ")\n"
+                              << *this << "\n";);
+        if (auto ref_gvars_opt = get_gvars(ref)) {
+
+          if ((*ref_gvars_opt).has_offset_and_size()) {
+            // CRAB_LOG("region-domain-is-deref",
+            // 	     crab::outs() << "\t" << "Found ghost variables for " << ref
+            // << "\n"
+            // 	     << "\toffset=" <<
+            // (*ref_gvars_opt).get_offset_and_size().get_offset() << "\n"
+            // 	     << "\tsize=" <<
+            // (*ref_gvars_opt).get_offset_and_size().get_size() << "\n";);
+            if ((*ref_gvars_opt)
+                    .get_offset_and_size()
+                    .is_deref(m_base_dom,
+                              rename_variable_or_constant(inputs[2]))) {
+              set_bool_var_to_true(bv);
+              CRAB_LOG("object-is-deref", crab::outs() << "\tRESULT=TRUE\n");
+              return;
+            }
+          }
+        }
+        CRAB_LOG("object-is-deref", crab::outs() << "\tRESULT=UNKNOWN\n");
+        operator-=(bv);
+      }
     }
   }
 
@@ -2753,17 +3026,19 @@ public:
       return boolean_value::get_false();
     }
 
-    interval_t ival = m_base_dom[ref];
-    number_t zero(0);
+    if (auto gvars_opt = get_gvars(ref)) {
+      interval_t ival = m_base_dom[(*gvars_opt).get_var()];
+      number_t zero(0);
 
-    if (!(interval_t(zero) <= ival)) {
-      return boolean_value::get_false();
-    }
+      if (!(interval_t(zero) <= ival)) {
+        return boolean_value::get_false();
+      }
 
-    boost::optional<number_t> x = ival.lb().number();
-    boost::optional<number_t> y = ival.ub().number();
-    if (x && y && *x == zero && *y == zero) { // ref == 0
-      return boolean_value::get_true();
+      boost::optional<number_t> x = ival.lb().number();
+      boost::optional<number_t> y = ival.ub().number();
+      if (x && y && *x == zero && *y == zero) {
+        return boolean_value::get_true();
+      }
     }
 
     return boolean_value::top();
@@ -2785,14 +3060,15 @@ public:
       CRAB_LOG("object-print", o << "("
                                  << "ObjectInfo=" << m_obj_info_env;
                o << ","
-                 << "BaseDom=" << m_base_dom;
+                 << "BaseDom=";
+               m_ghost_var_man.write(o, m_base_dom);
                o << ","
                  << "Addrs=" << m_addrs_dom;
                o << ","
                  << "Regs=" << m_uf_regs_dom;
                o << ","; object_write(o); o << ")\n"; return;);
       o << "Base = ";
-      m_base_dom.write(o);
+      m_ghost_var_man.write(o, m_base_dom);
       o << ",\nuf_addrs = ";
       m_addrs_dom.write(o);
       o << ",\nuf_regs = ";
