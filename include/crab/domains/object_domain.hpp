@@ -375,6 +375,9 @@ private:
     if (v_opt == boost::none) {
       return boost::none;
     } else {
+      if (is_unknown_region(*v_opt)) {
+        return boost::none;
+      }
       ghost_variables_t v_gvars = get_or_insert_gvars(*v_opt);
       return v_gvars.get_var();
     }
@@ -2415,7 +2418,9 @@ public:
       perform_reduction();
 
       ghost_variables_t lhs_ref_gvars = get_or_insert_gvars(lhs_ref);
-      ghost_variables_t lhs_rgn_gvars = get_or_insert_gvars(lhs_rgn);
+      base_dom_variable_t lhs_b_rgn =
+          is_unknown_region(lhs_rgn) ? lhs_rgn
+                                     : get_or_insert_gvars(lhs_rgn).get_var();
       ghost_variables_t cond_gvars = get_or_insert_gvars(cond);
       base_dom_variable_or_constant_t b_ref1 =
           rename_variable_or_constant(ref1);
@@ -2426,8 +2431,8 @@ public:
       boost::optional<base_dom_variable_t> b_rgn2 =
           rename_variable_optional(rgn2);
 
-      m_base_dom.select_ref(lhs_ref_gvars.get_var(), lhs_rgn_gvars.get_var(),
-                            cond, b_ref1, b_rgn1, b_ref2, b_rgn2);
+      m_base_dom.select_ref(lhs_ref_gvars.get_var(), lhs_b_rgn, cond, b_ref1,
+                            b_rgn1, b_ref2, b_rgn2);
       // ref_var is a reference, assign a fresh symbol into address dom
       // create a fresh symbol to represent its base address
       m_addrs_dom.set(get_or_insert_base_addr(lhs_ref),
