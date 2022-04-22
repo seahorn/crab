@@ -1225,6 +1225,10 @@ private:
   }
 
   void perform_reduction() {
+    if (!crab_domain_params_man::get().reduce_everywhere()) {
+      // if flag is false, no reduction is performed.
+      return;
+    }
     CRAB_LOG("object-reduction", crab::outs() << "State Before Reduction:\n"
                                               << *this << "\n";);
     for (auto kv : m_obj_info_env) {
