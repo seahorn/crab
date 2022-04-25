@@ -99,7 +99,7 @@ private:
   using union_find_domain_t = union_find_domain<Element, Domain, MergeSemantics>;
   using parents_map_t = std::unordered_map<element_t, element_t>;
 public:
-  using element_set_t = std::set<element_t>;  
+  using element_set_t = std::vector<element_t>; 
   using equivalence_class_elems_t = std::unordered_map<element_t, element_set_t>;
   using equivalence_class_t = equivalence_class<Domain>;  
 private:  
@@ -178,9 +178,10 @@ private:
     o << "})";
   }
 
-  void get_all_members(element_set_t &out) const {
+  void get_all_members(std::vector<element_t> &out) const {
+    out.reserve(m_parents.size());
     for (auto &kv: m_parents) {
-      out.insert(kv.first);
+      out.push_back(kv.first);
     }
   }
 
@@ -198,7 +199,7 @@ private:
 	                    << "\n\t" << *this << "\n\t" << o << "\n";);
       union_find_domain_t left(*this);
       union_find_domain_t right(o);
-
+      
       // Keep only common elements      
       element_set_t left_elems;
       left.get_all_members(left_elems);
@@ -235,7 +236,8 @@ private:
             right.get_equiv_class(*right_repr).get_domain();
         left_dom = (is_join ? (left_dom | right_dom): (left_dom || right_dom));
       }
-
+      left_equiv_classes.clear();
+      
       // Merge equivalence classes from the right to the left while
       // joining/widening the domains associated to the equivalence
       // classes.
@@ -291,7 +293,8 @@ private:
           return left;
         }
       }
-
+      left_equiv_classes.clear();
+      
       // Merge equivalence classes from the right to the left while
       // applying meet/narrowing
       for (auto &kv : right_equiv_classes) {
@@ -538,17 +541,11 @@ public:
     equivalence_class_elems_t res;
     for (auto &kv : m_parents) {
       element_t rep = find(kv.second);
-      auto it = res.find(rep);
-      if (it == res.end()) {
-        element_set_t s;
-        s.insert(kv.first);
-        res.insert({rep, s});
-      } else {
-        element_set_t &s = it->second;
-        s.insert(kv.first);
-      }
+      element_set_t &s = res[rep];
+      auto it = std::upper_bound(s.begin(), s.end(), kv.first);
+      s.insert(it, kv.first);
     }
-    return res;
+    return res;    
   }
 
   // Without path-compression
@@ -556,15 +553,9 @@ public:
     equivalence_class_elems_t res;
     for (auto &kv : m_parents) {
       element_t rep = find(kv.second);
-      auto it = res.find(rep);
-      if (it == res.end()) {
-        element_set_t s;
-        s.insert(kv.first);
-        res.insert({rep, s});
-      } else {
-        element_set_t &s = it->second;
-        s.insert(kv.first);
-      }
+      element_set_t &s = res[rep];
+      auto it = std::upper_bound(s.begin(), s.end(), kv.first);
+      s.insert(it, kv.first);
     }
     return res;
   }  
@@ -661,21 +652,20 @@ public:
     } else if (is_top() || o.is_bottom()) {
       return false;
     } else {
-      union_find_domain_t left(*this);
-      union_find_domain_t right(o);
+      const union_find_domain_t &left = *this;
+      const union_find_domain_t &right = o;
       equivalence_class_elems_t right_equiv_classes = right.equiv_classes_elems();
       equivalence_class_elems_t left_equiv_classes = left.equiv_classes_elems();
       for (auto &kv : right_equiv_classes) {
         element_t right_repr = kv.first;
-        element_set_t &right_elems = kv.second;
+        const element_set_t &right_elems = kv.second;
         for (const element_t &right_v : right_elems) {
           if (!left.contains(right_v)) {
             return false;
           }
           element_t left_repr = left.find(right_v);
-          element_set_t &left_elems = left_equiv_classes[left_repr];
+          const element_set_t &left_elems = left_equiv_classes[left_repr];
 
-	  // !(left_elems <= right_elems)
 	  if (!std::includes(right_elems.begin(), right_elems.end(),
 			     left_elems.begin(), left_elems.end())) {	    
             return false;
