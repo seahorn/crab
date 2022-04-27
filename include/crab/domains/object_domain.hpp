@@ -1152,6 +1152,8 @@ private:
 
   /***************** ODI map operations *****************/
   void move_singleton_to_odi_map(const obj_id_t &id) {
+    crab::CrabStats::count(domain_name() + ".count.move_object");
+    crab::ScopedCrabStats __st__(domain_name() + ".move_object");
     base_dom_variable_vector_t flds_vec;
     get_obj_dom_flds(id, flds_vec);
 
