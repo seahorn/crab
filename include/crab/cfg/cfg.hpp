@@ -270,8 +270,10 @@ public:
     }
     o << " "
       << "line=" << m_line << " "
-      << "col=" << m_col << ") "
-      << "id=" << m_id;
+      << "col=" << m_col << ") ";
+    if (m_id >= 0) {
+      o << "id=" << m_id;
+    }
   }
 };
 
@@ -1799,8 +1801,9 @@ public:
 
   intrinsic_stmt(std::string intrinsic_name,
                  const std::vector<variable_or_constant_t> &args,
-		 basic_block_t *parent)
-      : statement_t(CRAB_INTRINSIC, parent), m_intrinsic_name(intrinsic_name) {
+		 basic_block_t *parent,
+		 debug_info dbg_info = debug_info())
+    : statement_t(CRAB_INTRINSIC, parent, dbg_info), m_intrinsic_name(intrinsic_name) {
 
     std::copy(args.begin(), args.end(), std::back_inserter(m_args));
     for (auto arg : m_args) {
@@ -1813,8 +1816,9 @@ public:
   intrinsic_stmt(std::string intrinsic_name,
 		 const std::vector<variable_t> &lhs,
                  const std::vector<variable_or_constant_t> &args,
-		 basic_block_t *parent)
-      : statement_t(CRAB_INTRINSIC, parent), m_intrinsic_name(intrinsic_name) {
+		 basic_block_t *parent,
+		 debug_info dbg_info = debug_info())
+    : statement_t(CRAB_INTRINSIC, parent, dbg_info), m_intrinsic_name(intrinsic_name) {
 
     std::copy(args.begin(), args.end(), std::back_inserter(m_args));
     for (auto arg : m_args) {
@@ -1886,6 +1890,9 @@ public:
         o << ",";
     }
     o << ")";
+    if (this->m_dbg_info.has_debug()) {
+      o << "   /* " << this->m_dbg_info <<  " */";
+    }
   }
 
 private:
@@ -2728,8 +2735,9 @@ public:
 
   const statement_t *intrinsic(std::string name,
                                const std::vector<variable_t> &lhs,
-                               const std::vector<variable_or_constant_t> &args) {
-    return insert(new intrinsic_t(name, lhs, args, this));
+                               const std::vector<variable_or_constant_t> &args,
+			       debug_info di = debug_info()) {
+    return insert(new intrinsic_t(name, lhs, args, this, di));
   }
 
   const statement_t *array_init(variable_t a, lin_exp_t lb_idx,
