@@ -875,8 +875,23 @@ public:
   }
 
   virtual void exec(intrinsic_t &cs) override {
-    m_inv.intrinsic(cs.get_intrinsic_name(), cs.get_args(), cs.get_lhs());
-    CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << cs << " :" << m_inv <<"\n";);    
+    if (cs.get_intrinsic_name() == "print_invariants") {
+      // Note that we don't call the abstract transformer "intrinsic".
+      // Instead, we directly print the projected invariants here.
+      typename abs_dom_t::variable_vector_t vars;
+      auto const&inputs = cs.get_args(); 
+      for (auto in: inputs) {
+	if (in.is_variable()) {
+	  vars.push_back(in.get_variable());
+	}
+      }
+      abs_dom_t copy(m_inv);
+      copy.project(vars);
+      crab::outs() << cs << "\n" << "\t" << copy << "\n";
+    } else {
+      m_inv.intrinsic(cs.get_intrinsic_name(), cs.get_args(), cs.get_lhs());
+      CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << cs << " :" << m_inv <<"\n";);    
+    }
   }
 
   virtual void exec(callsite_t &cs) override {
