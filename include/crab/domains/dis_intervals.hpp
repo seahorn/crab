@@ -10,6 +10,7 @@
 #include <crab/config.h>
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/domains/intervals.hpp>
@@ -1373,10 +1374,9 @@ public:
                                                                    y, z, inv);
   }
 
-  void apply(int_conv_operation_t /*op*/, const variable_t &dst,
+  void apply(int_conv_operation_t op, const variable_t &dst,
              const variable_t &src) override {
-    // ignore widths
-    assign(dst, src);
+    int_cast_domain_traits<dis_interval_domain_t>::apply(*this, op, dst, src);
   }
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,

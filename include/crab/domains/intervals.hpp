@@ -44,6 +44,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
@@ -370,15 +371,7 @@ public:
   // cast operations
   void apply(crab::domains::int_conv_operation_t op, const variable_t &dst,
              const variable_t &src) override {
-    // ignore the widths
-    assign(dst, src);
-
-    if ((op == crab::domains::OP_ZEXT || op == crab::domains::OP_SEXT) &&
-	src.get_type().is_bool()) {
-      interval_t dst_max(number_t(0), number_t(1));
-      _env.set(dst, _env.at(dst) & dst_max);
-    }
-    
+    crab::domains::int_cast_domain_traits<interval_domain_t>::apply(*this, op, dst, src);
   }
 
   // bitwise operations

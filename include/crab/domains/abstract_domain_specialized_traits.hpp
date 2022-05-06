@@ -8,6 +8,7 @@
 
 #pragma once
 #include <crab/domains/generic_abstract_domain.hpp>
+#include <crab/domains/abstract_domain_operators.hpp>
 
 namespace crab {
 namespace domains {
@@ -212,10 +213,42 @@ public:
   }
 };
 
-// Some abstract domains have global state that should be reset by
-// the client if multiple crab instances will be run. This is just
+// Default implementation of integer cast instructions:
+// signed-extension, zero-extension and truncation.
+// 
+// This implementation assumes that the abstract domain Domain models
+// integers as mathematical integers and hence, bit-widths are mostly
+// ignored. Moreover, it assumes that Domain does not model Booleans.
+template<typename Domain> class int_cast_domain_traits {
+public:
+  using number_t = typename Domain::number_t;
+  using variable_t = typename Domain::variable_t;
+  
+  static void apply(Domain &dom, int_conv_operation_t op,
+		    const variable_t &dst, const variable_t &src) {
+    if (!(dst.get_type().is_bool() || src.get_type().is_bool())) {
+      dom.assign(dst, src);
+    }
+
+    /// Refine dst based on src's type
+    if (op == crab::domains::OP_ZEXT) {
+      if (src.get_type().is_bool()) {
+	dom += (dst >= 0);
+	dom += (dst <= 1);
+      } else if (src.get_type().is_integer()) {
+	unsigned bitwidth = src.get_type().get_integer_bitwidth();
+	unsigned upper_bound = (1 << bitwidth) - 1;
+	dom += (dst <= number_t(upper_bound));
+      }
+    }
+  }
+};
+
+  
+// DEPRECATED: the boxes domain has global state that should be reset
+// by the client if multiple crab instances will be run. This is just
 // a temporary hack. The proper solution is to avoid global state.
-template <typename Domain> class special_domain_traits {
+template<typename Domain> class special_domain_traits {
 public:
   static void clear_global_state(void) {}
 };

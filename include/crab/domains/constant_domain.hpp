@@ -3,6 +3,7 @@
 /* Classical constant propagation domain */
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/constant.hpp>
 #include <crab/domains/separate_domains.hpp>
@@ -388,10 +389,9 @@ public:
   }
 
   // cast operations
-  void apply(crab::domains::int_conv_operation_t /*op*/, const variable_t &dst,
+  void apply(crab::domains::int_conv_operation_t op, const variable_t &dst,
              const variable_t &src) override {
-    // ignore the widths
-    assign(dst, src);
+    int_cast_domain_traits<constant_domain_t>::apply(*this, op, dst, src);
   }
 
   // bitwise operations

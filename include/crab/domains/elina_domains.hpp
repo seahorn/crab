@@ -3,6 +3,7 @@
 #include <crab/config.h>
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -1563,9 +1564,7 @@ public:
 
   void apply(int_conv_operation_t op, const variable_t &dst,
              const variable_t &src) override {
-    // since reasoning about infinite precision we simply assign and
-    // ignore the widths.
-    assign(dst, src);
+    int_cast_domain_traits<elina_domain_t>::apply(*this, op, dst, src);
   }
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,

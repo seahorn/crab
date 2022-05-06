@@ -1808,15 +1808,7 @@ public:
 
   void apply(int_conv_operation_t op, const variable_t &dst,
              const variable_t &src) override {
-    // since reasoning about infinite precision we simply assign and
-    // ignore the widths.
-    assign(dst, src);
-
-    if ((op == crab::domains::OP_ZEXT || op == crab::domains::OP_SEXT) &&
-	src.get_type().is_bool()) {
-      interval_t dst_max(number_t(0), number_t(1));
-      set(dst, operator[](dst) & dst_max);
-    }    
+    int_cast_domain_traits<DBM_t>::apply(*this, op, dst, src);
   }
 
   // bitwise operators

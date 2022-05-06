@@ -1304,11 +1304,9 @@ public:
     rebind_var(x, term_of_itv(intv.lb(), intv.ub()));
   }
 
-  void apply(int_conv_operation_t /*op*/, const variable_t &dst,
+  void apply(int_conv_operation_t op, const variable_t &dst,
              const variable_t &src) override {
-    // since reasoning about infinite precision we simply assign and
-    // ignore the widths.
-    assign(dst, src);
+    int_cast_domain_traits<term_domain_t>::apply(*this, op, dst, src);    
   }
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,

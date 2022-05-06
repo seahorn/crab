@@ -13,7 +13,6 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
-#include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/term/term_expr.hpp>
 #include <crab/domains/term/term_operators.hpp>
@@ -866,7 +865,8 @@ public:
   void apply(int_conv_operation_t /*op*/, const variable_t &dst,
              const variable_t &src) override {
     // since reasoning about infinite precision we simply assign and
-    // ignore the widths.
+    // ignore the widths.  Note that dst can be a boolean and src and
+    // integer, or viceversa. 
     assign(dst, src);
   }
 
