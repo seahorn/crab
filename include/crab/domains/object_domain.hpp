@@ -1741,7 +1741,10 @@ public:
         m_obj_info_env(std::move(o.m_obj_info_env)),
         m_flds_id_map(std::move(o.m_flds_id_map)),
         m_refs_base_addrs_map(std::move(o.m_refs_base_addrs_map)),
-        m_ghost_var_man(std::move(o.m_ghost_var_man)) {}
+        m_ghost_var_man(std::move(o.m_ghost_var_man)) {
+    crab::CrabStats::count(domain_name() + ".count.move");
+    crab::ScopedCrabStats __st__(domain_name() + ".move");
+  }
 
   object_domain_t &operator=(const object_domain_t &o) {
     crab::CrabStats::count(domain_name() + ".count.copy");
@@ -1761,6 +1764,8 @@ public:
   }
 
   object_domain_t &operator=(object_domain_t &&o) {
+    crab::CrabStats::count(domain_name() + ".count.move");
+    crab::ScopedCrabStats __st__(domain_name() + ".move");
     if (this != &o) {
       m_is_bottom = std::move(o.m_is_bottom);
       m_base_dom = std::move(o.m_base_dom);
@@ -1778,6 +1783,9 @@ public:
   bool is_bottom() const override { return m_is_bottom; }
 
   bool is_top() const override {
+    crab::CrabStats::count(domain_name() + ".count.is_top");
+    crab::ScopedCrabStats __st__(domain_name() + ".is_top");
+
     bool res = (!is_bottom() && m_base_dom.is_top() &&
                 m_obj_info_env.is_top() && m_odi_map.is_top());
     return res;
@@ -1804,10 +1812,14 @@ public:
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
-    if (is_bottom() || o.is_top()) { // bot | o = top
+    // Trivial cases first
+    if (is_bottom()) { // this is bot, assign this by o
       *this = o;
       return;
-    } else if (o.is_bottom() || is_top()) { // this = top | o = bot
+    } else if (o.is_bottom()) { // o is bot, nothing change
+      return;
+    } else if (is_top() | o.is_top()) { // one is top, set to top
+      set_to_top();
       return;
     }
 
@@ -1816,17 +1828,22 @@ public:
 
     self_join(o);
 
-    CRAB_LOG("object", crab::outs() << *this << "\n");
+    CRAB_LOG("object", crab::outs() << "Result=" << *this << "\n");
   }
 
   object_domain_t operator|(const object_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
-    if (is_bottom() || o.is_top()) { // bot | o = top
+    // Trivial cases first
+    if (is_bottom()) { // this is bot, return o
       return o;
-    } else if (o.is_bottom() || is_top()) { // this = top | o = bot
+    } else if (o.is_bottom()) { // o is bot, return this
       return *this;
+    } else if (is_top() | o.is_top()) { // one is top, set to top
+      object_domain_t abs;
+      abs.set_to_top();
+      return abs;
     }
 
     CRAB_LOG("object", crab::outs()
@@ -2630,6 +2647,8 @@ public:
   void select(const variable_t &lhs, const linear_constraint_t &cond,
               const linear_expression_t &e1,
               const linear_expression_t &e2) override {
+    crab::CrabStats::count(domain_name() + ".count.select");
+    crab::ScopedCrabStats __st__(domain_name() + ".select");
 
     if (!is_bottom()) {
       // REDUCTION: perform reduction
@@ -3073,6 +3092,8 @@ public:
   // Return an interval with the possible values of v if such notion
   // exists in the abstract domain.
   interval_t operator[](const variable_t &v) override {
+    crab::CrabStats::count(domain_name() + ".count.to_interval");
+    crab::ScopedCrabStats __st__(domain_name() + ".to_interval");
     if (is_bottom()) {
       return interval_t::bottom();
     } else if (is_top()) {
@@ -3083,6 +3104,8 @@ public:
   }
 
   interval_t at(const variable_t &v) const override {
+    crab::CrabStats::count(domain_name() + ".count.to_interval");
+    crab::ScopedCrabStats __st__(domain_name() + ".to_interval");
     if (is_bottom()) {
       return interval_t::bottom();
     } else if (is_top()) {
@@ -3107,8 +3130,11 @@ public:
   /* begin intrinsics operations */
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
+    crab::CrabStats::count(domain_name() + ".count.intrinsic");
+    crab::ScopedCrabStats __st__(domain_name() + ".intrinsic");
+
     //=================================================================//
-    //       Special intrinsics supported by the region domain
+    //       Special intrinsics supported by the object domain
     //=================================================================//
     // ---DSA region analysis---
     //      This analysis indicates which regions might belong to the
