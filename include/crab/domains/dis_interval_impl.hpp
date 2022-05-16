@@ -11,7 +11,7 @@ template <typename Number> dis_interval<Number> dis_interval<Number>::top() {
   return dis_interval<Number>(dis_interval<Number>::TOP);
 }
 
-template <typename Number> dis_interval<Number> bottom() {
+template <typename Number> dis_interval<Number> dis_interval<Number>::bottom() {
   return dis_interval<Number>(dis_interval<Number>::BOT);
 }
 
