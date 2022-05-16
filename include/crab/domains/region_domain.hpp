@@ -1769,8 +1769,14 @@ public:
 	if (!m_is_bottom) {
 	  auto offset_lin_csts = convert_ref_cst_to_linear_cst(ref_cst, ghost_variable_kind::OFFSET);
 	  m_base_dom += offset_lin_csts;
-	  m_is_bottom = m_base_dom.is_bottom();
-	}
+          if (ref_cst.is_unary() && ref_cst.is_equality()) {
+            // a special case for p == NULL: add a constraint for p.size == 0
+            auto size_lin_csts = convert_ref_cst_to_linear_cst(
+                ref_cst, ghost_variable_kind::SIZE);
+            m_base_dom += size_lin_csts;
+          }
+          m_is_bottom = m_base_dom.is_bottom();
+        }
     }
     CRAB_LOG("region",
              crab::outs() << "ref_assume(" << ref_cst << ")" << *this << "\n";);

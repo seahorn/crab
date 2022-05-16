@@ -149,13 +149,13 @@ public:
     }
   }
 
-  void forget(const variable_t &var, GhostDomain &val) {
+  void forget(const variable_t &var, GhostDomain &val) const {
     if (boost::optional<ghost_variables_t> gvars = get(var)) {
       (*gvars).forget(val);
     }
   }
 
-  void project(const variable_vector_t &vars, GhostDomain &val) {
+  void project(const variable_vector_t &vars, GhostDomain &val) const {
     ghost_variable_vector_t gvars_vec;
     for (auto const &v : vars) {
       if (boost::optional<ghost_variables_t> gvars = get(v)) {
@@ -213,6 +213,10 @@ public:
 	if (ghost_vars.has_offset_and_size()) {
 	  return ghost_vars.get_offset_and_size().get_offset();
 	}
+      } else { // size
+        if (ghost_vars.has_offset_and_size()) {
+          return ghost_vars.get_offset_and_size().get_size();
+        }
       }
       return boost::none;
     };
@@ -226,7 +230,9 @@ public:
         assert(ref_cst.lhs().get_type().is_reference());
         ghost_variable_t x = get_or_insert(ref_cst.lhs()).get_var();
         if (ref_cst.is_equality()) {
-          return ghost_linear_constraint_t(x == number_t(0));
+          boost::optional<ghost_variable_t> sp_x =
+              get_ghost_var(ref_cst.lhs(), kind);
+          return ghost_linear_constraint_t(*sp_x == number_t(0));
         } else if (ref_cst.is_disequality()) {
           return ghost_linear_constraint_t(x != number_t(0));
         } else if (ref_cst.is_less_or_equal_than()) {
@@ -776,7 +782,9 @@ public:
         assert(ref_cst.lhs().get_type().is_reference());
         ghost_variable_t x = get_or_insert(ref_cst.lhs()).get_var();
         if (ref_cst.is_equality()) {
-          return ghost_linear_constraint_t(x == number_t(0));
+          boost::optional<ghost_variable_t> sp_x =
+              get_ghost_var(ref_cst.lhs(), kind);
+          return ghost_linear_constraint_t(*sp_x == number_t(0));
         } else if (ref_cst.is_disequality()) {
           return ghost_linear_constraint_t(x != number_t(0));
         } else if (ref_cst.is_less_or_equal_than()) {
