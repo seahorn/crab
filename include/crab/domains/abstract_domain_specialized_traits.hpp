@@ -13,27 +13,74 @@
 namespace crab {
 namespace domains {
 
+template <typename Domain> class checker_domain_traits;
+  
 // Perform constraint simplifications depending on the abstract domain
 template <typename Domain> class constraint_simp_domain_traits {
 public:
   using number_t = typename Domain::number_t;
+  using variable_t = typename Domain::variable_t;  
+  using linear_expression_t = typename Domain::linear_expression_t;  
   using linear_constraint_t = typename Domain::linear_constraint_t;
-  typedef
-      typename Domain::linear_constraint_system_t linear_constraint_system_t;
+  using linear_constraint_system_t = typename Domain::linear_constraint_system_t; 
 
   // Convert an equality into two inequalities. This is not
   // possible for machine arithmetic domains.
-  static void lower_equality(linear_constraint_t cst,
-                             linear_constraint_system_t &csts) {
+  static void lower_equality(const linear_constraint_t &cst,
+                             linear_constraint_system_t &out_csts) {
     if (cst.is_equality()) {
-      csts += linear_constraint_t(cst.expression(),
-                                  linear_constraint_t::INEQUALITY);
-      csts += linear_constraint_t(cst.expression() * number_t(-1),
-                                  linear_constraint_t::INEQUALITY);
+      out_csts += linear_constraint_t(cst.expression(),
+				      linear_constraint_t::INEQUALITY);
+      out_csts += linear_constraint_t(cst.expression() * number_t(-1),
+				      linear_constraint_t::INEQUALITY);
     } else {
-      csts += cst;
+      out_csts += cst;
     }
   }
+
+  // Convert a disequality into a strict inequality:
+  // - if cst is x!=y and abs_val |= x <= y then add x < y
+  // - if cst is x!=y and abs_val |= x >= y then add x > y
+  static void lower_disequality(const Domain &abs_val,
+				const linear_constraint_t &cst,
+				linear_constraint_system_t &out_csts) {
+
+    // TODO: we could use abs_val to infer more disequalities from cst.
+    auto get_binary_operands = [](const linear_constraint_t &c) -> 
+      boost::optional<std::pair<variable_t, variable_t>> {
+	if (c.is_disequation()) {
+	  if (c.size() == 2 && c.constant() == 0) {
+	    auto it = c.begin();
+	    auto nx = it->first;
+	    auto vx = it->second;
+	    ++it;
+	    assert(it != c.end());
+	    auto ny = it->first;
+	    auto vy = it->second;
+	    if (nx == (ny * -1)) {
+	      return std::make_pair(vx, vy);
+	    }
+	  }
+	}
+      return boost::none;
+    };
+    
+    if (auto pair = get_binary_operands(cst)) {
+      variable_t x = (*pair).first;
+      variable_t y = (*pair).second;
+      linear_constraint_t x_le_y(x <= y);
+      linear_constraint_t x_lt_y(linear_expression_t(x) < linear_expression_t(y));
+      if (checker_domain_traits<Domain>::entail(abs_val, x_le_y)) {
+	out_csts += x_lt_y;
+      } else {
+	linear_constraint_t x_ge_y(x >= y);
+	linear_constraint_t x_gt_y(linear_expression_t(x) > linear_expression_t(y));	    
+	if (checker_domain_traits<Domain>::entail(abs_val, x_ge_y)) {
+	  out_csts += x_gt_y;	      
+	} 
+      }
+    }
+  }  
 };
 
 // Special operations needed by the checker
@@ -49,10 +96,10 @@ public:
 
 private:
   struct entailment {
-    Domain _dom;
-    entailment(Domain dom) : _dom(dom) {}
+    const Domain &m_dom;
+    entailment(const Domain &dom) : m_dom(dom) {}
     bool operator()(const linear_constraint_t &cst) {
-      Domain dom(_dom); // copy is necessary
+      Domain dom(m_dom); // copy is necessary
       linear_constraint_t neg_cst = cst.negate();
       dom += neg_cst;
       return dom.is_bottom();
@@ -96,7 +143,7 @@ public:
    */
 
   // Return true if lhs entails (c1 or c2 or ... cn)
-  static bool entail(Domain &lhs,
+  static bool entail(const Domain &lhs,
                      const disjunctive_linear_constraint_system_t &rhs) {
     // -- trivial cases first
     if (rhs.is_false()) {
@@ -122,13 +169,13 @@ public:
 
   // Return true if (c1 or c2 or ... cn) entails rhs
   static bool entail(const disjunctive_linear_constraint_system_t &lhs,
-                     Domain &rhs) {
+                     const Domain &rhs) {
     auto csts = rhs.to_linear_constraint_system();
     return __entail(lhs, csts);
   }
 
   // Return true if lhs entails rhs.
-  static bool entail(Domain &lhs, const linear_constraint_t &rhs) {
+  static bool entail(const Domain &lhs, const linear_constraint_t &rhs) {
     if (lhs.is_bottom())
       return true;
     if (rhs.is_tautology())
@@ -169,7 +216,7 @@ public:
   }
 
   // Return true if inv intersects with cst.
-  static bool intersect(Domain &inv, const linear_constraint_t &cst) {
+  static bool intersect(const Domain &inv, const linear_constraint_t &cst) {
     if (inv.is_bottom() || cst.is_contradiction())
       return false;
     if (inv.is_top() || cst.is_tautology())
@@ -244,6 +291,7 @@ public:
   }
 };
 
+  
   
 // DEPRECATED: the boxes domain has global state that should be reset
 // by the client if multiple crab instances will be run. This is just

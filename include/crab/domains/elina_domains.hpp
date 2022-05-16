@@ -1386,6 +1386,7 @@ public:
                                    << *this << "\n";);
   }
 
+  
   void operator+=(const linear_constraint_system_t &_csts) override {
     crab::CrabStats::count(domain_name() + ".count.add_constraints");
     crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
@@ -1416,8 +1417,9 @@ public:
         csts +=
             ikos::linear_constraint_impl::strict_to_non_strict_inequality(c);
       } else if (c.is_disequation()) {
-        // We try to convert a disequation into conjunctive
-        // inequalities
+	// We try to convert a disequation into a strict inequality
+	constraint_simp_domain_traits<elina_domain_t>::lower_disequality(*this, c, csts);
+        // We try to convert a disequation into conjunctive inequalities
         inequalities_from_disequation(c.expression(), csts);
       } else {
         csts += c;

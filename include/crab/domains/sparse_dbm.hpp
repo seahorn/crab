@@ -1635,74 +1635,69 @@ public:
     crab::CrabStats::count(domain_name() + ".count.add_constraints");
     crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
 
+    if (cst.is_tautology()) {
+      return;
+    }
+    
+    if (cst.is_contradiction()) {
+      set_to_bottom();
+      return;
+    }
+    
     // XXX: we do nothing with unsigned linear inequalities
     if (cst.is_inequality() && cst.is_unsigned()) {
       CRAB_WARN("unsigned inequality ", cst, " skipped by split_dbm domain");
       return;
     }
-
-    if (is_bottom())
-      return;
-
-    normalize();
-
-    if (cst.is_tautology())
-      return;
-
-    // g.check_adjs();
-
-    if (cst.is_contradiction()) {
-      set_to_bottom();
+    
+    if (is_bottom()) {
       return;
     }
 
+    normalize();
+    // g.check_adjs();
     if (cst.is_inequality()) {
       if (!add_linear_leq(cst.expression())) {
         set_to_bottom();
       }
       // g.check_adjs();
-      CRAB_LOG("zones-sparse", crab::outs() << "--- " << cst << "\n"
-                                            << *this << "\n";);
-      return;
-    }
-
-    if (cst.is_strict_inequality()) {
+    } else if (cst.is_strict_inequality()) {
       // We try to convert a strict to non-strict.
-      auto nc =
-          ikos::linear_constraint_impl::strict_to_non_strict_inequality(cst);
+      auto nc = ikos::linear_constraint_impl::strict_to_non_strict_inequality(cst);
       if (nc.is_inequality()) {
         // here we succeed
         if (!add_linear_leq(nc.expression())) {
           set_to_bottom();
         }
-        CRAB_LOG("zones-split", crab::outs() << "--- " << cst << "\n"
-                                             << *this << "\n");
-        return;
       }
-    }
-
-    if (cst.is_equality()) {
+    } else if (cst.is_equality()) {
       const linear_expression_t &exp = cst.expression();
       if (!add_linear_leq(exp) || !add_linear_leq(-exp)) {
-        CRAB_LOG("zones-sparse", crab::outs() << " ~~> _|_"
-                                              << "\n";);
         set_to_bottom();
       }
       // g.check_adjs();
-      CRAB_LOG("zones-sparse", crab::outs() << "--- " << cst << "\n"
-                                            << *this << "\n";);
-      return;
+    } else if (cst.is_disequation()) {
+      // We handle here the case x !=y by converting the disequation
+      // into a strict inequality if possible.
+      linear_constraint_system_t csts;
+      constraint_simp_domain_traits<DBM_t>::lower_disequality(*this, cst, csts);
+      for (auto const& c: csts) {
+	// We try to convert a strict inequality into non-strict one
+	auto nc = ikos::linear_constraint_impl::strict_to_non_strict_inequality(c);
+	if (nc.is_inequality()) {
+	  // here we succeed
+	  if (!add_linear_leq(nc.expression())) {
+	    set_to_bottom();
+	  }
+	}
+      }
+      if (!is_bottom()) {
+	add_disequation(cst.expression());
+      }
     }
-
-    if (cst.is_disequation()) {
-      add_disequation(cst.expression());
-      return;
-    }
-
-    CRAB_WARN("Unhandled constraint ", cst, " by split_dbm");
-    CRAB_LOG("zones-sparse", crab::outs() << "---" << cst << "\n"
-                                          << *this << "\n";);
-    return;
+    
+    CRAB_LOG("zones-sparse", crab::outs() << "--- " << cst << "\n"
+	     << *this << "\n");
   }
 
   void operator+=(const linear_constraint_system_t &csts) override {

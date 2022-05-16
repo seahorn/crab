@@ -108,6 +108,11 @@ private:
           // CRAB_WARN("unsigned inequality skipped");
           continue;
         }
+	if (c.is_disequation()) {
+	  // We try to convert a disequation into a strict inequality
+	  crab::domains::constraint_simp_domain_traits<interval_domain_t>::
+	    lower_disequality(*this, c, signed_csts);
+	}
         signed_csts += c;
       }
       solver_t solver(signed_csts, threshold);

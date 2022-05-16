@@ -1110,6 +1110,8 @@ public:
         csts +=
             ikos::linear_constraint_impl::strict_to_non_strict_inequality(c);
       } else if (c.is_disequation()) {
+	// We try to convert a disequation into a strict inequality
+	constraint_simp_domain_traits<apron_domain_t>::lower_disequality(*this, c, csts);
         // We try to convert a disequation into conjunctive
         // inequalities
         inequalities_from_disequation(c.expression(), csts);
