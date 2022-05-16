@@ -79,6 +79,7 @@ public:
     }
 
   public:
+    
     ghost_variable_t get_offset() const { return m_offset; }
 
     ghost_variable_t get_size() const { return m_size; }
@@ -250,6 +251,11 @@ public:
   }
 
 public:
+
+  enum class ghost_variable_kind {
+    ADDRESS = 0, OFFSET = 1, SIZE = 2
+  };
+  
   static ghost_variables create(ghost_varname_allocator_t &alloc,
                                 var_allocator_fn_t alloc_fn,
                                 const varname_t &name, const variable_type &vty,
@@ -262,9 +268,9 @@ public:
     if (crab_domain_params_man::get().region_is_dereferenceable() &&
         (vty.is_reference() || vty.is_reference_region())) {
       return ghost_variables(
-          make_ghost_variable(alloc, alloc_fn, name, "address", vty),
-          make_ghost_variable(alloc, alloc_fn, name, "offset", vty),
-          make_ghost_variable(alloc, alloc_fn, name, "size", vty), vty);
+          make_ghost_variable(alloc, alloc_fn, name, ".address", vty),
+          make_ghost_variable(alloc, alloc_fn, name, ".offset", vty),
+          make_ghost_variable(alloc, alloc_fn, name, ".size", vty), vty);
     } else {
       return ghost_variables(
           make_ghost_variable(alloc, alloc_fn, name, "", vty), vty);
@@ -282,11 +288,11 @@ public:
       auto off_gvar = offset_size.get_offset();
       auto sz_gvar = offset_size.get_size();
       return ghost_variables(
-          make_ghost_variable(alloc, alloc_fn, addr_gvar.name(), "address",
+          make_ghost_variable(alloc, alloc_fn, addr_gvar.name(), ".address",
                               addr_gvar.get_type()),
-          make_ghost_variable(alloc, alloc_fn, off_gvar.name(), "offset",
+          make_ghost_variable(alloc, alloc_fn, off_gvar.name(), ".offset",
                               off_gvar.get_type()),
-          make_ghost_variable(alloc, alloc_fn, sz_gvar.name(), "size",
+          make_ghost_variable(alloc, alloc_fn, sz_gvar.name(), ".size",
                               sz_gvar.get_type()),
           gvars.m_vty);
     } else {
@@ -385,13 +391,10 @@ public:
 
   bool has_offset_and_size() const { return (bool)m_object_offset_size; }
 
-  // address: 1, offset: 2, size: 3
-  using ghost_var_id = unsigned;
-
   // Add ghost variables in the reverse map. A reverse map (rev_map)
   // maps ghost variables to CrabIR variables.
   void update_rev_varmap(
-      std::unordered_map<ghost_variable_t, std::pair<variable_t, ghost_var_id>>
+      std::unordered_map<ghost_variable_t, std::pair<variable_t, ghost_variable_kind>>
           &rev_map,
       variable_t v) const {
     rev_map.insert({m_var, {v, 1}});
@@ -404,7 +407,7 @@ public:
   // Remove ghost variables from the reverse map. A reverse map
   // (rev_map) maps ghost variables to CrabIR variables.
   void remove_rev_varmap(
-      std::unordered_map<ghost_variable_t, std::pair<variable_t, ghost_var_id>>
+      std::unordered_map<ghost_variable_t, std::pair<variable_t, ghost_variable_kind>>
           &rev_map) const {
     rev_map.erase(m_var);
     if (m_object_offset_size) {
@@ -416,22 +419,22 @@ public:
   // Assign a string name to each ghost variable
   static void mk_renaming_map(
       const std::unordered_map<ghost_variable_t,
-                               std::pair<variable_t, ghost_var_id>> &rev_map,
+                               std::pair<variable_t, ghost_variable_kind>> &rev_map,
       std::function<variable_type(const variable_t &)> get_type_fn,
       std::unordered_map<std::string, std::string> &out_str_map) {
     for (auto &kv : rev_map) {
       ghost_variable_t bv = kv.first;
       variable_t v = kv.second.first;
-      ghost_var_id ghost_id = kv.second.second;
+      ghost_variable_kind ghost_id = kv.second.second;
 
       variable_type vty = get_type_fn(v);
       if (crab_domain_params_man::get().region_is_dereferenceable() &&
           (vty.is_reference() || vty.is_reference_region())) {
-        if (ghost_id == 1) {
+        if (ghost_id == ghost_variable_kind::ADDRESS) {
           out_str_map[bv.name().str()] = v.name().str() + ".address";
-        } else if (ghost_id == 2) {
+        } else if (ghost_id == ghost_variable_kind::OFFSET) {
           out_str_map[bv.name().str()] = v.name().str() + ".offset";
-        } else if (ghost_id == 3) {
+        } else if (ghost_id == ghost_variable_kind::SIZE) {
           out_str_map[bv.name().str()] = v.name().str() + ".size";
         }
       } else {

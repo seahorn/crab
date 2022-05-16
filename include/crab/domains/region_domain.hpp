@@ -138,6 +138,7 @@ private:
           region_domain_t, base_abstract_domain_t,
           typename Params::varname_allocator_t>>::type;
   using ghost_variables_t = typename ghost_var_man_t::ghost_variables_t;
+  using ghost_variable_kind = typename ghost_variables_t::ghost_variable_kind;
   // Environment to keep simple finite properties about regions
   using rgn_env_t = ikos::separate_domain<variable_t, region_domain_impl::region_info>;
   // Union-find where equivalence classes are attached to boolean values
@@ -461,8 +462,9 @@ private:
   }
 
   base_linear_constraint_t
-  convert_ref_cst_to_linear_cst(const reference_constraint_t &ref_cst) {
-    return m_ghost_var_man.ghosting_ref_cst_to_linear_cst(ref_cst);
+  convert_ref_cst_to_linear_cst(const reference_constraint_t &ref_cst,
+				ghost_variable_kind kind) {
+    return m_ghost_var_man.ghosting_ref_cst_to_linear_cst(ref_cst, kind);
   }
 
   boost::optional<variable_t> rev_rename_var(const base_variable_t &v,
@@ -1760,9 +1762,15 @@ public:
         }
       }
 
-      auto b_lin_csts = convert_ref_cst_to_linear_cst(ref_cst);
-      m_base_dom += b_lin_csts;
-      m_is_bottom = m_base_dom.is_bottom();
+	auto addr_lin_csts = convert_ref_cst_to_linear_cst(ref_cst, ghost_variable_kind::ADDRESS);
+	m_base_dom += addr_lin_csts;
+	m_is_bottom = m_base_dom.is_bottom();
+	
+	if (!m_is_bottom) {
+	  auto offset_lin_csts = convert_ref_cst_to_linear_cst(ref_cst, ghost_variable_kind::OFFSET);
+	  m_base_dom += offset_lin_csts;
+	  m_is_bottom = m_base_dom.is_bottom();
+	}
     }
     CRAB_LOG("region",
              crab::outs() << "ref_assume(" << ref_cst << ")" << *this << "\n";);
@@ -2093,7 +2101,7 @@ public:
         }
       }
 
-      auto b_rhs = convert_ref_cst_to_linear_cst(rhs);
+      auto b_rhs = convert_ref_cst_to_linear_cst(rhs, ghost_variable_kind::ADDRESS);
       m_base_dom.assign_bool_cst(get_or_insert_gvars(lhs).get_var(), b_rhs);
 
       if (crab_domain_params_man::get().region_tag_analysis()) {
@@ -2178,7 +2186,7 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".backward_assign_bool_cst");
 
     if (!is_bottom()) {
-      auto b_rhs = convert_ref_cst_to_linear_cst(rhs);
+      auto b_rhs = convert_ref_cst_to_linear_cst(rhs, ghost_variable_kind::ADDRESS);
       m_base_dom.backward_assign_bool_cst(get_or_insert_gvars(lhs).get_var(),
                                           b_rhs, invariant.m_base_dom);
       if (crab_domain_params_man::get().region_tag_analysis()) {

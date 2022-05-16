@@ -34,7 +34,8 @@ namespace region_domain_impl {
    ghost_variables_t dup(const ghost_variables_t &gvars);
 
    ghost_linear_constraint_t
-   ghosting_ref_cst_to_linear_cst(const reference_constraint_t &ref_cst);
+   ghosting_ref_cst_to_linear_cst(const reference_constraint_t &ref_cst,
+                                  ghost_variable_kind kind);
 
    ghost_variable_or_constant_t
    rename_variable_or_constant(const variable_or_constant_t &v);
@@ -88,6 +89,7 @@ class ghost_variable_manager_with_fixed_naming {
 public:
   using ghost_variables_t =
       ghost_variables<Domain, GhostDomain, GhostDomainVarAlloc>;
+  using ghost_variable_kind = typename ghost_variables_t::ghost_variable_kind;  
   using get_type_fn = std::function<variable_type(const variable_t &)>;
 
 private:
@@ -196,8 +198,25 @@ public:
 
   // The ghost domain doesn't know about references so we convert a
   // reference constraint into a linear constraint.
+  // A reference variable can be ghosted by multiple ghost variables.
+  // The parameter @kind tells which one.  
   ghost_linear_constraint_t
-  ghosting_ref_cst_to_linear_cst(const reference_constraint_t &ref_cst) {
+  ghosting_ref_cst_to_linear_cst(const reference_constraint_t &ref_cst,
+				 ghost_variable_kind kind) {
+
+    auto get_ghost_var = [this](const variable_t &var, ghost_variable_kind kind) ->
+      boost::optional<ghost_variable_t> {
+      auto ghost_vars  = get_or_insert(var);
+      if (kind == ghost_variable_kind::ADDRESS) {
+	return ghost_vars.get_var();
+      } else if (kind == ghost_variable_kind::OFFSET) {
+	if (ghost_vars.has_offset_and_size()) {
+	  return ghost_vars.get_offset_and_size().get_offset();
+	}
+      }
+      return boost::none;
+    };
+      
     if (ref_cst.is_tautology()) {
       return ghost_linear_constraint_t::get_true();
     } else if (ref_cst.is_contradiction()) {
@@ -222,21 +241,24 @@ public:
       } else {
         assert(ref_cst.lhs().get_type().is_reference());
         assert(ref_cst.rhs().get_type().is_reference());
-        ghost_variable_t x = get_or_insert(ref_cst.lhs()).get_var();
-        ghost_variable_t y = get_or_insert(ref_cst.rhs()).get_var();
+	boost::optional<ghost_variable_t> x = get_ghost_var(ref_cst.lhs(), kind);
+	boost::optional<ghost_variable_t> y = get_ghost_var(ref_cst.rhs(), kind);
+	if (!x || !y) {
+	  return ghost_linear_constraint_t::get_true();
+	}
         number_t offset = ref_cst.offset();
         if (ref_cst.is_equality()) {
-          return ghost_linear_constraint_t(x == y + offset);
+          return ghost_linear_constraint_t(*x == *y + offset);
         } else if (ref_cst.is_disequality()) {
-          return ghost_linear_constraint_t(x != y + offset);
+          return ghost_linear_constraint_t(*x != *y + offset);
         } else if (ref_cst.is_less_or_equal_than()) {
-          return ghost_linear_constraint_t(x <= y + offset);
+          return ghost_linear_constraint_t(*x <= *y + offset);
         } else if (ref_cst.is_less_than()) {
-          return ghost_linear_constraint_t(x < y + offset);
+          return ghost_linear_constraint_t(*x < *y + offset);
         } else if (ref_cst.is_greater_or_equal_than()) {
-          return ghost_linear_constraint_t(x >= y + offset);
+          return ghost_linear_constraint_t(*x >= *y + offset);
         } else if (ref_cst.is_greater_than()) {
-          return ghost_linear_constraint_t(x > y + offset);
+          return ghost_linear_constraint_t(*x > *y + offset);
         }
       }
     }
@@ -394,12 +416,13 @@ class ghost_variable_manager_with_variable_naming {
   using ghost_variable_t = typename GhostDomain::variable_t;
   using ghost_variable_vector_t = typename GhostDomain::variable_vector_t;
   using ghost_varname_t = typename GhostDomain::varname_t;
-
+  
 public:
   using get_type_fn = std::function<variable_type(const variable_t &)>;
   // Map from variable to its ghost variables
   using ghost_variables_t =
       ghost_variables<Domain, GhostDomain, GhostDomainVarAlloc>;
+  using ghost_variable_kind = typename ghost_variables_t::ghost_variable_kind;
 
 private:
   using ghost_map_t = std::unordered_map<variable_t, ghost_variables_t>;
@@ -726,8 +749,24 @@ public:
 
   // The ghost domain doesn't know about references so we convert a
   // reference constraint into a linear constraint.
+  // A reference variable can be ghosted by multiple ghost variables.
+  // The parameter @kind tells which one.
   ghost_linear_constraint_t
-  ghosting_ref_cst_to_linear_cst(const reference_constraint_t &ref_cst) {
+  ghosting_ref_cst_to_linear_cst(const reference_constraint_t &ref_cst,
+				 ghost_variable_kind kind) {
+    auto get_ghost_var = [this](const variable_t &var, ghost_variable_kind kind) ->
+      boost::optional<ghost_variable_t> {
+      auto ghost_vars  = get_or_insert(var);
+      if (kind == ghost_variable_kind::ADDRESS) {
+	return ghost_vars.get_var();
+      } else if (kind == ghost_variable_kind::OFFSET) {
+	if (ghost_vars.has_offset_and_size()) {
+	  return ghost_vars.get_offset_and_size().get_offset();
+	}
+      }
+      return boost::none;
+    };
+      
     if (ref_cst.is_tautology()) {
       return ghost_linear_constraint_t::get_true();
     } else if (ref_cst.is_contradiction()) {
@@ -752,21 +791,24 @@ public:
       } else {
         assert(ref_cst.lhs().get_type().is_reference());
         assert(ref_cst.rhs().get_type().is_reference());
-        ghost_variable_t x = get_or_insert(ref_cst.lhs()).get_var();
-        ghost_variable_t y = get_or_insert(ref_cst.rhs()).get_var();
+	boost::optional<ghost_variable_t> x = get_ghost_var(ref_cst.lhs(), kind);
+	boost::optional<ghost_variable_t> y = get_ghost_var(ref_cst.rhs(), kind);
+	if (!x || !y) {
+	  return ghost_linear_constraint_t::get_true();
+	}	
         number_t offset = ref_cst.offset();
         if (ref_cst.is_equality()) {
-          return ghost_linear_constraint_t(x == y + offset);
+          return ghost_linear_constraint_t(*x == *y + offset);
         } else if (ref_cst.is_disequality()) {
-          return ghost_linear_constraint_t(x != y + offset);
+          return ghost_linear_constraint_t(*x != *y + offset);
         } else if (ref_cst.is_less_or_equal_than()) {
-          return ghost_linear_constraint_t(x <= y + offset);
+          return ghost_linear_constraint_t(*x <= *y + offset);
         } else if (ref_cst.is_less_than()) {
-          return ghost_linear_constraint_t(x < y + offset);
+          return ghost_linear_constraint_t(*x < *y + offset);
         } else if (ref_cst.is_greater_or_equal_than()) {
-          return ghost_linear_constraint_t(x >= y + offset);
+          return ghost_linear_constraint_t(*x >= *y + offset);
         } else if (ref_cst.is_greater_than()) {
-          return ghost_linear_constraint_t(x > y + offset);
+          return ghost_linear_constraint_t(*x > *y + offset);
         }
       }
     }
