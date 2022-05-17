@@ -268,6 +268,7 @@ private:
           object_domain_t, base_abstract_domain_t>;
   using ghost_variables_t = typename ghost_var_man_t::ghost_variables_t;
   using ghost_variable_vector_t = typename std::vector<ghost_variables_t>;
+  using ghost_variable_kind = typename ghost_variables_t::ghost_variable_kind;
   /**------------------ End type definitions ------------------**/
 
   /**------------------ Begin class field definitions ------------------**/
@@ -399,8 +400,9 @@ private:
   }
 
   base_dom_linear_constraint_t
-  convert_ref_cst_to_linear_cst(const reference_constraint_t &ref_cst) {
-    return m_ghost_var_man.ghosting_ref_cst_to_linear_cst(ref_cst);
+  convert_ref_cst_to_linear_cst(const reference_constraint_t &ref_cst,
+                                ghost_variable_kind kind) {
+    return m_ghost_var_man.ghosting_ref_cst_to_linear_cst(ref_cst, kind);
   }
 
   // Self join
@@ -2421,9 +2423,16 @@ public:
       // REDUCTION: perform reduction
       perform_reduction();
 
-      auto lin_cst = convert_ref_cst_to_linear_cst(ref_cst);
+      auto lin_cst =
+          convert_ref_cst_to_linear_cst(ref_cst, ghost_variable_kind::ADDRESS);
       m_base_dom += lin_cst;
       m_is_bottom = m_base_dom.is_bottom();
+      if (!m_is_bottom) {
+        auto offset_lin_csts =
+            convert_ref_cst_to_linear_cst(ref_cst, ghost_variable_kind::OFFSET);
+        m_base_dom += offset_lin_csts;
+        m_is_bottom = m_base_dom.is_bottom();
+      }
     }
 
     CRAB_LOG("object",
@@ -2789,7 +2798,8 @@ public:
       // REDUCTION: perform reduction
       perform_reduction();
 
-      auto rhs_lin_cst = convert_ref_cst_to_linear_cst(rhs);
+      auto rhs_lin_cst =
+          convert_ref_cst_to_linear_cst(rhs, ghost_variable_kind::ADDRESS);
       m_base_dom.assign_bool_cst(lhs, rhs_lin_cst);
       m_uf_regs_dom -= lhs;
     }
