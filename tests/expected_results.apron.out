@@ -2481,9 +2481,9 @@ exit:
 Invariants using Product(Boolean,Intervals)
 Abstract trace: entry exit
 user-defined assertion checker
-0  Number of total safe checks
+2  Number of total safe checks
 0  Number of total error checks
-2  Number of total warning checks
+0  Number of total warning checks
 0  Number of total unreachable checks
 
 entry:

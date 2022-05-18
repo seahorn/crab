@@ -467,7 +467,7 @@ struct abstract_domain_traits<flat_boolean_domain<Number, VariableName>> {
 
 // Simple reduced product of the flat boolean domain with an arbitrary
 // abstract domain.
-// 
+//
 // The reduction happens in two situations:
 //    (1) when bvar := linear_constraint from numerical (non-boolean) to boolean
 //    (2) when assume_bool(bvar) from boolean to numerical (non-boolean)
@@ -737,7 +737,7 @@ private:
   }
   
   template<class BoolToCstEnv>
-  void reduction_assume_bool(BoolToCstEnv &env,
+  void bwd_reduction_assume_bool(BoolToCstEnv &env,
 			     const variable_t &x, bool is_negated) {
 
     if (env.at(x).is_top() || env.at(x).is_bottom()) {
@@ -790,7 +790,7 @@ private:
   }
   
   template<class BoolToCstEnv>
-  void reduction_select_bool(BoolToCstEnv &env,
+  void fwd_reduction_select_bool(BoolToCstEnv &env,
 			     const variable_t &lhs, const variable_t &cond,
 			     const variable_t &b1, const variable_t &b2) {
 
@@ -1291,8 +1291,8 @@ public:
       return; 
     }
     
-    reduction_assume_bool(m_var_to_lincsts, x, is_negated);
-    reduction_assume_bool(m_var_to_refcsts, x, is_negated);    
+    bwd_reduction_assume_bool(m_var_to_lincsts, x, is_negated);
+    bwd_reduction_assume_bool(m_var_to_refcsts, x, is_negated);    
 
     CRAB_LOG("flat-boolean",
              crab::outs() << "\tAfter reduction=" << m_product << "\n";);
@@ -1309,8 +1309,26 @@ public:
       } else {
 	m_product.select_bool(lhs, cond, b1, b2);
 	
-	reduction_select_bool(m_var_to_lincsts, lhs, cond, b1, b2);
-	reduction_select_bool(m_var_to_refcsts, lhs, cond, b1, b2);
+	fwd_reduction_select_bool(m_var_to_lincsts, lhs, cond, b1, b2);
+	fwd_reduction_select_bool(m_var_to_refcsts, lhs, cond, b1, b2);
+
+	if (m_product.first().get_bool(b2) == boolean_value::get_false()) {
+	  // if lhs becomes true later then cond and b1 must be true
+	  m_var_to_lincsts.set(lhs, m_var_to_lincsts.at(cond) & m_var_to_lincsts.at(b1));
+	} else if (m_product.first().get_bool(b1) == boolean_value::get_false()) {
+	  // if lhs becomes true later then !cond and b2 must be true
+	  auto cond_csts = m_var_to_lincsts.at(cond);
+	  if (cond_csts.size() == 1) {
+	    auto cst = *(cond_csts.begin());
+	    m_var_to_lincsts.set(lhs,
+				 lincst_domain_t(cst.negate()) &
+				 m_var_to_lincsts.at(b2));
+	  } else {
+	    // we lost the condition because we cannot negate without
+	    // introducing disjunctions.
+	    m_var_to_lincsts.set(lhs, m_var_to_lincsts.at(b2));
+	  }
+	}
       }
     }
   }
