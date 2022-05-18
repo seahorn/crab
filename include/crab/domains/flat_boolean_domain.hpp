@@ -688,7 +688,7 @@ private:
 
   /** Begin helpers to update m_var_to_lincsts and m_var_to_refcsts **/
   template<class BoolToCstEnv>
-  void reduction_assign_bool_var(BoolToCstEnv &env,
+  void propagate_assign_bool_var(BoolToCstEnv &env,
 				 const variable_t &x, const variable_t &y,
 				 bool is_negated) {
     if (!is_negated) {
@@ -709,6 +709,28 @@ private:
     }
   }
 
+  template<class BoolToCstEnv>
+  void propagate_select_bool(BoolToCstEnv &env,
+			     const variable_t &lhs, const variable_t &cond,
+			     const variable_t &b1, const variable_t &b2) {
+    // lhs := true false true
+    if (m_product.first().get_bool(b2) == boolean_value::get_false()) {
+      // if lhs becomes true later then cond and b1 must be true
+      env.set(lhs, env.at(cond) & env.at(b1));
+    } else if (m_product.first().get_bool(b1) == boolean_value::get_false()) {
+      // if lhs becomes true later then !cond and b2 must be true
+      auto cond_csts = env.at(cond);
+      if (cond_csts.size() == 1) {
+	auto cst = *(cond_csts.begin());
+	env.set(lhs, typename BoolToCstEnv::value_type(cst.negate()) & env.at(b2));
+      } else {
+	// we lost the condition because we cannot negate without
+	// introducing disjunctions.
+	env.set(lhs, env.at(b2));
+      }
+    }
+  }
+  
   // return true if cst's variables haven't been modified. As
   // side-effect, it adds cst into the non-boolean domain if the
   // returned value is true.
@@ -1221,8 +1243,8 @@ public:
     }
 
     m_product.assign_bool_var(x, y, is_negated);
-    reduction_assign_bool_var(m_var_to_lincsts, x, y, is_negated);
-    reduction_assign_bool_var(m_var_to_refcsts, x, y, is_negated);
+    propagate_assign_bool_var(m_var_to_lincsts, x, y, is_negated);
+    propagate_assign_bool_var(m_var_to_refcsts, x, y, is_negated);
 
     CRAB_LOG("flat-boolean",
              crab::outs() << "\tunchanged vars=" << m_unchanged_vars << "\n"
@@ -1311,24 +1333,8 @@ public:
 	
 	fwd_reduction_select_bool(m_var_to_lincsts, lhs, cond, b1, b2);
 	fwd_reduction_select_bool(m_var_to_refcsts, lhs, cond, b1, b2);
-
-	if (m_product.first().get_bool(b2) == boolean_value::get_false()) {
-	  // if lhs becomes true later then cond and b1 must be true
-	  m_var_to_lincsts.set(lhs, m_var_to_lincsts.at(cond) & m_var_to_lincsts.at(b1));
-	} else if (m_product.first().get_bool(b1) == boolean_value::get_false()) {
-	  // if lhs becomes true later then !cond and b2 must be true
-	  auto cond_csts = m_var_to_lincsts.at(cond);
-	  if (cond_csts.size() == 1) {
-	    auto cst = *(cond_csts.begin());
-	    m_var_to_lincsts.set(lhs,
-				 lincst_domain_t(cst.negate()) &
-				 m_var_to_lincsts.at(b2));
-	  } else {
-	    // we lost the condition because we cannot negate without
-	    // introducing disjunctions.
-	    m_var_to_lincsts.set(lhs, m_var_to_lincsts.at(b2));
-	  }
-	}
+	propagate_select_bool(m_var_to_lincsts, lhs, cond, b1, b2);
+	propagate_select_bool(m_var_to_refcsts, lhs, cond, b1, b2);
       }
     }
   }
