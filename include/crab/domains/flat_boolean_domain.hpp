@@ -1,9 +1,9 @@
 #pragma once
 
-/*
-   A simple flat 3-valued boolean domain and a reduced product of this
-   flat bool domain with an arbitrary domain.
-*/
+/**
+ *  A simple flat 3-valued boolean domain and a reduced product of
+ *  this flat bool domain with an arbitrary domain.
+ **/
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
@@ -16,9 +16,11 @@
 #include <crab/support/stats.hpp>
 
 namespace crab {
-
 namespace domains {
-
+namespace flat_boolean_domain_impl {
+template<class Variable> class invariance_domain;
+} // end flat_boolean_domain_impl namespace
+  
 // A simple abstract domain for booleans
 template <typename Number, typename VariableName>
 class flat_boolean_domain final
@@ -270,10 +272,6 @@ public:
     }
   }
   
-  // XXX: these methods are not actually part of boolean_operators
-  // api but they are used by flat_boolean_numerical_domain and
-  // domain_traits.
-
   void set_bool(const variable_t &x, boolean_value v) { m_env.set(x, v); }
 
   boolean_value get_bool(const variable_t &x) const { return m_env.at(x); }
@@ -466,7 +464,7 @@ struct abstract_domain_traits<flat_boolean_domain<Number, VariableName>> {
 };
 
 // Simple reduced product of the flat boolean domain with an arbitrary
-// abstract domain.
+// numerical abstract domain.
 //
 // The reduction happens in two situations:
 //    (1) when bvar := linear_constraint from numerical (non-boolean) to boolean
@@ -532,132 +530,13 @@ public:
 
 private:
   
-
-  // invariant_domain is an abstract domain used to perform a
-  // must-forward dataflow analysis that keeps track whether a
-  // variable has been modified from any path since the variable was
-  // defined up to the current location.
-  // 
-  // We need to keep track which constraints still hold at the time
-  // the reduction from boolean variables to numerical ones is
-  // done. For instance,
-  //   
-  //  a := x > y;
-  //  // unchanged = {x,y}
-  //  if (*) {
-  //    x := 0;
-  //    // unchanged = {y}
-  //  } else {
-  //    // unchanged = {x,y}
-  //  }
-  //  // unchanged = {y}
-  //  assume(a);
-  //  // we cannot say a implies x>y since x might have been modified
-  class invariance_domain {
-
-  public:
-    using variable_t = typename linear_constraint_t::variable_t;
-    using var_domain_t = ikos::discrete_domain<variable_t>;
-    using iterator = typename var_domain_t::iterator;
-
-  private:
-    var_domain_t m_varset;
-
-  public:
-    invariance_domain() : m_varset(var_domain_t::bottom()) /*top by default*/ {}
-    invariance_domain(var_domain_t s) : m_varset(s) {}
-    invariance_domain(variable_t v) : m_varset(var_domain_t::bottom()) {
-      m_varset += v;
-    }
-    invariance_domain(const invariance_domain &other)
-        : m_varset(other.m_varset) {}
-
-    static invariance_domain bottom() { return var_domain_t::top(); }
-    static invariance_domain top() { return var_domain_t::bottom(); }
-
-    bool is_top() const { return m_varset.is_bottom(); }
-    bool is_bottom() const { return m_varset.is_top(); }
-
-    /*
-             top  = everything might change
-          {x,y,z} = nothing changes
-              {x} = everything might change except x
-
-                 top
-                / | \
-             {x} {y} {z}
-             / \ / \ / \
-           {x,y} {x,z} {y,z}
-              \   |   /
-               {x,y,z}
-                  |
-                 bot
-     */
-    bool operator<=(const invariance_domain &other) const {
-      if (other.is_top() || is_bottom())
-        return true;
-      else
-        return other.m_varset <= m_varset;
-    }
-
-    void operator|=(const invariance_domain &other) {
-      m_varset = m_varset & other.m_varset;
-    }
-
-    invariance_domain operator|(const invariance_domain &other) const {
-      return invariance_domain(m_varset & other.m_varset);
-    }
-
-    invariance_domain operator&(const invariance_domain &other) const {
-      return invariance_domain(m_varset | other.m_varset);
-    }
-
-    invariance_domain operator||(const invariance_domain &other) const {
-      return this->operator|(other);
-    }
-
-    invariance_domain operator&&(const invariance_domain &other) const {
-      return this->operator&(other);
-    }
-
-    invariance_domain &operator+=(const variable_t &v) {
-      m_varset += v;
-      return *this;
-    }
-    invariance_domain &operator-=(const variable_t &v) {
-      m_varset -= v;
-      return *this;
-    }
-
-    bool at(const variable_t &v) const{
-      invariance_domain d(v);
-      return (d <= *this);
-    }
-    std::size_t size() { return m_varset.size(); }
-    iterator begin() { return m_varset.begin(); }
-    iterator end() { return m_varset.end(); }
-    void write(crab::crab_os &o) {
-      if (is_bottom())
-        o << "_|_";
-      else if (is_top())
-        o << "top";
-      else
-        m_varset.write(o);
-    }
-    friend crab::crab_os &operator<<(crab::crab_os &o, invariance_domain &dom) {
-      dom.write(o);
-      return o;
-    }
-  };
-
-
   using reduced_domain_product2_t =
       reduced_domain_product2<number_t, varname_t, bool_domain_t, Dom>;
   
-  // bool_to_lincons_env_t and var_refcons_map_t are abstract domains
-  // used to map bool variables to sets of constraints such that if
-  // the bool variable is true then the conjunction of the constraints
-  // must be satisfiable.
+  // bool_to_lincons_env_t and var_refcons_map_t are specialized
+  // abstract domains used to map bool variables to sets of
+  // constraints such that if the bool variable becomes true then the
+  // conjunction of the constraints must hold.
   struct linear_constraint_compare {
     bool operator()(const linear_constraint_t &c1, const linear_constraint_t &c2) const {
       return c1.lexicographical_compare(c2);
@@ -672,7 +551,8 @@ private:
   using bool_to_lincons_env_t = ikos::separate_domain<variable_t, lincst_domain_t>;
   using refcst_domain_t = dual_set_domain<reference_constraint_t, reference_constraint_compare>;
   using bool_to_refcons_env_t = ikos::separate_domain<variable_t, refcst_domain_t>;
-
+  using invariance_domain_t = flat_boolean_domain_impl::invariance_domain<variable_t>;
+    
   // Reduced product of flat boolean domain and an arbitrary domain.
   reduced_domain_product2_t m_product;
   /** 
@@ -681,12 +561,12 @@ private:
    **/
   // Map from boolean variables to set of constraints such that if the
   // variable is evaluated to true then all the constraints hold.
-  bool_to_lincons_env_t m_var_to_lincsts;
-  bool_to_refcons_env_t m_var_to_refcsts;
-  // Which variable has been unchanged since its last update
-  invariance_domain m_unchanged_vars;
+  bool_to_lincons_env_t m_bool_to_lincsts;
+  bool_to_refcons_env_t m_bool_to_refcsts;
+  // Must analysis to konw which variables haven't changed.
+  invariance_domain_t m_unchanged_vars;
 
-  /** Begin helpers to update m_var_to_lincsts and m_var_to_refcsts **/
+  /** Begin helpers to update m_bool_to_lincsts and m_bool_to_refcsts **/
   template<class BoolToCstEnv>
   void propagate_assign_bool_var(BoolToCstEnv &env,
 				 const variable_t &x, const variable_t &y,
@@ -735,7 +615,7 @@ private:
   // side-effect, it adds cst into the non-boolean domain if the
   // returned value is true.
   bool add_if_unchanged(const linear_constraint_t &cst) {
-    typename invariance_domain::var_domain_t vars(
+    typename invariance_domain_t::var_domain_t vars(
           cst.expression().variables_begin(), cst.expression().variables_end());
     bool unchanged = m_unchanged_vars <= vars;
     if (unchanged) {
@@ -749,7 +629,7 @@ private:
   // returned value is true.
   bool add_if_unchanged(const reference_constraint_t &cst) {
     auto cst_vars = cst.variables();
-    typename invariance_domain::var_domain_t vars(
+    typename invariance_domain_t::var_domain_t vars(
           cst_vars.begin(), cst_vars.end());
     bool unchanged = m_unchanged_vars <= vars;
     if (unchanged) {
@@ -825,16 +705,16 @@ private:
     } 
   }
   
-  /** End helpers to update m_var_to_lincsts and m_var_to_refcsts **/
+  /** End helpers to update m_bool_to_lincsts and m_bool_to_refcsts **/
 
 
   flat_boolean_numerical_domain(reduced_domain_product2_t &&product,
-                                bool_to_lincons_env_t &&var_to_lincsts,
-				bool_to_refcons_env_t &&var_to_refcsts,
-                                invariance_domain &&unchanged_vars)
+                                bool_to_lincons_env_t &&bool_to_lincsts,
+				bool_to_refcons_env_t &&bool_to_refcsts,
+                                invariance_domain_t &&unchanged_vars)
       : m_product(std::move(product)),
-	m_var_to_lincsts(std::move(var_to_lincsts)),
-	m_var_to_refcsts(std::move(var_to_refcsts)),
+	m_bool_to_lincsts(std::move(bool_to_lincsts)),
+	m_bool_to_refcsts(std::move(bool_to_refcsts)),
         m_unchanged_vars(std::move(unchanged_vars)) {}
 
 public:
@@ -843,7 +723,7 @@ public:
     prod.set_to_top();
     return bool_num_domain_t(std::move(prod), bool_to_lincons_env_t::top(),
 			     bool_to_refcons_env_t::top(),
-                             invariance_domain::top());
+                             invariance_domain_t::top());
   }
 
   bool_num_domain_t make_bottom() const override {
@@ -851,7 +731,7 @@ public:
     prod.set_to_bottom();
     return bool_num_domain_t(std::move(prod), bool_to_lincons_env_t::bottom(),
 			     bool_to_refcons_env_t::bottom(),
-                             invariance_domain::bottom());
+                             invariance_domain_t::bottom());
   }
 
   void set_to_top() override {
@@ -859,7 +739,7 @@ public:
     prod.set_to_top();
     bool_num_domain_t abs(std::move(prod), bool_to_lincons_env_t::top(),
 			  bool_to_refcons_env_t::top(),
-                          invariance_domain::top());
+                          invariance_domain_t::top());
     std::swap(*this, abs);
   }
 
@@ -868,29 +748,29 @@ public:
     prod.set_to_bottom();
     bool_num_domain_t abs(std::move(prod), bool_to_lincons_env_t::bottom(),
 			  bool_to_refcons_env_t::bottom(),
-                          invariance_domain::bottom());
+                          invariance_domain_t::bottom());
     std::swap(*this, abs);
   }
 
   flat_boolean_numerical_domain()
-    : m_product(), m_var_to_lincsts(), m_var_to_refcsts(), m_unchanged_vars() {}
+    : m_product(), m_bool_to_lincsts(), m_bool_to_refcsts(), m_unchanged_vars() {}
 
   flat_boolean_numerical_domain(const bool_num_domain_t &other)
-      : m_product(other.m_product), m_var_to_lincsts(other.m_var_to_lincsts),
-	m_var_to_refcsts(other.m_var_to_refcsts),
+      : m_product(other.m_product), m_bool_to_lincsts(other.m_bool_to_lincsts),
+	m_bool_to_refcsts(other.m_bool_to_refcsts),
         m_unchanged_vars(other.m_unchanged_vars) {}
 
   flat_boolean_numerical_domain(const bool_num_domain_t &&other)
       : m_product(std::move(other.m_product)),
-        m_var_to_lincsts(std::move(other.m_var_to_lincsts)),
-        m_var_to_refcsts(std::move(other.m_var_to_refcsts)),	
+        m_bool_to_lincsts(std::move(other.m_bool_to_lincsts)),
+        m_bool_to_refcsts(std::move(other.m_bool_to_refcsts)),	
         m_unchanged_vars(std::move(other.m_unchanged_vars)) {}
 
   bool_num_domain_t &operator=(const bool_num_domain_t &other) {
     if (this != &other) {
       m_product = other.m_product;
-      m_var_to_lincsts = other.m_var_to_lincsts;
-      m_var_to_refcsts = other.m_var_to_refcsts;      
+      m_bool_to_lincsts = other.m_bool_to_lincsts;
+      m_bool_to_refcsts = other.m_bool_to_refcsts;      
       m_unchanged_vars = other.m_unchanged_vars;
     }
     return *this;
@@ -899,8 +779,8 @@ public:
   bool_num_domain_t &operator=(const bool_num_domain_t &&other) {
     if (this != &other) {
       m_product = std::move(other.m_product);
-      m_var_to_lincsts = std::move(other.m_var_to_lincsts);
-      m_var_to_refcsts = std::move(other.m_var_to_refcsts);      
+      m_bool_to_lincsts = std::move(other.m_bool_to_lincsts);
+      m_bool_to_refcsts = std::move(other.m_bool_to_refcsts);      
       m_unchanged_vars = std::move(other.m_unchanged_vars);
     }
     return *this;
@@ -924,29 +804,29 @@ public:
 
   void operator|=(const bool_num_domain_t &other) override {
     m_product |= other.m_product;
-    m_var_to_lincsts = m_var_to_lincsts | other.m_var_to_lincsts;
-    m_var_to_refcsts = m_var_to_refcsts | other.m_var_to_refcsts;    
+    m_bool_to_lincsts = m_bool_to_lincsts | other.m_bool_to_lincsts;
+    m_bool_to_refcsts = m_bool_to_refcsts | other.m_bool_to_refcsts;    
     m_unchanged_vars = m_unchanged_vars | other.m_unchanged_vars;
   }
 
   bool_num_domain_t operator|(const bool_num_domain_t &other) const override {
     return bool_num_domain_t(m_product | other.m_product,
-                             m_var_to_lincsts | other.m_var_to_lincsts,
-                             m_var_to_refcsts | other.m_var_to_refcsts,
+                             m_bool_to_lincsts | other.m_bool_to_lincsts,
+                             m_bool_to_refcsts | other.m_bool_to_refcsts,
                              m_unchanged_vars | other.m_unchanged_vars);
   }
 
   bool_num_domain_t operator&(const bool_num_domain_t &other) const override {
     return bool_num_domain_t(m_product & other.m_product,
-                             m_var_to_lincsts & other.m_var_to_lincsts,
-                             m_var_to_refcsts & other.m_var_to_refcsts,			     
+                             m_bool_to_lincsts & other.m_bool_to_lincsts,
+                             m_bool_to_refcsts & other.m_bool_to_refcsts,			     
                              m_unchanged_vars & other.m_unchanged_vars);
   }
 
   bool_num_domain_t operator||(const bool_num_domain_t &other) const override {
     return bool_num_domain_t(m_product || other.m_product,
-                             m_var_to_lincsts || other.m_var_to_lincsts,
-                             m_var_to_refcsts || other.m_var_to_refcsts,			     
+                             m_bool_to_lincsts || other.m_bool_to_lincsts,
+                             m_bool_to_refcsts || other.m_bool_to_refcsts,			     
                              m_unchanged_vars || other.m_unchanged_vars);
   }
 
@@ -954,15 +834,15 @@ public:
       const bool_num_domain_t &other,
       const thresholds<number_t> &ts) const override {
     return bool_num_domain_t(m_product.widening_thresholds(other.m_product, ts),
-                             m_var_to_lincsts || other.m_var_to_lincsts,
-                             m_var_to_refcsts || other.m_var_to_refcsts,			     
+                             m_bool_to_lincsts || other.m_bool_to_lincsts,
+                             m_bool_to_refcsts || other.m_bool_to_refcsts,			     
                              m_unchanged_vars || other.m_unchanged_vars);
   }
 
   bool_num_domain_t operator&&(const bool_num_domain_t &other) const override {
     return bool_num_domain_t(m_product && other.m_product,
-                             m_var_to_lincsts && other.m_var_to_lincsts,
-                             m_var_to_refcsts && other.m_var_to_refcsts,			     
+                             m_bool_to_lincsts && other.m_bool_to_lincsts,
+                             m_bool_to_refcsts && other.m_bool_to_refcsts,			     
                              m_unchanged_vars && other.m_unchanged_vars);
   }
 
@@ -1119,8 +999,8 @@ public:
 
   void operator-=(const variable_t &v) override {
     m_product -= v;
-    m_var_to_lincsts -= v;
-    m_var_to_refcsts -= v;    
+    m_bool_to_lincsts -= v;
+    m_bool_to_refcsts -= v;    
     m_unchanged_vars -= v;
   }
 
@@ -1165,7 +1045,7 @@ public:
 	  m_product.first().set_bool(x, boolean_value::top());
 	}
       }
-      m_var_to_lincsts.set(x, lincst_domain_t(cst));
+      m_bool_to_lincsts.set(x, lincst_domain_t(cst));
       // We assume all variables in cst are unchanged unless the
       // opposite is proven
       for (auto const &v : cst.variables()) {
@@ -1178,7 +1058,7 @@ public:
                           << "\t" << x << " := (" << cst << ")\n"
                           << "\t" << x << " := " << bx << "\n"
                           << "\tunchanged vars=" << m_unchanged_vars << "\n"
-	                  << "\tlinear constraints for reduction=" << m_var_to_lincsts << "\n"
+	                  << "\tlinear constraints for reduction=" << m_bool_to_lincsts << "\n"
                           << "\tINV=" << m_product << "\n";);
   }
 
@@ -1215,7 +1095,7 @@ public:
 	  m_product.first().set_bool(x, boolean_value::top());
 	}
       }
-      m_var_to_refcsts.set(x, refcst_domain_t(cst));
+      m_bool_to_refcsts.set(x, refcst_domain_t(cst));
       // We assume all variables in cst are unchanged unless the
       // opposite is proven
       for (auto const &v : cst.variables()) {
@@ -1228,7 +1108,7 @@ public:
                           << "\t" << x << " := (" << cst << ")\n"
                           << "\t" << x << " := " << bx << "\n"
                           << "\tunchanged vars=" << m_unchanged_vars << "\n"
-                          << "\treference constraints for reduction=" << m_var_to_refcsts
+                          << "\treference constraints for reduction=" << m_bool_to_refcsts
                           << "\n";);
   }
 
@@ -1243,13 +1123,13 @@ public:
     }
 
     m_product.assign_bool_var(x, y, is_negated);
-    propagate_assign_bool_var(m_var_to_lincsts, x, y, is_negated);
-    propagate_assign_bool_var(m_var_to_refcsts, x, y, is_negated);
+    propagate_assign_bool_var(m_bool_to_lincsts, x, y, is_negated);
+    propagate_assign_bool_var(m_bool_to_refcsts, x, y, is_negated);
 
     CRAB_LOG("flat-boolean",
              crab::outs() << "\tunchanged vars=" << m_unchanged_vars << "\n"
-	                  << "\tlinear constraints for reduction=" << m_var_to_lincsts << "\n"
-                          << "\treference constraints for reduction=" << m_var_to_refcsts	     
+	                  << "\tlinear constraints for reduction=" << m_bool_to_lincsts << "\n"
+                          << "\treference constraints for reduction=" << m_bool_to_refcsts	     
                           << "\n";);
   }
 
@@ -1266,8 +1146,8 @@ public:
 
     // // --- for reduction from boolean to the numerical domain
     // if (op == OP_BAND) {
-    //   m_var_to_lincsts.set
-    //     (x, m_var_to_lincsts [y] & m_var_to_lincsts [z]);
+    //   m_bool_to_lincsts.set
+    //     (x, m_bool_to_lincsts [y] & m_bool_to_lincsts [z]);
     //   return;
     // }
 
@@ -1275,18 +1155,18 @@ public:
     // // the operands is false
     // if (op == OP_BOR || op == OP_BXOR) {
     //   if (m_product.first().get_bool(y).is_false()) {
-    //     m_var_to_lincsts.set(x, m_var_to_lincsts [z]);
+    //     m_bool_to_lincsts.set(x, m_bool_to_lincsts [z]);
     //     return;
     //   }
     //   if (m_product.first().get_bool(z).is_false()) {
-    //     m_var_to_lincsts.set(x, m_var_to_lincsts [y]);
+    //     m_bool_to_lincsts.set(x, m_bool_to_lincsts [y]);
     //     return;
     //   }
     // }
 
     /// otherwise we give up
-    m_var_to_lincsts -= x;
-    m_var_to_refcsts -= x;    
+    m_bool_to_lincsts -= x;
+    m_bool_to_refcsts -= x;    
   }
 
   void assume_bool(const variable_t &x, bool is_negated) override {
@@ -1305,16 +1185,16 @@ public:
                           << ")\n"
                           << "\tINV=" << m_product << "\n"
                           << "\tunchanged vars=" << m_unchanged_vars << "\n"
-	                  << "\tlinear constraints for reduction=" << m_var_to_lincsts << "\n"
-                          << "\tref constraints for reduction=" << m_var_to_refcsts	     
+	                  << "\tlinear constraints for reduction=" << m_bool_to_lincsts << "\n"
+                          << "\tref constraints for reduction=" << m_bool_to_refcsts	     
                           << "\n";);
 
     if (is_bottom()) {
       return; 
     }
     
-    bwd_reduction_assume_bool(m_var_to_lincsts, x, is_negated);
-    bwd_reduction_assume_bool(m_var_to_refcsts, x, is_negated);    
+    bwd_reduction_assume_bool(m_bool_to_lincsts, x, is_negated);
+    bwd_reduction_assume_bool(m_bool_to_refcsts, x, is_negated);    
 
     CRAB_LOG("flat-boolean",
              crab::outs() << "\tAfter reduction=" << m_product << "\n";);
@@ -1331,10 +1211,10 @@ public:
       } else {
 	m_product.select_bool(lhs, cond, b1, b2);
 	
-	fwd_reduction_select_bool(m_var_to_lincsts, lhs, cond, b1, b2);
-	fwd_reduction_select_bool(m_var_to_refcsts, lhs, cond, b1, b2);
-	propagate_select_bool(m_var_to_lincsts, lhs, cond, b1, b2);
-	propagate_select_bool(m_var_to_refcsts, lhs, cond, b1, b2);
+	fwd_reduction_select_bool(m_bool_to_lincsts, lhs, cond, b1, b2);
+	fwd_reduction_select_bool(m_bool_to_refcsts, lhs, cond, b1, b2);
+	propagate_select_bool(m_bool_to_lincsts, lhs, cond, b1, b2);
+	propagate_select_bool(m_bool_to_refcsts, lhs, cond, b1, b2);
       }
     }
   }
@@ -1347,8 +1227,8 @@ public:
        if lhs is false then assume(not rhs)
     */
     /** TODO: this can be done better **/
-    m_var_to_lincsts -= lhs;
-    m_var_to_refcsts -= lhs;    
+    m_bool_to_lincsts -= lhs;
+    m_bool_to_refcsts -= lhs;    
   }
 
   void backward_assign_bool_ref_cst(const variable_t &lhs,
@@ -1363,8 +1243,8 @@ public:
                                 const bool_num_domain_t &inv) override {
     m_product.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv.m_product);
     /** TODO: this can be done better **/
-    m_var_to_lincsts -= lhs;
-    m_var_to_refcsts -= lhs;        
+    m_bool_to_lincsts -= lhs;
+    m_bool_to_refcsts -= lhs;        
   }
 
   void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
@@ -1372,8 +1252,8 @@ public:
                                   const bool_num_domain_t &inv) override {
     m_product.backward_apply_binary_bool(op, x, y, z, inv.m_product);
     /** TODO: this can be done better **/
-    m_var_to_lincsts -= x;
-    m_var_to_refcsts -= x;        
+    m_bool_to_lincsts -= x;
+    m_bool_to_refcsts -= x;        
   }
 
   // cast_operators_api
@@ -1671,8 +1551,8 @@ public:
 
     m_product.forget(variables);
     for (variable_t v : variables) {
-      m_var_to_lincsts -= v;
-      m_var_to_refcsts -= v;      
+      m_bool_to_lincsts -= v;
+      m_bool_to_refcsts -= v;      
       m_unchanged_vars -= v;
     }
   }
@@ -1692,19 +1572,19 @@ public:
 
     m_product.project(variables);
 
-    bool_to_lincons_env_t new_var_to_lincsts;
-    bool_to_refcons_env_t new_var_to_refcsts;    
-    invariance_domain new_unchanged_vars;
+    bool_to_lincons_env_t new_bool_to_lincsts;
+    bool_to_refcons_env_t new_bool_to_refcsts;    
+    invariance_domain_t new_unchanged_vars;
     for (variable_t v : variables) {
-      new_var_to_lincsts.set(v, m_var_to_lincsts.at(v));
-      new_var_to_refcsts.set(v, m_var_to_refcsts.at(v));      
+      new_bool_to_lincsts.set(v, m_bool_to_lincsts.at(v));
+      new_bool_to_refcsts.set(v, m_bool_to_refcsts.at(v));      
       
       if (m_unchanged_vars.at(v)) {
         new_unchanged_vars += v;
       }
     }
-    std::swap(m_var_to_lincsts, new_var_to_lincsts);
-    std::swap(m_var_to_refcsts, new_var_to_refcsts);    
+    std::swap(m_bool_to_lincsts, new_bool_to_lincsts);
+    std::swap(m_bool_to_refcsts, new_bool_to_refcsts);    
     std::swap(m_unchanged_vars, new_unchanged_vars);
   }
 
@@ -1717,14 +1597,140 @@ public:
     }
 
     m_product.expand(x, new_x);
-    m_var_to_lincsts.set(new_x, m_var_to_lincsts.at(x));
-    m_var_to_refcsts.set(new_x, m_var_to_refcsts.at(x));    
+    m_bool_to_lincsts.set(new_x, m_bool_to_lincsts.at(x));
+    m_bool_to_refcsts.set(new_x, m_bool_to_refcsts.at(x));    
     if (m_unchanged_vars.at(x)) {
       m_unchanged_vars += new_x;
     }
   }
 }; // class flat_boolean_numerical_domain
 
+namespace flat_boolean_domain_impl {
+// invariant_domain is a very specialized abstract domain used to
+// perform a must-forward dataflow analysis that keeps track whether a
+// variable has been modified from any path since the variable was
+// defined up to the current location.
+// 
+// We need to keep track which constraints still hold at the time
+// the reduction from boolean variables to numerical ones is
+// done. For instance,
+//   
+//  a := x > y;
+//  // unchanged = {x,y}
+//  if (*) {
+//    x := 0;
+//    // unchanged = {y}
+//  } else {
+//    // unchanged = {x,y}
+//  }
+//  // unchanged = {y}
+//  assume(a);
+//  // we cannot say a implies x>y since x might have been modified
+
+template<class Variable>  
+class invariance_domain {
+public:
+  using variable_t = Variable;
+  using var_domain_t = ikos::discrete_domain<variable_t>;
+  using iterator = typename var_domain_t::iterator;
+  
+private:
+  var_domain_t m_varset;
+  
+public:
+  invariance_domain() : m_varset(var_domain_t::bottom()) /*top by default*/ {}
+  invariance_domain(var_domain_t s) : m_varset(s) {}
+  invariance_domain(variable_t v) : m_varset(var_domain_t::bottom()) {
+    m_varset += v;
+  }
+  invariance_domain(const invariance_domain &other)
+    : m_varset(other.m_varset) {}
+  
+  static invariance_domain bottom() { return var_domain_t::top(); }
+  static invariance_domain top() { return var_domain_t::bottom(); }
+  
+  bool is_top() const { return m_varset.is_bottom(); }
+  bool is_bottom() const { return m_varset.is_top(); }
+  
+  /*
+             top  = everything might change
+          {x,y,z} = nothing changes
+              {x} = everything might change except x
+
+                 top
+                / | \
+             {x} {y} {z}
+             / \ / \ / \
+           {x,y} {x,z} {y,z}
+              \   |   /
+               {x,y,z}
+                  |
+                 bot
+  */
+  bool operator<=(const invariance_domain &other) const {
+    if (other.is_top() || is_bottom())
+      return true;
+    else
+      return other.m_varset <= m_varset;
+  }
+
+  void operator|=(const invariance_domain &other) {
+      m_varset = m_varset & other.m_varset;
+  }
+  
+  invariance_domain operator|(const invariance_domain &other) const {
+    return invariance_domain(m_varset & other.m_varset);
+  }
+  
+  invariance_domain operator&(const invariance_domain &other) const {
+    return invariance_domain(m_varset | other.m_varset);
+  }
+  
+  invariance_domain operator||(const invariance_domain &other) const {
+    return this->operator|(other);
+  }
+  
+  invariance_domain operator&&(const invariance_domain &other) const {
+      return this->operator&(other);
+  }
+  
+  invariance_domain &operator+=(const variable_t &v) {
+    m_varset += v;
+    return *this;
+  }
+  
+  invariance_domain &operator-=(const variable_t &v) {
+    m_varset -= v;
+    return *this;
+  }
+  
+  bool at(const variable_t &v) const{
+    invariance_domain d(v);
+    return (d <= *this);
+  }
+  
+  std::size_t size() { return m_varset.size(); }
+
+  iterator begin() { return m_varset.begin(); }
+
+  iterator end() { return m_varset.end(); }
+  
+  void write(crab::crab_os &o) {
+    if (is_bottom()) {
+      o << "_|_";
+    } else if (is_top()) {
+      o << "top";
+    } else {
+      m_varset.write(o);
+    }
+  }
+  friend crab::crab_os &operator<<(crab::crab_os &o, invariance_domain &dom) {
+    dom.write(o);
+    return o;
+  }
+};
+} // end flat_boolean_domain_impl namespace
+  
 template <typename Num>
 struct abstract_domain_traits<flat_boolean_numerical_domain<Num>> {
   using number_t = typename Num::number_t;
