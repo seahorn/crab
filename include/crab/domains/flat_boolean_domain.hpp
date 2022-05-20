@@ -17,10 +17,6 @@
 
 namespace crab {
 namespace domains {
-namespace flat_boolean_domain_impl {
-template<class Variable> class invariance_domain;
-} // end flat_boolean_domain_impl namespace
-  
 // A simple abstract domain for booleans
 template <typename Number, typename VariableName>
 class flat_boolean_domain final
@@ -537,22 +533,22 @@ private:
   // abstract domains used to map bool variables to sets of
   // constraints such that if the bool variable becomes true then the
   // conjunction of the constraints must hold.
-  struct linear_constraint_compare {
+  struct lincst_cmp {
     bool operator()(const linear_constraint_t &c1, const linear_constraint_t &c2) const {
       return c1.lexicographical_compare(c2);
     }
   };
-  struct reference_constraint_compare {
+  struct refcst_cmp {
     bool operator()(const reference_constraint_t &c1, const reference_constraint_t &c2) const {
       return c1.lexicographical_compare(c2);
     }
-  };  
-  using lincst_domain_t = dual_set_domain<linear_constraint_t, linear_constraint_compare>;
-  using bool_to_lincons_env_t = ikos::separate_domain<variable_t, lincst_domain_t>;
-  using refcst_domain_t = dual_set_domain<reference_constraint_t, reference_constraint_compare>;
-  using bool_to_refcons_env_t = ikos::separate_domain<variable_t, refcst_domain_t>;
-  using invariance_domain_t = flat_boolean_domain_impl::invariance_domain<variable_t>;
-    
+  };
+  using lincst_set_t = dual_set_domain<set_domain<linear_constraint_t, lincst_cmp>>;
+  using refcst_set_t = dual_set_domain<set_domain<reference_constraint_t, refcst_cmp>>;
+  using bool_to_lincons_env_t = ikos::separate_domain<variable_t, lincst_set_t>;  
+  using bool_to_refcons_env_t = ikos::separate_domain<variable_t, refcst_set_t>;
+  using invariance_domain_t = dual_set_domain<ikos::discrete_domain<variable_t>>;
+
   // Reduced product of flat boolean domain and an arbitrary domain.
   reduced_domain_product2_t m_product;
   /** 
@@ -563,7 +559,26 @@ private:
   // variable is evaluated to true then all the constraints hold.
   bool_to_lincons_env_t m_bool_to_lincsts;
   bool_to_refcons_env_t m_bool_to_refcsts;
-  // Must analysis to konw which variables haven't changed.
+  // invariance_domain_t is a very specialized abstract domain used to
+  // perform a must-forward dataflow analysis that keeps track whether a
+  // variable has been modified from any path since the variable was
+  // defined up to the current location.
+  // 
+  // We need to keep track which constraints still hold at the time
+  // the reduction from boolean variables to non-boolean ones is
+  // done. For instance,
+  //   
+  //  a := x > y;
+  //  // unchanged = {x,y}
+  //  if (*) {
+  //    x := 0;
+  //    // unchanged = {y}
+  //  } else {
+  //    // unchanged = {x,y}
+  //  }
+  //  // unchanged = {y}
+  //  assume(a);
+  //  // we cannot say a implies x>y since x might have been modified
   invariance_domain_t m_unchanged_vars;
 
   /** Begin helpers to update m_bool_to_lincsts and m_bool_to_refcsts **/
@@ -615,7 +630,7 @@ private:
   // side-effect, it adds cst into the non-boolean domain if the
   // returned value is true.
   bool add_if_unchanged(const linear_constraint_t &cst) {
-    typename invariance_domain_t::var_domain_t vars(
+    typename invariance_domain_t::set_domain_t vars(
           cst.expression().variables_begin(), cst.expression().variables_end());
     bool unchanged = m_unchanged_vars <= vars;
     if (unchanged) {
@@ -629,7 +644,7 @@ private:
   // returned value is true.
   bool add_if_unchanged(const reference_constraint_t &cst) {
     auto cst_vars = cst.variables();
-    typename invariance_domain_t::var_domain_t vars(
+    typename invariance_domain_t::set_domain_t vars(
           cst_vars.begin(), cst_vars.end());
     bool unchanged = m_unchanged_vars <= vars;
     if (unchanged) {
@@ -1045,7 +1060,7 @@ public:
 	  m_product.first().set_bool(x, boolean_value::top());
 	}
       }
-      m_bool_to_lincsts.set(x, lincst_domain_t(cst));
+      m_bool_to_lincsts.set(x, lincst_set_t(cst));
       // We assume all variables in cst are unchanged unless the
       // opposite is proven
       for (auto const &v : cst.variables()) {
@@ -1095,7 +1110,7 @@ public:
 	  m_product.first().set_bool(x, boolean_value::top());
 	}
       }
-      m_bool_to_refcsts.set(x, refcst_domain_t(cst));
+      m_bool_to_refcsts.set(x, refcst_set_t(cst));
       // We assume all variables in cst are unchanged unless the
       // opposite is proven
       for (auto const &v : cst.variables()) {
@@ -1604,132 +1619,6 @@ public:
     }
   }
 }; // class flat_boolean_numerical_domain
-
-namespace flat_boolean_domain_impl {
-// invariant_domain is a very specialized abstract domain used to
-// perform a must-forward dataflow analysis that keeps track whether a
-// variable has been modified from any path since the variable was
-// defined up to the current location.
-// 
-// We need to keep track which constraints still hold at the time
-// the reduction from boolean variables to numerical ones is
-// done. For instance,
-//   
-//  a := x > y;
-//  // unchanged = {x,y}
-//  if (*) {
-//    x := 0;
-//    // unchanged = {y}
-//  } else {
-//    // unchanged = {x,y}
-//  }
-//  // unchanged = {y}
-//  assume(a);
-//  // we cannot say a implies x>y since x might have been modified
-
-template<class Variable>  
-class invariance_domain {
-public:
-  using variable_t = Variable;
-  using var_domain_t = ikos::discrete_domain<variable_t>;
-  using iterator = typename var_domain_t::iterator;
-  
-private:
-  var_domain_t m_varset;
-  
-public:
-  invariance_domain() : m_varset(var_domain_t::bottom()) /*top by default*/ {}
-  invariance_domain(var_domain_t s) : m_varset(s) {}
-  invariance_domain(variable_t v) : m_varset(var_domain_t::bottom()) {
-    m_varset += v;
-  }
-  invariance_domain(const invariance_domain &other)
-    : m_varset(other.m_varset) {}
-  
-  static invariance_domain bottom() { return var_domain_t::top(); }
-  static invariance_domain top() { return var_domain_t::bottom(); }
-  
-  bool is_top() const { return m_varset.is_bottom(); }
-  bool is_bottom() const { return m_varset.is_top(); }
-  
-  /*
-             top  = everything might change
-          {x,y,z} = nothing changes
-              {x} = everything might change except x
-
-                 top
-                / | \
-             {x} {y} {z}
-             / \ / \ / \
-           {x,y} {x,z} {y,z}
-              \   |   /
-               {x,y,z}
-                  |
-                 bot
-  */
-  bool operator<=(const invariance_domain &other) const {
-    if (other.is_top() || is_bottom())
-      return true;
-    else
-      return other.m_varset <= m_varset;
-  }
-
-  void operator|=(const invariance_domain &other) {
-      m_varset = m_varset & other.m_varset;
-  }
-  
-  invariance_domain operator|(const invariance_domain &other) const {
-    return invariance_domain(m_varset & other.m_varset);
-  }
-  
-  invariance_domain operator&(const invariance_domain &other) const {
-    return invariance_domain(m_varset | other.m_varset);
-  }
-  
-  invariance_domain operator||(const invariance_domain &other) const {
-    return this->operator|(other);
-  }
-  
-  invariance_domain operator&&(const invariance_domain &other) const {
-      return this->operator&(other);
-  }
-  
-  invariance_domain &operator+=(const variable_t &v) {
-    m_varset += v;
-    return *this;
-  }
-  
-  invariance_domain &operator-=(const variable_t &v) {
-    m_varset -= v;
-    return *this;
-  }
-  
-  bool at(const variable_t &v) const{
-    invariance_domain d(v);
-    return (d <= *this);
-  }
-  
-  std::size_t size() { return m_varset.size(); }
-
-  iterator begin() { return m_varset.begin(); }
-
-  iterator end() { return m_varset.end(); }
-  
-  void write(crab::crab_os &o) {
-    if (is_bottom()) {
-      o << "_|_";
-    } else if (is_top()) {
-      o << "top";
-    } else {
-      m_varset.write(o);
-    }
-  }
-  friend crab::crab_os &operator<<(crab::crab_os &o, invariance_domain &dom) {
-    dom.write(o);
-    return o;
-  }
-};
-} // end flat_boolean_domain_impl namespace
   
 template <typename Num>
 struct abstract_domain_traits<flat_boolean_numerical_domain<Num>> {

@@ -52,11 +52,12 @@ template <typename Element> class discrete_domain {
 
 private:
   using ptset_t = patricia_tree_set<Element>;
+  using discrete_domain_t = discrete_domain<Element>;
 
 public:
-  using discrete_domain_t = discrete_domain<Element>;
+  using element_t = Element;
   using iterator = typename ptset_t::iterator;
-
+  
 private:
   bool m_is_top;
   ptset_t m_set;
@@ -277,24 +278,24 @@ namespace domains {
  * This domain is semantically equivalent to discrete_domain but it
  * uses std::set instead of patricia tries as underlying
  * datastructure. Because of this, this domain is slower than
- * discrete_domain so the only reason to use it is when Element is not
- * a subclass of indexable.
+ * discrete_domain so the only reason to use it is when Element cannot
+ * be a subclass of indexable.
 **/
 
 template <class Element, class Compare>
 class set_domain {
 private:
   using set_t = std::set<Element, Compare>;
+  using set_domain_t = set_domain<Element, Compare>;
 
 public:
-  using set_domain_t = set_domain<Element, Compare>;
+  using element_t = Element;  
   using iterator = typename set_t::const_iterator;
 
 private:
   bool m_is_top;
   set_t m_set;
 
-private:
   set_domain(bool is_top) : m_is_top(is_top) {}
   set_domain(set_t set) : m_is_top(false), m_set(set) {}
 
@@ -488,17 +489,17 @@ inline crab::crab_os &operator<<(crab::crab_os &o,
   return o;
 }
 
-// Dual of set_domain: the larger is the set, the more precise is the
-// domain.
-template<class Element, class Compare>
+// Dual of set_domain/discrete_domain: the larger is the set, the more
+// precise is the domain.
+template<class Set>
 class dual_set_domain {
-  using dual_set_domain_t = dual_set_domain<Element, Compare>;
-  using set_domain_t = set_domain<Element, Compare>;
-  
-  
+  using dual_set_domain_t = dual_set_domain<Set>;
+  using set_domain_t = Set; 
+    
   set_domain_t m_set;
     
 public:
+  using element_t = typename set_domain_t::element_t;
   using iterator = typename set_domain_t::iterator;
 
   dual_set_domain(set_domain_t s)
@@ -545,11 +546,11 @@ public:
     return this->operator&(other);
   }
 
-  dual_set_domain_t &operator+=(const Element &c) {
+  dual_set_domain_t &operator+=(const element_t &c) {
     m_set += c;
     return *this;
   }
-  dual_set_domain_t &operator-=(const Element &c) {
+  dual_set_domain_t &operator-=(const element_t &c) {
     m_set -= c;
     return *this;
   }
