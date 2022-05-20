@@ -270,13 +270,16 @@ template<typename Domain> class int_cast_domain_traits {
 public:
   using number_t = typename Domain::number_t;
   using variable_t = typename Domain::variable_t;
-  
+
   static void apply(Domain &dom, int_conv_operation_t op,
 		    const variable_t &dst, const variable_t &src) {
+
     if (!(dst.get_type().is_bool() || src.get_type().is_bool())) {
       dom.assign(dst, src);
+    } else {
+      dom -= dst;
     }
-
+    
     /// Refine dst based on src's type
     if (op == crab::domains::OP_ZEXT) {
       if (src.get_type().is_bool()) {
@@ -284,7 +287,7 @@ public:
 	dom += (dst <= 1);
       } else if (src.get_type().is_integer()) {
 	unsigned bitwidth = src.get_type().get_integer_bitwidth();
-	unsigned upper_bound = (1 << bitwidth) - 1;
+	number_t upper_bound = (number_t(1) << number_t(bitwidth)) - number_t(1);
 	dom += (dst <= number_t(upper_bound));
       }
     }
