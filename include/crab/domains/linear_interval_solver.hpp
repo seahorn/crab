@@ -83,7 +83,7 @@ template <typename Number, typename VariableName, typename IntervalCollection>
 class linear_interval_solver {
 
 public:
-  using Interval = typename IntervalCollection::value_type;
+  using Interval = typename IntervalCollection::mapped_type;
   using variable_t = crab::variable<Number, VariableName>;
   using linear_expression_t = linear_expression<Number, VariableName>;
   using linear_constraint_t = linear_constraint<Number, VariableName>;

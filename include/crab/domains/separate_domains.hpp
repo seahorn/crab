@@ -67,7 +67,8 @@ public:
   using separate_domain_t = separate_domain<Key, Value, ValueEqual>;
   using iterator = typename patricia_tree_t::iterator;
   using key_type = Key;
-  using value_type = Value;
+  using value_type = typename patricia_tree_t::binding_t;
+  using mapped_type = Value;
 
 private:
   bool _is_bottom;
@@ -498,7 +499,7 @@ private:
 
 public:
   using key_type = Key;
-  using value_type = discrete_domain_t;    
+  using mapped_type = discrete_domain_t;    
   using separate_discrete_domain_t = separate_discrete_domain<Key, Element>;
   using iterator = typename patricia_tree_t::iterator;
 
@@ -515,33 +516,33 @@ private:
   }
   /* begin patricia_tree API */
   class join_op : public binary_op_t {
-    std::pair<bool, boost::optional<value_type>>
-    apply(const key_type &/*key*/, const value_type &x, const value_type &y) override {
-      value_type z = x.operator|(y);
+    std::pair<bool, boost::optional<mapped_type>>
+    apply(const key_type &/*key*/, const mapped_type &x, const mapped_type &y) override {
+      mapped_type z = x.operator|(y);
       if (z.is_top()) {
 	// special encoding for top: the patricia tree will not keep
 	// top values.
-        return {false, boost::optional<value_type>()};
+        return {false, boost::optional<mapped_type>()};
       } else {
-        return {false, boost::optional<value_type>(z)};
+        return {false, boost::optional<mapped_type>(z)};
       }
     }
     bool default_is_absorbing() override { return true; }    
   }; // class join_op
 
   class meet_op : public binary_op_t {
-    std::pair<bool, boost::optional<value_type>>
-    apply(const key_type &/*key*/, const value_type &x, const value_type &y) override {
-      value_type z = x.operator&(y);
+    std::pair<bool, boost::optional<mapped_type>>
+    apply(const key_type &/*key*/, const mapped_type &x, const mapped_type &y) override {
+      mapped_type z = x.operator&(y);
       // Returning this pair means that if z is bottom do not treat it
       // special and just update the patricia tree with z.
-      return {false, boost::optional<value_type>(z)};
+      return {false, boost::optional<mapped_type>(z)};
     };
     bool default_is_absorbing() override { return false; }
   }; // class meet_op
 
   class domain_po : public partial_order_t {
-    bool leq(const value_type &x, const value_type &y) { return x.operator<=(y); }
+    bool leq(const mapped_type &x, const mapped_type &y) { return x.operator<=(y); }
     bool default_is_top() { return true; }
   }; // class domain_po
   /* end patricia_tree API */
@@ -650,7 +651,7 @@ public:
     }
   }
 
-  void set(const Key &k, value_type v) {
+  void set(const Key &k, mapped_type v) {
     // Note that we can store a key-value pair where the value is
     // bottom because bottom means empty set.
     if (!is_bottom()) {
@@ -669,16 +670,16 @@ public:
     return *this;
   }
 
-  value_type at(const Key &k) const {
+  mapped_type at(const Key &k) const {
     if (is_bottom()) {
       CRAB_ERROR("separate_discrete_domain::at is undefined on bottom");
     } else if (is_top()) {
-      return value_type::top();
+      return mapped_type::top();
     } else {
-      if (boost::optional<value_type> v = m_tree.lookup(k)) {
+      if (boost::optional<mapped_type> v = m_tree.lookup(k)) {
         return *v;
       } else {
-        return value_type::top();
+        return mapped_type::top();
       }
     }
   }
@@ -753,7 +754,7 @@ public:
 		     new_k, " does not exist in ", *this);
         }
       }
-      if (boost::optional<value_type> val_opt = m_tree.lookup(k)) {
+      if (boost::optional<mapped_type> val_opt = m_tree.lookup(k)) {
         if (!(*val_opt).is_top()) {
           m_tree.insert(new_k, *val_opt);
         }
@@ -775,7 +776,7 @@ public:
         Key k = it->first;
         k.write(o);
         o << " -> ";
-        value_type v = it->second;
+        mapped_type v = it->second;
         v.write(o);
         ++it;
         if (it != m_tree.end()) {

@@ -145,11 +145,11 @@ private:
   using rgn_equiv_classes_t = union_find_domain<variable_t, boolean_value>;
   // Map each reference or region variable to a set of allocation sites
   using alloc_site_env_t = separate_discrete_domain<variable_t, allocation_site>;
-  using allocation_sites = typename alloc_site_env_t::value_type;
+  using allocation_sites = typename alloc_site_env_t::mapped_type;
   // Map variables to sets of tags
   using tag_t = region_domain_impl::tag<number_t>;
   using tag_env_t = separate_discrete_domain<variable_t, tag_t>;
-  using tag_set = typename tag_env_t::value_type;
+  using tag_set = typename tag_env_t::mapped_type;
   
   static_assert(
       std::is_same<typename Params::number_t,
@@ -1044,11 +1044,11 @@ public:
     }
     if (crab_domain_params_man::get().region_allocation_sites()) {
       // Region does not contain any allocation site
-      m_alloc_env.set(rgn, alloc_site_env_t::value_type::bottom());
+      m_alloc_env.set(rgn, alloc_site_env_t::mapped_type::bottom());
     }
     if (crab_domain_params_man::get().region_tag_analysis()) {
       // Region does not contain any tag
-      m_tag_env.set(rgn, tag_env_t::value_type::bottom());
+      m_tag_env.set(rgn, tag_env_t::mapped_type::bottom());
     }
 
     if (!(rgn.get_type().is_unknown_region())) {
@@ -1973,7 +1973,7 @@ public:
       }
 
       if (crab_domain_params_man::get().region_tag_analysis()) {
-        m_tag_env.set(x, tag_env_t::value_type::bottom());
+        m_tag_env.set(x, tag_env_t::mapped_type::bottom());
       }
     }
   }

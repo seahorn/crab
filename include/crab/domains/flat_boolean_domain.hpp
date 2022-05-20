@@ -589,11 +589,11 @@ private:
     if (!is_negated) {
       env.set(x, env.at(y));
     } else {
-      typename BoolToCstEnv::value_type csts = env.at(y);
+      typename BoolToCstEnv::mapped_type csts = env.at(y);
       if (csts.size() == 1) {
 	// cst is either linear_constraint or reference_constraint
         auto cst = *(csts.begin());
-        env.set(x, typename BoolToCstEnv::value_type(cst.negate()));
+        env.set(x, typename BoolToCstEnv::mapped_type(cst.negate()));
         return;
       }
       // we do not negate multiple conjunctions because it would
@@ -617,7 +617,7 @@ private:
       auto cond_csts = env.at(cond);
       if (cond_csts.size() == 1) {
 	auto cst = *(cond_csts.begin());
-	env.set(lhs, typename BoolToCstEnv::value_type(cst.negate()) & env.at(b2));
+	env.set(lhs, typename BoolToCstEnv::mapped_type(cst.negate()) & env.at(b2));
       } else {
 	// we lost the condition because we cannot negate without
 	// introducing disjunctions.
@@ -678,7 +678,7 @@ private:
       }
     } else {
       // we only perform reduction if there is only one constraint
-      typename BoolToCstEnv::value_type csts = env.at(x);
+      typename BoolToCstEnv::mapped_type csts = env.at(x);
       if (csts.size() == 1) {
         auto cst = *(csts.begin());
         if (add_if_unchanged(cst.negate())) {
