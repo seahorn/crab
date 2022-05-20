@@ -1,3 +1,47 @@
+#pragma once
+
+/** Several implementations of set-based domains:
+ * 
+ * - discrete_domain uses patricia trees to implement sets. As a
+ *   constraint, it requires the set element to be indexable. Given a
+ *   set of elements E, the discrete domain is a finite lattice that
+ *   consists of all subsets of E. For instance if E={x,y,z}:
+ * 
+ *              {x,y,z}    least precise element
+ *              /  |   \
+ *          {x,y} {x,z} {y,z} 
+ *           \   /    /  /
+ *            \ / \  / \/
+ *            {x} {y} {z}
+ *              \  | / 
+ *                { }      most precise element
+ *
+ * - set_domain has the same functionality than discrete_domain but it
+ *   uses std::set. It should be used only when the set element cannot
+ *   be indexable because set_domain is slower than discrete_domain.
+ * 
+ * - dual_set_domain: it takes a set-based domain (discrete_domain or
+ *   set_domain) and invert it. That is, 
+ *
+ *                { }      least precise element
+ *               / |  \
+ *            {x} {y} {z}
+ *            / \ / \ /	\
+ *          {x,y} {x,z} {y,z}
+ *             \   |   /
+ *              {x,y,z}    most precise element
+ *
+ * - discrete_pair_domain is a set of pairs (key,value) where key must
+ *   be indexable.
+ **/
+#include <crab/domains/patricia_trees.hpp>
+#include <crab/support/debug.hpp>
+
+#include "boost/range/iterator_range_core.hpp"
+#include "boost/optional.hpp"
+
+namespace ikos {
+
 /*******************************************************************************
  *
  * An implementation of discrete domains based on Patricia trees.
@@ -37,17 +81,7 @@
  * UNILATERAL TERMINATION OF THIS AGREEMENT.
  *
  ******************************************************************************/
-
-#pragma once
-
-#include <crab/domains/patricia_trees.hpp>
-#include <crab/support/debug.hpp>
-
-#include "boost/range/iterator_range_core.hpp"
-#include "boost/optional.hpp"
-
-namespace ikos {
-
+  
 template <typename Element> class discrete_domain {
 
 private:
@@ -494,20 +528,25 @@ inline crab::crab_os &operator<<(crab::crab_os &o,
 template<class Set>
 class dual_set_domain {
   using dual_set_domain_t = dual_set_domain<Set>;
-  using set_domain_t = Set; 
-    
-  set_domain_t m_set;
-    
+       
 public:
+  using set_domain_t = Set;   
   using element_t = typename set_domain_t::element_t;
   using iterator = typename set_domain_t::iterator;
 
-  dual_set_domain(set_domain_t s)
-    : m_set(s) {}
+private:
+    set_domain_t m_set;
+public:
+  
   dual_set_domain()
     : m_set(set_domain_t::bottom()) /*top by default*/ {}
-  dual_set_domain(const dual_set_domain_t &other)
-    : m_set(other.m_set) {}
+  dual_set_domain(set_domain_t s)
+    : m_set(s) {}
+
+  dual_set_domain(const dual_set_domain_t &other) = default;
+  dual_set_domain(dual_set_domain_t &&other) = default;  
+  dual_set_domain_t&operator=(const dual_set_domain_t &other) = default;
+  dual_set_domain_t&operator=(dual_set_domain_t &&other) = default;  
 
   static dual_set_domain_t bottom() { return set_domain_t::top(); }
   static dual_set_domain_t top() { return set_domain_t::bottom(); }
@@ -555,12 +594,17 @@ public:
     return *this;
   }
 
+  bool at(const element_t &e) const{
+    dual_set_domain_t s(e);
+    return (s <= *this);
+  }
+  
   std::size_t size() { return m_set.size(); }
 
   iterator begin() const  { return m_set.begin(); }
   iterator end() const { return m_set.end(); }
   
-  void write(crab::crab_os &o) {
+  void write(crab::crab_os &o) const {
     if (is_bottom()) {
       o << "_|_";
     } else if (is_top()) {
@@ -571,7 +615,7 @@ public:
   }
 
   friend crab::crab_os &operator<<(crab::crab_os &o,
-				   dual_set_domain_t &dom) {
+				   const dual_set_domain_t &dom) {
     dom.write(o);
     return o;
   }
