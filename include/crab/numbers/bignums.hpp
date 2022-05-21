@@ -195,6 +195,9 @@ public:
 
   bool operator>=(q_number x) const;
 
+  // left shift
+  q_number operator<<(q_number x) const;
+  
   z_number numerator() const;
 
   z_number denominator() const;

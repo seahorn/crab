@@ -310,20 +310,23 @@ z_number z_number::operator^(z_number x) const {
   return res;
 }
 
+// left shift  
 z_number z_number::operator<<(z_number x) const {
   mpz_t mp_r;
-  mpz_init(mp_r);
-  // left shift
+  mpz_init(mp_r);  
+  // TODO: check for potential overflow
   mpz_mul_2exp(mp_r, _n, mpz_get_ui(x._n));
   z_number res = from_mpz_t(mp_r);
   mpz_clear(mp_r);
   return res;
 }
 
+// arithmetic right shift  
 z_number z_number::operator>>(z_number x) const {
+  
   mpz_t mp_r;
   mpz_init(mp_r);
-  // arithmetic right shift
+  // TODO: check for potential overflow
   mpz_fdiv_q_2exp(mp_r, _n, mpz_get_ui(x._n));
   z_number res = from_mpz_t(mp_r);
   mpz_clear(mp_r);
@@ -587,6 +590,28 @@ bool q_number::operator<=(q_number x) const { return mpq_cmp(_n, x._n) <= 0; }
 bool q_number::operator>(q_number x) const { return mpq_cmp(_n, x._n) > 0; }
 
 bool q_number::operator>=(q_number x) const { return mpq_cmp(_n, x._n) >= 0; }
+
+// left shift  
+q_number q_number::operator<<(q_number x) const {
+  auto to_z_number = [](q_number n) {
+    z_number num = n.numerator();
+    z_number den = n.denominator();
+    z_number q = num / den;
+    z_number r = num % den;
+    if (r != 0) {
+      CRAB_ERROR("q_number cannot be converted to z_number without rounding in left shift");
+    }
+    return q;
+  };  
+  mpq_t mp_r;
+  mpq_init(mp_r); 
+  z_number shift = to_z_number(x);
+  // TODO: check for potential overflow  
+  mpq_mul_2exp(mp_r, _n, mpz_get_ui(shift._n));
+  q_number res = from_mpq_t(mp_r);
+  mpq_clear(mp_r);
+  return res;
+}
 
 z_number q_number::numerator() const {
   return z_number::from_mpz_srcptr(mpq_numref(_n));
