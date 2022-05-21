@@ -613,12 +613,13 @@ private:
       }
     }
     while (!worklist.empty()) {
-      auto pair = worklist.back();
+       auto pair = worklist.back();
+      variable_t v(pair.first);
+      typename BoolEnv::mapped_type value(pair.second);
       worklist.pop_back();
-      auto value = pair.second;
       transform(value);
-      env -= pair.first;      
-      env.set(pair.first, value);
+      env -= v;
+      env.set(v, value);
     }
   }
 
