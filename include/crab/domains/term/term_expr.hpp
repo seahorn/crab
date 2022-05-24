@@ -166,23 +166,68 @@ public:
   using term_map_t = std::map<term_id, term_id>;
   using gener_map_t = std::map<std::pair<term_id, term_id>, term_id>;
 
-  term_table(void) : free_var(0) {}
-
-  term_table(const term_table_t &o)
-      : free_var(o.free_var), _map(o._map), terms(o.terms),
-        _parents(o._parents), _ref_count(o._ref_count), _depth(o._depth),
-        free_terms(o.free_terms) {}
-
-  term_table_t &operator=(const term_table_t &o) {
-    free_var = o.free_var;
-    _map = o._map;
-    terms = o.terms;
-    _ref_count = o._ref_count;
-    _parents = o._parents;
-    _depth = o._depth;
-    free_terms = o.free_terms;
-    return *this;
+private:
+  
+  term_id fresh_term(term_ref_t ref) {
+    if (m_free_terms.size() > 0) {
+      term_id t = m_free_terms.back();
+      m_free_terms.pop_back();
+      m_terms[t] = ref;
+      m_parents[t].clear();
+      m_depth[t] = 0;
+      m_ref_count[t] = 0;
+      return t;
+    } else {
+      term_id t = m_terms.size();
+      m_terms.push_back(ref);
+      m_ref_count.push_back(0);
+      m_parents.push_back(std::forward_list<term_id>());
+      m_depth.push_back(0);
+      return t;
+    }
   }
+
+  term_id add_term(term_ref_t ref) {
+    auto it = m_map.find(ref);
+    if (it != m_map.end()) {
+      return (*it).second;
+    } else {
+      term_id id = fresh_term(ref);
+      m_map[ref] = id;
+      if (ref.p.get()->kind() == TERM_APP) {
+        unsigned int c_depth = 0;
+        for (term_id c : term_args(ref.p.get())) {
+          assert(c < m_ref_count.size());
+          m_ref_count[c] += 1;
+          // do not keep order between parents
+          m_parents[c].push_front(id);
+          c_depth = std::max(c_depth, m_depth[c]);
+        }
+        m_depth[id] = 1 + c_depth;
+      }
+      /* Not true, as we're garbage collecting terms */
+      // assert(m_map.size() == id+1);
+      return id;
+    }
+  }
+
+  int m_free_var;
+  std::map<term_ref_t, term_id> m_map;
+  std::vector<term_ref_t> m_terms;
+  std::vector<std::forward_list<term_id_t>> m_parents;
+  // JN: I tested using vec instead of std::vector and performance
+  // didn't improve much.
+  std::vector<unsigned int> m_ref_count;
+  std::vector<unsigned int> m_depth;
+  std::vector<term_id> m_free_terms;
+  
+public:
+  
+  term_table(void) : m_free_var(0) {}
+  term_table(const term_table_t &o) = default;
+  term_table_t &operator=(const term_table_t &o) = default;
+  term_table(term_table_t &&o) = default;
+  term_table_t &operator=(term_table_t &&o) = default;
 
   term_id make_const(const Num &n) {
     term_ref_t ref(new const_term_t(n));
@@ -194,13 +239,13 @@ public:
   }
 
   term_id make_var(var_id n) {
-    free_var = std::max(free_var, n + 1);
+    m_free_var = std::max(m_free_var, n + 1);
     term_ref_t ref(new var_term_t(n));
     return add_term(ref);
   };
 
   term_id fresh_var(void) {
-    var_id v = free_var++;
+    var_id v = m_free_var++;
     return make_var(v);
   }
 
@@ -236,20 +281,20 @@ public:
     return find_ftor(f, ids);
   }
 
-  term_t *get_term_ptr(term_id t) { return terms[t].p.get(); }
+  term_t *get_term_ptr(term_id t) { return m_terms[t].p.get(); }
 
-  const term_t *get_term_ptr(term_id t) const { return terms[t].p.get(); }
+  const term_t *get_term_ptr(term_id t) const { return m_terms[t].p.get(); }
 
-  void add_ref(term_id t) { _ref_count[t]++; }
+  void add_ref(term_id t) { m_ref_count[t]++; }
 
   void deref(term_id t, std::vector<term_id> &forgotten) {
-    assert(_ref_count[t]);
-    _ref_count[t]--;
-    if (!_ref_count[t]) {
+    assert(m_ref_count[t]);
+    m_ref_count[t]--;
+    if (!m_ref_count[t]) {
       forgotten.push_back(t);
-      free_terms.push_back(t);
-      term_ref_t ref(terms[t]);
-      _map.erase(ref);
+      m_free_terms.push_back(t);
+      term_ref_t ref(m_terms[t]);
+      m_map.erase(ref);
       if (ref.p.get()->kind() == TERM_APP) {
         for (term_id c : term_args(ref.p.get())) {
           // remove t as parent of c before going down child
@@ -267,8 +312,8 @@ public:
     if (it != map.end())
       return (*it).second == tx;
 
-    term_ref_t ry(y.terms[ty]);
-    term_ref_t rx(terms[tx]);
+    term_ref_t ry(y.m_terms[ty]);
+    term_ref_t rx(m_terms[tx]);
     switch (ry.p.get()->kind()) {
     case TERM_CONST: {
       if (rx.p.get()->kind() != TERM_CONST ||
@@ -307,8 +352,8 @@ public:
     } else {
       // Haven't found this pair yet.
       // Generalize the arguments.
-      auto px(terms[tx].p.get());
-      auto py(y.terms[ty].p.get());
+      auto px(m_terms[tx].p.get());
+      auto py(y.m_terms[ty].p.get());
 
       term_kind kx = px->kind();
       term_kind ky = py->kind();
@@ -359,7 +404,7 @@ public:
     if (it != ren_map.end()) {
       return (*it).second;
     } else {
-      auto px(tx.terms[x].p.get());
+      auto px(tx.m_terms[x].p.get());
       term_kind kx = px->kind();
       term_id_t ret;
       if (kx == TERM_VAR) {
@@ -380,84 +425,31 @@ public:
     }
   }
 
-  std::forward_list<term_id_t> &parents(term_id_t id) { return _parents[id]; }
+  std::forward_list<term_id_t> &parents(term_id_t id) { return m_parents[id]; }
 
   void write(crab_os &o) const {
     bool first = true;
-    for (unsigned int ti = 0; ti < terms.size(); ti++) {
+    for (unsigned int ti = 0; ti < m_terms.size(); ti++) {
       if (first)
         first = false;
       else
         o << ", ";
-      term_t *p(terms[ti].p.get());
+      term_t *p(m_terms[ti].p.get());
       o << ti << " -> " << *p;
     }
   }
 
-  int size() const { return terms.size(); }
+  int size() const { return m_terms.size(); }
 
-  int depth(term_id t) { return _depth[t]; }
+  int depth(term_id t) { return m_depth[t]; }
 
   boost::optional<term_id> find_term(term_ref_t ref) const {
-    auto it = _map.find(ref);
-    if (it != _map.end())
+    auto it = m_map.find(ref);
+    if (it != m_map.end())
       return boost::optional<term_id>(it->second);
     else
       return boost::optional<term_id>();
-  }
-
-protected:  
-  // When we know that a germ doesn't already exist.
-  term_id fresh_term(term_ref_t ref) {
-    if (free_terms.size() > 0) {
-      term_id t = free_terms.back();
-      free_terms.pop_back();
-      terms[t] = ref;
-      _parents[t].clear();
-      _depth[t] = 0;
-      _ref_count[t] = 0;
-      return t;
-    } else {
-      term_id t = terms.size();
-      terms.push_back(ref);
-      _ref_count.push_back(0);
-      _parents.push_back(std::forward_list<term_id>());
-      _depth.push_back(0);
-      return t;
-    }
-  }
-
-  term_id add_term(term_ref_t ref) {
-    auto it = _map.find(ref);
-    if (it != _map.end()) {
-      return (*it).second;
-    } else {
-      term_id id = fresh_term(ref);
-      _map[ref] = id;
-      if (ref.p.get()->kind() == TERM_APP) {
-        unsigned int c_depth = 0;
-        for (term_id c : term_args(ref.p.get())) {
-          assert(c < _ref_count.size());
-          _ref_count[c] += 1;
-          // do not keep order between parents
-          _parents[c].push_front(id);
-          c_depth = std::max(c_depth, _depth[c]);
-        }
-        _depth[id] = 1 + c_depth;
-      }
-      /* Not true, as we're garbage collecting terms */
-      // assert(_map.size() == id+1);
-      return id;
-    }
-  }
-
-  int free_var;
-  std::map<term_ref_t, term_id> _map;
-  std::vector<term_ref_t> terms;
-  std::vector<std::forward_list<term_id_t>> _parents;
-  std::vector<unsigned int> _ref_count;
-  std::vector<unsigned int> _depth;
-  std::vector<term_id> free_terms;
+  }  
 };
 
 template <class Num, class Ftor>
