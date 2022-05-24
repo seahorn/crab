@@ -184,7 +184,13 @@ public:
   // Vector interface:
   const T &operator[](int index) const { return data[index]; }
   T &operator[](int index) { return data[index]; }
-
+  bool empty() const { return sz == 0;}
+  void push_back(const T &elem) { push(elem);} 
+  const T &back(void) const { return last(); }
+  T &back(void) { return last(); }
+  void pop_back(void) { return pop(); }
+  void reserve(int size) { capacity(size); }
+  
   // Duplicatation (preferred instead):
   void copyTo(vec<T> &copy) const {
     copy.clear();
