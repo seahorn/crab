@@ -1302,8 +1302,6 @@ public:
       return; 
     }
     
-    bwd_reduction_assume_bool(m_bool_to_lincsts, x, is_negated);
-    bwd_reduction_assume_bool(m_bool_to_refcsts, x, is_negated);
     // backward reduction for m_bool_to_bools
     // if x is true then all Boolean variables in bool_vars must be true.
     auto bool_vars = m_bool_to_bools.at(x);
@@ -1311,16 +1309,25 @@ public:
       // x is true
       for (auto const& v:  bool_vars) {
 	m_product.first().assume_bool(v, is_negated);
+	m_bool_to_lincsts.set(x, m_bool_to_lincsts.at(x) & m_bool_to_lincsts.at(v));
+	m_bool_to_refcsts.set(x, m_bool_to_refcsts.at(x) & m_bool_to_refcsts.at(v));	
       }
     } else {
       // x is false
       if (bool_vars.size() == 1) {
-	m_product.first().assume_bool(*(bool_vars.begin()), is_negated);
+	auto v = *(bool_vars.begin());
+	m_product.first().assume_bool(v, is_negated);
+	m_bool_to_lincsts.set(x, m_bool_to_lincsts.at(x) & m_bool_to_lincsts.at(v));
+	m_bool_to_refcsts.set(x, m_bool_to_refcsts.at(x) & m_bool_to_refcsts.at(v));	
       } else {
 	// the falsity of x depends on the falsity of any of the
 	// variables in bool_vars.
       }
     }
+
+    bwd_reduction_assume_bool(m_bool_to_lincsts, x, is_negated);
+    bwd_reduction_assume_bool(m_bool_to_refcsts, x, is_negated);
+    
     CRAB_LOG("flat-boolean",
              crab::outs() << "\tAfter reduction=" << m_product << "\n";);
   }
