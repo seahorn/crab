@@ -24,14 +24,11 @@ if (NOT APRON_FOUND)
   ## octD is faster than octMPQ
   find_library(Apron_Oct_Lib NAMES octD PATHS ${APRON_ROOT}/lib NO_DEFAULT_PATH)
   # find_library(Apron_Oct_Lib NAMES octMPQ PATHS ${APRON_ROOT}/lib)
-  find_library(Apron_Opt_Oct_Lib NAMES optoct PATHS ${APRON_ROOT}/lib NO_DEFAULT_PATH)
-  find_library(Apron_Opt_Oct_utils_Lib NAMES linkedlistapi PATHS ${APRON_ROOT}/lib NO_DEFAULT_PATH)
   find_library(Apron_Apron_Lib NAMES apron PATHS ${APRON_ROOT}/lib NO_DEFAULT_PATH)
   find_library(Apron_Box_Lib NAMES boxMPQ PATHS ${APRON_ROOT}/lib NO_DEFAULT_PATH)
   
   set(APRON_LIBRARY ${Apron_Box_Lib} 
     ${Apron_Polka_Lib} ${Apron_Oct_Lib} 
-    ${Apron_Opt_Oct_Lib} ${Apron_Opt_Oct_utils_Lib}
     ${Apron_Apron_Lib})
   
   include (FindPackageHandleStandardArgs)
