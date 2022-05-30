@@ -1167,6 +1167,10 @@ public:
     return res;
   }
 
+  void operator&=(const dis_interval_domain_t &e) override {
+    this->_env = this->_env & e._env;
+  }
+  
   dis_interval_domain_t
   operator&(const dis_interval_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");

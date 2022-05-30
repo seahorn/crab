@@ -44,6 +44,9 @@ public:
   Derived operator|(const Derived &other) const override {
     CRAB_ERROR(not_implemented_msg());
   }
+  void operator&=(const Derived &other) override {
+    CRAB_ERROR(not_implemented_msg());
+  }  
   Derived operator&(const Derived &other) const override {
     CRAB_ERROR(not_implemented_msg());
   }

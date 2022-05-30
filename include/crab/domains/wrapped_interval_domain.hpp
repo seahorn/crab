@@ -158,6 +158,14 @@ public:
     return res;
   }
 
+  void operator&=(const wrapped_interval_domain_t &e) override {
+    crab::CrabStats::count(domain_name() + ".count.meet");
+    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    CRAB_LOG("wrapped-int", crab::outs() << *this << " M " << e << " = ");
+    this->_env = this->_env & e._env;
+    CRAB_LOG("wrapped-int", crab::outs() << *this << "\n";);
+  }
+  
   wrapped_interval_domain_t
   operator&(const wrapped_interval_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
@@ -1050,6 +1058,12 @@ public:
                      _init_set | o._init_set);
   }
 
+  void operator&=(const this_type &o) override {
+    _w_int_dom &= o._w_int_dom;
+    _limit_env = _limit_env & o._limit_env;
+    _init_set = _init_set & o._init_set;
+  }
+  
   this_type operator&(const this_type &o) const override {
     return this_type(_w_int_dom & o._w_int_dom, _limit_env & o._limit_env,
                      _init_set & o._init_set);
@@ -1792,6 +1806,13 @@ public:
     return res;
   }
 
+  void operator&=(const wrapped_numerical_domain_t &other) override {
+    CRAB_LOG("wrapped-num",
+             crab::outs() << _product << " M " << other._product << " = ");
+    _product &= other._product;
+    CRAB_LOG("wrapped-num", crab::outs() << _product << "\n";);
+  }
+  
   wrapped_numerical_domain_t
   operator&(const wrapped_numerical_domain_t &other) const override {
     CRAB_LOG("wrapped-num", crab::outs() << "MEET " << _product << " "

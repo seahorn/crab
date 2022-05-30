@@ -826,11 +826,11 @@ public:
       for (auto p : out_vmap)
         out_tbl.add_ref(p.second);
 
-      std::swap(_alloc, palloc);
-      std::swap(_var_map, out_vmap);
-      std::swap(_rev_var_map, out_rvmap);
-      std::swap(_ttbl, out_tbl);
-      std::swap(_term_map, out_map);
+      _alloc = std::move(palloc);
+      _var_map = std::move(out_vmap);
+      _rev_var_map = std::move(out_rvmap);
+      _ttbl = std::move(out_tbl);
+      _term_map = std::move(out_map);
       _is_bottom = (_impl.is_bottom() ? true : false);
     }
   }
@@ -1049,6 +1049,14 @@ public:
     }
   }
 
+  void operator&=(const term_domain_t &o) override {
+    crab::CrabStats::count(domain_name() + ".count.meet");
+    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+
+    // TODO: improve by avoiding the copy of the left operand
+    *this = *this & o;
+  }
+  
   // Narrowing
   term_domain_t operator&&(const term_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");

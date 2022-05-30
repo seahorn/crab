@@ -338,6 +338,15 @@ public:
     return (m_env | o.m_env);
   }
 
+  void operator&=(const sign_domain_t &o) override {
+    crab::CrabStats::count(domain_name() + ".count.meet");
+    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    CRAB_LOG("sign-domain",
+             crab::outs() << "Meet " << m_env << " and " << o.m_env << "\n";);
+    m_env = m_env & o.m_env;
+    CRAB_LOG("sign-domain", crab::outs() << "Res=" << m_env << "\n";);
+  }
+  
   sign_domain_t operator&(const sign_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");

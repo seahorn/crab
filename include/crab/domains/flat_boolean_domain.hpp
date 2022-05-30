@@ -122,7 +122,7 @@ public:
     m_env = m_env | o.m_env;
     CRAB_LOG("flat-boolean", crab::outs() << *this << "\n");
   }
-
+  
   flat_boolean_domain_t
   operator&(const flat_boolean_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
@@ -133,6 +133,17 @@ public:
                                           << o << "=" << res << "\n");
     return res;
   }
+
+  void operator&=(const flat_boolean_domain_t &o) override {
+    crab::CrabStats::count(domain_name() + ".count.meet");
+    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+
+    CRAB_LOG("flat-boolean",
+             crab::outs() << "After meet " << *this << " and " << o << "=");
+    m_env = m_env & o.m_env;
+    CRAB_LOG("flat-boolean", crab::outs() << *this << "\n");
+  }
+  
 
   flat_boolean_domain_t
   operator||(const flat_boolean_domain_t &o) const override {
@@ -898,6 +909,14 @@ public:
                              m_unchanged_vars & other.m_unchanged_vars);
   }
 
+  void operator&=(const bool_num_domain_t &other) override {
+    m_product &= other.m_product;
+    m_bool_to_lincsts = m_bool_to_lincsts & other.m_bool_to_lincsts;
+    m_bool_to_refcsts = m_bool_to_refcsts & other.m_bool_to_refcsts;
+    m_bool_to_bools = m_bool_to_bools & other.m_bool_to_bools;
+    m_unchanged_vars = m_unchanged_vars & other.m_unchanged_vars;
+  }
+  
   bool_num_domain_t operator||(const bool_num_domain_t &other) const override {
     return bool_num_domain_t(m_product || other.m_product,
                              m_bool_to_lincsts || other.m_bool_to_lincsts,

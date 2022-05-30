@@ -299,6 +299,11 @@ public:
     }
   }
 
+  virtual void operator&=(const powerset_domain_t &other) override {
+    // TODO: improve this by avoiding the copy of the left operand.
+    *this = *this & other;
+  }
+  
   virtual powerset_domain_t
   operator||(const powerset_domain_t &other) const override {
     Domain left = smash_disjuncts(*this);

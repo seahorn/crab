@@ -125,6 +125,10 @@ public:
     return signed_constant_domain_t(m_product | other.m_product);
   }
 
+  void operator&=(const signed_constant_domain_t &other) override {
+    m_product &= other.m_product;
+  }
+
   signed_constant_domain_t
   operator&(const signed_constant_domain_t &other) const override {
     return signed_constant_domain_t(m_product & other.m_product);

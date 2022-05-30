@@ -186,6 +186,12 @@ public:
     return (this->_env | e._env);
   }
 
+  void operator&=(const interval_domain_t &e) override {
+    crab::CrabStats::count(domain_name() + ".count.meet");
+    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    this->_env = this->_env & e._env;
+  }
+  
   interval_domain_t operator&(const interval_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");

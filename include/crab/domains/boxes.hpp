@@ -841,6 +841,10 @@ public:
     return boxes_domain_t(join(m_ldd, other.m_ldd));
   }
 
+  void operator&=(const boxes_domain_t &other) override {
+    *this = *this & other;
+  }
+  
   boxes_domain_t operator&(const boxes_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");

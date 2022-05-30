@@ -757,6 +757,24 @@ public:
     }
   }
 
+  void operator&=(const ap_domain_t &o) override {
+    crab::CrabStats::count(domain_name() + ".count.meet");
+    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+
+    if (is_bottom() || o.is_top()) {
+      // do nothing
+    } else if (is_top() || o.is_bottom()) {
+      *this = o;
+    } else {
+      ap_state_ptr x =
+          apPtr(get_man(), ap_abstract0_copy(get_man(), &*o.m_apstate));
+      m_var_map =
+	std::move(merge_var_map(m_var_map, m_apstate, o.m_var_map, x));
+      m_apstate = apPtr(
+	get_man(), ap_abstract0_meet(get_man(), false, &*m_apstate, &*x));
+    }
+  }
+  
   apron_domain_t operator&(const apron_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");

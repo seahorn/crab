@@ -246,6 +246,11 @@ public:
                             m_base_dom | other.m_base_dom);
   }
 
+  void operator&=(const array_smashing_t &other) override {
+    m_last_access_env = m_last_access_env & other.m_last_access_env;
+    m_base_dom &= other.m_base_dom;
+  }
+  
   array_smashing_t operator&(const array_smashing_t &other) const override {
     return array_smashing_t(m_last_access_env & other.m_last_access_env,
                             m_base_dom & other.m_base_dom);

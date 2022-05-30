@@ -1667,7 +1667,7 @@ private:
                            std::move(out_cell_ghost_man));
     return res;
   }
-
+  
   array_adaptive_domain(base_domain_t &&inv, array_state_map_t &&amap,
                         cell_ghost_man_t &&cgman)
       : m_base_dom(std::move(inv)), m_array_map(std::move(amap)),
@@ -1861,6 +1861,40 @@ public:
     }
   }
 
+  void operator&=(const array_adaptive_domain_t &other) override {
+    crab::CrabStats::count(domain_name() + ".count.meet");
+    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    if (is_bottom() || other.is_top()) {
+      // do nothing
+    } else if (is_top() || other.is_bottom()) {
+      *this = other;
+    } else {
+      CRAB_LOG("array-adaptive",
+	       crab::outs() << "Meet " << *this << " and " << other << "\n";);
+
+
+      base_domain_t &left_dom = m_base_dom;
+      cell_ghost_man_t &left_cell_ghost_man = m_cell_ghost_man;
+      
+      base_domain_t right_dom(other.m_base_dom);
+      cell_ghost_man_t right_cell_ghost_man(other.m_cell_ghost_man);
+      
+      // Must be done before the renaming.
+      auto out_array_map =
+        m_array_map.meet(other.m_array_map, left_cell_ghost_man, left_dom,
+                         right_cell_ghost_man, right_dom);
+
+      cell_ghost_man_t out_cell_ghost_man =
+        left_cell_ghost_man.meet(right_cell_ghost_man, left_dom, right_dom);
+
+      left_dom &= right_dom;
+      m_array_map = std::move(out_array_map);
+      m_cell_ghost_man = std::move(out_cell_ghost_man);
+					   
+      CRAB_LOG("array-adaptive", crab::outs() << "Res=" << *this << "\n";);
+    }
+  }
+  
   array_adaptive_domain_t
   operator||(const array_adaptive_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");

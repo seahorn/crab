@@ -66,6 +66,7 @@ private:
     virtual void operator|=(const abstract_domain_concept &abs) = 0;
     virtual std::unique_ptr<abstract_domain_concept>
     operator&(const abstract_domain_concept &abs) const = 0;
+    virtual void operator&=(const abstract_domain_concept &abs) = 0;    
     virtual std::unique_ptr<abstract_domain_concept>
     operator||(const abstract_domain_concept &abs) const = 0;
     virtual std::unique_ptr<abstract_domain_concept>
@@ -275,6 +276,11 @@ private:
       return std::move(res);
     }
 
+    // unsafe: if the underlying domain in abs is not Domain then it will crash
+    void operator&=(const abstract_domain_concept &abs) override {
+      m_inv &= static_cast<const abstract_domain_model *>(&abs)->m_inv;
+    }
+    
     // unsafe: if the underlying domain in abs is not Domain then it will crash
     std::unique_ptr<abstract_domain_concept>
     operator&(const abstract_domain_concept &abs) const override {
@@ -666,6 +672,9 @@ public:
   abstract_domain operator|(const abstract_domain &abs) const override {
     return abstract_domain(std::move(m_concept->operator|(*(abs.m_concept))));
   }
+  void operator&=(const abstract_domain &abs) override {
+    m_concept->operator&=(*(abs.m_concept));
+  }  
   abstract_domain operator&(const abstract_domain &abs) const override {
     return abstract_domain(std::move(m_concept->operator&(*(abs.m_concept))));
   }
@@ -1058,6 +1067,11 @@ public:
     return create(norm() | o.norm());
   }
 
+  void operator&=(const abstract_domain_ref &o) override {
+    detach();
+    norm() &= o.norm();
+  }
+  
   abstract_domain_ref operator&(const abstract_domain_ref &o) const override {
     return create(norm() & o.norm());
   }

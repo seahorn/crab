@@ -175,6 +175,17 @@ public:
                                    false /* do not apply reduction */);
   }
 
+  void operator&=(const basic_domain_product2_t &other) {
+    if (is_bottom()) {
+      // do nothing
+    } else if (other.is_bottom()) {
+      *this = other;
+    } else {
+      m_first &= other.m_first;
+      m_second &= other.m_second;
+    }
+  }
+  
   basic_domain_product2_t
   operator&(const basic_domain_product2_t &other) const {
     if (is_bottom() || other.is_top()) {
@@ -335,6 +346,10 @@ public:
     return reduced_domain_product2_t(m_product | other.m_product);
   }
 
+  void operator&=(const reduced_domain_product2_t &other) override {
+    m_product &= other.m_product;
+  }
+  
   reduced_domain_product2_t operator&(const reduced_domain_product2_t &other) const override {
     return reduced_domain_product2_t(m_product & other.m_product);
   }
@@ -1124,6 +1139,15 @@ public:
     return res;
   }
 
+  void operator&=(const reduced_numerical_domain_product2_t &other) override {
+    CRAB_LOG("combined-domain", crab::outs()
+                                    << "============ MEET ==================";
+             crab::outs() << *this << "\n----------------";
+             crab::outs() << other << "\n----------------";);
+    m_product &= other.m_product;
+    CRAB_LOG("reduced-dom", crab::outs() << *this << "\n----------------\n";);
+  }
+  
   reduced_numerical_domain_product2_t
   operator&(const reduced_numerical_domain_product2_t &other) const override {
     reduced_numerical_domain_product2_t res(m_product & other.m_product);

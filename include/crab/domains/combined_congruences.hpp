@@ -132,6 +132,10 @@ public:
     return rnc_domain_t(m_product | other.m_product);
   }
 
+  void operator&=(const rnc_domain_t &other) override {
+    m_product &= other.m_product;
+  }
+  
   rnc_domain_t operator&(const rnc_domain_t &other) const override {
     return rnc_domain_t(m_product & other.m_product);
   }

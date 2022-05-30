@@ -910,6 +910,11 @@ public:
     return res;
   }
 
+  void operator&=(const region_domain_t &o) override {
+    // TODO: improve this by avoiding the copy of the left operand.
+    *this = *this & o;
+  }
+  
   region_domain_t operator||(const region_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");

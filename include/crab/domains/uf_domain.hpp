@@ -613,6 +613,11 @@ public:
     }
   }
 
+  void operator&=(const uf_domain_t &other) override {
+    // TODO: avoid the copy of the left operand.
+    *this = *this & other;
+  }
+  
   uf_domain_t operator&&(const uf_domain_t &o) const override {
     return *this & o;
   }
