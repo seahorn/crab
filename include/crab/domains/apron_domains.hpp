@@ -757,7 +757,7 @@ public:
     }
   }
 
-  void operator&=(const ap_domain_t &o) override {
+  void operator&=(const apron_domain_t &o) override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
 
