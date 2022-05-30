@@ -25,7 +25,7 @@ private:
   Domain m_val;
 
 public:
-  explicit equivalence_class(Domain val) : m_rank(0), m_val(val) {}
+  explicit equivalence_class(Domain &&val) : m_rank(0), m_val(std::move(val)) {}
 
   std::size_t &get_rank() { return m_rank; }
 
@@ -62,41 +62,64 @@ public:
 // Important: when two equivalence classes are merged, there are two
 // options: either apply union or intersection semantics.
 template<class Domain>  
-struct uf_merge_semantics_t {
+struct uf_merge_semantics {
   virtual bool is_bottom_absorbing() const = 0;
-  virtual Domain apply(const Domain &d1, const Domain &d2) const = 0;
+  virtual void apply(Domain &d1, const Domain &d2) const = 0;
 };
 
 template<class Domain>    
-struct uf_union_semantics_t: public uf_merge_semantics_t<Domain> {
+struct uf_union_semantics: public uf_merge_semantics<Domain> {
   virtual bool is_bottom_absorbing() const override {
     return false;
   }
-  virtual Domain apply(const Domain &d1, const Domain &d2) const override {
-    return d1 | d2;
+  virtual void apply(Domain &d1, const Domain &d2) const override {
+    d1 |= d2;
   }
 };
   
 template<class Domain>    
-struct uf_intersection_semantics_t: public uf_merge_semantics_t<Domain> {
+struct uf_intersection_semantics: public uf_merge_semantics<Domain> {
   virtual bool is_bottom_absorbing() const override {
     return true;
   }  
-  virtual Domain apply(const Domain &d1, const Domain &d2) const override {
-    return d1 & d2;
+  virtual void apply(Domain &d1, const Domain &d2) const override {
+    d1 &= d2;
   }
+};
+
+  
+// If Element and Domain are completely disjoint then this operation
+// is non-op. However, Element can be a variable and Domain can be,
+// for instance, an abstract domain that maps variables to abstract
+// states. In that case, if we forget a variable from an equivalence
+// class then we might want also to forget the variable from the
+// attached abstract domain. So this is something that should be
+// decided by the client of the union-find (see template parameters
+// ForgetElementInDomain and RenameElementInDomain).
+template<class Element, class Domain>  
+struct uf_forget_element_in_domain {
+  void operator()(Domain &dom, const Element&e) const {}
+};
+template<class Element, class Domain>  
+struct uf_rename_element_in_domain {
+  void operator()(Domain &dom, const Element&e, const Element &new_e) const {}
 };
   
 template<class Element, class Domain,
-	 // By default, we apply union semantics.
-	 class MergeSemantics = uf_union_semantics_t<Domain>>
+	 class MergeSemantics = uf_union_semantics<Domain>,
+	 class ForgetElementInDomain = uf_forget_element_in_domain<Element, Domain>,
+	 class RenameElementInDomain = uf_rename_element_in_domain<Element, Domain>>
 class union_find_domain {
 public:
   using element_t = Element;
   using domain_t = Domain;
   enum class lattice_val { bottom, top, neither_top_nor_bot };    
 private:
-  using union_find_domain_t = union_find_domain<Element, Domain, MergeSemantics>;
+  using union_find_domain_t = union_find_domain<Element,
+						Domain,
+						MergeSemantics,
+						ForgetElementInDomain,
+						RenameElementInDomain>;
   using parents_map_t = std::unordered_map<element_t, element_t>;
 public:
   using element_set_t = std::vector<element_t>; 
@@ -121,6 +144,9 @@ private:
   boost::optional<element_t>
   merge_elems(const element_set_t &elems,
              boost::optional<domain_t> dom = boost::none) {
+    crab::CrabStats::count("union_find.count.merge_elements");
+    crab::ScopedCrabStats __st__("union_find.merge_elements");
+    
     auto it = elems.begin();
     auto et = elems.end();
     if (it == et) {
@@ -185,7 +211,12 @@ private:
     }
   }
 
+  // 1. Ensure that left and right have the same equivalence classes.
+  // 2. Apply component-wise the join or the widening.
   union_find_domain_t join_or_widening(const union_find_domain_t &o, bool is_join) const {
+    crab::CrabStats::count("union_find.count.join_or_widening");
+    crab::ScopedCrabStats __st__("union_find.join_or_widening");
+    
     if (is_bottom()) {
       return o;
     } else if (o.is_bottom()) {
@@ -215,15 +246,11 @@ private:
 	  right.forget(v);
 	}
       }
-      
+     
       equivalence_class_elems_t right_equiv_classes = right.equiv_classes_elems();
       equivalence_class_elems_t left_equiv_classes = left.equiv_classes_elems();
 
-      // Merge equivalence classes from the left to the right while
-      // joining/widening the domains associated to the equivalence
-      // classes.
-      //
-      // The merging on the right is needed so that right_dom is updated.
+      // Merge equivalence classes from the left to the right
       for (auto &kv : left_equiv_classes) {
         boost::optional<element_t> right_repr =
 	  right.merge_elems(kv.second);
@@ -231,10 +258,13 @@ private:
 	  // this shouldn't happen
 	  CRAB_ERROR("unexpected situation in join_or_widening 1");
 	}
+	#if 0
+	// This is redundant
         domain_t &left_dom = left.get_equiv_class(kv.first).get_domain();
         const domain_t &right_dom =
             right.get_equiv_class(*right_repr).get_domain();
         left_dom = (is_join ? (left_dom | right_dom): (left_dom || right_dom));
+	#endif 
       }
       left_equiv_classes.clear();
       
@@ -258,7 +288,12 @@ private:
     }
   }
 
+  // 1. Ensure that left and right have the same equivalence classes.
+  // 2. Apply component-wise the meet or the narrowing
   union_find_domain_t meet_or_narrowing(const union_find_domain_t &o, bool is_meet) const {
+    crab::CrabStats::count("union_find.count.meet_or_narrowing");
+    crab::ScopedCrabStats __st__("union_find.meet_or_narrowing");
+    
     if (is_bottom() || o.is_top()) {
       return *this;
     } else if (o.is_bottom() || is_top()) {
@@ -270,8 +305,8 @@ private:
       union_find_domain_t left(*this);
       union_find_domain_t right(o);
       equivalence_class_elems_t right_equiv_classes = right.equiv_classes_elems();
-      equivalence_class_elems_t left_equiv_classes = left.equiv_classes_elems();
 
+      equivalence_class_elems_t left_equiv_classes = left.equiv_classes_elems();      
       // Merge equivalence classes from the right to the left while
       // applying meet/narrowing
       //
@@ -285,6 +320,8 @@ private:
 	  // this shouldn't happen
 	  CRAB_ERROR("unexpected situation in meet_or_narrowing 1");
 	}
+        #if 0
+	// This is redundant
         const domain_t &right_dom =
             right.get_equiv_class(*right_repr).get_domain();
         left_dom = (is_meet ? left_dom & right_dom: left_dom && right_dom);
@@ -292,6 +329,7 @@ private:
           left.set_to_bottom();
           return left;
         }
+	#endif 
       }
       left_equiv_classes.clear();
       
@@ -355,14 +393,19 @@ public:
     
   // Pre-condition: !contains(v)
   void make(const element_t &v, Domain val) {
-    if (is_bottom()) {
-      CRAB_ERROR("calling union_find_domain::make on bottom");
-    }
-    if (is_top()) {
-      CRAB_ERROR("calling union_find_domain::make on top");
-    }
-    if (contains(v)) {
-      CRAB_ERROR("element already exists when called union_find_domain::make");
+    crab::CrabStats::count("union_find.count.make");
+    crab::ScopedCrabStats __st__("union_find.make");
+
+    if (crab::CrabSanityCheckFlag) {
+      if (is_bottom()) {
+	CRAB_ERROR("calling union_find_domain::make on bottom");
+      }
+      if (is_top()) {
+	CRAB_ERROR("calling union_find_domain::make on top");
+      }
+      if (contains(v)) {
+	CRAB_ERROR("element already exists when called union_find_domain::make");
+      }
     }
 
     MergeSemantics op;
@@ -370,13 +413,16 @@ public:
       set_to_bottom();
     } else {
       m_parents.insert({v, v});
-      m_classes.insert({v, equivalence_class_t(val)});
+      m_classes.insert({v, equivalence_class_t(std::move(val))});
     }
   }
 
   // Pre-condition: contains(v)
   // NOTE: it is not "const" because it does path-compression
   element_t &find(const element_t &v) {
+    crab::CrabStats::count("union_find.count.find");
+    crab::ScopedCrabStats __st__("union_find.find");
+    
     auto it = m_parents.find(v);
     if (it == m_parents.end()) {
       assert(false);
@@ -394,6 +440,9 @@ public:
   // Pre-condition: contains(v)
   // find operation without path-compression
   const element_t &find(const element_t &v) const {
+    crab::CrabStats::count("union_find.count.find");
+    crab::ScopedCrabStats __st__("union_find.find");
+    
     auto it = m_parents.find(v);
     if (it == m_parents.end()) {
       assert(false);
@@ -413,6 +462,9 @@ public:
   // it returns the representative of the new equivalence class,
   // otherwise, none.
   boost::optional<element_t> join(const element_t &x, const element_t &y) {
+    crab::CrabStats::count("union_find.count.union");
+    crab::ScopedCrabStats __st__("union_find.union");
+    
     element_t rep_x = find(x);
     element_t rep_y = find(y);
     MergeSemantics merge_op;
@@ -422,7 +474,7 @@ public:
       domain_t &dom_x = ec_x.get_domain();
       domain_t &dom_y = ec_y.get_domain();
       if (ec_x.get_rank() > ec_y.get_rank()) {
-        dom_x = merge_op.apply(dom_x, dom_y);
+        merge_op.apply(dom_x, dom_y);
 	if (merge_op.is_bottom_absorbing() && dom_x.is_bottom()) {
 	  set_to_bottom();
 	  return boost::none;
@@ -431,7 +483,7 @@ public:
         m_classes.erase(rep_y);
         return rep_x;
       } else {
-        dom_y = merge_op.apply(dom_y, dom_x);
+        merge_op.apply(dom_y, dom_x);
 	if (merge_op.is_bottom_absorbing() && dom_y.is_bottom()) {
 	  set_to_bottom();
 	  return boost::none;
@@ -538,6 +590,9 @@ public:
   // Build a map from representative to a set with all the elements
   // in the equivalence class.
   equivalence_class_elems_t equiv_classes_elems() {
+    crab::CrabStats::count("union_find.count.equiv_classes_elems");
+    crab::ScopedCrabStats __st__("union_find.equiv_classes_elems");
+    
     equivalence_class_elems_t res;
     for (auto &kv : m_parents) {
       element_t rep = find(kv.second);
@@ -550,6 +605,9 @@ public:
 
   // Without path-compression
   equivalence_class_elems_t equiv_classes_elems() const {
+    crab::CrabStats::count("union_find.count.equiv_classes_elems");
+    crab::ScopedCrabStats __st__("union_find.equiv_classes_elems");
+    
     equivalence_class_elems_t res;
     for (auto &kv : m_parents) {
       element_t rep = find(kv.second);
@@ -647,6 +705,9 @@ public:
   //    forall x,y \in elems(o) :: o.find(x) != o.find(y) =>
   //                              this.find(x) != this.find(y)
   bool operator<=(const union_find_domain_t &o) const {
+    crab::CrabStats::count("union_find.count.less_or_equal");
+    crab::ScopedCrabStats __st__("union_find.less_or_equal");
+    
     if (is_bottom() || o.is_top()) {
       return true;
     } else if (is_top() || o.is_bottom()) {
@@ -714,8 +775,9 @@ public:
     m_parents.insert({y, rep_x});
   }
 
-  // The domain attached to the affected equivalence class is not
-  // modified.  
+  // Remove v from its equivalence class. Moreover, it applies
+  // ForgetElementInDomain on the domain attached to the equivalence
+  // class.
   void forget(const element_t &v) {
     if (is_bottom() || is_top()) {
       return;
@@ -730,6 +792,8 @@ public:
             m_parents.at(kv.first) = rep_v;
           }
         }
+	equivalence_class_t &ec = m_classes.at(rep_v);
+	ForgetElementInDomain{}(ec.get_domain(), v);
       } else {
         // v is the representative of the equivalence class
         boost::optional<element_t> new_rep;
@@ -744,13 +808,20 @@ public:
           }
         }
         m_classes.erase(v);
+	if (new_rep) {
+	  equivalence_class_t &ec = m_classes.at(*new_rep);
+	  ForgetElementInDomain{}(ec.get_domain(), v);
+	} else {
+	  // do nothing: v is the only element in its equivalence
+	  // class
+	}
       }
       m_parents.erase(v);
     }
   }
 
-  // The domains attached to the affected equivalence classes are not
-  // modified
+  // Remove from all equivalence classes any variable that is not in
+  // elements. 
   void project(const std::vector<element_t> &elements) {
     if (is_bottom() || is_top()) {
       return;
@@ -774,8 +845,9 @@ public:
     }
   }
 
-  // The domain attached to the affected equivalence class is not
-  // modified
+  // Rename old_elements in the affected equivalence classes with
+  // new_elements. Moreover, it applies RenameElementInDomain on the
+  // domain attached to the equivalence class.
   void rename(const std::vector<element_t> &old_elements,
               const std::vector<element_t> &new_elements) {
     if (is_top() || is_bottom()) {
@@ -792,25 +864,31 @@ public:
                    " does not exist");
       }
       if (contains(x)) {
-        // tuples where x is the left operand
-        std::vector<typename parents_map_t::value_type> left_x;
-        for (auto &kv : m_parents) {
-          if (kv.first == x) {
-            left_x.push_back(kv);
-          } else if (kv.second == x) {
-            kv.second = y;
-          }
-        }
-        for (auto &kv : left_x) {
-          m_parents.erase(kv.first);
-          m_parents.insert({y, (kv.second == x ? y : kv.second)});
-        }
-        auto it = m_classes.find(x);
-        if (it != m_classes.end()) {
-          equivalence_class_t equiv_class = it->second;
-          m_classes.erase(it);
-          m_classes.insert({y, std::move(equiv_class)});
-        }
+	// remove the key-value entry where key==x
+	// rename key-value entries   where value==x
+	boost::optional<element_t> parent_x;
+	for (auto it=m_parents.begin(), et=m_parents.end();it!=et;) {
+	  if ((*it).first == x) {
+	    parent_x = (*it).second;
+	    it = m_parents.erase(it);
+	  } else if ((*it).second == x) {
+	    (*it).second = y;
+	    ++it;
+	  } else {
+	    ++it;
+	  }
+	}
+
+	if (parent_x) {
+	  m_parents.insert({y, (*parent_x == x ? y: *parent_x)});
+	  auto it = m_classes.find(x);
+	  if (it != m_classes.end()) {
+	    equivalence_class_t equiv_class = it->second;
+	    RenameElementInDomain{}(equiv_class.get_domain(), x, y); 
+	    m_classes.erase(it);
+	    m_classes.insert({y, std::move(equiv_class)});
+	  }
+	}
       }
     };
 
