@@ -157,7 +157,7 @@ class region_domain_params {
 public:
   region_domain_params()
     : m_allocation_sites(true),
-      m_deallocation(true),
+      m_deallocation(false),
       m_refine_uninitialized_regions(false),
       m_tag_analysis(true),
       m_is_dereferenceable(false),
