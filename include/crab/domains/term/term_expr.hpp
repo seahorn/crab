@@ -56,8 +56,8 @@ public:
 template <class Num, class Ftor> class const_term : public term<Num, Ftor> {
 public:
   const_term(Num _val) : val(_val) {}
-  term_kind kind(void) const { return TERM_CONST; }
-  void write(crab_os &o) const { o << "c(" << val << ")"; }
+  virtual term_kind kind(void) const override { return TERM_CONST; }
+  virtual void write(crab_os &o) const override { o << "c(" << val << ")"; }
   
   Num val;
 };
@@ -65,8 +65,8 @@ public:
 template <class Num, class Ftor> class var_term : public term<Num, Ftor> {
 public:
   var_term(var_id _var) : var(_var) {}
-  term_kind kind(void) const { return TERM_VAR; }
-  void write(crab_os &o) const { o << "v(" << var << ")"; }
+  virtual term_kind kind(void) const override { return TERM_VAR; }
+  virtual void write(crab_os &o) const override { o << "v(" << var << ")"; }
   
   var_id var;
 };
@@ -74,8 +74,8 @@ public:
 template <class Num, class Ftor> class ftor_term : public term<Num, Ftor> {
 public:
   ftor_term(Ftor _f, const std::vector<term_id> &_args) : ftor(_f), args(_args) {}
-  term_kind kind(void) const { return TERM_APP; }
-  void write(crab_os &o) const {
+  virtual term_kind kind(void) const override { return TERM_APP; }
+  virtual void write(crab_os &o) const override {
     o << ftor;
     if (!args.empty()) {
       o << "(";

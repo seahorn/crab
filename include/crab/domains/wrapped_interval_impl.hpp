@@ -679,17 +679,21 @@ wrapped_interval<Number>::operator||(const wrapped_interval<Number> &x) const {
       max = wrapint(1 << (w - 2), w);
       break;
     }
+    // implicit fallthrough
   case 8:
     if (w > 3) {
       max = wrapint(1 << (w - 3), w);
       break;
     }
+    // implicit fallthrough    
   case 16:
     if (w > 4) {
       max = wrapint(1 << (w - 4), w);
       break;
     }
+    // implicit fallthrough    
   case 2:
+    // implicit fallthrough    
   default:
     assert(w > 1);
     max = wrapint(1 << (w - 1), w);

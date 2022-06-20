@@ -42,6 +42,7 @@ public:
     elt_t(key_t _k, const val_t &_v)
       : key(_k), val(_v) {}
     elt_t(const elt_t &o) = default;
+    elt_t& operator=(const elt_t &o) = default;    
 
     key_t key;
     val_t val;

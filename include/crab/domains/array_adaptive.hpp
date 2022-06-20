@@ -333,11 +333,11 @@ private:
   };
 
   class domain_po : public partial_order_t {
-    bool leq(const cell_set_t &x, const cell_set_t &y) {
+    bool leq(const cell_set_t &x, const cell_set_t &y) override {
       return cell_set_impl::set_inclusion(x, y);
     }
     // default value is bottom (i.e., empty map)
-    bool default_is_top() { return false; }
+    bool default_is_top() override { return false; }
   }; // class domain_po
 
   // Delete completely the cell

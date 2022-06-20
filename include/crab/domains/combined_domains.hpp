@@ -75,7 +75,7 @@ public:
   operator=(const basic_domain_product2_t &other) = default;
   basic_domain_product2_t &operator=(basic_domain_product2_t &&other) = default;
 
-  basic_domain_product2_t make_top() const {
+  basic_domain_product2_t make_top() const override {
     Domain1 dom1;
     Domain2 dom2;
     dom1.set_to_top();
@@ -83,7 +83,7 @@ public:
     return basic_domain_product2_t(std::move(dom1), std::move(dom2));
   }
 
-  basic_domain_product2_t make_bottom() const {
+  basic_domain_product2_t make_bottom() const override {
     Domain1 dom1;
     Domain2 dom2;
     dom1.set_to_bottom();
@@ -91,19 +91,19 @@ public:
     return basic_domain_product2_t(std::move(dom1), std::move(dom2));
   }
 
-  void set_to_top() {
+  void set_to_top() override {
     m_is_bottom = false;
     m_first.set_to_top();
     m_second.set_to_top();
   }
 
-  void set_to_bottom() {
+  void set_to_bottom() override {
     m_is_bottom = true;
     m_first.set_to_bottom();
     m_second.set_to_bottom();
   }
 
-  bool is_bottom() const {
+  bool is_bottom() const override {
     // canonicalize();
     // return m_is_bottom;
     if (m_is_bottom) {
@@ -113,7 +113,7 @@ public:
     }
   }
 
-  bool is_top() const {
+  bool is_top() const override {
     return (m_first.is_top() && m_second.is_top());
   }
 
@@ -131,7 +131,7 @@ public:
 
   const Domain2 &second() const { return m_second; }
 
-  bool operator<=(const basic_domain_product2_t &other) const {
+  bool operator<=(const basic_domain_product2_t &other) const override {
     if (is_bottom()) {
       return true;
     } else if (other.is_bottom()) {
@@ -145,7 +145,7 @@ public:
     return (operator<=(other) && other.operator<=(*this));
   }
 
-  void operator|=(const basic_domain_product2_t &other) {
+  void operator|=(const basic_domain_product2_t &other) override {
     if (is_bottom()) {
       *this = other;
     } else if (other.is_bottom()) {
@@ -157,7 +157,7 @@ public:
   }
 
   basic_domain_product2_t
-  operator|(const basic_domain_product2_t &other) const {
+  operator|(const basic_domain_product2_t &other) const override {
     if (is_bottom()) {
       return other;
     } else if (other.is_bottom()) {
@@ -169,7 +169,7 @@ public:
   }
 
   basic_domain_product2_t
-  operator||(const basic_domain_product2_t &other) const {
+  operator||(const basic_domain_product2_t &other) const override {
     return basic_domain_product2_t(m_first || other.m_first,
                                    m_second || other.m_second,
                                    false /* do not apply reduction */);
@@ -187,7 +187,7 @@ public:
   }
   
   basic_domain_product2_t
-  operator&(const basic_domain_product2_t &other) const {
+  operator&(const basic_domain_product2_t &other) const override {
     if (is_bottom() || other.is_top()) {
       return *this;
     } else if (other.is_bottom() || is_top()) {
@@ -199,7 +199,7 @@ public:
   }
 
   basic_domain_product2_t
-  operator&&(const basic_domain_product2_t &other) const {
+  operator&&(const basic_domain_product2_t &other) const override {
     if (is_bottom() || other.is_top()) {
       return *this;
     } else if (other.is_bottom() || is_top()) {
@@ -210,7 +210,7 @@ public:
     }
   }
 
-  void write(crab::crab_os &o) const {
+  void write(crab::crab_os &o) const override {
     if (is_bottom()) {
       o << "_|_";
     } else {
@@ -228,7 +228,7 @@ public:
     return o;
   }
 
-  std::string domain_name() const {
+  std::string domain_name() const override {
     std::string name =
         "Product(" + m_first.domain_name() + "," + m_second.domain_name() + ")";
     return name;

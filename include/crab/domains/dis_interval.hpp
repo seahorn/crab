@@ -48,11 +48,13 @@ private:
   interval_t approx(list_intervals_t x) const;
 
   struct WidenOp {
+    virtual ~WidenOp(){}
     virtual interval_t apply(const interval_t &before,
                              const interval_t &after) = 0;
   };
 
   struct BasicWidenOp : public WidenOp {
+    virtual ~BasicWidenOp(){}
     virtual interval_t apply(const interval_t &before,
                              const interval_t &after) override;
   };

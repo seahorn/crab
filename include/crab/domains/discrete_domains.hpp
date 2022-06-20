@@ -662,8 +662,8 @@ private:
   discrete_pair_domain(bool b) : m_is_top(b) {}
 
   class join_op : public binary_op_t {
-    std::pair<bool, boost::optional<Value>>
-    apply(const Key &/*key*/, const Value &x, const Value &y) {
+    virtual std::pair<bool, boost::optional<Value>>
+    apply(const Key &/*key*/, const Value &x, const Value &y) override {
       Value z = x.operator|(y);
       if (z.is_top()) {
         return {false, boost::optional<Value>()};
@@ -671,12 +671,12 @@ private:
         return {false, boost::optional<Value>(z)};
       }
     }
-    bool default_is_absorbing() { return false; }
+    virtual bool default_is_absorbing() override { return false; }
   }; // class join_op
 
   class meet_op : public binary_op_t {
-    std::pair<bool, boost::optional<Value>>
-    apply(const Key &/*key*/, const Value &x, const Value &y) {
+    virtual std::pair<bool, boost::optional<Value>>
+    apply(const Key &/*key*/, const Value &x, const Value &y) override {
       Value z = x.operator&(y);
       if (z.is_bottom()) {
         return {true, boost::optional<Value>()};
@@ -684,12 +684,12 @@ private:
         return {false, boost::optional<Value>(z)};
       }
     };
-    bool default_is_absorbing() { return true; }
+    virtual bool default_is_absorbing() override { return true; }
   }; // class meet_op
 
   class domain_po : public partial_order_t {
-    bool leq(const Value &x, const Value &y) { return x.operator<=(y); }
-    bool default_is_top() { return false; }
+    virtual bool leq(const Value &x, const Value &y) override { return x.operator<=(y); }
+    virtual bool default_is_top() override { return false; }
   }; // class domain_po
 
 public:

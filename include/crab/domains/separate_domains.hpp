@@ -542,8 +542,9 @@ private:
   }; // class meet_op
 
   class domain_po : public partial_order_t {
-    bool leq(const mapped_type &x, const mapped_type &y) { return x.operator<=(y); }
-    bool default_is_top() { return true; }
+    bool leq(const mapped_type &x, const mapped_type &y) override
+    { return x.operator<=(y); }
+    bool default_is_top() override { return true; }
   }; // class domain_po
   /* end patricia_tree API */
 

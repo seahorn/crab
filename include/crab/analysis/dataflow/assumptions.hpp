@@ -363,9 +363,9 @@ class assumption_dataflow_analysis : public assumption_analysis<CFG> {
 public:
   assumption_dataflow_analysis(CFG cfg) : assumption_analysis_t(cfg) {}
 
-  virtual ~assumption_dataflow_analysis() {}
+  virtual ~assumption_dataflow_analysis() override {}
 
-  virtual void exec() {
+  virtual void exec() override {
     typename assertion_crawler_t::assert_map_t assert_map;
     typename assertion_crawler_t::summary_map_t summaries;
     assertion_crawler_t assert_crawler(this->m_cfg, assert_map, summaries);

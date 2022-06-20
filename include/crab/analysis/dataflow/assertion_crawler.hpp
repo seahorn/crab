@@ -611,35 +611,35 @@ public:
       return m_sol;
     }
 
-    void visit(bin_op_t &s) {
+    virtual void visit(bin_op_t &s) override {
       propagate_data(s);
     }
 
-    void visit(assign_t &s) {
+    virtual void visit(assign_t &s) override {
       propagate_data(s);
     }
 
-    void visit(assume_t &s) {
+    virtual void visit(assume_t &s) override {
       propagate_data_and_control(s);
     }
 
-    void visit(select_t &s) {
+    virtual void visit(select_t &s) override {
       propagate_data(s);
     }
 
-    void visit(assert_t &s) {
+    virtual void visit(assert_t &s) override {
       process_assertion(s);
     }
 
-    void visit(int_cast_t &s) {
+    virtual void visit(int_cast_t &s) override {
       propagate_data(s);
     }
     
-    void visit(unreach_t &) {
+    virtual void visit(unreach_t &) override {
       m_sol.set_to_bottom();
     }
 
-    void visit(havoc_t &s) {
+    virtual void visit(havoc_t &s) override {
       CRAB_LOG("assertion-crawler-step", crab::outs()
                                              << "*** " << s << "\n"
                                              << "\tBEFORE: " << m_sol << "\n");
@@ -717,7 +717,7 @@ public:
     }
 				      
     
-    void visit(callsite_t &s) {
+    virtual void visit(callsite_t &s) override {
 
       CRAB_LOG("assertion-crawler-step-cs", crab::outs()
 	       << "*** " << s << "\n"
@@ -782,75 +782,75 @@ public:
 	       << "\tAFTER " << m_sol << "\n";);
     }
 
-    void visit(intrinsic_t &s) {
+    virtual void visit(intrinsic_t &s) override {
       propagate_data(s);      
     }
 
-    void visit(make_ref_t &s) {
+    virtual void visit(make_ref_t &s) override {
       propagate_data(s);
     }
 
-    void visit(remove_ref_t &s) {
+    virtual void visit(remove_ref_t &s) override {
       propagate_data(s);
     }
 
-    void visit(region_init_t &s) {
+    virtual void visit(region_init_t &s) override {
       propagate_data(s);
     }
 
-    void visit(region_copy_t &s) {
+    virtual void visit(region_copy_t &s) override {
       propagate_data(s);
     }
 
-    void visit(region_cast_t &s) {
+    virtual void visit(region_cast_t &s) override {
       propagate_data(s);
     }
 
-    void visit(load_from_ref_t &s) {
+    virtual void visit(load_from_ref_t &s) override {
       propagate_data(s);             
     }
 
-    void visit(store_to_ref_t &s) {
+    virtual void visit(store_to_ref_t &s) override {
       propagate_data(s);       
     }
 
-    void visit(gep_ref_t &s) {
+    virtual void visit(gep_ref_t &s) override {
       propagate_data(s); 
     }
 
-    void visit(assume_ref_t &s) {
+    virtual void visit(assume_ref_t &s) override {
       propagate_data_and_control(s);
     }
 
-    void visit(assert_ref_t &s) {
+    virtual void visit(assert_ref_t &s) override {
       process_assertion(s);
     }
     
-    void visit(select_ref_t &s) {
+    virtual void visit(select_ref_t &s) override {
       propagate_data(s);
     }    
 
-    void visit(bool_bin_op_t &s) {
+    virtual void visit(bool_bin_op_t &s) override {
       propagate_data(s);
     }
 
-    void visit(bool_assign_var_t &s) {
+    virtual void visit(bool_assign_var_t &s) override {
       propagate_data(s);
     }
 
-    void visit(bool_assign_cst_t &s) {
+    virtual void visit(bool_assign_cst_t &s) override {
       propagate_data(s);
     }
 
-    void visit(bool_select_t &s) {
+    virtual void visit(bool_select_t &s) override {
       propagate_data(s);
     }
     
-    void visit(bool_assume_t &s) {
+    virtual void visit(bool_assume_t &s) override {
       propagate_data_and_control(s);
     }
     
-    void visit(bool_assert_t &s) {
+    virtual void visit(bool_assert_t &s) override {
       process_assertion(s);
     }
   };

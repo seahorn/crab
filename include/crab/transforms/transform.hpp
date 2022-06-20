@@ -10,6 +10,7 @@ namespace transforms {
  **/
 template <typename CFG> class transform {
 public:
+  virtual ~transform(){}
   virtual bool run(CFG &cfg) = 0;
   virtual std::string get_name() const = 0;
 };

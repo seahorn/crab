@@ -56,8 +56,7 @@ template <class Number, class VariableName> class abstract_domain_results_api;
  * but it should. 
  **/
 template <class Dom> class abstract_domain_api:
-  public lattice_domain_api<Dom>,
-         abstract_domain_results_api<typename abstract_domain_traits<Dom>::number_t,
+  public abstract_domain_results_api<typename abstract_domain_traits<Dom>::number_t,
 				     typename abstract_domain_traits<Dom>::varname_t> {
 public:
   using number_t = typename abstract_domain_traits<Dom>::number_t;

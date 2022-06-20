@@ -63,6 +63,7 @@ public:
 // options: either apply union or intersection semantics.
 template<class Domain>  
 struct uf_merge_semantics {
+  virtual ~uf_merge_semantics() {} 
   virtual bool is_bottom_absorbing() const = 0;
   virtual void apply(Domain &d1, const Domain &d2) const = 0;
 };

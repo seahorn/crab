@@ -77,8 +77,8 @@ void cfg_body_to_dot(const CFG &cfg, const checker::checks_db &db,
     }
   };
 
-  auto statement_to_str = [&op_rewrite_map, &rewrite, &print_checks,
-                           &db](const statement_t &stmt) {
+  auto statement_to_str = [&op_rewrite_map, &rewrite, &print_checks]
+    (const statement_t &stmt) {
     crab_string_os os_s;
     print_checks(stmt, os_s);
     os_s << stmt;
