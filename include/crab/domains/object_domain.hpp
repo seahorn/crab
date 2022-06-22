@@ -1877,6 +1877,25 @@ public:
     return res;
   }
 
+  void operator&=(const object_domain_t &o) override {
+    crab::CrabStats::count(domain_name() + ".count.meet");
+    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+
+    if (is_bottom() || o.is_top()) { // bot & o or this & top, return this
+      return;
+    } else if (o.is_bottom() || is_top()) { // this & bot or top & o, return o
+      *this = o;
+      return;
+    }
+
+    CRAB_LOG("object", crab::outs()
+                           << "Meet " << *this << " and " << o << " =\n");
+
+    // TODO: improve this by avoiding the copy of the left operand.
+    *this = std::move(meet_or_narrowing(*this, o, true /*is meet*/));
+    CRAB_LOG("object", crab::outs() << *this << "\n");
+  }
+
   object_domain_t operator||(const object_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
