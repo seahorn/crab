@@ -176,6 +176,8 @@ public:
     }
   }
 
+  DEFAULT_ENTAILS(signed_constant_domain_t)
+  
   void operator-=(const variable_t &v) override { m_product -= v; }
 
   void assign(const variable_t &x, const linear_expression_t &e) override {

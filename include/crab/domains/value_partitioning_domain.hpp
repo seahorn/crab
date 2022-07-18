@@ -673,6 +673,17 @@ public:
     CRAB_LOG("partition", crab::outs() << "Res=" << *this << "\n";);
   }
 
+  bool entails(const linear_constraint_t &cst) const override {
+    if (!is_bottom()) {
+      for (auto &partition : m_partitions) {
+        if (!partition.get_dom().entails(cst)) {
+	  return false;
+	}
+      }
+    }
+    return true;
+  }
+  
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const value_partitioning_domain_t &invariant) override {
@@ -1771,6 +1782,17 @@ public:
     }
   }
 
+  bool entails(const linear_constraint_t &cst) const override {
+    if (!is_bottom()) {
+      for (auto &elem: m_product) {
+	if (!elem.entails(cst)) {
+	  return false;
+	}
+      }
+    }
+    return true;
+  }
+  
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const this_type &invariant) override {

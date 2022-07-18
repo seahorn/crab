@@ -1268,6 +1268,8 @@ public:
     }
   }
 
+  DEFAULT_ENTAILS(dis_interval_domain_t)
+
   void assign(const variable_t &x, const linear_expression_t &e) override {
     crab::CrabStats::count(domain_name() + ".count.assign");
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
