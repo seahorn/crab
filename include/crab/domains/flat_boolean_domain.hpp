@@ -1054,6 +1054,9 @@ public:
 #endif
   }
 
+  // FIXME/TODO: it needs to call entails
+  DEFAULT_ENTAILS(bool_num_domain_t)
+  
   void set(const variable_t &x, interval_t intv) {
     // reduced_domain_product2 does not define set method
     m_product.second().set(x, intv); // only on the numerical domain

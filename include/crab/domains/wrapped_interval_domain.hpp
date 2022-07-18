@@ -481,6 +481,21 @@ public:
                                 << "Added " << csts << " = " << *this << "\n");
   }
 
+  bool entails(const linear_constraint_t &cst) const override {
+    if (!cst.is_well_typed()) {
+      CRAB_WARN(domain_name(), "::entails ignored ", cst,
+		" because it not well typed");
+      return false;
+    }
+
+    wrapped_interval_domain_t copy(*this);
+    // REVISIT negation because it might not be sound for machine
+    // arithmetic.
+    linear_constraint_t neg_cst = cst.negate();
+    copy += neg_cst;
+    return copy.is_bottom();
+  }
+  
   // backward arithmetic operations
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const wrapped_interval_domain_t &inv) override {

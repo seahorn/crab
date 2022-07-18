@@ -401,6 +401,19 @@ public:
     CRAB_LOG("powerset", crab::outs() << "Res=" << *this << "\n";);
   }
 
+  virtual bool entails(const linear_constraint_t &cst) const override {
+    if (is_bottom()) {
+      return true;
+    }
+    
+    for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+      if (!m_disjuncts[i].entails(cst)) {
+	return false;
+      } 
+    }
+    return true;
+  }
+  
   virtual void operator-=(const variable_t &v) override {
     if (!is_bottom()) {
       for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {

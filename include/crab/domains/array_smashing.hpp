@@ -345,6 +345,10 @@ public:
     m_base_dom += csts;
   }
 
+  bool entails(const linear_constraint_t &cst) const override {
+    return m_base_dom.entails(cst);
+  }
+  
   void operator-=(const variable_t &var) override {
     if (var.get_type().is_array()) {
       bytes_t size = get_size(var);

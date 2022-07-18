@@ -2311,6 +2311,8 @@ public:
 	     << *this << "\n");
   }
 
+  DEFAULT_ENTAILS(DBM_t)
+
   void operator+=(const linear_constraint_system_t &csts) override {
     if (is_bottom())
       return;

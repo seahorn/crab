@@ -80,6 +80,7 @@ private:
                        const variable_t &y, number_t k) = 0;
     virtual void assign(const variable_t &x, const linear_expression_t &e) = 0;
     virtual void operator+=(const linear_constraint_system_t &csts) = 0;
+    virtual bool entails(const linear_constraint_t &cst) const = 0;    
     virtual void apply(bitwise_operation_t op, const variable_t &x,
                        const variable_t &y, const variable_t &z) = 0;
     virtual void apply(bitwise_operation_t op, const variable_t &x,
@@ -330,6 +331,9 @@ private:
     }
     void operator+=(const linear_constraint_system_t &csts) override {
       m_inv.operator+=(csts);
+    }
+    bool entails(const linear_constraint_t &cst) const override {
+      return m_inv.entails(cst);
     }
     void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
                const variable_t &z) override {
@@ -703,6 +707,9 @@ public:
   }
   void operator+=(const linear_constraint_system_t &csts) override {
     m_concept->operator+=(csts);
+  }
+  bool entails(const linear_constraint_t &cst) const override {
+    return m_concept->entails(cst);
   }
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
@@ -1110,6 +1117,10 @@ public:
   void operator+=(const linear_constraint_system_t &csts) override {
     detach();
     norm().operator+=(csts);
+  }
+  
+  bool entails(const linear_constraint_t &cst) const override {
+    return norm().entails(cst);
   }
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,

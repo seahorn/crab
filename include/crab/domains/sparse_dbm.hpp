@@ -1810,6 +1810,8 @@ public:
     }
   }
 
+  DEFAULT_ENTAILS(DBM_t)
+
   interval_t operator[](const variable_t &x) override {
     crab::CrabStats::count(domain_name() + ".count.to_intervals");
     crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");

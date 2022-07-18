@@ -1046,6 +1046,8 @@ public:
     CRAB_LOG("boxes", crab::outs() << *this << "\n";);
   }
 
+  DEFAULT_ENTAILS(boxes_domain_t)
+  
   void normalize() override {}
 
   void minimize() override {}
