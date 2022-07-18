@@ -1247,6 +1247,8 @@ public:
     }
   }
 
+  DEFAULT_ENTAILS(term_domain_t)
+  
   /*
   // If the children of t have changed, see if re-applying
   // the definition of t tightens the domain.

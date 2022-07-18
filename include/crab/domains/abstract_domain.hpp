@@ -123,6 +123,8 @@ public:
   virtual void assign(const variable_t &x, const linear_expression_t &e) = 0;
   // add all constraints \in csts
   virtual void operator+=(const linear_constraint_system_t &csts) = 0;
+  // return true only if *this entails rhs
+  virtual bool entails(const linear_constraint_t &rhs) const = 0;
   // x := y op z
   virtual void apply(bitwise_operation_t op, const variable_t &x,
                      const variable_t &y, const variable_t &z) = 0;
@@ -426,6 +428,9 @@ public:
                               const variable_t &z, const DOM &invariant)       \
       override {}                                                              \
   virtual void operator+=(const linear_constraint_system_t &csts) override {}  \
+  virtual bool entails(const linear_constraint_t &rhs) const override {        \
+    return false;							       \
+  } 									       \
   virtual interval_t operator[](const variable_t &x) override {                \
     return at(x);							       \
   }                                                                            \
@@ -646,6 +651,33 @@ virtual void select_ref(const variable_t &lhs_ref, const variable_t &lhs_rgn, co
    }									\
  }
   
+#define DEFAULT_ENTAILS(DOM)						\
+virtual bool entails(const linear_constraint_t &cst) const override {   \
+ if (is_bottom()) {							\
+   return true;                                                         \
+ } if (cst.is_tautology()) {						\
+   return true;                                                         \
+ } if (cst.is_contradiction()) {					\
+   return false;							\
+ }									\
+ auto entailmentFn = [this](const linear_constraint_t &c) -> bool {	\
+    DOM dom(*this);						        \
+    linear_constraint_t neg_c = c.negate();			        \
+    dom += neg_c;						        \
+    return dom.is_bottom();					        \
+ };									\
+if (cst.is_equality()) {						\
+  linear_constraint_system_t inequalities;				\
+  inequalities += linear_constraint_t(cst.expression(), 		\
+				      linear_constraint_t::INEQUALITY); \
+  inequalities += linear_constraint_t(cst.expression() * number_t(-1),	\
+				    linear_constraint_t::INEQUALITY);   \
+  return std::all_of(inequalities.begin(), inequalities.end(),		\
+		       entailmentFn);					\
+ } else {								\
+  return entailmentFn(cst);						\
+ }									\
+}
 
 ///
 ///==== END MACROS FOR EMPTY/DEFAULT IMPLEMENTATIONS ====

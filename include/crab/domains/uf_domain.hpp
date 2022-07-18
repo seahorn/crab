@@ -853,6 +853,8 @@ public:
     }
   }
 
+  DEFAULT_ENTAILS(uf_domain_t)
+  
   interval_t operator[](const variable_t &x) override {
     return at(x);
   }

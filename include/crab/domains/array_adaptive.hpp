@@ -2135,6 +2135,10 @@ public:
              crab::outs() << "assume(" << csts << ")  " << *this << "\n";);
   }
 
+  bool entails(const linear_constraint_t &cst) const override {
+    return m_base_dom.entails(cst);
+  }
+  
   void operator-=(const variable_t &var) override {
     crab::CrabStats::count(domain_name() + ".count.forget");
     crab::ScopedCrabStats __st__(domain_name() + ".forget");

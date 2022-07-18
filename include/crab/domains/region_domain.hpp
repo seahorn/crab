@@ -1964,6 +1964,19 @@ public:
     }
   }
 
+  // FIXME: it needs to call m_base_dom.entails
+  DEFAULT_ENTAILS(region_domain_t)
+
+  // FIXME: entails is const but rename_linear_cst is not
+  // 
+  // bool entails(const linear_constraint_t &cst) const override {
+  //   if (is_bottom()) {
+  //     return true;
+  //   }
+  //   auto b_cst = rename_linear_cst(cst);
+  //   return m_base_dom.entails(b_cst);
+  // }
+  
   #if 0
   // not part of the numerical_domains api but it should be  
   void set(const variable_t &x, interval_t intv) {
