@@ -1956,6 +1956,10 @@ public:
                                 << "END add constraints: " << _product << "\n");
   }
 
+  bool entails(const linear_constraint_t &cst) const override {
+    return _produc.second().entails(cst);
+  }
+  
   void set(const variable_t &x, interval_t intv) {
     // reduced_domain_product2 does not define set method
     _product.first().set(x, intv);
@@ -2282,10 +2286,6 @@ public:
   static bool entail(const disjunctive_linear_constraint_system_t &lhs,
                      this_type &rhs) {
     return checker_domain_traits<AbsDom>::entail(lhs, rhs.second());
-  }
-
-  static bool entail(this_type &inv, const linear_constraint_t &cst) {
-    return checker_domain_traits<AbsDom>::entail(inv.second(), cst);
   }
 
   static bool intersect(this_type &inv, const linear_constraint_t &cst) {

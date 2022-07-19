@@ -1,14 +1,12 @@
 #pragma once
 
-/*
-   User-definable assertion checker
- */
+/**
+ *  User-definable assertion checker
+ **/
 
 #include <crab/checkers/base_property.hpp>
-#include <crab/domains/abstract_domain_specialized_traits.hpp>
 
 namespace crab {
-
 namespace checker {
 
 template <typename Analyzer>
@@ -33,6 +31,20 @@ class assert_property_checker : public property_checker<Analyzer> {
   using typename base_checker_t::lin_exp_t;
   using typename base_checker_t::var_t;
 
+  bool entails(const abs_dom_t &lhs, const lin_cst_t &rhs) const {
+    CRAB_LOG("checker-entailment", 
+	     crab::outs() << "Checking whether\n"
+	                  << lhs << "\nentails " << rhs << "\n";);
+
+     bool res = lhs.entails(rhs);
+
+     CRAB_LOG("checker-entailment",
+              if (res) { crab::outs() << "\t**entailment holds.\n"; } else {
+                crab::outs() << "\t**entailment does not hold.\n";
+              });
+     return res;
+  }
+  
 public:
   using analyzer_t = Analyzer;
 
@@ -93,8 +105,8 @@ public:
         return;
       }
 
-      abs_dom_t inv(this->m_abs_tr->get_abs_value());
-      if (crab::domains::checker_domain_traits<abs_dom_t>::entail(inv, cst)) {
+      const abs_dom_t &inv = this->m_abs_tr->get_abs_value();
+      if (entails(inv, cst)) {
         crab::crab_string_os os;
         if (this->m_verbose >= 3) {
           os << "Property : " << cst << "\n";
