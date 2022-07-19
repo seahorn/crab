@@ -3093,37 +3093,29 @@ struct abstract_domain_traits<array_adaptive_domain<Dom>> {
   using varname_t = typename Dom::varname_t;
 };
 
-template <typename Dom>
-class checker_domain_traits<array_adaptive_domain<Dom>> {
-public:
-  using this_type = array_adaptive_domain<Dom>;
-  using base_domain_t = typename this_type::base_domain_t;
-  using linear_constraint_t = typename this_type::linear_constraint_t;
-  using disjunctive_linear_constraint_system_t =
-      typename this_type::disjunctive_linear_constraint_system_t;
-
-  static bool entail(this_type &lhs,
-                     const disjunctive_linear_constraint_system_t &rhs) {
-    base_domain_t &lhs_dom = lhs.get_content_domain();
-    return checker_domain_traits<base_domain_t>::entail(lhs_dom, rhs);
-  }
-
-  static bool entail(const disjunctive_linear_constraint_system_t &lhs,
-                     this_type &rhs) {
-    base_domain_t &rhs_dom = rhs.get_content_domain();
-    return checker_domain_traits<base_domain_t>::entail(lhs, rhs_dom);
-  }
-
-  static bool entail(this_type &lhs, const linear_constraint_t &rhs) {
-    base_domain_t &lhs_dom = lhs.get_content_domain();
-    return checker_domain_traits<base_domain_t>::entail(lhs_dom, rhs);
-  }
-
-  static bool intersect(this_type &inv, const linear_constraint_t &cst) {
-    base_domain_t &dom = inv.get_content_domain();
-    return checker_domain_traits<base_domain_t>::intersect(dom, cst);
-  }
-};
+// template <typename Dom>
+// class checker_domain_traits<array_adaptive_domain<Dom>> {
+// public:
+//   using this_type = array_adaptive_domain<Dom>;
+//   using base_domain_t = typename this_type::base_domain_t;
+//   using linear_constraint_t = typename this_type::linear_constraint_t;
+//   using disjunctive_linear_constraint_system_t =
+//       typename this_type::disjunctive_linear_constraint_system_t;
+//   static bool entail(this_type &lhs,
+//                      const disjunctive_linear_constraint_system_t &rhs) {
+//     base_domain_t &lhs_dom = lhs.get_content_domain();
+//     return checker_domain_traits<base_domain_t>::entail(lhs_dom, rhs);
+//   }
+//   static bool entail(const disjunctive_linear_constraint_system_t &lhs,
+//                      this_type &rhs) {
+//     base_domain_t &rhs_dom = rhs.get_content_domain();
+//     return checker_domain_traits<base_domain_t>::entail(lhs, rhs_dom);
+//   }
+//   static bool intersect(this_type &inv, const linear_constraint_t &cst) {
+//     base_domain_t &dom = inv.get_content_domain();
+//     return checker_domain_traits<base_domain_t>::intersect(dom, cst);
+//   }
+// };
 
 } // namespace domains
 } // namespace crab

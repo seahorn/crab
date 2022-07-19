@@ -1054,8 +1054,9 @@ public:
 #endif
   }
 
-  // FIXME/TODO: it needs to call entails
-  DEFAULT_ENTAILS(bool_num_domain_t)
+  bool entails(const linear_constraint_t &cst) const override {
+    return m_product.second().entails(cst);
+  }
   
   void set(const variable_t &x, interval_t intv) {
     // reduced_domain_product2 does not define set method
@@ -1148,8 +1149,7 @@ public:
 	// 
 	// However, entail splits equalities into inequalities to
 	// avoid disequalities after negation.
-	if (crab::domains::checker_domain_traits<Dom>::
-	    entail(m_product.second(), cst)) {
+	if (m_product.second().entails(cst)) {
 	  // -- definitely true
 	  m_product.first().set_bool(x, boolean_value::get_true());
 	} else {
@@ -1827,36 +1827,28 @@ struct abstract_domain_traits<flat_boolean_numerical_domain<Num>> {
   using varname_t = typename Num::varname_t;
 };
 
-template <typename Dom>
-class checker_domain_traits<flat_boolean_numerical_domain<Dom>> {
-public:
-  using this_type = flat_boolean_numerical_domain<Dom>;
-  using linear_constraint_t = typename this_type::linear_constraint_t;
-  using disjunctive_linear_constraint_system_t =
-      typename this_type::disjunctive_linear_constraint_system_t;
-
-  static bool entail(this_type &lhs,
-                     const disjunctive_linear_constraint_system_t &rhs) {
-    Dom &lhs_dom = lhs.second();
-    return checker_domain_traits<Dom>::entail(lhs_dom, rhs);
-  }
-
-  static bool entail(const disjunctive_linear_constraint_system_t &lhs,
-                     this_type &rhs) {
-    Dom &rhs_dom = rhs.second();
-    return checker_domain_traits<Dom>::entail(lhs, rhs_dom);
-  }
-
-  static bool entail(this_type &lhs, const linear_constraint_t &rhs) {
-    Dom &lhs_dom = lhs.second();
-    return checker_domain_traits<Dom>::entail(lhs_dom, rhs);
-  }
-
-  static bool intersect(this_type &inv, const linear_constraint_t &cst) {
-    Dom &dom = inv.second();
-    return checker_domain_traits<Dom>::intersect(dom, cst);
-  }
-};
+// template <typename Dom>
+// class checker_domain_traits<flat_boolean_numerical_domain<Dom>> {
+// public:
+//   using this_type = flat_boolean_numerical_domain<Dom>;
+//   using linear_constraint_t = typename this_type::linear_constraint_t;
+//   using disjunctive_linear_constraint_system_t =
+//       typename this_type::disjunctive_linear_constraint_system_t;
+//   static bool entail(this_type &lhs,
+//                      const disjunctive_linear_constraint_system_t &rhs) {
+//     Dom &lhs_dom = lhs.second();
+//     return checker_domain_traits<Dom>::entail(lhs_dom, rhs);
+//   }
+//   static bool entail(const disjunctive_linear_constraint_system_t &lhs,
+//                      this_type &rhs) {
+//     Dom &rhs_dom = rhs.second();
+//     return checker_domain_traits<Dom>::entail(lhs, rhs_dom);
+//   }
+//   static bool intersect(this_type &inv, const linear_constraint_t &cst) {
+//     Dom &dom = inv.second();
+//     return checker_domain_traits<Dom>::intersect(dom, cst);
+//   }
+// };
 
 } // end namespace domains
 } // end namespace crab
