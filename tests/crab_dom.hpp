@@ -11,6 +11,7 @@
 #include <crab/domains/constant_domain.hpp>
 #include <crab/domains/dis_intervals.hpp>
 #include <crab/domains/elina_domains.hpp>
+#include <crab/domains/fixed_tvpi_domain.hpp>
 #include <crab/domains/flat_boolean_domain.hpp>
 #include <crab/domains/generic_abstract_domain.hpp>
 #include <crab/domains/intervals.hpp>
@@ -69,6 +70,8 @@ using z_term_dis_int_t =
     term_domain<term::TDomInfo<z_number, varname_t, z_dis_interval_domain_t>>;
 using z_num_domain_t =
     reduced_numerical_domain_product2<z_term_dis_int_t, z_sdbm_domain_t>;
+//using z_fixed_tvpi_domain_t = fixed_tvpi_domain<z_soct_domain_t>;
+using z_fixed_tvpi_domain_t = fixed_tvpi_domain<z_sdbm_domain_t>;  
 // Boolean-numerical domain over integers
 using z_bool_num_domain_t = flat_boolean_numerical_domain<z_dbm_domain_t>;
 using z_bool_interval_domain_t =

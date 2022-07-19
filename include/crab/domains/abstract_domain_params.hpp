@@ -3,6 +3,8 @@
 #include <crab/support/os.hpp>
 #include <crab/support/debug.hpp>
 
+#include <vector>
+
 namespace crab {
 namespace domains {
 
@@ -279,13 +281,30 @@ public:
   void write(crab::crab_os &o) const;
 };
 
+class fixed_tvpi_domain_params {
+  std::vector<unsigned> m_coefficients;
+
+  friend class crab_domain_params;  
+public:
+  fixed_tvpi_domain_params() {}
+  
+  fixed_tvpi_domain_params(const std::vector<unsigned> &coefficients)
+    : m_coefficients(coefficients) {}
+
+  const std::vector<unsigned>& coefficients() const;
+  std::vector<unsigned>& coefficients();  
+  void update_params(const fixed_tvpi_domain_params& p);
+  void write(crab::crab_os &o) const;
+};
+
 class crab_domain_params: public elina_domain_params,
 			  public array_adaptive_domain_params,
 			  public boxes_domain_params,
 			  public powerset_domain_params,
 			  public region_domain_params,
 			  public zones_domain_params,
-			  public oct_domain_params {
+			  public oct_domain_params,
+			  public fixed_tvpi_domain_params {
 public:
   // To resolve ambiguous name lookup
   using elina_domain_params::update_params;
@@ -294,7 +313,8 @@ public:
   using powerset_domain_params::update_params;
   using region_domain_params::update_params;
   using zones_domain_params::update_params;
-  using oct_domain_params::update_params; 
+  using oct_domain_params::update_params;
+  using fixed_tvpi_domain_params::update_params;
   
   crab_domain_params()
     : elina_domain_params(),
@@ -303,7 +323,8 @@ public:
       powerset_domain_params(),
       region_domain_params(),
       zones_domain_params(),
-      oct_domain_params() {
+      oct_domain_params(),
+      fixed_tvpi_domain_params() {
   }
 
   /* Supported parameter strings:
@@ -332,9 +353,9 @@ public:
      - oct.widen_restabilize: bool
      - oct.special_assign: bool
      - oct.close_bounds_inline: bool
+     - fixed_tvpi.coefficients: list(unsigned)
    */
   void set_param(const std::string &param, const std::string &val);
-  
   void update_params(const crab_domain_params& p);
   void write(crab::crab_os &o) const;
 };
