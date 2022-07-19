@@ -167,7 +167,7 @@ private:
   bool m_is_bottom; // special symbol for bottom
   /** Begin base domain **/
   // Proxy to deal with m_base_dom.
-  ghost_var_man_t m_ghost_var_man;
+  mutable ghost_var_man_t m_ghost_var_man;
   // The base abstract domain: all the heavy lifting is done here.
   // m_base_dom does not have any variable of region/reference type.
   base_abstract_domain_t m_base_dom;
@@ -444,26 +444,26 @@ private:
   /** Renaming expressions in case the base domain has a different
       type for varnames.  **/
   base_variable_or_constant_t
-  rename_variable_or_constant(const variable_or_constant_t &v) {
+  rename_variable_or_constant(const variable_or_constant_t &v) const {
     return m_ghost_var_man.rename_variable_or_constant(v);
   }
 
-  base_linear_expression_t rename_linear_expr(const linear_expression_t &e) {
+  base_linear_expression_t rename_linear_expr(const linear_expression_t &e) const {
     return m_ghost_var_man.rename_linear_expr(e);
   }
 
-  base_linear_constraint_t rename_linear_cst(const linear_constraint_t &cst) {
+  base_linear_constraint_t rename_linear_cst(const linear_constraint_t &cst) const {
     return m_ghost_var_man.rename_linear_cst(cst);
   }
 
   base_linear_constraint_system_t
-  rename_linear_cst_sys(const linear_constraint_system_t &csts) {
+  rename_linear_cst_sys(const linear_constraint_system_t &csts) const {
     return m_ghost_var_man.rename_linear_cst_sys(csts);
   }
 
   base_linear_constraint_t
   convert_ref_cst_to_linear_cst(const reference_constraint_t &ref_cst,
-				ghost_variable_kind kind) {
+				ghost_variable_kind kind) const {
     return m_ghost_var_man.ghosting_ref_cst_to_linear_cst(ref_cst, kind);
   }
 
@@ -1964,18 +1964,13 @@ public:
     }
   }
 
-  // FIXME: it needs to call m_base_dom.entails
-  DEFAULT_ENTAILS(region_domain_t)
-
-  // FIXME: entails is const but rename_linear_cst is not
-  // 
-  // bool entails(const linear_constraint_t &cst) const override {
-  //   if (is_bottom()) {
-  //     return true;
-  //   }
-  //   auto b_cst = rename_linear_cst(cst);
-  //   return m_base_dom.entails(b_cst);
-  // }
+  bool entails(const linear_constraint_t &cst) const override {
+    if (is_bottom()) {
+      return true;
+    }
+    auto b_cst = rename_linear_cst(cst);
+    return m_base_dom.entails(b_cst);
+  }
   
   #if 0
   // not part of the numerical_domains api but it should be  
