@@ -1,6 +1,7 @@
 #include <crab/domains/abstract_domain_params.hpp>
 #include <string>
 #include <stdexcept>
+#include <sstream>
 
 namespace crab {
 namespace domains {
@@ -110,6 +111,34 @@ void oct_domain_params::write(crab::crab_os &o) const {
   o << "\tclose_bounds_inline=" << m_close_bounds_inline << "\n";  
 }
 
+const std::vector<unsigned>& fixed_tvpi_domain_params::coefficients() const {
+  return m_coefficients;
+}
+
+ std::vector<unsigned>& fixed_tvpi_domain_params::coefficients() {
+  return m_coefficients;
+}
+  
+void fixed_tvpi_domain_params::update_params(const fixed_tvpi_domain_params& p) {
+  m_coefficients.clear();
+  m_coefficients.insert(m_coefficients.end(),
+			p.m_coefficients.begin(), p.m_coefficients.end());
+}
+  
+void fixed_tvpi_domain_params::write(crab::crab_os &o) const {
+  o << "Fixed-TVPI parameters:\n";
+  o << "\ttracked coefficients={";
+  for (unsigned i=0, sz=m_coefficients.size();i<sz;) {
+    o << m_coefficients[i];
+    ++i;
+    if (i < sz) {
+      o << ",";
+    }
+  }
+  o << "}\n";
+}
+
+  
 void crab_domain_params::update_params(const crab_domain_params &p) {
   elina_domain_params e_p(p.elina_use_tree_expressions());
   array_adaptive_domain_params aa_p(p.array_adaptive_is_smashable(),
@@ -135,6 +164,8 @@ void crab_domain_params::update_params(const crab_domain_params &p) {
 			p.oct_widen_restabilize(),
 			p.oct_special_assign(),
 			p.oct_close_bounds_inline());
+  fixed_tvpi_domain_params tvpi_p(p.coefficients());
+  
   elina_domain_params::update_params(e_p);
   array_adaptive_domain_params::update_params(aa_p);
   boxes_domain_params::update_params(b_p);
@@ -142,6 +173,7 @@ void crab_domain_params::update_params(const crab_domain_params &p) {
   region_domain_params::update_params(r_p);
   zones_domain_params::update_params(z_p);
   oct_domain_params::update_params(o_p);
+  fixed_tvpi_domain_params::update_params(tvpi_p);
 }
 
 static bool to_bool(const std::string &val) {
@@ -176,6 +208,17 @@ static unsigned to_uint(const std::string &val) {
   } 
 }
 
+static std::vector<unsigned> to_list_of_unsigned(const std::string &val) {
+  std::vector<unsigned> res;
+  std::stringstream ss(val);
+  while (ss.good()) {
+    std::string substr;
+    getline(ss, substr, ',');
+    res.push_back(to_uint(substr));
+  }
+  return res;
+}
+  
 void crab_domain_params::set_param(const std::string &param, const std::string &val) {
   if (param == "elina.use_tree_expressions") {
     elina_domain_params::m_use_tree_expressions = to_bool(val);
@@ -225,6 +268,8 @@ void crab_domain_params::set_param(const std::string &param, const std::string &
     oct_domain_params::m_special_assign = to_bool(val);    
   } else if (param == "oct.close_bounds_inline") {
     oct_domain_params::m_close_bounds_inline = to_bool(val);    
+  } else if (param == "fixed_tvpi.coefficients") {
+    fixed_tvpi_domain_params::m_coefficients = to_list_of_unsigned(val);    
   } else {
     CRAB_WARN("Ignored unsupported parameter ",  param);
   }
@@ -238,6 +283,7 @@ void crab_domain_params::write(crab::crab_os &o) const {
   region_domain_params::write(o);
   zones_domain_params::write(o);
   oct_domain_params::write(o);
+  fixed_tvpi_domain_params::write(o);
 }
 } // end namespace domains
 } // end namespace crab
