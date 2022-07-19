@@ -8,7 +8,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 template <typename Dom> void check_entailment(Dom inv, const z_lin_cst_t &cst) {
-  bool r = checker_domain_traits<Dom>::entail(inv, cst);
+  bool r = inv.entails(cst);
   if (r) {
     crab::outs() << inv << " entails " << cst << "\n";
   } else {

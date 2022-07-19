@@ -1762,87 +1762,6 @@ template <typename N, typename V>
 typename boxes_domain<N, V>::var_map_t boxes_domain<N, V>::s_var_map;
 
 template <typename Number, typename VariableName>
-class checker_domain_traits<boxes_domain<Number, VariableName>> {
-public:
-  using this_type = boxes_domain<Number, VariableName>;
-  using linear_constraint_t = typename this_type::linear_constraint_t;
-  using disjunctive_linear_constraint_system_t =
-      typename this_type::disjunctive_linear_constraint_system_t;
-
-  static bool entail(this_type &lhs,
-                     const disjunctive_linear_constraint_system_t &rhs) {
-    // -- trivial cases first
-    if (rhs.is_false()) {
-      return false;
-    } else if (rhs.is_true()) {
-      return true;
-    } else if (lhs.is_bottom()) {
-      return true;
-    } else if (lhs.is_top()) {
-      return false;
-    }
-    this_type inv;
-    inv.set_to_bottom();
-    for (auto const &csts : rhs) {
-      this_type conj;
-      conj += csts;
-      inv |= conj;
-    }
-    return (lhs & inv.complement()).is_bottom();
-  }
-
-  static bool entail(const disjunctive_linear_constraint_system_t &lhs,
-                     this_type &rhs) {
-    // -- trivial cases first
-    if (rhs.is_bottom()) {
-      return false;
-    } else if (rhs.is_top()) {
-      return true;
-    } else if (lhs.is_false()) {
-      return true;
-    } else if (lhs.is_true()) {
-      return false;
-    }
-    this_type inv;
-    inv.set_to_bottom();
-    for (auto const &csts : lhs) {
-      this_type conj;
-      conj += csts;
-      inv |= conj;
-    }
-    return (inv & rhs.complement()).is_bottom();
-  }
-
-  static bool entail(this_type &lhs, const linear_constraint_t &rhs) {
-    // -- trivial cases first
-    if (lhs.is_bottom())
-      return true;
-    if (rhs.is_tautology())
-      return true;
-    if (rhs.is_contradiction())
-      return false;
-
-    this_type inv(lhs);
-    inv += rhs.negate();
-    return inv.is_bottom();
-  }
-
-  static bool intersect(this_type &inv, const linear_constraint_t &cst) {
-    // default code
-
-    // -- trivial cases first
-    if (inv.is_bottom() || cst.is_contradiction())
-      return false;
-    if (inv.is_top() || cst.is_tautology())
-      return true;
-
-    this_type cst_inv;
-    cst_inv += cst;
-    return (!(cst_inv & inv).is_bottom());
-  }
-};
-
-template <typename Number, typename VariableName>
 class special_domain_traits<boxes_domain<Number, VariableName>> {
 public:
   static void clear_global_state(void) {
@@ -1850,6 +1769,70 @@ public:
   }
 };
 
+// template <typename Number, typename VariableName>
+// class checker_domain_traits<boxes_domain<Number, VariableName>> {
+// public:
+//   using this_type = boxes_domain<Number, VariableName>;
+//   using linear_constraint_t = typename this_type::linear_constraint_t;
+//   using disjunctive_linear_constraint_system_t =
+//       typename this_type::disjunctive_linear_constraint_system_t;
+//   static bool entail(this_type &lhs,
+//                      const disjunctive_linear_constraint_system_t &rhs) {
+//     // -- trivial cases first
+//     if (rhs.is_false()) {
+//       return false;
+//     } else if (rhs.is_true()) {
+//       return true;
+//     } else if (lhs.is_bottom()) {
+//       return true;
+//     } else if (lhs.is_top()) {
+//       return false;
+//     }
+//     this_type inv;
+//     inv.set_to_bottom();
+//     for (auto const &csts : rhs) {
+//       this_type conj;
+//       conj += csts;
+//       inv |= conj;
+//     }
+//     return (lhs & inv.complement()).is_bottom();
+//   }
+//   static bool entail(const disjunctive_linear_constraint_system_t &lhs,
+//                      this_type &rhs) {
+//     // -- trivial cases first
+//     if (rhs.is_bottom()) {
+//       return false;
+//     } else if (rhs.is_top()) {
+//       return true;
+//     } else if (lhs.is_false()) {
+//       return true;
+//     } else if (lhs.is_true()) {
+//       return false;
+//     }
+//     this_type inv;
+//     inv.set_to_bottom();
+//     for (auto const &csts : lhs) {
+//       this_type conj;
+//       conj += csts;
+//       inv |= conj;
+//     }
+//     return (inv & rhs.complement()).is_bottom();
+//   }
+//   static bool intersect(this_type &inv, const linear_constraint_t &cst) {
+//     // default code
+
+//     // -- trivial cases first
+//     if (inv.is_bottom() || cst.is_contradiction())
+//       return false;
+//     if (inv.is_top() || cst.is_tautology())
+//       return true;
+
+//     this_type cst_inv;
+//     cst_inv += cst;
+//     return (!(cst_inv & inv).is_bottom());
+//   }
+// };
+  
 } // namespace domains
 } // namespace crab
 #endif /* HAVE_LDD */
