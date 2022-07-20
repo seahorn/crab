@@ -69,7 +69,7 @@ public:
       << "CacheUsed=" << cacheused_val() << ","
       << "CacheDirty=" << cachedirty_val();
   }
-  friend crab::crab_os &operator<<(crab::crab_os &o, object_info &dom) {
+  friend crab::crab_os &operator<<(crab::crab_os &o, const object_info &dom) {
     dom.write(o);
     return o;
   }

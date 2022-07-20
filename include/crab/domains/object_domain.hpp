@@ -432,12 +432,27 @@ private:
 
     // Case 2: singleton object in base domain
     //         odi map does not contain a field domain for that object
-    // Solution: we join the base dom and odi map
+    // Solution:
+    //  we join the base dom if two states contain the same singleton object;
+    //  if two singleton objects appeared on each state are different
+    //  (or we don't know), the join should project two objects, join them,
+    // and move the output in the odi map.
     // E.g.
-    //  s1: Base = { V_1 = 3, V_2 = 6 }, Object (V_1, V_2) = empty
-    //  s2: Base = { V_1 = 2, V_2 = 4 }, Object (V_1, V_2) = empty
+    //  s1: Base = { V_1 = 3, V_2 = 6 }, Object (V_1, V_2) = empty,
+    //      Addr = { single_v1 = SYM_1 }
+    //  s2: Base = { V_1 = 2, V_2 = 4 }, Object (V_1, V_2) = empty,
+    //      Addr = { single_v1 = SYM_1 }
     //  s1 U s2: Base in s1 U Base in s2
     //           Object (V_1, V_2) = empty
+    // E.g.
+    //  s1: Base = { V_1 = 3, V_2 = 6 }, Object (V_1, V_2) = empty
+    //      Addr = { single_v1 = SYM_1 }
+    //  s2: Base = { V_1 = 2, V_2 = 4 }, Object (V_1, V_2) = empty
+    //      Addr = { single_v1 = SYM_2 }
+    //  s1 U s2:
+    //      Base = (Base in s1).project(V_1, V_2) U
+    //             (Base in s2).project(V_1, V_2)
+    //      Object (V_1, V_2) = { 2 <= V_1 <= 3, 4 <= V_2 <= 6 }
 
     // Case 3:
     // one state: singleton object in base domain,
@@ -560,6 +575,24 @@ private:
         join_or_widen_singleton_with_non_singleton(
             id, right, *this, l_base_dom, out_odi_map, true /* is_join*/);
       }
+      // Step 3. Handle the case for joining singletons.
+      // In this case, the singleton object appears on each state may refer to
+      // different singleton. If so, the join requires to move singleton into
+      // odi map.
+      else if (l_num_refs.is_one() && r_num_refs.is_one()) {
+        if (mru_refer_same_object(id, m_addrs_dom, right.m_addrs_dom)) {
+          out_obj_info_env.set(
+              id, object_domain_impl::object_info(small_range::one(),
+                                                  // Cache is not used
+                                                  boolean_value::get_false(),
+                                                  // Cache is not dirty
+                                                  boolean_value::get_false()));
+        } else {
+          join_or_widen_two_different_singleton(id, *this, l_base_dom,
+                                                r_base_dom, out_odi_map,
+                                                true /* is_join*/);
+        }
+      }
     }
 
     // 3. join the base domain
@@ -650,6 +683,32 @@ private:
                  l_num_refs == small_range::oneOrMore()) {
         join_or_widen_singleton_with_non_singleton(id, right, left, l_base_dom,
                                                    out_odi_map, is_join);
+      } else if (l_num_refs.is_one() && r_num_refs.is_one() &&
+                 mru_refer_same_object(id, left.m_addrs_dom,
+                                       right.m_addrs_dom)) {
+        out_obj_info_env.set(
+            id, object_domain_impl::object_info(small_range::one(),
+                                                // Cache is not used
+                                                boolean_value::get_false(),
+                                                // Cache is not dirty
+                                                boolean_value::get_false()));
+      }
+      // Step 3. Handle the case for joining singletons.
+      // In this case, the singleton object appears on each state may refer to
+      // different singleton. If so, the join requires to move singleton into
+      // odi map.
+      else if (l_num_refs.is_one() && r_num_refs.is_one()) {
+        if (mru_refer_same_object(id, left.m_addrs_dom, right.m_addrs_dom)) {
+          out_obj_info_env.set(
+              id, object_domain_impl::object_info(small_range::one(),
+                                                  // Cache is not used
+                                                  boolean_value::get_false(),
+                                                  // Cache is not dirty
+                                                  boolean_value::get_false()));
+        } else {
+          join_or_widen_two_different_singleton(
+              id, left, l_base_dom, r_base_dom, out_odi_map, is_join);
+        }
       }
     }
 
@@ -701,6 +760,17 @@ private:
     //  s2: Base = { V_1 = 2, V_2 = 4 }, Object (V_1, V_2) = empty
     //  s1 meet s2:
     //    Base = { bot }, Object (V_1, V_2) = empty
+    //  we meet the base dom if two states contain the same singleton object;
+    //  if two singleton objects appeared on each state are different
+    //  (or we don't know), the result of meet is bottom.
+    // E.g.
+    //  s1: Base = { V_1 = 3, V_2 = 6 }, Object (V_1, V_2) = empty,
+    //      Addr = { single_v1 = SYM_1 }
+    //  s2: Base = { V_1 = 3, V_2 = 6 }, Object (V_1, V_2) = empty,
+    //      Addr = { single_v1 = SYM_1 }
+    //  s1 meet s2: Base = { V_1 = 3, V_2 = 6 }, Object (V_1, V_2) = empty
+    // Other cases,
+    //  s1 meet s2: Base = { bot }, Object (V_1, V_2) = empty
 
     // Case 3:
     // one state: singleton object in base domain,
@@ -1010,7 +1080,7 @@ private:
     }
     auto it = (*m_refs_base_addrs_map).find(v);
     if (it == (*m_refs_base_addrs_map).end()) {
-      CRAB_ERROR(domain_name(), "::get_base_addr_or_fail: ", v, "not found");
+      CRAB_ERROR(domain_name(), "::get_base_addr_or_fail: ", v, " not found");
     }
     return it->second;
   }
@@ -1175,6 +1245,9 @@ private:
 
     m_odi_map.set(id, res_prod);
     m_base_dom.forget(flds_vec);
+    CRAB_LOG("object-move-odi",
+             crab::outs() << "move object: " << id << singleton_base << "\n";
+             odi_write(crab::outs(), res_prod); crab::outs() << "\n";);
   }
 
   void join_or_widen_singleton_with_non_singleton(
@@ -1210,6 +1283,32 @@ private:
         res_prod.first() = res_prod.first() || singleton_base;
       }
     }
+
+    odi_map.set(id, res_prod);
+  }
+
+  void join_or_widen_two_different_singleton(const obj_id_t &id,
+                                             const object_domain_t &s_single,
+                                             base_abstract_domain_t &base_l,
+                                             base_abstract_domain_t &base_r,
+                                             odi_map_t &odi_map,
+                                             const bool is_join) const {
+
+    // Get object fields, either one state saves the same
+    base_dom_variable_vector_t flds_vec;
+    s_single.get_obj_dom_flds(id, flds_vec);
+
+    base_abstract_domain_t l_singleton(base_l);
+    l_singleton.project(flds_vec);
+    base_l.forget(flds_vec);
+
+    base_abstract_domain_t r_singleton(base_r);
+    r_singleton.project(flds_vec);
+    base_r.forget(flds_vec);
+
+    odi_domain_product_t res_prod; // initial value is top
+    res_prod.first() =
+        is_join ? l_singleton | r_singleton : l_singleton || r_singleton;
 
     odi_map.set(id, res_prod);
   }
@@ -2053,7 +2152,12 @@ public:
       const small_range &num_refs = old_obj_info.refcount_val();
 
       // Check number of references for an abstract object
-      if (num_refs.is_one()) {
+      if (num_refs.is_zero()) {
+        // if object is singleton, add a base address for that object.
+        // This is required when join / meet of two states.
+        m_addrs_dom.set(get_or_insert_base_addr(*id_opt),
+                        object_domain_impl::make_fresh_symbol(m_addrs_dom));
+      } else if (num_refs.is_one()) {
         // if the abstract object is a singleton object,
         // now the number of references is increasing,
         // need to move fields' properties into odi map
