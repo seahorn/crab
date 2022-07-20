@@ -3209,6 +3209,9 @@ public:
       return;
     }
 
+    // REDUCTION: perform reduction
+    perform_reduction();
+
     if (name == "regions_from_memory_object") {
       // pass region varaibles into object field map
       // the intrinsics is only added in clam if the object has more than one
