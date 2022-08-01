@@ -1076,8 +1076,14 @@ public:
         elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*o.m_apstate));
 
     var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, y);
+
+    // widening precondition: the old value is included in the new value.
+    // widen(old, new) = widen(old,(join(old,new)))    
+    elina_state_ptr x_join_y = elinaPtr(get_man(),
+					elina_abstract0_join(get_man(), false, &*x, &*y));
+    
     return elina_domain_t(
-        elinaPtr(get_man(), elina_abstract0_widening(get_man(), &*x, &*y)),
+        elinaPtr(get_man(), elina_abstract0_widening(get_man(), &*x, &*x_join_y)),
         std::move(m), false /* do not compact */);
     //}
   }
@@ -1133,9 +1139,14 @@ public:
       elina_intv_widen += intv_widen.to_linear_constraint_system();
       return res & elina_intv_widen;
 #else
+    // widening precondition: the old value is included in the new value.
+    // widen(old, new) = widen(old,(join(old,new)))    
+    elina_state_ptr x_join_y = elinaPtr(get_man(),
+					elina_abstract0_join(get_man(), false, &*x, &*y));
+      
     elina_lincons0_array_t csts = make_thresholds(o, ts);
     elina_domain_t res(elinaPtr(get_man(), elina_abstract0_widening_threshold(
-                                               get_man(), &*x, &*y, &csts)),
+                                               get_man(), &*x, &*x_join_y, &csts)),
                        std::move(m), false /* do not compact */);
     elina_lincons0_array_clear(&csts);
     return res;
