@@ -94,14 +94,16 @@ private:
     if (!((e.constant() % tracked_coeff) == 0)) {
       return false;
     }
-
-    for (auto it = e.begin(), et = e.end(); it != et; ++it) {
-      const number_t &coeff = (*it).first;
-      if (coeff == tracked_coeff || coeff == -tracked_coeff) {
-        return true;
-      }
-    }
-    return false;
+    
+    return true;
+    
+    // for (auto it = e.begin(), et = e.end(); it != et; ++it) {
+    //   const number_t &coeff = (*it).first;
+    //   if (coeff == tracked_coeff || coeff == -tracked_coeff) {
+    //     return true;
+    //   }
+    // }
+    // return false;
   }
 
   // clang-format off
