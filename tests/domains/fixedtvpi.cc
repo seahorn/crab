@@ -156,6 +156,43 @@ int main (int argc, char** argv) {
     run_and_check(cfg, cfg->entry(), init, false, 2, 1, 20, stats_enabled);
     crab_domain_params_man::get().coefficients().clear();
   }
+
+  {
+    crab_domain_params_man::get().coefficients().push_back(2);
+    variable_factory_t vfac;
+    z_var x(vfac["x"], crab::INT_TYPE, 32);
+    z_var y(vfac["y"], crab::INT_TYPE, 32);  
+    
+    z_fixed_tvpi_domain_t val1;
+    
+    val1.assign(y, 2*x);
+    val1 += (x >= z_number(0));
+    val1 += (x <= z_number(3));
+    
+    bool check1 = val1.entails(y >= z_number(0));
+    if (check1) {
+      crab::outs() << "Check1 passed\n";
+      val1 += (y >= z_number(0));
+    } else {
+      crab::outs() << "Check1 failed\n";
+    }
+    bool check2 = val1.entails(y <= z_number(6));
+    if (check2) {
+      crab::outs() << "Check2 passed\n";      
+      val1 += (y <= z_number(6));
+    } else {
+      crab::outs() << "Check2 failed\n";            
+    }
+    bool check3 = val1.entails(2*x == y);
+    if (check3) {
+      crab::outs() << "Check3 passed\n";      
+    } else {
+      crab::outs() << "Check3 failed\n";            
+    }
+    
+    crab::outs() <<  val1 << "\n";
+    crab_domain_params_man::get().coefficients().clear();
+  }
   
   // {
   //   variable_factory_t vfac;
