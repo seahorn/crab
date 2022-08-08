@@ -593,7 +593,17 @@ public:
   }
 
   void expand(const variable_t &var, const variable_t &new_var) override {
-    CRAB_WARN(domain_name(), "::expand not implemented");
+    if (is_bottom() || is_top()) {
+      return;
+    }
+
+    m_base_absval.expand(var, new_var);
+
+    for (auto coefficient : crab_domain_params_man::get().coefficients()) {
+      variable_t gv = get_ghost_var(var, coefficient);
+      variable_t gnv = get_ghost_var(new_var, coefficient);
+      m_base_absval.expand(gv, gnv);
+    }
   }
 
   void normalize() override {}
