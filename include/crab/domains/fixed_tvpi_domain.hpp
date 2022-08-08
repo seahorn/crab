@@ -213,6 +213,26 @@ private:
     }
   }
 
+  boost::optional<number_t> is_var_constant(const variable_t &x) {
+    interval_t ival = m_base_absval.at(x);
+    return ival.singleton();
+  }
+
+  void rewrite_apply_var(arith_operation_t op, const variable_t &x,
+                         const variable_t &y, const variable_t &z,
+                         unsigned coefficient) {
+    assert(coefficient > 1);
+
+    if (boost::optional<number_t> n = is_var_constant(z)) {
+      rewrite_apply(op, x, y, *n, coefficient);
+    } else if (boost::optional<number_t> n = is_var_constant(y)) {
+      rewrite_apply(op, x, z, *n, coefficient);
+    } else {
+      variable_t ghost_x = get_ghost_var(x, coefficient);
+      m_base_absval -= ghost_x;
+    }
+  }
+
   fixed_tvpi_domain(base_domain_t &&num) : m_base_absval(std::move(num)) {}
 
 public:
@@ -468,9 +488,8 @@ public:
       
       // (TODO): get intervals for z. This case is important to
       // implement to avoid losing too much precision.
-      for (auto coefficient: crab_domain_params_man::get().coefficients()) {            
-	variable_t ghost_x = get_ghost_var(x, coefficient);
-	m_base_absval -= ghost_x;
+      for (auto coefficient : crab_domain_params_man::get().coefficients()) {
+        rewrite_apply_var(op, x, y, z, coefficient);
       }
     }
   }
