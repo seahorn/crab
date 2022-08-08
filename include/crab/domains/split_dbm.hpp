@@ -117,7 +117,7 @@ protected:
     Wt apply(const Wt &x, const Wt &y) { return std::min(x, y); }
     bool default_is_absorbing() { return false; }
   };
-
+  
   vert_id get_vert(variable_t v) {
     auto it = vert_map.find(v);
     if (it != vert_map.end())
@@ -141,6 +141,15 @@ protected:
     return vert;
   }
 
+  boost::optional<vert_id> get_vert(const variable_t &v) const {
+    auto it = vert_map.find(v);
+    if (it != vert_map.end()) {
+      return (*it).second;
+    } else {
+      return boost::none;
+    } 
+  }
+  
   vert_id get_vert(graph_t &g, vert_map_t &vmap, rev_map_t &rmap,
                    std::vector<Wt> &pot, variable_t v) {
     auto it = vmap.find(v);
@@ -329,7 +338,7 @@ protected:
                            /* x >= lb for each {x,lb} in lbs */
                            std::vector<std::pair<variable_t, Wt>> &lbs,
                            /* x <= ub for each {x,ub} in ubs */
-                           std::vector<std::pair<variable_t, Wt>> &ubs) /*const*/ {
+                           std::vector<std::pair<variable_t, Wt>> &ubs) const {
 
     Wt unbounded_lbcoeff;
     Wt unbounded_ubcoeff;
@@ -810,10 +819,10 @@ protected:
   */
 
   // return true if edge from x to y with weight k is unsatisfiable
-  bool is_unsat_edge(vert_id x, vert_id y, Wt k) {
+  bool is_unsat_edge(vert_id x, vert_id y, Wt k) const {
 
     typename graph_t::mut_val_ref_t w;
-    if (g.lookup(y, x, &w)) {
+    if (const_cast<graph_t*>(&g)->lookup(y, x, &w)) {
       return ((w.get() + k) < Wt(0));
     } else {
       interval_t intv_x = interval_t::top();
@@ -838,6 +847,77 @@ protected:
     }
   }
 
+  // return true iff cst is unsatisfiable without modifying the DBM
+  bool is_unsat(const linear_constraint_t &cst) const {
+    if (is_bottom() || cst.is_contradiction()) {
+      return true;
+    }
+
+    if (is_top() || cst.is_tautology()) {
+      return false;
+    }
+
+    if (cst.is_inequality() && cst.is_unsigned()) {
+      CRAB_WARN("unsigned inequality ", cst, " skipped by ", domain_name());      
+      return false;
+    }
+    
+    std::vector<std::pair<variable_t, Wt>> lbs, ubs;
+    std::vector<diffcst_t> diffcsts;
+
+    if (cst.is_inequality()) {
+      linear_expression_t exp = cst.expression();
+      diffcsts_of_lin_leq(exp, diffcsts, lbs, ubs);
+    } else if (cst.is_strict_inequality()) {
+      auto nc = ikos::linear_constraint_impl::strict_to_non_strict_inequality(cst);
+      if (nc.is_inequality()) {
+        linear_expression_t exp = nc.expression();
+        diffcsts_of_lin_leq(exp, diffcsts, lbs, ubs);
+      } else {
+        // we couldn't convert the strict into a non-strict
+        return false;
+      }
+    } else if (cst.is_equality()) {
+      linear_expression_t exp = cst.expression();
+      diffcsts_of_lin_leq(exp, diffcsts, lbs, ubs);
+      diffcsts_of_lin_leq(-exp, diffcsts, lbs, ubs);
+    } else if (cst.is_disequation()) {
+      CRAB_WARN("disequalities ", cst, " not implemented by ", domain_name(), "::is_unsat");      
+      return false;
+    } else {
+      return false;
+    }
+
+    // check difference constraints
+    for (auto diffcst : diffcsts) {
+      variable_t x = diffcst.first.first;
+      variable_t y = diffcst.first.second;
+      Wt k = diffcst.second;
+
+      auto vy = get_vert(y);
+      auto vx = get_vert(x);
+      if (vx && vy && is_unsat_edge(*vy, *vx, k)) {
+        return true;
+      }
+    }
+
+    // check interval constraints
+    for (auto ub : ubs) {
+      auto vx = get_vert(ub.first);
+      if (vx && is_unsat_edge(0, *vx , ub.second)) {
+        return true;
+      }
+    }
+    for (auto lb : lbs) {
+      auto vx = get_vert(lb.first);
+      if (vx && is_unsat_edge(*vx, 0, -lb.second)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+  
   // Join of gx and gy.
   graph_t join(GrPerm &gx, GrPerm &gy, unsigned sz, std::vector<Wt> &pot_rx,
                std::vector<Wt> &pot_ry) const {
@@ -2292,8 +2372,6 @@ public:
 	     << *this << "\n");
   }
 
-  DEFAULT_ENTAILS(DBM_t)
-
   void operator+=(const linear_constraint_system_t &csts) override {
     if (is_bottom())
       return;
@@ -2303,63 +2381,42 @@ public:
     }
   }
 
-// return true iff cst is unsatisfiable without modifying the DBM
-  bool is_unsat(const linear_constraint_t &cst) /*const*/ {
-    if (is_bottom() || cst.is_contradiction()) {
-      return true;
+  virtual bool entails(const linear_constraint_t &cst) const override {	
+    if (is_bottom()) {							
+      return true;							
+    } if (cst.is_tautology()) {						
+      return true;							
+    } if (cst.is_contradiction()) {					
+      return false;							
     }
 
-    if (is_top() || cst.is_tautology()) {
-      return false;
-    }
-
-    std::vector<std::pair<variable_t, Wt>> lbs, ubs;
-    std::vector<diffcst_t> diffcsts;
-
-    if (cst.is_inequality()) {
-      linear_expression_t exp = cst.expression();
-      diffcsts_of_lin_leq(exp, diffcsts, lbs, ubs);
-    } else if (cst.is_strict_inequality()) {
-      auto nc =
-          ikos::linear_constraint_impl::strict_to_non_strict_inequality(cst);
-      if (nc.is_inequality()) {
-        linear_expression_t exp = nc.expression();
-        diffcsts_of_lin_leq(exp, diffcsts, lbs, ubs);
-      } else {
-        // we couldn't convert the strict into a non-strict
-        return false;
+    bool res;
+    if (cst.is_disequation()) {
+      // |= c1.x1 + ... + cn.xn != k is iff 
+      // (1) |= c1.x1 + ... + cn.xn < k OR
+      // (2) |= c1.x1 + ... + cn.xn > k
+      linear_constraint_t pob1(cst.expression(), linear_constraint_t::kind_t::STRICT_INEQUALITY);
+      res = is_unsat(pob1.negate());
+      if (!res) {
+	linear_constraint_t pob2(cst.expression() * number_t(-1), linear_constraint_t::kind_t::STRICT_INEQUALITY);
+	res = is_unsat(pob2.negate());
       }
     } else if (cst.is_equality()) {
-      linear_expression_t exp = cst.expression();
-      diffcsts_of_lin_leq(exp, diffcsts, lbs, ubs);
-      diffcsts_of_lin_leq(-exp, diffcsts, lbs, ubs);
+      // |= c1.x1 + ... + cn.xn == k is iff 
+      // (1) |= c1.x1 + ... + cn.xn <= k AND
+      // (2) |= c1.x1 + ... + cn.xn >= k
+      linear_constraint_t pob1(cst.expression(), linear_constraint_t::kind_t::INEQUALITY);
+      res = is_unsat(pob1.negate());
+      if (res) {
+	linear_constraint_t pob2(cst.expression() * number_t(-1), linear_constraint_t::kind_t::INEQUALITY);
+	res = is_unsat(pob2.negate());
+      }
     } else {
-      return false;
+      // cst is an inequality
+      res = is_unsat(cst.negate());
     }
-
-    // check difference constraints
-    for (auto diffcst : diffcsts) {
-      variable_t x = diffcst.first.first;
-      variable_t y = diffcst.first.second;
-      Wt k = diffcst.second;
-      if (is_unsat_edge(get_vert(y), get_vert(x), k)) {
-        return true;
-      }
-    }
-
-    // check interval constraints
-    for (auto ub : ubs) {
-      if (is_unsat_edge(0, get_vert(ub.first), ub.second)) {
-        return true;
-      }
-    }
-    for (auto lb : lbs) {
-      if (is_unsat_edge(get_vert(lb.first), 0, -lb.second)) {
-        return true;
-      }
-    }
-
-    return false;
+    
+    return res;
   }
   
   interval_t operator[](const variable_t &x) override {
