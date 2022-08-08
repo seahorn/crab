@@ -213,6 +213,30 @@ private:
     }
   }
 
+  void rewrite_apply_var(arith_operation_t op, const variable_t &x,
+                         const variable_t &y, const variable_t &z,
+                         unsigned coefficient) {
+    assert(coefficient > 1);
+    // TODO: ignored case if op is a subtraction or division
+    // TODO: ignored cases if y or z are not singleton
+    
+    if (boost::optional<number_t> n = m_base_absval.at(z).singleton()) {
+      rewrite_apply(op, x, y, *n, coefficient);
+      return;
+    }
+
+    if (op == OP_ADDITION || op == OP_MULTIPLICATION) {
+      if (boost::optional<number_t> n = m_base_absval.at(y).singleton()) {
+        rewrite_apply(op, x, z, *n, coefficient);
+	return;
+      }
+    }
+    
+    // default case: forget x
+    variable_t ghost_x = get_ghost_var(x, coefficient);
+    m_base_absval -= ghost_x;
+  }
+
   fixed_tvpi_domain(base_domain_t &&num) : m_base_absval(std::move(num)) {}
 
 public:
@@ -466,11 +490,8 @@ public:
     if (!is_bottom()) {
       m_base_absval.apply(op, x, y, z);
       
-      // (TODO): get intervals for z. This case is important to
-      // implement to avoid losing too much precision.
-      for (auto coefficient: crab_domain_params_man::get().coefficients()) {            
-	variable_t ghost_x = get_ghost_var(x, coefficient);
-	m_base_absval -= ghost_x;
+      for (auto coefficient : crab_domain_params_man::get().coefficients()) {
+        rewrite_apply_var(op, x, y, z, coefficient);
       }
     }
   }
