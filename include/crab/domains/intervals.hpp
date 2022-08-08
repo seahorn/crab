@@ -248,8 +248,41 @@ public:
     this->add(csts);
   }
 
-  DEFAULT_ENTAILS(interval_domain_t)
+  virtual bool entails(const linear_constraint_t &cst) const override {	
+    if (is_bottom()) {							
+      return true;							
+    } if (cst.is_tautology()) {						
+      return true;							
+    } if (cst.is_contradiction()) {					
+      return false;							
+    }
 
+    // val is modified after the check
+    auto entailmentFn = [](interval_domain_t &val, const linear_constraint_t &c) -> bool {	
+      linear_constraint_t neg_c = c.negate();			        
+      val += neg_c;						        
+      return val.is_bottom();					        
+    };
+
+    // Get only relevant state wrt cst variables
+    interval_domain_t val;
+    for (auto const&v: cst.variables()) {
+      val.set(v, at(v));
+    }
+
+    if (cst.is_equality()) {						
+      linear_constraint_t pob1(cst.expression(),linear_constraint_t::INEQUALITY);
+      interval_domain_t tmp(val);
+      if (!entailmentFn(tmp, pob1)) {
+	return false;
+      }
+      linear_constraint_t pob2(cst.expression() * number_t(-1), linear_constraint_t::INEQUALITY);   	 
+      return entailmentFn(val, pob2);		
+    } else {								
+      return entailmentFn(val, cst);						
+    }									
+  }
+  
   void assign(const variable_t &x, const linear_expression_t &e) override {
     crab::CrabStats::count(domain_name() + ".count.assign");
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
