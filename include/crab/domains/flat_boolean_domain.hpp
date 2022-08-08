@@ -1138,27 +1138,17 @@ public:
     } else if (cst.is_contradiction()) {
       m_product.first().set_bool(x, boolean_value::get_false());	
     } else {
-      Dom inv1(m_product.second());
-      inv1 += cst;
-      if (inv1.is_bottom()) {
+      if (m_product.second().entails(cst)) {
+	// -- definitely true
+	m_product.first().set_bool(x, boolean_value::get_true());
+      } else if (m_product.second().entails(cst.negate())) {
 	// -- definitely false
-	m_product.first().set_bool(x, boolean_value::get_false());
+	m_product.first().set_bool(x, boolean_value::get_false());	
       } else {
-	// The call to entail is equivalent to:
-	//   Dom inv2(m_product.second());
-	//   inv2 += cst.negate();
-	//   if (inv2.is_bottom()) { ...}
-	// 
-	// However, entail splits equalities into inequalities to
-	// avoid disequalities after negation.
-	if (m_product.second().entails(cst)) {
-	  // -- definitely true
-	  m_product.first().set_bool(x, boolean_value::get_true());
-	} else {
-	  // -- inconclusive
-	  m_product.first().set_bool(x, boolean_value::top());
-	}
+	// -- inconclusive
+	m_product.first().set_bool(x, boolean_value::top());
       }
+      
       m_bool_to_lincsts.set(x, lincst_set_t(cst));
       // We assume all variables in cst are unchanged unless the
       // opposite is proven
