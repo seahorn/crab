@@ -22,24 +22,33 @@ namespace domains {
 template <class Domain> class equivalence_class {
 private:
   std::size_t m_rank;
-  Domain m_val;
+  std::shared_ptr<Domain> m_val;
 
+  // Copy-on-write: call always this function before get_absval() if
+  // m_val might be modified.
+  void detach_absval() { m_val.reset(new Domain(*m_val));}
+  
 public:
-  explicit equivalence_class(Domain &&val) : m_rank(0), m_val(std::move(val)) {}
+
+  explicit equivalence_class(std::shared_ptr<Domain> val)
+    : m_rank(0), m_val(val) {}
 
   std::size_t &get_rank() { return m_rank; }
 
   std::size_t get_rank() const { return m_rank; }
 
-  Domain &get_absval() { return m_val; }
-
-  const Domain &get_absval() const { return m_val; }
-
-  //std::shared_ptr<Domain> get_absval() { return m_val; }
-  //void set_absval(std::shared_ptr<Domain> val) { m_val = val;}
-  //void detach_absval() { m_val.reset(new Domain(*m_val));}
+  std::shared_ptr<Domain> detach_and_get_absval() {
+    if (m_val.use_count() > 1) {
+      detach_absval();
+    }
+    return m_val;
+  }
   
+  std::shared_ptr<const Domain> get_absval() const {
+    return m_val;
+  }
 
+  void set_absval(std::shared_ptr<Domain> val) { m_val = val;}
 }; // end class equivalence_class
 
 /*
@@ -149,7 +158,7 @@ private:
   // Pre-condition: if dom != none then forall v \in elems:: contains(v)
   boost::optional<element_t>
   merge_elems(const element_set_t &elems,
-             boost::optional<domain_t> dom = boost::none) {
+	      std::shared_ptr<domain_t> absval = nullptr) {
     crab::CrabStats::count("union_find.count.merge_elements");
     crab::ScopedCrabStats __st__("union_find.merge_elements");
     
@@ -159,8 +168,8 @@ private:
       return boost::none;
     }
     element_t v = *it;
-    if (dom && !contains(v)) {
-      make(v, *dom);
+    if (absval && !contains(v)) {
+      make(v, absval);
       if (is_bottom()) {
 	return boost::none;
       }
@@ -173,8 +182,8 @@ private:
 
     boost::optional<element_t> repr;
     for (; it != et; ++it) {
-      if (dom && !contains(*it)) {
-        make(*it, *dom);
+      if (absval && !contains(*it)) {
+        make(*it, absval);
 	if (is_bottom()) {
 	  return boost::none;
 	}	
@@ -201,7 +210,7 @@ private:
     for (auto it = m_classes.begin(), et = m_classes.end(); it != et;) {
       element_t rep = it->first;
       const equivalence_class_t &ec = it->second;
-      o << rep << " -> " << ec.get_absval();
+      o << rep << " -> " << *(ec.get_absval());
       ++it;
       if (it != et) {
         o << ", ";
@@ -264,13 +273,6 @@ private:
 	  // this shouldn't happen
 	  CRAB_ERROR("unexpected situation in join_or_widening 1");
 	}
-	#if 0
-	// This is redundant
-        domain_t &left_dom = left.get_equiv_class(kv.first).get_absval();
-        const domain_t &right_dom =
-            right.get_equiv_class(*right_repr).get_absval();
-        left_dom = (is_join ? (left_dom | right_dom): (left_dom || right_dom));
-	#endif 
       }
       left_equiv_classes.clear();
       
@@ -284,10 +286,15 @@ private:
 	   // this shouldn't happen
 	  CRAB_ERROR("unexpected situation in join_or_widening 2");
 	}
-        domain_t &left_dom = left.get_equiv_class(*left_repr).get_absval();
-        const domain_t &right_dom =
-            right.get_equiv_class(kv.first).get_absval();
-	left_dom = (is_join ? (left_dom | right_dom): (left_dom || right_dom));	
+	auto &left_ec = left.get_equiv_class(*left_repr);
+	std::shared_ptr<domain_t> left_absval = left_ec.detach_and_get_absval();
+	std::shared_ptr<const domain_t> right_absval =
+	  right.get_equiv_class(kv.first).get_absval();
+	if (is_join) {
+	  *left_absval |= *right_absval;
+	} else {
+	  *left_absval = *left_absval || *right_absval;
+	}
       }
       CRAB_LOG("union-find", crab::outs() << "Res=" << left << "\n";);
       return left;
@@ -316,43 +323,41 @@ private:
       // Merge equivalence classes from the right to the left while
       // applying meet/narrowing
       //
-      // The merging on the right is needed so that right_dom is updated.
+      // The merging on the right is needed so that right_absval is updated.
       for (auto &kv : left_equiv_classes) {
-        domain_t &left_dom = left.get_equiv_class(kv.first).get_absval();
+	std::shared_ptr<domain_t> left_absval =
+	  left.get_equiv_class(kv.first).detach_and_get_absval();
         // add elements on the right if they do not exist
         boost::optional<element_t> right_repr =
-	  right.merge_elems(kv.second, left_dom);
+	  right.merge_elems(kv.second, left_absval);
         if (!right_repr) {
 	  // this shouldn't happen
 	  CRAB_ERROR("unexpected situation in meet_or_narrowing 1");
 	}
-        #if 0
-	// This is redundant
-        const domain_t &right_dom =
-            right.get_equiv_class(*right_repr).get_absval();
-        left_dom = (is_meet ? left_dom & right_dom: left_dom && right_dom);
-        if (left_dom.is_bottom()) {
-          left.set_to_bottom();
-          return left;
-        }
-	#endif 
       }
       left_equiv_classes.clear();
       
       // Merge equivalence classes from the right to the left while
       // applying meet/narrowing
       for (auto &kv : right_equiv_classes) {
-        const domain_t &right_dom =
-            right.get_equiv_class(kv.first).get_absval();
+	std::shared_ptr<domain_t> right_absval =
+            right.get_equiv_class(kv.first).detach_and_get_absval();
         boost::optional<element_t> left_repr =
-	  left.merge_elems(kv.second, right_dom);
+	  left.merge_elems(kv.second, right_absval);
         if (!left_repr) {
 	   // this shouldn't happen
 	  CRAB_ERROR("unexpected situation in meet_or_narrowing 2");
 	}
-        domain_t &left_dom = left.get_equiv_class(*left_repr).get_absval();
-	left_dom = (is_meet ? left_dom & right_dom: left_dom && right_dom);
-        if (left_dom.is_bottom()) {
+	auto &left_ec = left.get_equiv_class(*left_repr);
+	std::shared_ptr<domain_t> left_absval = left_ec.detach_and_get_absval();
+	if (is_meet) {
+	  // TODO: operator &= might not be defined if domain_t is not
+	  // derived from abstract_domain
+	  (*left_absval) = (*left_absval) & (*right_absval);	  	  
+	} else {
+	  (*left_absval) = (*left_absval) && (*right_absval);	  
+	}
+        if (left_absval->is_bottom()) {
           left.set_to_bottom();
           return left;
         }
@@ -360,14 +365,16 @@ private:
       return left;
     }
   }
- 
+
   struct get_absval_from_ec:
-    public std::unary_function<typename classes_map_t::value_type, Domain> {    
-    const Domain& operator()(const typename classes_map_t::value_type &kv) const {
+    public std::unary_function<typename classes_map_t::value_type, Domain> {
+
+    std::shared_ptr<const Domain> operator()(const typename classes_map_t::value_type &kv) const {
       return kv.second.get_absval();
     }
-    Domain& operator()(typename classes_map_t::value_type &kv) const {
-      return kv.second.get_absval();
+    
+    std::shared_ptr<Domain> operator()(typename classes_map_t::value_type &kv) const {
+      return kv.second.detach_and_get_absval();
     }     
   };  
 public:
@@ -396,9 +403,9 @@ public:
   bool is_empty() const {
     return m_parents.empty();
   }
-    
+
   // Pre-condition: !contains(v)
-  void make(const element_t &v, Domain val) {
+  void make(const element_t &v, std::shared_ptr<Domain> val) {
     crab::CrabStats::count("union_find.count.make");
     crab::ScopedCrabStats __st__("union_find.make");
 
@@ -415,14 +422,14 @@ public:
     }
 
     MergeSemantics op;
-    if (op.is_bottom_absorbing() && val.is_bottom()) {
+    if (op.is_bottom_absorbing() && val->is_bottom()) {
       set_to_bottom();
     } else {
       m_parents.insert({v, v});
-      m_classes.insert({v, equivalence_class_t(std::move(val))});
+      m_classes.insert({v, equivalence_class_t(val)});
     }
   }
-
+  
   // Pre-condition: contains(v)
   // NOTE: it is not "const" because it does path-compression
   element_t &find(const element_t &v) {
@@ -477,11 +484,11 @@ public:
     if (rep_x != rep_y) {
       equivalence_class_t &ec_x = m_classes.at(rep_x);
       equivalence_class_t &ec_y = m_classes.at(rep_y);
-      domain_t &dom_x = ec_x.get_absval();
-      domain_t &dom_y = ec_y.get_absval();
       if (ec_x.get_rank() > ec_y.get_rank()) {
-        merge_op.apply(dom_x, dom_y);
-	if (merge_op.is_bottom_absorbing() && dom_x.is_bottom()) {
+	std::shared_ptr<domain_t> dom_x = ec_x.detach_and_get_absval();
+	std::shared_ptr<const domain_t> dom_y = ec_y.get_absval();
+        merge_op.apply(*dom_x, *dom_y);
+	if (merge_op.is_bottom_absorbing() && dom_x->is_bottom()) {
 	  set_to_bottom();
 	  return boost::none;
 	}								   
@@ -489,8 +496,10 @@ public:
         m_classes.erase(rep_y);
         return rep_x;
       } else {
-        merge_op.apply(dom_y, dom_x);
-	if (merge_op.is_bottom_absorbing() && dom_y.is_bottom()) {
+	std::shared_ptr<const domain_t> dom_x = ec_x.get_absval();
+	std::shared_ptr<domain_t> dom_y = ec_y.detach_and_get_absval();
+        merge_op.apply(*dom_y, *dom_x);
+	if (merge_op.is_bottom_absorbing() && dom_y->is_bottom()) {
 	  set_to_bottom();
 	  return boost::none;
 	} 
@@ -651,30 +660,32 @@ public:
     m_val = lattice_val::bottom;
   }
 
-  void set(const element_t &x, domain_t dom) {
+  void set(const element_t &x, domain_t absval) {
     if (is_bottom()) { 
       return;
     }
 
     MergeSemantics op;
-    if (op.is_bottom_absorbing() && dom.is_bottom()) {
+    if (op.is_bottom_absorbing() && absval.is_bottom()) {
       set_to_bottom();
       return;
     }
 
+    std::shared_ptr<domain_t> absval_ptr = std::make_shared<domain_t>(absval);
+    
     if (!contains(x)) {
       // Create a singleton equivalence class
-      make(x, dom);
+      make(x, absval_ptr);
     } else {
       // Modify the abstract state of the whole equivalence class
       element_t rep_x = find(x);
       equivalence_class_t &ec_x = m_classes.at(rep_x);
-      ec_x.get_absval() = dom;
+      ec_x.set_absval(absval_ptr);
     }
   }
 
   // Return null if !contains(x)
-  domain_t *get(const element_t &x) {
+  std::shared_ptr<domain_t> get(const element_t &x) {
     if (is_bottom()) {
       CRAB_ERROR("called union_find_domain::operator[] on bottom");
     }
@@ -687,11 +698,11 @@ public:
 
     element_t rep_x = find(x);
     equivalence_class_t &ec_x = m_classes.at(rep_x);
-    return &(ec_x.get_absval());
+    return ec_x.detach_and_get_absval();
   }
 
   // Return null if !contains(x)
-  const domain_t *get(const element_t &x) const {
+  std::shared_ptr<const domain_t> get(const element_t &x) const {
     if (is_bottom()) {
       CRAB_ERROR("called union_find_domain::operator[] on bottom");
     }
@@ -704,7 +715,7 @@ public:
 
     element_t rep_x = find(x);
     const equivalence_class_t &ec_x = m_classes.at(rep_x);
-    return &(ec_x.get_absval());
+    return ec_x.get_absval();
   }  
 
   // Return true if *this is a refined partitioning of o
@@ -737,11 +748,11 @@ public:
 			     left_elems.begin(), left_elems.end())) {	    
             return false;
           }
-          const domain_t &left_dom =
+	  std::shared_ptr<const domain_t> left_absval =
               left.get_equiv_class(left_repr).get_absval();
-          const domain_t &right_dom =
+	  std::shared_ptr<const domain_t> right_absval =
               right.get_equiv_class(right_repr).get_absval();
-          if (!(left_dom <= right_dom)) {
+          if (!(*left_absval <= *right_absval)) {
             return false;
           }
         }
@@ -799,7 +810,7 @@ public:
           }
         }
 	equivalence_class_t &ec = m_classes.at(rep_v);
-	ForgetElementInDomain{}(ec.get_absval(), v);
+	ForgetElementInDomain{}(*(ec.detach_and_get_absval()), v);
       } else {
         // v is the representative of the equivalence class
         boost::optional<element_t> new_rep;
@@ -816,7 +827,7 @@ public:
         m_classes.erase(v);
 	if (new_rep) {
 	  equivalence_class_t &ec = m_classes.at(*new_rep);
-	  ForgetElementInDomain{}(ec.get_absval(), v);
+	  ForgetElementInDomain{}(*(ec.detach_and_get_absval()), v);
 	} else {
 	  // do nothing: v is the only element in its equivalence
 	  // class
@@ -889,10 +900,10 @@ public:
 	  m_parents.insert({y, (*parent_x == x ? y: *parent_x)});
 	  auto it = m_classes.find(x);
 	  if (it != m_classes.end()) {
-	    equivalence_class_t equiv_class = it->second;
-	    RenameElementInDomain{}(equiv_class.get_absval(), x, y); 
+	    equivalence_class_t ec = it->second;
+	    RenameElementInDomain{}(*(ec.detach_and_get_absval()), x, y); 
 	    m_classes.erase(it);
-	    m_classes.insert({y, std::move(equiv_class)});
+	    m_classes.insert({y, std::move(ec)});
 	  }
 	}
       }
@@ -947,7 +958,7 @@ public:
 	auto &p = *it;
         element_t &rep = tmp.find(p.first);
 	print_elems_vector(p.second);
-	o << "=>" << tmp.m_classes.at(rep).get_absval();
+	o << "=>" << *(tmp.m_classes.at(rep).get_absval());
         ++it;
         if (it != et) {
           o << ",";
