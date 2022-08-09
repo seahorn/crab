@@ -192,25 +192,41 @@ private:
     
     variable_t ghost_x = get_ghost_var(x, coefficient);
     number_t tracked_coefficient(coefficient);
-    if ((z % tracked_coefficient) == 0) {
-      if (op == OP_ADDITION || op == OP_SUBTRACTION) {
+    if (op == OP_ADDITION || op == OP_SUBTRACTION) {
+      if ((z % tracked_coefficient) == 0) {
         // rewrite("x := y + COEF") = "x/COEF := y/COEF + 1"
         // rewrite("x := y - COEF") = "x/COEF := y/COEF - 1"
         variable_t ghost_y = get_ghost_var(y, coefficient);
         m_base_absval.apply(op, ghost_x, ghost_y, z / tracked_coefficient);
-      } else if (op == OP_MULTIPLICATION) {
+        return;
+      }
+    } else if (op == OP_MULTIPLICATION) {
+      if (z == number_t(1)) {
+        // rewrite("x := y") = "x/COEF := y/COEF"
+        variable_t ghost_y = get_ghost_var(y, coefficient);
+        m_base_absval.assign(ghost_x, ghost_y);
+        return;
+      } else if ((z % tracked_coefficient) == 0) {
         // rewrite("x := COEF * y") = "x/COEF := y"
         m_base_absval.assign(ghost_x, y);
-      } else if (op == OP_SDIV) {
+        return;
+      }
+    } else if (op == OP_SDIV) {
+      if (z == number_t(1)) {
+        // rewrite("x := y") = "x/COEF := y/COEF"
+        variable_t ghost_y = get_ghost_var(y, coefficient);
+        m_base_absval.assign(ghost_x, ghost_y);
+        return;
+      } else if ((z % tracked_coefficient) == 0) {
         // rewrite("x := y/COEF") =  "x := y/COEF"
         variable_t ghost_y = get_ghost_var(y, coefficient);
         m_base_absval.assign(x, ghost_y);
-      } else {
-        m_base_absval -= ghost_x;
+        return;
       }
-    } else {
-      m_base_absval -= ghost_x;
     }
+
+    // default case: forget x
+    m_base_absval -= ghost_x;
   }
 
   void rewrite_apply_var(arith_operation_t op, const variable_t &x,
