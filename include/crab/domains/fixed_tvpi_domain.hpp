@@ -426,42 +426,29 @@ public:
   }
 
   bool entails(const linear_constraint_t &cst) const override {
-    bool is_bot = false;
+    if (is_bottom()) {
+      return true;
+    } else if (cst.is_tautology()) {						
+      return true;							
+    } else if (cst.is_contradiction()) {					
+      return false;							
+    }
+    
+    if (m_base_absval.entails(cst)) {
+      return true;      
+    }
+    
     // The entailment holds if one cst's version is entailed.
     for (auto coefficient: crab_domain_params_man::get().coefficients()) {	    
       if (can_rewrite_linear_constraint(cst, coefficient)) {
-	// By default, Crab reduces entails(absval, x == COEFF*N) to:
-	// 
-	//    is_unsat(absval, x < COEFF*N) and
-	//    is_unsat(absval, x > COEFF*N)
-	//
-	// where is_unsat(cst)= absval.operator+=(cst) and check absval.is_bottom()
-	//
-	// Since strict inequalities are not well supported by abstract
-	// domains over integers, Crab replaces x < y with x <= y-1.
-	//
-	// Constraints such as x <= COEF*y - 1 can be a problem for
-	// fixed_tvpi_domain because -1 is not divisible by COEFF.
-	// Instead, we rewrite first and then negate.
-	// 
 	linear_constraint_t gcst = rewrite_linear_constraint(cst, coefficient);
-	linear_constraint_t neg_gcst = gcst.negate();
-	base_domain_t copy(m_base_absval);
-	copy += neg_gcst;
-	is_bot = copy.is_bottom();
-	if (is_bot) {
-	  break;
+	if (m_base_absval.entails(gcst)) {
+	  return true;
 	}
       }
     }
-    
-    if (!is_bot) {
-      linear_constraint_t neg_cst = cst.negate();
-      base_domain_t copy(m_base_absval);
-      copy += neg_cst;
-      is_bot = copy.is_bottom();
-    }
-    return is_bot;
+
+    return false;
   }
   
   void assign(const variable_t &x, const linear_expression_t &e) override {
