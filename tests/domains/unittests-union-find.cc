@@ -40,17 +40,17 @@ int main(int argc, char **argv) {
     idom2.assign(x,10);
     idom2.assign(y, 20);
     
-    dom1.make(v1, idom1);
-    dom1.make(v2, idom1);
-    dom1.make(v3, idom1);
-    dom1.make(v4, idom1);
+    dom1.set(v1, idom1);
+    dom1.set(v2, idom1);
+    dom1.set(v3, idom1);
+    dom1.set(v4, idom1);
     crab::outs() << "Dom1=" << dom1 << "\n";    
     dom1.join(v1,v2);
     crab::outs() << "After join " << v1 << " and " << v2 << "=" << dom1 << "\n";
-    dom2.make(v1, idom2);
-    dom2.make(v2, idom2);
-    dom2.make(v3, idom2);
-    dom2.make(v4, idom2);
+    dom2.set(v1, idom2);
+    dom2.set(v2, idom2);
+    dom2.set(v3, idom2);
+    dom2.set(v4, idom2);
     crab::outs() << "Dom2=" << dom2 << "\n";    
     dom2.join(v3,v4);
     crab::outs() << "After join " << v3 << " and " << v4 << "=" << dom2 << "\n";    
@@ -85,18 +85,18 @@ int main(int argc, char **argv) {
     using union_find_domain_t =
       crab::domains::union_find_domain<z_var, boolean_value>;    
     union_find_domain_t dom1, dom2, dom3;
-    dom1.make(v1, boolean_value::get_false());
-    dom1.make(v2, boolean_value::get_false());
-    dom1.make(v3, boolean_value::get_false());
-    dom1.make(v4, boolean_value::get_false());
+    dom1.set(v1, boolean_value::get_false());
+    dom1.set(v2, boolean_value::get_false());
+    dom1.set(v3, boolean_value::get_false());
+    dom1.set(v4, boolean_value::get_false());
     dom1.join(v1,v2);
     dom1.join(v3,v4);
     crab::outs() << "Dom1=" << dom1 << "\n";
     /////
-    dom2.make(v1, boolean_value::get_false());
-    dom2.make(v2, boolean_value::get_false());
-    dom2.make(v3, boolean_value::get_false());
-    dom2.make(v4, boolean_value::get_false());
+    dom2.set(v1, boolean_value::get_false());
+    dom2.set(v2, boolean_value::get_false());
+    dom2.set(v3, boolean_value::get_false());
+    dom2.set(v4, boolean_value::get_false());
     dom2.join(v2,v3);
     crab::outs() << "Dom2=" << dom2 << "\n";        
     dom3 = dom1 & dom2;
@@ -107,18 +107,18 @@ int main(int argc, char **argv) {
     using union_find_domain_t =
       crab::domains::union_find_domain<z_var, boolean_value>;        
     union_find_domain_t dom1, dom2, dom3;
-    dom1.make(v1, boolean_value::get_false());
-    dom1.make(v2, boolean_value::get_false());
-    dom1.make(v3, boolean_value::get_false());
-    dom1.make(v4, boolean_value::get_false());
+    dom1.set(v1, boolean_value::get_false());
+    dom1.set(v2, boolean_value::get_false());
+    dom1.set(v3, boolean_value::get_false());
+    dom1.set(v4, boolean_value::get_false());
     dom1.join(v1,v2);
     dom1.join(v3,v4);
     crab::outs() << "Dom1=" << dom1 << "\n";
     /////
-    dom2.make(v5, boolean_value::get_false());
-    dom2.make(v6, boolean_value::get_false());
-    dom2.make(v7, boolean_value::get_false());
-    dom2.make(v8, boolean_value::get_false());
+    dom2.set(v5, boolean_value::get_false());
+    dom2.set(v6, boolean_value::get_false());
+    dom2.set(v7, boolean_value::get_false());
+    dom2.set(v8, boolean_value::get_false());
     dom2.join(v6,v7);
     crab::outs() << "Dom2=" << dom2 << "\n";        
     dom3 = dom1 & dom2;
@@ -130,18 +130,18 @@ int main(int argc, char **argv) {
     using union_find_domain_t =
       crab::domains::union_find_domain<z_var, boolean_value>;        
     union_find_domain_t dom1, dom2, dom3;
-    dom1.make(v1, boolean_value::get_false());
-    dom1.make(v2, boolean_value::get_false());
-    dom1.make(v3, boolean_value::get_false());
-    dom1.make(v4, boolean_value::get_false());
+    dom1.set(v1, boolean_value::get_false());
+    dom1.set(v2, boolean_value::get_false());
+    dom1.set(v3, boolean_value::get_false());
+    dom1.set(v4, boolean_value::get_false());
     dom1.join(v1,v2);
     dom1.join(v3,v4);
     crab::outs() << "Dom1=" << dom1 << "\n";
     /////
-    dom2.make(v3, boolean_value::get_false());
-    dom2.make(v4, boolean_value::get_false());
-    dom2.make(v7, boolean_value::get_false());
-    dom2.make(v8, boolean_value::get_false());
+    dom2.set(v3, boolean_value::get_false());
+    dom2.set(v4, boolean_value::get_false());
+    dom2.set(v7, boolean_value::get_false());
+    dom2.set(v8, boolean_value::get_false());
     dom2.join(v7,v8);
     crab::outs() << "Dom2=" << dom2 << "\n";        
     dom3 = dom1 & dom2;
