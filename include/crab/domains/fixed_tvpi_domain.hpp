@@ -225,8 +225,14 @@ private:
 
     if (boost::optional<number_t> n = is_var_constant(z)) {
       rewrite_apply(op, x, y, *n, coefficient);
-    } else if (boost::optional<number_t> n = is_var_constant(y)) {
-      rewrite_apply(op, x, z, *n, coefficient);
+    } else if (op == OP_ADDITION || OP_MULTIPLICATION) {
+      // ignore case if op is a subtraction or division
+      if (boost::optional<number_t> n = is_var_constant(y)) {
+        rewrite_apply(op, x, z, *n, coefficient);
+      } else {
+        variable_t ghost_x = get_ghost_var(x, coefficient);
+        m_base_absval -= ghost_x;
+      }
     } else {
       variable_t ghost_x = get_ghost_var(x, coefficient);
       m_base_absval -= ghost_x;
