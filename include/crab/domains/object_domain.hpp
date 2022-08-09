@@ -683,15 +683,6 @@ private:
                  l_num_refs == small_range::oneOrMore()) {
         join_or_widen_singleton_with_non_singleton(id, right, left, l_base_dom,
                                                    out_odi_map, is_join);
-      } else if (l_num_refs.is_one() && r_num_refs.is_one() &&
-                 mru_refer_same_object(id, left.m_addrs_dom,
-                                       right.m_addrs_dom)) {
-        out_obj_info_env.set(
-            id, object_domain_impl::object_info(small_range::one(),
-                                                // Cache is not used
-                                                boolean_value::get_false(),
-                                                // Cache is not dirty
-                                                boolean_value::get_false()));
       }
       // Step 3. Handle the case for joining singletons.
       // In this case, the singleton object appears on each state may refer to
