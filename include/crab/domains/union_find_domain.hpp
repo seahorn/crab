@@ -31,9 +31,14 @@ public:
 
   std::size_t get_rank() const { return m_rank; }
 
-  Domain &get_domain() { return m_val; }
+  Domain &get_absval() { return m_val; }
 
-  const Domain &get_domain() const { return m_val; }
+  const Domain &get_absval() const { return m_val; }
+
+  //std::shared_ptr<Domain> get_absval() { return m_val; }
+  //void set_absval(std::shared_ptr<Domain> val) { m_val = val;}
+  //void detach_absval() { m_val.reset(new Domain(*m_val));}
+  
 
 }; // end class equivalence_class
 
@@ -195,8 +200,8 @@ private:
     o << "}, {";
     for (auto it = m_classes.begin(), et = m_classes.end(); it != et;) {
       element_t rep = it->first;
-      equivalence_class_t ec = it->second;
-      o << rep << " -> " << ec.get_domain();
+      const equivalence_class_t &ec = it->second;
+      o << rep << " -> " << ec.get_absval();
       ++it;
       if (it != et) {
         o << ", ";
@@ -261,9 +266,9 @@ private:
 	}
 	#if 0
 	// This is redundant
-        domain_t &left_dom = left.get_equiv_class(kv.first).get_domain();
+        domain_t &left_dom = left.get_equiv_class(kv.first).get_absval();
         const domain_t &right_dom =
-            right.get_equiv_class(*right_repr).get_domain();
+            right.get_equiv_class(*right_repr).get_absval();
         left_dom = (is_join ? (left_dom | right_dom): (left_dom || right_dom));
 	#endif 
       }
@@ -279,9 +284,9 @@ private:
 	   // this shouldn't happen
 	  CRAB_ERROR("unexpected situation in join_or_widening 2");
 	}
-        domain_t &left_dom = left.get_equiv_class(*left_repr).get_domain();
+        domain_t &left_dom = left.get_equiv_class(*left_repr).get_absval();
         const domain_t &right_dom =
-            right.get_equiv_class(kv.first).get_domain();
+            right.get_equiv_class(kv.first).get_absval();
 	left_dom = (is_join ? (left_dom | right_dom): (left_dom || right_dom));	
       }
       CRAB_LOG("union-find", crab::outs() << "Res=" << left << "\n";);
@@ -313,7 +318,7 @@ private:
       //
       // The merging on the right is needed so that right_dom is updated.
       for (auto &kv : left_equiv_classes) {
-        domain_t &left_dom = left.get_equiv_class(kv.first).get_domain();
+        domain_t &left_dom = left.get_equiv_class(kv.first).get_absval();
         // add elements on the right if they do not exist
         boost::optional<element_t> right_repr =
 	  right.merge_elems(kv.second, left_dom);
@@ -324,7 +329,7 @@ private:
         #if 0
 	// This is redundant
         const domain_t &right_dom =
-            right.get_equiv_class(*right_repr).get_domain();
+            right.get_equiv_class(*right_repr).get_absval();
         left_dom = (is_meet ? left_dom & right_dom: left_dom && right_dom);
         if (left_dom.is_bottom()) {
           left.set_to_bottom();
@@ -338,14 +343,14 @@ private:
       // applying meet/narrowing
       for (auto &kv : right_equiv_classes) {
         const domain_t &right_dom =
-            right.get_equiv_class(kv.first).get_domain();
+            right.get_equiv_class(kv.first).get_absval();
         boost::optional<element_t> left_repr =
 	  left.merge_elems(kv.second, right_dom);
         if (!left_repr) {
 	   // this shouldn't happen
 	  CRAB_ERROR("unexpected situation in meet_or_narrowing 2");
 	}
-        domain_t &left_dom = left.get_equiv_class(*left_repr).get_domain();
+        domain_t &left_dom = left.get_equiv_class(*left_repr).get_absval();
 	left_dom = (is_meet ? left_dom & right_dom: left_dom && right_dom);
         if (left_dom.is_bottom()) {
           left.set_to_bottom();
@@ -356,21 +361,21 @@ private:
     }
   }
  
-  struct get_domain_from_ec:
+  struct get_absval_from_ec:
     public std::unary_function<typename classes_map_t::value_type, Domain> {    
     const Domain& operator()(const typename classes_map_t::value_type &kv) const {
-      return kv.second.get_domain();
+      return kv.second.get_absval();
     }
     Domain& operator()(typename classes_map_t::value_type &kv) const {
-      return kv.second.get_domain();
+      return kv.second.get_absval();
     }     
   };  
 public:
  
   using const_domain_iterator =
-    boost::transform_iterator<get_domain_from_ec, typename classes_map_t::const_iterator>;
+    boost::transform_iterator<get_absval_from_ec, typename classes_map_t::const_iterator>;
   using domain_iterator =
-    boost::transform_iterator<get_domain_from_ec, typename classes_map_t::iterator>;
+    boost::transform_iterator<get_absval_from_ec, typename classes_map_t::iterator>;
   using const_domain_range = boost::iterator_range<const_domain_iterator>;
   using domain_range = boost::iterator_range<domain_iterator>;
 
@@ -472,8 +477,8 @@ public:
     if (rep_x != rep_y) {
       equivalence_class_t &ec_x = m_classes.at(rep_x);
       equivalence_class_t &ec_y = m_classes.at(rep_y);
-      domain_t &dom_x = ec_x.get_domain();
-      domain_t &dom_y = ec_y.get_domain();
+      domain_t &dom_x = ec_x.get_absval();
+      domain_t &dom_y = ec_y.get_absval();
       if (ec_x.get_rank() > ec_y.get_rank()) {
         merge_op.apply(dom_x, dom_y);
 	if (merge_op.is_bottom_absorbing() && dom_x.is_bottom()) {
@@ -540,7 +545,7 @@ public:
       CRAB_ERROR("union-find domain: begin_domains() on top");
     }    
     return boost::make_transform_iterator(m_classes.begin(),
-					  get_domain_from_ec());
+					  get_absval_from_ec());
   }
   
   const_domain_iterator end_domains() const {
@@ -551,7 +556,7 @@ public:
       CRAB_ERROR("union-find domain: end_domains() on top");
     }     
     return boost::make_transform_iterator(m_classes.end(),
-					  get_domain_from_ec());
+					  get_absval_from_ec());
   }
 
   domain_iterator begin_domains() {
@@ -562,7 +567,7 @@ public:
       CRAB_ERROR("union-find domain: begin_domains() on top");
     }     
     return boost::make_transform_iterator(m_classes.begin(),
-					  get_domain_from_ec());
+					  get_absval_from_ec());
   }
 
   domain_iterator end_domains() {
@@ -573,7 +578,7 @@ public:
       CRAB_ERROR("union-find domain: end_domains() on top");
     }     
     return boost::make_transform_iterator(m_classes.end(),
-					  get_domain_from_ec());
+					  get_absval_from_ec());
   }    
 
   domain_range domains() {
@@ -664,7 +669,7 @@ public:
       // Modify the abstract state of the whole equivalence class
       element_t rep_x = find(x);
       equivalence_class_t &ec_x = m_classes.at(rep_x);
-      ec_x.get_domain() = dom;
+      ec_x.get_absval() = dom;
     }
   }
 
@@ -682,7 +687,7 @@ public:
 
     element_t rep_x = find(x);
     equivalence_class_t &ec_x = m_classes.at(rep_x);
-    return &(ec_x.get_domain());
+    return &(ec_x.get_absval());
   }
 
   // Return null if !contains(x)
@@ -699,7 +704,7 @@ public:
 
     element_t rep_x = find(x);
     const equivalence_class_t &ec_x = m_classes.at(rep_x);
-    return &(ec_x.get_domain());
+    return &(ec_x.get_absval());
   }  
 
   // Return true if *this is a refined partitioning of o
@@ -733,9 +738,9 @@ public:
             return false;
           }
           const domain_t &left_dom =
-              left.get_equiv_class(left_repr).get_domain();
+              left.get_equiv_class(left_repr).get_absval();
           const domain_t &right_dom =
-              right.get_equiv_class(right_repr).get_domain();
+              right.get_equiv_class(right_repr).get_absval();
           if (!(left_dom <= right_dom)) {
             return false;
           }
@@ -794,7 +799,7 @@ public:
           }
         }
 	equivalence_class_t &ec = m_classes.at(rep_v);
-	ForgetElementInDomain{}(ec.get_domain(), v);
+	ForgetElementInDomain{}(ec.get_absval(), v);
       } else {
         // v is the representative of the equivalence class
         boost::optional<element_t> new_rep;
@@ -811,7 +816,7 @@ public:
         m_classes.erase(v);
 	if (new_rep) {
 	  equivalence_class_t &ec = m_classes.at(*new_rep);
-	  ForgetElementInDomain{}(ec.get_domain(), v);
+	  ForgetElementInDomain{}(ec.get_absval(), v);
 	} else {
 	  // do nothing: v is the only element in its equivalence
 	  // class
@@ -885,7 +890,7 @@ public:
 	  auto it = m_classes.find(x);
 	  if (it != m_classes.end()) {
 	    equivalence_class_t equiv_class = it->second;
-	    RenameElementInDomain{}(equiv_class.get_domain(), x, y); 
+	    RenameElementInDomain{}(equiv_class.get_absval(), x, y); 
 	    m_classes.erase(it);
 	    m_classes.insert({y, std::move(equiv_class)});
 	  }
@@ -942,7 +947,7 @@ public:
 	auto &p = *it;
         element_t &rep = tmp.find(p.first);
 	print_elems_vector(p.second);
-	o << "=>" << tmp.m_classes.at(rep).get_domain();
+	o << "=>" << tmp.m_classes.at(rep).get_absval();
         ++it;
         if (it != et) {
           o << ",";
