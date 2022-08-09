@@ -107,6 +107,55 @@ z_cfg_t *prog2(variable_factory_t &vfac) {
   return cfg;
 }
 
+z_cfg_t *prog3(variable_factory_t &vfac) {
+
+  /*
+    int n = nd_int();
+    int x = nd_int();
+    int z = nd_int();
+    int z' = nd_int();
+    int m = nd_int();
+    int y = 2 * n;
+
+    x = 1 * y;
+    z = x;
+    m = y / 1;
+    z' = m;
+
+    __CRAB_assert(z == 2 * n);   // EXPECTED OK
+    __CRAB_assert(z' == 2 * n);   // EXPECTED OK
+   */
+  // Defining program variables
+  z_var x(vfac["x"], crab::INT_TYPE, 32);
+  z_var y(vfac["y"], crab::INT_TYPE, 32);
+  z_var z(vfac["z"], crab::INT_TYPE, 32);
+  z_var z_p(vfac["z'"], crab::INT_TYPE, 32);
+  z_var m(vfac["m"], crab::INT_TYPE, 32);
+  z_var n(vfac["n"], crab::INT_TYPE, 32);
+  // entry and exit block
+  auto cfg = new z_cfg_t("entry", "exit");
+  // adding blocks
+  z_basic_block_t &entry = cfg->insert("entry");
+  z_basic_block_t &header_1 = cfg->insert("header_1");
+  z_basic_block_t &exit = cfg->insert("exit");
+  // adding control flow
+  entry >> header_1;
+  header_1 >> exit;
+  // adding statements
+  entry.havoc(n);
+  entry.havoc(x);
+  entry.havoc(z);
+  entry.havoc(m);
+  entry.mul(y, n, 2);
+  header_1.mul(x, y, 1);
+  header_1.assign(z, x);
+  header_1.div(m, y, 1);
+  header_1.assign(z_p, m);
+  exit.assertion(z == 2 * n);
+  exit.assertion(z_p == 2 * n);
+  return cfg;
+}
+
 int main (int argc, char** argv) {
   bool stats_enabled = false;  
   if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
@@ -130,6 +179,17 @@ int main (int argc, char** argv) {
     crab_domain_params_man::get().coefficients().push_back(3); 
     variable_factory_t vfac;
     z_cfg_t *cfg = prog2(vfac);
+    z_fixed_tvpi_domain_t init;
+    run(cfg, cfg->entry(), init, false, 2, 1, 20, stats_enabled);
+    run_and_check(cfg, cfg->entry(), init, false, 2, 1, 20, stats_enabled);
+    crab_domain_params_man::get().coefficients().clear();
+    delete cfg;
+  }
+
+  {
+    crab_domain_params_man::get().coefficients().push_back(2);
+    variable_factory_t vfac;
+    z_cfg_t *cfg = prog3(vfac);
     z_fixed_tvpi_domain_t init;
     run(cfg, cfg->entry(), init, false, 2, 1, 20, stats_enabled);
     run_and_check(cfg, cfg->entry(), init, false, 2, 1, 20, stats_enabled);
