@@ -303,7 +303,11 @@ public:
 
   reduced_domain_product2() : m_product() {}
 
-  reduced_domain_product2(const reduced_domain_product2_t &other) : m_product(other.m_product) {}
+  reduced_domain_product2(Domain1 &&val1, Domain2 &&val2)
+    : m_product(std::move(val1), std::move(val2)) {}
+  
+  reduced_domain_product2(const reduced_domain_product2_t &other)
+    : m_product(other.m_product) {}
 
   reduced_domain_product2(const reduced_domain_product2_t &&other)
       : m_product(std::move(other.m_product)) {}
@@ -1093,8 +1097,12 @@ public:
     std::swap(*this, abs);
   }
 
-  reduced_numerical_domain_product2() : m_product() {}
+  reduced_numerical_domain_product2()
+    : m_product() {}
 
+  reduced_numerical_domain_product2(Domain1 &&val1, Domain2 &&val2)
+    : m_product(std::move(val1), std::move(val2)) {}
+    
   reduced_numerical_domain_product2(
       const reduced_numerical_domain_product2_t &other)
     : m_product(other.m_product) {}
