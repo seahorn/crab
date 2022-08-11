@@ -15,6 +15,7 @@
 #include <crab/domains/flat_boolean_domain.hpp>
 #include <crab/domains/generic_abstract_domain.hpp>
 #include <crab/domains/intervals.hpp>
+#include <crab/domains/lookahead_widening_domain.hpp>
 #include <crab/domains/powerset_domain.hpp>
 #include <crab/domains/region_domain.hpp>
 #include <crab/domains/sign_domain.hpp>
@@ -76,6 +77,8 @@ using z_fixed_tvpi_domain_t = fixed_tvpi_domain<z_sdbm_domain_t>;
 using z_bool_num_domain_t = flat_boolean_numerical_domain<z_dbm_domain_t>;
 using z_bool_interval_domain_t =
     flat_boolean_numerical_domain<z_interval_domain_t>;
+// lookahead widening
+using z_soct_domain_lw_t = lookahead_widening_domain<z_soct_domain_t>;    
 /*===================================================================*/
 // Arrays domains
 /*===================================================================*/
