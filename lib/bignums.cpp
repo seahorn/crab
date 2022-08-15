@@ -392,8 +392,8 @@ q_number q_number::from_mpz_t(mpz_t mp) {
 
 q_number q_number::from_mpq_srcptr(mpq_srcptr mp) {
   q_number q;
-  mpz_init_set(mpq_numref(q._n), mpq_numref(mp));
-  mpz_init_set(mpq_denref(q._n), mpq_denref(mp));
+  mpz_set(mpq_numref(q._n), mpq_numref(mp));
+  mpz_set(mpq_denref(q._n), mpq_denref(mp));
   return q;
 }
 
