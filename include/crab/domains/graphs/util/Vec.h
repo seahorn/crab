@@ -89,8 +89,7 @@ public:
     o.cap = 0;
   }
   vec<T> &operator=(vec<T> &&o) {
-    if (data)
-      free(data);
+    clear(true);
     data = o.data;
     o.data = nullptr;
     sz = o.sz;
