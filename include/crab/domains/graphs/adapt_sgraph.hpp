@@ -33,7 +33,7 @@ inline void *realloc_fail(void *ptr, size_t size) {
 // WARNING: Assumes Val is a basic type (so doesn't need a ctor/dtor call)
 template <class Val> class AdaptSMap {
   enum { sparse_threshold = 8 };
-
+  
 public:
   using key_t = uint16_t;
   using val_t = Val;
@@ -48,6 +48,14 @@ public:
     val_t val;
   };
 
+private:
+  size_t sz;
+  size_t dense_maxsz;
+  size_t sparse_ub;
+  elt_t *dense;
+  key_t *sparse;
+
+public:
   AdaptSMap(void)
       : sz(0), dense_maxsz(sparse_threshold), sparse_ub(10),
         dense((elt_t *)adapt_sgraph_impl::malloc_fail(sizeof(elt_t) *
@@ -61,7 +69,7 @@ public:
     o.sparse = nullptr;
     o.sz = 0;
     o.dense_maxsz = 0;
-    o.sparse_maxsz = 0;
+    o.sparse_ub = 0;
   }
 
   AdaptSMap(const AdaptSMap &o)
@@ -107,22 +115,24 @@ public:
   }
 
   AdaptSMap &operator=(AdaptSMap &&o) {
-    if (dense)
-      free(dense);
-    if (sparse)
-      free(sparse);
-
-    dense = o.dense;
-    o.dense = nullptr;
-    sparse = o.sparse;
-    o.sparse = nullptr;
-
-    sz = o.sz;
-    o.sz = 0;
-    dense_maxsz = o.dense_maxsz;
-    o.dense_maxsz = 0;
-    sparse_ub = o.sparse_ub;
-    o.sparse_ub = 0;
+    if (this != &o) {
+      if (dense)
+	free(dense);
+      if (sparse)
+	free(sparse);
+      
+      dense = o.dense;
+      o.dense = nullptr;
+      sparse = o.sparse;
+      o.sparse = nullptr;
+      
+      sz = o.sz;
+      o.sz = 0;
+      dense_maxsz = o.dense_maxsz;
+      o.dense_maxsz = 0;
+      sparse_ub = o.sparse_ub;
+      o.sparse_ub = 0;
+    }
     return *this;
   }
 
@@ -312,58 +322,30 @@ public:
   }
 
   void clear(void) { sz = 0; }
-
-  size_t sz;
-  size_t dense_maxsz;
-  size_t sparse_ub;
-  elt_t *dense;
-  key_t *sparse;
 };
 
 template <class Weight> class AdaptGraph {
   using smap_t = AdaptSMap<size_t>;
-
+  
 public:
   using vert_id = unsigned int;
   using Wt = Weight;
 
+private:
+  vec<smap_t> _preds;
+  vec<smap_t> _succs;
+  vec<Wt> _ws;
+  int edge_count;
+  std::vector<bool> is_free;
+  vec<vert_id> free_id;
+  vec<size_t> free_widx;
+  
+public:  
   AdaptGraph(void) : edge_count(0) {}
-
-  AdaptGraph(AdaptGraph<Wt> &&o)
-      : _preds(std::move(o._preds)), _succs(std::move(o._succs)),
-        _ws(std::move(o._ws)), edge_count(o.edge_count),
-        is_free(std::move(o.is_free)), free_id(std::move(o.free_id)),
-        free_widx(std::move(o.free_widx)) {}
-
-  AdaptGraph(const AdaptGraph<Wt> &o)
-      : _preds(o._preds), _succs(o._succs), _ws(o._ws),
-        edge_count(o.edge_count), is_free(o.is_free), free_id(o.free_id),
-        free_widx(o.free_widx) {}
-
-  AdaptGraph<Wt> &operator=(const AdaptGraph<Wt> &o) {
-    if (this != &o) {
-      _preds = o._preds;
-      _succs = o._succs;
-      _ws = o._ws;
-      edge_count = o.edge_count;
-      is_free = o.is_free;
-      free_id = o.free_id;
-      free_widx = o.free_widx;
-    }
-    return *this;
-  }
-
-  AdaptGraph<Wt> &operator=(AdaptGraph<Wt> &&o) {
-    _preds = std::move(o._preds);
-    _succs = std::move(o._succs);
-    _ws = std::move(o._ws);
-    edge_count = o.edge_count;
-    is_free = std::move(o.is_free);
-    free_id = std::move(o.free_id);
-    free_widx = std::move(o.free_widx);
-
-    return *this;
-  }
+  AdaptGraph(AdaptGraph<Wt> &&o) = default;
+  AdaptGraph(const AdaptGraph<Wt> &o) = default;
+  AdaptGraph<Wt> &operator=(const AdaptGraph<Wt> &o) = default;
+  AdaptGraph<Wt> &operator=(AdaptGraph<Wt> &&o) = default;
 
   template <class G> static AdaptGraph<Wt> copy(const G &o) {
     AdaptGraph<Wt> g;
@@ -664,18 +646,6 @@ public:
     g.write(o);
     return o;
   }
-
-  // Ick. This'll have another indirection on every operation.
-  // We'll see what the performance costs are like.
-  vec<smap_t> _preds;
-  vec<smap_t> _succs;
-  vec<Wt> _ws;
-
-  int edge_count;
-
-  std::vector<bool> is_free;
-  vec<vert_id> free_id;
-  vec<size_t> free_widx;
 };
 } // namespace crab
 #pragma GCC diagnostic pop
