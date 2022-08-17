@@ -1194,9 +1194,19 @@ protected:
       set_to_top();
     }
 
-    CRAB_LOG("zones-split-size", auto p = size();
-             crab::outs() << "#nodes = " << p.first << " #edges=" << p.second
-                          << "\n";);
+    CRAB_LOG("zones-split-size",
+	     auto p = size();
+	     print_dbm_size(p.first, p.second));
+  }
+
+  void print_dbm_size(unsigned nodes, unsigned edges) {
+    if (nodes > 1) {
+      crab::outs() << "#nodes=" << nodes << " "
+		   << "#edges=" << edges << " "
+		   << "#max-edges=" << nodes*nodes << " "
+		   << "(" << ((float)edges / (float)(nodes*nodes))*100 << ")"
+		   << "\n";
+    }
   }
 
 public:
@@ -1213,6 +1223,10 @@ public:
     crab::CrabStats::count(domain_name() + ".count.copy");
     crab::ScopedCrabStats __st__(domain_name() + ".copy");
 
+    CRAB_LOG("zones-split-size",
+	     auto p = size();
+	     print_dbm_size(p.first, p.second));
+    
     if (o._is_bottom)
       set_to_bottom();
 
@@ -1245,6 +1259,11 @@ public:
         assert(g.size() > 0);
       }
     }
+
+    CRAB_LOG("zones-split-size",
+	     auto p = size();
+	     print_dbm_size(p.first, p.second));
+    
     return *this;
   }
 
