@@ -45,16 +45,7 @@ template <class T> class vec {
   void grow(int min_cap);
 
   // Don't allow copying (error prone):
-  vec<T> &operator=(vec<T> &other) {
-    assert(0);
-    return *this;
-  }
-  /*         vec        (vec<T>& other) { assert(0); } */
-
-  static inline int imin(int x, int y) {
-    int mask = (x - y) >> (sizeof(int) * 8 - 1);
-    return (x & mask) + (y & (~mask));
-  }
+  vec<T> &operator=(vec<T> &other) = delete;
 
   static inline int imax(int x, int y) {
     int mask = (y - x) >> (sizeof(int) * 8 - 1);
@@ -88,22 +79,27 @@ public:
     o.sz = 0;
     o.cap = 0;
   }
+  
   vec<T> &operator=(vec<T> &&o) {
-    clear(true);
-    data = o.data;
-    o.data = nullptr;
-    sz = o.sz;
-    o.sz = 0;
-    cap = o.cap;
-    o.cap = 0;
+    if (this != &o) {
+      clear(true);
+      data = o.data;
+      o.data = nullptr;
+      sz = o.sz;
+      o.sz = 0;
+      cap = o.cap;
+      o.cap = 0;
+    }
     return *this;
   }
   vec<T> &operator=(const vec<T> &o) {
-    clear();
-    capacity(o.cap);
-    for (int ii = 0; ii < o.sz; ii++)
-      new (data + ii) T(o[ii]);
-    sz = o.sz;
+    if (this != &o) {
+      clear();
+      capacity(o.cap);
+      for (int ii = 0; ii < o.sz; ii++)
+	new (data + ii) T(o[ii]);
+      sz = o.sz;
+    }
     return *this;
   }
 
@@ -118,6 +114,7 @@ public:
     cap = 0;
     return ret;
   }
+  
   operator T *(void) { return data; } // (unsafe but convenient)
   operator const T *(void)const { return data; }
 
@@ -139,7 +136,6 @@ public:
   void capacity(int size) { grow(size); }
 
     // Stack interface:
-#if 1
   void push(void) {
     if (sz == cap) {
       cap = imax(2, (cap * 3 + 1) >> 1);
@@ -148,6 +144,7 @@ public:
     new (&data[sz]) T();
     sz++;
   }
+  
   // void   push  (const T& elem)     { if (sz == cap) { cap = imax(2,
   // (cap*3+1)>>1); data = (T*)realloc(data, cap * sizeof(T)); } new (&data[sz])
   // T(elem); sz++; }
@@ -158,24 +155,6 @@ public:
     }
     data[sz++] = elem;
   }
-  void push_(const T &elem) {
-    assert(sz < cap);
-    data[sz++] = elem;
-  }
-#else
-  void push(void) {
-    if (sz == cap)
-      grow(sz + 1);
-    new (&data[sz]) T();
-    sz++;
-  }
-  void push(const T &elem) {
-    if (sz == cap)
-      grow(sz + 1);
-    new (&data[sz]) T(elem);
-    sz++;
-  }
-#endif
 
   const T &last(void) const { return data[sz - 1]; }
   T &last(void) { return data[sz - 1]; }
@@ -189,23 +168,6 @@ public:
   T &back(void) { return last(); }
   void pop_back(void) { return pop(); }
   void reserve(int size) { capacity(size); }
-  
-  // Duplicatation (preferred instead):
-  void copyTo(vec<T> &copy) const {
-    copy.clear();
-    copy.growTo(sz);
-    for (int i = 0; i < sz; i++)
-      new (&copy[i]) T(data[i]);
-  }
-  void moveTo(vec<T> &dest) {
-    dest.clear(true);
-    dest.data = data;
-    dest.sz = sz;
-    dest.cap = cap;
-    data = NULL;
-    sz = 0;
-    cap = 0;
-  }
 };
 
 template <class T> void vec<T>::grow(int min_cap) {
