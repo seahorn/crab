@@ -837,6 +837,7 @@ public:
     }
   }
 
+  
   // Remove from all equivalence classes any variable that is not in
   // elements. 
   void project(const std::vector<element_t> &elements) {
