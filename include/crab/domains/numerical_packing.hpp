@@ -108,6 +108,41 @@ private:
     return std::move(base);
   }
 
+  // x := f(y)
+  std::shared_ptr<base_domain_t> apply_packs(const variable_t &x, const variable_t &y) {
+    std::shared_ptr<base_domain_t> absval = nullptr;
+    if (x != y) {
+      m_packs.forget(x);
+      variable_vector_t vars{x, y};
+      absval = merge(vars);
+    } else {
+      variable_vector_t vars{x};
+      absval = merge(vars);
+    }
+    assert(absval);
+    return absval;
+  }
+
+  // x := f(y,z)
+  std::shared_ptr<base_domain_t> apply_packs(const variable_t &x, const variable_t &y, const variable_t &z) {
+    std::shared_ptr<base_domain_t> absval = nullptr;
+    if (x != y && x != z) {
+      m_packs.forget(x);
+      variable_vector_t vars{x, y, z};
+      absval = merge(vars);
+    } else {
+      if (x == y) {
+	variable_vector_t vars{x, z};
+	absval = merge(vars);
+      } else {
+	variable_vector_t vars{x, y};
+	absval = merge(vars);
+      } 
+    }
+    assert(absval);
+    return absval;
+  }
+  
   numerical_packing_domain(union_find_domain_t &&packs)
       : m_packs(std::move(packs)) {}
 
@@ -313,22 +348,30 @@ public:
 
   void assign(const variable_t &x, const linear_expression_t &e) override {
     if (!is_bottom()) {
-      m_packs.forget(x);
-      variable_vector_t vars(e.variables().begin(), e.variables().end());
-      vars.push_back(x);
-      if (std::shared_ptr<base_domain_t> absval = merge(vars)) {
+      std::shared_ptr<base_domain_t> absval = nullptr;
+      variable_vector_t vars(e.variables().begin(), e.variables().end());      
+      if (std::find(vars.begin(), vars.end(), x) == vars.end()) {
+	m_packs.forget(x);
+	vars.push_back(x);
+      }       
+      absval = merge(vars);
+      if (absval) {
         absval->assign(x, e);
+      } else {
+	CRAB_ERROR(domain_name(), "::assign produced bottom!");
       }
+      
     }
   }
 
+  
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t z) override {
     if (!is_bottom()) {
-      m_packs.forget(x);
-      variable_vector_t vars{x, y};
-      if (std::shared_ptr<base_domain_t> absval = merge(vars)) {
-        absval->apply(op, x, y, z);
+      if (std::shared_ptr<base_domain_t> absval = apply_packs(x, y)) {
+	absval->apply(op, x, y, z);
+      } else {
+	CRAB_ERROR(domain_name(), "::apply 1 produced bottom!");
       }
     }
   }
@@ -336,32 +379,23 @@ public:
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
     if (!is_bottom()) {
-      m_packs.forget(x);
-      variable_vector_t vars{x, y, z};
-      if (std::shared_ptr<base_domain_t> absval = merge(vars)) {
-        absval->apply(op, x, y, z);
+      if (std::shared_ptr<base_domain_t> absval = apply_packs(x, y, z)) {
+	absval->apply(op, x, y, z);
+      } else {
+	CRAB_ERROR(domain_name(), "::apply 2 produced bottom!");
       }
     }
   }
 
   void apply(int_conv_operation_t op, const variable_t &dst,
              const variable_t &src) override {
-    if (!is_bottom()) {
+    if (!is_bottom() && (src != dst)) {
       m_packs.forget(dst);
       variable_vector_t vars{src, dst};
       if (std::shared_ptr<base_domain_t> absval = merge(vars)) {
         absval->apply(op, dst, src);
-      }
-    }
-  }
-
-  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
-             const variable_t &z) override {
-    if (!is_bottom()) {
-      m_packs.forget(x);
-      variable_vector_t vars{x, y, z};
-      if (std::shared_ptr<base_domain_t> absval = merge(vars)) {
-        absval->apply(op, x, y, z);
+      } else {
+	CRAB_ERROR(domain_name(), "::apply 3 produced bottom!");
       }
     }
   }
@@ -369,14 +403,25 @@ public:
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
     if (!is_bottom()) {
-      m_packs.forget(x);
-      variable_vector_t vars{x, y};
-      if (std::shared_ptr<base_domain_t> absval = merge(vars)) {
+      if (std::shared_ptr<base_domain_t> absval = apply_packs(x, y)) {
         absval->apply(op, x, y, k);
+      } else {
+	CRAB_ERROR(domain_name(), "::apply 4 produced bottom!");
       }
     }
   }
 
+  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
+             const variable_t &z) override {
+    if (!is_bottom()) {
+      if (std::shared_ptr<base_domain_t> absval = apply_packs(x, y, z)) {
+        absval->apply(op, x, y, z);
+      } else {
+	CRAB_ERROR(domain_name(), "::apply 5 produced bottom!");
+      }
+    }
+  }
+  
   void select(const variable_t &lhs, const linear_constraint_t &cond,
               const linear_expression_t &e1,
               const linear_expression_t &e2) override {
@@ -469,7 +514,7 @@ public:
   }
 
   void expand(const variable_t &var, const variable_t &new_var) override {
-    CRAB_WARN(domain_name(), "::expand not implemented");
+    CRAB_WARN(domain_name(), "::expand not implemented");    
   }
 
   void normalize() override {}
