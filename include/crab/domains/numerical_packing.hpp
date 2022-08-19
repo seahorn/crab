@@ -514,7 +514,13 @@ public:
   }
 
   void expand(const variable_t &var, const variable_t &new_var) override {
-    CRAB_WARN(domain_name(), "::expand not implemented");    
+    if (!is_bottom()) {
+      m_packs.forget(new_var);
+      variable_vector_t vars{var, new_var};
+      if (std::shared_ptr<base_domain_t> absval = merge(vars)) {
+        absval->expand(var, new_var);
+      }
+    }
   }
 
   void normalize() override {}
