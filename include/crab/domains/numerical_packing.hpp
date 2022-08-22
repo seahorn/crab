@@ -538,7 +538,35 @@ public:
 
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    if (!is_bottom()) {
+
+    auto error_if_not_variable = [&name](const variable_or_constant_t &vc) {
+      if (!vc.is_variable()) {
+        CRAB_ERROR("Intrinsics ", name, " expected a variable input");
+      }
+    };
+
+    if (is_bottom()) {
+      return;
+    }
+
+    if (name == "var_packing_merge") {
+      // dom.intrinsic("var_packing_merge", {v1, v2, ...}, {})
+
+      if (!outputs.empty()) {
+        CRAB_ERROR("Intrinsics ", name,
+                   " unexpected number of output parameters");
+      }
+      variable_vector_t vars;
+      vars.reserve(inputs.size());
+      for (auto &v_or_c : inputs) {
+        error_if_not_variable(v_or_c);
+        variable_t v = v_or_c.get_variable();
+        vars.push_back(v);
+      }
+      if (!vars.empty()) {
+        merge(vars);
+      }
+    } else {
       for (std::shared_ptr<base_domain_t> absval : m_packs.domains()) {
         absval->intrinsic(name, inputs, outputs);
       }
