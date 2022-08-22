@@ -20,27 +20,68 @@
 
 # Description #
 
-Crab (CoRnucopia of ABstractions) is a C++ library for building
-program static analyses based on
-[Abstract Interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).
+Crab is a C++ library for building program static analyses based on
+Abstract Interpretation
+(https://en.wikipedia.org/wiki/Abstract_interpretation). Crab provides
+a rich set of abstract domains, Kleene-based fixpoint solvers, as well
+as different analyses such as dataflow, inter-procedural and
+backward. The design of Crab is quite modular so that it is easy to
+plugin new abstract domains and solvers or build new analyses.
 
-Crab does not analyze directly a mainstream programming language such
-as C/C++ or Java but instead it analyzes its own CFG-based
-intermediate representation (CrabIR). This allows building analyses
-for different programming languages assuming a translator to CrabIR is
-available. In spite of its simple design, CrabIR is rich enough to
-represent languages such as [LLVM](https://llvm.org/) bitcode.
+Crab abstract domains can reason about memory contents, C-like arrays
+and numerical properties. Crab uses efficient implementations of
+popular numerical domains such as [Zones and
+Octagons](https://dl.acm.org/doi/abs/10.1145/3457885) and novel
+domains to reason, for instance, about [symbolic
+terms](https://dl.acm.org/doi/10.1007/978-3-662-49122-5_4) (aka
+uninterpreted functions). Crab also implements popular non-relational
+domains such as interval or congruences using [efficient environment
+maps](https://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.37.5452),
+and allows the combination of arbitrary domains via standard reduced
+product constructions. Crab also provides non-convex domains such as
+specialized disjunctive intervals called
+[Boxes](https://link.springer.com/chapter/10.1007/978-3-642-15769-1_18)
+based on linear decision diagrams and a more general value
+partitioning strategy that lifts an arbitrary domain to an
+over-approximation of its disjunction completion. In addition to these
+domains, all developed by Crab authors, the Crab library integrates
+popular abstract domain libraries such as
+[Apron](https://github.com/antoinemine/apron) and
+[Elina](http://elina.ethz.ch/).
 
-Crab has been designed to have two kind of users:
+Crab provides the state-of-the-art [interleaved fixpoint
+solver](https://link.springer.com/chapter/10.1007/978-3-642-38856-9_4)
+that uses Bourdoncle's [Weak Topological
+Ordering](https://link.springer.com/chapter/10.1007/BFb0039704) to
+select the set of widening points. To mitigate precision losses during
+widening, Crab implements some popular techniques such as widening
+with thresholds and [lookahead
+widening](https://link.springer.com/chapter/10.1007/11817963_41).
 
-1.  Program analysis/verification tools that want to use invariants
-    computed by abstract interpretation.
+Crab provides two different implementations of inter-procedural
+analyses: a top-down with memoization inter-procedural analysis with
+support for recursive calls, and a hybrid of bottom-up + top down
+analysis. Last but not least, Crab also implements a more experimental
+backward analysis that can be used to compute necessary preconditions
+and/or reduce the number of false alarms.
 
-2.  Researchers on abstract interpretation who would like to
-    experiment with new abstract domains or fixpoint algorithms.
+Crab does not analyze directly a mainstream programming language but
+instead it analyzes its own CFG-based intermediate representation
+called
+[CrabIR](https://link.springer.com/chapter/10.1007/978-3-030-95561-8_8).
+CrabIR is three-address code and it is strongly typed. In CrabIR,
+control flow is defined via non-deterministic goto instructions. Apart
+from standard boolean and arithmetic operations, CrabIR provides
+special assume and assert statements. The former can be used to refine
+the control flow and the latter provides a simple mechanishm to check
+for user-defined properties. In spite of its simple design, CrabIR is
+rich enough to represent languages such as
+[LLVM](https://github.com/seahorn/clam).
 
-The available documentation can be found in
-our [wiki](https://github.com/seahorn/crab/wiki/Home).
+**Crab is actively under development. If you find a bug please open an
+Github issue. Pull requests with new features are welcome.  The
+available documentation can be found in our
+[wiki](https://github.com/seahorn/crab/wiki/Home)**.
 
 # Docker # 
 
@@ -53,7 +94,7 @@ docker pull seahorn/crab:bionic
 docker run -v `pwd`:/host -it seahorn/crab:bionic
 ```
 
-# Requirements for compiling from sources #
+# Requirements #
 
 Crab is written in C++ and relies on the Boost library. The main
 requirements are:
@@ -69,12 +110,12 @@ In linux, you can install requirements typing the commands:
     sudo apt-get install libgmp-dev
     sudo apt-get install libmpfr-dev	
 
-# Building from sources and installation #
+# Compilation and Installation #
 
 To install Crab, type:
 
 	mkdir build && cd build
-    cmake -DCMAKE_INSTALL_PREFIX=_INSTALL_DIR_ ../
+    cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR ../
     cmake --build . --target install 
 
 The `tests` directory contains many examples of how to build programs
@@ -82,7 +123,7 @@ written in CrabIR and compute invariants using different analyses and
 abstract domains. To compile these tests type:
 
 	mkdir build && cd build
-    cmake -DCMAKE_INSTALL_PREFIX=_INSTALL_DIR_ -DCRAB_ENABLE_TESTS=ON ../	
+    cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR -DCRAB_ENABLE_TESTS=ON ../	
     cmake --build . --target install 	
 
 and then, for instance, to run `test1`:
@@ -109,24 +150,24 @@ cannot enable `-DCRAB_USE_APRON=ON` and `-DCRAB_USE_ELINA=ON` at the same time.
 For instance, to install Crab with Boxes and Apron, type:
 
 	mkdir build && cd build
-    cmake -DCMAKE_INSTALL_PREFIX=_INSTALL_DIR_ -DCRAB_USE_LDD=ON -DCRAB_USE_APRON=ON ../
+    cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR -DCRAB_USE_LDD=ON -DCRAB_USE_APRON=ON ../
 	cmake --build . --target ldd && cmake ..
 	cmake --build . --target apron && cmake ..	
     cmake --build . --target install 	
 
 
-# Using Crab in other C++ projects #
+# Using Crab library in other C++ projects #
 
 To include Crab in your C++ application you need to:
 
 - Include the C++ header files located at the
-`_INSTALL_DIR_/crab/include`, and
+`$INSTALL_DIR/crab/include`, and
  
 - Link your application with the Crab libraries installed in
-`_INSTALL_DIR_/crab/lib`.
+`$INSTALL_DIR/crab/lib`.
 
 If you compile with Boxes/Apron/Elina you need also to include
-`_INSTALL_DIR_/EXT/include` and link with `_INSTALL_DIR_/EXT/lib`
+`$INSTALL_DIR/EXT/include` and link with `$INSTALL_DIR/EXT/lib`
 where `EXT=apron|elina|ldd`.
 
 ## CMake ## 
