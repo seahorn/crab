@@ -89,8 +89,11 @@ public:
       dom.assign(m_offset, number_t(0));
       if (size.is_constant()) {
         dom.assign(m_size, size.get_constant());
+        dom.intrinsic("var_packing_merge", {m_offset, m_size}, {});
       } else {
         dom.assign(m_size, size.get_variable());
+        dom.intrinsic("var_packing_merge",
+                      {m_offset, m_size, size.get_variable()}, {});
       }
     }
 
