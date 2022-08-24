@@ -1,28 +1,7 @@
 # Crab: A C++ Library for Building Program Static Analyses #
 
-<img src="http://i.imgur.com/IDKhq5h.png" alt="crab logo" width=280 height=200 />
-
-<table>
-  <tr>
-    <th>Windows</th><th>Ubuntu</th><th>OS X</th><th>Coverage</th>
-  </tr>
-    <td>TBD</td>
-    <td> <a href="https://github.com/seahorn/crab/actions"><img src="https://github.com/seahorn/crab/workflows/CI/badge.svg?branch=master" title="Ubuntu 18.04 LTS 64bit, g++-6.0"/></a> </td>
-    <td>TBD</td>
-    <td><a href="https://codecov.io/gh/seahorn/crab"><img src="https://codecov.io/gh/seahorn/crab/branch/master/graph/badge.svg" /></a></td>
-  </tr>
-</table>
-
-
-**If you use this library please cite this [paper](https://dblp.uni-trier.de/rec/conf/vstte/GurfinkelN21.html).**
-
----
-
-# Description #
-
 Crab is a C++ library for building program static analyses based on
-Abstract Interpretation
-(https://en.wikipedia.org/wiki/Abstract_interpretation). Crab provides
+[Abstract Interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation). Crab provides
 a rich set of abstract domains, Kleene-based fixpoint solvers, as well
 as different analyses such as dataflow, inter-procedural and
 backward. The design of Crab is quite modular so that it is easy to
@@ -79,9 +58,22 @@ rich enough to represent languages such as
 [LLVM](https://github.com/seahorn/clam).
 
 **Crab is actively under development. If you find a bug please open an
-Github issue. Pull requests with new features are welcome.  The
+Github issue. Pull requests with new features are very welcome.  The
 available documentation can be found in our
-[wiki](https://github.com/seahorn/crab/wiki/Home)**.
+[wiki](https://github.com/seahorn/crab/wiki/Home). If you use this library please cite this [paper](https://dblp.uni-trier.de/rec/conf/vstte/GurfinkelN21.html).**
+
+<br/>
+
+<table>
+  <tr>
+    <th>Windows</th><th>Ubuntu</th><th>OS X</th><th>Coverage</th>
+  </tr>
+    <td>TBD</td>
+    <td> <a href="https://github.com/seahorn/crab/actions"><img src="https://github.com/seahorn/crab/workflows/CI/badge.svg?branch=master" title="Ubuntu 18.04 LTS 64bit, g++-6.0"/></a> </td>
+    <td>TBD</td>
+    <td><a href="https://codecov.io/gh/seahorn/crab"><img src="https://codecov.io/gh/seahorn/crab/branch/master/graph/badge.svg" /></a></td>
+  </tr>
+</table>
 
 # Docker # 
 
@@ -114,23 +106,19 @@ In linux, you can install requirements typing the commands:
 
 To install Crab, type:
 
-	mkdir build && cd build
-    cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR ../
-    cmake --build . --target install 
+     1. mkdir build && cd build
+     2. cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR ../
+     3. cmake --build . --target install 
 
 The `tests` directory contains many examples of how to build programs
 written in CrabIR and compute invariants using different analyses and
-abstract domains. To compile these tests type:
-
-	mkdir build && cd build
-    cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR -DCRAB_ENABLE_TESTS=ON ../	
-    cmake --build . --target install 	
+abstract domains. To compile these tests add option `-DCRAB_ENABLE_TESTS=ON` to line 2.
 
 and then, for instance, to run `test1`:
 
     build/test-bin/test1
     
-## Building from sources with third-party abstract domain libraries ##
+## Include third-party abstract domain libraries ##
 
 The [Boxes](https://github.com/seahorn/ldd)/[Apron](https://github.com/antoinemine/apron)/[Elina](https://github.com/eth-sri/ELINA) domains require third-party libraries. To avoid
 the burden to users who are not interested in those domains, the
@@ -149,12 +137,17 @@ cannot enable `-DCRAB_USE_APRON=ON` and `-DCRAB_USE_ELINA=ON` at the same time.
 	
 For instance, to install Crab with Boxes and Apron, type:
 
-	mkdir build && cd build
-    cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR -DCRAB_USE_LDD=ON -DCRAB_USE_APRON=ON ../
-	cmake --build . --target ldd && cmake ..
-	cmake --build . --target apron && cmake ..	
-    cmake --build . --target install 	
+     1. mkdir build && cd build
+     2. cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR -DCRAB_USE_LDD=ON -DCRAB_USE_APRON=ON ../
+     3. cmake --build . --target ldd && cmake ..
+     4. cmake --build . --target apron && cmake ..	
+     5. cmake --build . --target install 	
 
+Lines 3 and 4 will download, compile and install the Boxes and Apron domains, respectively. Replace `apron` at line 4 with `elina` if you want to use Elina library instead. If you have already compiled and installed these libraries in your machine then skip commands at line 3 and 4 and add the following options at line 2.
+
+- For Apron: `-DAPRON_ROOT=$APRON_INSTALL_DIR`
+- For Elina: `-DELINA_ROOT=$ELINA_INSTALL_DIR`
+- For Boxes: `-DCUDD_ROOT=$CUDD_INSTALL_DIR -DLDD_ROOT=$LDD_INSTALL_DIR`
 
 # Using Crab library in other C++ projects #
 
