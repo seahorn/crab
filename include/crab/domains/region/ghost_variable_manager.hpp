@@ -213,6 +213,10 @@ public:
 	if (ghost_vars.has_offset_and_size()) {
 	  return ghost_vars.get_offset_and_size().get_offset();
 	}
+      } else if (kind == ghost_variable_kind::SIZE) {
+	if (ghost_vars.has_offset_and_size()) {
+	  return ghost_vars.get_offset_and_size().get_size();
+	}
       }
       return boost::none;
     };
@@ -762,6 +766,10 @@ public:
       } else if (kind == ghost_variable_kind::OFFSET) {
 	if (ghost_vars.has_offset_and_size()) {
 	  return ghost_vars.get_offset_and_size().get_offset();
+	}
+      } else if (kind == ghost_variable_kind::SIZE) {
+	if (ghost_vars.has_offset_and_size()) {
+	  return ghost_vars.get_offset_and_size().get_size();
 	}
       }
       return boost::none;

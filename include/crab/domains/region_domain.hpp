@@ -1733,52 +1733,80 @@ public:
     crab::CrabStats::count(domain_name() + ".count.ref_assume");
     crab::ScopedCrabStats __st__(domain_name() + ".ref_assume");
 
-    if (!is_bottom()) {
-      if (ref_cst.is_tautology()) {
-        return;
-      }
-      if (ref_cst.is_contradiction()) {
-        set_to_bottom();
-        return;
-      }
-
-      if (crab_domain_params_man::get().region_allocation_sites()) {
-        if (ref_cst.is_equality() && ref_cst.is_binary()) {
-          auto lhs_as = m_alloc_env.at(ref_cst.lhs());
-          auto rhs_as = m_alloc_env.at(ref_cst.rhs());
-          // **Important note about soundness**: if the program
-          // environment is not modeled precisely enough we can
-          // conclude *incorrectly* that p == q is definitely not
-          // true. At least here, we skip the cases where either p or
-          // q does not have at least one allocation site.
-          if (!lhs_as.is_bottom() && !rhs_as.is_bottom()) {
-            allocation_sites inter = lhs_as & rhs_as;
-            if (inter.is_bottom()) {
-              // if they do not have any common allocation site then
-              // they cannot be the same address.
-              set_to_bottom();
-              return;
-            }
-            // If ref_cst is a disequality we cannot make the state
-            // bottom by looking only at allocation sites. Even if
-            // both references point to the same allocation site they
-            // can still be different.
-          }
-        }
-      }
-
-	auto addr_lin_csts = convert_ref_cst_to_linear_cst(ref_cst, ghost_variable_kind::ADDRESS);
-	m_base_dom += addr_lin_csts;
-	m_is_bottom = m_base_dom.is_bottom();
-	
-	if (!m_is_bottom) {
-	  auto offset_lin_csts = convert_ref_cst_to_linear_cst(ref_cst, ghost_variable_kind::OFFSET);
-	  m_base_dom += offset_lin_csts;
-	  m_is_bottom = m_base_dom.is_bottom();
-	}
-    }
     CRAB_LOG("region",
              crab::outs() << "ref_assume(" << ref_cst << ")" << *this << "\n";);
+
+    if (is_bottom()) {
+      return;
+    }
+    
+    if (ref_cst.is_tautology()) {
+      return;
+    }
+    
+    if (ref_cst.is_contradiction()) {
+      set_to_bottom();
+      return;
+    }
+
+    
+    if (crab_domain_params_man::get().region_allocation_sites()) {
+      if (ref_cst.is_equality() && ref_cst.is_binary()) {
+	auto lhs_as = m_alloc_env.at(ref_cst.lhs());
+	auto rhs_as = m_alloc_env.at(ref_cst.rhs());
+	/** 
+	 * Important note about soundness: if the program
+	 * environment is not modeled precisely enough we can
+	 * conclude *incorrectly* that p == q is definitely not
+	 * true. At least here, we skip the cases where either p or
+	 * q does not have at least one allocation site.
+	 **/
+	if (!lhs_as.is_bottom() && !rhs_as.is_bottom()) {
+	  allocation_sites inter = lhs_as & rhs_as;
+	  if (inter.is_bottom()) {
+	    // if they do not have any common allocation site then
+	    // they cannot be the same address.
+	    set_to_bottom();
+	    return;
+	  }
+	  // If ref_cst is a disequality we cannot make the state
+	  // bottom by looking only at allocation sites. Even if
+	  // both references point to the same allocation site they
+	  // can still be different.
+	}
+      }
+    }
+
+    /** 
+     * Having any constraint on p and q implies that the same
+     * constraint applies on address(p) and address(q).
+     **/
+    auto addr_lin_csts =
+      convert_ref_cst_to_linear_cst(ref_cst, ghost_variable_kind::ADDRESS);
+    m_base_dom += addr_lin_csts;
+    m_is_bottom = m_base_dom.is_bottom();
+    
+    /** 
+     * Having p relop q (where relop is not equality) DOESN'T
+     * imply that relop holds on offset(p) and offset(q) EXCEPT if
+     * p and q are known to point to the same singleton memory
+     * object.
+     **/      
+    if (!m_is_bottom && ref_cst.is_equality()) {
+      auto offset_lin_csts =
+	convert_ref_cst_to_linear_cst(ref_cst, ghost_variable_kind::OFFSET);
+      m_base_dom += offset_lin_csts;
+      m_is_bottom = m_base_dom.is_bottom();
+    }
+    
+    if (!m_is_bottom && ref_cst.is_equality()) {
+      auto size_lin_csts =
+	convert_ref_cst_to_linear_cst(ref_cst, ghost_variable_kind::SIZE);
+      m_base_dom += size_lin_csts;
+      m_is_bottom = m_base_dom.is_bottom();
+    } 
+
+    CRAB_LOG("region", crab::outs() << "Result=" << *this << "\n";);
   }
 
   void ref_to_int(const variable_t &rgn, const variable_t &ref_var,
