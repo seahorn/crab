@@ -561,6 +561,13 @@ private:
         // join the summary, cache and flds part
         odi_domain_product_t o_prod = l_prod | r_prod;
         out_odi_map.set(id, o_prod);
+        // at the end, the cache is empty. Need to update object info.
+        out_obj_info_env.set(
+            id, object_domain_impl::object_info(l_num_refs | r_num_refs,
+                                                // Cache is not used
+                                                boolean_value::get_false(),
+                                                // Cache is not dirty
+                                                boolean_value::get_false()));
       }
       // Step 2. Handle the case for joining singleton with non-singleton
       // In this case, we need to commit the cache if the cache is used
@@ -570,10 +577,24 @@ private:
         // right state: non-singleton
         join_or_widen_singleton_with_non_singleton(
             id, *this, right, r_base_dom, out_odi_map, true /* is_join*/);
+        // at the end, the cache is empty. Need to update object info.
+        out_obj_info_env.set(
+            id, object_domain_impl::object_info(l_num_refs | r_num_refs,
+                                                // Cache is not used
+                                                boolean_value::get_false(),
+                                                // Cache is not dirty
+                                                boolean_value::get_false()));
       } else if (r_num_refs.is_one() &&
                  l_num_refs == small_range::oneOrMore()) {
         join_or_widen_singleton_with_non_singleton(
             id, right, *this, l_base_dom, out_odi_map, true /* is_join*/);
+        // at the end, the cache is empty. Need to update object info.
+        out_obj_info_env.set(
+            id, object_domain_impl::object_info(l_num_refs | r_num_refs,
+                                                // Cache is not used
+                                                boolean_value::get_false(),
+                                                // Cache is not dirty
+                                                boolean_value::get_false()));
       }
       // Step 3. Handle the case for joining singletons.
       // In this case, the singleton object appears on each state may refer to
@@ -591,6 +612,13 @@ private:
           join_or_widen_two_different_singleton(id, *this, l_base_dom,
                                                 r_base_dom, out_odi_map,
                                                 true /* is_join*/);
+          // at the end, the cache is empty. Need to update object info.
+          out_obj_info_env.set(
+              id, object_domain_impl::object_info(l_num_refs | r_num_refs,
+                                                  // Cache is not used
+                                                  boolean_value::get_false(),
+                                                  // Cache is not dirty
+                                                  boolean_value::get_false()));
         }
       }
     }
@@ -672,6 +700,12 @@ private:
         odi_domain_product_t o_prod =
             is_join ? l_prod | r_prod : l_prod || r_prod;
         out_odi_map.set(id, o_prod);
+        out_obj_info_env.set(
+            id, object_domain_impl::object_info(l_num_refs | r_num_refs,
+                                                // Cache is not used
+                                                boolean_value::get_false(),
+                                                // Cache is not dirty
+                                                boolean_value::get_false()));
       }
       // Step 2. Handle the case for joining singleton with non-singleton
       else if (l_num_refs.is_one() && r_num_refs == small_range::oneOrMore()) {
@@ -679,10 +713,22 @@ private:
         // right state: non-singleton
         join_or_widen_singleton_with_non_singleton(id, left, right, r_base_dom,
                                                    out_odi_map, is_join);
+        out_obj_info_env.set(
+            id, object_domain_impl::object_info(l_num_refs | r_num_refs,
+                                                // Cache is not used
+                                                boolean_value::get_false(),
+                                                // Cache is not dirty
+                                                boolean_value::get_false()));
       } else if (r_num_refs.is_one() &&
                  l_num_refs == small_range::oneOrMore()) {
         join_or_widen_singleton_with_non_singleton(id, right, left, l_base_dom,
                                                    out_odi_map, is_join);
+        out_obj_info_env.set(
+            id, object_domain_impl::object_info(l_num_refs | r_num_refs,
+                                                // Cache is not used
+                                                boolean_value::get_false(),
+                                                // Cache is not dirty
+                                                boolean_value::get_false()));
       }
       // Step 3. Handle the case for joining singletons.
       // In this case, the singleton object appears on each state may refer to
@@ -699,6 +745,12 @@ private:
         } else {
           join_or_widen_two_different_singleton(
               id, left, l_base_dom, r_base_dom, out_odi_map, is_join);
+          out_obj_info_env.set(
+              id, object_domain_impl::object_info(l_num_refs | r_num_refs,
+                                                  // Cache is not used
+                                                  boolean_value::get_false(),
+                                                  // Cache is not dirty
+                                                  boolean_value::get_false()));
         }
       }
     }
@@ -833,7 +885,7 @@ private:
       const small_range &r_num_refs = r_obj_info.refcount_val();
       const odi_domain_product_t *l_prod_ref = left.m_odi_map.find(id);
       const odi_domain_product_t *r_prod_ref = right.m_odi_map.find(id);
-      // Step 1. Join the odi map if the object is non-singleton in both states
+      // Step 1. Meet the odi map if the object is non-singleton in both states
       if (l_num_refs == small_range::oneOrMore() &&
           r_num_refs == small_range::oneOrMore()) {
         const boolean_value l_used = l_obj_info.cacheused_val();
@@ -857,22 +909,40 @@ private:
           commit_cache_if_dirty(r_base_dom, right.m_uf_regs_dom, r_prod,
                                 &r_obj_info, id);
         }
-        // join the summary, cache and flds part
+        // meet the summary, cache and flds part
         odi_domain_product_t o_prod =
             is_meet ? l_prod & r_prod : l_prod && r_prod;
         out_odi_map.set(id, o_prod);
+        out_obj_info_env.set(
+            id, object_domain_impl::object_info(l_num_refs & r_num_refs,
+                                                // Cache is not used
+                                                boolean_value::get_false(),
+                                                // Cache is not dirty
+                                                boolean_value::get_false()));
       }
       if (l_num_refs.is_one() && r_num_refs == small_range::oneOrMore()) {
         // left state: singleton
         // right state: non-singleton
         meet_or_narrow_non_singleton_with_singleton(id, l_base_dom, right,
                                                     r_base_dom, is_meet);
+        out_obj_info_env.set(
+            id, object_domain_impl::object_info(l_num_refs,
+                                                // Cache is not used
+                                                boolean_value::get_false(),
+                                                // Cache is not dirty
+                                                boolean_value::get_false()));
         out_odi_map -= id; // remove non singleton in odi map since meet in odi
                            // map will keep that
       } else if (r_num_refs.is_one() &&
                  l_num_refs == small_range::oneOrMore()) {
         meet_or_narrow_non_singleton_with_singleton(id, r_base_dom, left,
                                                     l_base_dom, is_meet);
+        out_obj_info_env.set(
+            id, object_domain_impl::object_info(r_num_refs,
+                                                // Cache is not used
+                                                boolean_value::get_false(),
+                                                // Cache is not dirty
+                                                boolean_value::get_false()));
         out_odi_map -= id; // remove non singleton in odi map since meet in odi
                            // map will keep that
       }
@@ -1252,7 +1322,6 @@ private:
 
     base_abstract_domain_t singleton_base(s_single.m_base_dom);
     singleton_base.project(flds_vec);
-    // singleton_base.project(flds_vec);
 
     odi_domain_product_t res_prod; // initial value is top
     const odi_domain_product_t *prod_ref = s_non_single.m_odi_map.find(id);
@@ -1500,23 +1569,17 @@ private:
       if (symb_opt == boost::none) {
         continue;
       }
-      auto it = map.find(*symb_opt);
-      if (it == map.end()) {
-        for (auto it_regs = uf_regs_dom.begin(); it_regs != uf_regs_dom.end();
-             ++it_regs) {
-          if (object_domain_impl::is_two_vars_have_same_term(
-                  v, t_ptr, it_regs->first, it_regs->second)) {
-            if (it != map.end()) {
-              std::get<1>(it->second).push_back(it_regs->first);
-            } else {
-              map.insert({*symb_opt, {{}, {it_regs->first}}});
-            }
+      for (auto it_regs = uf_regs_dom.begin(); it_regs != uf_regs_dom.end();
+           ++it_regs) {
+        if (object_domain_impl::is_two_vars_have_same_term(
+                v, t_ptr, it_regs->first, it_regs->second)) {
+          auto it = map.find(*symb_opt);
+          if (it != map.end()) {
+            std::get<1>(it->second).push_back(it_regs->first);
+          } else {
+            map.insert({*symb_opt, {{v}, {it_regs->first}}});
           }
         }
-      }
-      auto it_2 = map.find(*symb_opt);
-      if (it_2 != map.end()) {
-        std::get<0>(it_2->second).push_back(v);
       }
     }
   }
@@ -1916,7 +1979,7 @@ public:
     }
 
     CRAB_LOG("object", crab::outs()
-                           << "Join " << *this << " and " << o << " =\n");
+                           << "Join " << *this << "\n and " << o << "\n =\n");
 
     self_join(o);
 
@@ -1939,11 +2002,11 @@ public:
     }
 
     CRAB_LOG("object", crab::outs()
-                           << "Join " << *this << " and " << o << " =\n");
+                           << "Join " << *this << "\n and " << o << "\n =\n");
 
     object_domain_t res(
         std::move(join_or_widening(*this, o, true /*is join*/)));
-    CRAB_LOG("object", crab::outs() << res << "\n");
+    CRAB_LOG("object", crab::outs() << "Result=" << res << "\n");
     return res;
   }
 

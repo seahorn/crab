@@ -84,7 +84,7 @@ void object_domain_params::update_params(const object_domain_params &params) {
 
 void object_domain_params::write(crab::crab_os &o) const {
   o << "Object parameters:\n";
-  o << "\reduce_everywhere=" << m_reduce_everywhere << "\n";
+  o << "\treduce_everywhere=" << m_reduce_everywhere << "\n";
 }
 
 void zones_domain_params::update_params(const zones_domain_params &params) {
