@@ -78,8 +78,8 @@ public:
   using vert_id = typename G::vert_id;
   using Wt = typename G::Wt;
   // These defined below
-  // using pred_range = ...
-  // using succ_range = ...
+  // using const_pred_range = ...
+  // using const_succ_range = ...
   // using const_e_pred_range = ...
   // using const_e_succ_range = ...
   using wt_ref_t = typename G::wt_ref_t;
@@ -152,10 +152,10 @@ public:
   /* exclude _v_ex from the view */
   template <class It> class e_adj_iterator {
   public:
-    using const_edge_ref = typename It::const_edge_ref;
+    using edge_wrapper = typename It::edge_wrapper;
 
     e_adj_iterator(const It &_iG, vert_id _v_ex) : iG(_iG), v_ex(_v_ex) {}
-    const_edge_ref operator*(void)const { return *iG; }
+    edge_wrapper operator*(void)const { return *iG; }
     e_adj_iterator &operator++(void) {
       ++iG;
       return *this;
@@ -185,55 +185,57 @@ public:
     vert_id v_ex;
   };
 
-  using pred_range =
-    adj_list<typename G::pred_range, adj_iterator<typename G::pred_range::iterator>>;
-  using succ_range =
-    adj_list<typename G::succ_range, adj_iterator<typename G::succ_range::iterator>>;
+  using const_pred_range =
+    adj_list<typename G::const_pred_range,
+	     adj_iterator<typename G::const_pred_range::iterator>>;
+  using const_succ_range =
+    adj_list<typename G::const_succ_range,
+	     adj_iterator<typename G::const_succ_range::iterator>>;
 
-  using e_pred_range =
+  using const_e_pred_range =
     adj_list<typename G::const_e_pred_range,
 	     e_adj_iterator<typename G::const_e_pred_range::iterator>>;
-  using e_succ_range =
+  using const_e_succ_range =
     adj_list<typename G::const_e_succ_range,
 	     e_adj_iterator<typename G::const_e_succ_range::iterator>>;
 
   // If v is v+ (v-) then v- (v+) does not appear as a successor
-  succ_range succs(vert_id v) const {
+  const_succ_range succs(vert_id v) const {
     // assert(v != v_ex);
     vert_id v_opp;
     if (v % 2 == 0)
       v_opp = v + 1;
     else
       v_opp = v - 1;
-    return succ_range(g.succs(v), v_opp);
+    return const_succ_range(g.succs(v), v_opp);
   }
 
   // If v is v+ (v-) then v- (v+) does not appear as a predecessor
-  pred_range preds(vert_id v) const {
+  const_pred_range preds(vert_id v) const {
     // assert(v != v_ex);
     vert_id v_opp;
     if (v % 2 == 0)
       v_opp = v + 1;
     else
       v_opp = v - 1;
-    return pred_range(g.preds(v), v_opp);
+    return const_pred_range(g.preds(v), v_opp);
   }
 
-  e_succ_range e_succs(vert_id v) const {
+  const_e_succ_range e_succs(vert_id v) const {
     vert_id v_opp;
     if (v % 2 == 0)
       v_opp = v + 1;
     else
       v_opp = v - 1;
-    return e_succ_range(g.e_succs(v), v_opp);
+    return const_e_succ_range(g.e_succs(v), v_opp);
   }
-  e_pred_range e_preds(vert_id v) const {
+  const_e_pred_range e_preds(vert_id v) const {
     vert_id v_opp;
     if (v % 2 == 0)
       v_opp = v + 1;
     else
       v_opp = v - 1;
-    return e_pred_range(g.e_preds(v), v_opp);
+    return const_e_pred_range(g.e_preds(v), v_opp);
   }
 
   const G &g;
@@ -1928,6 +1930,10 @@ private:
     return g;
   }
 
+  bool need_normalization() const {
+    return !m_unstable.empty();
+  }
+  
   split_oct_domain(vert_map_t &&_vert_map, rev_map_t &&_rev_map,
                    graph_t &&_graph, std::vector<Wt> &&_potential,
                    vert_set_t &&_unstable)
@@ -2031,101 +2037,108 @@ public:
     else if (is_top())
       return false;
     else {
-      split_oct_domain_t left(*this);
-      left.normalize();
-      // XXX: we can avoid copy of the right operand but we need to
-      // create const versions of several methods in graph_t.
-      split_oct_domain_t right(o);
 
-      if (left.m_vert_map.size() < right.m_vert_map.size()) {
-        return false;
-      }
+      auto leq_op =
+	[](const split_oct_domain_t&left, const split_oct_domain_t& right) -> bool {
+	// left operand is normalized, right doesn't need to.
 
-      wt_ref_t wx;
-      wt_ref_t wy;
-      wt_ref_t wz;
+	wt_ref_t wx, wy, wz;
+	
+	if (left.m_vert_map.size() < right.m_vert_map.size()) {
+	  return false;
+	}
 
-      std::vector<unsigned int> vert_renaming(right.m_graph.size(), -1);
-      for (auto p : right.m_vert_map) {
-        auto it = left.m_vert_map.find(p.first);
-        if (it == left.m_vert_map.end()) {
-          return false;
-        }
-        if (right.m_graph.succs(p.second.first).size() == 0 &&
-            right.m_graph.succs(p.second.second).size() == 0 &&
-            right.m_graph.preds(p.second.first).size() == 0 &&
-            right.m_graph.preds(p.second.second).size() == 0)
-          continue;
 
-        vert_renaming[p.second.first] = (*it).second.first;
-        vert_renaming[p.second.second] = (*it).second.second;
-      }
-
-      assert(left.m_graph.size() >= 0);
-      for (vert_id ox : right.m_graph.verts()) {
-        if (right.m_graph.succs(ox).size() == 0)
-          continue;
-
-        assert(vert_renaming[ox] != -1);
-        vert_id x = vert_renaming[ox];
-        for (auto edge : right.m_graph.e_succs(ox)) {
-          vert_id oy = edge.vert;
-          assert(vert_renaming[oy] != -1);
-          if (ox == oy)
-            continue;
-          vert_id y = vert_renaming[oy];
-          Wt ow = edge.val;
-
-          // explicit edge on the left operand
-          if (left.m_graph.lookup(x, y, wx) && (wx.get() <= ow))
-            continue;
-
+	std::vector<unsigned int> vert_renaming(right.m_graph.size(), -1);
+	for (auto p : right.m_vert_map) {
+	  auto it = left.m_vert_map.find(p.first);
+	  if (it == left.m_vert_map.end()) {
+	    return false;
+	  }
+	  if (right.m_graph.succs(p.second.first).size() == 0 &&
+	      right.m_graph.succs(p.second.second).size() == 0 &&
+	      right.m_graph.preds(p.second.first).size() == 0 &&
+	      right.m_graph.preds(p.second.second).size() == 0)
+	    continue;
+	  
+	  vert_renaming[p.second.first] = (*it).second.first;
+	  vert_renaming[p.second.second] = (*it).second.second;
+	}
+	
+	assert(left.m_graph.size() >= 0);
+	for (vert_id ox : right.m_graph.verts()) {
+	  if (right.m_graph.succs(ox).size() == 0)
+	    continue;
+	  
+	  assert(vert_renaming[ox] != -1);
+	  vert_id x = vert_renaming[ox];
+	  for (auto edge : right.m_graph.e_succs(ox)) {
+	    vert_id oy = edge.vert;
+	    assert(vert_renaming[oy] != -1);
+	    if (ox == oy)
+	      continue;
+	    vert_id y = vert_renaming[oy];
+	    Wt ow = edge.val;
+	    
+	    // explicit edge on the left operand
+	    if (left.m_graph.lookup(x, y, wx) && (wx.get() <= ow))
+	      continue;
+	    
           // implicit edge on the left operand
-          if (x % 2 == 0 && y % 2 == 0) { // both pos
-            // y-x <= k in o: check if -2x <= k1 and 2y <= k2 in this and
-            //                         k1+k2/2 <= k
-            if (!left.m_graph.lookup(x, x + 1, wx) ||
-                !left.m_graph.lookup(y + 1, y, wy)) {
-              return false;
-            }
-            if (!((Wt)(wx.get() + wy.get()) / (Wt)2 <= ow)) {
-              return false;
-            }
-
+	    if (x % 2 == 0 && y % 2 == 0) { // both pos
+	      // y-x <= k in o: check if -2x <= k1 and 2y <= k2 in this and
+	      //                         k1+k2/2 <= k
+	      if (!left.m_graph.lookup(x, x + 1, wx) ||
+		  !left.m_graph.lookup(y + 1, y, wy)) {
+		return false;
+	      }
+	      if (!((Wt)(wx.get() + wy.get()) / (Wt)2 <= ow)) {
+		return false;
+	      }
+	      
           } else if (x % 2 == 0 && y % 2 != 0) { // x pos
-            // -y-x <= k in o: check if -2x <= k1 and -2y <= k2 in this and
-            //                         k1+k2/2 <= k
-            if (!left.m_graph.lookup(x, x + 1, wx) ||
-                !left.m_graph.lookup(y - 1, y, wy)) {
+	      // -y-x <= k in o: check if -2x <= k1 and -2y <= k2 in this and
+	      //                         k1+k2/2 <= k
+	      if (!left.m_graph.lookup(x, x + 1, wx) ||
+		  !left.m_graph.lookup(y - 1, y, wy)) {
+		return false;
+	      }
+	      if (!((Wt)(wx.get() + wy.get()) / (Wt)2 <= ow)) {
+		return false;
+	      }
+	    } else if (x % 2 != 0 && y % 2 == 0) { // y pos
+	      //  y+x <= k in o: check if  2x <= k1 and 2y <= k2 in this and
+	      //                         k1+k2/2 <= k
+	      if (!left.m_graph.lookup(x, x - 1, wx) ||
+		  !left.m_graph.lookup(y + 1, y, wy)) {
+		return false;
+	      }
+	      if (!((Wt)(wx.get() + wy.get()) / (Wt)2 <= ow)) {
+		return false;
+	      }
+	    } else if (x % 2 != 0 && y % 2 != 0) { // both neg
+	      //  -y+x <= k in o: check if  2x <= k1 and -2y <= k2 in this and
+	      //                         k1+k2/2 <= k
+	      if (!left.m_graph.lookup(x, x - 1, wx) ||
+		  !left.m_graph.lookup(y - 1, y, wy)) {
               return false;
-            }
-            if (!((Wt)(wx.get() + wy.get()) / (Wt)2 <= ow)) {
-              return false;
-            }
-          } else if (x % 2 != 0 && y % 2 == 0) { // y pos
-            //  y+x <= k in o: check if  2x <= k1 and 2y <= k2 in this and
-            //                         k1+k2/2 <= k
-            if (!left.m_graph.lookup(x, x - 1, wx) ||
-                !left.m_graph.lookup(y + 1, y, wy)) {
-              return false;
-            }
-            if (!((Wt)(wx.get() + wy.get()) / (Wt)2 <= ow)) {
-              return false;
-            }
-          } else if (x % 2 != 0 && y % 2 != 0) { // both neg
-            //  -y+x <= k in o: check if  2x <= k1 and -2y <= k2 in this and
-            //                         k1+k2/2 <= k
-            if (!left.m_graph.lookup(x, x - 1, wx) ||
-                !left.m_graph.lookup(y - 1, y, wy)) {
-              return false;
-            }
-            if (!((Wt)(wx.get() + wy.get()) / (Wt)2 <= ow)) {
-              return false;
-            }
-          }
-        }
+	      }
+	      if (!((Wt)(wx.get() + wy.get()) / (Wt)2 <= ow)) {
+		return false;
+	      }
+	    }
+	  }
+	}
+	return true;
+      };
+
+      if (need_normalization()) {
+	split_oct_domain_t left(*this);
+	left.normalize();
+	return leq_op(left, o);
+      } else {
+	return leq_op(*this, o);
       }
-      return true;
     }
   }
 
@@ -2140,183 +2153,175 @@ public:
     else if (is_top() || o.is_bottom())
       return *this;
     else {
-      split_oct_domain_t left(*this);
-      split_oct_domain_t right(o);
-
       CRAB_LOG("octagon", crab::outs() << "Before join:\n"
                                        << "DBM 1\n"
-                                       << left << "\n"
-                                       << left.m_graph << "\n"
+                                       << *this << "\n"
+                                       << m_graph << "\n"
                                        << "DBM 2\n"
-                                       << right << "\n"
-                                       << right.m_graph << "\n");
+                                       << o << "\n"
+	                               << o.m_graph << "\n");
 
-      CRAB_LOG(
-          "octagon-join", crab::outs() << "rev_map 1={";
-          for (unsigned i = 0, e = left.m_rev_vert_map.size(); i != e; i++) {
-            if (left.m_rev_vert_map[i])
-              crab::outs() << *(left.m_rev_vert_map[i]) << "(" << i << ");";
-          } crab::outs()
-          << "}\n";
-          crab::outs() << "rev_map 2={"; for (unsigned i = 0,
-                                              e = right.m_rev_vert_map.size();
-                                              i != e; i++) {
-            if (right.m_rev_vert_map[i])
-              crab::outs() << *(right.m_rev_vert_map[i]) << "(" << i << ");";
-          } crab::outs() << "}\n";);
+      auto join_op =
+	[this](const split_oct_domain_t &left,  const split_oct_domain_t &right) -> split_oct_domain_t {
+	  // Both left and right are normalized
+	  
+	  CRAB_LOG("octagon-join", crab::outs() << "rev_map 1={";
+		   for (unsigned i = 0, e = left.m_rev_vert_map.size(); i != e; i++) {
+		     if (left.m_rev_vert_map[i])
+		       crab::outs() << *(left.m_rev_vert_map[i]) << "(" << i << ");";
+		   } crab::outs()
+		   << "}\n";
+		   crab::outs() << "rev_map 2={"; for (unsigned i = 0,
+							 e = right.m_rev_vert_map.size();
+						       i != e; i++) {
+		     if (right.m_rev_vert_map[i])
+		       crab::outs() << *(right.m_rev_vert_map[i]) << "(" << i << ");";
+		   } crab::outs() << "}\n";);
+	  
 
-      left.normalize();
-      right.normalize();
-
-      check_potential(left.m_graph, left.m_potential, __LINE__);
-      check_potential(right.m_graph, right.m_potential, __LINE__);
-
-      std::vector<vert_id> perm_x;
-      std::vector<vert_id> perm_y;
-      std::vector<Wt> pot_rx;
-      std::vector<Wt> pot_ry;
-      vert_map_t out_vmap;
-      rev_map_t out_revmap;
-
-      for (auto p : left.m_vert_map) {
-        auto it = right.m_vert_map.find(p.first);
-        if (it != right.m_vert_map.end()) {
-          out_vmap.insert(
-              vmap_elt_t(p.first, {perm_x.size(), perm_x.size() + 1}));
-          out_revmap.push_back(p.first);
-          out_revmap.push_back(p.first);
-          pot_rx.push_back(left.m_potential[p.second.first]);
-          pot_rx.push_back(left.m_potential[p.second.second]);
-          pot_ry.push_back(right.m_potential[(*it).second.first]);
-          pot_ry.push_back(right.m_potential[(*it).second.second]);
-          perm_x.push_back(p.second.first);
-          perm_x.push_back(p.second.second);
-          perm_y.push_back((*it).second.first);
-          perm_y.push_back((*it).second.second);
-        }
-      }
-
-      unsigned int sz = perm_x.size();
-
-      // Build the permuted view of x and y.
-      assert(left.m_graph.size() > 0);
-      GrPerm gx(perm_x, left.m_graph);
-      assert(right.m_graph.size() > 0);
-      GrPerm gy(perm_y, right.m_graph);
-
-      // Compute the deferred relations for gy
-      graph_t g_ix_ry = split_rels(gx, gy, sz);
-      // Apply the deferred relations, and re-close.
-      bool is_closed;
-      graph_t g_rx(GrOps::meet(gx, g_ix_ry, is_closed));
+	  check_potential(left.m_graph, left.m_potential, __LINE__);
+	  check_potential(right.m_graph, right.m_potential, __LINE__);
+	  
+	  std::vector<vert_id> perm_x, perm_y;
+	  std::vector<Wt> pot_rx, pot_ry;
+	  vert_map_t out_vmap;
+	  rev_map_t out_revmap;
+	  
+	  for (auto p : left.m_vert_map) {
+	    auto it = right.m_vert_map.find(p.first);
+	    if (it != right.m_vert_map.end()) {
+	      out_vmap.insert(vmap_elt_t(p.first, {perm_x.size(), perm_x.size() + 1}));
+	      out_revmap.push_back(p.first);
+	      out_revmap.push_back(p.first);
+	      pot_rx.push_back(left.m_potential[p.second.first]);
+	      pot_rx.push_back(left.m_potential[p.second.second]);
+	      pot_ry.push_back(right.m_potential[(*it).second.first]);
+	      pot_ry.push_back(right.m_potential[(*it).second.second]);
+	      perm_x.push_back(p.second.first);
+	      perm_x.push_back(p.second.second);
+	      perm_y.push_back((*it).second.first);
+	      perm_y.push_back((*it).second.second);
+	    }
+	  }
+	  
+	  unsigned int sz = perm_x.size();
+	  
+	  // Build the permuted view of x and y.
+	  assert(left.m_graph.size() > 0);
+	  GrPerm gx(perm_x, left.m_graph);
+	  assert(right.m_graph.size() > 0);
+	  GrPerm gy(perm_y, right.m_graph);
+	  
+	  // Compute the deferred relations for gy
+	  graph_t g_ix_ry = split_rels(gx, gy, sz);
+	  // Apply the deferred relations, and re-close.
+	  bool is_closed;
+	  graph_t g_rx(GrOps::meet(gx, g_ix_ry, is_closed));
 #ifdef JOIN_CLOSE_AFTER_MEET
-      // Conjecture: g_rx is closed
-      if (!is_closed) {
-        edge_vector delta;
-        split_octagons_impl::SplitOctGraph<graph_t> g_rx_oct(g_rx);
-        GrOps::close_after_meet(g_rx_oct, pot_rx, gx, g_ix_ry, delta);
-        update_delta(g_rx, delta);
-      }
+	  // Conjecture: g_rx is closed
+	  if (!is_closed) {
+	    edge_vector delta;
+	    split_octagons_impl::SplitOctGraph<graph_t> g_rx_oct(g_rx);
+	    GrOps::close_after_meet(g_rx_oct, pot_rx, gx, g_ix_ry, delta);
+	    update_delta(g_rx, delta);
+	  }
 #endif
-
-      // Compute the deferred relations for gx
-      graph_t g_rx_iy = split_rels(gy, gx, sz);
-      // Apply the deferred relations, and re-close.
-      graph_t g_ry(GrOps::meet(gy, g_rx_iy, is_closed));
+	  // Compute the deferred relations for gx
+	  graph_t g_rx_iy = split_rels(gy, gx, sz);
+	  // Apply the deferred relations, and re-close.
+	  graph_t g_ry(GrOps::meet(gy, g_rx_iy, is_closed));
 #ifdef JOIN_CLOSE_AFTER_MEET
-      // Conjecture: g_ry is closed
-      if (!is_closed) {
-        edge_vector delta;
-        split_octagons_impl::SplitOctGraph<graph_t> g_ry_oct(g_ry);
-        GrOps::close_after_meet(g_ry_oct, pot_ry, gy, g_rx_iy, delta);
-        update_delta(g_ry, delta);
-      }
+	  // Conjecture: g_ry is closed
+	  if (!is_closed) {
+	    edge_vector delta;
+	    split_octagons_impl::SplitOctGraph<graph_t> g_ry_oct(g_ry);
+	    GrOps::close_after_meet(g_ry_oct, pot_ry, gy, g_rx_iy, delta);
+	    update_delta(g_ry, delta);
+	  }
 #endif
+	  CRAB_LOG("octagon-join", crab::outs() << "rev_map={";
+		   for (unsigned i = 0, e = out_revmap.size(); i != e; i++) {
+		     if (out_revmap[i])
+		       crab::outs() << *(out_revmap[i]) << "(" << i << ");";
+		   } crab::outs()
+		   << "}\n";);
+	  
+	  CRAB_LOG("octagon-join", crab::outs()
+		   << "\tBefore joined:\n\tg_rx:" << g_rx
+		   << "\n\tg_ry:" << g_ry << "\n");
 
-      CRAB_LOG(
-          "octagon-join", crab::outs() << "rev_map={";
-          for (unsigned i = 0, e = out_revmap.size(); i != e; i++) {
-            if (out_revmap[i])
-              crab::outs() << *(out_revmap[i]) << "(" << i << ");";
-          } crab::outs()
-          << "}\n";);
+	  // We now have the relevant set of relations. Because g_rx and
+	  // g_ry are closed, the result is also closed.
+	  graph_t join_g(GrOps::join(g_rx, g_ry));
+	  
+	  CRAB_LOG("octagon-join", crab::outs() << "Joined graph:\n"
+		   << join_g << "\n");
 
-      CRAB_LOG("octagon-join", crab::outs()
-                                   << "\tBefore joined:\n\tg_rx:" << g_rx
-                                   << "\n\tg_ry:" << g_ry << "\n");
+	  /*
+	   * Infer relationships from bounds
+	   */
 
-      // We now have the relevant set of relations. Because g_rx and
-      // g_ry are closed, the result is also closed.
-      graph_t join_g(GrOps::join(g_rx, g_ry));
+	  //         a                                                c
+	  // pos(x) --> neg(x) in one graph and the other has pos(x) ---> neg(x)
+	  // such that a < c
+	  std::vector<vert_id> lb_left;
+	  //         a                                                c
+	  // pos(x) --> neg(x) in one graph and the other has pos(x) ---> neg(x)
+	  // such that a > c
+	  std::vector<vert_id> lb_right;
+	  //         a                                                c
+	  // neg(x) --> pos(x) in one graph and the other has neg(x) ---> pos(x)
+	  // such that a < c
+	  std::vector<vert_id> ub_left;
+	  //         a                                                c
+	  // neg(x) --> pos(x) in one graph and the other has neg(x) ---> pos(x)
+	  // such that a > c
+	  std::vector<vert_id> ub_right;
 
-      CRAB_LOG("octagon-join", crab::outs() << "Joined graph:\n"
-                                            << join_g << "\n");
+	  wt_ref_t wx;
+	  wt_ref_t wy;
 
-      /*
-       * Infer relationships from bounds
-       */
+	  for (vert_id v : gx.verts()) {
+	    if (v % 2 != 0)
+	      continue;
+	    if (gx.lookup(v + 1, v, wx) && gy.lookup(v + 1, v, wy)) {
+	      if (wx.get() < wy.get())
+		ub_left.push_back(v);
+	      if (wy.get() < wx.get())
+		ub_right.push_back(v);
+	    }
+	    if (gx.lookup(v, v + 1, wx) && gy.lookup(v, v + 1, wy)) {
+	      if (wx.get() < wy.get())
+		lb_left.push_back(v);
+	      if (wy.get() < wx.get())
+		lb_right.push_back(v);
+	    }
+	  }
 
-      //         a                                                c
-      // pos(x) --> neg(x) in one graph and the other has pos(x) ---> neg(x)
-      // such that a < c
-      std::vector<vert_id> lb_left;
-      //         a                                                c
-      // pos(x) --> neg(x) in one graph and the other has pos(x) ---> neg(x)
-      // such that a > c
-      std::vector<vert_id> lb_right;
-      //         a                                                c
-      // neg(x) --> pos(x) in one graph and the other has neg(x) ---> pos(x)
-      // such that a < c
-      std::vector<vert_id> ub_left;
-      //         a                                                c
-      // neg(x) --> pos(x) in one graph and the other has neg(x) ---> pos(x)
-      // such that a > c
-      std::vector<vert_id> ub_right;
-
-      wt_ref_t wx;
-      wt_ref_t wy;
-
-      for (vert_id v : gx.verts()) {
-        if (v % 2 != 0)
-          continue;
-        if (gx.lookup(v + 1, v, wx) && gy.lookup(v + 1, v, wy)) {
-          if (wx.get() < wy.get())
-            ub_left.push_back(v);
-          if (wy.get() < wx.get())
-            ub_right.push_back(v);
-        }
-        if (gx.lookup(v, v + 1, wx) && gy.lookup(v, v + 1, wy)) {
-          if (wx.get() < wy.get())
-            lb_left.push_back(v);
-          if (wy.get() < wx.get())
-            lb_right.push_back(v);
-        }
-      }
-
-      CRAB_LOG(
-          "octagon-join", crab::outs() << "lb_right={"; for (vert_id s
-                                                             : lb_right) {
-            crab::outs() << s << ";";
-          } crab::outs() << "}\n";
-          crab::outs() << "lb_left={"; for (vert_id s
-                                            : lb_left) {
-            crab::outs() << s << ";";
-          } crab::outs() << "}\n";
-          crab::outs() << "ub_right={"; for (vert_id s
-                                             : ub_right) {
-            crab::outs() << s << ";";
-          } crab::outs() << "}\n";
-          crab::outs() << "ub_left={"; for (vert_id s
-                                            : ub_left) {
-            crab::outs() << s << ";";
-          } crab::outs() << "}\n";);
-
-      Wt_min min_op;
-      for (vert_id s : lb_left) {
-        Wt dx_s = gx.edge_val(s, s + 1) / (Wt)2;
-        Wt dy_s = gy.edge_val(s, s + 1) / (Wt)2;
-        for (vert_id d : ub_right) { // CASE 1
-          /*
+	  CRAB_LOG("octagon-join",
+		   crab::outs() << "lb_right={";
+		   for (vert_id s : lb_right) {
+		     crab::outs() << s << ";";
+		   } crab::outs() << "}\n";
+		   crab::outs() << "lb_left={";
+		   for (vert_id s : lb_left) {
+		     crab::outs() << s << ";";
+		   } crab::outs() << "}\n";
+		   crab::outs() << "ub_right={";
+		   for (vert_id s : ub_right) {
+		     crab::outs() << s << ";";
+		   } crab::outs() << "}\n";
+		   crab::outs() << "ub_left={";
+		   for (vert_id s : ub_left) {
+		     crab::outs() << s << ";";
+		   } crab::outs() << "}\n";);
+	  
+	  Wt_min min_op;
+	  for (vert_id s : lb_left) {
+	    Wt dx_s = gx.edge_val(s, s + 1) / (Wt)2;
+	    Wt dy_s = gy.edge_val(s, s + 1) / (Wt)2;
+            for (vert_id d : ub_right) { // CASE 1
+            /*
                      a                   b
             pos(x) ---> neg(x), neg(y) ---> pos(y)  in G1  // {-x <= a/2, y <=
             b/2} c                   d pos(x) ---> neg(x), neg(y) ---> pos(y) in
@@ -2324,20 +2329,20 @@ public:
 
             ===> -x+y <= max(a+b, c+d)  if max(a+b, c+d) < max(a,c) + max(b,d)
             edge from pos(y) to pos(x) or from neg(x) to neg(y)
-          */
-          if (s == d)
-            continue;
-          join_g.update_edge(s,
-                             std::max(dx_s + gx.edge_val(d + 1, d) / (Wt)2,
-                                      dy_s + gy.edge_val(d + 1, d) / (Wt)2),
-                             d, min_op);
-          join_g.update_edge(d + 1,
-                             std::max(dx_s + gx.edge_val(d + 1, d) / (Wt)2,
-                                      dy_s + gy.edge_val(d + 1, d) / (Wt)2),
-                             s + 1, min_op);
-        }
-        for (vert_id d : lb_right) { // CASE 2
-          /*
+            */
+	      if (s == d)
+		continue;
+	      join_g.update_edge(s,
+				 std::max(dx_s + gx.edge_val(d + 1, d) / (Wt)2,
+					  dy_s + gy.edge_val(d + 1, d) / (Wt)2),
+				 d, min_op);
+	      join_g.update_edge(d + 1,
+				 std::max(dx_s + gx.edge_val(d + 1, d) / (Wt)2,
+					  dy_s + gy.edge_val(d + 1, d) / (Wt)2),
+				 s + 1, min_op);
+	    }
+	    for (vert_id d : lb_right) { // CASE 2
+	    /*
                     a                   b
             pos(x) ---> neg(x), pos(y) ---> neg(y)  in G1 // {-x <= a/2, -y <=
             b/2} c                   d pos(x) ---> neg(x), pos(y) ---> neg(y) in
@@ -2346,24 +2351,24 @@ public:
             ===>  -x-y <= max(a+b, c+d) if max(a+b, c+d) < max(a,c) + max(b,d)
             edge from neg(x) to pos(y) or from neg(y) to pos(x)
           */
-          if (s == d)
-            continue;
-          join_g.update_edge(d,
-                             std::max(dx_s + gx.edge_val(d, d + 1) / (Wt)2,
-                                      dy_s + gy.edge_val(d, d + 1) / (Wt)2),
-                             s + 1, min_op);
-          join_g.update_edge(s,
-                             std::max(dx_s + gx.edge_val(d, d + 1) / (Wt)2,
-                                      dy_s + gy.edge_val(d, d + 1) / (Wt)2),
-                             d + 1, min_op);
-        }
+	      if (s == d)
+		continue;
+	      join_g.update_edge(d,
+				 std::max(dx_s + gx.edge_val(d, d + 1) / (Wt)2,
+					  dy_s + gy.edge_val(d, d + 1) / (Wt)2),
+				 s + 1, min_op);
+	      join_g.update_edge(s,
+				 std::max(dx_s + gx.edge_val(d, d + 1) / (Wt)2,
+					  dy_s + gy.edge_val(d, d + 1) / (Wt)2),
+				 d + 1, min_op);
+	    }
       }
-
-      for (vert_id s : ub_left) {
-        Wt dx_s = gx.edge_val(s + 1, s) / (Wt)2;
-        Wt dy_s = gy.edge_val(s + 1, s) / (Wt)2;
-        for (vert_id d : lb_right) { // CASE 3
-          /*
+	  
+	  for (vert_id s : ub_left) {
+	    Wt dx_s = gx.edge_val(s + 1, s) / (Wt)2;
+	    Wt dy_s = gy.edge_val(s + 1, s) / (Wt)2;
+	    for (vert_id d : lb_right) { // CASE 3
+            /*
                     a                   b
             neg(x) ---> pos(x), pos(y) ---> neg(y)  in G1 // {x <= a/2, -y <=
             b/2} c                   d neg(x) ---> pos(x), pos(y) ---> neg(y) in
@@ -2371,20 +2376,20 @@ public:
 
             ===>  x-y <= max(a+b, c+d) if max(a+b, c+d) < max(a,c) + max(b,d)
             edge from pos(x) to pos(y) or from neg(y) to neg(x)
-          */
-          if (s == d)
-            continue;
-          join_g.update_edge(d,
-                             std::max(dx_s + gx.edge_val(d, d + 1) / (Wt)2,
-                                      dy_s + gy.edge_val(d, d + 1) / (Wt)2),
-                             s, min_op);
-          join_g.update_edge(s + 1,
-                             std::max(dx_s + gx.edge_val(d, d + 1) / (Wt)2,
-                                      dy_s + gy.edge_val(d, d + 1) / (Wt)2),
-                             d + 1, min_op);
-        }
-        for (vert_id d : ub_right) { // CASE 4
-          /*
+           */
+	      if (s == d)
+		continue;
+	      join_g.update_edge(d,
+				 std::max(dx_s + gx.edge_val(d, d + 1) / (Wt)2,
+					  dy_s + gy.edge_val(d, d + 1) / (Wt)2),
+				 s, min_op);
+	      join_g.update_edge(s + 1,
+				 std::max(dx_s + gx.edge_val(d, d + 1) / (Wt)2,
+					  dy_s + gy.edge_val(d, d + 1) / (Wt)2),
+				 d + 1, min_op);
+	    }
+	    for (vert_id d : ub_right) { // CASE 4
+            /*
                     a                   b
             neg(x) ---> pos(x), neg(y) ---> pos(y)  in G1 // {x <= a/2, y <=
             b/2} c                   d neg(x) ---> pos(x), neg(y) ---> pos(y) in
@@ -2392,51 +2397,68 @@ public:
 
             ===>  x+y <= max(a+b, c+d) if max(a+b, c+d) < max(a,c) + max(b,d)
             edge from pos(x) to neg(y) or from pos(y) to neg(x)
-          */
-          if (s == d)
-            continue;
-          join_g.update_edge(s + 1,
-                             std::max(dx_s + gx.edge_val(d + 1, d) / (Wt)2,
-                                      dy_s + gy.edge_val(d + 1, d) / (Wt)2),
-                             d, min_op);
-          join_g.update_edge(d + 1,
-                             std::max(dx_s + gx.edge_val(d + 1, d) / (Wt)2,
-                                      dy_s + gy.edge_val(d + 1, d) / (Wt)2),
-                             s, min_op);
-        }
+            */
+	      if (s == d)
+		continue;
+	      join_g.update_edge(s + 1,
+				 std::max(dx_s + gx.edge_val(d + 1, d) / (Wt)2,
+					  dy_s + gy.edge_val(d + 1, d) / (Wt)2),
+				 d, min_op);
+	      join_g.update_edge(d + 1,
+				 std::max(dx_s + gx.edge_val(d + 1, d) / (Wt)2,
+					  dy_s + gy.edge_val(d + 1, d) / (Wt)2),
+				 s, min_op);
+	    }
+	  }
+	  // Conjecture: join_g remains closed.
+	  // Now garbage collect any unused vertices
+	  CRAB_LOG("octagon-join", crab::outs()
+		   << "Joined graph (with implicit edges):\n"
+		   << join_g << "\n");
+	  for (vert_id v : join_g.verts()) {
+	    if (v % 2 != 0)
+	      continue;
+	    if (join_g.succs(v).size() == 0 && join_g.preds(v).size() == 0 &&
+		join_g.succs(v + 1).size() == 0 &&
+		join_g.preds(v + 1).size() == 0) {
+	      join_g.forget(v);
+	      join_g.forget(v + 1);
+	      if (out_revmap[v]) {
+		out_vmap.erase(*(out_revmap[v]));
+		out_revmap[v] = boost::none;
+		out_revmap[v + 1] = boost::none;
+	      }
+	    }
+	  }
+	  split_oct_domain_t res(std::move(out_vmap), std::move(out_revmap),
+				 std::move(join_g), std::move(pot_rx),
+				 vert_set_t());
+	  // join_g.check_adjs();
+	  CRAB_LOG("octagon", crab::outs() << "Result join:\n" << res << "\n");
+	  CRAB_LOG("octagon-join", crab::outs() << join_g << "\n";);
+	  check_potential(res.m_graph, res.m_potential, __LINE__);
+	  return res;
+	};
+
+      if (need_normalization() && o.need_normalization()) {
+	split_oct_domain_t left(*this);
+	split_oct_domain_t right(o);
+	left.normalize();
+	right.normalize();
+	return join_op(left, right);
+      } else if (need_normalization()) {
+	split_oct_domain_t left(*this);
+	const split_oct_domain_t &right = o;
+	left.normalize();
+	return join_op(left, right);
+      } else if (o.need_normalization()) {
+	const split_oct_domain_t &left = *this;
+	split_oct_domain_t right(o);
+	right.normalize();
+	return join_op(left, right);
+      } else {
+	return join_op(*this, o);
       }
-
-      // Conjecture: join_g remains closed.
-
-      // Now garbage collect any unused vertices
-      CRAB_LOG("octagon-join", crab::outs()
-                                   << "Joined graph (with implicit edges):\n"
-                                   << join_g << "\n");
-      for (vert_id v : join_g.verts()) {
-        if (v % 2 != 0)
-          continue;
-        if (join_g.succs(v).size() == 0 && join_g.preds(v).size() == 0 &&
-            join_g.succs(v + 1).size() == 0 &&
-            join_g.preds(v + 1).size() == 0) {
-          join_g.forget(v);
-          join_g.forget(v + 1);
-          if (out_revmap[v]) {
-            out_vmap.erase(*(out_revmap[v]));
-            out_revmap[v] = boost::none;
-            out_revmap[v + 1] = boost::none;
-          }
-        }
-      }
-
-      split_oct_domain_t res(std::move(out_vmap), std::move(out_revmap),
-                             std::move(join_g), std::move(pot_rx),
-                             vert_set_t());
-      // join_g.check_adjs();
-      CRAB_LOG("octagon", crab::outs() << "Result join:\n" << res << "\n");
-      CRAB_LOG("octagon-join", crab::outs() << join_g << "\n";);
-
-      check_potential(res.m_graph, res.m_potential, __LINE__);
-      return res;
     }
   }
 
@@ -2451,50 +2473,44 @@ public:
       return *this;
     else {
       CRAB_LOG("octagon",
-               split_oct_domain_t left(*this); // to avoid closure
                crab::outs() << "Before widening:\n";
                crab::outs() << "DBM 1\n"
-                            << left << "\n";
+                            << *this << "\n";
                crab::outs() << "DBM 2\n"
                             << o << "\n";);
 
-      split_oct_domain_t right(o);
-      right.normalize();
-
-      // Figure out the common renaming
-      std::vector<vert_id> perm_x;
-      std::vector<vert_id> perm_y;
-      vert_map_t out_vmap;
-      rev_map_t out_revmap;
-      std::vector<Wt> widen_pot;
-      vert_set_t widen_unstable(m_unstable);
-
-      assert(m_potential.size() > 0);
-      for (auto p : m_vert_map) {
-        auto it = right.m_vert_map.find(p.first);
-        // Variable exists in both
-        if (it != right.m_vert_map.end()) {
-          out_vmap.insert(
-              vmap_elt_t(p.first, {perm_x.size(), perm_x.size() + 1}));
-          out_revmap.push_back(p.first);
-          out_revmap.push_back(p.first);
-          widen_pot.push_back(m_potential[p.second.first]);
-          widen_pot.push_back(m_potential[p.second.second]);
-          perm_x.push_back(p.second.first);
-          perm_x.push_back(p.second.second);
-          perm_y.push_back((*it).second.first);
-          perm_y.push_back((*it).second.second);
-        }
-      }
-
-      // Build the permuted view of x and y.
-      graph_t left_g(m_graph);
-      assert(left_g.size() > 0);
-      GrPerm gx(perm_x, left_g);
-      assert(right.m_graph.size() > 0);
-      GrPerm gy(perm_y, right.m_graph);
-
-      CRAB_LOG("octagon-widening", crab::outs()
+      auto widen_op =
+	[this](const split_oct_domain_t &left, const split_oct_domain_t &right) -> split_oct_domain_t {
+	  // Figure out the common renaming
+	  std::vector<vert_id> perm_x, perm_y;
+	  vert_map_t out_vmap;
+	  rev_map_t out_revmap;
+	  std::vector<Wt> widen_pot;
+	  vert_set_t widen_unstable(left.m_unstable);
+	  
+	  assert(left.m_potential.size() > 0);
+	  for (auto p : left.m_vert_map) {
+	    auto it = right.m_vert_map.find(p.first);
+	    // Variable exists in both
+	    if (it != right.m_vert_map.end()) {
+	      out_vmap.insert(vmap_elt_t(p.first, {perm_x.size(), perm_x.size() + 1}));
+	      out_revmap.push_back(p.first);
+	      out_revmap.push_back(p.first);
+	      widen_pot.push_back(left.m_potential[p.second.first]);
+	      widen_pot.push_back(left.m_potential[p.second.second]);
+	      perm_x.push_back(p.second.first);
+	      perm_x.push_back(p.second.second);
+	      perm_y.push_back((*it).second.first);
+	      perm_y.push_back((*it).second.second);
+	    }
+	  }
+	  // Build the permuted view of x and y.
+	  assert(left.m_graph.size() > 0);
+	  GrPerm gx(perm_x, left.m_graph);
+	  assert(right.m_graph.size() > 0);
+	  GrPerm gy(perm_y, right.m_graph);
+	  
+	  CRAB_LOG("octagon-widening", crab::outs()
                                        << "== After permutations == \n";
                crab::outs() << "DBM 1:\n"; gx.write(crab::outs());
                crab::outs() << "\n"; crab::outs() << "DBM 2:\n";
@@ -2506,29 +2522,38 @@ public:
                    crab::outs() << *(out_revmap[i]) << "(" << i << ");";
                } crab::outs() << "}\n";);
 
-      // Now perform the widening
-      graph_t widen_g(split_widen(gx, gy, widen_unstable));
-
-      CRAB_LOG(
-          "octagon-widening", crab::outs()
-                                  << "Unstable list after point-wise widening{";
-          for (vert_id v
-               : widen_unstable) {
+	  // Now perform the widening
+	  graph_t widen_g(split_widen(gx, gy, widen_unstable));
+	  
+	  CRAB_LOG("octagon-widening", crab::outs()
+		   << "Unstable list after point-wise widening{";
+          for (vert_id v : widen_unstable) {
+		 
             crab::outs() << *out_revmap[v] << ((v % 2 == 0) ? "+" : "-") << ";";
           } crab::outs()
           << "}\n");
 
-      split_oct_domain_t res(std::move(out_vmap), std::move(out_revmap),
-                             std::move(widen_g), std::move(widen_pot),
-                             std::move(widen_unstable));
-
-      CRAB_LOG("octagon-widening", crab::outs() << "Result widening:\n"
-                                                << res.m_graph << "\n";);
-      CRAB_LOG("octagon",
-               split_oct_domain_t res_copy(res); // to avoid closure
-               crab::outs() << "Result widening:\n"
-                            << res_copy << "\n";);
-      return res;
+	  split_oct_domain_t res(std::move(out_vmap), std::move(out_revmap),
+				 std::move(widen_g), std::move(widen_pot),
+				 std::move(widen_unstable));
+	  
+	  CRAB_LOG("octagon-widening", crab::outs() << "Result widening:\n"
+		   << res.m_graph << "\n";);
+	  CRAB_LOG("octagon",
+		   crab::outs() << "Result widening:\n" << res << "\n";);
+	  return res;
+	};
+      
+      // Do not normalize left operand
+      const split_oct_domain_t &left = *this;
+      if (o.need_normalization()) {
+	split_oct_domain_t right(o);
+	right.normalize();
+	return widen_op(left, right);
+      } else {
+	return widen_op(left, o);
+      }
+      
     }
   }
 
@@ -2549,125 +2574,143 @@ public:
                                        << "DBM 2\n"
                                        << o << "\n");
 
-      split_oct_domain_t left(*this);
-      split_oct_domain_t right(o);
+      auto meet_op =
+	[this](const split_oct_domain_t &left, const split_oct_domain_t &right) -> split_oct_domain_t {
+	  vert_map_t meet_verts;
+	  rev_map_t meet_rev;
+	  std::vector<vert_id> perm_x, perm_y;
+	  std::vector<Wt> meet_pi;
+	  
+	  for (auto p : left.m_vert_map) {
+	    vert_id vv = perm_x.size();
+	    meet_verts.insert(vmap_elt_t(p.first, {vv, vv + 1}));
+	    meet_rev.push_back(p.first);
+	    meet_rev.push_back(p.first);
+	    
+	    perm_x.push_back(p.second.first);
+	    perm_x.push_back(p.second.second);
+	    perm_y.push_back(-1);
+	    perm_y.push_back(-1);
+	    meet_pi.push_back(left.m_potential[p.second.first]);
+	    meet_pi.push_back(left.m_potential[p.second.second]);
+	  }
+	  
+	  // Add missing mappings from the right operand.
+	  for (auto p : right.m_vert_map) {
+	    auto it = meet_verts.find(p.first);
+	    
+	    if (it == meet_verts.end()) {
+	      vert_id vv = perm_y.size();
+	      meet_rev.push_back(p.first);
+	      meet_rev.push_back(p.first);
+	      
+	      perm_y.push_back(p.second.first);
+	      perm_y.push_back(p.second.second);
+	      perm_x.push_back(-1);
+	      perm_x.push_back(-1);
+	      meet_pi.push_back(right.m_potential[p.second.first]);
+	      meet_pi.push_back(right.m_potential[p.second.second]);
+	      meet_verts.insert(vmap_elt_t(p.first, {vv, vv + 1}));
+	    } else {
+	      perm_y[(*it).second.first] = p.second.first;
+	      perm_y[(*it).second.second] = p.second.second;
+	    }
+	  }
+	  
+	  // Build the permuted view of x and y.
+	  assert(left.m_graph.size() > 0);
+	  GrPerm gx(perm_x, left.m_graph);
+	  assert(right.m_graph.size() > 0);
+	  GrPerm gy(perm_y, right.m_graph);
+	  
+	  // Compute the syntactic meet of the permuted graphs.
+	  bool is_closed;
+	  graph_t meet_g(GrOps::meet(gx, gy, is_closed));
 
-      left.normalize();
-      right.normalize();
+	  // Compute updated potentials on the zero-enriched graph
+	  // vector<Wt> meet_pi(meet_g.size());
+	  // We've warm-started pi with the operand potentials
+	  if (!GrOps::select_potentials(meet_g, meet_pi)) {
+	    // Potentials cannot be selected -- state is infeasible.
+	    return make_bottom();
+	  }
 
-      vert_map_t meet_verts;
-      rev_map_t meet_rev;
-      std::vector<vert_id> perm_x;
-      std::vector<vert_id> perm_y;
-      std::vector<Wt> meet_pi;
+	  if (!is_closed) {
+	    // JN: this code needs to be tested
+	    edge_vector delta;
+	    split_octagons_impl::SplitOctGraph<graph_t> meet_g_oct(meet_g);
+	    
+	    if (crab_domain_params_man::get().oct_chrome_dijkstra()) {
+	      GrOps::close_after_meet(meet_g_oct, meet_pi, gx, gy, delta);
+	    } else {
+	      GrOps::close_johnson(meet_g_oct, meet_pi, delta);
+	    }
+	    
+	    // JN: we should be fine calling GrOps::apply_delta
+	    update_delta(meet_g, delta);
 
-      for (auto p : left.m_vert_map) {
-        vert_id vv = perm_x.size();
-        meet_verts.insert(vmap_elt_t(p.first, {vv, vv + 1}));
-        meet_rev.push_back(p.first);
-        meet_rev.push_back(p.first);
+	    // Wt_min min_op;
+	    // for(auto e : delta) {
+	    //   if (e.first.first % 2 == 2) {
+	    //     if(meet_g.elem(e.first.first+1, e.first.first))
+	    // 	meet_g.update_edge(e.first.first+1,
+	    // 			   meet_g.edge_val(e.first.first+1,
+	    // e.first.first)
+	    //  			   (Wt) 2*e.second, 			   e.first.second,
+	    //  min_op);
+	    //     if(meet_g.elem(e.first.second, e.first.first+1))
+	    // 	meet_g.update_edge(e.first.first,
+	    // 			   meet_g.edge_val(e.first.second,
+	    // e.first.first+1)
+	    //  			   (Wt) 2*e.second, 			   e.first.first+1,
+	    //  min_op);
+	    //   } else if (e.first.first % 2 == 2) {
+	    //     if(meet_g.elem(e.first.first, e.first.first+1))
+	    // 	meet_g.update_edge(e.first.first,
+	    // 			   meet_g.edge_val(e.first.first,
+	    // e.first.first+1)
+	    //  			   (Wt) 2*e.second, 			   e.first.second,
+	    //  min_op);
+	    //     if(meet_g.elem(e.first.second, e.first.first+1))
+	    // 	meet_g.update_edge(e.first.first+1,
+	    // 			   meet_g.edge_val(e.first.second+1,
+	    // e.first.first)
+	    //  			   (Wt) 2*e.second, 			   e.first.first,
+	    //  min_op);
+	    //   }
+	    // }
+	  }
 
-        perm_x.push_back(p.second.first);
-        perm_x.push_back(p.second.second);
-        perm_y.push_back(-1);
-        perm_y.push_back(-1);
-        meet_pi.push_back(left.m_potential[p.second.first]);
-        meet_pi.push_back(left.m_potential[p.second.second]);
+	  check_potential(meet_g, meet_pi, __LINE__);
+	  split_oct_domain_t res(std::move(meet_verts), std::move(meet_rev),
+				 std::move(meet_g), std::move(meet_pi),
+				 vert_set_t());
+	  
+	  CRAB_LOG("octagon", crab::outs() << "Result meet:\n" << res << "\n");
+	  return res;
+	};
+
+      if (need_normalization() && o.need_normalization()) {
+	split_oct_domain_t left(*this);
+	split_oct_domain_t right(o);
+	left.normalize();
+	right.normalize();
+	return meet_op(left, right);
+      } else if (need_normalization()) {
+	split_oct_domain_t left(*this);
+	const split_oct_domain_t &right = o;
+	left.normalize();
+	return meet_op(left, right);
+      } else if (o.need_normalization()) {
+	const split_oct_domain_t &left = *this;
+	split_oct_domain_t right(o);
+	right.normalize();
+	return meet_op(left, right);
+      } else {
+	return meet_op(*this, o);
       }
 
-      // Add missing mappings from the right operand.
-      for (auto p : right.m_vert_map) {
-        auto it = meet_verts.find(p.first);
-
-        if (it == meet_verts.end()) {
-          vert_id vv = perm_y.size();
-          meet_rev.push_back(p.first);
-          meet_rev.push_back(p.first);
-
-          perm_y.push_back(p.second.first);
-          perm_y.push_back(p.second.second);
-          perm_x.push_back(-1);
-          perm_x.push_back(-1);
-          meet_pi.push_back(right.m_potential[p.second.first]);
-          meet_pi.push_back(right.m_potential[p.second.second]);
-          meet_verts.insert(vmap_elt_t(p.first, {vv, vv + 1}));
-        } else {
-          perm_y[(*it).second.first] = p.second.first;
-          perm_y[(*it).second.second] = p.second.second;
-        }
-      }
-
-      // Build the permuted view of x and y.
-      assert(left.m_graph.size() > 0);
-      GrPerm gx(perm_x, left.m_graph);
-      assert(right.m_graph.size() > 0);
-      GrPerm gy(perm_y, right.m_graph);
-
-      // Compute the syntactic meet of the permuted graphs.
-      bool is_closed;
-      graph_t meet_g(GrOps::meet(gx, gy, is_closed));
-
-      // Compute updated potentials on the zero-enriched graph
-      // vector<Wt> meet_pi(meet_g.size());
-      // We've warm-started pi with the operand potentials
-      if (!GrOps::select_potentials(meet_g, meet_pi)) {
-        // Potentials cannot be selected -- state is infeasible.
-        return make_bottom();
-      }
-
-      if (!is_closed) {
-        // JN: this code needs to be tested
-        edge_vector delta;
-        split_octagons_impl::SplitOctGraph<graph_t> meet_g_oct(meet_g);
-
-        if (crab_domain_params_man::get().oct_chrome_dijkstra()) {
-          GrOps::close_after_meet(meet_g_oct, meet_pi, gx, gy, delta);
-        } else {
-          GrOps::close_johnson(meet_g_oct, meet_pi, delta);
-        }
-
-        // JN: we should be fine calling GrOps::apply_delta
-        update_delta(meet_g, delta);
-
-        // Wt_min min_op;
-        // for(auto e : delta) {
-        //   if (e.first.first % 2 == 2) {
-        //     if(meet_g.elem(e.first.first+1, e.first.first))
-        // 	meet_g.update_edge(e.first.first+1,
-        // 			   meet_g.edge_val(e.first.first+1,
-        // e.first.first)
-        //  			   (Wt) 2*e.second, 			   e.first.second,
-        //  min_op);
-        //     if(meet_g.elem(e.first.second, e.first.first+1))
-        // 	meet_g.update_edge(e.first.first,
-        // 			   meet_g.edge_val(e.first.second,
-        // e.first.first+1)
-        //  			   (Wt) 2*e.second, 			   e.first.first+1,
-        //  min_op);
-        //   } else if (e.first.first % 2 == 2) {
-        //     if(meet_g.elem(e.first.first, e.first.first+1))
-        // 	meet_g.update_edge(e.first.first,
-        // 			   meet_g.edge_val(e.first.first,
-        // e.first.first+1)
-        //  			   (Wt) 2*e.second, 			   e.first.second,
-        //  min_op);
-        //     if(meet_g.elem(e.first.second, e.first.first+1))
-        // 	meet_g.update_edge(e.first.first+1,
-        // 			   meet_g.edge_val(e.first.second+1,
-        // e.first.first)
-        //  			   (Wt) 2*e.second, 			   e.first.first,
-        //  min_op);
-        //   }
-        // }
-      }
-
-      check_potential(meet_g, meet_pi, __LINE__);
-      split_oct_domain_t res(std::move(meet_verts), std::move(meet_rev),
-                             std::move(meet_g), std::move(meet_pi),
-                             vert_set_t());
-
-      CRAB_LOG("octagon", crab::outs() << "Result meet:\n" << res << "\n");
-      return res;
+      
     }
   }
 
@@ -2687,94 +2730,101 @@ public:
                                        << "DBM 2\n"
                                        << o << "\n");
 
+      auto meet_op = [this](split_oct_domain_t &left, const split_oct_domain_t &right)  {
+	vert_map_t meet_verts;
+	rev_map_t meet_rev;
+	std::vector<vert_id> perm_x, perm_y;
+	std::vector<Wt> meet_pi;
+
+	for (auto p : left.m_vert_map) {
+	  vert_id vv = perm_x.size();
+	  meet_verts.insert(vmap_elt_t(p.first, {vv, vv + 1}));
+	  meet_rev.push_back(p.first);
+	  meet_rev.push_back(p.first);
+	  
+	  perm_x.push_back(p.second.first);
+	  perm_x.push_back(p.second.second);
+	  perm_y.push_back(-1);
+	  perm_y.push_back(-1);
+	  meet_pi.push_back(left.m_potential[p.second.first]);
+	  meet_pi.push_back(left.m_potential[p.second.second]);
+	}
+	
+	// Add missing mappings from the right operand.
+	for (auto p : right.m_vert_map) {
+	  auto it = meet_verts.find(p.first);
+	  
+	  if (it == meet_verts.end()) {
+	    vert_id vv = perm_y.size();
+	    meet_rev.push_back(p.first);
+	    meet_rev.push_back(p.first);
+	    
+	    perm_y.push_back(p.second.first);
+	    perm_y.push_back(p.second.second);
+	    perm_x.push_back(-1);
+	    perm_x.push_back(-1);
+	    meet_pi.push_back(right.m_potential[p.second.first]);
+	    meet_pi.push_back(right.m_potential[p.second.second]);
+	    meet_verts.insert(vmap_elt_t(p.first, {vv, vv + 1}));
+	  } else {
+	    perm_y[(*it).second.first] = p.second.first;
+	    perm_y[(*it).second.second] = p.second.second;
+	  }
+	}
+	
+	// Build the permuted view of x and y.
+	assert(left.m_graph.size() > 0);
+	GrPerm gx(perm_x, left.m_graph);
+	assert(right.m_graph.size() > 0);
+	GrPerm gy(perm_y, right.m_graph);
+	
+	// Compute the syntactic meet of the permuted graphs.
+	bool is_closed;
+	graph_t meet_g(GrOps::meet(gx, gy, is_closed));
+	
+	// Compute updated potentials on the zero-enriched graph
+	// vector<Wt> meet_pi(meet_g.size());
+	// We've warm-started pi with the operand potentials
+	if (!GrOps::select_potentials(meet_g, meet_pi)) {
+	  // Potentials cannot be selected -- state is infeasible.
+	  set_to_bottom();
+	  return;
+	}
+	
+	if (!is_closed) {
+	  edge_vector delta;
+	  split_octagons_impl::SplitOctGraph<graph_t> meet_g_oct(meet_g);
+	  if (crab_domain_params_man::get().oct_chrome_dijkstra()) {
+	    GrOps::close_after_meet(meet_g_oct, meet_pi, gx, gy, delta);
+	  } else {
+	    GrOps::close_johnson(meet_g_oct, meet_pi, delta);
+	  }
+	  update_delta(meet_g, delta);
+	}
+	
+	check_potential(meet_g, meet_pi, __LINE__);
+	
+	left.m_vert_map = std::move(meet_verts);
+	left.m_rev_vert_map = std::move(meet_rev);
+	left.m_graph = std::move(meet_g);
+	left.m_potential = std::move(meet_pi);
+	left.m_unstable.clear();
+	left.m_is_bottom = false;
+	
+	CRAB_LOG("octagon", crab::outs() << "Result meet:\n" << left << "\n");
+      };
+
       split_oct_domain_t &left = *this;
-      split_oct_domain_t right(o);
-
       left.normalize();
-      right.normalize();
 
-      vert_map_t meet_verts;
-      rev_map_t meet_rev;
-      std::vector<vert_id> perm_x;
-      std::vector<vert_id> perm_y;
-      std::vector<Wt> meet_pi;
-
-      for (auto p : left.m_vert_map) {
-        vert_id vv = perm_x.size();
-        meet_verts.insert(vmap_elt_t(p.first, {vv, vv + 1}));
-        meet_rev.push_back(p.first);
-        meet_rev.push_back(p.first);
-
-        perm_x.push_back(p.second.first);
-        perm_x.push_back(p.second.second);
-        perm_y.push_back(-1);
-        perm_y.push_back(-1);
-        meet_pi.push_back(left.m_potential[p.second.first]);
-        meet_pi.push_back(left.m_potential[p.second.second]);
+      if (o.need_normalization()) {
+	split_oct_domain_t right(o);
+	right.normalize();
+	meet_op(left, right);
+      } else {
+	meet_op(left, o);
       }
-
-      // Add missing mappings from the right operand.
-      for (auto p : right.m_vert_map) {
-        auto it = meet_verts.find(p.first);
-
-        if (it == meet_verts.end()) {
-          vert_id vv = perm_y.size();
-          meet_rev.push_back(p.first);
-          meet_rev.push_back(p.first);
-
-          perm_y.push_back(p.second.first);
-          perm_y.push_back(p.second.second);
-          perm_x.push_back(-1);
-          perm_x.push_back(-1);
-          meet_pi.push_back(right.m_potential[p.second.first]);
-          meet_pi.push_back(right.m_potential[p.second.second]);
-          meet_verts.insert(vmap_elt_t(p.first, {vv, vv + 1}));
-        } else {
-          perm_y[(*it).second.first] = p.second.first;
-          perm_y[(*it).second.second] = p.second.second;
-        }
-      }
-
-      // Build the permuted view of x and y.
-      assert(left.m_graph.size() > 0);
-      GrPerm gx(perm_x, left.m_graph);
-      assert(right.m_graph.size() > 0);
-      GrPerm gy(perm_y, right.m_graph);
-
-      // Compute the syntactic meet of the permuted graphs.
-      bool is_closed;
-      graph_t meet_g(GrOps::meet(gx, gy, is_closed));
-
-      // Compute updated potentials on the zero-enriched graph
-      // vector<Wt> meet_pi(meet_g.size());
-      // We've warm-started pi with the operand potentials
-      if (!GrOps::select_potentials(meet_g, meet_pi)) {
-        // Potentials cannot be selected -- state is infeasible.
-	set_to_bottom();
-        return;
-      }
-
-      if (!is_closed) {
-        edge_vector delta;
-        split_octagons_impl::SplitOctGraph<graph_t> meet_g_oct(meet_g);
-        if (crab_domain_params_man::get().oct_chrome_dijkstra()) {
-          GrOps::close_after_meet(meet_g_oct, meet_pi, gx, gy, delta);
-        } else {
-          GrOps::close_johnson(meet_g_oct, meet_pi, delta);
-        }
-        update_delta(meet_g, delta);
-      }
-
-      check_potential(meet_g, meet_pi, __LINE__);
-
-      m_vert_map = std::move(meet_verts);
-      m_rev_vert_map = std::move(meet_rev);
-      m_graph = std::move(meet_g);
-      m_potential = std::move(meet_pi);
-      m_unstable.clear();
-      m_is_bottom = false;
-      
-      CRAB_LOG("octagon", crab::outs() << "Result meet:\n" << *this << "\n");
+     
     }
   }
   
@@ -2784,7 +2834,6 @@ public:
     return (*this || o);
   }
 
-  // NARROWING
   split_oct_domain_t operator&&(const split_oct_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
@@ -2801,11 +2850,22 @@ public:
                                        << o << "\n");
 
       // TODO: Implement properly
-      // Narrowing as a no-op should be sound.
-      split_oct_domain_t res(*this);
-      res.normalize();
-      CRAB_LOG("octagon", crab::outs() << "Result narrowing:\n" << res << "\n");
-      return res;
+#if 1
+      // Narrowing implemented as meet might not terminate.
+      // Make sure that there is always a maximum bound for narrowing iterations.
+      return *this & o;
+#else
+      // Narrowing as a no-op: sound and it will terminate
+      if (need_normalization()) {
+	split_oct_domain_t res(*this);
+	res.normalize();      
+	CRAB_LOG("octagon", crab::outs() << "Result narrowing:\n" << res << "\n");
+	return res;
+      } else {
+	CRAB_LOG("octagon", crab::outs() << "Result narrowing:\n" << *this << "\n");
+	return *this;
+      }
+#endif      
     }
   }
 

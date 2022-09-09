@@ -911,48 +911,54 @@ public:
     else if (is_top())
       return false;
     else {
-      typename graph_t::wt_ref_t wx;
-      DBM_t left(*this);
-      left.normalize();
-      // XXX: we can avoid copy of the right operand but we need to
-      // create const versions of several methods in graph_t.
-      DBM_t right(o);
-
       // CRAB_LOG("zones-sparse",
       //          crab::outs() << "operator<=: "<< *this<< "<=?"<< o << "\n");
 
-      if (left.vert_map.size() < right.vert_map.size())
-        return false;
+      auto leq_op = [](const DBM_t &left, const DBM_t &right) -> bool {
+	// left needs to be normalized but right doesn't need to.
+	
+	typename graph_t::wt_ref_t wx;
+	
+	if (left.vert_map.size() < right.vert_map.size())
+	  return false;
+	
+	// Set up a mapping from o to this.
+	std::vector<unsigned int> vert_renaming(right.g.size(), -1);
+	vert_renaming[0] = 0;
+	for (auto p : right.vert_map) {
+	  auto it = left.vert_map.find(p.first);
+	  // We can't have this <= o if we're missing some
+	  // vertex.
+	  if (it == left.vert_map.end())
+	    return false;
+	  vert_renaming[p.second] = (*it).second;
+	}
+	
+	assert(left.g.size() > 0);
+	for (vert_id ox : right.g.verts()) {
+	  assert(vert_renaming[ox] != -1);
+	  vert_id x = vert_renaming[ox];
+	  for (auto edge : right.g.e_succs(ox)) {
+	    vert_id oy = edge.vert;
+	    assert(vert_renaming[ox] != -1);
+	    vert_id y = vert_renaming[oy];
+	    Wt ow = edge.val;
+	    
+	    if (!left.g.lookup(x, y, wx) || (ow < wx.get()))
+	      return false;
+	  }
+	}
+	return true;
+      };
 
-      // Set up a mapping from o to this.
-      std::vector<unsigned int> vert_renaming(right.g.size(), -1);
-      vert_renaming[0] = 0;
-      for (auto p : right.vert_map) {
-        auto it = left.vert_map.find(p.first);
-        // We can't have this <= o if we're missing some
-        // vertex.
-        if (it == left.vert_map.end())
-          return false;
-        vert_renaming[p.second] = (*it).second;
+      if (need_normalization()) {
+	DBM_t left(*this);
+	left.normalize();
+	return leq_op(left, o);
+      } else {
+	return leq_op(*this, o);
       }
-
-      assert(left.g.size() > 0);
-      // GrPerm g_perm(vert_renaming, g);
-
-      for (vert_id ox : right.g.verts()) {
-        assert(vert_renaming[ox] != -1);
-        vert_id x = vert_renaming[ox];
-        for (auto edge : right.g.e_succs(ox)) {
-          vert_id oy = edge.vert;
-          assert(vert_renaming[ox] != -1);
-          vert_id y = vert_renaming[oy];
-          Wt ow = edge.val;
-
-          if (!left.g.lookup(x, y, wx) || (ow < wx.get()))
-            return false;
-        }
-      }
-      return true;
+            
     }
   }
 
@@ -973,80 +979,86 @@ public:
     } else if (is_top() || o.is_bottom()) {
       // do nothing
     } else {
-      normalize();
-      DBM_t right(o);
-      right.normalize();
 
-      assert(check_potential(g, potential));
-      assert(check_potential(right.g, right.potential));
 
-      // Figure out the common renaming, initializing the
-      // resulting potentials as we go.
-      std::vector<vert_id> perm_x;
-      std::vector<vert_id> perm_y;
-      std::vector<variable_t> perm_inv;
+      auto join_op = [this](DBM_t &left, const DBM_t &right) {
+	assert(check_potential(left.g, left.potential));
+	assert(check_potential(right.g, right.potential));
+	
+	// Figure out the common renaming, initializing the
+	// resulting potentials as we go.
+	std::vector<vert_id> perm_x, perm_y;
+	std::vector<variable_t> perm_inv;
+	std::vector<Wt> pot_rx, pot_ry;
+	vert_map_t out_vmap;
+	rev_map_t out_revmap;
+	// Add the zero vertex
+	assert(left.potential.size() > 0);
+	pot_rx.push_back(0);
+	pot_ry.push_back(0);
+	perm_x.push_back(0);
+	perm_y.push_back(0);
+	out_revmap.push_back(boost::none);
+	
+	for (auto p : left.vert_map) {
+	  auto it = right.vert_map.find(p.first);
+	  // Variable exists in both
+	  if (it != right.vert_map.end()) {
+	    out_vmap.insert(vmap_elt_t(p.first, perm_x.size()));
+	    out_revmap.push_back(p.first);
+	    
+	    pot_rx.push_back(left.potential[p.second] - left.potential[0]);
+	    pot_ry.push_back(right.potential[(*it).second] - right.potential[0]);
+	    perm_inv.push_back(p.first);
+	    perm_x.push_back(p.second);
+	    perm_y.push_back((*it).second);
+	  }
+	}
+	// unsigned int sz = perm_x.size();
+	
+	// Build the permuted view of x and y.
+	assert(left.g.size() > 0);
+	GrPerm gx(perm_x, left.g);
+	assert(right.g.size() > 0);
+	GrPerm gy(perm_y, right.g);
+	
+	// We now have the relevant set of relations. Because g_rx and g_ry are
+	// closed, the result is also closed.
+	graph_t join_g(GrOps::join(gx, gy));
+	
+	// Now garbage collect any unused vertices
+	for (vert_id v : join_g.verts()) {
+	  if (v == 0)
+	    continue;
+	  if (join_g.succs(v).size() == 0 && join_g.preds(v).size() == 0) {
+	    join_g.forget(v);
+	    if (out_revmap[v]) {
+	      out_vmap.erase(*(out_revmap[v]));
+	      out_revmap[v] = boost::none;
+	    }
+	  }
+	}
+	
+	left.vert_map = std::move(out_vmap);
+	left.rev_map = std::move(out_revmap);
+	left.g = std::move(join_g);
+	left.potential = std::move(pot_rx);
+	left.unstable.clear();
+	left._is_bottom = false;
+	CRAB_LOG("zones-sparse", crab::outs() << "Result join:\n"
+		 << left << "\n";);
+      };
 
-      std::vector<Wt> pot_rx;
-      std::vector<Wt> pot_ry;
-      vert_map_t out_vmap;
-      rev_map_t out_revmap;
-      // Add the zero vertex
-      assert(potential.size() > 0);
-      pot_rx.push_back(0);
-      pot_ry.push_back(0);
-      perm_x.push_back(0);
-      perm_y.push_back(0);
-      out_revmap.push_back(boost::none);
-
-      for (auto p : vert_map) {
-        auto it = right.vert_map.find(p.first);
-        // Variable exists in both
-        if (it != right.vert_map.end()) {
-          out_vmap.insert(vmap_elt_t(p.first, perm_x.size()));
-          out_revmap.push_back(p.first);
-
-          pot_rx.push_back(potential[p.second] - potential[0]);
-          pot_ry.push_back(right.potential[(*it).second] - right.potential[0]);
-          perm_inv.push_back(p.first);
-          perm_x.push_back(p.second);
-          perm_y.push_back((*it).second);
-        }
-      }
-      // unsigned int sz = perm_x.size();
-
-      // Build the permuted view of x and y.
-      assert(g.size() > 0);
-      GrPerm gx(perm_x, g);
-      assert(right.g.size() > 0);
-      GrPerm gy(perm_y, right.g);
-
-      // We now have the relevant set of relations. Because g_rx and g_ry are
-      // closed, the result is also closed.
-      Wt_min min_op;
-      graph_t join_g(GrOps::join(gx, gy));
-
-      // Now garbage collect any unused vertices
-      for (vert_id v : join_g.verts()) {
-        if (v == 0)
-          continue;
-        if (join_g.succs(v).size() == 0 && join_g.preds(v).size() == 0) {
-          join_g.forget(v);
-          if (out_revmap[v]) {
-            out_vmap.erase(*(out_revmap[v]));
-            out_revmap[v] = boost::none;
-          }
-        }
-      }
-
-      std::swap(vert_map, out_vmap);
-      std::swap(rev_map, out_revmap);
-      std::swap(g, join_g);
-      std::swap(potential, pot_rx);
-      unstable.clear();
-      _is_bottom = false;
+      DBM_t &left = *this;
+      left.normalize();
+      if (o.need_normalization()) {
+	DBM_t right(o);
+	right.normalize();
+	join_op(left, right);
+      } else {
+	join_op(left, o);
+      }       
     }
-    CRAB_LOG("zones-sparse", crab::outs() << "Result join:\n"
-                                          << *this << "\n";);
   }
 
   DBM_t operator|(const DBM_t &o) const override {
@@ -1067,79 +1079,91 @@ public:
                                             << "DBM 2\n"
                                             << o << "\n");
 
-      DBM_t left(*this);
-      DBM_t right(o);
+      auto join_op = [this](const DBM_t &left, const DBM_t& right) -> DBM_t {
+	// Both left and right are normalized
+      
+	assert(check_potential(left.g, left.potential));
+	assert(check_potential(right.g, right.potential));
+	
+	// Figure out the common renaming, initializing the
+	// resulting potentials as we go.
+	std::vector<vert_id> perm_x, perm_y;
+	std::vector<variable_t> perm_inv;
+	std::vector<Wt> pot_rx, pot_ry;
+	vert_map_t out_vmap;
+	rev_map_t out_revmap;
+	// Add the zero vertex
+	assert(left.potential.size() > 0);
+	pot_rx.push_back(0);
+	pot_ry.push_back(0);
+	perm_x.push_back(0);
+	perm_y.push_back(0);
+	out_revmap.push_back(boost::none);
+	
+	for (auto p : left.vert_map) {
+	  auto it = right.vert_map.find(p.first);
+	  // Variable exists in both
+	  if (it != right.vert_map.end()) {
+	    out_vmap.insert(vmap_elt_t(p.first, perm_x.size()));
+	    out_revmap.push_back(p.first);
+	    pot_rx.push_back(left.potential[p.second] - left.potential[0]);
+	    pot_ry.push_back(right.potential[(*it).second] - right.potential[0]);
+	    perm_inv.push_back(p.first);
+	    perm_x.push_back(p.second);
+	    perm_y.push_back((*it).second);
+	  }
+	}
+	// Build the permuted view of x and y.
+	assert(left.g.size() > 0);
+	GrPerm gx(perm_x, left.g);
+	assert(right.g.size() > 0);
+	GrPerm gy(perm_y, right.g);
+	
+	// We now have the relevant set of relations. Because g_rx and g_ry are
+	// closed, the result is also closed.
+	graph_t join_g(GrOps::join(gx, gy));
 
-      left.normalize();
-      right.normalize();
+	// Now garbage collect any unused vertices
+	for (vert_id v : join_g.verts()) {
+	  if (v == 0)
+	    continue;
+	  if (join_g.succs(v).size() == 0 && join_g.preds(v).size() == 0) {
+	    join_g.forget(v);
+	    if (out_revmap[v]) {
+	      out_vmap.erase(*(out_revmap[v]));
+	      out_revmap[v] = boost::none;
+	    }
+	  }
+	}
 
-      assert(check_potential(left.g, left.potential));
-      assert(check_potential(right.g, right.potential));
+	DBM_t res(std::move(out_vmap), std::move(out_revmap), std::move(join_g),
+		  std::move(pot_rx), vert_set_t());
+	CRAB_LOG("zones-sparse", crab::outs() << "Result join:\n"
+		 << res << "\n";);
+	
+	return res;
+      };
 
-      // Figure out the common renaming, initializing the
-      // resulting potentials as we go.
-      std::vector<vert_id> perm_x;
-      std::vector<vert_id> perm_y;
-      std::vector<variable_t> perm_inv;
-
-      std::vector<Wt> pot_rx;
-      std::vector<Wt> pot_ry;
-      vert_map_t out_vmap;
-      rev_map_t out_revmap;
-      // Add the zero vertex
-      assert(left.potential.size() > 0);
-      pot_rx.push_back(0);
-      pot_ry.push_back(0);
-      perm_x.push_back(0);
-      perm_y.push_back(0);
-      out_revmap.push_back(boost::none);
-
-      for (auto p : left.vert_map) {
-        auto it = right.vert_map.find(p.first);
-        // Variable exists in both
-        if (it != right.vert_map.end()) {
-          out_vmap.insert(vmap_elt_t(p.first, perm_x.size()));
-          out_revmap.push_back(p.first);
-
-          pot_rx.push_back(left.potential[p.second] - left.potential[0]);
-          pot_ry.push_back(right.potential[(*it).second] - right.potential[0]);
-          perm_inv.push_back(p.first);
-          perm_x.push_back(p.second);
-          perm_y.push_back((*it).second);
-        }
+      if (need_normalization() && o.need_normalization()) {
+	DBM_t left(*this);
+	DBM_t right(o);
+	left.normalize();
+	right.normalize();
+	return join_op(left, right);
+      } else if (need_normalization()) {
+	DBM_t left(*this);
+	const DBM_t &right = o;
+	left.normalize();
+	return join_op(left, right);
+      } else if (o.need_normalization()) {
+	const DBM_t &left = *this;
+	DBM_t right(o);
+	right.normalize();
+	return join_op(left, right);
+      } else {
+	return join_op(*this, o);
       }
-      // unsigned int sz = perm_x.size();
-
-      // Build the permuted view of x and y.
-      assert(left.g.size() > 0);
-      GrPerm gx(perm_x, left.g);
-      assert(right.g.size() > 0);
-      GrPerm gy(perm_y, right.g);
-
-      // We now have the relevant set of relations. Because g_rx and g_ry are
-      // closed, the result is also closed.
-      Wt_min min_op;
-      graph_t join_g(GrOps::join(gx, gy));
-
-      // Now garbage collect any unused vertices
-      for (vert_id v : join_g.verts()) {
-        if (v == 0)
-          continue;
-        if (join_g.succs(v).size() == 0 && join_g.preds(v).size() == 0) {
-          join_g.forget(v);
-          if (out_revmap[v]) {
-            out_vmap.erase(*(out_revmap[v]));
-            out_revmap[v] = boost::none;
-          }
-        }
-      }
-
-      DBM_t res(std::move(out_vmap), std::move(out_revmap), std::move(join_g),
-                std::move(pot_rx), vert_set_t());
-      CRAB_LOG("zones-sparse", crab::outs() << "Result join:\n"
-                                            << res << "\n";);
-
-      return res;
+      
     }
   }
 
@@ -1153,63 +1177,74 @@ public:
       return *this;
     else {
       CRAB_LOG("zones-sparse",
-               DBM_t left(*this); // to avoid closure on left operand
                crab::outs() << "Before widening:\n"
                             << "DBM 1\n"
-                            << left << "\n"
+                            << *this << "\n"
                             << "DBM 2\n"
                             << o << "\n";);
+
+      auto widen_op = [](const DBM_t &left, const DBM_t &right) -> DBM_t {
+	// Only right is normalized
+      
+	// Figure out the common renaming
+	std::vector<vert_id> perm_x, perm_y;
+	vert_map_t out_vmap;
+	rev_map_t out_revmap;
+	std::vector<Wt> widen_pot;
+	vert_set_t widen_unstable(left.unstable);
+	
+	assert(left.potential.size() > 0);
+	widen_pot.push_back(Wt(0));
+	perm_x.push_back(0);
+	perm_y.push_back(0);
+	out_revmap.push_back(boost::none);
+	for (auto p : left.vert_map) {
+	  auto it = right.vert_map.find(p.first);
+	  // Variable exists in both
+	  if (it != right.vert_map.end()) {
+	    out_vmap.insert(vmap_elt_t(p.first, perm_x.size()));
+	    out_revmap.push_back(p.first);
+	    
+	    widen_pot.push_back(left.potential[p.second] - left.potential[0]);
+	    perm_x.push_back(p.second);
+	    perm_y.push_back((*it).second);
+	  }
+	}
+	
+	// Build the permuted view of x and y.
+
+	assert(left.g.size() > 0);
+	GrPerm gx(perm_x, left.g);
+	assert(right.g.size() > 0);
+	GrPerm gy(perm_y, right.g);
+
+	// Now perform the widening
+	std::vector<vert_id> destabilized;
+	graph_t widen_g(GrOps::widen(gx, gy, destabilized));
+	for (vert_id v : destabilized) {
+	  widen_unstable.insert(v);
+	}
+
+	DBM_t res(std::move(out_vmap), std::move(out_revmap), std::move(widen_g),
+		  std::move(widen_pot), std::move(widen_unstable));
+	
+	CRAB_LOG("zones-sparse", crab::outs()
+		 << "Result widening:\n" << res << "\n";);
+	return res;
+      };
+
+
       // Do not normalize left operand
-      DBM_t right(o);
-      right.normalize();
-
-      // Figure out the common renaming
-      std::vector<vert_id> perm_x;
-      std::vector<vert_id> perm_y;
-      vert_map_t out_vmap;
-      rev_map_t out_revmap;
-      std::vector<Wt> widen_pot;
-      vert_set_t widen_unstable(unstable);
-
-      assert(potential.size() > 0);
-      widen_pot.push_back(Wt(0));
-      perm_x.push_back(0);
-      perm_y.push_back(0);
-      out_revmap.push_back(boost::none);
-      for (auto p : vert_map) {
-        auto it = right.vert_map.find(p.first);
-        // Variable exists in both
-        if (it != right.vert_map.end()) {
-          out_vmap.insert(vmap_elt_t(p.first, perm_x.size()));
-          out_revmap.push_back(p.first);
-
-          widen_pot.push_back(potential[p.second] - potential[0]);
-          perm_x.push_back(p.second);
-          perm_y.push_back((*it).second);
-        }
+      const DBM_t &left = *this;
+      if (o.need_normalization()) {
+	DBM_t right(o);
+	right.normalize();
+	return widen_op(left, right);
+      } else {
+	return widen_op(left, o);
       }
-
-      // Build the permuted view of x and y.
-      graph_t left_g(g);
-
-      assert(left_g.size() > 0);
-      GrPerm gx(perm_x, left_g);
-      assert(right.g.size() > 0);
-      GrPerm gy(perm_y, right.g);
-
-      // Now perform the widening
-      std::vector<vert_id> destabilized;
-      graph_t widen_g(GrOps::widen(gx, gy, destabilized));
-      for (vert_id v : destabilized)
-        widen_unstable.insert(v);
-
-      DBM_t res(std::move(out_vmap), std::move(out_revmap), std::move(widen_g),
-                std::move(widen_pot), std::move(widen_unstable));
-
-      CRAB_LOG("zones-sparse", DBM_t res_copy(res); crab::outs()
-                                                    << "Result widening:\n"
-                                                    << res_copy << "\n";);
-      return res;
+      
+      
     }
   }
 
@@ -1227,86 +1262,101 @@ public:
                                             << *this << "\n"
                                             << "DBM 2\n"
                                             << o << "\n";);
-      DBM_t left(*this);
-      DBM_t right(o);
 
-      left.normalize();
-      right.normalize();
+      auto meet_op = [this](const DBM_t &left, const DBM_t &right) -> DBM_t {
+	// Both left and right are normalized
+	
+	// We map vertices in the left operand onto a contiguous range.
+	// This will often be the identity map, but there might be gaps.
+	vert_map_t meet_verts;
+	rev_map_t meet_rev;
+	std::vector<vert_id> perm_x, perm_y;
+	std::vector<Wt> meet_pi;
+	perm_x.push_back(0);
+	perm_y.push_back(0);
+	meet_pi.push_back(Wt(0));
+	meet_rev.push_back(boost::none);
+	for (auto p : left.vert_map) {
+	  vert_id vv = perm_x.size();
+	  meet_verts.insert(vmap_elt_t(p.first, vv));
+	  meet_rev.push_back(p.first);
+	  perm_x.push_back(p.second);
+	  perm_y.push_back(-1);
+	  meet_pi.push_back(left.potential[p.second] - left.potential[0]);
+	}
+	
+	// Add missing mappings from the right operand.
+	for (auto p : right.vert_map) {
+	  auto it = meet_verts.find(p.first);
+	  if (it == meet_verts.end()) {
+	    vert_id vv = perm_y.size();
+	    meet_rev.push_back(p.first);
+	    perm_y.push_back(p.second);
+	    perm_x.push_back(-1);
+	    meet_pi.push_back(right.potential[p.second] - right.potential[0]);
+	    meet_verts.insert(vmap_elt_t(p.first, vv));
+	  } else {
+	    perm_y[(*it).second] = p.second;
+	  }
+	}
+	
+	// Build the permuted view of x and y.
+	assert(left.g.size() > 0);
+	GrPerm gx(perm_x, left.g);
+	assert(right.g.size() > 0);
+	GrPerm gy(perm_y, right.g);
+	
+	// Compute the syntactic meet of the permuted graphs.
+	bool is_closed;
+	graph_t meet_g(GrOps::meet(gx, gy, is_closed));
+	
+	// Compute updated potentials on the zero-enriched graph
+	// std::vector<Wt> meet_pi(meet_g.size());
+	// We've warm-started pi with the operand potentials
+	if (!GrOps::select_potentials(meet_g, meet_pi)) {
+	  // Potentials cannot be selected -- state is infeasible.
+	  DBM_t res;
+	  res.set_to_bottom();
+	  return res;
+	}
+	
+	if (!is_closed) {
+	  edge_vector delta;
+	  if (crab_domain_params_man::get().zones_chrome_dijkstra()) {
+	    GrOps::close_after_meet(meet_g, meet_pi, gx, gy, delta);
+	  } else {
+	    GrOps::close_johnson(meet_g, meet_pi, delta);
+	  }
+	  GrOps::apply_delta(meet_g, delta);
+	}
+	assert(check_potential(meet_g, meet_pi));
+	DBM_t res(std::move(meet_verts), std::move(meet_rev), std::move(meet_g),
+		  std::move(meet_pi), vert_set_t());
+	CRAB_LOG("zones-sparse", crab::outs() << "Result meet:\n"
+		 << res << "\n";);
+	return res;
+      };
 
-      // We map vertices in the left operand onto a contiguous range.
-      // This will often be the identity map, but there might be gaps.
-      vert_map_t meet_verts;
-      rev_map_t meet_rev;
-
-      std::vector<vert_id> perm_x;
-      std::vector<vert_id> perm_y;
-      std::vector<Wt> meet_pi;
-      perm_x.push_back(0);
-      perm_y.push_back(0);
-      meet_pi.push_back(Wt(0));
-      meet_rev.push_back(boost::none);
-      for (auto p : left.vert_map) {
-        vert_id vv = perm_x.size();
-        meet_verts.insert(vmap_elt_t(p.first, vv));
-        meet_rev.push_back(p.first);
-
-        perm_x.push_back(p.second);
-        perm_y.push_back(-1);
-        meet_pi.push_back(left.potential[p.second] - left.potential[0]);
+      if (need_normalization() && o.need_normalization()) {
+	DBM_t left(*this);
+	DBM_t right(o);
+	left.normalize();
+	right.normalize();
+	return meet_op(left, right);
+      } else if (need_normalization()) {
+	DBM_t left(*this);
+	const DBM_t &right = o;
+	left.normalize();
+	return meet_op(left, right);
+      } else if (o.need_normalization()) {
+	const DBM_t &left = *this;
+	DBM_t right(o);
+	right.normalize();
+	return meet_op(left, right);
+      } else {
+	return meet_op(*this, o);
       }
-
-      // Add missing mappings from the right operand.
-      for (auto p : right.vert_map) {
-        auto it = meet_verts.find(p.first);
-
-        if (it == meet_verts.end()) {
-          vert_id vv = perm_y.size();
-          meet_rev.push_back(p.first);
-
-          perm_y.push_back(p.second);
-          perm_x.push_back(-1);
-          meet_pi.push_back(right.potential[p.second] - right.potential[0]);
-          meet_verts.insert(vmap_elt_t(p.first, vv));
-        } else {
-          perm_y[(*it).second] = p.second;
-        }
-      }
-
-      // Build the permuted view of x and y.
-      assert(left.g.size() > 0);
-      GrPerm gx(perm_x, left.g);
-      assert(right.g.size() > 0);
-      GrPerm gy(perm_y, right.g);
-
-      // Compute the syntactic meet of the permuted graphs.
-      bool is_closed;
-      graph_t meet_g(GrOps::meet(gx, gy, is_closed));
-
-      // Compute updated potentials on the zero-enriched graph
-      // std::vector<Wt> meet_pi(meet_g.size());
-      // We've warm-started pi with the operand potentials
-      if (!GrOps::select_potentials(meet_g, meet_pi)) {
-        // Potentials cannot be selected -- state is infeasible.
-        DBM_t res;
-        res.set_to_bottom();
-        return res;
-      }
-
-      if (!is_closed) {
-        edge_vector delta;
-        if (crab_domain_params_man::get().zones_chrome_dijkstra())
-          GrOps::close_after_meet(meet_g, meet_pi, gx, gy, delta);
-        else
-          GrOps::close_johnson(meet_g, meet_pi, delta);
-
-        GrOps::apply_delta(meet_g, delta);
-      }
-      assert(check_potential(meet_g, meet_pi));
-      DBM_t res(std::move(meet_verts), std::move(meet_rev), std::move(meet_g),
-                std::move(meet_pi), vert_set_t());
-      CRAB_LOG("zones-sparse", crab::outs() << "Result meet:\n"
-                                            << res << "\n";);
-      return res;
+      
     }
   }
 
@@ -1324,90 +1374,95 @@ public:
                                             << *this << "\n"
                                             << "DBM 2\n"
                                             << o << "\n";);
+
+      auto meet_op = [this](DBM_t &left, const DBM_t & right) {
+	// Both left and right are normalized
+
+	// Common renaming
+	vert_map_t meet_verts;
+	rev_map_t meet_rev;
+	std::vector<vert_id> perm_x,  perm_y;
+	std::vector<Wt> meet_pi;
+	perm_x.push_back(0);
+	perm_y.push_back(0);
+	meet_pi.push_back(Wt(0));
+	meet_rev.push_back(boost::none);
+	for (auto p : left.vert_map) {
+	  vert_id vv = perm_x.size();
+	  meet_verts.insert(vmap_elt_t(p.first, vv));
+	  meet_rev.push_back(p.first);
+	  perm_x.push_back(p.second);
+	  perm_y.push_back(-1);
+	  meet_pi.push_back(left.potential[p.second] - left.potential[0]);
+	}
+	
+	// Add missing mappings from the right operand.
+	for (auto p : right.vert_map) {
+	  auto it = meet_verts.find(p.first);
+	  if (it == meet_verts.end()) {
+	    vert_id vv = perm_y.size();
+	    meet_rev.push_back(p.first);
+	    perm_y.push_back(p.second);
+	    perm_x.push_back(-1);
+	    meet_pi.push_back(right.potential[p.second] - right.potential[0]);
+	    meet_verts.insert(vmap_elt_t(p.first, vv));
+	  } else {
+	    perm_y[(*it).second] = p.second;
+	  }
+	}
+	// Build the permuted view of x and y.
+	assert(left.g.size() > 0);
+	GrPerm gx(perm_x, left.g);
+	assert(right.g.size() > 0);
+	GrPerm gy(perm_y, right.g);
+	
+	// Compute the syntactic meet of the permuted graphs.
+	bool is_closed;
+	graph_t meet_g(GrOps::meet(gx, gy, is_closed));
+
+	// Compute updated potentials on the zero-enriched graph
+	// std::vector<Wt> meet_pi(meet_g.size());
+	// We've warm-started pi with the operand potentials
+	if (!GrOps::select_potentials(meet_g, meet_pi)) {
+	  // Potentials cannot be selected -- state is infeasible.
+	  set_to_bottom();
+	  return;
+	}
+	
+	if (!is_closed) {
+	  edge_vector delta;
+	  if (crab_domain_params_man::get().zones_chrome_dijkstra()) {
+	    GrOps::close_after_meet(meet_g, meet_pi, gx, gy, delta);
+	  } else {
+	    GrOps::close_johnson(meet_g, meet_pi, delta);
+	  }
+	  GrOps::apply_delta(meet_g, delta);
+	}
+	assert(check_potential(meet_g, meet_pi));
+	
+	left.vert_map = std::move(meet_verts);
+	left.rev_map = std::move(meet_rev);
+	left.g = std::move(meet_g);
+	left.potential = std::move(meet_pi);
+	left.unstable.clear();
+	left._is_bottom = false;
+	
+	CRAB_LOG("zones-sparse", crab::outs() << "Result meet:\n"
+		 << left << "\n";);
+      };
+
+
       DBM_t &left = *this;
-      DBM_t right(o);
-
       left.normalize();
-      right.normalize();
 
-      // We map vertices in the left operand onto a contiguous range.
-      // This will often be the identity map, but there might be gaps.
-      vert_map_t meet_verts;
-      rev_map_t meet_rev;
-
-      std::vector<vert_id> perm_x;
-      std::vector<vert_id> perm_y;
-      std::vector<Wt> meet_pi;
-      perm_x.push_back(0);
-      perm_y.push_back(0);
-      meet_pi.push_back(Wt(0));
-      meet_rev.push_back(boost::none);
-      for (auto p : left.vert_map) {
-        vert_id vv = perm_x.size();
-        meet_verts.insert(vmap_elt_t(p.first, vv));
-        meet_rev.push_back(p.first);
-
-        perm_x.push_back(p.second);
-        perm_y.push_back(-1);
-        meet_pi.push_back(left.potential[p.second] - left.potential[0]);
+      if (o.need_normalization()) {
+	DBM_t right(o);
+	right.normalize();
+	meet_op(left, right);
+      } else {
+	meet_op(left, o);
       }
-
-      // Add missing mappings from the right operand.
-      for (auto p : right.vert_map) {
-        auto it = meet_verts.find(p.first);
-
-        if (it == meet_verts.end()) {
-          vert_id vv = perm_y.size();
-          meet_rev.push_back(p.first);
-
-          perm_y.push_back(p.second);
-          perm_x.push_back(-1);
-          meet_pi.push_back(right.potential[p.second] - right.potential[0]);
-          meet_verts.insert(vmap_elt_t(p.first, vv));
-        } else {
-          perm_y[(*it).second] = p.second;
-        }
-      }
-
-      // Build the permuted view of x and y.
-      assert(left.g.size() > 0);
-      GrPerm gx(perm_x, left.g);
-      assert(right.g.size() > 0);
-      GrPerm gy(perm_y, right.g);
-
-      // Compute the syntactic meet of the permuted graphs.
-      bool is_closed;
-      graph_t meet_g(GrOps::meet(gx, gy, is_closed));
-
-      // Compute updated potentials on the zero-enriched graph
-      // std::vector<Wt> meet_pi(meet_g.size());
-      // We've warm-started pi with the operand potentials
-      if (!GrOps::select_potentials(meet_g, meet_pi)) {
-        // Potentials cannot be selected -- state is infeasible.
-        set_to_bottom();
-        return;
-      }
-
-      if (!is_closed) {
-        edge_vector delta;
-        if (crab_domain_params_man::get().zones_chrome_dijkstra())
-          GrOps::close_after_meet(meet_g, meet_pi, gx, gy, delta);
-        else
-          GrOps::close_johnson(meet_g, meet_pi, delta);
-
-        GrOps::apply_delta(meet_g, delta);
-      }
-      assert(check_potential(meet_g, meet_pi));
-
-      vert_map = std::move(meet_verts);
-      rev_map = std::move(meet_rev);
-      g = std::move(meet_g);
-      potential = std::move(meet_pi);
-      unstable.clear();
-      _is_bottom = false;
       
-      CRAB_LOG("zones-sparse", crab::outs() << "Result meet:\n"
-                                            << *this << "\n";);
     }
   }
   
@@ -1426,19 +1481,28 @@ public:
                                             << "DBM 2\n"
                                             << o << "\n";);
 
-      // FIXME: Implement properly
-      // Narrowing as a no-op should be sound.
-      DBM_t res(*this);
-      res.normalize();
-      CRAB_LOG("zones-sparse", crab::outs() << "Result narrowing:\n"
-                                            << res << "\n";);
-      return res;
+      // TODO: Implement properly
+#if 1
+      // Narrowing implemented as meet might not terminate.
+      // Make sure that there is always a maximum bound for narrowing iterations.
+      return *this & o;
+#else
+      // Narrowing as a no-op: sound and terminate.
+      if (need_normalization()) {
+	DBM_t res(*this);
+	res.normalize();      
+	CRAB_LOG("zones-sparse", crab::outs() << "Result narrowing:\n" << res << "\n");
+	return res;
+      } else {
+	CRAB_LOG("zones-sparse", crab::outs() << "Result narrowing:\n" << *this << "\n");
+	return *this;
+      }
+#endif       
     }
   }
 
-  DBM_t widening_thresholds(
-      const DBM_t &o,
-      const thresholds<number_t> &ts) const override {
+  DBM_t widening_thresholds(const DBM_t &o,
+			    const thresholds<number_t> &ts) const override {
     // TODO: use thresholds
     return (*this || o);
   }
