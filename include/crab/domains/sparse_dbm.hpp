@@ -653,7 +653,7 @@ protected:
       for (auto d_p : dest_dec) {
         vert_id de = d_p.first;
         Wt wt_sijd = wt_sij + d_p.second;
-        if (g.lookup(se, de, &w)) {
+        if (g.lookup(se, de, w)) {
           if (w.get() <= wt_sijd) {
             continue;
 	  }

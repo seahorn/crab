@@ -43,6 +43,7 @@
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/graphs/graph_config.hpp>
 #include <crab/domains/graphs/graph_ops.hpp>
+#include <crab/domains/graphs/graph_views.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
