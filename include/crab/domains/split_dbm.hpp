@@ -3,7 +3,7 @@
  * Difference Bound Matrix domain based on the paper "Exploiting
  * Sparsity in Difference-Bound Matrices" by Gange, Navas, Schachte,
  * Sondergaard, and Stuckey published in SAS'16.
-
+ *
  * A re-engineered implementation of the Difference Bound Matrix
  * domain, which maintains bounds and relations separately.
  *
@@ -78,6 +78,7 @@ private:
   using graph_t = typename Params::graph_t;
   using ntow = DBM_impl::NtoW<number_t, Wt>;
   using vert_id = typename graph_t::vert_id;
+  using wt_ref_t = typename graph_t::wt_ref_t;
 #ifdef USE_FLAT_MAP
   using vert_map_t = boost::container::flat_map<variable_t, vert_id>;
 #else
@@ -458,13 +459,13 @@ protected:
     check_potential(g, potential, __LINE__);
 
     Wt_min min_op;
-    typename graph_t::mut_val_ref_t w;
+    wt_ref_t w;
     for (auto p : lbs) {
       CRAB_LOG("zones-split", crab::outs()
                                   << p.first << ">=" << p.second << "\n");
       variable_t x(p.first);
       vert_id v = get_vert(p.first);
-      if (g.lookup(v, 0, &w) && w.get() <= -p.second)
+      if (g.lookup(v, 0, w) && w.get() <= -p.second)
         continue;
       g.set_edge(v, -p.second, 0);
 
@@ -493,7 +494,7 @@ protected:
                                   << p.first << "<=" << p.second << "\n");
       variable_t x(p.first);
       vert_id v = get_vert(p.first);
-      if (g.lookup(0, v, &w) && w.get() <= p.second)
+      if (g.lookup(0, v, w) && w.get() <= p.second)
         continue;
       g.set_edge(0, p.second, v);
       if (!repair_potential(0, v)) {
@@ -525,9 +526,9 @@ protected:
       vert_id dest = get_vert(diff.first.first);
 
       // Check if the edge (src,dest) via bounds already exists
-      typename graph_t::mut_val_ref_t w1, w2;
-      if (g.lookup(src, 0, &w1) && g.lookup(0, dest, &w2) &&
-          w1.get() + w2.get() <= diff.second) {
+      wt_ref_t w1, w2;
+      if (g.lookup(src, 0, w1) && g.lookup(0, dest, w2) &&
+          (w1.get() + w2.get()) <= diff.second) {
         continue;
       }
 
@@ -567,7 +568,7 @@ protected:
       return false;
     } else if (!new_i.is_top() && (new_i <= i)) {
       vert_id v = get_vert(x);
-      typename graph_t::mut_val_ref_t w;
+      wt_ref_t w; 
       Wt_min min_op;
       if (new_i.lb().is_finite()) {
         // strenghten lb
@@ -576,7 +577,7 @@ protected:
           return true;
         }
 
-        if (g.lookup(v, 0, &w) && lb_val < w.get()) {
+        if (g.lookup(v, 0, w) && lb_val < w.get()) {
           g.set_edge(v, lb_val, 0);
           if (!repair_potential(v, 0)) {
             set_to_bottom();
@@ -603,7 +604,7 @@ protected:
           return true;
         }
 
-        if (g.lookup(0, v, &w) && (ub_val < w.get())) {
+        if (g.lookup(0, v, w) && (ub_val < w.get())) {
           g.set_edge(0, ub_val, v);
           if (!repair_potential(0, v)) {
             set_to_bottom();
@@ -704,19 +705,18 @@ protected:
 
   // Restore closure after a single edge addition
   void close_over_edge(vert_id ii, vert_id jj) {
-    Wt_min min_op;
-
     assert(ii != 0 && jj != 0);
-    SubGraph<graph_t> g_excl(g, 0);
 
+    Wt_min min_op;
+    wt_ref_t w;
+    SubGraph<graph_t> g_excl(g, 0);
     Wt c = g_excl.edge_val(ii, jj);
 
-    typename graph_t::mut_val_ref_t w;
 
     if (crab_domain_params_man::get().zones_close_bounds_inline()) {
-      if (g.lookup(0, ii, &w))
+      if (g.lookup(0, ii, w))
         g.update_edge(0, w.get() + c, jj, min_op);
-      if (g.lookup(jj, 0, &w))
+      if (g.lookup(jj, 0, w))
         g.update_edge(ii, w.get() + c, 0, min_op);
     }
 
@@ -730,18 +730,20 @@ protected:
       Wt wt_sij = edge.val + c;
       assert(g_excl.succs(se).begin() != g_excl.succs(se).end());
       if (se != jj) {
-        if (g_excl.lookup(se, jj, &w)) {
-          if (w.get() <= wt_sij)
+        if (g_excl.lookup(se, jj, w)) {
+          if (w.get() <= wt_sij) {
             continue;
-          w = wt_sij;
+	  }
+	  // REVISIT(PERFORMANCE): extra call to lookup
+	  g.set_edge(se, wt_sij, jj);
         } else {
           delta.push_back({{se, jj}, wt_sij});
         }
         src_dec.push_back(std::make_pair(se, edge.val));
         if (crab_domain_params_man::get().zones_close_bounds_inline()) {
-          if (g.lookup(0, se, &w))
+          if (g.lookup(0, se, w))
             g.update_edge(0, w.get() + wt_sij, jj, min_op);
-          if (g.lookup(jj, 0, &w))
+          if (g.lookup(jj, 0, w))
             g.update_edge(se, w.get() + wt_sij, 0, min_op);
         }
       }
@@ -753,18 +755,20 @@ protected:
       vert_id de = edge.vert;
       Wt wt_ijd = edge.val + c;
       if (de != ii) {
-        if (g_excl.lookup(ii, de, &w)) {
-          if (w.get() <= wt_ijd)
+        if (g_excl.lookup(ii, de, w)) {
+          if (w.get() <= wt_ijd) {
             continue;
-          w = wt_ijd;
+	  }
+	  // REVISIT(PERFORMANCE): extra call to lookup
+	  g.set_edge(ii, wt_ijd, de);
         } else {
           delta.push_back({{ii, de}, {wt_ijd}});
         }
         dest_dec.push_back(std::make_pair(de, edge.val));
         if (crab_domain_params_man::get().zones_close_bounds_inline()) {
-          if (g.lookup(0, ii, &w))
+          if (g.lookup(0, ii, w))
             g.update_edge(0, w.get() + wt_ijd, de, min_op);
-          if (g.lookup(de, 0, &w))
+          if (g.lookup(de, 0, w))
             g.update_edge(ii, w.get() + wt_ijd, 0, min_op);
         }
       }
@@ -777,17 +781,19 @@ protected:
       for (auto d_p : dest_dec) {
         vert_id de = d_p.first;
         Wt wt_sijd = wt_sij + d_p.second;
-        if (g.lookup(se, de, &w)) {
-          if (w.get() <= wt_sijd)
+        if (g.lookup(se, de, w)) {
+          if (w.get() <= wt_sijd) {
             continue;
-          w = wt_sijd;
+	  }
+	  // REVISIT(PERFORMANCE): extra call to lookup
+	  g.set_edge(se, wt_sijd, de);
         } else {
           g.add_edge(se, wt_sijd, de);
         }
         if (crab_domain_params_man::get().zones_close_bounds_inline()) {
-          if (g.lookup(0, se, &w))
+          if (g.lookup(0, se, w))
             g.update_edge(0, w.get() + wt_sijd, de, min_op);
-          if (g.lookup(de, 0, &w))
+          if (g.lookup(de, 0, w))
             g.update_edge(se, w.get() + wt_sijd, 0, min_op);
         }
       }
@@ -820,9 +826,8 @@ protected:
 
   // return true if edge from x to y with weight k is unsatisfiable
   bool is_unsat_edge(vert_id x, vert_id y, Wt k) const {
-
-    typename graph_t::mut_val_ref_t w;
-    if (const_cast<graph_t*>(&g)->lookup(y, x, &w)) {
+    wt_ref_t w;
+    if (g.lookup(y, x, w)) {
       return ((w.get() + k) < Wt(0));
     } else {
       interval_t intv_x = interval_t::top();
@@ -924,13 +929,12 @@ protected:
 
     // Compute the deferred relations
     graph_t g_ix_ry;
+    wt_ref_t ws, wd;    
     g_ix_ry.growTo(sz);
     SubGraph<GrPerm> gy_excl(gy, 0);
     for (vert_id s : gy_excl.verts()) {
       for (vert_id d : gy_excl.succs(s)) {
-        typename graph_t::mut_val_ref_t ws;
-        typename graph_t::mut_val_ref_t wd;
-        if (gx.lookup(s, 0, &ws) && gx.lookup(0, d, &wd)) {
+        if (gx.lookup(s, 0, ws) && gx.lookup(0, d, wd)) {
           g_ix_ry.add_edge(s, ws.get() + wd.get(), d);
         }
       }
@@ -954,13 +958,11 @@ protected:
     SubGraph<GrPerm> gx_excl(gx, 0);
     for (vert_id s : gx_excl.verts()) {
       for (vert_id d : gx_excl.succs(s)) {
-        typename graph_t::mut_val_ref_t ws;
-        typename graph_t::mut_val_ref_t wd;
         // Assumption: gx.mem(s, d) -> gx.edge_val(s, d) <=
         //             ranges[var(s)].ub() - ranges[var(d)].lb()
         // That is, if the relation exists, it's at least as strong as the
         // bounds.
-        if (gy.lookup(s, 0, &ws) && gy.lookup(0, d, &wd))
+        if (gy.lookup(s, 0, ws) && gy.lookup(0, d, wd))
           g_rx_iy.add_edge(s, ws.get() + wd.get(), d);
       }
     }
@@ -990,16 +992,15 @@ protected:
     std::vector<vert_id> ub_up;
     std::vector<vert_id> ub_down;
 
-    typename graph_t::mut_val_ref_t wx;
-    typename graph_t::mut_val_ref_t wy;
+    wt_ref_t wx, wy;
     for (vert_id v : gx_excl.verts()) {
-      if (gx.lookup(0, v, &wx) && gy.lookup(0, v, &wy)) {
+      if (gx.lookup(0, v, wx) && gy.lookup(0, v, wy)) {
         if (wx.get() < wy.get())
           ub_up.push_back(v);
         if (wy.get() < wx.get())
           ub_down.push_back(v);
       }
-      if (gx.lookup(v, 0, &wx) && gy.lookup(v, 0, &wy)) {
+      if (gx.lookup(v, 0, wx) && gy.lookup(v, 0, wy)) {
         if (wx.get() < wy.get())
           lb_down.push_back(v);
         if (wy.get() < wx.get())
@@ -1041,11 +1042,11 @@ protected:
     g.growTo(sz);
 
     Wt_min min_op;
-    typename graph_t::mut_val_ref_t wx, wy;
+    wt_ref_t wx, wy;
 
     auto update_edge_widen_g = [&g](vert_id src, vert_id dst, Wt val) {
-      typename graph_t::mut_val_ref_t wz;
-      if (g.lookup(src, dst, &wz)) {
+      wt_ref_t wz;
+      if (g.lookup(src, dst, wz)) {
         if (wz.get() > val) {
           g.set_edge(src, val, dst);
           return true;
@@ -1067,14 +1068,14 @@ protected:
         if (s == d)
           continue;
         /* for each edge(s,0,d) in r check if exists edge(s,d) in l */
-        if (l.lookup(s, d, &wx) &&
+        if (l.lookup(s, d, wx) &&
             ((edge_pred.val + edge_succ.val) <= wx.get())) {
           bool res = update_edge_widen_g(s, d, wx.get());
           if (res) {
             CRAB_LOG("zones-split-widening", auto vs = rev_map[s];
                      auto vd = rev_map[d];
                      crab::outs() << "Widening 1: added " << *vd << "-" << *vs
-                                  << "<=" << wx.get() << "\n";);
+		                  << "<=" << wx.get() << "\n";);
           }
         }
       }
@@ -1087,7 +1088,7 @@ protected:
       for (auto e : r.e_succs(s)) {
         vert_id d = e.vert;
         /* for each edge(s,d) in r check if exists edge(s,d) in l */
-        if (l.lookup(s, d, &wx) && e.val <= wx.get()) {
+        if (l.lookup(s, d, wx) && e.val <= wx.get()) {
           bool res = update_edge_widen_g(s, d, wx.get());
           if (res) {
             CRAB_LOG(
@@ -1416,9 +1417,8 @@ public:
       if (left.vert_map.size() < right.vert_map.size())
         return false;
 
-      typename graph_t::mut_val_ref_t wx;
-      typename graph_t::mut_val_ref_t wy;
-
+      wt_ref_t wx, wy;
+      
       // Set up a mapping from o to this.
       std::vector<unsigned int> vert_renaming(right.g.size(), -1);
       vert_renaming[0] = 0;
@@ -1450,9 +1450,9 @@ public:
           assert(vert_renaming[oy] != -1);
           vert_id y = vert_renaming[oy];
           Wt ow = edge.val;
-          if (left.g.lookup(x, y, &wx) && (wx.get() <= ow))
+          if (left.g.lookup(x, y, wx) && (wx.get() <= ow))
             continue;
-          if (!left.g.lookup(x, 0, &wx) || !left.g.lookup(0, y, &wy))
+          if (!left.g.lookup(x, 0, wx) || !left.g.lookup(0, y, wy))
             return false;
           if (!(wx.get() + wy.get() <= ow))
             return false;

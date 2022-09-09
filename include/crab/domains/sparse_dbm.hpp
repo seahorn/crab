@@ -515,24 +515,23 @@ protected:
   // x != n
   void add_univar_disequation(const variable_t &x, number_t n) {
     bool overflow;
+    Wt_min min_op;
+    typename graph_t::wt_ref_t w;    
     interval_t i = get_interval(x);
     interval_t ni(n); 
     interval_t new_i =
-        ikos::linear_interval_solver_impl::trim_interval<interval_t>(
-            i, ni);
+        ikos::linear_interval_solver_impl::trim_interval<interval_t>(i, ni);
     if (new_i.is_bottom()) {
       set_to_bottom();
     } else if (!new_i.is_top() && (new_i <= i)) {
       vert_id v = get_vert(x);
-      Wt_min min_op;
-      typename graph_t::mut_val_ref_t w;
       if (new_i.lb().is_finite()) {
         // strenghten lb
         Wt lb_val = ntow::convert(-(*(new_i.lb().number())), overflow);
         if (overflow) {
           return;
         }
-        if (g.lookup(v, 0, &w) && lb_val < w.get()) {
+        if (g.lookup(v, 0, w) && lb_val < w.get()) {
           g.set_edge(v, lb_val, 0);
           if (!repair_potential(v, 0)) {
             set_to_bottom();
@@ -558,7 +557,7 @@ protected:
         if (overflow) {
           return;
         }
-        if (g.lookup(0, v, &w) && (ub_val < w.get())) {
+        if (g.lookup(0, v, w) && (ub_val < w.get())) {
           g.set_edge(0, ub_val, v);
           if (!repair_potential(0, v)) {
             set_to_bottom();
@@ -600,11 +599,8 @@ protected:
   // Restore closure after a single edge addition
   void close_over_edge(vert_id ii, vert_id jj) {
     Wt_min min_op;
-
+    typename graph_t::wt_ref_t w;
     Wt c = g.edge_val(ii, jj);
-
-    typename graph_t::mut_val_ref_t w;
-
     // There may be a cheaper way to do this.
     // GKG: Now implemented.
     std::vector<std::pair<vert_id, Wt>> src_dec;
@@ -616,34 +612,17 @@ protected:
 
       assert(g.succs(se).begin() != g.succs(se).end());
       if (se != jj) {
-        if (g.lookup(se, jj, &w)) {
-          if (w.get() <= wt_sij)
+        if (g.lookup(se, jj, w)) {
+          if (w.get() <= wt_sij) {
             continue;
-          w = wt_sij;
+	  }
+	  // REVISIT(PERFORMANCE): extra call to lookup
+	  g.set_edge(se, wt_sij, jj);
         } else {
           g.add_edge(se, wt_sij, jj);
         }
         // assert(potential[se] + g.edge_val(se, jj) - potential[jj] >= Wt(0));
         src_dec.push_back({se, w_si});
-
-        /*
-         for(auto edge : g.e_succs(jj))
-         {
-           vert_id de = edge.vert;
-           if(se != de)
-           {
-             Wt wt_sijd = wt_sij + edge.val;
-             if(g.lookup(se, de, &w))
-             {
-               if((*w) <= wt_sijd)
-                 continue;
-               (*w) = wt_sijd;
-             } else {
-               g.add_edge(se, wt_sijd, de);
-             }
-           }
-         }
-         */
       }
     }
 
@@ -653,10 +632,12 @@ protected:
       Wt w_jd = edge.val;
       Wt wt_ijd = w_jd + c;
       if (de != ii) {
-        if (g.lookup(ii, de, &w)) {
-          if (w.get() <= wt_ijd)
+        if (g.lookup(ii, de, w)) {
+          if (w.get() <= wt_ijd) {
             continue;
-          w = wt_ijd;
+	  }
+	  // REVISIT(PERFORMANCE): extra call to lookup
+	  g.set_edge(ii, wt_ijd, de);
         } else {
           g.add_edge(ii, wt_ijd, de);
         }
@@ -673,9 +654,11 @@ protected:
         vert_id de = d_p.first;
         Wt wt_sijd = wt_sij + d_p.second;
         if (g.lookup(se, de, &w)) {
-          if (w.get() <= wt_sijd)
+          if (w.get() <= wt_sijd) {
             continue;
-          w = wt_sijd;
+	  }
+	  // REVISIT(PERFORMANCE): extra call to lookup
+	  g.set_edge(se, wt_sijd, de);
         } else {
           g.add_edge(se, wt_sijd, de);
         }
@@ -928,6 +911,7 @@ public:
     else if (is_top())
       return false;
     else {
+      typename graph_t::wt_ref_t wx;
       DBM_t left(*this);
       left.normalize();
       // XXX: we can avoid copy of the right operand but we need to
@@ -939,8 +923,6 @@ public:
 
       if (left.vert_map.size() < right.vert_map.size())
         return false;
-
-      typename graph_t::mut_val_ref_t wx;
 
       // Set up a mapping from o to this.
       std::vector<unsigned int> vert_renaming(right.g.size(), -1);
@@ -966,7 +948,7 @@ public:
           vert_id y = vert_renaming[oy];
           Wt ow = edge.val;
 
-          if (!left.g.lookup(x, y, &wx) || (ow < wx.get()))
+          if (!left.g.lookup(x, y, wx) || (ow < wx.get()))
             return false;
         }
       }

@@ -48,11 +48,14 @@ template <class G> class GraphPerm {
 public:
   using vert_id = typename G::vert_id;
   using Wt = typename G::Wt;
-  using g_pred_range = typename G::pred_range;
-  using g_succ_range = typename G::succ_range;
-  using mut_val_ref_t = typename G::mut_val_ref_t;
+  // These defined below
+  // using pred_range = ...
+  // using succ_range = ...
+  // using const_e_pred_range = ...
+  // using const_e_succ_range = ...
+  using wt_ref_t = typename G::wt_ref_t;
 
-  GraphPerm(std::vector<vert_id> &_perm, G &_g)
+  GraphPerm(std::vector<vert_id> &_perm, const G &_g)
       : g(_g), perm(_perm), inv(_g.size(), -1) {
     for (unsigned int vi = 0; vi < perm.size(); vi++) {
       if (perm[vi] == -1)
@@ -69,21 +72,21 @@ public:
     return g.elem(perm[x], perm[y]);
   }
 
-  bool lookup(vert_id x, vert_id y, mut_val_ref_t *w) const {
+  bool lookup(vert_id x, vert_id y, wt_ref_t &w) const {
     if (perm[x] > g.size() || perm[y] > g.size())
       return false;
     return g.lookup(perm[x], perm[y], w);
   }
-
+  
   // Precondition: elem(x, y) is true.
   Wt edge_val(vert_id x, vert_id y) const {
-    //      assert(perm[x] < g.size() && perm[y] < g.size());
+    // assert(perm[x] < g.size() && perm[y] < g.size());
     return g.edge_val(perm[x], perm[y]);
   }
 
   // Precondition: elem(x, y) is true.
   Wt operator()(vert_id x, vert_id y) const {
-    //      assert(perm[x] < g.size() && perm[y] < g.size());
+    // assert(perm[x] < g.size() && perm[y] < g.size());
     return g(perm[x], perm[y]);
   }
 
@@ -98,7 +101,7 @@ public:
   // the vertex iterator isn't just a vert_id*.
   template <class ItG> class adj_iterator {
   public:
-    adj_iterator(std::vector<vert_id> &_inv, const ItG &_v)
+    adj_iterator(const std::vector<vert_id> &_inv, const ItG &_v)
         : inv(_inv), v(_v) {}
 
     vert_id operator*(void)const { return inv[*v]; }
@@ -115,18 +118,20 @@ public:
     }
 
   protected:
-    std::vector<vert_id> &inv;
+    const std::vector<vert_id> &inv;
     ItG v;
   };
 
   template <class ItG> class e_adj_iterator {
   public:
-    using edge_ref = typename ItG::edge_ref;
+    using const_edge_ref = typename ItG::const_edge_ref;
 
-    e_adj_iterator(std::vector<vert_id> &_inv, const ItG &_v)
+    e_adj_iterator(const std::vector<vert_id> &_inv, const ItG &_v)
         : inv(_inv), v(_v) {}
 
-    edge_ref operator*(void)const { return edge_ref(inv[(*v).vert], (*v).val); }
+    const_edge_ref operator*(void) {
+      return const_edge_ref(inv[(*v).vert], (*v).val);
+    }
 
     e_adj_iterator &operator++(void) {
       ++v;
@@ -140,7 +145,7 @@ public:
     }
 
   protected:
-    std::vector<vert_id> &inv;
+    const std::vector<vert_id> &inv;
     ItG v;
   };
 
@@ -148,15 +153,13 @@ public:
   public:
     using ItG = typename RG::iterator;
     using adj_list_t = adj_list<RG, It>;
-    //      using adj_iter_t = adj_iterator<ItG>;
-
     using iterator = It;
 
-    adj_list(std::vector<vert_id> &_perm, std::vector<vert_id> &_inv,
+    adj_list(const std::vector<vert_id> &_perm, const std::vector<vert_id> &_inv,
              const RG &_adj)
         : perm(_perm), inv(_inv), adj(_adj) {}
 
-    adj_list(std::vector<vert_id> &_perm, std::vector<vert_id> &_inv)
+    adj_list(const std::vector<vert_id> &_perm, const std::vector<vert_id> &_inv)
         : perm(_perm), inv(_inv), adj() {}
 
     iterator begin(void) const {
@@ -179,50 +182,51 @@ public:
     }
 
   protected:
-    std::vector<vert_id> &perm;
-    std::vector<vert_id> &inv;
+    const std::vector<vert_id> &perm;
+    const std::vector<vert_id> &inv;
     boost::optional<RG> adj;
   };
 
+  // public typedefs
   using pred_range = adj_list<typename G::pred_range,
                               adj_iterator<typename G::pred_range::iterator>>;
   using succ_range = adj_list<typename G::succ_range,
                               adj_iterator<typename G::succ_range::iterator>>;
+  using const_e_pred_range =
+      adj_list<typename G::const_e_pred_range,
+               e_adj_iterator<typename G::const_e_pred_range::iterator>>;
+  using const_e_succ_range =
+      adj_list<typename G::const_e_succ_range,
+               e_adj_iterator<typename G::const_e_succ_range::iterator>>;
 
-  using e_pred_range =
-      adj_list<typename G::e_pred_range,
-               e_adj_iterator<typename G::e_pred_range::iterator>>;
-  using e_succ_range =
-      adj_list<typename G::e_succ_range,
-               e_adj_iterator<typename G::e_succ_range::iterator>>;
-
-  succ_range succs(vert_id v) {
+  succ_range succs(vert_id v) const {
     if (perm[v] == (-1))
       return succ_range(perm, inv);
     else
       return succ_range(perm, inv, g.succs(perm[v]));
   }
-  pred_range preds(vert_id v) {
+  pred_range preds(vert_id v) const {
     if (perm[v] == (-1))
       return pred_range(perm, inv);
     else
       return pred_range(perm, inv, g.preds(perm[v]));
   }
 
-  e_succ_range e_succs(vert_id v) {
+  const_e_succ_range e_succs(vert_id v) const {
     if (perm[v] == (-1))
-      return e_succ_range(perm, inv);
+      return const_e_succ_range(perm, inv);
     else
-      return e_succ_range(perm, inv, g.e_succs(perm[v]));
+      return const_e_succ_range(perm, inv, g.e_succs(perm[v]));
   }
-  e_pred_range e_preds(vert_id v) {
+  
+  const_e_pred_range e_preds(vert_id v) const {
     if (perm[v] == (-1))
-      return e_pred_range(perm, inv);
+      return const_e_pred_range(perm, inv);
     else
-      return e_pred_range(perm, inv, g.e_preds(perm[v]));
+      return const_e_pred_range(perm, inv, g.e_preds(perm[v]));
   }
 
-  void write(crab_os &o) {
+  void write(crab_os &o) const {
     o << "[|";
     bool first = true;
     for (vert_id v : verts()) {
@@ -245,7 +249,7 @@ public:
     o << "|]";
   }
 
-  G &g;
+  const G &g;
   std::vector<vert_id> perm;
   std::vector<vert_id> inv;
 };
@@ -255,53 +259,30 @@ template <class G> class SubGraph {
 public:
   using vert_id = typename G::vert_id;
   using Wt = typename G::Wt;
+  // These defined below 
+  //using pred_range = ...
+  //using succ_range = ...
+  //using const_e_pred_range = ...
+  //using const_e_succ_range = ...
+  using wt_ref_t = typename G::wt_ref_t;
 
-  using g_pred_range = typename G::pred_range;
-  using g_succ_range = typename G::succ_range;
-
-  using g_e_pred_range = typename G::e_pred_range;
-  using g_e_succ_range = typename G::e_succ_range;
-
-  using mut_val_ref_t = typename G::mut_val_ref_t;
-
-  SubGraph(G &_g, vert_id _v_ex) : g(_g), v_ex(_v_ex) {}
+  SubGraph(const G &_g, vert_id _v_ex) : g(_g), v_ex(_v_ex) {}
 
   bool elem(vert_id x, vert_id y) const {
     return (x != v_ex && y != v_ex && g.elem(x, y));
   }
 
-  bool lookup(vert_id x, vert_id y, mut_val_ref_t *w) const {
+  bool lookup(vert_id x, vert_id y, wt_ref_t &w) const {
     return (x != v_ex && y != v_ex && g.lookup(x, y, w));
   }
-
+  
   Wt edge_val(vert_id x, vert_id y) const { return g.edge_val(x, y); }
 
   // Precondition: elem(x, y) is true.
   Wt operator()(vert_id x, vert_id y) const { return g(x, y); }
 
-  void clear_edges(void) { g.clear_edges(); }
-
-  void clear(void) { assert(0 && "SubGraph::clear not implemented."); }
-
   // Number of allocated vertices
   int size(void) const { return g.size(); }
-
-  // Assumption: (x, y) not in mtx
-  void add_edge(vert_id x, Wt wt, vert_id y) {
-    // assert(x != v_ex && y != v_ex);
-    assert(!elem(x, y));
-    g.add_edge(x, wt, y);
-  }
-
-  void set_edge(vert_id s, Wt w, vert_id d) {
-    // assert(s != v_ex && d != v_ex);
-    g.set_edge(s, w, d);
-  }
-
-  template <class Op> void update_edge(vert_id s, Wt w, vert_id d, Op &op) {
-    // assert(s != v_ex && d != v_ex);
-    g.update_edge(s, w, d, op);
-  }
 
   class vert_iterator {
   public:
@@ -357,7 +338,7 @@ public:
 
   template <class It> class e_adj_iterator {
   public:
-    using edge_ref = typename It::edge_ref;
+    using edge_ref = typename It::const_edge_ref;
 
     e_adj_iterator(const It &_iG, vert_id _v_ex) : iG(_iG), v_ex(_v_ex) {}
     edge_ref operator*(void)const { return *iG; }
@@ -388,30 +369,35 @@ public:
     R rG;
     vert_id v_ex;
   };
+
+  // public typedefs
   using pred_range =
-      adj_list<g_pred_range, adj_iterator<typename g_pred_range::iterator>>;
+    adj_list<typename G::pred_range, adj_iterator<typename G::pred_range::iterator>>;
   using succ_range =
-      adj_list<g_succ_range, adj_iterator<typename g_succ_range::iterator>>;
+    adj_list<typename G::succ_range, adj_iterator<typename G::succ_range::iterator>>;
+  using const_e_pred_range =
+    adj_list<typename G::const_e_pred_range,
+	     e_adj_iterator<typename G::const_e_pred_range::iterator>>;
+  using const_e_succ_range =
+    adj_list<typename G::const_e_succ_range,
+	     e_adj_iterator<typename G::const_e_succ_range::iterator>>;
 
-  using e_pred_range =
-      adj_list<g_e_pred_range,
-               e_adj_iterator<typename g_e_pred_range::iterator>>;
-  using e_succ_range =
-      adj_list<g_e_succ_range,
-               e_adj_iterator<typename g_e_succ_range::iterator>>;
-
-  succ_range succs(vert_id v) {
-    //      assert(v != v_ex);
+  succ_range succs(vert_id v) const {
+    // assert(v != v_ex);
     return succ_range(g.succs(v), v_ex);
   }
-  pred_range preds(vert_id v) {
-    //      assert(v != v_ex);
+  pred_range preds(vert_id v) const {
+    // assert(v != v_ex);
     return pred_range(g.preds(v), v_ex);
   }
-  e_succ_range e_succs(vert_id v) { return e_succ_range(g.e_succs(v), v_ex); }
-  e_pred_range e_preds(vert_id v) { return e_pred_range(g.e_preds(v), v_ex); }
+  const_e_succ_range e_succs(vert_id v) const {
+    return const_e_succ_range(g.e_succs(v), v_ex);
+  }
+  const_e_pred_range e_preds(vert_id v) const {
+    return const_e_pred_range(g.e_preds(v), v_ex);
+  }
 
-  G &g;
+  const G &g;
   vert_id v_ex;
 };
 
@@ -422,18 +408,17 @@ template <class G> class GraphRev {
 public:
   using vert_id = typename G::vert_id;
   using Wt = typename G::Wt;
-  // using g_adj_list = typename G::adj_list;
-  using mut_val_ref_t = typename G::mut_val_ref_t;
+  using wt_ref_t = typename G::wt_ref_t;
 
-  GraphRev(G &_g) : g(_g) {}
+  GraphRev(const G &_g) : g(_g) {}
 
   // Check whether an edge is live
   bool elem(vert_id x, vert_id y) const { return g.elem(y, x); }
 
-  bool lookup(vert_id x, vert_id y, mut_val_ref_t *w) const {
-    return g.lookup(y, x, w);
+  bool lookup(vert_id x, vert_id y, wt_ref_t &w) const {
+     return g.lookup(y, x, w);
   }
-
+  
   // Precondition: elem(x, y) is true.
   Wt edge_val(vert_id x, vert_id y) const { return g.edge_val(y, x); }
 
@@ -443,21 +428,20 @@ public:
   // Number of allocated vertices
   int size(void) const { return g.size(); }
 
-  //    using adj_list = typename G::adj_list;
+  typename G::vert_range verts(void) const { return g.verts(); }
+  
   using pred_range = typename G::succ_range;
   using succ_range = typename G::pred_range;
-
-  using e_pred_range = typename G::e_succ_range;
-  using e_succ_range = typename G::e_pred_range;
-
-  typename G::vert_range verts(void) const { return g.verts(); }
+  using const_e_pred_range = typename G::const_e_succ_range;
+  using const_e_succ_range = typename G::const_e_pred_range;
 
   succ_range succs(vert_id v) { return g.preds(v); }
   succ_range preds(vert_id v) { return g.succs(v); }
 
-  e_succ_range e_succs(vert_id v) { return g.e_preds(v); }
-  e_pred_range e_preds(vert_id v) { return g.e_succs(v); }
-  G &g;
+  const_e_succ_range e_succs(vert_id v) const { return g.e_preds(v); }
+  const_e_pred_range e_preds(vert_id v) const { return g.e_succs(v); }
+  
+  const G &g;
 };
 
 // Comparator for use with min-heaps.
@@ -476,13 +460,10 @@ public:
   //    using graph_t = SparseWtGraph<Wt>;
   using graph_t = Gr;
   using vert_id = typename graph_t::vert_id;
-  using mut_val_ref_t = typename graph_t::mut_val_ref_t;
-
+  using wt_ref_t = typename graph_t::wt_ref_t;  
   using edge_vector = std::vector<std::pair<std::pair<vert_id, vert_id>, Wt>>;
-
   using WtComp = DistComp<std::vector<Wt>>;
   using WtHeap = Heap<WtComp>;
-
   using edge_ref = std::pair<std::pair<vert_id, vert_id>, Wt>;
 
   //===========================================
@@ -542,19 +523,20 @@ public:
   }
 
   // Syntactic join.
-  template <class G1, class G2> static graph_t join(G1 &l, G2 &r) {
+  template <class G1, class G2>
+  static graph_t join(const G1 &l, const G2 &r) {
     // For the join, potentials are preserved
     assert(l.size() == r.size());
+
     int sz = l.size();
-
     graph_t g;
+    wt_ref_t wr;
+    
     g.growTo(sz);
-
-    mut_val_ref_t wr;
     for (vert_id s : l.verts()) {
       for (auto e : l.e_succs(s)) {
         vert_id d = e.vert;
-        if (r.lookup(s, d, &wr))
+        if (r.lookup(s, d, wr))
           g.add_edge(s, std::max(e.val, wr.get()), d);
       }
     }
@@ -563,32 +545,13 @@ public:
 
   // Syntactic meet
   template <class G1, class G2>
-  static graph_t meet(G1 &l, G2 &r, bool &is_closed) {
+  static graph_t meet(const G1 &l, const G2 &r, bool &is_closed) {
     assert(l.size() == r.size());
 
-    /*
-          for(vert_id s : l.verts())
-            for(vert_id d : l.succs(s))
-              if(!r.elem(s, d) || l.edge_val(s, d) < r.edge_val(s, d))
-                goto r_not_dom;
-          // r dominates
-          is_closed = true;
-          return graph_t::copy(r);
-
-    r_not_dom:
-    */
     graph_t g(graph_t::copy(l));
-    //      bool l_dom = true;
-
-    mut_val_ref_t wg;
     for (vert_id s : r.verts()) {
       for (auto e : r.e_succs(s)) {
-        if (!g.lookup(s, e.vert, &wg)) {
-          g.add_edge(s, e.val, e.vert);
-        } else {
-          if (e.val < wg.get())
-            wg = e.val;
-        }
+	g.set_edge_if_less_than(s, e.val, e.vert);
       }
     }
     is_closed = false;
@@ -596,16 +559,16 @@ public:
   }
 
   template <class G1, class G2>
-  static graph_t widen(G1 &l, G2 &r, std::vector<vert_id> &unstable) {
+  static graph_t widen(const G1 &l, const G2 &r, std::vector<vert_id> &unstable) {
     assert(l.size() == r.size());
     size_t sz = l.size();
     graph_t g;
     g.growTo(sz);
-    mut_val_ref_t wl;
+    wt_ref_t wl;
     for (vert_id s : r.verts()) {
       for (auto e : r.e_succs(s)) {
         vert_id d = e.vert;
-        if (l.lookup(s, d, &wl) && e.val <= wl.get())
+        if (l.lookup(s, d, wl) && e.val <= wl.get())
           g.add_edge(s, wl.get(), d);
       }
 
@@ -625,8 +588,8 @@ public:
   // Duped pretty much verbatim from Wikipedia
   // Abuses 'dual_queue' to store indices.
   template <class G>
-  static void strong_connect(G &x, std::vector<vert_id> &stack, int &index,
-                             vert_id v,
+  static void strong_connect(const G &x, std::vector<vert_id> &stack,
+			     int &index, vert_id v,
                              std::vector<std::vector<vert_id>> &sccs) {
     vert_marks[v] = (index << 1) | 1;
     // assert(vert_marks[v]&1);
@@ -661,7 +624,7 @@ public:
   }
 
   template <class G>
-  static void compute_sccs(G &x, std::vector<std::vector<vert_id>> &out_scc) {
+  static void compute_sccs(const G &x, std::vector<std::vector<vert_id>> &out_scc) {
     int sz = x.size();
     grow_scratch(sz);
 
@@ -673,26 +636,16 @@ public:
       if (!vert_marks[v])
         strong_connect(x, stack, index, v, out_scc);
     }
-    /*
-    printf("[");
-    for(int ii = 0; ii < out_scc.size(); ii++)
-    {
-      printf("[");
-      for(int jj = 0; jj < out_scc[ii].size(); jj++)
-        printf(" %d", out_scc[ii][jj]);
-      printf("]");
-    }
-    printf("]\n");
-    */
 
-    for (vert_id v : x.verts())
+    for (vert_id v : x.verts()) {
       vert_marks[v] = 0;
+    }
   }
 
   // Run Bellman-Ford to compute a valid model of a set of difference
   // constraints. Returns false if there is some negative cycle.
   template <class G, class P>
-  static bool select_potentials(G &g, P &potentials) {
+  static bool select_potentials(const G &g, P &potentials) {
     int sz = g.size();
     assert(potentials.size() >= sz);
     grow_scratch(sz);
@@ -779,7 +732,7 @@ public:
   }
 
   template <class G, class G1, class G2, class P>
-  static void close_after_meet(G &g, const P &pots, G1 &l, G2 &r,
+  static void close_after_meet(const G &g, const P &pots, const G1 &l, const G2 &r,
                                edge_vector &delta) {
     // We assume the syntactic meet has already been computed,
     // and potentials have been initialized.
@@ -790,7 +743,7 @@ public:
     delta.clear();
 
     std::vector<std::vector<vert_id>> colour_succs(2 * sz);
-    mut_val_ref_t w;
+    wt_ref_t w;
 
     // Partition edges into r-only/rb/b-only.
     for (vert_id s : g.verts()) {
@@ -799,9 +752,9 @@ public:
       for (auto e : g.e_succs(s)) {
         char mark = 0;
         vert_id d = e.vert;
-        if (l.lookup(s, d, &w) && w.get() == e.val)
+        if (l.lookup(s, d, w) && w.get() == e.val)
           mark |= E_LEFT;
-        if (r.lookup(s, d, &w) && w.get() == e.val)
+        if (r.lookup(s, d, w) && w.get() == e.val)
           mark |= E_RIGHT;
         // Add them to the appropriate coloured successor list
         // Could do it inline, but this'll do.
@@ -844,7 +797,7 @@ public:
 
   // Straight implementation of Dijkstra's algorithm
   template <class G, class P>
-  static void dijkstra(G &g, const P &p, vert_id src,
+  static void dijkstra(const G &g, const P &p, vert_id src,
                        std::vector<std::pair<vert_id, Wt>> &out) {
     unsigned int sz = g.size();
     if (sz == 0)
@@ -870,13 +823,13 @@ public:
       heap.insert(dest);
     }
 
-    mut_val_ref_t w;
+    wt_ref_t w;
     while (!heap.empty()) {
       int es = heap.removeMin();
       Wt es_cost =
           dists[es] + p[es]; // If it's on the queue, distance is not infinite.
       Wt es_val = es_cost - p[src];
-      if (!g.lookup(src, es, &w) || w.get() > es_val)
+      if (!g.lookup(src, es, w) || w.get() > es_val)
         out.push_back(std::make_pair(es, es_val));
 
       for (auto e_ed : g.e_succs(es)) {
@@ -897,7 +850,7 @@ public:
   }
 
   template <class G, class P>
-  static void close_johnson(G &g, const P &p, edge_vector &out) {
+  static void close_johnson(const G &g, const P &p, edge_vector &out) {
     std::vector<std::pair<vert_id, Wt>> adjs;
     for (vert_id v : g.verts()) {
       adjs.clear();
@@ -910,7 +863,7 @@ public:
   // P is some vector-alike holding a valid system of potentials.
   // Don't need to clear/initialize
   template <class G, class P>
-  static void chrome_dijkstra(G &g, const P &p,
+  static void chrome_dijkstra(const G &g, const P &p,
                               std::vector<std::vector<vert_id>> &colour_succs,
                               vert_id src,
                               std::vector<std::pair<vert_id, Wt>> &out) {
@@ -938,13 +891,13 @@ public:
       heap.insert(dest);
     }
 
-    mut_val_ref_t w;
+    wt_ref_t w;
     while (!heap.empty()) {
       int es = heap.removeMin();
       Wt es_cost =
           dists[es] + p[es]; // If it's on the queue, distance is not infinite.
       Wt es_val = es_cost - p[src];
-      if (!g.lookup(src, es, &w) || w.get() > es_val)
+      if (!g.lookup(src, es, w) || w.get() > es_val)
         out.push_back(std::make_pair(es, es_val));
 
       if (vert_marks[es] == (E_LEFT | E_RIGHT))
@@ -977,7 +930,7 @@ public:
   // expanding anything that _was_ stable. GKG: Factor out common elements of
   // this & the previous algorithm.
   template <class G, class P, class S>
-  static void dijkstra_recover(G &g, const P &p, const S &is_stable,
+  static void dijkstra_recover(const G &g, const P &p, const S &is_stable,
                                vert_id src,
                                std::vector<std::pair<vert_id, Wt>> &out) {
     unsigned int sz = g.size();
@@ -1007,13 +960,13 @@ public:
       heap.insert(dest);
     }
 
-    mut_val_ref_t w;
+    wt_ref_t w;
     while (!heap.empty()) {
       int es = heap.removeMin();
       Wt es_cost =
           dists[es] + p[es]; // If it's on the queue, distance is not infinite.
       Wt es_val = es_cost - p[src];
-      if (!g.lookup(src, es, &w) || w.get() > es_val)
+      if (!g.lookup(src, es, w) || w.get() > es_val)
         out.push_back(std::make_pair(es, es_val));
 
       if (vert_marks[es] == V_STABLE)
@@ -1042,33 +995,8 @@ public:
     }
   }
 
-  class forall_except {
-  public:
-    forall_except(vert_id _v) : v(_v) {}
-
-    bool operator[](vert_id w) const { return w != v; }
-
-  protected:
-    vert_id v;
-  };
-
-  /*
-  template<class V>
-  class vec_neg {
-  public:
-    vec_neg(const V& _vec)
-      : vec(_vec)
-    { }
-
-    auto operator[](size_t idx) const { return -(vec[idx]); }
-  protected:
-    const V& vec;
-  };
-  template<class V>
-  vec_neg<V> negate_vec(const V& vec) { return vec_neg<V>(vec); }
-  */
   template <class G, class P>
-  static bool repair_potential(G &g, P &p, vert_id ii, vert_id jj) {
+  static bool repair_potential(const G &g, P &p, vert_id ii, vert_id jj) {
     // Ensure there's enough scratch space.
     unsigned int sz = g.size();
     // assert(src < (int) sz && dest < (int) sz);
@@ -1118,7 +1046,7 @@ public:
   }
 
   template <class G, class P, class V>
-  static void close_after_widen(G &g, P &p, const V &is_stable,
+  static void close_after_widen(const G &g, P &p, const V &is_stable,
                                 edge_vector &delta) {
     unsigned int sz = g.size();
     grow_scratch(sz);
@@ -1173,7 +1101,7 @@ public:
   // Compute the transitive closure of edges reachable from v, assuming
   // (1) the subgraph G \ {v} is closed, and (2) P is a valid model of G.
   template <class G, class P>
-  static void close_after_assign_fwd(G &g, const P &p, vert_id v,
+  static void close_after_assign_fwd(const G &g, const P &p, vert_id v,
                                      std::vector<std::pair<vert_id, Wt>> &aux) {
     // Initialize the queue and distances.
     for (vert_id u : g.verts())
@@ -1223,7 +1151,7 @@ public:
   }
 
   template <class G, class P>
-  static void close_after_assign(G &g, P &p, vert_id v, edge_vector &delta) {
+  static void close_after_assign(const G &g, P &p, vert_id v, edge_vector &delta) {
     unsigned int sz = g.size();
     grow_scratch(sz);
 

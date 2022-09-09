@@ -76,19 +76,20 @@ template <class G> class SplitOctGraph {
 public:
   using vert_id = typename G::vert_id;
   using Wt = typename G::Wt;
-  using g_pred_range = typename G::pred_range;
-  using g_succ_range = typename G::succ_range;
-  using g_e_pred_range = typename G::e_pred_range;
-  using g_e_succ_range = typename G::e_succ_range;
-  using mut_val_ref_t = typename G::mut_val_ref_t;
+  // These defined below
+  // using pred_range = ...
+  // using succ_range = ...
+  // using const_e_pred_range = ...
+  // using const_e_succ_range = ...
+  using wt_ref_t = typename G::wt_ref_t;
 
-  SplitOctGraph(G &_g) : g(_g) {}
+  SplitOctGraph(const G &_g) : g(_g) {}
 
   bool elem(vert_id x, vert_id y) const {
     return ((x / 2 != y / 2) && g.elem(x, y));
   }
 
-  bool lookup(vert_id x, vert_id y, mut_val_ref_t *w) const {
+  bool lookup(vert_id x, vert_id y, wt_ref_t &w) const {
     return ((x / 2 != y / 2) && g.lookup(x, y, w));
   }
 
@@ -97,29 +98,8 @@ public:
   // Precondition: elem(x, y) is true.
   Wt operator()(vert_id x, vert_id y) const { return g(x, y); }
 
-  void clear_edges(void) { g.clear_edges(); }
-
-  void clear(void) { CRAB_ERROR("SplitOctGraph::clear not implemented."); }
-
   // Number of allocated vertices
   int size(void) const { return g.size(); }
-
-  // Assumption: (x, y) not in mtx
-  void add_edge(vert_id x, Wt wt, vert_id y) {
-    // assert(x != v_ex && y != v_ex);
-    assert(!elem(x, y));
-    g.add_edge(x, wt, y);
-  }
-
-  void set_edge(vert_id s, Wt w, vert_id d) {
-    //  assert(s != v_ex && d != v_ex);
-    g.set_edge(s, w, d);
-  }
-
-  template <class Op> void update_edge(vert_id s, Wt w, vert_id d, Op &op) {
-    //  assert(s != v_ex && d != v_ex);
-    g.update_edge(s, w, d, op);
-  }
 
   class vert_iterator {
   public:
@@ -171,10 +151,10 @@ public:
   /* exclude _v_ex from the view */
   template <class It> class e_adj_iterator {
   public:
-    using edge_ref = typename It::edge_ref;
+    using const_edge_ref = typename It::const_edge_ref;
 
     e_adj_iterator(const It &_iG, vert_id _v_ex) : iG(_iG), v_ex(_v_ex) {}
-    edge_ref operator*(void)const { return *iG; }
+    const_edge_ref operator*(void)const { return *iG; }
     e_adj_iterator &operator++(void) {
       ++iG;
       return *this;
@@ -205,19 +185,19 @@ public:
   };
 
   using pred_range =
-      adj_list<g_pred_range, adj_iterator<typename g_pred_range::iterator>>;
+    adj_list<typename G::pred_range, adj_iterator<typename G::pred_range::iterator>>;
   using succ_range =
-      adj_list<g_succ_range, adj_iterator<typename g_succ_range::iterator>>;
+    adj_list<typename G::succ_range, adj_iterator<typename G::succ_range::iterator>>;
 
   using e_pred_range =
-      adj_list<g_e_pred_range,
-               e_adj_iterator<typename g_e_pred_range::iterator>>;
+    adj_list<typename G::const_e_pred_range,
+	     e_adj_iterator<typename G::const_e_pred_range::iterator>>;
   using e_succ_range =
-      adj_list<g_e_succ_range,
-               e_adj_iterator<typename g_e_succ_range::iterator>>;
+    adj_list<typename G::const_e_succ_range,
+	     e_adj_iterator<typename G::const_e_succ_range::iterator>>;
 
   // If v is v+ (v-) then v- (v+) does not appear as a successor
-  succ_range succs(vert_id v) {
+  succ_range succs(vert_id v) const {
     // assert(v != v_ex);
     vert_id v_opp;
     if (v % 2 == 0)
@@ -228,7 +208,7 @@ public:
   }
 
   // If v is v+ (v-) then v- (v+) does not appear as a predecessor
-  pred_range preds(vert_id v) {
+  pred_range preds(vert_id v) const {
     // assert(v != v_ex);
     vert_id v_opp;
     if (v % 2 == 0)
@@ -238,7 +218,7 @@ public:
     return pred_range(g.preds(v), v_opp);
   }
 
-  e_succ_range e_succs(vert_id v) {
+  e_succ_range e_succs(vert_id v) const {
     vert_id v_opp;
     if (v % 2 == 0)
       v_opp = v + 1;
@@ -246,7 +226,7 @@ public:
       v_opp = v - 1;
     return e_succ_range(g.e_succs(v), v_opp);
   }
-  e_pred_range e_preds(vert_id v) {
+  e_pred_range e_preds(vert_id v) const {
     vert_id v_opp;
     if (v % 2 == 0)
       v_opp = v + 1;
@@ -255,7 +235,7 @@ public:
     return e_pred_range(g.e_preds(v), v_opp);
   }
 
-  G &g;
+  const G &g;
 };
 } // end namespace split_octagons_impl
 
@@ -286,7 +266,7 @@ private:
   using bound_t = ikos::bound<number_t>;
   using Wt = typename Params::Wt;
   using graph_t = typename Params::graph_t;
-  using mut_val_ref_t = typename graph_t::mut_val_ref_t;
+  using wt_ref_t = typename graph_t::wt_ref_t;  
   using ntow = DBM_impl::NtoW<number_t, Wt>;
   using vert_id = typename graph_t::vert_id;
   // (variable: (vert_id of pos, vert_id of neg))
@@ -458,9 +438,9 @@ private:
   // have more precise weights than existing ones. If that's the case
   // this function is unnecessary.
   template <class G> void update_delta(G &g, edge_vector &delta) const {
-    mut_val_ref_t w;
+    wt_ref_t w;
     for (std::pair<std::pair<vert_id, vert_id>, Wt> &e : delta) {
-      if (!g.lookup(e.first.first, e.first.second, &w) || e.second < w.get()) {
+      if (!g.lookup(e.first.first, e.first.second, w) || e.second < w.get()) {
         g.set_edge(e.first.first, Wt(e.second), e.first.second);
       }
     }
@@ -1023,7 +1003,7 @@ private:
              crab::outs() << "Updating bounds after adding an edge from " << i
                           << " to " << j << " with k=" << c << "...\n";);
 
-    mut_val_ref_t w;
+    wt_ref_t w;
     if (i % 2 == 0 && j % 2 == 0) {
       /* as inference rule:
          j - i <= c
@@ -1031,9 +1011,9 @@ private:
          -------------
          j     <=  (c+w)/2
        */
-      if (g.lookup(j + 1, i, &w)) {
+      if (g.lookup(j + 1, i, w)) {
         Wt k = (w.get() + c); // don't multiply by 2
-        if (!g.lookup(j + 1, j, &w) || k < w.get()) {
+        if (!g.lookup(j + 1, j, w) || k < w.get()) {
           delta.push_back({{j + 1, j}, k}); // ub of j
           CRAB_LOG("octagon-bounds",
                    crab::outs()
@@ -1047,9 +1027,9 @@ private:
          -------------
               -i <= (c+w)/2
        */
-      if (g.lookup(j, i + 1, &w)) {
+      if (g.lookup(j, i + 1, w)) {
         Wt k = (w.get() + c); // don't multiply by -2
-        if (!g.lookup(i, i + 1, &w) || k < w.get()) {
+        if (!g.lookup(i, i + 1, w) || k < w.get()) {
           delta.push_back({{i, i + 1}, k}); // lb of i
           CRAB_LOG("octagon-bounds",
                    crab::outs()
@@ -1064,9 +1044,9 @@ private:
          -------------
           -j    <=  (c+w)/2
        */
-      if (g.lookup(j - 1, i, &w)) {
+      if (g.lookup(j - 1, i, w)) {
         Wt k = (w.get() + c); // don't multiply by -2
-        if (!g.lookup(j - 1, j, &w) || k < w.get()) {
+        if (!g.lookup(j - 1, j, w) || k < w.get()) {
           delta.push_back({{j - 1, j}, k}); // lb of j
           CRAB_LOG("octagon-bounds",
                    crab::outs()
@@ -1080,9 +1060,9 @@ private:
          -------------
             -i  <=  (c+w)/2
        */
-      if (g.lookup(j, i + 1, &w)) {
+      if (g.lookup(j, i + 1, w)) {
         Wt k = (w.get() + c); // don't multiply by -2
-        if (!g.lookup(i, i + 1, &w) || k < w.get()) {
+        if (!g.lookup(i, i + 1, w) || k < w.get()) {
           delta.push_back({{i, i + 1}, k}); // lb of i
           CRAB_LOG("octagon-bounds",
                    crab::outs()
@@ -1097,9 +1077,9 @@ private:
          -------------
           j      <= (c+w)/2
        */
-      if (g.lookup(j + 1, i, &w)) {
+      if (g.lookup(j + 1, i, w)) {
         Wt k = (w.get() + c); // don't multiply by 2
-        if (!g.lookup(j + 1, j, &w) || k < w.get()) {
+        if (!g.lookup(j + 1, j, w) || k < w.get()) {
           delta.push_back({{j + 1, j}, k}); // ub of j
           CRAB_LOG("octagon-bounds",
                    crab::outs()
@@ -1113,9 +1093,9 @@ private:
          -------------
                i <= (c+w)/2
        */
-      if (g.lookup(j, i - 1, &w)) {
+      if (g.lookup(j, i - 1, w)) {
         Wt k = (w.get() + c); // don't multiply by 2
-        if (!g.lookup(i, i - 1, &w) || k < w.get()) {
+        if (!g.lookup(i, i - 1, w) || k < w.get()) {
           delta.push_back({{i, i - 1}, k}); // ub of i
           CRAB_LOG("octagon-bounds",
                    crab::outs()
@@ -1130,9 +1110,9 @@ private:
          -------------
           -j    <= (c+w)/2
        */
-      if (g.lookup(j - 1, i, &w)) {
+      if (g.lookup(j - 1, i, w)) {
         Wt k = (w.get() + c); // don't multiply by -2
-        if (!g.lookup(j - 1, j, &w) || k < w.get()) {
+        if (!g.lookup(j - 1, j, w) || k < w.get()) {
           delta.push_back({{j - 1, j}, k}); // lb of j
           CRAB_LOG("octagon-bounds",
                    crab::outs()
@@ -1146,9 +1126,9 @@ private:
          -------------
                i <= (c+w)/2
        */
-      if (g.lookup(j, i - 1, &w)) {
+      if (g.lookup(j, i - 1, w)) {
         Wt k = (w.get() + c); // don't multiply by 2
-        if (!g.lookup(i, i - 1, &w) || k < w.get()) {
+        if (!g.lookup(i, i - 1, w) || k < w.get()) {
           delta.push_back({{i, i - 1}, k}); // ub of i
           CRAB_LOG("octagon-bounds",
                    crab::outs()
@@ -1191,7 +1171,7 @@ private:
 
     check_potential(m_graph, m_potential, __LINE__);
     Wt_min min_op;
-    mut_val_ref_t w;
+    wt_ref_t w;
     for (auto p : lbs) {
       crab::ScopedCrabStats __st__(domain_name() +
                                    ".add_constraints.add_lb_csts");
@@ -1200,7 +1180,7 @@ private:
 
       variable_t x(p.first);
       vert_id v = get_vert(p.first);
-      if (m_graph.lookup(v, v + 1, &w) && w.get() <= (Wt)-2 * p.second)
+      if (m_graph.lookup(v, v + 1, w) && w.get() <= (Wt)-2 * p.second)
         continue;
       m_graph.set_edge(v, (Wt)-2 * p.second, v + 1);
       CRAB_LOG("octagon-add", crab::outs()
@@ -1229,7 +1209,7 @@ private:
                crab::outs() << "\t" << p.first << "<=" << p.second << "\n");
       variable_t x(p.first);
       vert_id v = get_vert(p.first);
-      if (m_graph.lookup(v + 1, v, &w) && w.get() <= (Wt)2 * p.second)
+      if (m_graph.lookup(v + 1, v, w) && w.get() <= (Wt)2 * p.second)
         continue;
       m_graph.set_edge(v + 1, (Wt)2 * p.second, v);
       CRAB_LOG("octagon-add", crab::outs()
@@ -1264,9 +1244,9 @@ private:
         Check if the binary constraint already exists via bounds:
            x - y <= k is skipped if x <= k1 and -y <= k2 and k1+k2 <= k
        */
-      mut_val_ref_t w1, w2;
-      if (m_graph.lookup(dest + 1, dest, &w1) &&
-          m_graph.lookup(src, src + 1, &w2) &&
+      wt_ref_t w1, w2;
+      if (m_graph.lookup(dest + 1, dest, w1) &&
+          m_graph.lookup(src, src + 1, w2) &&
           ((w1.get() + w2.get()) / (Wt)2) <= w) {
         continue;
       }
@@ -1314,9 +1294,9 @@ private:
         Check if the binary constraint already exists via bounds:
            x + y <= k is skipped if x <= k1 and y <= k2 and k1+k2 <= k
        */
-      mut_val_ref_t w1, w2;
-      if (m_graph.lookup(dest + 1, dest, &w1) &&
-          m_graph.lookup(src + 1, src, &w2) &&
+      wt_ref_t w1, w2;
+      if (m_graph.lookup(dest + 1, dest, w1) &&
+          m_graph.lookup(src + 1, src, w2) &&
           ((w1.get() + w2.get()) / (Wt)2) <= w) {
         continue;
       }
@@ -1368,9 +1348,9 @@ private:
         Check if the binary constraint already exists via bounds:
           -x - y <= k is skipped if -x <= k1 and -y <= k2 and k1+k2 <= k
        */
-      mut_val_ref_t w1, w2;
-      if (m_graph.lookup(dest, dest + 1, &w1) &&
-          m_graph.lookup(src, src + 1, &w2) &&
+      wt_ref_t w1, w2;
+      if (m_graph.lookup(dest, dest + 1, w1) &&
+          m_graph.lookup(src, src + 1, w2) &&
           ((w1.get() + w2.get()) / (Wt)2) <= w) {
         continue;
       }
@@ -1435,14 +1415,14 @@ private:
       return false;
     } else if (!new_i.is_top() && (new_i <= i)) {
       vert_id v = get_vert(x);
-      mut_val_ref_t w;
+      wt_ref_t w;
       if (new_i.lb().is_finite()) {
         Wt lb_val =
             ntow::convert(-number_t(2) * (*(new_i.lb().number())), overflow);
         if (overflow) {
           return true;
         }
-        if (m_graph.lookup(v, v + 1, &w) && lb_val < w.get()) {
+        if (m_graph.lookup(v, v + 1, w) && lb_val < w.get()) {
           m_graph.set_edge(v, lb_val, v + 1);
           if (!repair_potential(v, v + 1)) {
             set_to_bottom();
@@ -1461,7 +1441,7 @@ private:
         if (overflow) {
           return true;
         }
-        if (m_graph.lookup(v + 1, v, &w) && (ub_val < w.get())) {
+        if (m_graph.lookup(v + 1, v, w) && (ub_val < w.get())) {
           m_graph.set_edge(v + 1, ub_val, v);
           if (!repair_potential(v + 1, v)) {
             set_to_bottom();
@@ -1529,22 +1509,26 @@ private:
   void integer_tightening() {
 #ifdef INTEGER_TIGHTENING
     for (vert_id v : m_graph.verts()) {
-      mut_val_ref_t w;
-      if (v % 2 == 0 && (m_graph.lookup(v, v + 1, &w)) && (w.get() & 1)) {
+      wt_ref_t w;
+      if (v % 2 == 0 && (m_graph.lookup(v, v + 1, w)) && (w.get() & 1)) {
         // weight is odd so we need to tighten it
         CRAB_LOG("octagon-integer", crab::outs() << "Tightening edge " << v
                                                  << " --> " << v + 1 << " from "
                                                  << w.get() << " to ";);
-        w = 2 * (Wt)std::floor((float)w.get() / 2);
-        CRAB_LOG("octagon-integer", crab::outs() << w.get() << "\n";);
+	// REVISIT(PERFORMANCE): extra call to lookup
+	Wt tightened_w = 2 * (Wt)std::floor((float)w.get() / 2);
+	m_graph.set_edge(v, tightened_w, v + 1);
+        CRAB_LOG("octagon-integer", crab::outs() << tightened_w << "\n";);
       }
-      if (v % 2 != 0 && (m_graph.lookup(v, v - 1, &w)) && (w.get() & 1)) {
+      if (v % 2 != 0 && (m_graph.lookup(v, v - 1, w)) && (w.get() & 1)) {
         // weight is odd so we need to tighten it
         CRAB_LOG("octagon-integer", crab::outs() << "Tightening edge " << v
                                                  << " --> " << v + 1 << " from "
                                                  << w.get() << " to ";);
-        w = 2 * (Wt)std::floor((float)w.get() / 2);
-        CRAB_LOG("octagon-integer", crab::outs() << w.get() << "\n";);
+	// REVISIT(PERFORMANCE): extra call to lookup
+	Wt tightened_w = 2 * (Wt)std::floor((float)w.get() / 2);
+	m_graph.set_edge(v, tightened_w, v - 1);
+        CRAB_LOG("octagon-integer", crab::outs() << tightened_w << "\n";);
       }
     }
 #endif
@@ -1553,7 +1537,7 @@ private:
   void close_over_edge(vert_id ii, vert_id jj) {
     assert(ii / 2 != jj / 2);
 
-    mut_val_ref_t w;
+    wt_ref_t w;
     Wt c = m_graph.edge_val(ii, jj);
 
     split_octagons_impl::SplitOctGraph<graph_t> g_oct(m_graph);
@@ -1574,14 +1558,15 @@ private:
       Wt wt_sij = edge.val + c;
       assert(g_oct.succs(se).begin() != g_oct.succs(se).end());
       if (se != jj) {
-        if (/*g_oct*/ m_graph.lookup(se, jj, &w)) {
+        if (/*g_oct*/ m_graph.lookup(se, jj, w)) {
           if (w.get() <= wt_sij)
             continue;
           CRAB_LOG("octagon-close-edge",
                    crab::outs()
                        << "[close-edge 1] improved edge " << se << "-->" << jj
                        << " from " << w.get() << " to " << wt_sij << "\n";);
-          w = wt_sij;
+	  // REVISIT(PERFORMANCE): extra call to lookup
+	  m_graph.set_edge(se, wt_sij, jj);
         } else {
           CRAB_LOG("octagon-close-edge",
                    crab::outs() << "[close-edge 1] added edge " << se << "-->"
@@ -1603,14 +1588,15 @@ private:
       vert_id de = edge.vert;
       Wt wt_ijd = edge.val + c;
       if (de != ii) {
-        if (/*g_oct*/ m_graph.lookup(ii, de, &w)) {
+        if (/*g_oct*/ m_graph.lookup(ii, de, w)) {
           if (w.get() <= wt_ijd)
             continue;
           CRAB_LOG("octagon-close-edge",
                    crab::outs()
                        << "[close-edge 2] improved edge " << ii << "-->" << de
                        << " from " << w.get() << " to " << wt_ijd << "\n";);
-          w = wt_ijd;
+	  // REVISIT(PERFORMANCE): extra call to lookup
+	  m_graph.set_edge(ii, wt_ijd, de);
         } else {
           delta.push_back({{ii, de}, wt_ijd});
           CRAB_LOG("octagon-close-edge",
@@ -1636,14 +1622,15 @@ private:
         if (se == de)
           continue;
         Wt wt_sijd = wt_sij + d_p.second;
-        if (m_graph.lookup(se, de, &w)) {
+        if (m_graph.lookup(se, de, w)) {
           if (w.get() <= wt_sijd)
             continue;
           CRAB_LOG("octagon-close-edge",
                    crab::outs()
                        << "[close-edge 3] improved edge " << se << "-->" << de
                        << " from " << w.get() << " to " << wt_sijd << "\n";);
-          w = wt_sijd;
+	  // REVISIT(PERFORMANCE): extra call to lookup
+	  m_graph.set_edge(se, wt_sijd, de);
         } else {
           // m_graph.add_edge(se, wt_sijd, de);
           delta.push_back({{se, de}, wt_sijd});
@@ -1675,31 +1662,30 @@ private:
     for (vert_id s : gy_oct.verts()) {
       for (vert_id d : gy_oct.succs(s)) {
         Wt_min min_op;
-        mut_val_ref_t ws;
-        mut_val_ref_t wd;
+        wt_ref_t ws, wd;
         bool added = false;
         if (s % 2 == 0 && d % 2 == 0) { // both pos
           // if  d-s <= k in gy and -2s <= k1  and 2d <= k2 in gx then
           //     add d-s <= k1+k2/2
-          if (gx.lookup(s, s + 1, &ws) && gx.lookup(d + 1, d, &wd)) {
+          if (gx.lookup(s, s + 1, ws) && gx.lookup(d + 1, d, wd)) {
             added = true;
           }
         } else if (s % 2 == 0 && d % 2 != 0) { // s pos
           // if -d-s <= k in gy and -2s <= k1 and -2d <= k2 in gx then
           //    add -d-s <= k1+k2/2
-          if (gx.lookup(s, s + 1, &ws) && gx.lookup(d - 1, d, &wd)) {
+          if (gx.lookup(s, s + 1, ws) && gx.lookup(d - 1, d, wd)) {
             added = true;
           }
         } else if (s % 2 != 0 && d % 2 == 0) { // d pos
           // if d+s <= k in gy and 2s <= k1 and 2d <= k2 in gx then
           //    add d+s <= k1+k2/2
-          if (gx.lookup(s, s - 1, &ws) && gx.lookup(d + 1, d, &wd)) {
+          if (gx.lookup(s, s - 1, ws) && gx.lookup(d + 1, d, wd)) {
             added = true;
           }
         } else if (s % 2 != 0 && d % 2 != 0) { // both neg
           // if -d+s <= k in gy and 2s <= k1 and -2d <= k2 in gx then
           //    add -d+s <= k1+k2/2
-          if (gx.lookup(s, s - 1, &ws) && gx.lookup(d - 1, d, &wd)) {
+          if (gx.lookup(s, s - 1, ws) && gx.lookup(d - 1, d, wd)) {
             added = true;
           }
         }
@@ -1722,7 +1708,7 @@ private:
 
     Wt_min min_op;
     Wt e_val;
-    mut_val_ref_t ws, wd, wy;
+    wt_ref_t ws, wd, wy;
 
     // Skip bounds on the non-closed left
     split_octagons_impl::SplitOctGraph<GrPerm> l_oct(l);
@@ -1733,9 +1719,9 @@ private:
         if (s % 2 == 0 && d % 2 == 0) { // both pos
           // if d-s <= k in l and -2s <= k1 and 2d <= k2 in r then
           //    add d-s <= e_val if k1+k2/2 <= e_val
-          if (r.lookup(s, s + 1, &ws) && r.lookup(d + 1, d, &wd) &&
+          if (r.lookup(s, s + 1, ws) && r.lookup(d + 1, d, wd) &&
               ((Wt)(ws.get() + wd.get()) / (Wt)2 <= e_val) &&
-              (!g.lookup(s, d, &wy) || (e_val < wy.get()))) {
+              (!g.lookup(s, d, wy) || (e_val < wy.get()))) {
             /* begin preserve coherence */
             if (g.elem(d + 1, s + 1)) {
               continue;
@@ -1752,9 +1738,9 @@ private:
         } else if (s % 2 == 0 && d % 2 != 0) { // s pos
           // if -d-s <= k in l and -2s <= k1 and -2d <= k2 in r then
           //    add -d-s <= e_val if k1+k2/2 <= e_val
-          if (r.lookup(s, s + 1, &ws) && r.lookup(d - 1, d, &wd) &&
+          if (r.lookup(s, s + 1, ws) && r.lookup(d - 1, d, wd) &&
               ((Wt)(ws.get() + wd.get()) / (Wt)2 <= e_val) &&
-              (!g.lookup(s, d, &wy) || (e_val < wy.get()))) {
+              (!g.lookup(s, d, wy) || (e_val < wy.get()))) {
             /* begin preserve coherence */
             if (g.elem(d - 1, s + 1)) {
               continue;
@@ -1772,9 +1758,9 @@ private:
         } else if (s % 2 != 0 && d % 2 == 0) { // d pos
           // if d+s <= k in l and 2s <= k1 and 2d <= k2 in r then
           //    add d+s <= e_val if k1+k2/2  <= e_val
-          if (r.lookup(s, s - 1, &ws) && r.lookup(d + 1, d, &wd) &&
+          if (r.lookup(s, s - 1, ws) && r.lookup(d + 1, d, wd) &&
               ((Wt)(ws.get() + wd.get()) / (Wt)2 <= e_val) &&
-              (!g.lookup(s, d, &wy) || (e_val < wy.get()))) {
+              (!g.lookup(s, d, wy) || (e_val < wy.get()))) {
             /* begin preserve coherence */
             if (g.elem(d + 1, s - 1)) {
               continue;
@@ -1791,9 +1777,9 @@ private:
         } else if (s % 2 != 0 && d % 2 != 0) { // both neg
           // if -d+s <= k in l and 2s <= k1 and -2d <= k2 in r then
           //    add -d+s <= e_val if k1+k2/2  <= e_val
-          if (r.lookup(s, s - 1, &ws) && r.lookup(d - 1, d, &wd) &&
+          if (r.lookup(s, s - 1, ws) && r.lookup(d - 1, d, wd) &&
               ((Wt)(ws.get() + wd.get()) / (Wt)2 <= e_val) &&
-              (!g.lookup(s, d, &wy) || (e_val < wy.get()))) {
+              (!g.lookup(s, d, wy) || (e_val < wy.get()))) {
             /* begin preserve coherence */
             if (g.elem(d - 1, s - 1)) {
               continue;
@@ -1821,7 +1807,7 @@ private:
     g.growTo(sz);
 
     Wt_min min_op;
-    mut_val_ref_t wx;
+    wt_ref_t wx;
 
     /**
      * Add stable relationships which are explicit both in l and r
@@ -1830,7 +1816,7 @@ private:
       for (auto e : r.e_succs(s)) {
         vert_id d = e.vert;
         /* check if s->d is explicit in l */
-        if (l.lookup(s, d, &wx) && e.val <= wx.get()) {
+        if (l.lookup(s, d, wx) && e.val <= wx.get()) {
           g.add_edge(s, wx.get(), d);
           CRAB_LOG(
               "octagon-widening", auto vs = m_rev_vert_map[s];
@@ -2054,9 +2040,9 @@ public:
         return false;
       }
 
-      mut_val_ref_t wx;
-      mut_val_ref_t wy;
-      mut_val_ref_t wz;
+      wt_ref_t wx;
+      wt_ref_t wy;
+      wt_ref_t wz;
 
       std::vector<unsigned int> vert_renaming(right.m_graph.size(), -1);
       for (auto p : right.m_vert_map) {
@@ -2090,15 +2076,15 @@ public:
           Wt ow = edge.val;
 
           // explicit edge on the left operand
-          if (left.m_graph.lookup(x, y, &wx) && (wx.get() <= ow))
+          if (left.m_graph.lookup(x, y, wx) && (wx.get() <= ow))
             continue;
 
           // implicit edge on the left operand
           if (x % 2 == 0 && y % 2 == 0) { // both pos
             // y-x <= k in o: check if -2x <= k1 and 2y <= k2 in this and
             //                         k1+k2/2 <= k
-            if (!left.m_graph.lookup(x, x + 1, &wx) ||
-                !left.m_graph.lookup(y + 1, y, &wy)) {
+            if (!left.m_graph.lookup(x, x + 1, wx) ||
+                !left.m_graph.lookup(y + 1, y, wy)) {
               return false;
             }
             if (!((Wt)(wx.get() + wy.get()) / (Wt)2 <= ow)) {
@@ -2108,8 +2094,8 @@ public:
           } else if (x % 2 == 0 && y % 2 != 0) { // x pos
             // -y-x <= k in o: check if -2x <= k1 and -2y <= k2 in this and
             //                         k1+k2/2 <= k
-            if (!left.m_graph.lookup(x, x + 1, &wx) ||
-                !left.m_graph.lookup(y - 1, y, &wy)) {
+            if (!left.m_graph.lookup(x, x + 1, wx) ||
+                !left.m_graph.lookup(y - 1, y, wy)) {
               return false;
             }
             if (!((Wt)(wx.get() + wy.get()) / (Wt)2 <= ow)) {
@@ -2118,8 +2104,8 @@ public:
           } else if (x % 2 != 0 && y % 2 == 0) { // y pos
             //  y+x <= k in o: check if  2x <= k1 and 2y <= k2 in this and
             //                         k1+k2/2 <= k
-            if (!left.m_graph.lookup(x, x - 1, &wx) ||
-                !left.m_graph.lookup(y + 1, y, &wy)) {
+            if (!left.m_graph.lookup(x, x - 1, wx) ||
+                !left.m_graph.lookup(y + 1, y, wy)) {
               return false;
             }
             if (!((Wt)(wx.get() + wy.get()) / (Wt)2 <= ow)) {
@@ -2128,8 +2114,8 @@ public:
           } else if (x % 2 != 0 && y % 2 != 0) { // both neg
             //  -y+x <= k in o: check if  2x <= k1 and -2y <= k2 in this and
             //                         k1+k2/2 <= k
-            if (!left.m_graph.lookup(x, x - 1, &wx) ||
-                !left.m_graph.lookup(y - 1, y, &wy)) {
+            if (!left.m_graph.lookup(x, x - 1, wx) ||
+                !left.m_graph.lookup(y - 1, y, wy)) {
               return false;
             }
             if (!((Wt)(wx.get() + wy.get()) / (Wt)2 <= ow)) {
@@ -2286,19 +2272,19 @@ public:
       // such that a > c
       std::vector<vert_id> ub_right;
 
-      mut_val_ref_t wx;
-      mut_val_ref_t wy;
+      wt_ref_t wx;
+      wt_ref_t wy;
 
       for (vert_id v : gx.verts()) {
         if (v % 2 != 0)
           continue;
-        if (gx.lookup(v + 1, v, &wx) && gy.lookup(v + 1, v, &wy)) {
+        if (gx.lookup(v + 1, v, wx) && gy.lookup(v + 1, v, wy)) {
           if (wx.get() < wy.get())
             ub_left.push_back(v);
           if (wy.get() < wx.get())
             ub_right.push_back(v);
         }
-        if (gx.lookup(v, v + 1, &wx) && gy.lookup(v, v + 1, &wy)) {
+        if (gx.lookup(v, v + 1, wx) && gy.lookup(v, v + 1, wy)) {
           if (wx.get() < wy.get())
             lb_left.push_back(v);
           if (wy.get() < wx.get())
@@ -3586,7 +3572,7 @@ public:
     /// This code can print the same constraint twice. E.g., the
     /// constraint x - y <= k can be printed if we have edges from
     /// pos(y) to pos(x) and from neg(x) to neg(y).
-    mut_val_ref_t w;
+    wt_ref_t w;
     if (is_bottom()) {
       o << "_|_";
       return;
