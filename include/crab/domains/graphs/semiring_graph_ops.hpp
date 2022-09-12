@@ -13,8 +13,7 @@ namespace domains {
 
 // This class generalizes GrOps from graph_ops.hpp to a more general
 // semiring (GrOps only deals with integers).
-template <class Gr, bool IsDistWt>
-class SemiringGrOps {
+template <class Gr, bool IsDistWt> class SemiringGrOps {
   //
   // IsDistWt must be true iff
   //   Wt_meet.apply(x, Wt_join.apply(y,z)) =
@@ -136,7 +135,8 @@ public:
 
   // Syntactic widening
   template <class G1, class G2>
-  static graph_t widen(const G1 &l, const G2 &r, std::vector<vert_id> &unstable) {
+  static graph_t widen(const G1 &l, const G2 &r,
+                       std::vector<vert_id> &unstable) {
     assert(l.size() == r.size());
     size_t sz = l.size();
     graph_t g;

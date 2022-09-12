@@ -190,10 +190,12 @@ public:
   };
 
   // public typedefs
-  using const_pred_range = adj_list<typename G::const_pred_range,
-                              adj_iterator<typename G::const_pred_range::iterator>>;
-  using const_succ_range = adj_list<typename G::const_succ_range,
-                              adj_iterator<typename G::const_succ_range::iterator>>;
+  using const_pred_range =
+      adj_list<typename G::const_pred_range,
+               adj_iterator<typename G::const_pred_range::iterator>>;
+  using const_succ_range =
+      adj_list<typename G::const_succ_range,
+               adj_iterator<typename G::const_succ_range::iterator>>;
   using const_e_pred_range =
       adj_list<typename G::const_e_pred_range,
                e_adj_iterator<typename G::const_e_pred_range::iterator>>;
@@ -373,10 +375,12 @@ public:
   };
 
   // public typedefs
-  using const_pred_range = adj_list<typename G::const_pred_range,
-                              adj_iterator<typename G::const_pred_range::iterator>>;
-  using const_succ_range = adj_list<typename G::const_succ_range,
-                              adj_iterator<typename G::const_succ_range::iterator>>;
+  using const_pred_range =
+      adj_list<typename G::const_pred_range,
+               adj_iterator<typename G::const_pred_range::iterator>>;
+  using const_succ_range =
+      adj_list<typename G::const_succ_range,
+               adj_iterator<typename G::const_succ_range::iterator>>;
   using const_e_pred_range =
       adj_list<typename G::const_e_pred_range,
                e_adj_iterator<typename G::const_e_pred_range::iterator>>;
@@ -435,7 +439,6 @@ public:
   int size(void) const { return g.size(); }
 
   typename G::vert_range verts(void) const { return g.verts(); }
-
 
   const_succ_range succs(vert_id v) const { return g.preds(v); }
   const_succ_range preds(vert_id v) const { return g.succs(v); }

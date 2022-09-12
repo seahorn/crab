@@ -8,7 +8,7 @@
 
 /**
  * An adaptive sparse-map.
- * 
+ *
  * Starts off as an unsorted vector, switching to a
  * sparse-set when |S| >= sparse_threshold
  * WARNING: Assumes Val is a basic type (so doesn't need a ctor/dtor call)
@@ -35,16 +35,15 @@ inline void *realloc_fail(void *ptr, size_t size) {
 
 template <class Val> class AdaptSMap {
   enum { sparse_threshold = 8 };
-  
+
 public:
   using key_t = uint16_t;
   using val_t = Val;
   class elt_t {
   public:
-    elt_t(key_t _k, const val_t &_v)
-      : key(_k), val(_v) {}
+    elt_t(key_t _k, const val_t &_v) : key(_k), val(_v) {}
     elt_t(const elt_t &o) = default;
-    elt_t& operator=(const elt_t &o) = default;    
+    elt_t &operator=(const elt_t &o) = default;
 
     key_t key;
     val_t val;
@@ -119,15 +118,15 @@ public:
   AdaptSMap &operator=(AdaptSMap &&o) {
     if (this != &o) {
       if (dense)
-	free(dense);
+        free(dense);
       if (sparse)
-	free(sparse);
-      
+        free(sparse);
+
       dense = o.dense;
       o.dense = nullptr;
       sparse = o.sparse;
       o.sparse = nullptr;
-      
+
       sz = o.sz;
       o.sz = 0;
       dense_maxsz = o.dense_maxsz;
@@ -162,7 +161,7 @@ public:
       return *it;
     }
 
-    key_t operator*(void)const { return (*e).key; }
+    key_t operator*(void) const { return (*e).key; }
     bool operator!=(const key_iter_t &o) const { return e < o.e; }
     key_iter_t &operator++(void) {
       ++e;
@@ -207,7 +206,7 @@ public:
   bool elem(key_t k) const {
     if (sparse) {
       if (k >= sparse_ub) {
-	return false;
+        return false;
       }
       int idx = sparse[k];
       // WARNING: Valgrind will complain about uninitialized memory
@@ -217,7 +216,7 @@ public:
       // undefined behavior (dense[idx].key might be uninitialized)
       // and relying on the fact that compilers such as gcc and Clang
       // will not optimized code.
-      // 
+      //
       // A possible solution is to allocate sparse with calloc and
       // hoping that the OS does lazily the initialization.
       return (idx < sz) && dense[idx].key == k;
@@ -233,10 +232,10 @@ public:
   bool lookup(key_t k, val_t *v_out) const {
     if (sparse) {
       if (k >= sparse_ub) {
-	return false;
-      }      
+        return false;
+      }
       int idx = sparse[k];
-      // SEE ABOVE WARNING      
+      // SEE ABOVE WARNING
       if (idx < sz && dense[idx].key == k) {
         (*v_out) = dense[idx].val;
         return true;
@@ -259,7 +258,7 @@ public:
     elt_t repl = dense[sz];
     if (sparse) {
       if (k >= sparse_ub) {
-	return;
+        return;
       }
       int idx = sparse[k];
       dense[idx] = repl;

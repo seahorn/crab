@@ -8,12 +8,11 @@
 namespace crab {
 namespace graph_iterators {
 
-// This can be a template parameter of ver_iterator  
+// This can be a template parameter of ver_iterator
 using vert_id = unsigned int;
 
-
 /** Iterators over graph nodes **/
-  
+
 class vert_iterator {
 public:
   vert_iterator(vert_id _v, const std::vector<bool> &_is_free)
@@ -44,35 +43,34 @@ public:
       : sz(_sz), is_free(_is_free) {}
   vert_iterator begin(void) const { return vert_iterator(0, is_free); }
   vert_iterator end(void) const { return vert_iterator(sz, is_free); }
-  unsigned int size(void) const { return (unsigned int) sz; }
+  unsigned int size(void) const { return (unsigned int)sz; }
+
 private:
   vert_id sz;
   const std::vector<bool> &is_free;
 };
 
 // FIXME(more reusable): it assumes that Pred is a std container but
-// patricia trees/sets have different API  
-template<class Pred, class PredIt>
-class pred_range {
+// patricia trees/sets have different API
+template <class Pred, class PredIt> class pred_range {
 public:
   using iterator = PredIt;
-  
+
   pred_range(Pred &_p) : p(_p) {}
   iterator begin(void) const { return iterator(p.begin()); }
   iterator end(void) const { return iterator(p.end()); }
   size_t size(void) const { return p.size(); }
-  
+
   bool mem(unsigned int v) const { return p.find(v) != p.end(); }
   void add(unsigned int v) { p.insert(v); }
   void remove(unsigned int v) { p.erase(v); }
   void clear() { p.clear(); }
-  
+
 private:
   Pred &p;
 };
 
-template<class Pred, class PredIt>  
-class const_pred_range {
+template <class Pred, class PredIt> class const_pred_range {
 public:
   using iterator = PredIt;
   const_pred_range(const Pred &_p) : p(_p) {}
@@ -80,41 +78,40 @@ public:
   iterator end(void) const { return iterator(p.end()); }
   size_t size(void) const { return p.size(); }
   bool mem(unsigned int v) const { return p.find(v) != p.end(); }
-  
+
 private:
   const Pred &p;
 };
 
-
 // FIXME(more reusable): it assumes that Succ is a std container but
 // patricia trees/sets have different API
-template<class Succ, class SuccIt>    
-class succ_range {
+template <class Succ, class SuccIt> class succ_range {
   using succ_elt_t = typename Succ::value_type;
   using Wt = typename Succ::mapped_type;
+
 public:
   using iterator = SuccIt;
-  
+
   succ_range(Succ &_p) : p(_p) {}
   iterator begin(void) const { return iterator(p.begin()); }
   iterator end(void) const { return iterator(p.end()); }
   size_t size(void) const { return p.size(); }
-  
+
   bool mem(unsigned int v) const { return p.find(v) != p.end(); }
   void add(unsigned int v, const Wt &w) { p.insert(succ_elt_t(v, w)); }
   const Wt &value(unsigned int v) const { return (*(p.find(v))).second; }
   Wt &value(unsigned int v) { return (*(p.find(v))).second; }
   void remove(unsigned int v) { p.erase(v); }
   void clear() { p.clear(); }
-  
+
 private:
   Succ &p;
 };
 
-template<class Succ, class SuccIt>      
-class const_succ_range {
+template <class Succ, class SuccIt> class const_succ_range {
   using succ_elt_t = typename Succ::value_type;
   using Wt = typename Succ::mapped_type;
+
 public:
   using iterator = SuccIt;
   const_succ_range(const Succ &_p) : p(_p) {}
@@ -124,13 +121,13 @@ public:
   bool mem(unsigned int v) const { return p.find(v) != p.end(); }
   void add(unsigned int v, const Wt &w) { p.insert(succ_elt_t(v, w)); }
   const Wt &value(unsigned int v) const { return (*(p.find(v))).second; }
-  
+
 private:
   const Succ &p;
 };
-  
+
 /** Iterators over graph edges **/
-  
+
 template <class Wt> class edge_ref_t {
 public:
   edge_ref_t(vert_id _v, Wt &_w) : vert(_v), val(_w) {}
@@ -145,13 +142,13 @@ public:
   const Wt &val;
 };
 
-template<class Wt>  class edge_val_t {
+template <class Wt> class edge_val_t {
 public:
   edge_val_t(vert_id _v, Wt _w) : vert(_v), val(_w) {}
   vert_id vert;
   Wt val; // no longer a ref
 };
-  
+
 template <class G, class It, class E> class fwd_edge_iterator {
 public:
   using Wt = typename G::Wt;
@@ -218,7 +215,7 @@ public:
   using Wt = typename G::Wt;
   using edge_wrapper = E;
   using type = rev_edge_iterator<G, It, E>;
-  
+
   rev_edge_iterator(void) : g(nullptr) {}
   rev_edge_iterator(G &_g, vert_id _d, It _it) : g(&_g), d(_d), it(_it) {}
 
@@ -248,7 +245,7 @@ public:
   using Wt = typename G::Wt;
   using edge_wrapper = E;
   using type = const_rev_edge_iterator<G, It, E>;
-  
+
   const_rev_edge_iterator(void) : g(nullptr) {}
   const_rev_edge_iterator(const G &_g, vert_id _d, It _it)
       : g(&_g), d(_d), it(_it) {}
@@ -256,8 +253,7 @@ public:
   static type empty_iterator() {
     static std::unique_ptr<type> it = nullptr;
     if (!it)
-      it = std::unique_ptr<type>(
-          new type());
+      it = std::unique_ptr<type>(new type());
     return *it;
   }
 

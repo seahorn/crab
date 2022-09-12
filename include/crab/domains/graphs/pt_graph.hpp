@@ -14,7 +14,7 @@
  * a weight stored in the patricia tree.
  */
 namespace crab {
-  
+
 template <class Weight> class PtGraph {
 public:
   using Wt = Weight;
@@ -27,20 +27,21 @@ public:
     vert_id d;
     // Expensive with patricia trees because we cannot store a
     // reference
-    Wt w;    
+    Wt w;
+
   public:
     wt_ref_t() : g(nullptr) {}
-    
+
     wt_ref_t(const graph_t &_g, vert_id _s, vert_id _d)
-      : g(&_g), s(_s), d(_d), w(g->succs(s).value(d)) {}
-       
+        : g(&_g), s(_s), d(_d), w(g->succs(s).value(d)) {}
+
     const Wt &get() const {
       assert(g);
       return w;
     }
   };
 
-private:  
+private:
   class vert_idx : public indexable {
   public:
     vert_idx(vert_id _v) : v(_v) {}
@@ -67,7 +68,7 @@ private:
       ++it;
       return *this;
     }
-    vert_id operator*(void)const { return (*it).v; }
+    vert_id operator*(void) const { return (*it).v; }
 
   private:
     ItP it;
@@ -93,15 +94,15 @@ private:
       ++it;
       return *this;
     }
-    vert_id operator*(void)const { return (*it).first.v; }
+    vert_id operator*(void) const { return (*it).first.v; }
 
   private:
     ItS it;
   };
 
   using edge_val_t = graph_iterators::edge_val_t<Wt>;
-  
-public:  
+
+public:
   class pred_range {
   public:
     using iterator = pred_iterator;
@@ -175,12 +176,14 @@ public:
   private:
     const succ_t &p;
   };
-  
+
   using vert_iterator = graph_iterators::vert_iterator;
   using vert_range = graph_iterators::vert_range;
-  using const_e_succ_range = graph_iterators::const_fwd_edge_range<graph_t, succ_iterator, edge_val_t>;
-  using const_e_pred_range = graph_iterators::const_rev_edge_range<graph_t, pred_iterator, edge_val_t>;
-  
+  using const_e_succ_range =
+      graph_iterators::const_fwd_edge_range<graph_t, succ_iterator, edge_val_t>;
+  using const_e_pred_range =
+      graph_iterators::const_rev_edge_range<graph_t, pred_iterator, edge_val_t>;
+
   PtGraph() : edge_count(0), _succs(), _preds(), is_free(), free_id() {}
 
   template <class Wo> PtGraph(const PtGraph<Wo> &o) : edge_count(0) {
@@ -296,7 +299,7 @@ public:
 
   // Check whether an edge is live
   bool elem(vert_id x, vert_id y) const { return succs(x).mem(y); }
- 
+
   bool lookup(vert_id x, vert_id y, wt_ref_t &w) const {
     if (!succs(x).mem(y)) {
       return false;
@@ -358,11 +361,11 @@ public:
       // Expensive with patricia trees because it requires
       // lookup+insert
       if (w < edge_val(s, d)) {
-	_succs[s].insert(vert_idx(d), w);
+        _succs[s].insert(vert_idx(d), w);
       }
     }
   }
-  
+
   template <class Op> void update_edge(vert_id s, Wt w, vert_id d, Op &op) {
     if (elem(s, d)) {
       // _succs[s].insert(vert_idx(d), w, op);
@@ -374,38 +377,29 @@ public:
       add_edge(s, w, d);
   }
 
-  
-
   // FIXME: Verts currently iterates over free vertices,
   // as well as existing ones
-  vert_range verts(void) const {
-    return vert_range(is_free.size(), is_free);
-  }
-  
-  succ_range succs(vert_id v) {
-    return succ_range(_succs[v]);
-  }
+  vert_range verts(void) const { return vert_range(is_free.size(), is_free); }
+
+  succ_range succs(vert_id v) { return succ_range(_succs[v]); }
 
   const_succ_range succs(vert_id v) const {
     return const_succ_range(_succs[v]);
   }
 
-  pred_range preds(vert_id v) {
-    return pred_range(_preds[v]);
-  }
+  pred_range preds(vert_id v) { return pred_range(_preds[v]); }
 
   const_pred_range preds(vert_id v) const {
     return const_pred_range(_preds[v]);
   }
 
- 
   const_e_succ_range e_succs(vert_id v) const {
     return const_e_succ_range(*this, v);
   }
   const_e_pred_range e_preds(vert_id v) const {
     return const_e_pred_range(*this, v);
   }
-  
+
   // growTo shouldn't be used after forget
   void growTo(unsigned int new_sz) {
     size_t sz = is_free.size();

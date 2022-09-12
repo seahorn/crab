@@ -1,8 +1,8 @@
 #pragma once
 
-#include <crab/support/os.hpp>
-#include <crab/domains/graphs/util/reference_wrapper.hpp>
 #include <crab/domains/graphs/graph_iterators.hpp>
+#include <crab/domains/graphs/util/reference_wrapper.hpp>
+#include <crab/support/os.hpp>
 
 #include <unordered_map>
 #include <unordered_set>
@@ -24,7 +24,6 @@ public:
   using wt_ref_t = crab::reference_wrapper<const Wt>;
 
 private:
-  
   using pred_t = std::unordered_set<vert_id>;
   using succ_t = std::unordered_map<vert_id, Wt>;
 
@@ -35,13 +34,13 @@ private:
 
     pred_iterator(ItP _it) : it(_it) {}
     pred_iterator(void) : it() {}
-    
+
     bool operator!=(const type &o) const { return it != o.it; }
     type &operator++(void) {
       ++it;
       return *this;
     }
-    vert_id operator*(void)const { return (*it); }
+    vert_id operator*(void) const { return (*it); }
 
   protected:
     ItP it;
@@ -54,7 +53,7 @@ private:
 
     succ_iterator(ItS _it) : it(_it) {}
     succ_iterator(void) : it() {}
-    
+
     // XXX: to make sure that we always return the same address
     // for the "empty" iterator, otherwise we can trigger
     // undefined behavior.
@@ -69,30 +68,35 @@ private:
       ++it;
       return *this;
     }
-    vert_id operator*(void)const { return (*it).first; }
+    vert_id operator*(void) const { return (*it).first; }
 
   protected:
     ItS it;
   };
 
   using edge_ref_t = graph_iterators::edge_ref_t<Wt>;
-  using const_edge_ref_t = graph_iterators::const_edge_ref_t<Wt>;  
-  
-public:
+  using const_edge_ref_t = graph_iterators::const_edge_ref_t<Wt>;
 
+public:
   using vert_iterator = graph_iterators::vert_iterator;
-  using vert_range = graph_iterators::vert_range;  
+  using vert_range = graph_iterators::vert_range;
   using pred_range = graph_iterators::pred_range<pred_t, pred_iterator>;
-  using const_pred_range = graph_iterators::const_pred_range<pred_t, pred_iterator>;
+  using const_pred_range =
+      graph_iterators::const_pred_range<pred_t, pred_iterator>;
   using succ_range = graph_iterators::succ_range<succ_t, succ_iterator>;
-  using const_succ_range = graph_iterators::const_succ_range<succ_t, succ_iterator>;
-  using e_succ_range = graph_iterators::fwd_edge_range<graph_t, succ_iterator, edge_ref_t>;
-  using e_pred_range = graph_iterators::rev_edge_range<graph_t, pred_iterator, edge_ref_t>;
+  using const_succ_range =
+      graph_iterators::const_succ_range<succ_t, succ_iterator>;
+  using e_succ_range =
+      graph_iterators::fwd_edge_range<graph_t, succ_iterator, edge_ref_t>;
+  using e_pred_range =
+      graph_iterators::rev_edge_range<graph_t, pred_iterator, edge_ref_t>;
   using const_e_succ_range =
-    graph_iterators::const_fwd_edge_range<graph_t, succ_iterator, const_edge_ref_t>;
+      graph_iterators::const_fwd_edge_range<graph_t, succ_iterator,
+                                            const_edge_ref_t>;
   using const_e_pred_range =
-    graph_iterators::const_rev_edge_range<graph_t, pred_iterator, const_edge_ref_t>;
-  
+      graph_iterators::const_rev_edge_range<graph_t, pred_iterator,
+                                            const_edge_ref_t>;
+
   HtGraph() : edge_count(0), _succs(), _preds(), is_free(), free_id() {}
 
   template <class Wo> HtGraph(const HtGraph<Wo> &o) : edge_count(0) {
@@ -208,7 +212,7 @@ public:
 
   // Check whether an edge is live
   bool elem(vert_id x, vert_id y) const { return succs(x).mem(y); }
-  
+
   bool lookup(vert_id x, vert_id y, wt_ref_t &w) const {
     if (!succs(x).mem(y))
       return false;
@@ -273,12 +277,11 @@ public:
     else {
       Wt &v = edge_val(s, d);
       if (w < v) {
-	v = w;
+        v = w;
       }
-    }    
-    
+    }
   }
-  
+
   template <class Op> void update_edge(vert_id s, Wt w, vert_id d, Op &op) {
     if (elem(s, d)) {
       edge_val(s, d) = op.apply(edge_val(s, d), w);
@@ -289,30 +292,19 @@ public:
       add_edge(s, w, d);
   }
 
-
   // FIXME: Verts currently iterates over free vertices,
   // as well as existing ones
-  vert_range verts(void) const {
-    return vert_range(is_free.size(), is_free);
-  }
-  succ_range succs(vert_id v) {
-    return succ_range(_succs[v]);
-  }
-  pred_range preds(vert_id v) {
-    return pred_range(_preds[v]);
-  }  
+  vert_range verts(void) const { return vert_range(is_free.size(), is_free); }
+  succ_range succs(vert_id v) { return succ_range(_succs[v]); }
+  pred_range preds(vert_id v) { return pred_range(_preds[v]); }
   const_succ_range succs(vert_id v) const {
-     return const_succ_range(_succs[v]);
+    return const_succ_range(_succs[v]);
   }
   const_pred_range preds(vert_id v) const {
-     return const_pred_range(_preds[v]);
+    return const_pred_range(_preds[v]);
   }
-  e_succ_range e_succs(vert_id v) {
-    return e_succ_range(*this, v);
-  }
-  e_pred_range e_preds(vert_id v) {
-    return e_pred_range(*this, v);
-  }
+  e_succ_range e_succs(vert_id v) { return e_succ_range(*this, v); }
+  e_pred_range e_preds(vert_id v) { return e_pred_range(*this, v); }
   const_e_succ_range e_succs(vert_id v) const {
     return const_e_succ_range(*this, v);
   }
@@ -361,12 +353,9 @@ public:
   }
 
 private:
-  
   unsigned int edge_count;
-
   std::vector<succ_t> _succs;
   std::vector<pred_t> _preds;
-
   std::vector<bool> is_free;
   std::vector<int> free_id;
 };

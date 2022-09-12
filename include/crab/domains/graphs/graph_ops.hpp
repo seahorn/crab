@@ -3,9 +3,9 @@
 #include <crab/domains/graphs/graph_views.hpp>
 #include <crab/domains/graphs/util/Heap.h>
 
+#include <algorithm> // std::sort
 #include <boost/optional.hpp>
 #include <vector>
-#include <algorithm> // std::sort
 
 /**
  * A set of utility algorithms for manipulating graphs.
@@ -31,7 +31,7 @@ public:
   //    using graph_t = SparseWtGraph<Wt>;
   using graph_t = Gr;
   using vert_id = typename graph_t::vert_id;
-  using wt_ref_t = typename graph_t::wt_ref_t;  
+  using wt_ref_t = typename graph_t::wt_ref_t;
   using edge_vector = std::vector<std::pair<std::pair<vert_id, vert_id>, Wt>>;
   using WtComp = DistComp<std::vector<Wt>>;
   using WtHeap = Heap<WtComp>;
@@ -94,15 +94,14 @@ public:
   }
 
   // Syntactic join.
-  template <class G1, class G2>
-  static graph_t join(const G1 &l, const G2 &r) {
+  template <class G1, class G2> static graph_t join(const G1 &l, const G2 &r) {
     // For the join, potentials are preserved
     assert(l.size() == r.size());
 
     int sz = l.size();
     graph_t g;
     wt_ref_t wr;
-    
+
     g.growTo(sz);
     for (vert_id s : l.verts()) {
       for (auto e : l.e_succs(s)) {
@@ -122,7 +121,7 @@ public:
     graph_t g(graph_t::copy(l));
     for (vert_id s : r.verts()) {
       for (auto e : r.e_succs(s)) {
-	g.set_edge_if_less_than(s, e.val, e.vert);
+        g.set_edge_if_less_than(s, e.val, e.vert);
       }
     }
     is_closed = false;
@@ -130,7 +129,8 @@ public:
   }
 
   template <class G1, class G2>
-  static graph_t widen(const G1 &l, const G2 &r, std::vector<vert_id> &unstable) {
+  static graph_t widen(const G1 &l, const G2 &r,
+                       std::vector<vert_id> &unstable) {
     assert(l.size() == r.size());
     size_t sz = l.size();
     graph_t g;
@@ -160,7 +160,7 @@ public:
   // Abuses 'dual_queue' to store indices.
   template <class G>
   static void strong_connect(const G &x, std::vector<vert_id> &stack,
-			     int &index, vert_id v,
+                             int &index, vert_id v,
                              std::vector<std::vector<vert_id>> &sccs) {
     vert_marks[v] = (index << 1) | 1;
     // assert(vert_marks[v]&1);
@@ -195,7 +195,8 @@ public:
   }
 
   template <class G>
-  static void compute_sccs(const G &x, std::vector<std::vector<vert_id>> &out_scc) {
+  static void compute_sccs(const G &x,
+                           std::vector<std::vector<vert_id>> &out_scc) {
     int sz = x.size();
     grow_scratch(sz);
 
@@ -303,8 +304,8 @@ public:
   }
 
   template <class G, class G1, class G2, class P>
-  static void close_after_meet(const G &g, const P &pots, const G1 &l, const G2 &r,
-                               edge_vector &delta) {
+  static void close_after_meet(const G &g, const P &pots, const G1 &l,
+                               const G2 &r, edge_vector &delta) {
     // We assume the syntactic meet has already been computed,
     // and potentials have been initialized.
     // We just want to restore closure.
@@ -722,7 +723,8 @@ public:
   }
 
   template <class G, class P>
-  static void close_after_assign(const G &g, P &p, vert_id v, edge_vector &delta) {
+  static void close_after_assign(const G &g, P &p, vert_id v,
+                                 edge_vector &delta) {
     unsigned int sz = g.size();
     grow_scratch(sz);
 

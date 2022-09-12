@@ -35,11 +35,15 @@ enum GraphRep {
  * 3) z_number
  *
  * 1) is the fastest but things can go wrong if some DBM
- * operation overflows. 2) is slower than 1) but it checks for
- * overflow before any DBM operation. 3) is the slowest and it
- * represents weights using unbounded mathematical integers so
- * overflow is not a concern but it might not be what you need
- * when reasoning about programs with wraparound semantics.
+ * operation overflows.
+ * 
+ * 2) is slower than 1) but it checks for overflow before any DBM
+ * operation.
+ * 
+ * 3) is the slowest and it represents weights using unbounded
+ * mathematical integers so overflow is not a concern but it might not
+ * be what you need when reasoning about programs with wraparound
+ * semantics.
  **/
 
 template <typename Number, GraphRep Graph = GraphRep::adapt_ss>

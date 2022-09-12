@@ -1,12 +1,12 @@
 #pragma once
 
-#include <crab/support/os.hpp>
-#include <crab/domains/graphs/util/reference_wrapper.hpp>
 #include <crab/domains/graphs/graph_iterators.hpp>
-#include <vector>
+#include <crab/domains/graphs/util/reference_wrapper.hpp>
+#include <crab/support/os.hpp>
 #include <memory>
+#include <vector>
 
-/* 
+/*
  * An implementation of a sparse weighted graph.
  */
 namespace crab {
@@ -19,7 +19,6 @@ public:
   using wt_ref_t = crab::reference_wrapper<const Wt>;
 
 private:
-
   class adj_iterator {
   public:
     adj_iterator(void) : ptr(nullptr) {}
@@ -33,7 +32,7 @@ private:
         it = std::unique_ptr<adj_iterator>(new adj_iterator());
       return *it;
     }
-    vert_id operator*(void)const { return (vert_id)*ptr; }
+    vert_id operator*(void) const { return (vert_id)*ptr; }
     adj_iterator &operator++(void) {
       ptr++;
       return *this;
@@ -43,7 +42,6 @@ private:
   protected:
     uint16_t *ptr;
   };
-
 
   class adj_list {
   public:
@@ -85,23 +83,27 @@ private:
     uint16_t *sparseptr;
   };
 
-
   using edge_ref_t = graph_iterators::edge_ref_t<Wt>;
   using const_edge_ref_t = graph_iterators::const_edge_ref_t<Wt>;
-  
-public:
 
+public:
   using vert_iterator = graph_iterators::vert_iterator;
   using vert_range = graph_iterators::vert_range;
   using const_succ_range = adj_list;
   using const_pred_range = adj_list;
   using succ_range = const_succ_range;
   using pred_range = const_pred_range;
-  using e_succ_range = graph_iterators::fwd_edge_range<graph_t, adj_iterator, edge_ref_t>;
-  using e_pred_range = graph_iterators::rev_edge_range<graph_t, adj_iterator, edge_ref_t>;
-  using const_e_succ_range = graph_iterators::const_fwd_edge_range<graph_t, adj_iterator, const_edge_ref_t>;
-  using const_e_pred_range = graph_iterators::const_rev_edge_range<graph_t, adj_iterator, const_edge_ref_t>;
-  
+  using e_succ_range =
+      graph_iterators::fwd_edge_range<graph_t, adj_iterator, edge_ref_t>;
+  using e_pred_range =
+      graph_iterators::rev_edge_range<graph_t, adj_iterator, edge_ref_t>;
+  using const_e_succ_range =
+      graph_iterators::const_fwd_edge_range<graph_t, adj_iterator,
+                                            const_edge_ref_t>;
+  using const_e_pred_range =
+      graph_iterators::const_rev_edge_range<graph_t, adj_iterator,
+                                            const_edge_ref_t>;
+
   SparseWtGraph(unsigned int _maxsz = 10, float _growth_rate = 1.4)
       : max_sz(_maxsz), sz(0), growth_rate(_growth_rate), edge_count(0),
         fwd_adjs(
@@ -332,8 +334,8 @@ public:
 
   // Check whether an edge is live
   bool elem(vert_id x, vert_id y) const { return succs(x).mem(y); }
-  
-  bool lookup(vert_id x, vert_id y, wt_ref_t &w) const{
+
+  bool lookup(vert_id x, vert_id y, wt_ref_t &w) const {
     if (!succs(x).mem(y))
       return false;
     w = wt_ref_t(mtx[max_sz * x + y]);
@@ -398,11 +400,11 @@ public:
     } else {
       Wt &v = edge_val(s, d);
       if (w < v) {
-	v = w;
+        v = w;
       }
     }
   }
-  
+
   template <class Op> void update_edge(vert_id s, Wt w, vert_id d, Op &op) {
     if (elem(s, d)) {
       edge_val(s, d) = op.apply(edge_val(s, d), w);
@@ -413,12 +415,9 @@ public:
       add_edge(s, w, d);
   }
 
-  
   // FIXME: Verts currently iterates over free vertices,
   // as well as existing ones
-  vert_range verts(void) const {
-    return vert_range(sz, is_free);
-  }
+  vert_range verts(void) const { return vert_range(sz, is_free); }
   succ_range succs(vert_id v) {
     return succ_range(fwd_adjs + v * (2 * max_sz + 1), max_sz);
   }
@@ -431,12 +430,8 @@ public:
   const_pred_range preds(vert_id v) const {
     return const_pred_range(rev_adjs + v * (2 * max_sz + 1), max_sz);
   }
-  e_succ_range e_succs(vert_id v) {
-    return e_succ_range(*this, v);
-  }
-  e_pred_range e_preds(vert_id v) {
-    return e_pred_range(*this, v);
-  }
+  e_succ_range e_succs(vert_id v) { return e_succ_range(*this, v); }
+  e_pred_range e_preds(vert_id v) { return e_pred_range(*this, v); }
   const_e_succ_range e_succs(vert_id v) const {
     return const_e_succ_range(*this, v);
   }
