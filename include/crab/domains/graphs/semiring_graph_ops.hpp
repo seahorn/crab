@@ -69,7 +69,7 @@ public:
   }
 
   // Syntactic join.
-  template <class G1, class G2> static graph_t join(G1 &l, G2 &r) {
+  template <class G1, class G2> static graph_t join(const G1 &l, const G2 &r) {
     assert(l.size() == r.size());
     int sz = l.size();
 
@@ -90,7 +90,7 @@ public:
   // Syntactic meet/narrowing
   // apply meet if is_meet is true, otherwise apply narrowing
   template <class G1, class G2>
-  static graph_t meet_or_narrowing(G1 &l, G2 &r, const bool is_meet,
+  static graph_t meet_or_narrowing(const G1 &l, const G2 &r, const bool is_meet,
                                    std::vector<vert_id> &changed) {
     assert(l.size() == r.size());
     graph_t g(graph_t::copy(l));
@@ -136,7 +136,7 @@ public:
 
   // Syntactic widening
   template <class G1, class G2>
-  static graph_t widen(G1 &l, G2 &r, std::vector<vert_id> &unstable) {
+  static graph_t widen(const G1 &l, const G2 &r, std::vector<vert_id> &unstable) {
     assert(l.size() == r.size());
     size_t sz = l.size();
     graph_t g;
@@ -277,7 +277,7 @@ public:
 
   /// FIXME: Avoid expanding stable vertices
   template <typename G>
-  static void dijkstra(G &g, vert_id s,
+  static void dijkstra(const G &g, vert_id s,
                        std::vector<std::pair<vert_id, Wt>> &out) {
 
     std::vector<Wt> dists;

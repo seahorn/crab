@@ -1,10 +1,13 @@
 #pragma once
 
 #include <crab/support/os.hpp>
+#include <crab/domains/graphs/util/reference_wrapper.hpp>
+#include <crab/domains/graphs/graph_iterators.hpp>
 #include <vector>
+#include <memory>
 
-/* A (slightly) cleaner implementation of a sparse weighted graph.
- *
+/* 
+ * An implementation of a sparse weighted graph.
  */
 namespace crab {
 
@@ -12,30 +15,92 @@ template <class Weight> class SparseWtGraph {
 public:
   using Wt = Weight;
   using graph_t = SparseWtGraph<Wt>;
+  using vert_id = typename graph_iterators::vert_id;
+  using wt_ref_t = crab::reference_wrapper<const Wt>;
 
-  using vert_id = unsigned int;
+private:
 
-  class mut_val_ref_t {
+  class adj_iterator {
   public:
-    mut_val_ref_t() : w(nullptr) {}
-    const Wt &get() const {
-      assert(w);
-      return *w;
+    adj_iterator(void) : ptr(nullptr) {}
+    adj_iterator(uint16_t *_p) : ptr(_p) {}
+    // XXX: to make sure that we always return the same address
+    // for the "empty" iterator, otherwise we can trigger
+    // undefined behavior.
+    static adj_iterator empty_iterator() {
+      static std::unique_ptr<adj_iterator> it = nullptr;
+      if (!it)
+        it = std::unique_ptr<adj_iterator>(new adj_iterator());
+      return *it;
     }
-    Wt &get() {
-      assert(w);
-      return *w;
+    vert_id operator*(void)const { return (vert_id)*ptr; }
+    adj_iterator &operator++(void) {
+      ptr++;
+      return *this;
     }
-    void operator=(Wt *_w) {
-      w = _w;
-    }
-    void operator=(Wt _w) {
-      assert(w);
-      *w = _w;
-    }    
-  private:
-    Wt *w;
+    bool operator!=(const adj_iterator &o) const { return ptr < o.ptr; }
+
+  protected:
+    uint16_t *ptr;
   };
+
+
+  class adj_list {
+  public:
+    using iterator = adj_iterator;
+
+    adj_list(uint16_t *_ptr, unsigned int max_sz)
+        : ptr(_ptr), sparseptr(_ptr + 1 + max_sz) {}
+    adj_iterator begin(void) const { return adj_iterator(ptr + 1); }
+    adj_iterator end(void) const { return adj_iterator(ptr + 1 + size()); }
+    vert_id operator[](unsigned int idx) const { return (vert_id)ptr[1 + idx]; }
+    uint16_t *sparse(void) const { return sparseptr; }
+    uint16_t *dense(void) const { return (uint16_t *)(ptr + 1); }
+    unsigned int size(void) const { return *ptr; }
+
+    bool mem(unsigned int v) const {
+      unsigned int idx = sparse()[v];
+      return idx < size() && dense()[idx] == v;
+    }
+    void add(unsigned int v) {
+      //       assert(!mem(v));
+      //        assert(dense()+v < sparse());
+      unsigned int idx = *ptr;
+      dense()[idx] = v;
+      sparse()[v] = idx;
+      (*ptr)++;
+    }
+    void remove(unsigned int v) {
+      //        assert(mem(v));
+      (*ptr)--;
+      unsigned int idx = sparse()[v];
+      unsigned int w = dense()[*ptr];
+      dense()[idx] = w;
+      sparse()[w] = idx;
+    }
+    void clear() { *ptr = 0; }
+
+  protected:
+    uint16_t *ptr;
+    uint16_t *sparseptr;
+  };
+
+
+  using edge_ref_t = graph_iterators::edge_ref_t<Wt>;
+  using const_edge_ref_t = graph_iterators::const_edge_ref_t<Wt>;
+  
+public:
+
+  using vert_iterator = graph_iterators::vert_iterator;
+  using vert_range = graph_iterators::vert_range;
+  using const_succ_range = adj_list;
+  using const_pred_range = adj_list;
+  using succ_range = const_succ_range;
+  using pred_range = const_pred_range;
+  using e_succ_range = graph_iterators::fwd_edge_range<graph_t, adj_iterator, edge_ref_t>;
+  using e_pred_range = graph_iterators::rev_edge_range<graph_t, adj_iterator, edge_ref_t>;
+  using const_e_succ_range = graph_iterators::const_fwd_edge_range<graph_t, adj_iterator, const_edge_ref_t>;
+  using const_e_pred_range = graph_iterators::const_rev_edge_range<graph_t, adj_iterator, const_edge_ref_t>;
   
   SparseWtGraph(unsigned int _maxsz = 10, float _growth_rate = 1.4)
       : max_sz(_maxsz), sz(0), growth_rate(_growth_rate), edge_count(0),
@@ -45,12 +110,10 @@ public:
             (uint16_t *)malloc(sizeof(uint16_t) * max_sz * (2 * max_sz + 1))),
         mtx((Wt *)malloc(sizeof(Wt) * max_sz * max_sz)) {
     /*
-    for(vert_id v = 0 ; v < sz; v++)
-    {
-      succs(v).clear(); preds(v).clear();
-    }
-
-    check_adjs();
+      for(vert_id v = 0 ; v < sz; v++) {
+        succs(v).clear(); preds(v).clear();
+      }
+      check_adjs();
     */
   }
 
@@ -171,20 +234,16 @@ public:
     return *this;
   }
 
-  // void check_adjs(void)
-  // {
-  //   for(vert_id v : verts())
-  //   {
+  // void check_adjs(void) {
+  //   for(vert_id v : verts()) {
   //     assert(succs(v).size() <= sz);
-  //     for(vert_id s : succs(v))
-  //     {
+  //     for(vert_id s : succs(v)) {
   //       assert(s < sz);
   //       assert(preds(s).mem(v));
   //     }
 
   //     assert(preds(v).size() <= sz);
-  //     for(vert_id p : preds(v))
-  //     {
+  //     for(vert_id p : preds(v)) {
   //       assert(p < sz);
   //       assert(succs(p).mem(v));
   //     }
@@ -274,10 +333,10 @@ public:
   // Check whether an edge is live
   bool elem(vert_id x, vert_id y) const { return succs(x).mem(y); }
   
-  bool lookup(vert_id x, vert_id y, mut_val_ref_t *w) {
+  bool lookup(vert_id x, vert_id y, wt_ref_t &w) const{
     if (!succs(x).mem(y))
       return false;
-    *w = &mtx[max_sz * x + y];
+    w = wt_ref_t(mtx[max_sz * x + y]);
     return true;
   }
 
@@ -333,6 +392,17 @@ public:
       edge_val(s, d) = w;
   }
 
+  void set_edge_if_less_than(vert_id s, Wt w, vert_id d) {
+    if (!elem(s, d)) {
+      add_edge(s, w, d);
+    } else {
+      Wt &v = edge_val(s, d);
+      if (w < v) {
+	v = w;
+      }
+    }
+  }
+  
   template <class Op> void update_edge(vert_id s, Wt w, vert_id d, Op &op) {
     if (elem(s, d)) {
       edge_val(s, d) = op.apply(edge_val(s, d), w);
@@ -343,227 +413,36 @@ public:
       add_edge(s, w, d);
   }
 
-  class vert_iterator {
-  public:
-    vert_iterator(vert_id _v, const std::vector<bool> &_is_free)
-        : v(_v), is_free(_is_free) {}
-    vert_id operator*(void)const { return v; }
-    vert_iterator &operator++(void) {
-      ++v;
-      return *this;
-    }
-    vert_iterator &operator--(void) {
-      --v;
-      return *this;
-    }
-    bool operator!=(const vert_iterator &o) {
-      while (v < o.v && is_free[v])
-        ++v;
-      return v < o.v;
-    }
-
-  protected:
-    vert_id v;
-    const std::vector<bool> &is_free;
-  };
-  class vert_range {
-  public:
-    vert_range(vert_id _sz, const std::vector<bool> &_is_free)
-        : sz(_sz), is_free(_is_free) {}
-    vert_iterator begin(void) const { return vert_iterator(0, is_free); }
-    vert_iterator end(void) const { return vert_iterator(sz, is_free); }
-    // unsigned int size(void) const { return (unsigned int) sz; }
-  protected:
-    vert_id sz;
-    const std::vector<bool> &is_free;
-  };
+  
   // FIXME: Verts currently iterates over free vertices,
   // as well as existing ones
-  vert_range verts(void) const { return vert_range(sz, is_free); }
-
-  class edge_ref_t {
-  public:
-    edge_ref_t(vert_id _v, Wt &_w) : vert(_v), val(_w) {}
-    vert_id vert;
-    Wt &val;
-  };
-
-  class const_edge_ref {
-    const_edge_ref(vert_id _v, const Wt &_w) : vert(_v), val(_w) {}
-    vert_id vert;
-    const Wt &val;
-  };
-
-  class adj_iterator {
-  public:
-    adj_iterator(void) : ptr(nullptr) {}
-    adj_iterator(uint16_t *_p) : ptr(_p) {}
-    // XXX: to make sure that we always return the same address
-    // for the "empty" iterator, otherwise we can trigger
-    // undefined behavior.
-    static adj_iterator empty_iterator() {
-      static std::unique_ptr<adj_iterator> it = nullptr;
-      if (!it)
-        it = std::unique_ptr<adj_iterator>(new adj_iterator());
-      return *it;
-    }
-    vert_id operator*(void)const { return (vert_id)*ptr; }
-    adj_iterator &operator++(void) {
-      ptr++;
-      return *this;
-    }
-    bool operator!=(const adj_iterator &o) const { return ptr < o.ptr; }
-
-  protected:
-    uint16_t *ptr;
-  };
-
-  class fwd_edge_iterator {
-  public:
-    using edge_ref = edge_ref_t;
-    fwd_edge_iterator(void) : g(nullptr) {}
-    fwd_edge_iterator(graph_t &_g, vert_id _s, adj_iterator _it)
-        : g(&_g), s(_s), it(_it) {}
-    // XXX: to make sure that we always return the same address
-    // for the "empty" iterator, otherwise we can trigger
-    // undefined behavior.
-    static fwd_edge_iterator empty_iterator() {
-      static std::unique_ptr<fwd_edge_iterator> it = nullptr;
-      if (!it)
-        it = std::unique_ptr<fwd_edge_iterator>(new fwd_edge_iterator());
-      return *it;
-    }
-    edge_ref operator*(void)const {
-      return edge_ref((*it), g->edge_val(s, (*it)));
-    }
-    fwd_edge_iterator &operator++(void) {
-      ++it;
-      return *this;
-    }
-    bool operator!=(const fwd_edge_iterator &o) { return it != o.it; }
-
-    graph_t *g;
-    vert_id s;
-    adj_iterator it;
-  };
-
-  class rev_edge_iterator {
-  public:
-    using edge_ref = edge_ref_t;
-    rev_edge_iterator(void) : g(nullptr) {}
-    rev_edge_iterator(graph_t &_g, vert_id _d, adj_iterator _it)
-        : g(&_g), d(_d), it(_it) {}
-
-    // XXX: to make sure that we always return the same address
-    // for the "empty" iterator, otherwise we can trigger
-    // undefined behavior.
-    static rev_edge_iterator empty_iterator() {
-      static std::unique_ptr<rev_edge_iterator> it = nullptr;
-      if (!it)
-        it = std::unique_ptr<rev_edge_iterator>(new rev_edge_iterator());
-      return *it;
-    }
-
-    edge_ref operator*(void)const {
-      return edge_ref((*it), g->edge_val((*it), d));
-    }
-    rev_edge_iterator &operator++(void) {
-      ++it;
-      return *this;
-    }
-    bool operator!=(const rev_edge_iterator &o) { return it != o.it; }
-
-    graph_t *g;
-    vert_id d;
-    adj_iterator it;
-  };
-
-  using succ_iterator = adj_iterator;
-  using pred_iterator = adj_iterator;
-  class adj_list {
-  public:
-    using iterator = adj_iterator;
-
-    adj_list(uint16_t *_ptr, unsigned int max_sz)
-        : ptr(_ptr), sparseptr(_ptr + 1 + max_sz) {}
-    adj_iterator begin(void) const { return adj_iterator(ptr + 1); }
-    adj_iterator end(void) const { return adj_iterator(ptr + 1 + size()); }
-    vert_id operator[](unsigned int idx) const { return (vert_id)ptr[1 + idx]; }
-    uint16_t *sparse(void) const { return sparseptr; }
-    uint16_t *dense(void) const { return (uint16_t *)(ptr + 1); }
-    unsigned int size(void) const { return *ptr; }
-
-    bool mem(unsigned int v) const {
-      unsigned int idx = sparse()[v];
-      return idx < size() && dense()[idx] == v;
-    }
-    void add(unsigned int v) {
-      //       assert(!mem(v));
-      //        assert(dense()+v < sparse());
-      unsigned int idx = *ptr;
-      dense()[idx] = v;
-      sparse()[v] = idx;
-      (*ptr)++;
-    }
-    void remove(unsigned int v) {
-      //        assert(mem(v));
-      (*ptr)--;
-      unsigned int idx = sparse()[v];
-      unsigned int w = dense()[*ptr];
-      dense()[idx] = w;
-      sparse()[w] = idx;
-    }
-    void clear() { *ptr = 0; }
-
-  protected:
-    uint16_t *ptr;
-    uint16_t *sparseptr;
-  };
-
-  using succ_range = adj_list;
-  using pred_range = adj_list;
-
-  class fwd_edge_range {
-  public:
-    using iterator = fwd_edge_iterator;
-    fwd_edge_range(graph_t &_g, vert_id _s) : g(_g), s(_s) {}
-
-    fwd_edge_iterator begin(void) const {
-      return fwd_edge_iterator(g, s, g.succs(s).begin());
-    }
-    fwd_edge_iterator end(void) const {
-      return fwd_edge_iterator(g, s, g.succs(s).end());
-    }
-    graph_t &g;
-    vert_id s;
-  };
-
-  class rev_edge_range {
-  public:
-    using iterator = rev_edge_iterator;
-    rev_edge_range(graph_t &_g, vert_id _d) : g(_g), d(_d) {}
-
-    rev_edge_iterator begin(void) const {
-      return rev_edge_iterator(g, d, g.preds(d).begin());
-    }
-    rev_edge_iterator end(void) const {
-      return rev_edge_iterator(g, d, g.preds(d).end());
-    }
-    graph_t &g;
-    vert_id d;
-  };
-
-  using e_succ_range = fwd_edge_range;
-  using e_pred_range = rev_edge_range;
-
-  adj_list succs(vert_id v) const {
-    return adj_list(fwd_adjs + v * (2 * max_sz + 1), max_sz);
+  vert_range verts(void) const {
+    return vert_range(sz, is_free);
   }
-  fwd_edge_range e_succs(vert_id v) { return fwd_edge_range(*this, v); }
-  adj_list preds(vert_id v) const {
-    return adj_list(rev_adjs + v * (2 * max_sz + 1), max_sz);
+  succ_range succs(vert_id v) {
+    return succ_range(fwd_adjs + v * (2 * max_sz + 1), max_sz);
   }
-  rev_edge_range e_preds(vert_id v) { return rev_edge_range(*this, v); }
+  pred_range preds(vert_id v) {
+    return pred_range(rev_adjs + v * (2 * max_sz + 1), max_sz);
+  }
+  const_succ_range succs(vert_id v) const {
+    return const_succ_range(fwd_adjs + v * (2 * max_sz + 1), max_sz);
+  }
+  const_pred_range preds(vert_id v) const {
+    return const_pred_range(rev_adjs + v * (2 * max_sz + 1), max_sz);
+  }
+  e_succ_range e_succs(vert_id v) {
+    return e_succ_range(*this, v);
+  }
+  e_pred_range e_preds(vert_id v) {
+    return e_pred_range(*this, v);
+  }
+  const_e_succ_range e_succs(vert_id v) const {
+    return const_e_succ_range(*this, v);
+  }
+  const_e_pred_range e_preds(vert_id v) const {
+    return const_e_pred_range(*this, v);
+  }
 
   // growTo shouldn't be used after forget
   void growTo(unsigned int new_sz) {
@@ -573,7 +452,6 @@ public:
       preds(sz).clear();
       is_free.push_back(false);
     }
-    // GKG: Need to be careful about free_ids.
   }
 
   void write(crab_os &o) const {

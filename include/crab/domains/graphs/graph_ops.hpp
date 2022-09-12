@@ -24,7 +24,6 @@ public:
   V &A;
 };
 
-// GKG - What's the best way to split this out?
 template <class Gr> class GraphOps {
 public:
   using Wt = typename Gr::Wt;

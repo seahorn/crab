@@ -1,6 +1,8 @@
 #pragma once
 
 #include <crab/support/os.hpp>
+#include <crab/domains/graphs/util/reference_wrapper.hpp>
+#include <crab/domains/graphs/graph_iterators.hpp>
 
 #include <unordered_map>
 #include <unordered_set>
@@ -18,34 +20,78 @@ template <class Weight> class HtGraph {
 public:
   using Wt = Weight;
   using graph_t = HtGraph<Wt>;
-  using vert_id = unsigned int;
+  using vert_id = typename graph_iterators::vert_id;
+  using wt_ref_t = crab::reference_wrapper<const Wt>;
 
+private:
+  
   using pred_t = std::unordered_set<vert_id>;
   using succ_t = std::unordered_map<vert_id, Wt>;
-  using succ_elt_t = typename succ_t::value_type;
 
-  class mut_val_ref_t {
+  class pred_iterator {
   public:
-    mut_val_ref_t() : w(nullptr) {}
-    const Wt &get() const {
-      assert(w);
-      return *w;
-    }
-    Wt &get() {
-      assert(w);
-      return *w;
-    }
-    void operator=(Wt *_w) {
-      w = _w;
-    }
-    void operator=(Wt _w) {
-      assert(w);
-      *w = _w;
-    }
+    using ItP = typename pred_t::const_iterator;
+    using type = pred_iterator;
 
-  private:
-    Wt *w;
+    pred_iterator(ItP _it) : it(_it) {}
+    pred_iterator(void) : it() {}
+    
+    bool operator!=(const type &o) const { return it != o.it; }
+    type &operator++(void) {
+      ++it;
+      return *this;
+    }
+    vert_id operator*(void)const { return (*it); }
+
+  protected:
+    ItP it;
   };
+
+  class succ_iterator {
+  public:
+    using ItS = typename succ_t::const_iterator;
+    using type = succ_iterator;
+
+    succ_iterator(ItS _it) : it(_it) {}
+    succ_iterator(void) : it() {}
+    
+    // XXX: to make sure that we always return the same address
+    // for the "empty" iterator, otherwise we can trigger
+    // undefined behavior.
+    static type empty_iterator() {
+      static std::unique_ptr<type> it = nullptr;
+      if (!it)
+        it = std::unique_ptr<type>(new type());
+      return *it;
+    }
+    bool operator!=(const type &o) const { return it != o.it; }
+    type &operator++(void) {
+      ++it;
+      return *this;
+    }
+    vert_id operator*(void)const { return (*it).first; }
+
+  protected:
+    ItS it;
+  };
+
+  using edge_ref_t = graph_iterators::edge_ref_t<Wt>;
+  using const_edge_ref_t = graph_iterators::const_edge_ref_t<Wt>;  
+  
+public:
+
+  using vert_iterator = graph_iterators::vert_iterator;
+  using vert_range = graph_iterators::vert_range;  
+  using pred_range = graph_iterators::pred_range<pred_t, pred_iterator>;
+  using const_pred_range = graph_iterators::const_pred_range<pred_t, pred_iterator>;
+  using succ_range = graph_iterators::succ_range<succ_t, succ_iterator>;
+  using const_succ_range = graph_iterators::const_succ_range<succ_t, succ_iterator>;
+  using e_succ_range = graph_iterators::fwd_edge_range<graph_t, succ_iterator, edge_ref_t>;
+  using e_pred_range = graph_iterators::rev_edge_range<graph_t, pred_iterator, edge_ref_t>;
+  using const_e_succ_range =
+    graph_iterators::const_fwd_edge_range<graph_t, succ_iterator, const_edge_ref_t>;
+  using const_e_pred_range =
+    graph_iterators::const_rev_edge_range<graph_t, pred_iterator, const_edge_ref_t>;
   
   HtGraph() : edge_count(0), _succs(), _preds(), is_free(), free_id() {}
 
@@ -89,20 +135,15 @@ public:
     return *this;
   }
 
-  // void check_adjs(void)
-  // {
-  //   for(vert_id v : verts())
-  //   {
+  // void check_adjs(void) {
+  //   for(vert_id v : verts()) {
   //     assert(succs(v).size() <= _succs.size());
-  //     for(vert_id s : succs(v))
-  //     {
+  //     for(vert_id s : succs(v)) {
   //       assert(s < _succs.size());
   //       assert(preds(s).mem(v));
   //     }
-
   //     assert(preds(v).size() <= _succs.size());
-  //     for(vert_id p : preds(v))
-  //     {
+  //     for(vert_id p : preds(v)) {
   //       assert(p < _succs.size());
   //       assert(succs(p).mem(v));
   //     }
@@ -168,10 +209,10 @@ public:
   // Check whether an edge is live
   bool elem(vert_id x, vert_id y) const { return succs(x).mem(y); }
   
-  bool lookup(vert_id x, vert_id y, mut_val_ref_t *w) {
+  bool lookup(vert_id x, vert_id y, wt_ref_t &w) const {
     if (!succs(x).mem(y))
       return false;
-    *w = &succs(x).value(y);
+    w = succs(x).value(y);
     return true;
   }
 
@@ -221,17 +262,25 @@ public:
     if (!elem(s, d))
       add_edge(s, w, d);
     else {
-      // XXX: this does not have effect if d is already a key
-      //_succs[s].insert(succ_elt_t(d, w));
       edge_val(s, d) = w;
     }
   }
 
+  void set_edge_if_less_than(vert_id s, Wt w, vert_id d) {
+    // assert(s < size() && d < size());
+    if (!elem(s, d))
+      add_edge(s, w, d);
+    else {
+      Wt &v = edge_val(s, d);
+      if (w < v) {
+	v = w;
+      }
+    }    
+    
+  }
+  
   template <class Op> void update_edge(vert_id s, Wt w, vert_id d, Op &op) {
     if (elem(s, d)) {
-      // _succs[s].insert(vert_idx(d), w, op);
-      // XXX: this does not have effect if d is already a key
-      //_succs[s].insert(succ_elt_t(d, op.apply(edge_val(s, d), w)));
       edge_val(s, d) = op.apply(edge_val(s, d), w);
       return;
     }
@@ -240,272 +289,36 @@ public:
       add_edge(s, w, d);
   }
 
-  class vert_iterator {
-  public:
-    vert_iterator(vert_id _v, const std::vector<bool> &_is_free)
-        : v(_v), is_free(_is_free) {}
-    vert_id operator*(void)const { return v; }
-    vert_iterator &operator++(void) {
-      ++v;
-      return *this;
-    }
-    //      vert_iterator& operator--(void) { --v; return *this; }
-    bool operator!=(const vert_iterator &o) {
-      while (v < o.v && is_free[v])
-        ++v;
-      return v < o.v;
-    }
-
-  protected:
-    vert_id v;
-    const std::vector<bool> &is_free;
-  };
-
-  class vert_range {
-  public:
-    vert_range(const std::vector<bool> &_is_free) : is_free(_is_free) {}
-    vert_iterator begin(void) const { return vert_iterator(0, is_free); }
-    vert_iterator end(void) const {
-      return vert_iterator(is_free.size(), is_free);
-    }
-
-  protected:
-    const std::vector<bool> &is_free;
-  };
 
   // FIXME: Verts currently iterates over free vertices,
   // as well as existing ones
-  vert_range verts(void) const { return vert_range(is_free); }
-
-  class pred_iterator {
-  public:
-    using ItP = typename pred_t::const_iterator;
-    using iter_t = pred_iterator;
-
-    pred_iterator(const ItP &_it) : it(_it) {}
-    pred_iterator(void) : it() {}
-    bool operator!=(const iter_t &o) { return it != o.it; }
-    iter_t &operator++(void) {
-      ++it;
-      return *this;
-    }
-    vert_id operator*(void)const { return (*it); }
-
-  protected:
-    ItP it;
-  };
-
-  class succ_iterator {
-  public:
-    using ItS = typename succ_t::const_iterator;
-    using iter_t = succ_iterator;
-    succ_iterator(const ItS &_it) : it(_it) {}
-    succ_iterator(void) : it() {}
-    // XXX: to make sure that we always return the same address
-    // for the "empty" iterator, otherwise we can trigger
-    // undefined behavior.
-    static iter_t empty_iterator() {
-      static std::unique_ptr<iter_t> it = nullptr;
-      if (!it)
-        it = std::unique_ptr<iter_t>(new iter_t());
-      return *it;
-    }
-    bool operator!=(const iter_t &o) { return it != o.it; }
-    iter_t &operator++(void) {
-      ++it;
-      return *this;
-    }
-    vert_id operator*(void)const { return (*it).first; }
-
-  protected:
-    ItS it;
-  };
-
-  class pred_range {
-  public:
-    using iterator = pred_iterator;
-
-    pred_range(pred_t &_p) : p(_p) {}
-    iterator begin(void) const { return iterator(p.begin()); }
-    iterator end(void) const { return iterator(p.end()); }
-    size_t size(void) const { return p.size(); }
-
-    bool mem(unsigned int v) const { return p.find(v) != p.end(); }
-    void add(unsigned int v) { p.insert(v); }
-    void remove(unsigned int v) { p.erase(v); }
-    void clear() { p.clear(); }
-
-  protected:
-    pred_t &p;
-  };
-
-  class const_pred_range {
-  public:
-    using iterator = pred_iterator;
-    const_pred_range(const pred_t &_p) : p(_p) {}
-    iterator begin(void) const { return iterator(p.begin()); }
-    iterator end(void) const { return iterator(p.end()); }
-    size_t size(void) const { return p.size(); }
-    bool mem(unsigned int v) const { return p.find(v) != p.end(); }
-
-  protected:
-    const pred_t &p;
-  };
-
-  class succ_range {
-  public:
-    using iterator = succ_iterator;
-
-    succ_range(succ_t &_p) : p(_p) {}
-    iterator begin(void) const { return iterator(p.begin()); }
-    iterator end(void) const { return iterator(p.end()); }
-    size_t size(void) const { return p.size(); }
-
-    bool mem(unsigned int v) const { return p.find(v) != p.end(); }
-    void add(unsigned int v, const Wt &w) { p.insert(succ_elt_t(v, w)); }
-    const Wt &value(unsigned int v) const { return (*(p.find(v))).second; }
-    Wt &value(unsigned int v) { return (*(p.find(v))).second; }
-    void remove(unsigned int v) { p.erase(v); }
-    void clear() { p.clear(); }
-
-  protected:
-    succ_t &p;
-  };
-
-  class const_succ_range {
-  public:
-    using iterator = succ_iterator;
-    const_succ_range(const succ_t &_p) : p(_p) {}
-    iterator begin(void) const { return iterator(p.begin()); }
-    iterator end(void) const { return iterator(p.end()); }
-    size_t size(void) const { return p.size(); }
-    bool mem(unsigned int v) const { return p.find(v) != p.end(); }
-    void add(unsigned int v, const Wt &w) { p.insert(succ_elt_t(v, w)); }
-    const Wt &value(unsigned int v) const { return (*(p.find(v))).second; }
-
-  protected:
-    const succ_t &p;
-  };
-
-  class edge_ref_t {
-  public:
-    edge_ref_t(vert_id _v, Wt &_w) : vert(_v), val(_w) {}
-    vert_id vert;
-    Wt &val;
-  };
-
-  class const_edge_ref_t {
-  public:
-    const_edge_ref_t(vert_id _v, const Wt &_w) : vert(_v), val(_w) {}
-    vert_id vert;
-    const Wt &val;
-  };
-
-  class fwd_edge_iterator {
-  public:
-    using edge_ref = edge_ref_t;
-    fwd_edge_iterator(void) : g(nullptr) {}
-    fwd_edge_iterator(graph_t &_g, vert_id _s, succ_iterator _it)
-        : g(&_g), s(_s), it(_it) {}
-    // XXX: to make sure that we always return the same address
-    // for the "empty" iterator, otherwise we can trigger
-    // undefined behavior.
-    static fwd_edge_iterator empty_iterator() {
-      static std::unique_ptr<fwd_edge_iterator> it = nullptr;
-      if (!it)
-        it = std::unique_ptr<fwd_edge_iterator>(new fwd_edge_iterator());
-      return *it;
-    }
-
-    edge_ref operator*(void)const {
-      return edge_ref((*it), g->edge_val(s, (*it)));
-    }
-    fwd_edge_iterator &operator++(void) {
-      ++it;
-      return *this;
-    }
-    bool operator!=(const fwd_edge_iterator &o) { return it != o.it; }
-
-    graph_t *g;
-    vert_id s;
-    succ_iterator it;
-  };
-
-  class fwd_edge_range {
-  public:
-    using iterator = fwd_edge_iterator;
-    fwd_edge_range(graph_t &_g, vert_id _s) : g(_g), s(_s) {}
-
-    fwd_edge_iterator begin(void) const {
-      return fwd_edge_iterator(g, s, g.succs(s).begin());
-    }
-    fwd_edge_iterator end(void) const {
-      return fwd_edge_iterator(g, s, g.succs(s).end());
-    }
-    graph_t &g;
-    vert_id s;
-  };
-
-  class rev_edge_iterator {
-  public:
-    using edge_ref = edge_ref_t;
-    rev_edge_iterator(void) : g(nullptr) {}
-    rev_edge_iterator(graph_t &_g, vert_id _d, pred_iterator _it)
-        : g(&_g), d(_d), it(_it) {}
-
-    // XXX: to make sure that we always return the same address
-    // for the "empty" iterator, otherwise we can trigger
-    // undefined behavior.
-    static rev_edge_iterator empty_iterator() {
-      static std::unique_ptr<rev_edge_iterator> it = nullptr;
-      if (!it)
-        it = std::unique_ptr<rev_edge_iterator>(new rev_edge_iterator());
-      return *it;
-    }
-
-    edge_ref operator*(void)const {
-      return edge_ref((*it), g->edge_val((*it), d));
-    }
-    rev_edge_iterator &operator++(void) {
-      ++it;
-      return *this;
-    }
-    bool operator!=(const rev_edge_iterator &o) { return it != o.it; }
-
-    graph_t *g;
-    vert_id d;
-    pred_iterator it;
-  };
-
-  class rev_edge_range {
-  public:
-    using iterator = rev_edge_iterator;
-    rev_edge_range(graph_t &_g, vert_id _d) : g(_g), d(_d) {}
-
-    rev_edge_iterator begin(void) const {
-      return rev_edge_iterator(g, d, g.preds(d).begin());
-    }
-    rev_edge_iterator end(void) const {
-      return rev_edge_iterator(g, d, g.preds(d).end());
-    }
-    graph_t &g;
-    vert_id d;
-  };
-
-  using e_succ_range = fwd_edge_range;
-  using e_pred_range = rev_edge_range;
-
-  succ_range succs(vert_id v) { return succ_range(_succs[v]); }
+  vert_range verts(void) const {
+    return vert_range(is_free.size(), is_free);
+  }
+  succ_range succs(vert_id v) {
+    return succ_range(_succs[v]);
+  }
+  pred_range preds(vert_id v) {
+    return pred_range(_preds[v]);
+  }  
   const_succ_range succs(vert_id v) const {
-    return const_succ_range(_succs[v]);
+     return const_succ_range(_succs[v]);
   }
-  e_succ_range e_succs(vert_id v) { return fwd_edge_range(*this, v); }
-
-  pred_range preds(vert_id v) { return pred_range(_preds[v]); }
   const_pred_range preds(vert_id v) const {
-    return const_pred_range(_preds[v]);
+     return const_pred_range(_preds[v]);
   }
-  e_pred_range e_preds(vert_id v) { return rev_edge_range(*this, v); }
+  e_succ_range e_succs(vert_id v) {
+    return e_succ_range(*this, v);
+  }
+  e_pred_range e_preds(vert_id v) {
+    return e_pred_range(*this, v);
+  }
+  const_e_succ_range e_succs(vert_id v) const {
+    return const_e_succ_range(*this, v);
+  }
+  const_e_pred_range e_preds(vert_id v) const {
+    return const_e_pred_range(*this, v);
+  }
 
   // growTo shouldn't be used after forget
   void growTo(unsigned int new_sz) {
@@ -547,7 +360,8 @@ public:
     return o;
   }
 
-protected:
+private:
+  
   unsigned int edge_count;
 
   std::vector<succ_t> _succs;

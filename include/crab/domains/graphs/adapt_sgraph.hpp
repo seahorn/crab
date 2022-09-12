@@ -3,6 +3,7 @@
 #include <crab/support/os.hpp>
 #include <crab/domains/graphs/adapt_smap.hpp>
 #include <crab/domains/graphs/util/Vec.h>
+#include <crab/domains/graphs/graph_iterators.hpp>
 #include <crab/domains/graphs/util/reference_wrapper.hpp>
 
 // Adaptive sparse-set based weighted graph implementation
@@ -28,69 +29,10 @@ private:
   std::vector<bool> is_free;
   vec<vert_id> free_id;
   vec<size_t> free_widx;
-  
-public:  
-  AdaptGraph(void) : edge_count(0) {}
-  AdaptGraph(AdaptGraph<Wt> &&o) = default;
-  AdaptGraph(const AdaptGraph<Wt> &o) = default;
-  AdaptGraph<Wt> &operator=(const AdaptGraph<Wt> &o) = default;
-  AdaptGraph<Wt> &operator=(AdaptGraph<Wt> &&o) = default;
-
-  template <class G> static AdaptGraph<Wt> copy(const G &o) {
-    AdaptGraph<Wt> g;
-    g.growTo(o.size());
-
-    for (vert_id s : o.verts()) {
-      for (auto e : const_cast<G &>(o).e_succs(s)) {
-        g.add_edge(s, e.val, e.vert);
-      }
-    }
-    return g;
-  }
-
-  class vert_iterator {
-  public:
-    vert_iterator(vert_id _v, const std::vector<bool> &_is_free)
-        : v(_v), is_free(_is_free) {}
-    vert_id operator*(void)const { return v; }
-    bool operator!=(const vert_iterator &o) {
-      while (v < o.v && is_free[v])
-        ++v;
-      return v < o.v;
-    }
-    vert_iterator &operator++(void) {
-      ++v;
-      return *this;
-    }
-
-    vert_id v;
-    const std::vector<bool> &is_free;
-  };
-  
-  class vert_range {
-  public:
-    vert_range(const std::vector<bool> &_is_free) : is_free(_is_free) {}
-
-    vert_iterator begin(void) const { return vert_iterator(0, is_free); }
-    vert_iterator end(void) const {
-      return vert_iterator(is_free.size(), is_free);
-    }
-
-    size_t size(void) const { return is_free.size(); }
-    const std::vector<bool> &is_free;
-  };
-  vert_range verts(void) const { return vert_range(is_free); }
-
-  class edge_ref_t {
-  public:
-    edge_ref_t(vert_id _vert, Wt &_val) : vert(_vert), val(_val) {}
-    vert_id vert;
-    Wt &val;
-  };
-
+    
   class edge_iter {
   public:
-    using edge_ref = edge_ref_t;
+    using edge_wrapper = typename graph_iterators::edge_ref_t<Wt>;
     edge_iter(const smap_t::elt_iter_t &_it, vec<Wt> &_ws)
         : it(_it), ws(&_ws) {}
     edge_iter(const edge_iter &o) : it(o.it), ws(o.ws) {}
@@ -106,8 +48,8 @@ public:
       return *it;
     }
 
-    edge_ref operator*(void)const {
-      return edge_ref((*it).key, (*ws)[(*it).val]);
+    edge_wrapper operator*(void)const {
+      return edge_wrapper((*it).key, (*ws)[(*it).val]);
     }
     edge_iter operator++(void) {
       ++it;
@@ -119,17 +61,10 @@ public:
     vec<Wt> *ws;
   };
 
-
-  class const_edge_ref_t {
-  public:
-    const_edge_ref_t(vert_id _vert, const Wt &_val) : vert(_vert), val(_val) {}
-    vert_id vert;
-    const Wt &val;
-  };
-
+  
   class const_edge_iter {
   public:
-    using const_edge_ref = const_edge_ref_t;
+    using edge_wrapper = typename graph_iterators::const_edge_ref_t<Wt>;
     const_edge_iter(const smap_t::elt_iter_t &_it, const vec<Wt> &_ws)
       : it(_it), ws(&_ws) {}
     const_edge_iter(const edge_iter &o) : it(o.it), ws(o.ws) {}
@@ -142,8 +77,8 @@ public:
       return *it;
     }
 
-    const_edge_ref operator*(void)const {
-      return const_edge_ref((*it).key, (*ws)[(*it).val]);
+    edge_wrapper operator*(void)const {
+      return edge_wrapper((*it).key, (*ws)[(*it).val]);
     }
     
     const_edge_iter operator++(void) {
@@ -183,35 +118,69 @@ public:
     elt_range_t r;
     const vec<Wt> &ws;
   };
-
-  // public typedefs
-  using pred_range = typename smap_t::key_range_t;
-  using succ_range = typename smap_t::key_range_t;
+  
+public:
+  using vert_iterator = graph_iterators::vert_iterator;
+  using vert_range = graph_iterators::vert_range;  
+  using const_pred_range = typename smap_t::key_range_t;
+  using const_succ_range = typename smap_t::key_range_t;
+  using pred_range = const_pred_range;
+  using succ_range = const_succ_range;
   using e_pred_range = edge_range_t;
   using e_succ_range = edge_range_t;
   using const_e_pred_range = const_edge_range_t;
   using const_e_succ_range = const_edge_range_t;
+  
+  AdaptGraph(void) : edge_count(0) {}
+  AdaptGraph(AdaptGraph<Wt> &&o) = default;
+  AdaptGraph(const AdaptGraph<Wt> &o) = default;
+  AdaptGraph<Wt> &operator=(const AdaptGraph<Wt> &o) = default;
+  AdaptGraph<Wt> &operator=(AdaptGraph<Wt> &&o) = default;
 
-  succ_range succs(vert_id v) const { return _succs[v].keys(); }
-  pred_range preds(vert_id v) const { return _preds[v].keys(); }
+  template <class G> static AdaptGraph<Wt> copy(const G &o) {
+    AdaptGraph<Wt> g;
+    g.growTo(o.size());
 
+    for (vert_id s : o.verts()) {
+      for (auto e : const_cast<G &>(o).e_succs(s)) {
+        g.add_edge(s, e.val, e.vert);
+      }
+    }
+    return g;
+  }
+
+  vert_range verts(void) const { return vert_range(is_free.size(), is_free); }
+
+  succ_range succs(vert_id v) { return _succs[v].keys(); }
+
+  pred_range preds(vert_id v) { return _preds[v].keys(); }
+
+  const_succ_range succs(vert_id v) const { return _succs[v].keys(); }
+
+  const_pred_range preds(vert_id v) const { return _preds[v].keys(); }
+  
   e_succ_range e_succs(vert_id v) {
     return e_succ_range(_succs[v].elts(), _ws);
   }
+  
   e_pred_range e_preds(vert_id v) {
     return e_pred_range(_preds[v].elts(), _ws);
   }
+  
   const_e_succ_range e_succs(vert_id v) const {
     return const_e_succ_range(_succs[v].elts(), _ws);
   }
+  
   const_e_pred_range e_preds(vert_id v) const {
     return const_e_pred_range(_preds[v].elts(), _ws);
   }
 
-  // Management
   bool is_empty(void) const { return edge_count == 0; }
+
   size_t size(void) const { return _succs.size(); }
+
   size_t num_edges(void) const { return edge_count; }
+
   vert_id new_vertex(void) {
     vert_id v;
     if (free_id.size() > 0) {
@@ -344,7 +313,7 @@ public:
     }
   }
   
-  void write(crab_os &o) {
+  void write(crab_os &o) const {
     o << "[|";
     bool first = true;
     for (vert_id v : verts()) {
@@ -368,7 +337,7 @@ public:
     o << "|]";
   }
 
-  friend crab::crab_os &operator<<(crab::crab_os &o, AdaptGraph<Weight> &g) {
+  friend crab::crab_os &operator<<(crab::crab_os &o, const AdaptGraph<Weight> &g) {
     g.write(o);
     return o;
   }

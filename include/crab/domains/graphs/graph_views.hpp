@@ -4,8 +4,8 @@
 #include <vector>
 
 /**
- * Graph views - for when we want to traverse some mutation
- * of the graph without actually constructing it.
+ * Graph views - to traverse some mutation of the graph without
+ * actually constructing it.
  **/
 
 #pragma GCC diagnostic push
@@ -49,12 +49,12 @@ template <class G> class GraphPerm {
 public:
   using vert_id = typename G::vert_id;
   using Wt = typename G::Wt;
+  using wt_ref_t = typename G::wt_ref_t;
   // These defined below
-  // using pred_range = ...
-  // using succ_range = ...
+  // using const_pred_range = ...
+  // using const_succ_range = ...
   // using const_e_pred_range = ...
   // using const_e_succ_range = ...
-  using wt_ref_t = typename G::wt_ref_t;
 
   GraphPerm(std::vector<vert_id> &_perm, const G &_g)
       : g(_g), perm(_perm), inv(_g.size(), -1) {
@@ -125,13 +125,13 @@ public:
 
   template <class ItG> class e_adj_iterator {
   public:
-    using const_edge_ref = typename ItG::const_edge_ref;
+    using edge_wrapper = typename ItG::edge_wrapper;
 
     e_adj_iterator(const std::vector<vert_id> &_inv, const ItG &_v)
         : inv(_inv), v(_v) {}
 
-    const_edge_ref operator*(void) {
-      return const_edge_ref(inv[(*v).vert], (*v).val);
+    edge_wrapper operator*(void) {
+      return edge_wrapper(inv[(*v).vert], (*v).val);
     }
 
     e_adj_iterator &operator++(void) {
@@ -190,10 +190,10 @@ public:
   };
 
   // public typedefs
-  using pred_range = adj_list<typename G::pred_range,
-                              adj_iterator<typename G::pred_range::iterator>>;
-  using succ_range = adj_list<typename G::succ_range,
-                              adj_iterator<typename G::succ_range::iterator>>;
+  using const_pred_range = adj_list<typename G::const_pred_range,
+                              adj_iterator<typename G::const_pred_range::iterator>>;
+  using const_succ_range = adj_list<typename G::const_succ_range,
+                              adj_iterator<typename G::const_succ_range::iterator>>;
   using const_e_pred_range =
       adj_list<typename G::const_e_pred_range,
                e_adj_iterator<typename G::const_e_pred_range::iterator>>;
@@ -201,17 +201,17 @@ public:
       adj_list<typename G::const_e_succ_range,
                e_adj_iterator<typename G::const_e_succ_range::iterator>>;
 
-  succ_range succs(vert_id v) const {
+  const_succ_range succs(vert_id v) const {
     if (perm[v] == (-1))
-      return succ_range(perm, inv);
+      return const_succ_range(perm, inv);
     else
-      return succ_range(perm, inv, g.succs(perm[v]));
+      return const_succ_range(perm, inv, g.succs(perm[v]));
   }
-  pred_range preds(vert_id v) const {
+  const_pred_range preds(vert_id v) const {
     if (perm[v] == (-1))
-      return pred_range(perm, inv);
+      return const_pred_range(perm, inv);
     else
-      return pred_range(perm, inv, g.preds(perm[v]));
+      return const_pred_range(perm, inv, g.preds(perm[v]));
   }
 
   const_e_succ_range e_succs(vert_id v) const {
@@ -261,12 +261,12 @@ template <class G> class SubGraph {
 public:
   using vert_id = typename G::vert_id;
   using Wt = typename G::Wt;
+  using wt_ref_t = typename G::wt_ref_t;
   // These defined below
-  // using pred_range = ...
-  // using succ_range = ...
+  // using const_pred_range = ...
+  // using const_succ_range = ...
   // using const_e_pred_range = ...
   // using const_e_succ_range = ...
-  using wt_ref_t = typename G::wt_ref_t;
 
   SubGraph(const G &_g, vert_id _v_ex) : g(_g), v_ex(_v_ex) {}
 
@@ -340,10 +340,10 @@ public:
 
   template <class It> class e_adj_iterator {
   public:
-    using edge_ref = typename It::const_edge_ref;
+    using edge_wrapper = typename It::edge_wrapper;
 
     e_adj_iterator(const It &_iG, vert_id _v_ex) : iG(_iG), v_ex(_v_ex) {}
-    edge_ref operator*(void) const { return *iG; }
+    edge_wrapper operator*(void) const { return *iG; }
     e_adj_iterator &operator++(void) {
       ++iG;
       return *this;
@@ -373,10 +373,10 @@ public:
   };
 
   // public typedefs
-  using pred_range = adj_list<typename G::pred_range,
-                              adj_iterator<typename G::pred_range::iterator>>;
-  using succ_range = adj_list<typename G::succ_range,
-                              adj_iterator<typename G::succ_range::iterator>>;
+  using const_pred_range = adj_list<typename G::const_pred_range,
+                              adj_iterator<typename G::const_pred_range::iterator>>;
+  using const_succ_range = adj_list<typename G::const_succ_range,
+                              adj_iterator<typename G::const_succ_range::iterator>>;
   using const_e_pred_range =
       adj_list<typename G::const_e_pred_range,
                e_adj_iterator<typename G::const_e_pred_range::iterator>>;
@@ -384,13 +384,13 @@ public:
       adj_list<typename G::const_e_succ_range,
                e_adj_iterator<typename G::const_e_succ_range::iterator>>;
 
-  succ_range succs(vert_id v) const {
+  const_succ_range succs(vert_id v) const {
     // assert(v != v_ex);
-    return succ_range(g.succs(v), v_ex);
+    return const_succ_range(g.succs(v), v_ex);
   }
-  pred_range preds(vert_id v) const {
+  const_pred_range preds(vert_id v) const {
     // assert(v != v_ex);
-    return pred_range(g.preds(v), v_ex);
+    return const_pred_range(g.preds(v), v_ex);
   }
   const_e_succ_range e_succs(vert_id v) const {
     return const_e_succ_range(g.e_succs(v), v_ex);
@@ -411,6 +411,10 @@ public:
   using vert_id = typename G::vert_id;
   using Wt = typename G::Wt;
   using wt_ref_t = typename G::wt_ref_t;
+  using const_pred_range = typename G::const_succ_range;
+  using const_succ_range = typename G::const_pred_range;
+  using const_e_pred_range = typename G::const_e_succ_range;
+  using const_e_succ_range = typename G::const_e_pred_range;
 
   GraphRev(const G &_g) : g(_g) {}
 
@@ -432,13 +436,9 @@ public:
 
   typename G::vert_range verts(void) const { return g.verts(); }
 
-  using pred_range = typename G::succ_range;
-  using succ_range = typename G::pred_range;
-  using const_e_pred_range = typename G::const_e_succ_range;
-  using const_e_succ_range = typename G::const_e_pred_range;
 
-  succ_range succs(vert_id v) { return g.preds(v); }
-  succ_range preds(vert_id v) { return g.succs(v); }
+  const_succ_range succs(vert_id v) const { return g.preds(v); }
+  const_succ_range preds(vert_id v) const { return g.succs(v); }
 
   const_e_succ_range e_succs(vert_id v) const { return g.e_preds(v); }
   const_e_pred_range e_preds(vert_id v) const { return g.e_succs(v); }
