@@ -3604,6 +3604,7 @@ public:
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(split_oct_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(split_oct_domain_t)
   DEFAULT_SELECT(split_oct_domain_t)
+  DEFAULT_WEAK_ASSIGN(split_oct_domain_t)  
 
   /* begin intrinsics operations */
   void intrinsic(std::string name,

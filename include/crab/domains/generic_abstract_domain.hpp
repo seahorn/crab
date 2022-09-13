@@ -79,6 +79,7 @@ private:
     virtual void apply(arith_operation_t op, const variable_t &x,
                        const variable_t &y, number_t k) = 0;
     virtual void assign(const variable_t &x, const linear_expression_t &e) = 0;
+    virtual void weak_assign(const variable_t &x, const linear_expression_t &e) = 0;    
     virtual void operator+=(const linear_constraint_system_t &csts) = 0;
     virtual bool entails(const linear_constraint_t &cst) const = 0;    
     virtual void apply(bitwise_operation_t op, const variable_t &x,
@@ -95,6 +96,10 @@ private:
                                      const reference_constraint_t &rhs) = 0;
     virtual void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                  bool is_not_rhs) = 0;
+    virtual void weak_assign_bool_cst(const variable_t &lhs,
+				      const linear_constraint_t &rhs) = 0;
+    virtual void weak_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
+				      bool is_not_rhs) = 0;
     virtual void apply_binary_bool(bool_operation_t op, const variable_t &x,
                                    const variable_t &y,
                                    const variable_t &z) = 0;
@@ -329,6 +334,9 @@ private:
     void assign(const variable_t &x, const linear_expression_t &e) override {
       m_inv.assign(x, e);
     }
+    void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+      m_inv.weak_assign(x, e);
+    }
     void operator+=(const linear_constraint_system_t &csts) override {
       m_inv.operator+=(csts);
     }
@@ -362,6 +370,14 @@ private:
     void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                          bool is_not_rhs) override {
       m_inv.assign_bool_var(lhs, rhs, is_not_rhs);
+    }
+    void weak_assign_bool_cst(const variable_t &lhs,
+                         const linear_constraint_t &rhs) override {
+      m_inv.weak_assign_bool_cst(lhs, rhs);
+    }
+    void weak_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
+                         bool is_not_rhs) override {
+      m_inv.weak_assign_bool_var(lhs, rhs, is_not_rhs);
     }
     void apply_binary_bool(bool_operation_t op, const variable_t &x,
                            const variable_t &y, const variable_t &z) override {
@@ -705,6 +721,9 @@ public:
   void assign(const variable_t &x, const linear_expression_t &e) override {
     m_concept->assign(x, e);
   }
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    m_concept->weak_assign(x, e);
+  }
   void operator+=(const linear_constraint_system_t &csts) override {
     m_concept->operator+=(csts);
   }
@@ -738,6 +757,14 @@ public:
   void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                        bool is_not_rhs) override {
     m_concept->assign_bool_var(lhs, rhs, is_not_rhs);
+  }
+  void weak_assign_bool_cst(const variable_t &lhs,
+                       const linear_constraint_t &rhs) override {
+    m_concept->weak_assign_bool_cst(lhs, rhs);
+  }
+  void weak_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
+                       bool is_not_rhs) override {
+    m_concept->weak_assign_bool_var(lhs, rhs, is_not_rhs);
   }
   void apply_binary_bool(bool_operation_t op, const variable_t &x,
                          const variable_t &y, const variable_t &z) override {
@@ -1113,6 +1140,11 @@ public:
     detach();
     norm().assign(x, e);
   }
+  
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    detach();
+    norm().weak_assign(x, e);
+  }
 
   void operator+=(const linear_constraint_system_t &csts) override {
     detach();
@@ -1163,6 +1195,18 @@ public:
     norm().assign_bool_var(lhs, rhs, is_not_rhs);
   }
 
+  void weak_assign_bool_cst(const variable_t &lhs,
+                       const linear_constraint_t &rhs) override {
+    detach();
+    norm().weak_assign_bool_cst(lhs, rhs);
+  }
+
+  void weak_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
+                       bool is_not_rhs) override {
+    detach();
+    norm().weak_assign_bool_var(lhs, rhs, is_not_rhs);
+  }
+  
   void apply_binary_bool(bool_operation_t op, const variable_t &x,
                          const variable_t &y, const variable_t &z) override {
     detach();

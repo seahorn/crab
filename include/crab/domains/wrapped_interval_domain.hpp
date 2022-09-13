@@ -276,6 +276,21 @@ public:
                                 << x << ":=" << e << "=" << _env.at(x) << "\n");
   }
 
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    crab::CrabStats::count(domain_name() + ".count.weak_assign");
+    crab::ScopedCrabStats __st__(domain_name() + ".weak_assign");
+    if (boost::optional<variable_t> v = e.get_variable()) {
+      this->_env.join(x, this->_env.at(*v));
+    } else {
+      wrapped_interval_t r = eval_expr(
+          e,
+          x.get_type().is_integer() ? x.get_type().get_integer_bitwidth() : 0);
+      this->_env.join(x, r);
+    }
+    CRAB_LOG("wrapped-int", crab::outs()
+	     << "weak_assign(" << x << "," << e << ")=" << _env.at(x) << "\n");
+  }
+  
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
@@ -524,7 +539,7 @@ public:
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
   DEFAULT_SELECT(wrapped_interval_domain_t)
-
+  
   void forget(const variable_vector_t &variables) override {
     if (is_bottom() || is_top()) {
       return;
@@ -1225,6 +1240,8 @@ public:
                                  << x << ":=" << e << " => " << *this << "\n";);
   }
 
+  DEFAULT_WEAK_ASSIGN(this_type)
+  
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const this_type &invariant) override {
     _w_int_dom.backward_assign(x, e, invariant._w_int_dom);

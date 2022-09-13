@@ -405,6 +405,19 @@ public:
     CRAB_LOG("sign-domain", crab::outs() << "RES=" << m_env.at(x) << "\n";);
   }
 
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    crab::CrabStats::count(domain_name() + ".count.weak_assign");
+    crab::ScopedCrabStats __st__(domain_name() + ".weak_assign");
+    CRAB_LOG("sign-domain", crab::outs() << "weak_assign(" << x << "," << e << ")\n";);
+    if (boost::optional<variable_t> v = e.get_variable()) {
+      m_env.join(x, m_env.at(*v));
+    } else {
+      m_env.join(x, eval_expr(e));
+    }
+    CRAB_LOG("sign-domain", crab::outs() << "RES=" << m_env.at(x) << "\n";);
+  }
+  
+
   void apply(crab::domains::arith_operation_t op, const variable_t &x,
              const variable_t &y, const variable_t &z) override {
     crab::CrabStats::count(domain_name() + ".count.apply");

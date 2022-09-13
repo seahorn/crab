@@ -390,8 +390,8 @@ private:
     }
   }
 
-  void ref_store(base_abstract_domain_t &base_dom, const variable_t &rgn_var,
-                 const variable_or_constant_t &val) {
+  void do_mem_write(base_abstract_domain_t &base_dom, const variable_t &rgn_var,
+		    const variable_or_constant_t &val, bool weak) {
     assert(is_tracked_region(rgn_var));
     ghost_variables_t rgn_gvars = get_or_insert_gvars(rgn_var);
 
@@ -399,20 +399,37 @@ private:
     // integers. val can be any scalar including a reference.
     if (val.get_type().is_bool()) {
       if (val.is_constant()) {
-        base_dom.assign_bool_cst(rgn_gvars.get_var(),
-                                 (val.is_bool_true()
-                                      ? base_linear_constraint_t::get_true()
-                                      : base_linear_constraint_t::get_false()));
+	if (!weak) {
+	  base_dom.assign_bool_cst(rgn_gvars.get_var(),
+				   (val.is_bool_true()
+				    ? base_linear_constraint_t::get_true()
+				    : base_linear_constraint_t::get_false()));
+	} else {
+	  base_dom.weak_assign_bool_cst(rgn_gvars.get_var(),
+				   (val.is_bool_true()
+				    ? base_linear_constraint_t::get_true()
+				    : base_linear_constraint_t::get_false()));
+	}
       } else {
-        base_dom.assign_bool_var(
-            rgn_gvars.get_var(),
-            get_or_insert_gvars(val.get_variable()).get_var(), false);
+	if (!weak) {
+	  base_dom.assign_bool_var(
+              rgn_gvars.get_var(),
+              get_or_insert_gvars(val.get_variable()).get_var(), false);
+	} else {
+	  base_dom.weak_assign_bool_var(
+              rgn_gvars.get_var(),
+              get_or_insert_gvars(val.get_variable()).get_var(), false);
+	}
       }
     } else if (val.get_type().is_integer() || val.get_type().is_real() ||
                val.get_type().is_reference()) {
 
       if (val.is_constant()) {
-        base_dom.assign(rgn_gvars.get_var(), val.get_constant());
+	if (!weak) {
+	  base_dom.assign(rgn_gvars.get_var(), val.get_constant());
+	} else {
+	  base_dom.weak_assign(rgn_gvars.get_var(), val.get_constant());
+	}
 
         if (val.get_type().is_reference()) {
           if (rgn_gvars.has_offset_and_size()) {
@@ -423,20 +440,30 @@ private:
         }
       } else {
         ghost_variables_t val_gvars = get_or_insert_gvars(val.get_variable());
-        base_dom.assign(rgn_gvars.get_var(), val_gvars.get_var());
+	if (!weak) {	
+	  base_dom.assign(rgn_gvars.get_var(), val_gvars.get_var());
+	} else {
+	  base_dom.weak_assign(rgn_gvars.get_var(), val_gvars.get_var());
+	} 
 
         if (val.get_type().is_reference()) {
           if (rgn_gvars.has_offset_and_size() &&
               val_gvars.has_offset_and_size()) {
-            rgn_gvars.get_offset_and_size().assign(
-                base_dom, val_gvars.get_offset_and_size());
+
+	    if (!weak) {	
+	      rgn_gvars.get_offset_and_size().assign(
+                  base_dom, val_gvars.get_offset_and_size());
+	    } else {
+	      rgn_gvars.get_offset_and_size().weak_assign(
+                  base_dom, val_gvars.get_offset_and_size());
+	    } 
           } else if (rgn_gvars.has_offset_and_size()) {
             rgn_gvars.get_offset_and_size().forget(base_dom);
           }
         }
       }
     } else {
-      CRAB_ERROR(domain_name(), "::ref_store: unsupported type ",
+      CRAB_ERROR(domain_name(), "::do_mem_write: unsupported type ",
                  val.get_type());
     }
   }
@@ -1589,7 +1616,7 @@ public:
       CRAB_LOG("region-store", crab::outs() << "Performing strong update\n";);
 
       if (is_tracked_rgn) {
-        ref_store(m_base_dom, rgn, val);
+        do_mem_write(m_base_dom, rgn, val, false /*!weak*/);
       }
 
       if (crab_domain_params_man::get().region_allocation_sites()) {
@@ -1615,9 +1642,7 @@ public:
       CRAB_LOG("region-store", crab::outs() << "Performing weak update\n";);
 
       if (is_tracked_rgn) {
-        base_abstract_domain_t tmp(m_base_dom);
-        ref_store(tmp, rgn, val);
-        m_base_dom |= tmp;
+	do_mem_write(m_base_dom, rgn, val, true /*weak*/);
       }
 
       if (crab_domain_params_man::get().region_allocation_sites()) {
@@ -1866,7 +1891,7 @@ public:
   // This default implementation is expensive because it will call the
   // join.
   DEFAULT_SELECT_REF(region_domain_t)
-
+  
   // arithmetic operations
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
@@ -1911,6 +1936,11 @@ public:
     }
   }
 
+  // Weak assignments are performed by other domains and since the
+  // region domain is often at the top of the hierarchy of domains,
+  // weak assignments shouldn't happen in this domain.
+  DEFAULT_WEAK_ASSIGN(region_domain_t)
+  
   void select(const variable_t &lhs, const linear_constraint_t &cond,
               const linear_expression_t &e1,
               const linear_expression_t &e2) override {
@@ -2166,6 +2196,12 @@ public:
       }
     }
   }
+
+  // Weak assignments are performed by other domains and since the
+  // region domain is often at the top of the hierarchy of domains,
+  // weak assignments shouldn't happen in this domain.
+  DEFAULT_WEAK_BOOL_ASSIGN(region_domain_t)  
+  
   void apply_binary_bool(bool_operation_t op, const variable_t &x,
                          const variable_t &y, const variable_t &z) override {
     crab::CrabStats::count(domain_name() + ".count.apply_binary_bool");

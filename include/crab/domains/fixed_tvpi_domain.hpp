@@ -159,7 +159,7 @@ private:
   }
 
   void rewrite_assign(const variable_t &x, const linear_expression_t &e,
-                      unsigned coefficient) {
+                      unsigned coefficient, bool weak) {
     assert(coefficient > 1);
 
     variable_t ghost_x = get_ghost_var(x, coefficient);
@@ -168,18 +168,31 @@ private:
     if (boost::optional<number_t> n = x_intv.singleton()) {
       if ((*n) % tracked_coefficient == 0) {
         // rewrite("x := n") = "x/COEF := n/COEF"
-        m_base_absval.assign(ghost_x, (*n) / tracked_coefficient);
+	if (!weak) {
+	  m_base_absval.assign(ghost_x, (*n) / tracked_coefficient);
+	} else {
+	  m_base_absval.weak_assign(ghost_x, (*n) / tracked_coefficient);
+	}
       } else {
         m_base_absval -= ghost_x;
       }
     } else if (boost::optional<variable_t> y = e.get_variable()) {
       // rewrite("x := y") = "x/COEF := y/COEF"
       variable_t ghost_y = get_ghost_var(*y, coefficient);
-      m_base_absval.assign(ghost_x, ghost_y);
+      if (!weak) {
+	m_base_absval.assign(ghost_x, ghost_y);
+      } else {
+	m_base_absval.weak_assign(ghost_x, ghost_y);	
+      } 
     } else {
       if (can_rewrite_linear_expression(e, coefficient)) {
-        m_base_absval.assign(ghost_x,
-                             rewrite_linear_expression(e, coefficient));
+	if (!weak) {
+	  m_base_absval.assign(ghost_x,
+			       rewrite_linear_expression(e, coefficient));
+	} else {
+	  m_base_absval.weak_assign(ghost_x,
+				    rewrite_linear_expression(e, coefficient));	  
+	}
       } else {
         m_base_absval -= ghost_x;
       }
@@ -472,11 +485,21 @@ public:
       m_base_absval.assign(x, e);
       
       for (auto coefficient: crab_domain_params_man::get().coefficients()) {	          
-	rewrite_assign(x, e, coefficient);
+	rewrite_assign(x, e, coefficient, false /*!weak*/);
       }
     }
   }
 
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    if (!is_bottom()) {
+      m_base_absval.weak_assign(x, e);
+      
+      for (auto coefficient: crab_domain_params_man::get().coefficients()) {	          
+	rewrite_assign(x, e, coefficient, true /*weak*/);
+      }
+    }
+  }
+  
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t z) override {
     if (!is_bottom()) {

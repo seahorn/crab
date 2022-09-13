@@ -264,6 +264,12 @@ public:
     }
   }
 
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    if (!is_bottom()) {
+      m_product.weak_assign(x, e);
+    }
+  }
+  
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t z) override {
     if (!is_bottom()) {
@@ -299,6 +305,13 @@ public:
     }
   }
 
+  void select(const variable_t &lhs, const linear_constraint_t &cond, 
+	      const linear_expression_t &e1,  const linear_expression_t &e2) override {
+    if (!is_bottom()) {
+      m_product.select(lhs, cond, e1, e2);
+    }
+  }
+  
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const this_type &invariant) override {
     CRAB_WARN(domain_name(), "::backward_assign not implemented");
@@ -315,8 +328,6 @@ public:
                       const this_type &invariant) override {
     CRAB_WARN(domain_name(), "::backward_apply not implemented");
   }
-
-  DEFAULT_SELECT(this_type)
 
   // TODO: we should implement these operations
   BOOL_OPERATIONS_NOT_IMPLEMENTED(this_type)

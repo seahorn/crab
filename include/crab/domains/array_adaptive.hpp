@@ -2164,6 +2164,16 @@ public:
                                             << " " << *this << "\n";);
   }
 
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    crab::CrabStats::count(domain_name() + ".count.assign");
+    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+
+    m_base_dom.weak_assign(x, e);
+
+    CRAB_LOG("array-adaptive", crab::outs() << "weak_assign(" << x << "," << e
+	                                    << ")=" << *this << "\n";);
+  }
+    
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t z) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
@@ -2259,6 +2269,16 @@ public:
     m_base_dom.assign_bool_var(lhs, rhs, is_not_rhs);
   }
 
+  virtual void weak_assign_bool_cst(const variable_t &lhs,
+				    const linear_constraint_t &rhs) override {
+    m_base_dom.weak_assign_bool_cst(lhs, rhs);
+  }
+
+  virtual void weak_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
+				    bool is_not_rhs) override {
+    m_base_dom.weak_assign_bool_var(lhs, rhs, is_not_rhs);
+  }
+  
   virtual void apply_binary_bool(bool_operation_t op, const variable_t &x,
                                  const variable_t &y,
                                  const variable_t &z) override {

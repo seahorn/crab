@@ -79,6 +79,9 @@ public:
   void assign(const variable_t &x, const linear_expression_t &e) override {
     CRAB_ERROR(not_implemented_msg());
   }
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    CRAB_ERROR(not_implemented_msg());
+  }
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t z) override {
     CRAB_ERROR(not_implemented_msg());
@@ -121,12 +124,20 @@ public:
   void assign_bool_cst(const variable_t &lhs,
                        const linear_constraint_t &rhs) override {
     CRAB_ERROR(not_implemented_msg());
-  }
+  }  
   void assign_bool_ref_cst(const variable_t &lhs,
                            const reference_constraint_t &rhs) override {
     CRAB_ERROR(not_implemented_msg());
   }
   void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
+                       bool is_not_rhs) override {
+    CRAB_ERROR(not_implemented_msg());
+  }
+  void weak_assign_bool_cst(const variable_t &lhs,
+                       const linear_constraint_t &rhs) override {
+    CRAB_ERROR(not_implemented_msg());
+  }  
+  void weak_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                        bool is_not_rhs) override {
     CRAB_ERROR(not_implemented_msg());
   }

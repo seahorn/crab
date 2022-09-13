@@ -651,6 +651,8 @@ public:
     }
   }
 
+  DEFAULT_WEAK_ASSIGN(uf_domain_t)
+  
   /* Begin uf-domain API */
 
   // Precondition:
@@ -1033,6 +1035,9 @@ public:
     }
   }
 
+
+  DEFAULT_WEAK_BOOL_ASSIGN(uf_domain_t)
+  
   virtual void apply_binary_bool(bool_operation_t op, const variable_t &x,
                                  const variable_t &y,
                                  const variable_t &z) override {

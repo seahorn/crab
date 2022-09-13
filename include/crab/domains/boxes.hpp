@@ -1677,6 +1677,8 @@ public:
 
   DEFAULT_SELECT(boxes_domain_t)
   DEFAULT_SELECT_BOOL(boxes_domain_t)
+  DEFAULT_WEAK_ASSIGN(boxes_domain_t)
+  DEFAULT_WEAK_BOOL_ASSIGN(boxes_domain_t)
   
   linear_constraint_system_t to_linear_constraint_system() const override {
     crab::CrabStats::count(domain_name() +

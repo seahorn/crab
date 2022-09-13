@@ -364,6 +364,23 @@ public:
     }
   }
 
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    if (!is_bottom()) {
+      std::shared_ptr<base_domain_t> absval = nullptr;
+      variable_vector_t vars(e.variables().begin(), e.variables().end());      
+      if (std::find(vars.begin(), vars.end(), x) == vars.end()) {
+	m_packs.forget(x);
+	vars.push_back(x);
+      }       
+      absval = merge(vars);
+      if (absval) {
+        absval->weak_assign(x, e);
+      } else {
+	CRAB_ERROR(domain_name(), "::weak_assign produced bottom!");
+      }
+    }
+  }
+  
   
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t z) override {

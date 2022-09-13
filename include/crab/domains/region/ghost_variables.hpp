@@ -111,6 +111,20 @@ public:
       dom.assign(m_size, rhs.m_size);
     }
 
+    void weak_assign(ghost_domain_t &dom, const ghost_offset_and_size &rhs) const {
+      if (m_offset.get_type() != rhs.m_offset.get_type()) {
+        CRAB_ERROR("Type inconsistency while assign ghost object_offset_size "
+                   "variables");
+      }
+      if (m_size.get_type() != rhs.m_size.get_type()) {
+        CRAB_ERROR("Type inconsistency while assign ghost object_offset_size "
+                   "variables");
+      }
+
+      dom.weak_assign(m_offset, rhs.m_offset);
+      dom.weak_assign(m_size, rhs.m_size);
+    }
+    
     void assign(ghost_domain_t &dom, const ghost_offset_and_size &rhs,
                 const ghost_linear_expression_t &offset) const {
       if (m_offset.get_type() != rhs.m_offset.get_type()) {
@@ -126,6 +140,21 @@ public:
       dom.assign(m_size, rhs.m_size);
     }
 
+    void weak_assign(ghost_domain_t &dom, const ghost_offset_and_size &rhs,
+                const ghost_linear_expression_t &offset) const {
+      if (m_offset.get_type() != rhs.m_offset.get_type()) {
+        CRAB_ERROR("Type inconsistency while assign ghost object_offset_size "
+                   "variables");
+      }
+      if (m_size.get_type() != rhs.m_size.get_type()) {
+        CRAB_ERROR("Type inconsistency while assign ghost object_offset_size "
+                   "variables");
+      }
+
+      dom.weak_assign(m_offset, rhs.m_offset + offset);
+      dom.weak_assign(m_size, rhs.m_size);
+    }
+    
     bool is_deref(ghost_domain_t &dom,
                   const ghost_variable_or_constant_t &byte_sz) const {
       // TODO: we don't check that m_offset >= 0

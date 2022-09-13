@@ -252,6 +252,17 @@ public:
     this->_env.set(x, r);
   }
 
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    crab::CrabStats::count(domain_name() + ".count.weak_assign");
+    crab::ScopedCrabStats __st__(domain_name() + ".weak_assign");
+
+    congruence_t r = e.constant();
+    for (auto kv : e) {
+      r = r + (kv.first * this->_env.at(kv.second));
+    }
+    this->_env.join(x, r);
+  }  
+
   void apply(crab::domains::arith_operation_t op, const variable_t &x,
              const variable_t &y, const variable_t &z) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
@@ -438,7 +449,7 @@ public:
   }
 
   DEFAULT_SELECT(congruence_domain_t)
-
+  
   /// congruence_domain implements only standard abstract operations
   /// of a numerical domain so it is intended to be used as a leaf
   /// domain in the hierarchy of domains.

@@ -1450,6 +1450,7 @@ public:
   }
 
   DEFAULT_SELECT(apron_domain_t)
+  DEFAULT_WEAK_ASSIGN(apron_domain_t)    
   
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const apron_domain_t &invariant) override {

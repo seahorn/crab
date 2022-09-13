@@ -1677,6 +1677,7 @@ public:
   }
 
   DEFAULT_SELECT(elina_domain_t)
+  DEFAULT_WEAK_ASSIGN(elina_domain_t)      
   
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const elina_domain_t &invariant) override {

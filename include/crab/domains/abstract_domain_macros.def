@@ -13,7 +13,15 @@
  * DEFAULT_SELECT(DOM)
  * DEFAULT_SELECT_REF(DOM)
  * DEFAULT_SELECT_BOOL(DOM)
+ * DEFAULT_WEAK_ASSIGN(DOM)
+ * DEFAULT_WEAK_BOOL_ASSIGN(DOM) 
  * DEFAULT_ENTAILS(DOM)
+ *
+ * Note that these macros are not really necessary because they could
+ * be part of the base class (abstract_domain).  However, we prefer to
+ * enforce explicit calls to these macros so that it's more obvious
+ * which operations are not implemented or which operations could be
+ * implemented more efficiently.
  **/
 
 #define NUMERICAL_OPERATIONS_NOT_IMPLEMENTED(DOM)                              \
@@ -21,8 +29,8 @@
                      const variable_t &y, const variable_t &z) override {}     \
   virtual void apply(crab::domains::arith_operation_t op, const variable_t &x, \
                      const variable_t &y, number_t k) override {}              \
-  virtual void assign(const variable_t &x, const linear_expression_t &e)       \
-      override {}                                                              \
+  virtual void assign(const variable_t &x, const linear_expression_t &e) override {} \
+  virtual void weak_assign(const variable_t &x, const linear_expression_t &e) override {} \
   virtual void select(const variable_t &lhs, const linear_constraint_t &cond,  \
 		      const linear_expression_t &e1,			       \
 		      const linear_expression_t &e2) override {}               \
@@ -60,8 +68,10 @@
                                const linear_constraint_t &rhs) override {}     \
   virtual void assign_bool_ref_cst(                                            \
       const variable_t &lhs, const reference_constraint_t &rhs) override {}    \
-  virtual void assign_bool_var(const variable_t &lhs, const variable_t &rhs,   \
-                               bool is_not_rhs) override {}                    \
+  virtual void assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs) override {} \
+  virtual void weak_assign_bool_cst(const variable_t &lhs,                      \
+                                    const linear_constraint_t &rhs) override {} \
+  virtual void weak_assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs) override {} \
   virtual void apply_binary_bool(crab::domains::bool_operation_t op,           \
                                  const variable_t &x, const variable_t &y,     \
                                  const variable_t &z) override {}              \
@@ -259,7 +269,33 @@ virtual void select_ref(const variable_t &lhs_ref, const variable_t &lhs_rgn, co
      *this = inv1 | inv2;						\
    }									\
  }
-  
+
+#define DEFAULT_WEAK_ASSIGN(DOM)                                        \
+virtual void weak_assign(const variable_t &x, const linear_expression_t &e) override { \
+   if (!is_bottom()) {                                                  \
+     DOM other(*this);                                                  \
+     other.assign(x, e);                                                \
+     *this |= other;                                                    \
+   }                                                                    \
+}                                                                       
+
+#define DEFAULT_WEAK_BOOL_ASSIGN(DOM)                                        \
+virtual void weak_assign_bool_cst(const variable_t &lhs,                     \
+                                  const linear_constraint_t &rhs) override { \
+   if (!is_bottom()) {                                                       \
+     DOM other(*this);                                                       \
+     other.assign_bool_cst(lhs, rhs);                                        \
+     *this |= other;                                                         \
+   }                                                                         \
+}                                                                            \
+virtual void weak_assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs) override { \
+   if (!is_bottom()) {                                                       \
+     DOM other(*this);                                                       \
+     other.assign_bool_var(lhs, rhs, is_not_rhs);                            \
+     *this |= other;                                                         \
+   }                                                                         \
+}
+
 #define DEFAULT_ENTAILS(DOM)						\
 virtual bool entails(const linear_constraint_t &cst) const override {   \
  if (is_bottom()) {							\

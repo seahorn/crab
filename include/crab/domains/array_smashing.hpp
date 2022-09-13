@@ -150,36 +150,47 @@ private:
   }
 
   // lhs and rhs only involve scalar variables
-  void do_strong_update(base_dom_t &dom, const variable_t &lhs,
-                        const linear_expression_t &rhs) {
+  void do_update(base_dom_t &dom, const variable_t &lhs,
+		 const linear_expression_t &rhs, bool weak) {
     auto ty = lhs.get_type();
     if (ty.is_bool()) {
       if (rhs.is_constant()) {
         if (rhs.constant() >= number_t(1)) {
-          dom.assign_bool_cst(lhs, linear_constraint_t::get_true());
+	  if (!weak) {
+	    dom.assign_bool_cst(lhs, linear_constraint_t::get_true());
+	  } else {
+	    dom.weak_assign_bool_cst(lhs, linear_constraint_t::get_true());
+	  }
         } else {
-          dom.assign_bool_cst(lhs, linear_constraint_t::get_false());
+	  if (!weak) {
+	    dom.assign_bool_cst(lhs, linear_constraint_t::get_false());
+	  } else {
+	    dom.weak_assign_bool_cst(lhs, linear_constraint_t::get_false());
+	  }
         }
       } else if (auto rhs_v = rhs.get_variable()) {
-        dom.assign_bool_var(lhs, (*rhs_v), false);
+	if (!weak) {
+	  dom.assign_bool_var(lhs, (*rhs_v), false);
+	} else {
+	  dom.weak_assign_bool_var(lhs, (*rhs_v), false);
+	}
       }
     } else {
       assert(ty.is_integer() || ty.is_real());
-      dom.assign(lhs, rhs);
+      if (!weak) {
+	dom.assign(lhs, rhs);
+      } else {
+	dom.weak_assign(lhs, rhs);
+      }
     }
   }
 
-  // lhs and rhs only involve scalar variables
   void do_strong_update(const variable_t &lhs, const linear_expression_t &rhs) {
-    do_strong_update(m_base_dom, lhs, rhs);
+    do_update(m_base_dom, lhs, rhs, false /*!weak*/);
   }
 
-  // We perform the strong update on a copy of *this. Then, we join
-  // the copy of *this with *this.
   void do_weak_update(const variable_t &lhs, const linear_expression_t &rhs) {
-    base_dom_t other(m_base_dom);
-    do_strong_update(other, lhs, rhs);
-    m_base_dom |= other;
+    do_update(m_base_dom, lhs, rhs, true /*weak*/);
   }
 
   array_smashing(last_access_env_t &&last_access_env, base_dom_t &&base_dom)
@@ -370,6 +381,13 @@ public:
                              << "apply " << x << " := " << e << *this << "\n";);
   }
 
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    m_base_dom.weak_assign(x, e);
+
+    CRAB_LOG("smashing", crab::outs()
+	     << "weak_assign(" << x << "," << e << ")" <<  *this << "\n";);
+  }
+  
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t z) override {
     m_base_dom.apply(op, x, y, z);
@@ -446,6 +464,16 @@ public:
     m_base_dom.assign_bool_var(lhs, rhs, is_not_rhs);
   }
 
+  virtual void weak_assign_bool_cst(const variable_t &lhs,
+				    const linear_constraint_t &rhs) override {
+    m_base_dom.weak_assign_bool_cst(lhs, rhs);
+  }
+
+  virtual void weak_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
+				    bool is_not_rhs) override {
+    m_base_dom.weak_assign_bool_var(lhs, rhs, is_not_rhs);
+  }
+  
   virtual void apply_binary_bool(bool_operation_t op, const variable_t &x,
                                  const variable_t &y,
                                  const variable_t &z) override {

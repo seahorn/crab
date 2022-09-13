@@ -335,6 +335,15 @@ public:
     }
   }
 
+  virtual void weak_assign(const variable_t &x,
+                      const linear_expression_t &e) override {
+    if (!is_bottom()) {
+      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+        m_disjuncts[i].weak_assign(x, e);
+      }
+    }
+  }
+  
   virtual void apply(arith_operation_t op, const variable_t &x,
                      const variable_t &y, const variable_t &z) override {
     if (!is_bottom()) {
@@ -735,6 +744,24 @@ public:
     }
   }
 
+  virtual void weak_assign_bool_cst(const variable_t &lhs,
+                               const linear_constraint_t &rhs) override {
+    if (!is_bottom()) {
+      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+        m_disjuncts[i].weak_assign_bool_cst(lhs, rhs);
+      }
+    }
+  }
+
+  virtual void weak_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
+                               bool is_not_rhs) override {
+    if (!is_bottom()) {
+      for (unsigned i = 0, sz = m_disjuncts.size(); i < sz; ++i) {
+        m_disjuncts[i].weak_assign_bool_var(lhs, rhs, is_not_rhs);
+      }
+    }
+  }
+  
   virtual void apply_binary_bool(bool_operation_t op, const variable_t &x,
                                  const variable_t &y,
                                  const variable_t &z) override {

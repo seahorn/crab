@@ -298,6 +298,22 @@ public:
     }
   }
 
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    crab::CrabStats::count(domain_name() + ".count.weak_assign");
+    crab::ScopedCrabStats __st__(domain_name() + ".weak_assign");
+
+    if (boost::optional<variable_t> v = e.get_variable()) {
+      this->_env.join(x, this->_env.at(*v));
+    } else {
+      interval_t r = e.constant();
+      for (auto kv : e) {
+        r += kv.first * this->_env.at(kv.second);
+      }
+      this->_env.join(x, r);
+    }
+  }
+
+  
   void apply(crab::domains::arith_operation_t op, const variable_t &x,
              const variable_t &y, const variable_t &z) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
@@ -527,6 +543,7 @@ public:
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)
 
+  
   void forget(const variable_vector_t &variables) override {
     if (is_bottom() || is_top()) {
       return;

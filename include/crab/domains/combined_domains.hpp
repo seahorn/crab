@@ -383,6 +383,11 @@ public:
     m_product.second().assign(x, e);
   }
 
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    m_product.first().weak_assign(x, e);
+    m_product.second().weak_assign(x, e);
+  }
+  
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
     m_product.first().apply(op, x, y, z);
@@ -735,6 +740,20 @@ public:
     reduce();
   }
 
+  virtual void weak_assign_bool_cst(const variable_t &lhs,
+				    const linear_constraint_t &rhs) override {
+    m_product.first().weak_assign_bool_cst(lhs, rhs);
+    m_product.second().weak_assign_bool_cst(lhs, rhs);
+    reduce();
+  }
+
+  virtual void weak_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
+				    bool is_not_rhs) override {
+    m_product.first().weak_assign_bool_var(lhs, rhs, is_not_rhs);
+    m_product.second().weak_assign_bool_var(lhs, rhs, is_not_rhs);
+    reduce();
+  }
+  
   virtual void apply_binary_bool(bool_operation_t op, const variable_t &x,
                                  const variable_t &y,
                                  const variable_t &z) override {
@@ -1259,6 +1278,15 @@ public:
                                     << x << ":=" << e << "=" << *this << "\n");
   }
 
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    m_product.weak_assign(x, e);
+    if (!Params::apply_reduction_only_add_constraint) {
+      reduce_variable(x);
+    }
+    CRAB_LOG("combined-domain", crab::outs()
+	     << "weak_assign(" << x << "," << e << ")=" << *this << "\n");
+  }
+  
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
     m_product.apply(op, x, y, z);

@@ -571,6 +571,17 @@ public:
     }
   }
 
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    if (!is_bottom()) {
+      for (auto &partition : m_partitions) {
+        partition.get_dom().weak_assign(x, e);
+      }
+      if (m_variable && *m_variable == x) {
+	update_partitions();
+      } 
+    }
+  }
+  
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
     if (!is_bottom()) {
@@ -1409,6 +1420,54 @@ private:
     }
   }
 
+  void assign(const variable_t &x, const linear_expression_t &e, bool weak) {
+    if (!is_bottom()) {
+      if (!has_partitions()) {
+	if (!weak) {
+	  m_absval.assign(x, e);
+	} else {
+	  m_absval.weak_assign(x, e);
+	} 
+      } else {
+	
+	if (boost::optional<variable_t> y = e.get_variable()) {
+	  // x := y
+	  // 
+	  if (value_partitioning_domain_t *partition_y = get_partition(*y)) {
+	    // We create a new partition for x if we have one for y
+	    if (!contains(x)) {
+	      // The user didn't select x as a partitioning variable.
+	      // This step is a bit problematic. If we don't add a new
+	      // partition for x then we might lose precision if x
+	      // flows later to y which can happen in loops. If we add
+	      // a new partition then the analysis might blow up if
+	      // too many partitions are added.
+	      CRAB_WARN(domain_name(),
+			" assigning a partitioning variable ", *y,
+			" to a non-partitioning one ", x);
+	    }  
+	    value_partitioning_domain_t partition_x(*partition_y);
+	    partition_x.m_variable = x;
+	    remove_partition(x); 
+	    add_partition(std::move(partition_x));
+	    // TODO(IMPORTANT): if x is not partitioning variable
+	    // chosen by the user then we should remove the partition
+	    // for x when we remove the partition of y. This is not
+	    // done at the moment.
+	  }
+	}
+	
+        for (auto &elem : m_product) {
+	  if (!weak) {
+	    elem.assign(x, e);
+	  } else {
+	    elem.weak_assign(x, e);
+	  } 
+        }
+      }
+    }
+  }
+  
 public:
   product_value_partitioning_domain() {
     NumDomain top;
@@ -1655,45 +1714,13 @@ public:
   }
 
   void assign(const variable_t &x, const linear_expression_t &e) override {
-    if (!is_bottom()) {
-      if (!has_partitions()) {
-        m_absval.assign(x, e);
-      } else {
-	
-	if (boost::optional<variable_t> y = e.get_variable()) {
-	  // x := y
-	  // 
-	  if (value_partitioning_domain_t *partition_y = get_partition(*y)) {
-	    // We create a new partition for x if we have one for y
-	    if (!contains(x)) {
-	      // The user didn't select x as a partitioning variable.
-	      // This step is a bit problematic. If we don't add a new
-	      // partition for x then we might lose precision if x
-	      // flows later to y which can happen in loops. If we add
-	      // a new partition then the analysis might blow up if
-	      // too many partitions are added.
-	      CRAB_WARN(domain_name(),
-			" assigning a partitioning variable ", *y,
-			" to a non-partitioning one ", x);
-	    }  
-	    value_partitioning_domain_t partition_x(*partition_y);
-	    partition_x.m_variable = x;
-	    remove_partition(x); 
-	    add_partition(std::move(partition_x));
-	    // TODO(IMPORTANT): if x is not partitioning variable
-	    // chosen by the user then we should remove the partition
-	    // for x when we remove the partition of y. This is not
-	    // done at the moment.
-	  }
-	}
-	
-        for (auto &elem : m_product) {
-          elem.assign(x, e);
-        }
-      }
-    }
+    assign(x, e, false /*!weak*/);
   }
 
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    assign(x, e, true /*weak*/);
+  }
+  
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
     if (!is_bottom()) {

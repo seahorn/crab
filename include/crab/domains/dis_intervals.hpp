@@ -1274,7 +1274,6 @@ public:
     crab::CrabStats::count(domain_name() + ".count.assign");
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
 
-    // crab::outs() << "*** " <<  x << ":=" << e << " in " << *this << "\n";
     if (boost::optional<variable_t> v = e.get_variable()) {
       this->_env.set(x, this->_env.at(*v));
     } else {
@@ -1283,9 +1282,22 @@ public:
         r += dis_interval_t(t.first) * this->_env.at(t.second);
       this->_env.set(x, r);
     }
-    // crab::outs() << "result=" << *this << "\n";
   }
 
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    crab::CrabStats::count(domain_name() + ".count.weak_assign");
+    crab::ScopedCrabStats __st__(domain_name() + ".weak_assign");
+
+    if (boost::optional<variable_t> v = e.get_variable()) {
+      this->_env.join(x, this->_env.at(*v));
+    } else {
+      dis_interval_t r(e.constant());
+      for (auto t : e)
+        r += dis_interval_t(t.first) * this->_env.at(t.second);
+      this->_env.join(x, r);
+    }
+  }
+  
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t z) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
@@ -1448,7 +1460,7 @@ public:
   }
 
   DEFAULT_SELECT(dis_interval_domain_t)
-
+  
   /// dis_interval_domain implements only standard abstract operations
   /// of a numerical domain so it is intended to be used as a leaf
   /// domain in the hierarchy of domains.

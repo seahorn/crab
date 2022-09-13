@@ -2053,6 +2053,7 @@ public:
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
   DEFAULT_SELECT(DBM_t)
+  DEFAULT_WEAK_ASSIGN(DBM_t)  
   
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {

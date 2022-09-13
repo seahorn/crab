@@ -193,6 +193,14 @@ public:
              crab::outs() << x << ":=" << bx << "\n");
   }
 
+  void weak_assign_bool_cst(const variable_t &x,
+			    const linear_constraint_t &cst) override {
+    m_env -= x;
+    CRAB_LOG("flat-boolean", auto bx = m_env.at(x);
+             crab::outs() << "weak_assign(" << x << "," << bx << ")\n");
+  }
+  
+  
   void assign_bool_ref_cst(const variable_t &x,
                            const reference_constraint_t &cst) override {
     m_env -= x;
@@ -212,6 +220,18 @@ public:
              crab::outs() << " --->" << x << "=" << bx << "\n");
   }
 
+  void weak_assign_bool_var(const variable_t &x, const variable_t &y,
+			    bool is_not_y) override {
+    crab::CrabStats::count(domain_name() + ".count.weak_assign_bool_var");
+    crab::ScopedCrabStats __st__(domain_name() + ".weak_assign_bool_var");
+    m_env.join(x, (is_not_y ? m_env.at(y).Negate() : m_env.at(y)));
+    CRAB_LOG("flat-boolean", auto bx = m_env.at(x);
+             crab::outs() << "After " << "weak_assign(" << x << ",";
+             if (is_not_y) crab::outs() << "not(" << y << "))";
+             else crab::outs() << y;
+             crab::outs() << " --->" << x << "=" << bx << "\n");
+  }
+  
   void apply_binary_bool(bool_operation_t op, const variable_t &x,
                          const variable_t &y, const variable_t &z) override {
     crab::CrabStats::count(domain_name() + ".count.apply_binary_bool");
@@ -345,7 +365,7 @@ public:
   NUMERICAL_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
-  
+
   // not part of the numerical_domains api but it should be
   void set(const variable_t &x, interval_t intv) {}
 
@@ -777,7 +797,108 @@ private:
   
   /** End helpers to update subdomains **/
 
+  /**
+   * Reduce from the boolean domain to the non-boolean domain.
+   **/
+  void reduce_bool_to_csts(const variable_t &x, bool is_negated) {
+    // backward reduction for m_bool_to_bools
+    // if x is true then all Boolean variables in bool_vars must be true.
+    auto bool_vars = m_bool_to_bools.at(x);
+    if (!is_negated) {
+      // x is true
+      for (auto const& v:  bool_vars) {
+	m_product.first().assume_bool(v, is_negated);
+	m_bool_to_lincsts.set(x, m_bool_to_lincsts.at(x) & m_bool_to_lincsts.at(v));
+	m_bool_to_refcsts.set(x, m_bool_to_refcsts.at(x) & m_bool_to_refcsts.at(v));	
+      }
+    } else {
+      // x is false
+      if (bool_vars.size() == 1) {
+	auto v = *(bool_vars.begin());
+	m_product.first().assume_bool(v, is_negated);
+	m_bool_to_lincsts.set(x, m_bool_to_lincsts.at(x) & m_bool_to_lincsts.at(v));
+	m_bool_to_refcsts.set(x, m_bool_to_refcsts.at(x) & m_bool_to_refcsts.at(v));	
+      } else {
+	// the falsity of x depends on the falsity of any of the
+	// variables in bool_vars.
+      }
+    }
 
+    bwd_reduction_assume_bool(m_bool_to_lincsts, x, is_negated);
+    bwd_reduction_assume_bool(m_bool_to_refcsts, x, is_negated);
+    
+  }
+  
+
+  /**
+   * Reduction from the non-boolean domain to the flat boolean domain.
+   */
+  void reduce_num_cst_to_bool(const variable_t &x,
+			      const linear_constraint_t &cst) {
+    if (cst.is_tautology()) {
+      m_product.first().set_bool(x, boolean_value::get_true());
+    } else if (cst.is_contradiction()) {
+      m_product.first().set_bool(x, boolean_value::get_false());	
+    } else {
+      if (m_product.second().entails(cst)) {
+	// -- definitely true
+	m_product.first().set_bool(x, boolean_value::get_true());
+      } else if (m_product.second().entails(cst.negate())) {
+	// -- definitely false
+	m_product.first().set_bool(x, boolean_value::get_false());	
+      } else {
+	// -- inconclusive
+	m_product.first().set_bool(x, boolean_value::top());
+      }
+      
+      m_bool_to_lincsts.set(x, lincst_set_t(cst));
+      // We assume all variables in cst are unchanged unless the
+      // opposite is proven
+      for (auto const &v : cst.variables()) {
+	m_unchanged_vars += v;
+      }
+    }
+    m_bool_to_bools -= x;
+  }
+
+  /**
+   * Reduction from the non-boolean domain to the flat boolean domain.
+   */  
+  void reduce_ref_cst_to_bool(const variable_t &x,
+			      const reference_constraint_t &cst) {
+    if (cst.is_tautology()) {
+      m_product.first().set_bool(x, boolean_value::get_true());
+    } else if (cst.is_contradiction()) {
+      m_product.first().set_bool(x, boolean_value::get_false());	
+    } else {
+      Dom inv1(m_product.second());
+      inv1.ref_assume(cst);
+      if (inv1.is_bottom()) {
+	// -- definitely false
+	m_product.first().set_bool(x, boolean_value::get_false());
+    } else {
+	Dom inv2(m_product.second());
+	inv2.ref_assume(cst.negate());
+	if (inv2.is_bottom()) {
+	  // -- definitely true
+	  m_product.first().set_bool(x, boolean_value::get_true());
+	} else {
+	  // -- inconclusive
+	  m_product.first().set_bool(x, boolean_value::top());
+	}
+      }
+      m_bool_to_refcsts.set(x, refcst_set_t(cst));
+      // We assume all variables in cst are unchanged unless the
+      // opposite is proven
+      for (auto const &v : cst.variables()) {
+	m_unchanged_vars += v;
+      }
+    }
+    m_bool_to_bools -= x;
+
+  }
+
+  
   flat_boolean_numerical_domain(reduced_domain_product2_t &&product,
                                 bool_to_lincons_env_t &&bool_to_lincsts,
 				bool_to_refcons_env_t &&bool_to_refcsts,
@@ -960,6 +1081,11 @@ public:
     m_unchanged_vars -= x;
   }
 
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    m_product.weak_assign(x, e);
+    m_unchanged_vars -= x;
+  }
+  
   void select(const variable_t &lhs, const linear_constraint_t &cond,
 	      const linear_expression_t &e1,  const linear_expression_t &e2) override {
     m_product.select(lhs, cond, e1, e2);
@@ -1118,7 +1244,7 @@ public:
   }
 
   // boolean_operators
-
+    
   void assign_bool_cst(const variable_t &x,
                        const linear_constraint_t &cst) override {
     crab::CrabStats::count(domain_name() + ".count.assign_bool_cst");
@@ -1129,32 +1255,7 @@ public:
     }
 
     m_product.assign_bool_cst(x, cst);
-
-    /** Reduction from the non-boolean domain to the flat boolean domain **/
-    if (cst.is_tautology()) {
-      m_product.first().set_bool(x, boolean_value::get_true());
-    } else if (cst.is_contradiction()) {
-      m_product.first().set_bool(x, boolean_value::get_false());	
-    } else {
-      if (m_product.second().entails(cst)) {
-	// -- definitely true
-	m_product.first().set_bool(x, boolean_value::get_true());
-      } else if (m_product.second().entails(cst.negate())) {
-	// -- definitely false
-	m_product.first().set_bool(x, boolean_value::get_false());	
-      } else {
-	// -- inconclusive
-	m_product.first().set_bool(x, boolean_value::top());
-      }
-      
-      m_bool_to_lincsts.set(x, lincst_set_t(cst));
-      // We assume all variables in cst are unchanged unless the
-      // opposite is proven
-      for (auto const &v : cst.variables()) {
-	m_unchanged_vars += v;
-      }
-    }
-    m_bool_to_bools -= x;
+    reduce_num_cst_to_bool(x, cst);
 
     CRAB_LOG("flat-boolean", auto bx = m_product.first().get_bool(x);
              crab::outs() << "*** Reduction non-boolean --> boolean\n "
@@ -1175,37 +1276,7 @@ public:
     }
 
     m_product.assign_bool_ref_cst(x, cst);
-
-    /** Reduction from the non-boolean domain to the flat boolean domain **/
-    if (cst.is_tautology()) {
-      m_product.first().set_bool(x, boolean_value::get_true());
-    } else if (cst.is_contradiction()) {
-      m_product.first().set_bool(x, boolean_value::get_false());	
-    } else {
-      Dom inv1(m_product.second());
-      inv1.ref_assume(cst);
-      if (inv1.is_bottom()) {
-	// -- definitely false
-	m_product.first().set_bool(x, boolean_value::get_false());
-    } else {
-	Dom inv2(m_product.second());
-	inv2.ref_assume(cst.negate());
-	if (inv2.is_bottom()) {
-	  // -- definitely true
-	  m_product.first().set_bool(x, boolean_value::get_true());
-	} else {
-	  // -- inconclusive
-	  m_product.first().set_bool(x, boolean_value::top());
-	}
-      }
-      m_bool_to_refcsts.set(x, refcst_set_t(cst));
-      // We assume all variables in cst are unchanged unless the
-      // opposite is proven
-      for (auto const &v : cst.variables()) {
-	m_unchanged_vars += v;
-      }
-    }
-    m_bool_to_bools -= x;
+    reduce_ref_cst_to_bool(x, cst);
     
     CRAB_LOG("flat-boolean", auto bx = m_product.first().get_bool(x);
              crab::outs() << "*** Reduction non-boolean --> boolean\n "
@@ -1244,6 +1315,8 @@ public:
                           << "\n";);
   }
 
+  DEFAULT_WEAK_BOOL_ASSIGN(bool_num_domain_t)
+  
   void apply_binary_bool(bool_operation_t op, const variable_t &x,
                          const variable_t &y, const variable_t &z) override {
     crab::CrabStats::count(domain_name() + ".count.apply_binary_bool");
@@ -1312,31 +1385,7 @@ public:
       return; 
     }
     
-    // backward reduction for m_bool_to_bools
-    // if x is true then all Boolean variables in bool_vars must be true.
-    auto bool_vars = m_bool_to_bools.at(x);
-    if (!is_negated) {
-      // x is true
-      for (auto const& v:  bool_vars) {
-	m_product.first().assume_bool(v, is_negated);
-	m_bool_to_lincsts.set(x, m_bool_to_lincsts.at(x) & m_bool_to_lincsts.at(v));
-	m_bool_to_refcsts.set(x, m_bool_to_refcsts.at(x) & m_bool_to_refcsts.at(v));	
-      }
-    } else {
-      // x is false
-      if (bool_vars.size() == 1) {
-	auto v = *(bool_vars.begin());
-	m_product.first().assume_bool(v, is_negated);
-	m_bool_to_lincsts.set(x, m_bool_to_lincsts.at(x) & m_bool_to_lincsts.at(v));
-	m_bool_to_refcsts.set(x, m_bool_to_refcsts.at(x) & m_bool_to_refcsts.at(v));	
-      } else {
-	// the falsity of x depends on the falsity of any of the
-	// variables in bool_vars.
-      }
-    }
-
-    bwd_reduction_assume_bool(m_bool_to_lincsts, x, is_negated);
-    bwd_reduction_assume_bool(m_bool_to_refcsts, x, is_negated);
+    reduce_bool_to_csts(x, is_negated);
     
     CRAB_LOG("flat-boolean",
              crab::outs() << "\tAfter reduction=" << m_product << "\n";);

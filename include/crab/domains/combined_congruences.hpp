@@ -194,6 +194,11 @@ public:
     reduce_variable(x);
   }
 
+  void weak_assign(const variable_t &x, const linear_expression_t &e) override {
+    m_product.weak_assign(x, e);
+    reduce_variable(x);
+  }
+  
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
     m_product.apply(op, x, y, z);

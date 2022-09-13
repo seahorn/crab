@@ -320,6 +320,23 @@ public:
     }
   }
 
+  void join(const Key &k, const Value &v) {
+    if (!is_bottom()) {
+      if (v.is_bottom()) {
+        set_to_bottom();
+      } else if (v.is_top()) {
+        _tree.remove(k);
+      } else {
+	const Value* old_v = _tree.find(k);
+	if (!old_v) {
+	  _tree.remove(k);
+	} else {
+	  _tree.insert(k, *old_v | v);
+	}
+      }
+    }
+  }
+  
   void set_to_bottom() {
     _is_bottom = true;
     _tree = patricia_tree_t();

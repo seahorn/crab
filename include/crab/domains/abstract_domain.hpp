@@ -121,6 +121,8 @@ public:
                      const variable_t &y, number_t k) = 0;
   // x := e
   virtual void assign(const variable_t &x, const linear_expression_t &e) = 0;
+  // join(*this, copy_of_this(x := e))
+  virtual void weak_assign(const variable_t &x, const linear_expression_t &e) = 0;
   // add all constraints \in csts
   virtual void operator+=(const linear_constraint_system_t &csts) = 0;
   // return true only if *this entails rhs
@@ -142,13 +144,21 @@ public:
   /**************************** Boolean operations ****************************/
   // lhs := rhs
   virtual void assign_bool_cst(const variable_t &lhs,
-                               const linear_constraint_t &rhs) = 0;
+                               const linear_constraint_t &rhs) = 0;  
   virtual void assign_bool_ref_cst(const variable_t &lhs,
-                                   const reference_constraint_t &rhs) = 0;
+                                   const reference_constraint_t &rhs) = 0; 
   // lhs := not(rhs) if is_not_rhs
   // lhs := rhs      otherwise
   virtual void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                bool is_not_rhs) = 0;
+
+  // join(*this, copy_of_this(lhs:=rhs))
+  virtual void weak_assign_bool_cst(const variable_t &lhs,
+				    const linear_constraint_t &rhs) = 0;
+  // join(*this, copy_of_this(lhs:=not(rhs))) if is_not_rhs
+  // join(*this, copy_of_this(lhs:=rhs))      otherwise
+  virtual void weak_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
+				    bool is_not_rhs) = 0;
   // x := y op z
   virtual void apply_binary_bool(bool_operation_t op, const variable_t &x,
                                  const variable_t &y, const variable_t &z) = 0;
