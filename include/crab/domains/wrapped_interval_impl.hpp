@@ -679,21 +679,21 @@ wrapped_interval<Number>::operator||(const wrapped_interval<Number> &x) const {
       max = wrapint(1 << (w - 2), w);
       break;
     }
-    // implicit fallthrough
+    BOOST_FALLTHROUGH;     
   case 8:
     if (w > 3) {
       max = wrapint(1 << (w - 3), w);
       break;
     }
-    // implicit fallthrough    
+    BOOST_FALLTHROUGH;     
   case 16:
     if (w > 4) {
       max = wrapint(1 << (w - 4), w);
       break;
     }
-    // implicit fallthrough    
+    BOOST_FALLTHROUGH;     
   case 2:
-    // implicit fallthrough    
+    BOOST_FALLTHROUGH;         
   default:
     assert(w > 1);
     max = wrapint(1 << (w - 1), w);
@@ -803,17 +803,21 @@ wrapped_interval<Number> wrapped_interval<Number>::widening_thresholds(
       max = wrapint(1 << (w - 2), w);
       break;
     }
+    BOOST_FALLTHROUGH; 
   case 8:
     if (w > 3) {
       max = wrapint(1 << (w - 3), w);
       break;
     }
+    BOOST_FALLTHROUGH; 
   case 16:
     if (w > 4) {
       max = wrapint(1 << (w - 4), w);
       break;
     }
+    BOOST_FALLTHROUGH; 
   case 2:
+    BOOST_FALLTHROUGH; 
   default:
     assert(w > 1);
     max = wrapint(1 << (w - 1), w);
