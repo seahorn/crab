@@ -315,8 +315,6 @@ public:
       case crab::domains::OP_UREM:
         xc = yc.URem(zc);
         break;
-      default:
-        CRAB_ERROR("Operation ", op, " not supported");
       }
       m_env.set(x, xc);
     }
@@ -353,8 +351,6 @@ public:
       case crab::domains::OP_UREM:
         xc = yc.URem(zc);
         break;
-      default:
-        CRAB_ERROR("Operation ", op, " not supported");
       }
       m_env.set(x, xc);
     }
@@ -429,12 +425,9 @@ public:
       case crab::domains::OP_LSHR:
         xc = yc.BitwiseLShr(zc);
         break;
-      case crab::domains::OP_ASHR: {
+      case crab::domains::OP_ASHR: 
         xc = yc.BitwiseAShr(zc);
         break;
-      }
-      default:
-        CRAB_ERROR("Operation ", op, " not supported");
       }
       m_env.set(x, xc);
     }
@@ -465,12 +458,9 @@ public:
       case crab::domains::OP_LSHR:
         xc = yc.BitwiseLShr(zc);
         break;
-      case crab::domains::OP_ASHR: {
+      case crab::domains::OP_ASHR: 
         xc = yc.BitwiseAShr(zc);
         break;
-      }
-      default:
-        CRAB_ERROR("Operation ", op, " not supported");
       }
       m_env.set(x, xc);
     }

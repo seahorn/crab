@@ -307,8 +307,6 @@ public:
     case OP_UREM:
       xi = yi.URem(zi);
       break;
-    default:
-      CRAB_ERROR("Operation ", op, " not supported");
     }
     this->_env.set(x, xi);
     CRAB_LOG("wrapped-int", crab::outs() << x << ":=" << y << " " << op << " "
@@ -348,8 +346,6 @@ public:
     case OP_UREM:
       xi = yi.URem(zi);
       break;
-    default:
-      CRAB_ERROR("Operation ", op, " not supported");
     }
     this->_env.set(x, xi);
     CRAB_LOG("wrapped-int", crab::outs() << x << ":=" << y << " " << op << " "
@@ -395,8 +391,6 @@ public:
         wrapped_interval_t dst_i;
         dst_i = src_i.Trunc(bits_to_keep);
       } break;
-      default:
-        CRAB_ERROR("unexpected operation: ", op);
       }
     }
     set(dst, dst_i);
@@ -414,32 +408,24 @@ public:
     wrapped_interval_t xi = wrapped_interval_t::bottom();
 
     switch (op) {
-    case OP_AND: {
+    case OP_AND: 
       xi = yi.And(zi);
       break;
-    }
-    case OP_OR: {
+    case OP_OR: 
       xi = yi.Or(zi);
       break;
-    }
-    case OP_XOR: {
+    case OP_XOR: 
       xi = yi.Xor(zi);
       break;
-    }
-    case OP_SHL: {
+    case OP_SHL: 
       xi = yi.Shl(zi);
       break;
-    }
-    case OP_LSHR: {
+    case OP_LSHR: 
       xi = yi.LShr(zi);
       break;
-    }
-    case OP_ASHR: {
+    case OP_ASHR: 
       xi = yi.AShr(zi);
       break;
-    }
-    default:
-      CRAB_ERROR("unreachable");
     }
     this->_env.set(x, xi);
   }
@@ -455,32 +441,24 @@ public:
         (x.get_type().is_integer() ? x.get_type().get_integer_bitwidth() : 0));
     wrapped_interval_t xi = wrapped_interval_t::bottom();
     switch (op) {
-    case OP_AND: {
+    case OP_AND: 
       xi = yi.And(zi);
       break;
-    }
-    case OP_OR: {
+    case OP_OR: 
       xi = yi.Or(zi);
       break;
-    }
-    case OP_XOR: {
+    case OP_XOR: 
       xi = yi.Xor(zi);
       break;
-    }
-    case OP_SHL: {
+    case OP_SHL: 
       xi = yi.Shl(zi);
       break;
-    }
-    case OP_LSHR: {
+    case OP_LSHR: 
       xi = yi.LShr(zi);
       break;
-    }
-    case OP_ASHR: {
+    case OP_ASHR: 
       xi = yi.AShr(zi);
       break;
-    }
-    default:
-      CRAB_ERROR("unreachable");
     }
     this->_env.set(x, xi);
   }

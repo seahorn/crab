@@ -300,8 +300,6 @@ void small_range::write(crab_os &o) const {
   case OneOrMore:
     o << "[1,+oo]";
     break;
-  default:
-    CRAB_ERROR("unexpected small_range value");
   }
 }
 

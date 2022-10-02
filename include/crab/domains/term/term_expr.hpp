@@ -143,8 +143,6 @@ bool term<Num, Ftor>::operator<(const term_t &other) const {
     }
     return false;
   }
-  default:
-    CRAB_ERROR("Unsupported term kind.");
   }
 }
 

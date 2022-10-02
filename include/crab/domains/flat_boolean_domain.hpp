@@ -227,8 +227,6 @@ public:
     case OP_BXOR:
       m_env.set(x, m_env.at(y).Xor(m_env.at(z)));
       break;
-    default:
-      CRAB_ERROR("Unknown boolean operator");
     }
 
     CRAB_LOG("flat-boolean", auto bx = m_env.at(x);

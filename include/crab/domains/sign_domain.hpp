@@ -434,8 +434,6 @@ public:
     case crab::domains::OP_UREM:
       xi = yi.URem(zi);
       break;
-    default:
-      CRAB_ERROR("Operation ", op, " not supported");
     }
     m_env.set(x, xi);
   }
@@ -471,8 +469,6 @@ public:
     case crab::domains::OP_UREM:
       xi = yi.URem(zi);
       break;
-    default:
-      CRAB_ERROR("Operation ", op, " not supported");
     }
     m_env.set(x, xi);
   }
@@ -531,32 +527,24 @@ public:
     sign_t xi = sign_t::bottom();
 
     switch (op) {
-    case crab::domains::OP_AND: {
+    case crab::domains::OP_AND: 
       xi = yi.And(zi);
       break;
-    }
-    case crab::domains::OP_OR: {
+    case crab::domains::OP_OR: 
       xi = yi.Or(zi);
       break;
-    }
-    case crab::domains::OP_XOR: {
+    case crab::domains::OP_XOR: 
       xi = yi.Xor(zi);
       break;
-    }
-    case crab::domains::OP_SHL: {
+    case crab::domains::OP_SHL: 
       xi = yi.Shl(zi);
       break;
-    }
-    case crab::domains::OP_LSHR: {
+    case crab::domains::OP_LSHR: 
       xi = yi.LShr(zi);
       break;
-    }
-    case crab::domains::OP_ASHR: {
+    case crab::domains::OP_ASHR: 
       xi = yi.AShr(zi);
       break;
-    }
-    default:
-      CRAB_ERROR("unreachable");
     }
     m_env.set(x, xi);
   }
@@ -571,32 +559,24 @@ public:
     sign_t xi = sign_t::bottom();
 
     switch (op) {
-    case crab::domains::OP_AND: {
+    case crab::domains::OP_AND: 
       xi = yi.And(zi);
       break;
-    }
-    case crab::domains::OP_OR: {
+    case crab::domains::OP_OR: 
       xi = yi.Or(zi);
       break;
-    }
-    case crab::domains::OP_XOR: {
+    case crab::domains::OP_XOR: 
       xi = yi.Xor(zi);
       break;
-    }
-    case crab::domains::OP_SHL: {
+    case crab::domains::OP_SHL: 
       xi = yi.Shl(zi);
       break;
-    }
-    case crab::domains::OP_LSHR: {
+    case crab::domains::OP_LSHR: 
       xi = yi.LShr(zi);
       break;
-    }
-    case crab::domains::OP_ASHR: {
+    case crab::domains::OP_ASHR: 
       xi = yi.AShr(zi);
       break;
-    }
-    default:
-      CRAB_ERROR("unreachable");
     }
     m_env.set(x, xi);
   }
