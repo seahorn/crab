@@ -10,7 +10,6 @@
 
 /*
  * Hash table backed implementation of a sparse, weighted graph.
- * Trades some time penalty for much lower memory consumption.
  */
 namespace crab {
 

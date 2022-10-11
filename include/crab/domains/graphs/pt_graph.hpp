@@ -7,11 +7,15 @@
 
 #include <vector>
 
-/* Patricia-tree backed sparse weighted graph.
+/*
+ * Patricia-tree backed sparse weighted graph.
  * Trades some time penalty for much lower memory consumption.
  *
- * Part of this time penalty is because we cannot take a reference to
- * a weight stored in the patricia tree.
+ * This is an implementation of a "persistent" graph, meaning that
+ * after a graph update the new and old version share all the common
+ * nodes and edges (i.e., structural sharing) between them. This is
+ * what it makes this implementation very memory efficient. The price
+ * to pay is that the lookups are done in logarithmic time.
  */
 namespace crab {
 
@@ -25,8 +29,8 @@ public:
     const graph_t *g;
     vert_id s;
     vert_id d;
-    // Expensive with patricia trees because we cannot store a
-    // reference
+    // potentially expensive with patricia trees because we cannot
+    // store a reference
     Wt w;
 
   public:
@@ -186,12 +190,7 @@ public:
 
   PtGraph() : edge_count(0), _succs(), _preds(), is_free(), free_id() {}
 
-  template <class Wo> PtGraph(const PtGraph<Wo> &o) : edge_count(0) {
-    for (vert_id v : o.verts())
-      for (vert_id d : o.succs(v))
-        add_edge(v, o.edge_val(v, d), d);
-  }
-
+  // PtGraph is a persistent graph so the copy is cheap.
   PtGraph(const PtGraph<Wt> &o)
       : edge_count(o.edge_count), _succs(o._succs), _preds(o._preds),
         is_free(o.is_free), free_id(o.free_id) {}
@@ -203,47 +202,32 @@ public:
     o.edge_count = 0;
   }
 
+  // PtGraph is a persistent graph so the assignment is cheap  
   PtGraph &operator=(const PtGraph<Wt> &o) {
-    if ((&o) == this)
-      return *this;
-
-    edge_count = o.edge_count;
-    _succs = o._succs;
-    _preds = o._preds;
-    is_free = o.is_free;
-    free_id = o.free_id;
-
+    if (this != &o) {
+      edge_count = o.edge_count;
+      _succs = o._succs;
+      _preds = o._preds;
+      is_free = o.is_free;
+      free_id = o.free_id;
+    }
     return *this;
   }
 
   PtGraph &operator=(PtGraph<Wt> &&o) {
-    edge_count = o.edge_count;
-    _succs = std::move(o._succs);
-    _preds = std::move(o._preds);
-    is_free = std::move(o.is_free);
-    free_id = std::move(o.free_id);
+    if (this != &o) {
+      edge_count = o.edge_count;
+      _succs = std::move(o._succs);
+      _preds = std::move(o._preds);
+      is_free = std::move(o.is_free);
+      free_id = std::move(o.free_id);
+    }
 
     return *this;
   }
 
-  // void check_adjs(void) {
-  //   for(vert_id v : verts()) {
-  //     assert(succs(v).size() <= _succs.size());
-  //     for(vert_id s : succs(v)) {
-  //       assert(s < _succs.size());
-  //       assert(preds(s).mem(v));
-  //     }
-  //     assert(preds(v).size() <= _succs.size());
-  //     for(vert_id p : preds(v)) {
-  //       assert(p < _succs.size());
-  //       assert(succs(p).mem(v));
-  //     }
-  //   }
-  // }
-
   ~PtGraph() {}
 
-  // GKG: Can do this more efficiently
   template <class G> static graph_t copy(G &g) {
     graph_t ret;
     ret.growTo(g.size());
@@ -253,7 +237,6 @@ public:
         ret.add_edge(s, g.edge_val(s, d), d);
       }
     }
-
     return ret;
   }
 
@@ -360,6 +343,10 @@ public:
     } else {
       // Expensive with patricia trees because it requires
       // lookup+insert
+      // 
+      // TODO: extend patricia tree API to insert a new pair key-value
+      // if some user-given binary predicate holds on the old and new
+      // value associated to the key
       if (w < edge_val(s, d)) {
         _succs[s].insert(vert_idx(d), w);
       }
