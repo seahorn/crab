@@ -1080,7 +1080,7 @@ private:
     CRAB_LOG("inter-restrict", errs() << "Inv after formal/actual unification: "
                                       << caller_dom << "\n";);
     // Meet
-    callee_dom = caller_dom & callee_dom;
+    callee_dom &= caller_dom;
     CRAB_LOG("inter-restrict",
              errs() << "Inv after meet with callee  " << callee_dom << "\n";);
     // project onto **input** formal parameters
@@ -1236,7 +1236,7 @@ private:
                                   << "CALLEE:" << sum_out_dom << "\n";);
 
     // Meet with the caller
-    caller_dom = caller_dom & sum_out_dom;
+    caller_dom &= sum_out_dom;
 
     CRAB_LOG("inter-extend", crab::outs() << caller_dom << "\n";);
     return caller_dom;
