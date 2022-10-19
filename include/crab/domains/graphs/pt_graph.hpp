@@ -23,7 +23,7 @@ template <class Weight> class PtGraph {
 public:
   using Wt = Weight;
   using graph_t = PtGraph<Wt>;
-  using vert_id = typename graph_iterators::vert_id;
+  using vert_id = graph_iterators::vert_id;
 
   class wt_ref_t {
     const graph_t *g;

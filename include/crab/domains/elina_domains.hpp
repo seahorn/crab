@@ -57,7 +57,6 @@ public:
 #include <algorithm>
 #include <boost/bimap.hpp>
 #include <boost/optional.hpp>
-#include <type_traits>
 
 /**
  * If template parameter Number is ikos::q_number then the Elina

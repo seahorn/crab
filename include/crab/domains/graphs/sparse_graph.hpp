@@ -15,7 +15,7 @@ template <class Weight> class SparseWtGraph {
 public:
   using Wt = Weight;
   using graph_t = SparseWtGraph<Wt>;
-  using vert_id = typename graph_iterators::vert_id;
+  using vert_id = graph_iterators::vert_id;
   using wt_ref_t = crab::reference_wrapper<const Wt>;
 
 private:

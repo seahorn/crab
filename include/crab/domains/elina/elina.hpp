@@ -1,5 +1,7 @@
 #pragma once
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
 #include "elina_abstract0.h"
 #include "elina_coeff.h"
 #include "elina_dimension.h"
@@ -13,6 +15,7 @@
 #include "opt_oct.h"
 #include "opt_pk.h"
 #include "opt_zones.h"
+#pragma GCC diagnostic pop
 
 #include <boost/shared_ptr.hpp>
 

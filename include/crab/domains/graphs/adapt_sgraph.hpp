@@ -17,7 +17,7 @@ template <class Weight> class AdaptGraph {
   using smap_t = AdaptSMap<size_t>;
 
 public:
-  using vert_id = unsigned int;
+  using vert_id = graph_iterators::vert_id;
   using Wt = Weight;
   using wt_ref_t = crab::reference_wrapper<const Wt>;
 
