@@ -306,8 +306,8 @@ endif ()
 #------- Create CRAB_LIBS and CRAB_INCLUDE_DIRS for Crab clients -------#
 set (CRAB_DEPS_LIBS
   ${LDD_LIBRARY} 
-  ${APRON_LIBRARY}
   ${PPLITE_LIBRARY}
+  ${APRON_LIBRARY}
   ${FLINT_LIBRARY}
   ${ELINA_LIBRARY}
   ${MPFR_LIBRARIES} 
