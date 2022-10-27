@@ -7,6 +7,9 @@
 /** Define whether apron library is available */
 #cmakedefine HAVE_APRON ${HAVE_APRON}
 
+/** Define whether pplite library is available */
+#cmakedefine HAVE_PPLITE ${HAVE_PPLITE}
+
 /** Define whether elina library is available */
 #cmakedefine HAVE_ELINA ${HAVE_ELINA}
 
