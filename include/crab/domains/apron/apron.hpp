@@ -6,6 +6,10 @@
 #include "pk.h"
 #include "pkeq.h"
 
+#ifdef HAVE_PPLITE
+#include "ap_pplite.h"
+#endif
+
 #include <memory>
 
 namespace crab {
