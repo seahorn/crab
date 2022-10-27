@@ -330,6 +330,10 @@ int main(int argc, char **argv) {
       z_pk_apron_domain_t init;
       run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     }
+    {
+      z_poly_pplite_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
     delete cfg;
   }
 #endif
