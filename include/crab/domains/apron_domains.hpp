@@ -1642,6 +1642,29 @@ public:
 
   disjunctive_linear_constraint_system_t
   to_disjunctive_linear_constraint_system() const override {
+#ifdef HAVE_PPLITE
+    // Ad-hoc handling for PSet (which is disjunctive).
+    if (ApronDom == APRON_PPLITE_PSET) {
+      if (is_bottom()) {
+        return disjunctive_linear_constraint_system_t(true /*is_false*/);
+      } else if (is_top()) {
+        return disjunctive_linear_constraint_system_t(false /*is_false*/);
+      } else {
+        auto pset = &*m_apstate;
+        auto num_disj = ap_pplite_poly_num_disjuncts(s_apman, pset);
+        auto res = disjunctive_linear_constraint_system_t(false /*is_false*/);
+        for (auto d = 0; d < num_disj; ++d) {
+          auto lc_arr = ap_pplite_poly_disj_to_lincons_array(s_apman, pset, d);
+          linear_constraint_system_t csts;
+          for (unsigned i = 0; i < lc_arr.size; i++)
+            csts += tconst2const(lc_arr.p[i]);
+          ap_lincons0_array_clear(&lc_arr);
+          res += csts;
+        }
+        return res;
+      }
+    }
+#endif // HAVE_PPLITE
     auto lin_csts = to_linear_constraint_system();
     if (lin_csts.is_false()) {
       return disjunctive_linear_constraint_system_t(true /*is_false*/);
@@ -1779,6 +1802,14 @@ public:
       return;
     } else {
       // dump();
+#ifdef HAVE_PPLITE
+      // Ad-hoc handling for PSet (which is disjunctive).
+      if (ApronDom == APRON_PPLITE_PSET) {
+        auto inv = to_disjunctive_linear_constraint_system();
+        o << inv;
+        return;
+      }
+#endif
       linear_constraint_system_t inv = to_linear_constraint_system();
       o << inv;
     }
