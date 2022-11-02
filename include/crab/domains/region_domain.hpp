@@ -140,17 +140,19 @@ private:
   using ghost_variables_t = typename ghost_var_man_t::ghost_variables_t;
   using ghost_variable_kind = typename ghost_variables_t::ghost_variable_kind;
   // Environment to keep simple finite properties about regions
-  using rgn_env_t = ikos::separate_domain<variable_t, region_domain_impl::region_info>;
+  using rgn_env_t =
+      ikos::separate_domain<variable_t, region_domain_impl::region_info>;
   // Union-find where equivalence classes are attached to boolean values
   using rgn_equiv_classes_t = union_find_domain<variable_t, boolean_value>;
   // Map each reference or region variable to a set of allocation sites
-  using alloc_site_env_t = separate_discrete_domain<variable_t, allocation_site>;
+  using alloc_site_env_t =
+      separate_discrete_domain<variable_t, allocation_site>;
   using allocation_sites = typename alloc_site_env_t::mapped_type;
   // Map variables to sets of tags
   using tag_t = region_domain_impl::tag<number_t>;
   using tag_env_t = separate_discrete_domain<variable_t, tag_t>;
   using tag_set = typename tag_env_t::mapped_type;
-  
+
   static_assert(
       std::is_same<typename Params::number_t,
                    typename Params::base_abstract_domain_t::number_t>::value,
@@ -163,7 +165,6 @@ private:
       "Either region and base domain uses the same variable factory or base "
       "domain uses Params::varname_allocator_t");
 
-  
   bool m_is_bottom; // special symbol for bottom
   /** Begin base domain **/
   // Proxy to deal with m_base_dom.
@@ -186,7 +187,7 @@ private:
   tag_env_t m_tag_env;
   // Allocation analysis: map each reference to its set of possible
   // allocation sites.
-  // 
+  //
   // It also maps each region variable to the union of all possible
   // allocation sites from all possible references stored in that
   // region. Regions need to be tracked because references are stored
@@ -202,7 +203,7 @@ private:
   //                                       and rgn2.
   //
   // This partitioning is used to reason about deallocations.
-  // 
+  //
   // Deallocation analysis: keep track of whether some memory within a
   // region has been deallocated. For this, we need to know which
   // regions might belong to the same allocated memory object.  Each
@@ -217,14 +218,12 @@ private:
   rgn_equiv_classes_t m_rgn_equiv_classes;
 
   region_domain(ghost_var_man_t &&ghost_var_man, rgn_env_t &&rgn_env,
-                base_abstract_domain_t &&base_dom,
-                alloc_site_env_t &&alloc_env,
+                base_abstract_domain_t &&base_dom, alloc_site_env_t &&alloc_env,
                 rgn_equiv_classes_t &&rgn_equiv_classes, tag_env_t &&tag_env)
       : m_is_bottom(base_dom.is_bottom()),
         m_ghost_var_man(std::move(ghost_var_man)),
-        m_base_dom(std::move(base_dom)),
-        m_rgn_env(std::move(rgn_env)), m_tag_env(std::move(tag_env)),
-        m_alloc_env(std::move(alloc_env)),
+        m_base_dom(std::move(base_dom)), m_rgn_env(std::move(rgn_env)),
+        m_tag_env(std::move(tag_env)), m_alloc_env(std::move(alloc_env)),
         m_rgn_equiv_classes(std::move(rgn_equiv_classes)) {}
 
   using base_dom_binop_t = std::function<base_abstract_domain_t(
@@ -263,15 +262,15 @@ private:
 
   // Return true if a region variable is initialized on the right but
   // uninitialized on the left.
-  bool
-  can_propagate_initialized_regions(const rgn_env_t &left_rgn_env,
-                                    const rgn_env_t &right_rgn_env,
-                                    variable_vector_t &out) const {
+  bool can_propagate_initialized_regions(const rgn_env_t &left_rgn_env,
+                                         const rgn_env_t &right_rgn_env,
+                                         variable_vector_t &out) const {
     bool propagate = false;
     for (auto kv : left_rgn_env) {
       const variable_t &v = kv.first;
       const boolean_value &left_init_val = kv.second.init_val();
-      if (left_init_val.is_false() /*&& right_rgn_env.at(v).init_val().is_true()*/) {
+      if (left_init_val
+              .is_false() /*&& right_rgn_env.at(v).init_val().is_true()*/) {
         out.push_back(v);
         propagate = true;
       }
@@ -284,7 +283,7 @@ private:
     rgn_env_t out_rgn_env(m_rgn_env | right.m_rgn_env);
     alloc_site_env_t out_alloc_env(m_alloc_env | right.m_alloc_env);
     rgn_equiv_classes_t out_rgn_equiv_classes(m_rgn_equiv_classes |
-					      right.m_rgn_equiv_classes);
+                                              right.m_rgn_equiv_classes);
     tag_env_t out_tag_env(m_tag_env | right.m_tag_env);
 
     if (ghost_var_man_t::need_renaming()) {
@@ -311,9 +310,8 @@ private:
                                       base_dom_binop_t base_dom_op) const {
 
     // rgn_env does not require common renaming
-    rgn_env_t out_rgn_env(
-        is_join ? (left.m_rgn_env | right.m_rgn_env)
-                : (left.m_rgn_env || right.m_rgn_env));
+    rgn_env_t out_rgn_env(is_join ? (left.m_rgn_env | right.m_rgn_env)
+                                  : (left.m_rgn_env || right.m_rgn_env));
 
     // tag_env does not require common renaming (i.e., no ghost
     // variables).  The domain is finite
@@ -326,7 +324,7 @@ private:
     // rgn_equiv_classes does not require common renaming (i.e., no
     // ghost variables).  The domain is finite
     rgn_equiv_classes_t out_rgn_equiv_classes(left.m_rgn_equiv_classes |
-                                      right.m_rgn_equiv_classes);
+                                              right.m_rgn_equiv_classes);
 
     if (ghost_var_man_t::need_renaming()) {
       base_abstract_domain_t left_dom(left.m_base_dom);
@@ -354,15 +352,14 @@ private:
                                        const bool is_meet,
                                        base_dom_binop_t base_dom_op) const {
 
-    rgn_env_t out_rgn_env(
-        is_meet ? (left.m_rgn_env & right.m_rgn_env)
-                : (left.m_rgn_env && right.m_rgn_env));
+    rgn_env_t out_rgn_env(is_meet ? (left.m_rgn_env & right.m_rgn_env)
+                                  : (left.m_rgn_env && right.m_rgn_env));
 
     // these domains are finite
     tag_env_t out_tag_env(left.m_tag_env & right.m_tag_env);
     alloc_site_env_t out_alloc_env(left.m_alloc_env & right.m_alloc_env);
     rgn_equiv_classes_t out_rgn_equiv_classes(left.m_rgn_equiv_classes &
-					      right.m_rgn_equiv_classes);
+                                              right.m_rgn_equiv_classes);
 
     // This shouldn't happen but just in case ...
     if (out_rgn_env.is_bottom() || out_rgn_equiv_classes.is_bottom() ||
@@ -463,7 +460,7 @@ private:
 
   base_linear_constraint_t
   convert_ref_cst_to_linear_cst(const reference_constraint_t &ref_cst,
-				ghost_variable_kind kind) {
+                                ghost_variable_kind kind) {
     return m_ghost_var_man.ghosting_ref_cst_to_linear_cst(ref_cst, kind);
   }
 
@@ -642,8 +639,7 @@ public:
   region_domain(region_domain_t &&o)
       : m_is_bottom(o.m_is_bottom),
         m_ghost_var_man(std::move(o.m_ghost_var_man)),
-        m_base_dom(std::move(o.m_base_dom)),
-        m_rgn_env(std::move(o.m_rgn_env)),
+        m_base_dom(std::move(o.m_base_dom)), m_rgn_env(std::move(o.m_rgn_env)),
         m_tag_env(std::move(o.m_tag_env)),
         m_alloc_env(std::move(o.m_alloc_env)),
         m_rgn_equiv_classes(std::move(o.m_rgn_equiv_classes)) {}
@@ -757,7 +753,7 @@ public:
       return;
     } else if (o.is_bottom()) {
       return;
-    } else if (is_top() | o.is_top()) {
+    } else if (is_top() || o.is_top()) {
       set_to_top();
       return;
     }
@@ -774,8 +770,8 @@ public:
     /// in general.
 
     variable_vector_t left_regions, right_regions;
-    bool refine_left = can_propagate_initialized_regions(
-        m_rgn_env, o.m_rgn_env, left_regions);
+    bool refine_left =
+        can_propagate_initialized_regions(m_rgn_env, o.m_rgn_env, left_regions);
     bool refine_right = can_propagate_initialized_regions(
         o.m_rgn_env, m_rgn_env, right_regions);
 
@@ -783,20 +779,20 @@ public:
     /// we cannot improve invariants on the right operand we avoid
     /// making a copy of it.
     if (refine_left && !refine_right) {
-      m_ghost_var_man.merge(left_regions, o.m_ghost_var_man,
-			    m_base_dom, o.m_base_dom);
+      m_ghost_var_man.merge(left_regions, o.m_ghost_var_man, m_base_dom,
+                            o.m_base_dom);
       do_join(o);
     } else if (!refine_left && refine_right) {
       region_domain_t right(o);
       right.m_ghost_var_man.merge(right_regions, m_ghost_var_man,
-				  right.m_base_dom, m_base_dom);
+                                  right.m_base_dom, m_base_dom);
       do_join(right);
     } else if (refine_left && refine_right) {
       region_domain_t right(o);
-      m_ghost_var_man.merge(left_regions, right.m_ghost_var_man,
-			    m_base_dom, right.m_base_dom);
+      m_ghost_var_man.merge(left_regions, right.m_ghost_var_man, m_base_dom,
+                            right.m_base_dom);
       right.m_ghost_var_man.merge(right_regions, m_ghost_var_man,
-				  right.m_base_dom, m_base_dom);
+                                  right.m_base_dom, m_base_dom);
       do_join(right);
     } else {
       do_join(o);
@@ -814,7 +810,7 @@ public:
       return o;
     } else if (o.is_bottom()) {
       return *this;
-    } else if (is_top() | o.is_top()) {
+    } else if (is_top() || o.is_top()) {
       region_domain_t abs;
       abs.set_to_top();
       return abs;
@@ -836,8 +832,8 @@ public:
     /// in general
 
     variable_vector_t left_regions, right_regions;
-    bool refine_left = can_propagate_initialized_regions(
-        m_rgn_env, o.m_rgn_env, left_regions);
+    bool refine_left =
+        can_propagate_initialized_regions(m_rgn_env, o.m_rgn_env, left_regions);
     bool refine_right = can_propagate_initialized_regions(
         o.m_rgn_env, m_rgn_env, right_regions);
 
@@ -849,7 +845,7 @@ public:
       /// Refine left by propagating information from right's regions
       region_domain_t left(*this);
       left.m_ghost_var_man.merge(left_regions, o.m_ghost_var_man,
-				 left.m_base_dom, o.m_base_dom);
+                                 left.m_base_dom, o.m_base_dom);
       region_domain_t res(std::move(
           do_join_or_widening(left, o, true /*is join*/, base_dom_op)));
       CRAB_LOG("region", crab::outs() << "Result=" << res << "\n");
@@ -858,7 +854,7 @@ public:
       /// Refine right by propagating information from left's regions
       region_domain_t right(o);
       right.m_ghost_var_man.merge(right_regions, m_ghost_var_man,
-				  right.m_base_dom, m_base_dom);
+                                  right.m_base_dom, m_base_dom);
       region_domain_t res(std::move(
           do_join_or_widening(*this, right, true /*is join*/, base_dom_op)));
       CRAB_LOG("region", crab::outs() << "Result=" << res << "\n");
@@ -869,10 +865,9 @@ public:
       region_domain_t left(*this);
       region_domain_t right(o);
       left.m_ghost_var_man.merge(left_regions, right.m_ghost_var_man,
-				 left.m_base_dom, right.m_base_dom);
-      right.m_ghost_var_man.merge(right_regions,
-				  left.m_ghost_var_man,
-				  right.m_base_dom, left.m_base_dom);
+                                 left.m_base_dom, right.m_base_dom);
+      right.m_ghost_var_man.merge(right_regions, left.m_ghost_var_man,
+                                  right.m_base_dom, left.m_base_dom);
       region_domain_t res(std::move(
           do_join_or_widening(left, right, true /*is join*/, base_dom_op)));
       CRAB_LOG("region", crab::outs() << "Result=" << res << "\n");
@@ -914,7 +909,7 @@ public:
     // TODO: improve this by avoiding the copy of the left operand.
     *this = *this & o;
   }
-  
+
   region_domain_t operator||(const region_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
@@ -1181,13 +1176,12 @@ public:
     if (!src_rgn.get_type().is_unknown_region()) {
       assert(dst_rgn.get_type().is_unknown_region());
 
-      m_rgn_env.set(dst_rgn, region_domain_impl::region_info(
-                                      src_rgn_info.refcount_val(),
-                                      src_rgn_info.init_val(),
-                                      type_value(src_rgn.get_type())));
+      m_rgn_env.set(dst_rgn,
+                    region_domain_impl::region_info(
+                        src_rgn_info.refcount_val(), src_rgn_info.init_val(),
+                        type_value(src_rgn.get_type())));
 
-      region_domain_impl::region_info old_dst_rgn_info =
-          m_rgn_env.at(dst_rgn);
+      region_domain_impl::region_info old_dst_rgn_info = m_rgn_env.at(dst_rgn);
       const type_value &dst_dyn_type = old_dst_rgn_info.type_val();
       if (!has_dynamic_type(dst_rgn, dst_dyn_type)) {
         // skip assign ghost variables
@@ -1206,10 +1200,10 @@ public:
       assert(src_rgn.get_type().is_unknown_region());
       assert(!dst_rgn.get_type().is_unknown_region());
 
-      m_rgn_env.set(dst_rgn, region_domain_impl::region_info(
-                                      src_rgn_info.refcount_val(),
-                                      src_rgn_info.init_val(),
-                                      type_value(dst_rgn.get_type())));
+      m_rgn_env.set(dst_rgn,
+                    region_domain_impl::region_info(
+                        src_rgn_info.refcount_val(), src_rgn_info.init_val(),
+                        type_value(dst_rgn.get_type())));
 
       if (!has_dynamic_type(src_rgn, src_rgn_info.type_val())) {
         // skip assign ghost variables
@@ -1248,8 +1242,7 @@ public:
 
     // Update region counting
     auto old_rgn_info = m_rgn_env.at(rgn);
-    m_rgn_env.set(rgn,
-                       region_domain_impl::region_info(
+    m_rgn_env.set(rgn, region_domain_impl::region_info(
                            old_rgn_info.refcount_val().increment(),
                            old_rgn_info.init_val(), old_rgn_info.type_val()));
 
@@ -1393,11 +1386,13 @@ public:
     const small_range &num_refs = rgn_info.refcount_val();
     if (num_refs.is_zero() || num_refs.is_one()) {
       if (num_refs.is_zero()) {
-	// We consider that if the region has a zero refcounter then
-	// we can perform strong read. This might be unsound so at
-	// least we print a warning.	
-	CRAB_WARN(domain_name(), "::ref_load from a region with zero refcounter. "
-		  "Perhaps region objects are allocated outside the code under analysis."); 
+        // We consider that if the region has a zero refcounter then
+        // we can perform strong read. This might be unsound so at
+        // least we print a warning.
+        CRAB_WARN(domain_name(),
+                  "::ref_load from a region with zero refcounter. "
+                  "Perhaps region objects are allocated outside the code under "
+                  "analysis.");
       }
       // strong read
       CRAB_LOG("region-load", crab::outs() << "Reading from singleton\n";);
@@ -1578,13 +1573,15 @@ public:
     //
     if (is_uninitialized_rgn || num_refs.is_zero() || num_refs.is_one()) {
       if (num_refs.is_zero()) {
-	// We consider that if the region has a zero refcounter then
-	// we can perform strong update. This might be unsound so at
-	// least we print a warning.	
-	CRAB_WARN(domain_name(), "::ref_store from a region with zero refcounter. "
-		  "Perhaps region objects are allocated outside the code under analysis."); 
+        // We consider that if the region has a zero refcounter then
+        // we can perform strong update. This might be unsound so at
+        // least we print a warning.
+        CRAB_WARN(domain_name(),
+                  "::ref_store from a region with zero refcounter. "
+                  "Perhaps region objects are allocated outside the code under "
+                  "analysis.");
       }
-      
+
       /* strong update */
       CRAB_LOG("region-store", crab::outs() << "Performing strong update\n";);
 
@@ -1623,8 +1620,7 @@ public:
       if (crab_domain_params_man::get().region_allocation_sites()) {
         if (val.get_type().is_reference()) {
           if (val.is_variable()) {
-            m_alloc_env.set(rgn,
-                                 m_alloc_env.at(rgn) |
+            m_alloc_env.set(rgn, m_alloc_env.at(rgn) |
                                      m_alloc_env.at(val.get_variable()));
           }
         }
@@ -1685,10 +1681,10 @@ public:
       if (!(rgn1 == rgn2 && (eval(offset) == (number_t(0))))) {
         // Update region counting
         auto old_rgn2_info = m_rgn_env.at(rgn2);
-        m_rgn_env.set(rgn2, region_domain_impl::region_info(
-                                     old_rgn2_info.refcount_val().increment(),
-                                     old_rgn2_info.init_val(),
-                                     old_rgn2_info.type_val()));
+        m_rgn_env.set(rgn2,
+                      region_domain_impl::region_info(
+                          old_rgn2_info.refcount_val().increment(),
+                          old_rgn2_info.init_val(), old_rgn2_info.type_val()));
       }
 
       if (crab_domain_params_man::get().region_allocation_sites()) {
@@ -1739,72 +1735,71 @@ public:
     if (is_bottom()) {
       return;
     }
-    
+
     if (ref_cst.is_tautology()) {
       return;
     }
-    
+
     if (ref_cst.is_contradiction()) {
       set_to_bottom();
       return;
     }
 
-    
     if (crab_domain_params_man::get().region_allocation_sites()) {
       if (ref_cst.is_equality() && ref_cst.is_binary()) {
-	auto lhs_as = m_alloc_env.at(ref_cst.lhs());
-	auto rhs_as = m_alloc_env.at(ref_cst.rhs());
-	/** 
-	 * Important note about soundness: if the program
-	 * environment is not modeled precisely enough we can
-	 * conclude *incorrectly* that p == q is definitely not
-	 * true. At least here, we skip the cases where either p or
-	 * q does not have at least one allocation site.
-	 **/
-	if (!lhs_as.is_bottom() && !rhs_as.is_bottom()) {
-	  allocation_sites inter = lhs_as & rhs_as;
-	  if (inter.is_bottom()) {
-	    // if they do not have any common allocation site then
-	    // they cannot be the same address.
-	    set_to_bottom();
-	    return;
-	  }
-	  // If ref_cst is a disequality we cannot make the state
-	  // bottom by looking only at allocation sites. Even if
-	  // both references point to the same allocation site they
-	  // can still be different.
-	}
+        auto lhs_as = m_alloc_env.at(ref_cst.lhs());
+        auto rhs_as = m_alloc_env.at(ref_cst.rhs());
+        /**
+         * Important note about soundness: if the program
+         * environment is not modeled precisely enough we can
+         * conclude *incorrectly* that p == q is definitely not
+         * true. At least here, we skip the cases where either p or
+         * q does not have at least one allocation site.
+         **/
+        if (!lhs_as.is_bottom() && !rhs_as.is_bottom()) {
+          allocation_sites inter = lhs_as & rhs_as;
+          if (inter.is_bottom()) {
+            // if they do not have any common allocation site then
+            // they cannot be the same address.
+            set_to_bottom();
+            return;
+          }
+          // If ref_cst is a disequality we cannot make the state
+          // bottom by looking only at allocation sites. Even if
+          // both references point to the same allocation site they
+          // can still be different.
+        }
       }
     }
 
-    /** 
+    /**
      * Having any constraint on p and q implies that the same
      * constraint applies on address(p) and address(q).
      **/
     auto addr_lin_csts =
-      convert_ref_cst_to_linear_cst(ref_cst, ghost_variable_kind::ADDRESS);
+        convert_ref_cst_to_linear_cst(ref_cst, ghost_variable_kind::ADDRESS);
     m_base_dom += addr_lin_csts;
     m_is_bottom = m_base_dom.is_bottom();
-    
-    /** 
+
+    /**
      * Having p relop q (where relop is not equality) DOESN'T
      * imply that relop holds on offset(p) and offset(q) EXCEPT if
      * p and q are known to point to the same singleton memory
      * object.
-     **/      
+     **/
     if (!m_is_bottom && ref_cst.is_equality()) {
       auto offset_lin_csts =
-	convert_ref_cst_to_linear_cst(ref_cst, ghost_variable_kind::OFFSET);
+          convert_ref_cst_to_linear_cst(ref_cst, ghost_variable_kind::OFFSET);
       m_base_dom += offset_lin_csts;
       m_is_bottom = m_base_dom.is_bottom();
     }
-    
+
     if (!m_is_bottom && ref_cst.is_equality()) {
       auto size_lin_csts =
-	convert_ref_cst_to_linear_cst(ref_cst, ghost_variable_kind::SIZE);
+          convert_ref_cst_to_linear_cst(ref_cst, ghost_variable_kind::SIZE);
       m_base_dom += size_lin_csts;
       m_is_bottom = m_base_dom.is_bottom();
-    } 
+    }
 
     CRAB_LOG("region", crab::outs() << "Result=" << *this << "\n";);
   }
@@ -1856,8 +1851,7 @@ public:
 
       // Update region counting
       auto old_rgn_info = m_rgn_env.at(rgn);
-      m_rgn_env.set(rgn,
-                         region_domain_impl::region_info(
+      m_rgn_env.set(rgn, region_domain_impl::region_info(
                              old_rgn_info.refcount_val().increment(),
                              old_rgn_info.init_val(), old_rgn_info.type_val()));
     }
@@ -1992,7 +1986,7 @@ public:
     }
   }
 
-  #if 0
+#if 0
   // not part of the numerical_domains api but it should be  
   void set(const variable_t &x, interval_t intv) {
     crab::CrabStats::count(domain_name() + ".count.assign");
@@ -2010,8 +2004,8 @@ public:
       }
     }
   }
-  #endif
-  
+#endif
+
   interval_t operator[](const variable_t &x) override {
     if (is_bottom()) {
       return interval_t::bottom();
@@ -2134,7 +2128,8 @@ public:
         }
       }
 
-      auto b_rhs = convert_ref_cst_to_linear_cst(rhs, ghost_variable_kind::ADDRESS);
+      auto b_rhs =
+          convert_ref_cst_to_linear_cst(rhs, ghost_variable_kind::ADDRESS);
       m_base_dom.assign_bool_cst(get_or_insert_gvars(lhs).get_var(), b_rhs);
 
       if (crab_domain_params_man::get().region_tag_analysis()) {
@@ -2219,7 +2214,8 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".backward_assign_bool_cst");
 
     if (!is_bottom()) {
-      auto b_rhs = convert_ref_cst_to_linear_cst(rhs, ghost_variable_kind::ADDRESS);
+      auto b_rhs =
+          convert_ref_cst_to_linear_cst(rhs, ghost_variable_kind::ADDRESS);
       m_base_dom.backward_assign_bool_cst(get_or_insert_gvars(lhs).get_var(),
                                           b_rhs, invariant.m_base_dom);
       if (crab_domain_params_man::get().region_tag_analysis()) {
@@ -2914,8 +2910,8 @@ public:
       o << "{}";
     } else {
       CRAB_LOG(
-          "region-print",
-	  o << "(" << "RegionInfo=" << m_rgn_env;
+          "region-print", o << "("
+                            << "RegionInfo=" << m_rgn_env;
           if (crab_domain_params_man::get().region_allocation_sites()) {
             o << ","
               << "AllocSites=" << m_alloc_env;
@@ -2925,33 +2921,31 @@ public:
           } if (crab_domain_params_man::get().region_tag_analysis()) {
             o << ","
               << "Tags=" << m_tag_env;
-	  }
-	  o << "," << "BaseDom=" << m_base_dom  << ")\n";
-	  return;
-	       );	       
-	  
+          } o
+          << ","
+          << "BaseDom=" << m_base_dom << ")\n";
+          return;);
+
       CRAB_LOG(
-	  "region-print-debug",	       
-	  /// This format is understood by Clam debugging scripts such
-	  /// as read_assertions.py.
-	  o << "(" 
-	  << "RgnCounter="
-	  << "{";
-	  for(auto it = m_rgn_env.begin(), et = m_rgn_env.end(); it!=et;) {
-	    o << it->first  << " -> " << it->second.refcount_val();
-	    ++it;
-	    if (it != et) {
-	      o << ";";
-	    }	  
-	  }
-	  o << "}," << "BaseDom=";
-	  
-	  // We ask the ghost manager to print the base domain so that it
-	  // can rename ghost variables to user-friendly names.
-	  m_ghost_var_man.write(o, m_base_dom);
-	  o << ")";
-	  return;
-	       );      
+          "region-print-debug",
+          /// This format is understood by Clam debugging scripts such
+          /// as read_assertions.py.
+          o << "("
+            << "RgnCounter="
+            << "{";
+          for (auto it = m_rgn_env.begin(), et = m_rgn_env.end(); it != et;) {
+            o << it->first << " -> " << it->second.refcount_val();
+            ++it;
+            if (it != et) {
+              o << ";";
+            }
+          } o
+          << "},"
+          << "BaseDom=";
+
+          // We ask the ghost manager to print the base domain so that it
+          // can rename ghost variables to user-friendly names.
+          m_ghost_var_man.write(o, m_base_dom); o << ")"; return;);
 
       // We ask the ghost manager to print the base domain so that it
       // can rename ghost variables to user-friendly names.
