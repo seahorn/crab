@@ -27,11 +27,15 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}  "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 #--------------- Crab Options ---------------------#
 option(CRAB_USE_LDD   "Enable Ldd library" OFF)
 option(CRAB_USE_APRON "Enable Apron library" OFF)
+option(CRAB_USE_PPLITE "Enable PPLite library" OFF)
 option(CRAB_USE_ELINA "Enable Elina library" OFF)
 option(CRAB_BUILD_LIBS_SHARED "Build all Crab libraries dynamically." OFF)
 option(CRAB_ENABLE_STATS "Enable stats" ON)
 if (CRAB_USE_APRON AND CRAB_USE_ELINA)
   message(FATAL_ERROR "Crab: Apron and Elina are not compatible. Choose one")
+endif()
+if (NOT CRAB_USE_APRON AND CRAB_USE_PPLITE)
+  message(FATAL_ERROR "Crab: PPLite library requires Apron")
 endif()
 
 ## Only for developers use
@@ -77,6 +81,9 @@ if (CRAB_BUILD_LIBS_SHARED)
   endif()
   if(CRAB_USE_APRON)
     set(_DYNAMIC_LIBS_EXC_STR "${_DYNAMIC_LIBS_EXC_STR}\n  - except apron")
+  endif()
+  if(CRAB_USE_PPLITE)
+    set(_DYNAMIC_LIBS_EXC_STR "${_DYNAMIC_LIBS_EXC_STR}\n  - except pplite")
   endif()
   message (STATUS "Crab: libraries and dependencies are built dynamically ${_DYNAMIC_LIBS_EXC_STR}")  
   set(CRAB_LIBS_TYPE SHARED)
@@ -145,6 +152,15 @@ if (CRAB_USE_APRON OR CRAB_USE_ELINA)
   endif ()
 endif ()
 
+#---------- FLINT ---------#
+if (CRAB_USE_PPLITE)
+  get_filename_component (GMP_SEARCH_PATH ${GMP_INCLUDE_DIR} PATH)
+  find_package(FLINT REQUIRED)
+  if (FLINT_FOUND)
+    get_filename_component (FLINT_SEARCH_PATH ${FLINT_INCLUDES} PATH)
+  endif ()
+endif ()
+
 #------- Configuration for Coverage ----------#
 if (CMAKE_BUILD_TYPE STREQUAL Coverage)
   include(Coverage)
@@ -162,6 +178,7 @@ find_package (Git)
 include(download_apron)
 include(download_elina)
 include(download_boxes_ldd)
+include(download_pplite)
 
 if (CRAB_USE_LDD)
   find_package(Ldd)
@@ -192,6 +209,22 @@ if (CRAB_USE_APRON)
     message (WARNING "Crab: no apron found. Run \n\tcmake --build . --target apron && cmake ${CMAKE_SOURCE_DIR}")
     # restore old CMAKE_FIND_LIBRARY_SUFFIXES
     set(CMAKE_FIND_LIBRARY_SUFFIXES ${_CRAB_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})     
+    return()
+  endif()
+endif ()
+
+if (CRAB_USE_PPLITE)
+  find_package(PPLite)
+  if (PPLITE_FOUND)
+    include_directories (${PPLITE_INCLUDE_DIR})
+    set (PPLITE_LIBS ${PPLITE_LIBRARY})
+    set (HAVE_PPLITE TRUE)
+  else()
+    ExternalProject_Get_Property (pplite INSTALL_DIR)
+    set (PPLITE_ROOT ${INSTALL_DIR} CACHE FILEPATH "Forced location of pplite" FORCE)
+    message (WARNING "Crab: no pplite found. Run \n\tcmake --build . --target pplite && cmake ${CMAKE_SOURCE_DIR}")
+    # restore old CMAKE_FIND_LIBRARY_SUFFIXES
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ${_CRAB_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
     return()
   endif()
 endif ()
@@ -230,6 +263,13 @@ else ()
   message (STATUS "Crab: Apron domains will not be available")
 endif ()
 
+if (CRAB_USE_PPLITE)
+  set_target_properties(pplite PROPERTIES EXCLUDE_FROM_ALL ON)
+  message (STATUS "Crab: PPLite domains will be available")
+else ()
+  message (STATUS "Crab: PPLite domains will not be available")
+endif ()
+
 if (CRAB_USE_ELINA)
   set_target_properties(elina PROPERTIES EXCLUDE_FROM_ALL ON)
   message (STATUS "Crab: Elina domains will be available")
@@ -266,7 +306,9 @@ endif ()
 #------- Create CRAB_LIBS and CRAB_INCLUDE_DIRS for Crab clients -------#
 set (CRAB_DEPS_LIBS
   ${LDD_LIBRARY} 
+  ${PPLITE_LIBRARY}
   ${APRON_LIBRARY}
+  ${FLINT_LIBRARY}
   ${ELINA_LIBRARY}
   ${MPFR_LIBRARIES} 
   ${GMP_LIB})
@@ -284,6 +326,9 @@ else ()
   endif ()
   if (APRON_FOUND)
      set (_CRAB_INCLUDE_DIRS ${_CRAB_INCLUDE_DIRS} ${APRON_INCLUDE_DIR})
+  endif ()
+  if (PPLITE_FOUND)
+     set (_CRAB_INCLUDE_DIRS ${_CRAB_INCLUDE_DIRS} ${PPLITE_INCLUDE_DIR})
   endif ()
   if (ELINA_FOUND)
      set (_CRAB_INCLUDE_DIRS ${_CRAB_INCLUDE_DIRS} ${ELINA_INCLUDE_DIR})
@@ -351,9 +396,9 @@ endif ()
 
 # Print cmake command 
 if (CRAB_ENABLE_TESTS)
-  message(STATUS "Crab: cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCRAB_USE_APRON=${CRAB_USE_APRON} -DCRAB_USE_ELINA=${CRAB_USE_ELINA} -DCRAB_USE_LDD=${CRAB_USE_LDD} -DCRAB_BUILD_LIBS_SHARED=${CRAB_BUILD_LIBS_SHARED} -DCRAB_ENABLE_TESTS=${CRAB_ENABLE_TESTS} -DTEST_DIR=${TEST_DIR}")
+  message(STATUS "Crab: cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCRAB_USE_APRON=${CRAB_USE_APRON} -DCRAB_USE_PPLITE=${CRAB_USE_PPLITE} -DCRAB_USE_ELINA=${CRAB_USE_ELINA} -DCRAB_USE_LDD=${CRAB_USE_LDD} -DCRAB_BUILD_LIBS_SHARED=${CRAB_BUILD_LIBS_SHARED} -DCRAB_ENABLE_TESTS=${CRAB_ENABLE_TESTS} -DTEST_DIR=${TEST_DIR}")
 else()
-  message(STATUS "Crab: cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCRAB_USE_APRON=${CRAB_USE_APRON} -DCRAB_USE_ELINA=${CRAB_USE_ELINA} -DCRAB_USE_LDD=${CRAB_USE_LDD} -DCRAB_BUILD_LIBS_SHARED=${CRAB_BUILD_LIBS_SHARED}")
+  message(STATUS "Crab: cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCRAB_USE_APRON=${CRAB_USE_APRON} -DCRAB_USE_PPLITE=${CRAB_USE_PPLITE} -DCRAB_USE_ELINA=${CRAB_USE_ELINA} -DCRAB_USE_LDD=${CRAB_USE_LDD} -DCRAB_BUILD_LIBS_SHARED=${CRAB_BUILD_LIBS_SHARED}")
 endif() 
 
 

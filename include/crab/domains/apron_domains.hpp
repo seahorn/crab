@@ -13,7 +13,12 @@
 
 namespace crab {
 namespace domains {
-using apron_domain_id_t = enum { APRON_INT, APRON_OCT, APRON_PK };
+using apron_domain_id_t
+= enum { APRON_INT, APRON_OCT, APRON_PK
+#ifdef HAVE_PPLITE
+         , APRON_PPLITE_POLY, APRON_PPLITE_FPOLY, APRON_PPLITE_PSET
+#endif
+};
 
 template <typename Number> class ApronDefaultParams {
 public:
@@ -107,6 +112,19 @@ private:
   bool is_integer() const { return !is_real(); }
 
   static ap_manager_t *get_man() {
+#ifdef HAVE_PPLITE
+    // Helper for allocating/initializing PPLite's manager.
+    auto pplite_manager_alloc
+      = [](const char* domain_name) {
+          // Polyhedra are topologically closed (strict == false).
+          auto man = ap_pplite_poly_manager_alloc(false);
+          // Select the specific PPLite domain.
+          ap_pplite_poly_manager_set_kind(man, domain_name);
+          // Widening arguments satisfy the inclusion hypothesis.
+          ap_pplite_poly_manager_set_widen_spec(man, "risky");
+          return man;
+        };
+#endif // HAVE_PPLITE
     if (!s_apman) {
       switch (ApronDom) {
       case APRON_INT:
@@ -118,6 +136,17 @@ private:
       case APRON_PK:
         s_apman = pk_manager_alloc(false);
         break;
+#ifdef HAVE_PPLITE
+      case APRON_PPLITE_POLY:
+        s_apman = pplite_manager_alloc("Poly");
+        break;
+      case APRON_PPLITE_FPOLY:
+        s_apman = pplite_manager_alloc("F_Poly");
+        break;
+      case APRON_PPLITE_PSET:
+        s_apman = pplite_manager_alloc("PSet");
+        break;
+#endif // HAVE_PPLITE
       default:
         CRAB_ERROR("unknown apron domain");
       }
@@ -912,6 +941,11 @@ public:
             std::move(m));
       case APRON_INT:
       case APRON_PK:
+#ifdef HAVE_PPLITE
+      case APRON_PPLITE_POLY:
+      case APRON_PPLITE_FPOLY:
+      case APRON_PPLITE_PSET:
+#endif // HAVE_PPLITE
       default:
         // CRAB_WARN("used meet instead of narrowing: \n",
         //           "make sure only a finite number of descending iterations
@@ -1608,6 +1642,29 @@ public:
 
   disjunctive_linear_constraint_system_t
   to_disjunctive_linear_constraint_system() const override {
+#ifdef HAVE_PPLITE
+    // Ad-hoc handling for PSet (which is disjunctive).
+    if (ApronDom == APRON_PPLITE_PSET) {
+      if (is_bottom()) {
+        return disjunctive_linear_constraint_system_t(true /*is_false*/);
+      } else if (is_top()) {
+        return disjunctive_linear_constraint_system_t(false /*is_false*/);
+      } else {
+        auto pset = &*m_apstate;
+        auto num_disj = ap_pplite_poly_num_disjuncts(s_apman, pset);
+        auto res = disjunctive_linear_constraint_system_t(false /*is_false*/);
+        for (auto d = 0; d < num_disj; ++d) {
+          auto lc_arr = ap_pplite_poly_disj_to_lincons_array(s_apman, pset, d);
+          linear_constraint_system_t csts;
+          for (unsigned i = 0; i < lc_arr.size; i++)
+            csts += tconst2const(lc_arr.p[i]);
+          ap_lincons0_array_clear(&lc_arr);
+          res += csts;
+        }
+        return res;
+      }
+    }
+#endif // HAVE_PPLITE
     auto lin_csts = to_linear_constraint_system();
     if (lin_csts.is_false()) {
       return disjunctive_linear_constraint_system_t(true /*is_false*/);
@@ -1745,6 +1802,14 @@ public:
       return;
     } else {
       // dump();
+#ifdef HAVE_PPLITE
+      // Ad-hoc handling for PSet (which is disjunctive).
+      if (ApronDom == APRON_PPLITE_PSET) {
+        auto inv = to_disjunctive_linear_constraint_system();
+        o << inv;
+        return;
+      }
+#endif
       linear_constraint_system_t inv = to_linear_constraint_system();
       o << inv;
     }
@@ -1758,6 +1823,14 @@ public:
       return "ApronOctagon";
     case APRON_PK:
       return "ApronNewPolka";
+#ifdef HAVE_PPLITE
+    case APRON_PPLITE_POLY:
+      return "ApronPPLitePoly";
+    case APRON_PPLITE_FPOLY:
+      return "ApronPPLiteFPoly";
+    case APRON_PPLITE_PSET:
+      return "ApronPPLitePSet";
+#endif // HAVE_PPLITE
     default:
       CRAB_ERROR("Unknown apron domain");
     }

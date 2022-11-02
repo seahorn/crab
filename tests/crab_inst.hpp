@@ -34,6 +34,11 @@ Z_RUNNER(crab::domain_impl::z_dis_interval_domain_t)
 Z_RUNNER(crab::domain_impl::z_box_apron_domain_t)
 Z_RUNNER(crab::domain_impl::z_oct_apron_domain_t)
 Z_RUNNER(crab::domain_impl::z_pk_apron_domain_t)
+#ifdef HAVE_PPLITE
+Z_RUNNER(crab::domain_impl::z_poly_pplite_domain_t)
+Z_RUNNER(crab::domain_impl::z_fpoly_pplite_domain_t)
+Z_RUNNER(crab::domain_impl::z_pset_pplite_domain_t)
+#endif
 Z_RUNNER(crab::domain_impl::z_zones_elina_domain_t)
 Z_RUNNER(crab::domain_impl::z_oct_elina_domain_t)
 Z_RUNNER(crab::domain_impl::z_pk_elina_domain_t)
@@ -55,6 +60,11 @@ Z_RUNNER(crab::domain_impl::z_rgn_sdbm_t)
 Q_RUNNER(crab::domain_impl::q_interval_domain_t)
 Q_RUNNER(crab::domain_impl::q_oct_apron_domain_t)
 Q_RUNNER(crab::domain_impl::q_pk_apron_domain_t)
+#ifdef HAVE_PPLITE
+Q_RUNNER(crab::domain_impl::q_poly_pplite_domain_t)
+Q_RUNNER(crab::domain_impl::q_fpoly_pplite_domain_t)
+Q_RUNNER(crab::domain_impl::q_pset_pplite_domain_t)
+#endif
 Q_RUNNER(crab::domain_impl::q_oct_elina_domain_t)
 Q_RUNNER(crab::domain_impl::q_pk_elina_domain_t)
 Q_RUNNER(crab::domain_impl::q_boxes_domain_t)

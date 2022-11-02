@@ -53,6 +53,11 @@ using z_dis_interval_domain_t = dis_interval_domain<z_number, varname_t>;
 using z_box_apron_domain_t = apron_domain<z_number, varname_t, APRON_INT>;
 using z_oct_apron_domain_t = apron_domain<z_number, varname_t, APRON_OCT>;
 using z_pk_apron_domain_t = apron_domain<z_number, varname_t, APRON_PK>;
+#ifdef HAVE_PPLITE
+using z_poly_pplite_domain_t = apron_domain<z_number, varname_t, APRON_PPLITE_POLY>;
+using z_fpoly_pplite_domain_t = apron_domain<z_number, varname_t, APRON_PPLITE_FPOLY>;
+using z_pset_pplite_domain_t = apron_domain<z_number, varname_t, APRON_PPLITE_PSET>;
+#endif
 using z_zones_elina_domain_t = elina_domain<z_number, varname_t, ELINA_ZONES>;
 using z_oct_elina_domain_t = elina_domain<z_number, varname_t, ELINA_OCT>;
 using z_pk_elina_domain_t = elina_domain<z_number, varname_t, ELINA_PK>;
@@ -126,6 +131,11 @@ using z_rgn_sign_constant_t = region_domain<z_rgn_sign_cst_params_t>;
 using q_interval_domain_t = interval_domain<q_number, varname_t>;
 using q_boxes_domain_t = boxes_domain<q_number, varname_t>;
 using q_pk_apron_domain_t = apron_domain<q_number, varname_t, APRON_PK>;
+#ifdef HAVE_PPLITE
+using q_poly_pplite_domain_t = apron_domain<q_number, varname_t, APRON_PPLITE_POLY>;
+using q_fpoly_pplite_domain_t = apron_domain<q_number, varname_t, APRON_PPLITE_FPOLY>;
+using q_pset_pplite_domain_t = apron_domain<q_number, varname_t, APRON_PPLITE_PSET>;
+#endif
 using q_oct_apron_domain_t = apron_domain<q_number, varname_t, APRON_OCT>;
 using q_pk_elina_domain_t = elina_domain<q_number, varname_t, ELINA_PK>;
 using q_oct_elina_domain_t = elina_domain<q_number, varname_t, ELINA_OCT>;
