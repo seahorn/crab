@@ -1,7 +1,3 @@
-=== Begin ./test-bin/apron-octagons ===
-=== End ./test-bin/apron-octagons ===
-=== Begin ./test-bin/apron_domains ===
-=== End ./test-bin/apron_domains ===
 === Begin ./test-bin/array_adaptive1 ===
 Program 1: forall 0<= i< 10. a[i] = 123456
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
@@ -444,26 +440,6 @@ bb2=({TRUE -> true; FALSE -> false; A.smashed -> true; B.smashed -> false}, {n1 
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 === End ./test-bin/array_smashing ===
-=== Begin ./test-bin/backward-1-apron ===
-=== End ./test-bin/backward-1-apron ===
-=== Begin ./test-bin/backward-1-elina ===
-=== End ./test-bin/backward-1-elina ===
-=== Begin ./test-bin/backward-2-apron ===
-=== End ./test-bin/backward-2-apron ===
-=== Begin ./test-bin/backward-2-boxes ===
-=== End ./test-bin/backward-2-boxes ===
-=== Begin ./test-bin/backward-2-elina ===
-=== End ./test-bin/backward-2-elina ===
-=== Begin ./test-bin/backward-3-apron ===
-=== End ./test-bin/backward-3-apron ===
-=== Begin ./test-bin/backward-3-elina ===
-=== End ./test-bin/backward-3-elina ===
-=== Begin ./test-bin/backward-4-apron ===
-=== End ./test-bin/backward-4-apron ===
-=== Begin ./test-bin/backward-4-boxes ===
-=== End ./test-bin/backward-4-boxes ===
-=== Begin ./test-bin/backward-4-elina ===
-=== End ./test-bin/backward-4-elina ===
 === Begin ./test-bin/backward-array-1 ===
 entry:
   x = array_load(M,0,sz=4);
@@ -501,18 +477,6 @@ user-defined assertion checker
 0  Number of total unreachable checks
 
 === End ./test-bin/backward-array-1 ===
-=== Begin ./test-bin/backward-array-1-apron ===
-=== End ./test-bin/backward-array-1-apron ===
-=== Begin ./test-bin/bakhirkin-apron ===
-=== End ./test-bin/bakhirkin-apron ===
-=== Begin ./test-bin/bakhirkin-elina ===
-=== End ./test-bin/bakhirkin-elina ===
-=== Begin ./test-bin/boxes ===
-=== End ./test-bin/boxes ===
-=== Begin ./test-bin/boxes-ldd ===
-=== End ./test-bin/boxes-ldd ===
-=== Begin ./test-bin/boxes_bug ===
-=== End ./test-bin/boxes_bug ===
 === Begin ./test-bin/bu_inter ===
 z:int32 declare foo(x:int32)
 entry:
@@ -580,8 +544,6 @@ exit={x2 -> [3, 3]; y2 -> [6, 6]; z2 -> [8, 8]; w2 -> [11, 11]}
 entry={x2 -> [3, 3]; y2 -> [6, 6]}
 =================================
 === End ./test-bin/bu_inter ===
-=== Begin ./test-bin/bu_inter-apron ===
-=== End ./test-bin/bu_inter-apron ===
 === Begin ./test-bin/cfg ===
 CFG
 x0:
@@ -1259,10 +1221,6 @@ bb2={i -> [0, 99]; k -> [0, +oo]}
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
 === End ./test-bin/disintervals ===
-=== Begin ./test-bin/elina-octagons ===
-=== End ./test-bin/elina-octagons ===
-=== Begin ./test-bin/elina_domains ===
-=== End ./test-bin/elina_domains ===
 === Begin ./test-bin/entailment ===
 {x -> [5, 10]} does not entail x = 7
 {x -> [5, 10]} does not entail x = 11
@@ -1270,6 +1228,93 @@ Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 {x -> [5, 5], y -> [0, 10]} does not entail x = 7
 {x -> [5, 5], y -> [0, 10]} entails y != 42
 === End ./test-bin/entailment ===
+=== Begin ./test-bin/fixedtvpi ===
+Invariants using FixedTVPIDomain(SplitDBM)
+entry=top
+loop_header={i -> [0, +oo], x -> [0, +oo], y -> [0, +oo], n -> [1, +oo], x.tvpi.ghost_var(4) -> [0, +oo], y.tvpi.ghost_var(4) -> [0, +oo], y.tvpi.ghost_var(8) -> [0, +oo], x.tvpi.ghost_var(4)-i<=0, y.tvpi.ghost_var(8)-i<=0, i-x<=0, x.tvpi.ghost_var(4)-x<=0, y.tvpi.ghost_var(4)-x<=0, y.tvpi.ghost_var(8)-x<=0, i-y<=0, x-y<=0, x.tvpi.ghost_var(4)-y<=0, y.tvpi.ghost_var(4)-y<=0, y.tvpi.ghost_var(8)-y<=0, i-n<=0, x.tvpi.ghost_var(4)-n<=0, y.tvpi.ghost_var(8)-n<=0, i-x.tvpi.ghost_var(4)<=0, y.tvpi.ghost_var(8)-x.tvpi.ghost_var(4)<=0, i-y.tvpi.ghost_var(4)<=0, x.tvpi.ghost_var(4)-y.tvpi.ghost_var(4)<=0, y.tvpi.ghost_var(8)-y.tvpi.ghost_var(4)<=0, i-y.tvpi.ghost_var(8)<=0, x.tvpi.ghost_var(4)-y.tvpi.ghost_var(8)<=0}
+loop_exit={i -> [0, +oo], x -> [0, +oo], y -> [0, +oo], n -> [1, +oo], x.tvpi.ghost_var(4) -> [0, +oo], y.tvpi.ghost_var(4) -> [0, +oo], y.tvpi.ghost_var(8) -> [0, +oo], x.tvpi.ghost_var(4)-i<=0, y.tvpi.ghost_var(8)-i<=0, i-x<=0, x.tvpi.ghost_var(4)-x<=0, y.tvpi.ghost_var(4)-x<=0, y.tvpi.ghost_var(8)-x<=0, i-y<=0, x-y<=0, x.tvpi.ghost_var(4)-y<=0, y.tvpi.ghost_var(4)-y<=0, y.tvpi.ghost_var(8)-y<=0, i-n<=0, x.tvpi.ghost_var(4)-n<=0, y.tvpi.ghost_var(8)-n<=0, i-x.tvpi.ghost_var(4)<=0, y.tvpi.ghost_var(8)-x.tvpi.ghost_var(4)<=0, i-y.tvpi.ghost_var(4)<=0, x.tvpi.ghost_var(4)-y.tvpi.ghost_var(4)<=0, y.tvpi.ghost_var(8)-y.tvpi.ghost_var(4)<=0, i-y.tvpi.ghost_var(8)<=0, x.tvpi.ghost_var(4)-y.tvpi.ghost_var(8)<=0}
+exit={i -> [1, +oo], x -> [4, +oo], y -> [8, +oo], n -> [1, +oo], x.tvpi.ghost_var(4) -> [1, +oo], i.tvpi.ghost_var(4) -> [0, +oo], y.tvpi.ghost_var(4) -> [1, +oo], y.tvpi.ghost_var(8) -> [1, +oo], n.tvpi.ghost_var(4) -> [0, +oo], x.tvpi.ghost_var(4)-i<=0, y.tvpi.ghost_var(8)-i<=0, n-i<=0, i-x<=-3, x.tvpi.ghost_var(4)-x<=-3, y.tvpi.ghost_var(4)-x<=0, y.tvpi.ghost_var(8)-x<=-3, n-x<=-3, i-y<=-7, x-y<=0, x.tvpi.ghost_var(4)-y<=-7, y.tvpi.ghost_var(4)-y<=0, y.tvpi.ghost_var(8)-y<=-7, n-y<=-7, i-n<=0, x.tvpi.ghost_var(4)-n<=0, y.tvpi.ghost_var(8)-n<=0, i-x.tvpi.ghost_var(4)<=0, y.tvpi.ghost_var(8)-x.tvpi.ghost_var(4)<=0, n-x.tvpi.ghost_var(4)<=0, n.tvpi.ghost_var(4)-i.tvpi.ghost_var(4)<=0, i-y.tvpi.ghost_var(4)<=0, x.tvpi.ghost_var(4)-y.tvpi.ghost_var(4)<=0, y.tvpi.ghost_var(8)-y.tvpi.ghost_var(4)<=0, n-y.tvpi.ghost_var(4)<=0, i-y.tvpi.ghost_var(8)<=0, x.tvpi.ghost_var(4)-y.tvpi.ghost_var(8)<=0, n-y.tvpi.ghost_var(8)<=0, n.tvpi.ghost_var(8)-i.tvpi.ghost_var(8)<=0}
+loop_body={i -> [0, +oo], x -> [0, +oo], y -> [0, +oo], n -> [1, +oo], x.tvpi.ghost_var(4) -> [0, +oo], y.tvpi.ghost_var(4) -> [0, +oo], y.tvpi.ghost_var(8) -> [0, +oo], x.tvpi.ghost_var(4)-i<=0, y.tvpi.ghost_var(8)-i<=0, i-x<=0, x.tvpi.ghost_var(4)-x<=0, y.tvpi.ghost_var(4)-x<=0, y.tvpi.ghost_var(8)-x<=0, i-y<=0, x-y<=0, x.tvpi.ghost_var(4)-y<=0, y.tvpi.ghost_var(4)-y<=0, y.tvpi.ghost_var(8)-y<=0, i-n<=0, x.tvpi.ghost_var(4)-n<=0, y.tvpi.ghost_var(8)-n<=0, i-x.tvpi.ghost_var(4)<=0, y.tvpi.ghost_var(8)-x.tvpi.ghost_var(4)<=0, i-y.tvpi.ghost_var(4)<=0, x.tvpi.ghost_var(4)-y.tvpi.ghost_var(4)<=0, y.tvpi.ghost_var(8)-y.tvpi.ghost_var(4)<=0, i-y.tvpi.ghost_var(8)<=0, x.tvpi.ghost_var(4)-y.tvpi.ghost_var(8)<=0}
+Abstract trace: entry (loop_header loop_body)^{4} loop_exit exit
+
+Invariants using FixedTVPIDomain(SplitDBM)
+Abstract trace: entry (loop_header loop_body)^{4} loop_exit exit
+user-defined assertion checker
+2  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+Invariants using FixedTVPIDomain(SplitDBM)
+entry=top
+loop_header={i -> [0, +oo], x -> [0, +oo], n -> [1, +oo], i-x<=0, i-n<=0}
+loop_exit={i -> [0, +oo], x -> [0, +oo], n -> [1, +oo], i-x<=0, i-n<=0}
+exit={i -> [1, +oo], x -> [2, +oo], n -> [1, +oo], i.tvpi.ghost_var(2) -> [0, +oo], n.tvpi.ghost_var(2) -> [0, +oo], x.tvpi.ghost_var(2) -> [1, +oo], n-i<=0, x.tvpi.ghost_var(3)-i<=0, i-x<=-1, n-x<=-1, x.tvpi.ghost_var(3)-x<=-1, i-n<=0, x.tvpi.ghost_var(3)-n<=0, n.tvpi.ghost_var(2)-i.tvpi.ghost_var(2)<=0, n.tvpi.ghost_var(3)-i.tvpi.ghost_var(3)<=0, n-x.tvpi.ghost_var(2)<=0, i-x.tvpi.ghost_var(2)<=0, x.tvpi.ghost_var(3)-x.tvpi.ghost_var(2)<=0}
+loop_body={i -> [0, +oo], x -> [0, +oo], n -> [1, +oo], i-x<=0, i-n<=0}
+loop_body_else={x -> [0, +oo], n -> [1, +oo], i -> [1, +oo], i-x<=1, i-n<=0}
+loop_body_tail={i -> [1, +oo], x -> [2, +oo], n -> [1, +oo], i-x<=-1, i-n<=0}
+loop_body_then={x -> [0, +oo], n -> [1, +oo], i -> [1, +oo], i-x<=1, i-n<=0}
+Abstract trace: entry (loop_header loop_body loop_body_else loop_body_then loop_body_tail)^{4} loop_exit exit
+
+Invariants using FixedTVPIDomain(SplitDBM)
+Abstract trace: entry (loop_header loop_body loop_body_else loop_body_then loop_body_tail)^{4} loop_exit exit
+user-defined assertion checker
+0  Number of total safe checks
+0  Number of total error checks
+2  Number of total warning checks
+0  Number of total unreachable checks
+
+Check1 passed
+Check2 passed
+Check3 passed
+{y.tvpi.ghost_var(2) -> [0, 3], x -> [0, 3], x.tvpi.ghost_var(2) -> [0, +oo], y -> [0, 6], x-y.tvpi.ghost_var(2)<=0, y.tvpi.ghost_var(2)-x<=0}
+=== End ./test-bin/fixedtvpi ===
+=== Begin ./test-bin/fixedtvpi2 ===
+Invariants using FixedTVPIDomain(SplitDBM)
+entry=top
+header_1={x-y.tvpi.ghost_var(2)<=0, y.tvpi.ghost_var(2)-x<=0, z-z2.tvpi.ghost_var(2)<=0, z2.tvpi.ghost_var(2)-z<=0}
+exit={x-y.tvpi.ghost_var(2)<=0, y.tvpi.ghost_var(2)-x<=0, z-z2.tvpi.ghost_var(2)<=0, x-z2.tvpi.ghost_var(2)<=-3, y.tvpi.ghost_var(2)-z2.tvpi.ghost_var(2)<=-3, z2.tvpi.ghost_var(2)-z<=0, x-z<=-3, y.tvpi.ghost_var(2)-z<=-3, x.tvpi.ghost_var(3)-z.tvpi.ghost_var(3)<=-1}
+Abstract trace: entry header_1 exit
+
+Invariants using FixedTVPIDomain(SplitDBM)
+Abstract trace: entry header_1 exit
+user-defined assertion checker
+3  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+Invariants using FixedTVPIDomain(SplitDBM)
+entry=top
+bb_1={x -> [0, 4], x.tvpi.ghost_var(2) -> [0, 2], x.tvpi.ghost_var(3) -> [0, +oo], y -> [2, 2], y.tvpi.ghost_var(2) -> [1, 1]}
+bb_2={x -> [0, 4], x.tvpi.ghost_var(2) -> [0, 2], x.tvpi.ghost_var(3) -> [0, +oo], y -> [2, 2], y.tvpi.ghost_var(2) -> [1, 1], z -> [0, 8], z.tvpi.ghost_var(2) -> [0, 4], z.tvpi.ghost_var(2)-x<=0, x-z.tvpi.ghost_var(2)<=0}
+bb_3={x -> [0, 4], x.tvpi.ghost_var(2) -> [0, 2], x.tvpi.ghost_var(3) -> [0, +oo], y -> [2, 2], y.tvpi.ghost_var(2) -> [1, 1], z -> [0, 8], z.tvpi.ghost_var(2) -> [0, 4], m -> [0, +oo], m.tvpi.ghost_var(2) -> [0, +oo], z.tvpi.ghost_var(2)-x<=0, x-z.tvpi.ghost_var(2)<=0, z-m<=0, z.tvpi.ghost_var(2)-m.tvpi.ghost_var(2)<=0, x-m.tvpi.ghost_var(2)<=0, z.tvpi.ghost_var(3)-m.tvpi.ghost_var(3)<=0}
+exit={x -> [0, 4], x.tvpi.ghost_var(2) -> [0, 2], x.tvpi.ghost_var(3) -> [0, +oo], y -> [2, 2], y.tvpi.ghost_var(2) -> [1, 1], z -> [0, 8], z.tvpi.ghost_var(2) -> [0, 4], m -> [0, +oo], m.tvpi.ghost_var(2) -> [0, +oo], j -> [-1, 3], k -> [-2, 6], k.tvpi.ghost_var(2) -> [-1, 3], z.tvpi.ghost_var(2)-x<=0, j-x<=-1, k.tvpi.ghost_var(2)-x<=-1, x-z.tvpi.ghost_var(2)<=0, j-z.tvpi.ghost_var(2)<=-1, k.tvpi.ghost_var(2)-z.tvpi.ghost_var(2)<=-1, z-m<=0, z.tvpi.ghost_var(2)-m.tvpi.ghost_var(2)<=0, x-m.tvpi.ghost_var(2)<=0, j-m.tvpi.ghost_var(2)<=-1, k.tvpi.ghost_var(2)-m.tvpi.ghost_var(2)<=-1, z.tvpi.ghost_var(3)-m.tvpi.ghost_var(3)<=0, x-j<=1, z.tvpi.ghost_var(2)-j<=1, k.tvpi.ghost_var(2)-j<=0, j-k.tvpi.ghost_var(2)<=0, x-k.tvpi.ghost_var(2)<=1, z.tvpi.ghost_var(2)-k.tvpi.ghost_var(2)<=1}
+Abstract trace: entry bb_1 bb_2 bb_3 exit
+
+Invariants using FixedTVPIDomain(SplitDBM)
+Abstract trace: entry bb_1 bb_2 bb_3 exit
+user-defined assertion checker
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+Invariants using FixedTVPIDomain(SplitDBM)
+entry=top
+header_1={n-y.tvpi.ghost_var(2)<=0, y.tvpi.ghost_var(2)-n<=0}
+exit={n-y.tvpi.ghost_var(2)<=0, x.tvpi.ghost_var(2)-y.tvpi.ghost_var(2)<=0, z.tvpi.ghost_var(2)-y.tvpi.ghost_var(2)<=0, m.tvpi.ghost_var(2)-y.tvpi.ghost_var(2)<=0, z'.tvpi.ghost_var(2)-y.tvpi.ghost_var(2)<=0, y.tvpi.ghost_var(2)-n<=0, x.tvpi.ghost_var(2)-n<=0, z.tvpi.ghost_var(2)-n<=0, m.tvpi.ghost_var(2)-n<=0, z'.tvpi.ghost_var(2)-n<=0, y-x<=0, z-x<=0, x-y<=0, z-y<=0, y.tvpi.ghost_var(2)-x.tvpi.ghost_var(2)<=0, n-x.tvpi.ghost_var(2)<=0, z.tvpi.ghost_var(2)-x.tvpi.ghost_var(2)<=0, m.tvpi.ghost_var(2)-x.tvpi.ghost_var(2)<=0, z'.tvpi.ghost_var(2)-x.tvpi.ghost_var(2)<=0, x-z<=0, y-z<=0, x.tvpi.ghost_var(2)-z.tvpi.ghost_var(2)<=0, y.tvpi.ghost_var(2)-z.tvpi.ghost_var(2)<=0, n-z.tvpi.ghost_var(2)<=0, m.tvpi.ghost_var(2)-z.tvpi.ghost_var(2)<=0, z'.tvpi.ghost_var(2)-z.tvpi.ghost_var(2)<=0, y.tvpi.ghost_var(2)-m.tvpi.ghost_var(2)<=0, n-m.tvpi.ghost_var(2)<=0, x.tvpi.ghost_var(2)-m.tvpi.ghost_var(2)<=0, z.tvpi.ghost_var(2)-m.tvpi.ghost_var(2)<=0, z'.tvpi.ghost_var(2)-m.tvpi.ghost_var(2)<=0, m-z'<=0, z'-m<=0, m.tvpi.ghost_var(2)-z'.tvpi.ghost_var(2)<=0, y.tvpi.ghost_var(2)-z'.tvpi.ghost_var(2)<=0, n-z'.tvpi.ghost_var(2)<=0, x.tvpi.ghost_var(2)-z'.tvpi.ghost_var(2)<=0, z.tvpi.ghost_var(2)-z'.tvpi.ghost_var(2)<=0}
+Abstract trace: entry header_1 exit
+
+Invariants using FixedTVPIDomain(SplitDBM)
+Abstract trace: entry header_1 exit
+user-defined assertion checker
+2  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+=== End ./test-bin/fixedtvpi2 ===
 === Begin ./test-bin/flat_bool_domain1 ===
 entry:
   i = 0;
@@ -1320,8 +1365,6 @@ bb2=({b1 -> true; bf -> false; bt -> true}, {i -> [0, 99]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 === End ./test-bin/flat_bool_domain1 ===
-=== Begin ./test-bin/flat_bool_domain1-boxes ===
-=== End ./test-bin/flat_bool_domain1-boxes ===
 === Begin ./test-bin/flat_bool_domain2 ===
 entry:
   i = 0;
@@ -1501,8 +1544,6 @@ user-defined assertion checker
 0  Number of total unreachable checks
 
 === End ./test-bin/flat_bool_domain5 ===
-=== Begin ./test-bin/flat_bool_domain5-boxes ===
-=== End ./test-bin/flat_bool_domain5-boxes ===
 === Begin ./test-bin/flat_bool_domain6 ===
 Invariants using Product(Boolean,SparseDBM)
 Abstract trace: bb1 bb4 bb2 bb3
@@ -1587,6 +1628,60 @@ ret:
 
 
 === End ./test-bin/live-1 ===
+=== Begin ./test-bin/lookahead-widening ===
+entry:
+  x = 0;
+  y = 0;
+  goto bb1;
+bb1:
+  goto bb2,bb3;
+bb2:
+  assume(x <= 50);
+  y = y+1;
+  goto bb4;
+bb4:
+  goto bb5,bb7;
+bb5:
+  assume(-y <= 0);
+  goto bb6;
+bb6:
+  x = x+1;
+  goto bb1;
+bb7:
+  assume(y <= -1);
+  goto exit;
+exit:
+
+bb3:
+  assume(-x <= -51);
+  y = y-1;
+  goto bb4;
+
+Invariants using SplitOctagons
+entry={}
+bb1={-x <= 0; -y <= 0; -x+y <= 0; -x-y <= 0}
+bb3={-x <= 0; -y <= 0; -x+y <= 0; -x-y <= 0}
+bb4={-x <= 0; -y <= 1; -x+y <= 1; -x-y <= -1}
+bb7={-x <= 0; -y <= 1; -x+y <= 1; -x-y <= -1}
+exit={y = -1; -x <= -2; -x+y <= 1; -x-y <= -1}
+bb5={-x <= 0; -y <= 1; -x+y <= 1; -x-y <= -1}
+bb6={-x <= 0; -y <= 0; -x+y <= 1; -x-y <= -1}
+bb2={-x <= 0; -y <= 0; -x+y <= 0; -x-y <= 0}
+Abstract trace: entry (bb1 bb3 bb2 bb4 bb5 bb6)^{5} bb7 exit
+
+Invariants using LookaheadWideningDomain(SplitOctagons)
+entry=top
+bb1={-x <= 0; x <= 102; -y <= 0; y <= 51; -x+y <= 0; -x-y <= 0; x+y <= 102; x+y <= 153}
+bb3={-x <= 0; x <= 102; -y <= 0; y <= 51; -x+y <= 0; -x-y <= 0; x+y <= 102; x+y <= 153}
+bb4={-x <= 0; x <= 102; -y <= 1; y <= 51; -x+y <= 1; -x-y <= -1; x+y <= 101; x+y <= 152}
+bb7={-x <= 0; x <= 102; -y <= 1; y <= 51; -x+y <= 1; -x-y <= -1; x+y <= 101; x+y <= 152}
+exit={y = -1; -x <= -2; x <= 102; -x+y <= 1; -x-y <= -1; x+y <= 101; x+y <= 152}
+bb5={-x <= 0; x <= 102; -y <= 1; y <= 51; -x+y <= 1; -x-y <= -1; x+y <= 101; x+y <= 152}
+bb6={-x <= 0; x <= 101; -y <= 0; y <= 51; -x+y <= 1; -x-y <= -1; x+y <= 101; x+y <= 152}
+bb2={-x <= 0; x <= 102; -y <= 0; y <= 51; -x+y <= 0; -x-y <= 0; x+y <= 102; x+y <= 153}
+Abstract trace: entry (bb1 bb3 bb2 bb4 bb5 bb6)^{7} bb7 exit
+
+=== End ./test-bin/lookahead-widening ===
 === Begin ./test-bin/lower_safe_assertions ===
 Analysis using SplitDBM
  --- SAFE --------------------
@@ -1828,14 +1923,6 @@ user-defined assertion checker
 0  Number of total unreachable checks
 
 === End ./test-bin/powerset ===
-=== Begin ./test-bin/precond-1-apron ===
-=== End ./test-bin/precond-1-apron ===
-=== Begin ./test-bin/precond-1-elina ===
-=== End ./test-bin/precond-1-elina ===
-=== Begin ./test-bin/precond-2-apron ===
-=== End ./test-bin/precond-2-apron ===
-=== Begin ./test-bin/precond-2-elina ===
-=== End ./test-bin/precond-2-elina ===
 === Begin ./test-bin/region-1 ===
 entry:
   region_init(region_0:region(int));
@@ -2511,10 +2598,6 @@ user-defined assertion checker
 0  Number of total unreachable checks
 
 === End ./test-bin/soct ===
-=== Begin ./test-bin/soct-apron ===
-=== End ./test-bin/soct-apron ===
-=== Begin ./test-bin/soct-elina ===
-=== End ./test-bin/soct-elina ===
 === Begin ./test-bin/td_inter_1 ===
 z:int32 declare foo(x:int32)
 entry:
@@ -2601,10 +2684,6 @@ Running top-down inter-procedural analysis with SplitDBM
  0  Number of total warning checks
  0  Number of total unreachable checks
 === End ./test-bin/td_inter_1 ===
-=== Begin ./test-bin/td_inter_1-apron ===
-=== End ./test-bin/td_inter_1-apron ===
-=== Begin ./test-bin/td_inter_1-elina ===
-=== End ./test-bin/td_inter_1-elina ===
 === Begin ./test-bin/td_inter_2 ===
 (x_out:int32,y_out:int32) declare loop(x_in:int32,y_in:int32)
 entry:
@@ -3074,8 +3153,6 @@ bb1_t={i -> [0, 6136154492292301/562949953421312]}
 Abstract trace: entry (bb1 bb1_t)^{3} bb1_f ret
 
 === End ./test-bin/test1-real ===
-=== Begin ./test-bin/test1-real-apron ===
-=== End ./test-bin/test1-real-apron ===
 === Begin ./test-bin/test2 ===
 loop1_entry:
   i = 0;
@@ -3186,10 +3263,6 @@ bb1={x -> [0, +oo]; y -> [0, 1/2]}
 Abstract trace: entry (bb1)^{3}
 
 === End ./test-bin/test2-real ===
-=== Begin ./test-bin/test2-real-apron ===
-=== End ./test-bin/test2-real-apron ===
-=== Begin ./test-bin/test2-real-boxes ===
-=== End ./test-bin/test2-real-boxes ===
 === Begin ./test-bin/test3 ===
 entry:
   i = 0;
@@ -3356,10 +3429,6 @@ body={x -> [1, +oo]; y -> [0, +oo]}
 Abstract trace: entry (header body)^{3} exit
 
 === End ./test-bin/test3-real ===
-=== Begin ./test-bin/test3-real-apron ===
-=== End ./test-bin/test3-real-apron ===
-=== Begin ./test-bin/test3-real-boxes ===
-=== End ./test-bin/test3-real-boxes ===
 === Begin ./test-bin/test4 ===
 entry:
   i = 0;
@@ -3427,10 +3496,6 @@ loop_t={i -> [0, 10]; p -> [0, 0] | [4, 4] | [8, 8] | [12, 12] | [16, +oo]}
 Abstract trace: entry (loop_head loop_t)^{4} loop_f ret
 
 === End ./test-bin/test4 ===
-=== Begin ./test-bin/test4-real-apron ===
-=== End ./test-bin/test4-real-apron ===
-=== Begin ./test-bin/test4-real-elina ===
-=== End ./test-bin/test4-real-elina ===
 === Begin ./test-bin/test5 ===
 entry:
   i = 0;
@@ -3753,12 +3818,6 @@ Test using ArrayAdaptive(ArraySmashing(Intervals))
 EXPECTED: {y >= 2, ...}
 RESULT: {x -> [2, +oo]; y -> [2, +oo]}
 === End ./test-bin/unittests-backward ===
-=== Begin ./test-bin/unittests-backward-apron ===
-=== End ./test-bin/unittests-backward-apron ===
-=== Begin ./test-bin/unittests-backward-elina ===
-=== End ./test-bin/unittests-backward-elina ===
-=== Begin ./test-bin/unittests-boxes ===
-=== End ./test-bin/unittests-boxes ===
 === Begin ./test-bin/unittests-linear-constraints ===
 Before normalize constraints {x <= 8; -y <= -5; y <= 6; -x <= -8; -v <= -9888; z = 10; w <= 0; v <= 9888}
 After normalize constraints {x = 8; v = 9888; -y <= -5; y <= 6; z = 10; w <= 0}
@@ -3778,6 +3837,16 @@ Checking if {x <= 8,-y <= -5} <= {x <= 8,y <= 6,-y <= -5,-x <= -8}=1
 {x <= 8,y <= 6,-y <= -5,-x <= -8} | {...}={...}
 --------------
 === End ./test-bin/unittests-linear-constraints ===
+=== Begin ./test-bin/unittests-num-packing ===
+EXPECTED={({x,y},{x=y})} ACTUAL={Pack({x,y},{x-y<=0, y-x<=0})
+EXPECTED=_|_ ACTUAL=_|_
+EXPECTED=top ACTUAL=top
+EXPECTED={({x},{x->[5,10]}),({y},{y->10}),({z},{z->0})} ACTUAL={Pack({x},{x -> [5, 10]}),Pack({y},{y -> [10, 10]}),Pack({z},{z -> [0, 0]})
+EXPECTED={({x,y},{x->10, y->10}), ({z},{z->0})} ACTUAL={Pack({x,y},{y -> [10, 10], x -> [10, 10]}),Pack({z},{z -> [0, 0]})
+EXPECTED={({x},{x->10}), ({z},{z->0})} ACTUAL={Pack({x},{x -> [10, 10]}),Pack({z},{z -> [0, 0]})
+EXPECTED={({w},{w->5}),({z},{z->10})} ACTUAL={Pack({w},{w -> [5, 5]}),Pack({z},{z -> [10, 10]})
+EXPECTED={({w},{w->5}),({z},{z->10}), ({x,y},{x=y})} ACTUAL={Pack({w},{w -> [5, 5]}),Pack({z},{z -> [10, 10]}),Pack({x,y},{x-y<=0, y-x<=0})
+=== End ./test-bin/unittests-num-packing ===
 === Begin ./test-bin/unittests-regions ===
 Join of
 	{x -> [5, +oo]; y -> [10, +oo]}
@@ -3910,10 +3979,6 @@ Before renaming {x -> t0[_x0], y -> t1[_x1]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 After rename x with w and y with z={z -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 After rename x with w={y -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 === End ./test-bin/unittests-rename ===
-=== Begin ./test-bin/unittests-rename-apron ===
-=== End ./test-bin/unittests-rename-apron ===
-=== Begin ./test-bin/unittests-rename-elina ===
-=== End ./test-bin/unittests-rename-elina ===
 === Begin ./test-bin/unittests-uf ===
 === Join === 
 {x -> *(8,5), y -> 8} | {x -> *($VAR_0,5), y -> $VAR_0} = {x -> *($VAR_0,5), y -> $VAR_0}
@@ -3961,6 +4026,53 @@ Dom1={{v1,v2}=>false,{v3,v4}=>false}
 Dom2={{v3}=>false,{v4}=>false,{v7,v8}=>false}
 Dom1 & Dom2 = {{v1,v2}=>false,{v3,v4}=>false,{v7,v8}=>false}
 === End ./test-bin/unittests-union-find ===
+=== Begin ./test-bin/unittests-value-partitioning ===
+===== Initially ======
+top
+Start partitioning on x
+After x:=5;y:=10 ({x=[5, 5] => {x -> [5, 5], y -> [10, 10]}})
+After x:=10;y:=20 ({x=[10, 10] => {x -> [10, 10], y -> [20, 20]}})
+After join ({x=[5, 5] => {x -> [5, 5], y -> [10, 10]}, x=[10, 10] => {x -> [10, 10], y -> [20, 20]}})
+Start partitioning on z
+After z:=5;w:=10 ({x=[5, 5] => {x -> [5, 5], y -> [10, 10], z -> [5, 5], w -> [10, 10]}, x=[10, 10] => {x -> [10, 10], y -> [20, 20], z -> [5, 5], w -> [10, 10]}}, {z=[5, 5] => {x -> [5, 10], y -> [10, 20], z -> [5, 5], w -> [10, 10], y-x<=10, x-y<=-5}})
+After z:=10;w:=20 ({x=[5, 5] => {x -> [5, 5], y -> [10, 10], z -> [10, 10], w -> [20, 20]}, x=[10, 10] => {x -> [10, 10], y -> [20, 20], z -> [10, 10], w -> [20, 20]}}, {z=[10, 10] => {x -> [5, 10], y -> [10, 20], z -> [10, 10], w -> [20, 20], y-x<=10, x-y<=-5}})
+After join ({x=[5, 5] => {x -> [5, 5], y -> [10, 10], w -> [10, 20], z -> [5, 10], z-w<=-5, w-z<=10}, x=[10, 10] => {x -> [10, 10], y -> [20, 20], w -> [10, 20], z -> [5, 10], z-w<=-5, w-z<=10}}, {z=[5, 5] => {x -> [5, 10], y -> [10, 20], z -> [5, 5], w -> [10, 10], y-x<=10, x-y<=-5}, z=[10, 10] => {x -> [5, 10], y -> [10, 20], z -> [10, 10], w -> [20, 20], y-x<=10, x-y<=-5}})
+End partitioning on x
+({z=[5, 5] => {x -> [5, 10], y -> [10, 20], z -> [5, 5], w -> [10, 10], y-x<=10, x-y<=-5}, z=[10, 10] => {x -> [5, 10], y -> [10, 20], z -> [10, 10], w -> [20, 20], y-x<=10, x-y<=-5}})
+End partitioning on z
+{x -> [5, 10], y -> [10, 20], w -> [10, 20], z -> [5, 10], y-x<=10, x-y<=-5, z-w<=-5, w-z<=10}
+===== Infer bottom ======
+top
+Start partitioning on x
+After x:=5;y:=10 ({x=[5, 5] => {x -> [5, 5], y -> [10, 10]}})
+After x:=10;y:=20 ({x=[10, 10] => {x -> [10, 10], y -> [20, 20]}})
+After join ({x=[5, 5] => {x -> [5, 5], y -> [10, 10]}, x=[10, 10] => {x -> [10, 10], y -> [20, 20]}})
+Start partitioning on z
+After z:=5;w:=10 ({x=[5, 5] => {x -> [5, 5], y -> [10, 10], z -> [5, 5], w -> [10, 10]}, x=[10, 10] => {x -> [10, 10], y -> [20, 20], z -> [5, 5], w -> [10, 10]}}, {z=[5, 5] => {x -> [5, 10], y -> [10, 20], z -> [5, 5], w -> [10, 10], y-x<=10, x-y<=-5}})
+After z:=10;w:=20 ({x=[5, 5] => {x -> [5, 5], y -> [10, 10], z -> [10, 10], w -> [20, 20]}, x=[10, 10] => {x -> [10, 10], y -> [20, 20], z -> [10, 10], w -> [20, 20]}}, {z=[10, 10] => {x -> [5, 10], y -> [10, 20], z -> [10, 10], w -> [20, 20], y-x<=10, x-y<=-5}})
+After join ({x=[5, 5] => {x -> [5, 5], y -> [10, 10], w -> [10, 20], z -> [5, 10], z-w<=-5, w-z<=10}, x=[10, 10] => {x -> [10, 10], y -> [20, 20], w -> [10, 20], z -> [5, 10], z-w<=-5, w-z<=10}}, {z=[5, 5] => {x -> [5, 10], y -> [10, 20], z -> [5, 5], w -> [10, 10], y-x<=10, x-y<=-5}, z=[10, 10] => {x -> [5, 10], y -> [10, 20], z -> [10, 10], w -> [20, 20], y-x<=10, x-y<=-5}})
+_|_
+===== Join (EXPECTED Top) ======
+Join
+	({v1=[5, 5] => {v1 -> [5, 5], v2 -> [10, 10]}, v1=[10, 10] => {v1 -> [10, 10], v2 -> [20, 20]}}, {v3=[-oo, +oo] => {v1 -> [5, 10], v2 -> [10, 20], v2-v1<=10, v1-v2<=-5}})
+	({v1=[-oo, +oo] => {v3 -> [50, 52], v4 -> [60, 62], v4-v3<=10, v3-v4<=-10}}, {v3=[50, 50] => {v3 -> [50, 50], v4 -> [60, 60]}, v3=[52, 52] => {v3 -> [52, 52], v4 -> [62, 62]}})
+RES:top
+===== Meet (EXPECTED non-bot/non-top ======
+Meet
+	({v1=[5, 5] => {v1 -> [5, 5], v2 -> [10, 10]}, v1=[10, 10] => {v1 -> [10, 10], v2 -> [20, 20]}}, {v3=[-oo, +oo] => {v1 -> [5, 10], v2 -> [10, 20], v2-v1<=10, v1-v2<=-5}})
+	({v1=[-oo, +oo] => {v3 -> [50, 52], v4 -> [60, 62], v4-v3<=10, v3-v4<=-10}}, {v3=[50, 50] => {v3 -> [50, 50], v4 -> [60, 60]}, v3=[52, 52] => {v3 -> [52, 52], v4 -> [62, 62]}})
+RES:({v1=[5, 10] => {v1 -> [5, 10], v2 -> [10, 20], v3 -> [50, 52], v4 -> [60, 62], v2-v1<=10, v1-v2<=-5, v4-v3<=10, v3-v4<=-10}}, {v3=[50, 52] => {v1 -> [5, 10], v2 -> [10, 20], v3 -> [50, 52], v4 -> [60, 62], v2-v1<=10, v1-v2<=-5, v4-v3<=10, v3-v4<=-10}})
+===== Join EXPECTED non-top ======
+Join
+	({v1=[5, 5] => {v1 -> [5, 5], v2 -> [10, 10]}, v1=[10, 10] => {v1 -> [10, 10], v2 -> [20, 20]}})
+	({v1=[50, 50] => {v1 -> [50, 50], v2 -> [60, 60]}, v1=[52, 52] => {v1 -> [52, 52], v2 -> [62, 62]}})
+RES:({v1=[5, 5] => {v1 -> [5, 5], v2 -> [10, 10]}, v1=[10, 10] => {v1 -> [10, 10], v2 -> [20, 20]}, v1=[50, 50] => {v1 -> [50, 50], v2 -> [60, 60]}, v1=[52, 52] => {v1 -> [52, 52], v2 -> [62, 62]}})
+===== Meet EXPECTED bot ======
+Meet
+	({v1=[5, 5] => {v1 -> [5, 5], v2 -> [10, 10]}, v1=[10, 10] => {v1 -> [10, 10], v2 -> [20, 20]}})
+	({v1=[50, 50] => {v1 -> [50, 50], v2 -> [60, 60]}, v1=[52, 52] => {v1 -> [52, 52], v2 -> [62, 62]}})
+RES:_|_
+=== End ./test-bin/unittests-value-partitioning ===
 === Begin ./test-bin/unittests-zones ===
 {A -> [0, +oo], x -> [0, 0], x-A<=0}
 Before x != 0: {x -> [0, 10], y -> [0, 10], z -> [0, 10], y-x<=0, z-x<=0, x-y<=0, z-y<=0, x-z<=0, y-z<=0}
