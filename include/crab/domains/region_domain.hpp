@@ -784,7 +784,7 @@ public:
       return;
     } else if (o.is_bottom()) {
       return;
-    } else if (is_top() | o.is_top()) {
+    } else if (is_top() || o.is_top()) {
       set_to_top();
       return;
     }
@@ -841,7 +841,7 @@ public:
       return o;
     } else if (o.is_bottom()) {
       return *this;
-    } else if (is_top() | o.is_top()) {
+    } else if (is_top() || o.is_top()) {
       region_domain_t abs;
       abs.set_to_top();
       return abs;

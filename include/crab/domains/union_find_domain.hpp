@@ -236,7 +236,7 @@ private:
       return o;
     } else if (o.is_bottom()) {
       return *this;
-    } else if (is_top() | o.is_top()) {
+    } else if (is_top() || o.is_top()) {
       union_find_domain_t res;
       return res;
     } else {
