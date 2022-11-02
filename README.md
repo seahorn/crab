@@ -25,8 +25,8 @@ partitioning strategy that lifts an arbitrary domain to an
 over-approximation of its disjunction completion. In addition to these
 domains, all developed by Crab authors, the Crab library integrates
 popular abstract domain libraries such as
-[Apron](https://github.com/antoinemine/apron) and
-[Elina](http://elina.ethz.ch/).
+[Apron](https://github.com/antoinemine/apron),
+[Elina](http://elina.ethz.ch/), and [PPLite](https://github.com/ezaffanella/PPLite).
 
 Crab provides the state-of-the-art [interleaved fixpoint
 solver](https://link.springer.com/chapter/10.1007/978-3-642-38856-9_4)
@@ -95,12 +95,14 @@ requirements are:
 - Boost >= 1.65
 - GMP 
 - MPFR (if `-DCRAB_USE_APRON=ON` or `-DCRAB_USE_ELINA=ON`)
+- FLINT (only if `-DCRAB_USE_PPLITE=ON`) 
 
 In linux, you can install requirements typing the commands:
 
 	sudo apt-get install libboost-all-dev libboost-program-options-dev
     sudo apt-get install libgmp-dev
     sudo apt-get install libmpfr-dev	
+	sudo apt-get install libflint-dev
 
 # Compilation and Installation #
 
@@ -120,7 +122,7 @@ and then, for instance, to run `test1`:
     
 ## Include third-party abstract domain libraries ##
 
-The [Boxes](https://github.com/seahorn/ldd)/[Apron](https://github.com/antoinemine/apron)/[Elina](https://github.com/eth-sri/ELINA) domains require third-party libraries. To avoid
+The [Boxes](https://github.com/seahorn/ldd)/[Apron](https://github.com/antoinemine/apron)/[Elina](https://github.com/eth-sri/ELINA)/[PPLite](https://github.com/ezaffanella/PPLite) domains require third-party libraries. To avoid
 the burden to users who are not interested in those domains, the
 installation of the libraries is optional.
 
@@ -131,6 +133,10 @@ installation of the libraries is optional.
 
 - If you want to use the Elina library domains then add
   `-DCRAB_USE_ELINA=ON` option.
+
+- If you want to use the PPLite library domains then add
+  `-DCRAB_USE_PPLITE=ON` option.
+
 
 **Important:** Apron and Elina are currently not compatible so you
 cannot enable `-DCRAB_USE_APRON=ON` and `-DCRAB_USE_ELINA=ON` at the same time. 
@@ -143,11 +149,12 @@ For instance, to install Crab with Boxes and Apron, type:
      4. cmake --build . --target apron && cmake ..	
      5. cmake --build . --target install 	
 
-Lines 3 and 4 will download, compile and install the Boxes and Apron domains, respectively. Replace `apron` at line 4 with `elina` if you want to use Elina library instead. If you have already compiled and installed these libraries in your machine then skip commands at line 3 and 4 and add the following options at line 2.
+Lines 3 and 4 will download, compile and install the Boxes and Apron domains, respectively. Replace `apron` at line 4 with `elina` or `pplite` if you want to use Elina or PPLite instead. If you have already compiled and installed these libraries in your machine then skip commands at line 3 and 4 and add the following options at line 2.
 
 - For Apron: `-DAPRON_ROOT=$APRON_INSTALL_DIR`
 - For Elina: `-DELINA_ROOT=$ELINA_INSTALL_DIR`
 - For Boxes: `-DCUDD_ROOT=$CUDD_INSTALL_DIR -DLDD_ROOT=$LDD_INSTALL_DIR`
+- For PPLite: `-DPPLITE_ROOT=$PPLITE_INSTALL_DIR -DFLINT_ROOT=$FLINT_INSTALL_DIR`
 
 # Using Crab library in other C++ projects #
 
@@ -159,9 +166,9 @@ To include Crab in your C++ application you need to:
 - Link your application with the Crab libraries installed in
 `$INSTALL_DIR/crab/lib`.
 
-If you compile with Boxes/Apron/Elina you need also to include
+If you compile with Boxes/Apron/Elina/PPLite you need also to include
 `$INSTALL_DIR/EXT/include` and link with `$INSTALL_DIR/EXT/lib`
-where `EXT=apron|elina|ldd`.
+where `EXT=apron|elina|ldd|pplite`.
 
 ## CMake ## 
 
