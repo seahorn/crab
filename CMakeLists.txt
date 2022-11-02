@@ -373,6 +373,11 @@ if (CRAB_USE_APRON)
   install(DIRECTORY ${INSTALL_DIR} DESTINATION .)          
 endif()
 
+if (CRAB_USE_PPLITE)
+  ExternalProject_Get_Property (pplite INSTALL_DIR)  
+  install(DIRECTORY ${INSTALL_DIR} DESTINATION .)          
+endif()
+
 if (CRAB_USE_ELINA)
   ExternalProject_Get_Property (elina INSTALL_DIR)  
   install(DIRECTORY ${INSTALL_DIR} DESTINATION .)    
