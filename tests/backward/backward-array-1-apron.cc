@@ -75,6 +75,7 @@ bb3:
 }
 
 int main(int argc, char **argv) {
+#ifdef HAVE_APRON
   bool stats_enabled = false;
   if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
     return 0;
@@ -84,12 +85,13 @@ int main(int argc, char **argv) {
   crab::outs() << *cfg << "\n";
 
   // A forward+backward analysis should prove the assertion holds.
-  z_aa_int_t initial_states;
-  backward_run<z_aa_int_t>(cfg, cfg->entry(), initial_states, 1, 2, 20,
-			   stats_enabled);
+  z_aa_box_apron_t initial_states;
+  backward_run<z_aa_box_apron_t>(cfg, cfg->entry(), initial_states, 1, 2, 20,
+				 stats_enabled);
 
   // free the CFG
   delete cfg;
+#endif
 
   return 0;
 }

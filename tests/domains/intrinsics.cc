@@ -107,26 +107,26 @@ int main(int argc, char **argv) {
     inv.intrinsic("foo2", {}, {});
     crab::outs() << inv << "\n";
   }
-#ifdef HAVE_APRON
-  {
-    z_pk_apron_domain_t inv;
-    inv.intrinsic("foo1", {o1, o2}, {i1, i2});
-    inv.intrinsic("foo2", {o1}, {i1});
-    inv.intrinsic("foo2", {}, {i1});
-    inv.intrinsic("foo2", {}, {});
-    crab::outs() << inv << "\n";
-  }
-#endif
-#ifdef HAVE_ELINA
-  {
-    z_pk_elina_domain_t inv;
-    inv.intrinsic("foo1", {o1, o2}, {i1, i2});
-    inv.intrinsic("foo2", {o1}, {i1});
-    inv.intrinsic("foo2", {}, {i1});
-    inv.intrinsic("foo2", {}, {});
-    crab::outs() << inv << "\n";
-  }
-#endif
+// #ifdef HAVE_APRON
+//   {
+//     z_pk_apron_domain_t inv;
+//     inv.intrinsic("foo1", {o1, o2}, {i1, i2});
+//     inv.intrinsic("foo2", {o1}, {i1});
+//     inv.intrinsic("foo2", {}, {i1});
+//     inv.intrinsic("foo2", {}, {});
+//     crab::outs() << inv << "\n";
+//   }
+// #endif
+// #ifdef HAVE_ELINA
+//   {
+//     z_pk_elina_domain_t inv;
+//     inv.intrinsic("foo1", {o1, o2}, {i1, i2});
+//     inv.intrinsic("foo2", {o1}, {i1});
+//     inv.intrinsic("foo2", {}, {i1});
+//     inv.intrinsic("foo2", {}, {});
+//     crab::outs() << inv << "\n";
+//   }
+// #endif
 
   return 0;
 }

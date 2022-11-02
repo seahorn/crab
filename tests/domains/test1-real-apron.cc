@@ -37,6 +37,7 @@ q_cfg_t *prog(variable_factory_t &vfac) {
 
 /* Example of how to infer invariants from the above CFG */
 int main(int argc, char **argv) {
+#ifdef HAVE_APRON  
   bool stats_enabled = false;
   if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
     return 0;
@@ -46,8 +47,8 @@ int main(int argc, char **argv) {
   cfg->simplify(); // this is optional
   crab::outs() << *cfg << "\n";
 
-  q_interval_domain_t init;
+  q_pk_apron_domain_t init;
   run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-  
+#endif
   return 0;
 }

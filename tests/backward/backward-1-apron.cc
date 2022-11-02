@@ -43,6 +43,7 @@ z_cfg_t *prog(variable_factory_t &vfac) {
 }
 
 int main(int argc, char **argv) {
+#ifdef HAVE_APRON  
   bool stats_enabled = false;
   if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
     return 0;
@@ -52,19 +53,13 @@ int main(int argc, char **argv) {
   crab::outs() << *cfg << "\n";
 
 // A forward+backward analysis should prove the assertion holds.
-#ifdef HAVE_APRON
+
   z_box_apron_domain_t initial_states;
   backward_run<z_box_apron_domain_t>(cfg, cfg->entry(), initial_states, 1, 2,
                                      20, stats_enabled);
-#endif
-#ifdef HAVE_ELINA
-  z_oct_elina_domain_t initial_states;
-  backward_run<z_oct_elina_domain_t>(cfg, cfg->entry(), initial_states, 1, 2,
-                                     20, stats_enabled);
-#endif
 
   // free the CFG
   delete cfg;
-
+#endif
   return 0;
 }

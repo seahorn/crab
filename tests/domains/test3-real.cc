@@ -48,21 +48,7 @@ int main(int argc, char **argv) {
   q_cfg_t *cfg = prog(vfac);
   crab::outs() << *cfg << "\n";
 
-  {
-    q_interval_domain_t init;
-    run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-  }
-#ifdef HAVE_APRON
-  {
-    q_pk_apron_domain_t init;
-    run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-  }
-#endif
-#ifdef HAVE_LDD
-  {
-    q_boxes_domain_t init;
-    run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-  }
-#endif
+  q_interval_domain_t init;
+  run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
   return 0;
 }

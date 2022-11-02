@@ -82,6 +82,7 @@ z_cfg_t *prog(variable_factory_t &vfac) {
 
 /* Example of how to infer invariants from the above CFG */
 int main(int argc, char **argv) {
+#ifdef HAVE_LDD
   bool stats_enabled = false;
   if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
     return 0;
@@ -90,15 +91,9 @@ int main(int argc, char **argv) {
   z_cfg_t *cfg = prog(vfac);
   crab::outs() << *cfg << "\n";
 
-  {
-    z_interval_domain_t init;
-    run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-  }
-  {
-    z_bool_num_domain_t init;
-    run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-  }
-
+  z_boxes_domain_t init;
+  run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
   delete cfg;
+#endif  
   return 0;
 }

@@ -8,6 +8,7 @@ using namespace crab::analyzer;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
+
 // from TOPLAS paper Fig 1.b: version 1 
 // (computing expression y:= 200-2*x in two instructions:
 //  tmp:= 2*x; y:= 200-tmp;)
@@ -224,6 +225,7 @@ z_cfg_t* prog10(variable_factory_t &vfac)  {
 
 
 int main(int argc, char** argv) {
+#ifdef HAVE_ELINA  
   bool stats_enabled = false;
   if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
       return 0;
@@ -235,8 +237,8 @@ int main(int argc, char** argv) {
     z_cfg_t* cfg = prog6(vfac);
     crab::outs() << *cfg << "\n";
     // EXPECTED: SAFE
-    z_soct_domain_t inv;
-    run_and_check<z_soct_domain_t>(cfg, cfg->entry(), inv, false, 1, 2, 20, stats_enabled);
+    z_oct_elina_domain_t inv;
+    run_and_check<z_oct_elina_domain_t>(cfg, cfg->entry(), inv, false, 1, 2, 20, stats_enabled);
     delete cfg;
   }
   {
@@ -244,8 +246,8 @@ int main(int argc, char** argv) {
     z_cfg_t* cfg = prog7(vfac);
     crab::outs() << *cfg << "\n";
     // EXPECTED: SAFE
-    z_soct_domain_t inv;
-    run_and_check<z_soct_domain_t>(cfg, cfg->entry(), inv, false, 1, 2, 20, stats_enabled);
+    z_oct_elina_domain_t inv;
+    run_and_check<z_oct_elina_domain_t>(cfg, cfg->entry(), inv, false, 1, 2, 20, stats_enabled);
     delete cfg;
   }
   // crab::outs() << "##============================================##\n";
@@ -254,8 +256,8 @@ int main(int argc, char** argv) {
     z_cfg_t* cfg = prog8(vfac);
     crab::outs() << *cfg << "\n";
     // EXPECTED: SAFE
-    z_soct_domain_t inv;
-    run_and_check<z_soct_domain_t>(cfg, cfg->entry(), inv, false, 1, 2, 20, stats_enabled);
+    z_oct_elina_domain_t inv;
+    run_and_check<z_oct_elina_domain_t>(cfg, cfg->entry(), inv, false, 1, 2, 20, stats_enabled);
     delete cfg;
   }
   // crab::outs() << "##============================================##\n";
@@ -264,21 +266,19 @@ int main(int argc, char** argv) {
     z_cfg_t* cfg = prog9(vfac);
     crab::outs() << *cfg << "\n";
     // EXPECTED: SAFE
-    z_soct_domain_t inv;
-    run_and_check<z_soct_domain_t>(cfg, cfg->entry(), inv, false, 1, 2, 20, stats_enabled);
+    z_oct_elina_domain_t inv;
+    run_and_check<z_oct_elina_domain_t>(cfg, cfg->entry(), inv, false, 1, 2, 20, stats_enabled);
     delete cfg;
   }
   // crab::outs() << "##============================================##\n";
-  // FIXME: soct is imprecise if DefaultParams.special_assign = 1   
   { 
     variable_factory_t vfac;
     z_cfg_t* cfg = prog10(vfac);
     crab::outs() << *cfg << "\n";
-    // EXPECTED: SAFE
-    z_soct_domain_t inv;
-    run_and_check<z_soct_domain_t>(cfg, cfg->entry(), inv, false, 1, 2, 20, stats_enabled);
+    z_oct_elina_domain_t inv;
+    run_and_check<z_oct_elina_domain_t>(cfg, cfg->entry(), inv, false, 1, 2, 20, stats_enabled);
     delete cfg;
   }
-  
+#endif          
   return 0;
 }

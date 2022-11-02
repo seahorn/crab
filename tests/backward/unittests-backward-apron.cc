@@ -7,6 +7,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 int main(int argc, char **argv) {
+#ifdef HAVE_APRON  
   bool stats_enabled = false;
   if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
     return 0;
@@ -18,7 +19,7 @@ int main(int argc, char **argv) {
   z_var z(vfac["z"], crab::INT_TYPE, 32);
 
   { // backward array load
-    z_aa_int_t pre, inv;
+    z_aa_box_apron_t pre, inv;
     crab::outs() << "Test using " << pre.domain_name() << "\n";
     pre += (y >= 1);
     pre.backward_array_load(y, M, 4, 4, inv);
@@ -29,7 +30,7 @@ int main(int argc, char **argv) {
   crab::outs() << "============================\n";
 
   { // backward array store
-    z_aa_int_t pre, inv;
+    z_aa_box_apron_t pre, inv;
     crab::outs() << "Test using " << pre.domain_name() << "\n";
     pre += (x >= 2);
     pre += (y >= 1);
@@ -43,7 +44,7 @@ int main(int argc, char **argv) {
   crab::outs() << "============================\n";
 
   { // backward array store
-    z_aa_int_t pre, inv;
+    z_aa_box_apron_t pre, inv;
     crab::outs() << "Test using " << pre.domain_name() << "\n";
     pre += (x >= 2);
     pre += (y >= 1);
@@ -57,7 +58,7 @@ int main(int argc, char **argv) {
   crab::outs() << "============================\n";
 
   { // backward array store
-    z_aa_int_t pre, inv;
+    z_aa_box_apron_t pre, inv;
     crab::outs() << "Test using " << pre.domain_name() << "\n";
     pre += (x >= 2);
     pre += (y >= 1);
@@ -66,6 +67,8 @@ int main(int argc, char **argv) {
     crab::outs() << "EXPECTED: {y >= 2, ...}\n";
     crab::outs() << "RESULT: " << pre << "\n";
   }
+#endif
+
 
   return 0;
 }

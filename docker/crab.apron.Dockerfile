@@ -64,6 +64,7 @@ RUN cmake -GNinja \
 
 # Run tests
 RUN /crab/tests/run_tests.sh /crab/tests/expected_results.apron.out /crab/build
+RUN /crab/tests/run_tests.sh /crab/tests/expected_results.boxes.out /crab/build
 
 WORKDIR /crab
 

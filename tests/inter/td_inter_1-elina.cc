@@ -222,6 +222,8 @@ using callgraph_t = call_graph<z_cfg_ref_t>;
 using inter_params_t = top_down_inter_analyzer_parameters<callgraph_t>;
 
 int main(int argc, char **argv) {
+#ifdef HAVE_ELINA
+  
   bool stats_enabled = false;
   if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
     return 0;
@@ -241,48 +243,29 @@ int main(int argc, char **argv) {
 
   vector<z_cfg_ref_t> cfgs({*t1, *t2, *t3, *t4, *t5});
   callgraph_t cg(cfgs);
-  {
-    z_dbm_domain_t init;
-    crab::outs() << "Running top-down inter-procedural analysis with "
-                 << init.domain_name() << "\n";
-
-    /////////////////////////////////////////
-    // it should prove all assertions
-    /////////////////////////////////////////
-    inter_params_t params1;
-    td_inter_run(cg, init, params1, true, false, false);
-    /////////////////////////////////////////
-    // it should prove all assertions (see above comments)
-    /////////////////////////////////////////
-    inter_params_t params2;
-    params2.max_call_contexts = 3;
-    params2.checker_verbosity = 1;
-    td_inter_run(cg, init, params2, true, false, false);
-  }
-  {
-    z_sdbm_domain_t init;
-    crab::outs() << "Running top-down inter-procedural analysis with "
-                 << init.domain_name() << "\n";
-
-    /////////////////////////////////////////
-    // it should prove all assertions
-    /////////////////////////////////////////
-    inter_params_t params1;
-    td_inter_run(cg, init, params1, true, false, false);
-    /////////////////////////////////////////
-    // it should prove all assertions (see above comments)
-    /////////////////////////////////////////
-    inter_params_t params2;
-    params2.max_call_contexts = 3;
-    params2.checker_verbosity = 1;
-    td_inter_run(cg, init, params2, true, false, false);
-  }
+  z_oct_elina_domain_t init;
+  crab::outs() << "Running top-down inter-procedural analysis with "
+	       << init.domain_name() << "\n";
+  
+  /////////////////////////////////////////
+  // it should prove all assertions
+  /////////////////////////////////////////
+  inter_params_t params1;
+  td_inter_run(cg, init, params1, true, false, false);
+  /////////////////////////////////////////
+  // it should prove all assertions (see above comments)    
+  /////////////////////////////////////////
+  inter_params_t params2;
+  params2.max_call_contexts = 3;
+  params2.checker_verbosity = 1;
+  td_inter_run(cg, init, params2, true, false, false);
 
   delete t1;
   delete t2;
   delete t3;
   delete t4;
   delete t5;
+#endif
 
   return 0;
 }

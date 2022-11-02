@@ -124,6 +124,7 @@ z_cfg_t *m(variable_factory_t &vfac) {
 }
 
 int main(int argc, char **argv) {
+#ifdef HAVE_APRON  
   bool stats_enabled = false;
   if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
     return 0;
@@ -156,10 +157,10 @@ int main(int argc, char **argv) {
   params.widening_delay = 2;
   params.descending_iters = 2;
   params.thresholds_size = 20;
-  z_dbm_domain_t bu_top;
+  z_oct_apron_domain_t bu_top;
   z_interval_domain_t td_top;
-  bu_inter_run<z_dbm_domain_t, z_interval_domain_t>(
-	 *cg, bu_top, td_top, false, params, stats_enabled);
+  bu_inter_run<z_oct_apron_domain_t, z_interval_domain_t>(
+	      *cg, bu_top, td_top, false, params, stats_enabled);
 
   /// nothing wrong with this test but it prints invariants differently
   /// on Linux and mac.
@@ -180,6 +181,7 @@ int main(int argc, char **argv) {
   delete t3;
   delete t4;
   delete t5;
+#endif
 
   return 0;
 }

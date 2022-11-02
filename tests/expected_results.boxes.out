@@ -1,0 +1,634 @@
+=== Begin ./test-bin/backward-2-boxes ===
+entry:
+  goto bb1,bb2;
+bb1:
+  assume(-x <= -1);
+  y = x;
+  goto bb3;
+bb3:
+  assume(-y <= -6);
+  assert(x <= 5);
+  assert(-x <= 5);
+
+bb2:
+  assume(x <= 0);
+  tmp = 0;
+  y = tmp-x;
+  goto bb3;
+
+Invariants using Boxes
+entry={}
+bb2={}
+bb3={-x <= -1; -y <= -1} or 
+{x <= 0; -tmp <= 0; tmp <= 0; -y <= 0}
+bb1={}
+ --- WARNING -----------------
+Property : x <= 5
+Invariant: {-x <= -1; -y <= -6} or 
+{x <= 0; -tmp <= 0; tmp <= 0; -y <= -6}
+ -----------------------------
+ --- WARNING -----------------
+Property : -x <= 5
+Invariant: {-x <= -1; x <= 5; -y <= -6} or 
+{x <= 0; -tmp <= 0; tmp <= 0; -y <= -6}
+ -----------------------------
+user-defined assertion checker
+0  Number of total safe checks
+0  Number of total error checks
+2  Number of total warning checks
+0  Number of total unreachable checks
+
+=== End ./test-bin/backward-2-boxes ===
+=== Begin ./test-bin/backward-4-boxes ===
+bb1:
+  x = 0;
+  goto bb2;
+bb2:
+  goto bb3,bb4;
+bb3:
+  assume(x <= 99);
+  x = x+1;
+  goto bb2;
+bb4:
+  assume(-x <= -100);
+  assert(x <= 100);
+
+
+Invariants using Boxes
+bb1={}
+bb2={-x <= 0; x <= 100}
+bb4={-x <= 0}
+bb3={-x <= 0}
+ --- SAFE --------------------
+Property : x <= 100
+Invariant: {-x <= -100}
+Note: it was proven by the forward+backward analysis
+ -----------------------------
+user-defined assertion checker
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+=== End ./test-bin/backward-4-boxes ===
+=== Begin ./test-bin/boxes ===
+entry:
+  k = 0;
+  i = 0;
+  goto bb1;
+bb1:
+  goto bb1_t,bb1_f;
+bb1_t:
+  assume(i <= 99);
+  i = i+1;
+  k = k+1;
+  goto bb1;
+bb1_f:
+  assume(-i <= -100);
+  goto ret;
+ret:
+
+
+Invariants using Boxes
+entry={}
+bb1={-k <= -15; -i <= -14; i <= 100} or 
+{-k <= -14; k <= 14; -i <= -14; i <= 14} or 
+{-k <= -13; k <= 13; -i <= -13; i <= 13} or 
+{-k <= -12; k <= 12; -i <= -12; i <= 12} or 
+{-k <= -11; k <= 11; -i <= -11; i <= 11} or 
+{-k <= -10; k <= 10; -i <= -10; i <= 10} or 
+{-k <= -9; k <= 9; -i <= -9; i <= 9} or 
+{-k <= -8; k <= 8; -i <= -8; i <= 8} or 
+{-k <= -7; k <= 7; -i <= -7; i <= 7} or 
+{-k <= -6; k <= 6; -i <= -6; i <= 6} or 
+{-k <= -5; k <= 5; -i <= -5; i <= 5} or 
+{-k <= -4; k <= 4; -i <= -4; i <= 4} or 
+{-k <= -3; k <= 3; -i <= -3; i <= 3} or 
+{-k <= -2; k <= 2; -i <= -2; i <= 2} or 
+{-k <= -1; k <= 1; -i <= -1; i <= 1} or 
+{-k <= 0; k <= 0; -i <= 0; i <= 0}
+bb1_f={-k <= -15; -i <= -14; i <= 100} or 
+{-k <= -14; k <= 14; -i <= -14; i <= 14} or 
+{-k <= -13; k <= 13; -i <= -13; i <= 13} or 
+{-k <= -12; k <= 12; -i <= -12; i <= 12} or 
+{-k <= -11; k <= 11; -i <= -11; i <= 11} or 
+{-k <= -10; k <= 10; -i <= -10; i <= 10} or 
+{-k <= -9; k <= 9; -i <= -9; i <= 9} or 
+{-k <= -8; k <= 8; -i <= -8; i <= 8} or 
+{-k <= -7; k <= 7; -i <= -7; i <= 7} or 
+{-k <= -6; k <= 6; -i <= -6; i <= 6} or 
+{-k <= -5; k <= 5; -i <= -5; i <= 5} or 
+{-k <= -4; k <= 4; -i <= -4; i <= 4} or 
+{-k <= -3; k <= 3; -i <= -3; i <= 3} or 
+{-k <= -2; k <= 2; -i <= -2; i <= 2} or 
+{-k <= -1; k <= 1; -i <= -1; i <= 1} or 
+{-k <= 0; k <= 0; -i <= 0; i <= 0}
+ret={-k <= -15; -i <= -100; i <= 100}
+bb1_t={-k <= -15; -i <= -14; i <= 100} or 
+{-k <= -14; k <= 14; -i <= -14; i <= 14} or 
+{-k <= -13; k <= 13; -i <= -13; i <= 13} or 
+{-k <= -12; k <= 12; -i <= -12; i <= 12} or 
+{-k <= -11; k <= 11; -i <= -11; i <= 11} or 
+{-k <= -10; k <= 10; -i <= -10; i <= 10} or 
+{-k <= -9; k <= 9; -i <= -9; i <= 9} or 
+{-k <= -8; k <= 8; -i <= -8; i <= 8} or 
+{-k <= -7; k <= 7; -i <= -7; i <= 7} or 
+{-k <= -6; k <= 6; -i <= -6; i <= 6} or 
+{-k <= -5; k <= 5; -i <= -5; i <= 5} or 
+{-k <= -4; k <= 4; -i <= -4; i <= 4} or 
+{-k <= -3; k <= 3; -i <= -3; i <= 3} or 
+{-k <= -2; k <= 2; -i <= -2; i <= 2} or 
+{-k <= -1; k <= 1; -i <= -1; i <= 1} or 
+{-k <= 0; k <= 0; -i <= 0; i <= 0}
+Abstract trace: entry (bb1 bb1_t)^{13} bb1_f ret
+
+loop1_entry:
+  i = 0;
+  k = 30;
+  goto loop1_bb1;
+loop1_bb1:
+  goto loop1_bb1_t,loop1_bb1_f;
+loop1_bb1_t:
+  assume(i <= 9);
+  i = i+1;
+  goto loop1_bb1;
+loop1_bb1_f:
+  assume(-i <= -10);
+  j = 0;
+  goto loop2_bb1;
+loop2_bb1:
+  goto loop2_bb1_t,loop2_bb1_f;
+loop2_bb1_t:
+  assume(j <= 9);
+  j = j+1;
+  goto loop2_bb1;
+loop2_bb1_f:
+  assume(-j <= -10);
+  goto ret;
+ret:
+
+
+Invariants using Boxes
+loop1_entry={}
+loop1_bb1={-k <= -30; k <= 30; -i <= 0; i <= 10}
+loop1_bb1_f={-k <= -30; k <= 30; -i <= 0; i <= 10}
+loop2_bb1={-k <= -30; k <= 30; -i <= -10; i <= 10; -j <= 0; j <= 10}
+loop2_bb1_f={-k <= -30; k <= 30; -i <= -10; i <= 10; -j <= 0; j <= 10}
+ret={-k <= -30; k <= 30; -i <= -10; i <= 10; -j <= -10; j <= 10}
+loop2_bb1_t={-k <= -30; k <= 30; -i <= -10; i <= 10; -j <= 0; j <= 10}
+loop1_bb1_t={-k <= -30; k <= 30; -i <= 0; i <= 10}
+Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t)^{11} loop1_bb1_f (loop2_bb1 loop2_bb1_t)^{11} loop2_bb1_f ret
+
+entry:
+  i = 0;
+  goto loop1_head;
+loop1_head:
+  goto loop1_t,loop1_f;
+loop1_t:
+  assume(i <= 10);
+  goto loop1_body;
+loop1_body:
+  i = i+1;
+  goto loop1_body_t,loop1_body_f;
+loop1_body_t:
+  assume(-i <= -9);
+  i = 0;
+  goto loop1_body_x;
+loop1_body_x:
+  goto loop1_head;
+loop1_body_f:
+  assume(i <= 8);
+  goto loop1_body_x;
+loop1_f:
+  assume(-i <= -11);
+  goto loop2_head;
+loop2_head:
+  goto loop2_t,loop2_f;
+loop2_t:
+  assume(i <= 100);
+  i = i-1;
+  goto loop2_head;
+loop2_f:
+  assume(-i <= -101);
+  goto ret;
+ret:
+
+
+Invariants using Boxes
+entry={}
+loop1_head={-i <= 0; i <= 8}
+loop1_f={-i <= 0; i <= 8}
+loop2_head=_|_
+loop2_f=_|_
+ret=_|_
+loop2_t=_|_
+loop1_t={-i <= 0; i <= 8}
+loop1_body={-i <= 0; i <= 8}
+loop1_body_f={-i <= -1; i <= 9}
+loop1_body_x={-i <= 0; i <= 8}
+loop1_body_t={-i <= -1; i <= 9}
+Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{9} loop1_f (loop2_head loop2_t)^{1} loop2_f ret
+
+entry:
+  i = 0;
+  p = 0;
+  goto loop_head;
+loop_head:
+  goto loop_t,loop_f;
+loop_t:
+  assume(i <= 9);
+  i = i+1;
+  p = p+4;
+  goto loop_head;
+loop_f:
+  assume(-i <= -10);
+  goto ret;
+ret:
+
+
+Invariants using Boxes
+entry={}
+loop_head={-i <= -10; i <= 10; -p <= -40; p <= 40} or 
+{-i <= -9; i <= 9; -p <= -36; p <= 36} or 
+{-i <= -8; i <= 8; -p <= -32; p <= 32} or 
+{-i <= -7; i <= 7; -p <= -28; p <= 28} or 
+{-i <= -6; i <= 6; -p <= -24; p <= 24} or 
+{-i <= -5; i <= 5; -p <= -20; p <= 20} or 
+{-i <= -4; i <= 4; -p <= -16; p <= 16} or 
+{-i <= -3; i <= 3; -p <= -12; p <= 12} or 
+{-i <= -2; i <= 2; -p <= -8; p <= 8} or 
+{-i <= -1; i <= 1; -p <= -4; p <= 4} or 
+{-i <= 0; i <= 0; -p <= 0; p <= 0}
+loop_f={-i <= -10; i <= 10; -p <= -40; p <= 40} or 
+{-i <= -9; i <= 9; -p <= -36; p <= 36} or 
+{-i <= -8; i <= 8; -p <= -32; p <= 32} or 
+{-i <= -7; i <= 7; -p <= -28; p <= 28} or 
+{-i <= -6; i <= 6; -p <= -24; p <= 24} or 
+{-i <= -5; i <= 5; -p <= -20; p <= 20} or 
+{-i <= -4; i <= 4; -p <= -16; p <= 16} or 
+{-i <= -3; i <= 3; -p <= -12; p <= 12} or 
+{-i <= -2; i <= 2; -p <= -8; p <= 8} or 
+{-i <= -1; i <= 1; -p <= -4; p <= 4} or 
+{-i <= 0; i <= 0; -p <= 0; p <= 0}
+ret={-i <= -10; i <= 10; -p <= -40; p <= 40}
+loop_t={-i <= -10; i <= 10; -p <= -40; p <= 40} or 
+{-i <= -9; i <= 9; -p <= -36; p <= 36} or 
+{-i <= -8; i <= 8; -p <= -32; p <= 32} or 
+{-i <= -7; i <= 7; -p <= -28; p <= 28} or 
+{-i <= -6; i <= 6; -p <= -24; p <= 24} or 
+{-i <= -5; i <= 5; -p <= -20; p <= 20} or 
+{-i <= -4; i <= 4; -p <= -16; p <= 16} or 
+{-i <= -3; i <= 3; -p <= -12; p <= 12} or 
+{-i <= -2; i <= 2; -p <= -8; p <= 8} or 
+{-i <= -1; i <= 1; -p <= -4; p <= 4} or 
+{-i <= 0; i <= 0; -p <= 0; p <= 0}
+Abstract trace: entry (loop_head loop_t)^{11} loop_f ret
+
+entry:
+  k = 0;
+  i = 0;
+  goto bb1;
+bb1:
+  goto bb1_t,bb1_f;
+bb1_t:
+  assume(i != 9);
+  goto bb2;
+bb2:
+  i = i+1;
+  k = k+1;
+  goto bb1;
+bb1_f:
+  assume(i = 9);
+  goto ret;
+ret:
+
+
+Invariants using Boxes
+entry={}
+bb1={-k <= -9; k <= 9; -i <= -9; i <= 9} or 
+{-k <= -8; k <= 8; -i <= -8; i <= 8} or 
+{-k <= -7; k <= 7; -i <= -7; i <= 7} or 
+{-k <= -6; k <= 6; -i <= -6; i <= 6} or 
+{-k <= -5; k <= 5; -i <= -5; i <= 5} or 
+{-k <= -4; k <= 4; -i <= -4; i <= 4} or 
+{-k <= -3; k <= 3; -i <= -3; i <= 3} or 
+{-k <= -2; k <= 2; -i <= -2; i <= 2} or 
+{-k <= -1; k <= 1; -i <= -1; i <= 1} or 
+{-k <= 0; k <= 0; -i <= 0; i <= 0}
+bb1_f={-k <= -9; k <= 9; -i <= -9; i <= 9} or 
+{-k <= -8; k <= 8; -i <= -8; i <= 8} or 
+{-k <= -7; k <= 7; -i <= -7; i <= 7} or 
+{-k <= -6; k <= 6; -i <= -6; i <= 6} or 
+{-k <= -5; k <= 5; -i <= -5; i <= 5} or 
+{-k <= -4; k <= 4; -i <= -4; i <= 4} or 
+{-k <= -3; k <= 3; -i <= -3; i <= 3} or 
+{-k <= -2; k <= 2; -i <= -2; i <= 2} or 
+{-k <= -1; k <= 1; -i <= -1; i <= 1} or 
+{-k <= 0; k <= 0; -i <= 0; i <= 0}
+ret={-k <= -9; k <= 9; -i <= -9; i <= 9}
+bb1_t={-k <= -9; k <= 9; -i <= -9; i <= 9} or 
+{-k <= -8; k <= 8; -i <= -8; i <= 8} or 
+{-k <= -7; k <= 7; -i <= -7; i <= 7} or 
+{-k <= -6; k <= 6; -i <= -6; i <= 6} or 
+{-k <= -5; k <= 5; -i <= -5; i <= 5} or 
+{-k <= -4; k <= 4; -i <= -4; i <= 4} or 
+{-k <= -3; k <= 3; -i <= -3; i <= 3} or 
+{-k <= -2; k <= 2; -i <= -2; i <= 2} or 
+{-k <= -1; k <= 1; -i <= -1; i <= 1} or 
+{-k <= 0; k <= 0; -i <= 0; i <= 0}
+bb2={-k <= -8; k <= 8; -i <= -8; i <= 8} or 
+{-k <= -7; k <= 7; -i <= -7; i <= 7} or 
+{-k <= -6; k <= 6; -i <= -6; i <= 6} or 
+{-k <= -5; k <= 5; -i <= -5; i <= 5} or 
+{-k <= -4; k <= 4; -i <= -4; i <= 4} or 
+{-k <= -3; k <= 3; -i <= -3; i <= 3} or 
+{-k <= -2; k <= 2; -i <= -2; i <= 2} or 
+{-k <= -1; k <= 1; -i <= -1; i <= 1} or 
+{-k <= 0; k <= 0; -i <= 0; i <= 0}
+Abstract trace: entry (bb1 bb1_t bb2)^{10} bb1_f ret
+
+entry:
+  x = 1;
+  y = 0;
+  goto header;
+header:
+  goto body,exit;
+body:
+  x = x+y;
+  y = y+1;
+  goto header;
+exit:
+  assert(-x+y <= 0);
+
+
+Invariants using Boxes
+entry={}
+header={-x <= -2; -y <= -1} or 
+{-x <= -1; x <= 1; -y <= 0}
+exit={-x <= -2; -y <= -1} or 
+{-x <= -1; x <= 1; -y <= 0}
+body={-x <= -2; -y <= -1} or 
+{-x <= -1; x <= 1; -y <= 0}
+Abstract trace: entry (header body)^{4} exit
+
+Testing some boxes operations ...
+{-y <= -6; y <= 6; -z <= -7; z <= 7} or 
+{-y <= -3; y <= 3; -z <= -4; z <= 4}
+x:=y + z= 
+{-x <= -11; x <= 13; -y <= -6; y <= 6; -z <= -7; z <= 7} or 
+{-x <= -10; x <= 10; -y <= -6; y <= 6; -z <= -7; z <= 7} or 
+{-x <= -10; x <= 10; -y <= -3; y <= 3; -z <= -4; z <= 4} or 
+{-x <= -7; x <= 9; -y <= -3; y <= 3; -z <= -4; z <= 4}
+x:=y - z= 
+{-x <= 0; x <= 2; -y <= -6; y <= 6; -z <= -7; z <= 7} or 
+{-x <= 1; x <= -1; -y <= -6; y <= 6; -z <= -7; z <= 7} or 
+{-x <= 1; x <= -1; -y <= -3; y <= 3; -z <= -4; z <= 4} or 
+{-x <= 4; x <= -2; -y <= -3; y <= 3; -z <= -4; z <= 4}
+x:=y * z= 
+{-x <= -12; x <= 42; -y <= -6; y <= 6; -z <= -7; z <= 7} or 
+{-x <= -12; x <= 42; -y <= -3; y <= 3; -z <= -4; z <= 4}
+x:=y / z= 
+{-x <= 0; x <= 1; -y <= -6; y <= 6; -z <= -7; z <= 7} or 
+{-x <= 0; x <= 1; -y <= -3; y <= 3; -z <= -4; z <= 4}
+INV: {-x <= -11; x <= 13; -y <= -6; y <= 6; -z <= -7; z <= 7} or 
+{-x <= -10; x <= 10; -y <= -6; y <= 6; -z <= -7; z <= 7} or 
+{-x <= -10; x <= 10; -y <= -3; y <= 3; -z <= -4; z <= 4} or 
+{-x <= -7; x <= 9; -y <= -3; y <= 3; -z <= -4; z <= 4}
+ADDED x >= y 
+{-x <= -11; x <= 13; -y <= -6; y <= 6; -z <= -7; z <= 7} or 
+{-x <= -10; x <= 10; -y <= -6; y <= 6; -z <= -7; z <= 7} or 
+{-x <= -10; x <= 10; -y <= -3; y <= 3; -z <= -4; z <= 4} or 
+{-x <= -7; x <= 9; -y <= -3; y <= 3; -z <= -4; z <= 4}
+INV: {-x <= -11; x <= 13; -y <= -6; y <= 6; -z <= -7; z <= 7} or 
+{-x <= -10; x <= 10; -y <= -6; y <= 6; -z <= -7; z <= 7} or 
+{-x <= -10; x <= 10; -y <= -3; y <= 3; -z <= -4; z <= 4} or 
+{-x <= -7; x <= 9; -y <= -3; y <= 3; -z <= -4; z <= 4}
+ADDED x <= y + z -1
+{-x <= -11; x <= 12; -y <= -6; y <= 6; -z <= -7; z <= 7} or 
+{-x <= -10; x <= 10; -y <= -6; y <= 6; -z <= -7; z <= 7} or 
+{-x <= -10; x <= 10; -y <= -3; y <= 3; -z <= -4; z <= 4} or 
+{-x <= -7; x <= 9; -y <= -3; y <= 3; -z <= -4; z <= 4}
+INV: {}
+ADDED x != 9
+{-x <= -10} or 
+{x <= 8}
+ADDED y >= 9
+{-x <= -10; -y <= -9} or 
+{x <= 8; -y <= -9}
+ADDED y <= 9
+{-x <= -10; -y <= -9; y <= 9} or 
+{x <= 8; -y <= -9; y <= 9}
+ADDED z > 9
+{-x <= -10; -y <= -9; y <= 9; -z <= -10} or 
+{x <= 8; -y <= -9; y <= 9; -z <= -10}
+ADDED z < 9
+_|_
+=== End ./test-bin/boxes ===
+=== Begin ./test-bin/boxes-bug ===
+OP1={-x <= -2; -y <= -2; y <= 2} or 
+{-x <= -1; x <= 1; -y <= -1; y <= 1} or 
+{-x <= -1; x <= 1; -y <= 0; y <= 0}
+OP2={-x < -3; -y <= -3; y <= 3} or 
+{-x <= -2; x <= 3; -y <= -3; y <= 3} or 
+{-x <= -2; x <= 3; -y <= -2; y <= 2} or 
+{-x <= -2; x <= 3; -y <= -1; y <= 1} or 
+{-x < -1; x < 2; -y <= -2; y <= 2} or 
+{-x < -1; x < 2; -y <= -1; y <= 1} or 
+{-x <= -1; x <= 1; -y <= -2; y <= 2} or 
+{-x <= -1; x <= 1; -y <= -1; y <= 1} or 
+{-x <= -1; x <= 1; -y <= 0; y <= 0}
+WIDENING(OP1,OP2)={-x < -3; -y <= -3} or 
+{-x < -3; -y <= -2; y <= 2} or 
+{-x <= -2; x <= 3; -y <= -3} or 
+{-x <= -2; x <= 3; -y <= -2; y <= 2} or 
+{-x <= -2; x <= 3; y <= 1} or 
+{-x < -1; x < 2; -y <= -2; y <= 2} or 
+{-x < -1; x < 2; -y <= -1; y <= 1} or 
+{-x <= -1; x <= 1; -y <= -2} or 
+{-x <= -1; x <= 1; -y <= -1; y <= 1} or 
+{-x <= -1; x <= 1; -y <= 0; y <= 0}
+[A] CONVEX(WIDENING(OP1,OP2))={-x <= -1}
+--------------------------------
+CONVEX(OP1)={x -> [1, +oo]; y -> [0, 2]}
+CONVEX(OP2)={x -> [1, +oo]; y -> [0, 3]}
+[B] WIDENING(CONVEX(OP1),CONVEX(OP2))={x -> [1, +oo]; y -> [0, +oo]}
+--------------------------------
+[A] and [B] should be the same if CONVEX distributes over WIDENING 
+=== End ./test-bin/boxes-bug ===
+=== Begin ./test-bin/boxes-ldd ===
+Join 
+Widening 
+Widening of 
+{-x <= 0; x <= 1/4; -y <= -1/4; y <= 1/2}and
+{-x <= -1/4; x <= 1; -y <= -1/8; y <= 1/4} or 
+{-x <= 0; x <= 0; -y <= -1/2; y <= 1/2} = 
+{-x < -1/4; -y <= -1/8; y <= 1/4} or 
+{-x <= 0; x <= 1/4; y <= 1/2}
+=== End ./test-bin/boxes-ldd ===
+=== Begin ./test-bin/flat_bool_domain1-boxes ===
+entry:
+  i = 0;
+  bf = false;
+  bt = true;
+  goto bb1;
+bb1:
+  goto bb1_t,bb1_f;
+bb1_t:
+  b1 = (i <= 99);
+  assume(b1);
+  assert(b1);
+  goto bb2;
+bb2:
+  havoc(nd);
+  inc = ite(-nd <= -1,1,2);
+  i = i+inc;
+  b3 = (-i <= -1);
+  b4 = b3;
+  b4 = b4|bf;
+  b4 = b4&bt;
+  b4 = b4^bt;
+  b4 = b4^bt;
+  goto bb1;
+bb1_f:
+  b2 = (-i <= -100);
+  assume(b2);
+  goto ret;
+ret:
+
+
+Invariants using Boxes
+entry={}
+bb1={-i <= -1; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; b1 <= 1; -nd <= -1; -inc <= -1; inc <= 1; -b3 <= -1; b3 <= 1; -b4 <= -1; b4 <= 1} or 
+{-i <= -1; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; b1 <= 1; nd <= 0; -inc <= -2; inc <= 2; -b3 <= -1; b3 <= 1; -b4 <= -1; b4 <= 1} or 
+{-i <= 0; i <= 0; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1}
+bb1_f={-i <= -1; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; b1 <= 1; -nd <= -1; -inc <= -1; inc <= 1; -b3 <= -1; b3 <= 1; -b4 <= -1; b4 <= 1} or 
+{-i <= -1; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; b1 <= 1; nd <= 0; -inc <= -2; inc <= 2; -b3 <= -1; b3 <= 1; -b4 <= -1; b4 <= 1} or 
+{-i <= 0; i <= 0; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1}
+ret={-i <= -100; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; b1 <= 1; -nd <= -1; -inc <= -1; inc <= 1; -b3 <= -1; b3 <= 1; -b4 <= -1; b4 <= 1; -b2 <= -1; b2 <= 1} or 
+{-i <= -100; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; b1 <= 1; nd <= 0; -inc <= -2; inc <= 2; -b3 <= -1; b3 <= 1; -b4 <= -1; b4 <= 1; -b2 <= -1; b2 <= 1}
+bb1_t={-i <= -1; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; b1 <= 1; -nd <= -1; -inc <= -1; inc <= 1; -b3 <= -1; b3 <= 1; -b4 <= -1; b4 <= 1} or 
+{-i <= -1; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; b1 <= 1; nd <= 0; -inc <= -2; inc <= 2; -b3 <= -1; b3 <= 1; -b4 <= -1; b4 <= 1} or 
+{-i <= 0; i <= 0; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1}
+bb2={-i <= -1; i <= 99; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; b1 <= 1; -nd <= -1; -inc <= -1; inc <= 1; -b3 <= -1; b3 <= 1; -b4 <= -1; b4 <= 1} or 
+{-i <= -1; i <= 99; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; b1 <= 1; nd <= 0; -inc <= -2; inc <= 2; -b3 <= -1; b3 <= 1; -b4 <= -1; b4 <= 1} or 
+{-i <= 0; i <= 0; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; b1 <= 1}
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
+=== End ./test-bin/flat_bool_domain1-boxes ===
+=== Begin ./test-bin/flat_bool_domain5-boxes ===
+entry:
+  havoc(x);
+  b2 = (-x <= 0);
+  b3 = (x <= 10);
+  b4 = false;
+  b5 = ite(b2,b3,b4);
+  assume(b5);
+  goto exit;
+exit:
+  assert(-x <= 0);
+  assert(x <= 10);
+
+
+Invariants using Boxes
+Abstract trace: entry exit
+user-defined assertion checker
+2  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+entry:
+  havoc(x);
+  b2 = (-x <= 0);
+  b3 = (x <= 10);
+  b4 = false;
+  b5 = ite(b2,b3,b4);
+  assume(not(b5));
+  goto exit;
+exit:
+  assert(x <= 10);
+
+
+Invariants using Boxes
+Abstract trace: entry exit
+user-defined assertion checker
+0  Number of total safe checks
+0  Number of total error checks
+1  Number of total warning checks
+0  Number of total unreachable checks
+
+=== End ./test-bin/flat_bool_domain5-boxes ===
+=== Begin ./test-bin/test2-real-boxes ===
+entry:
+  x = 0;
+  y = 1/2;
+  goto bb1;
+bb1:
+  x = x+y;
+  y = y/2;
+  goto bb1;
+
+Invariants using Boxes
+entry={}
+bb1={-x < 0; y <= 1/4} or 
+{-x <= 0; x <= 0; -y <= -1/2; y <= 1/2} or 
+{-x <= 0; x <= 0; y <= 1/4} or 
+{x < 0; y <= 1/4}
+Abstract trace: entry (bb1)^{4}
+
+=== End ./test-bin/test2-real-boxes ===
+=== Begin ./test-bin/test3-real-boxes ===
+entry:
+  x = 1;
+  y = 0;
+  goto header;
+header:
+  goto body,exit;
+body:
+  x = x+y;
+  y = y+1;
+  goto header;
+exit:
+  assert(-x+y <= 0);
+
+
+Invariants using Boxes
+entry={}
+header={}
+exit={}
+body={}
+Abstract trace: entry (header body)^{6} exit
+
+=== End ./test-bin/test3-real-boxes ===
+=== Begin ./test-bin/unittests-boxes ===
+-------------------
+{-y <= 0; y <= 9}
+z:=y+ 24:
+expected= z = [24, 33]
+result={-y <= 0; y <= 9; -z <= -24; z <= 33}
+-------------------
+{-y <= 0; y <= 9}
+z:=y* 24:
+expected= z = [0, 216]
+result={-y <= 0; y <= 9; -z <= 0; z <= 216}
+-------------------
+{-y <= 0; y <= 9; -x <= -24; x <= 24}
+z:=y*x:
+expected= z = [0, 216]
+result={-y <= 0; y <= 9; -z <= 0; z <= 216; -x <= -24; x <= 24}
+-------------------
+{-y <= 1; y <= 9}
+z:=y* 24:
+expected= z = [-24, 216]
+result={-y <= 1; y <= 9; -z <= 24; z <= 216}
+-------------------
+{-y <= 0; y <= 80}
+z:=y/ 4:
+expected= z = [0, 20]
+result={-y <= 0; y <= 80; -z <= 0; z <= 20}
+-------------------
+{-y <= 0; y <= 80; -x <= -4; x <= 4}
+z:=y/x:
+expected= z = [0, 20]
+result={-y <= 0; y <= 80; -z <= 0; z <= 20; -x <= -4; x <= 4}
+=== End ./test-bin/unittests-boxes ===

@@ -1,3 +1,5 @@
+=== Begin ./test-bin/apron-octagons ===
+=== End ./test-bin/apron-octagons ===
 === Begin ./test-bin/apron_domains ===
 === End ./test-bin/apron_domains ===
 === Begin ./test-bin/array_adaptive1 ===
@@ -33,7 +35,6 @@ Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 4: forall 0<= i < n. a[i] = 123456 (unbounded loop)
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
-CRAB WARNING: array adaptive store range ignored because upper bound n is not constant
 entry=({}, {})
 bb1=({}, {i -> [0, +oo]; n -> [1, +oo]})
 bb1_f=({}, {i -> [0, +oo]; n -> [1, +oo]})
@@ -54,7 +55,6 @@ Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
-CRAB WARNING: array adaptive store range ignored because upper bound n is not constant
 entry=({}, {})
 bb1=({}, {i -> [1, +oo]; n -> [2, +oo]; val -> [89, 89]})
 bb1_f=({}, {i -> [1, +oo]; n -> [2, +oo]; val -> [89, 89]})
@@ -75,7 +75,6 @@ Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
 Program 8: forall 0<= i < n. 1 <= a[i] <= 2
 Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
-CRAB WARNING: array adaptive store range ignored because upper bound n is not constant
 entry=({}, {})
 bb1=({}, {i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]})
 bb1_f2=({}, {i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]})
@@ -445,77 +444,26 @@ bb2=({TRUE -> true; FALSE -> false; A.smashed -> true; B.smashed -> false}, {n1 
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 === End ./test-bin/array_smashing ===
-=== Begin ./test-bin/backward-1 ===
-entry:
-  goto bb1,bb2;
-bb1:
-  assume(-x <= 0);
-  y = x;
-  goto bb3;
-bb3:
-  assume(-y <= -1);
-  assert(x != 0);
-
-bb2:
-  assume(x <= -1);
-  tmp = 0;
-  y = tmp-x;
-  goto bb3;
-
-=== End ./test-bin/backward-1 ===
-=== Begin ./test-bin/backward-2 ===
-entry:
-  goto bb1,bb2;
-bb1:
-  assume(-x <= -1);
-  y = x;
-  goto bb3;
-bb3:
-  assume(-y <= -6);
-  assert(x <= 5);
-  assert(-x <= 5);
-
-bb2:
-  assume(x <= 0);
-  tmp = 0;
-  y = tmp-x;
-  goto bb3;
-
-=== End ./test-bin/backward-2 ===
-=== Begin ./test-bin/backward-3 ===
-bb1:
-  x = 0;
-  y = 0;
-  goto bb2;
-bb2:
-  goto bb3,bb4;
-bb3:
-  assume(x <= 99);
-  x = x+1;
-  y = y+1;
-  goto bb2;
-bb4:
-  assume(-x <= -100);
-  assert(y <= 100);
-
-
-=== End ./test-bin/backward-3 ===
-=== Begin ./test-bin/backward-4 ===
-bb1:
-  x = 0;
-  goto bb2;
-bb2:
-  goto bb3,bb4;
-bb3:
-  assume(x <= 99);
-  x = x+1;
-  goto bb2;
-bb4:
-  assume(-x <= -100);
-  assert(x <= 100);
-
-
-=== End ./test-bin/backward-4 ===
+=== Begin ./test-bin/backward-1-apron ===
+=== End ./test-bin/backward-1-apron ===
+=== Begin ./test-bin/backward-1-elina ===
+=== End ./test-bin/backward-1-elina ===
+=== Begin ./test-bin/backward-2-apron ===
+=== End ./test-bin/backward-2-apron ===
+=== Begin ./test-bin/backward-2-boxes ===
+=== End ./test-bin/backward-2-boxes ===
+=== Begin ./test-bin/backward-2-elina ===
+=== End ./test-bin/backward-2-elina ===
+=== Begin ./test-bin/backward-3-apron ===
+=== End ./test-bin/backward-3-apron ===
+=== Begin ./test-bin/backward-3-elina ===
+=== End ./test-bin/backward-3-elina ===
+=== Begin ./test-bin/backward-4-apron ===
+=== End ./test-bin/backward-4-apron ===
+=== Begin ./test-bin/backward-4-boxes ===
+=== End ./test-bin/backward-4-boxes ===
+=== Begin ./test-bin/backward-4-elina ===
+=== End ./test-bin/backward-4-elina ===
 === Begin ./test-bin/backward-array-1 ===
 entry:
   x = array_load(M,0,sz=4);
@@ -553,34 +501,16 @@ user-defined assertion checker
 0  Number of total unreachable checks
 
 === End ./test-bin/backward-array-1 ===
-=== Begin ./test-bin/bakhirkin ===
-entry:
-  x = 0;
-  goto header1;
-header1:
-  goto body1,exit1;
-body1:
-  x = x+y;
-  goto header1;
-exit1:
-  goto ifxpos,ret;
-ifxpos:
-  assume(-x <= -1);
-  goto header2;
-header2:
-  goto body2,exit2;
-body2:
-  y = y+x;
-  goto header2;
-exit2:
-  assert(-y <= 0);
-  goto ret;
-ret:
-
-
-=== End ./test-bin/bakhirkin ===
+=== Begin ./test-bin/backward-array-1-apron ===
+=== End ./test-bin/backward-array-1-apron ===
+=== Begin ./test-bin/bakhirkin-apron ===
+=== End ./test-bin/bakhirkin-apron ===
+=== Begin ./test-bin/bakhirkin-elina ===
+=== End ./test-bin/bakhirkin-elina ===
 === Begin ./test-bin/boxes ===
 === End ./test-bin/boxes ===
+=== Begin ./test-bin/boxes-ldd ===
+=== End ./test-bin/boxes-ldd ===
 === Begin ./test-bin/boxes_bug ===
 === End ./test-bin/boxes_bug ===
 === Begin ./test-bin/bu_inter ===
@@ -650,6 +580,8 @@ exit={x2 -> [3, 3]; y2 -> [6, 6]; z2 -> [8, 8]; w2 -> [11, 11]}
 entry={x2 -> [3, 3]; y2 -> [6, 6]}
 =================================
 === End ./test-bin/bu_inter ===
+=== Begin ./test-bin/bu_inter-apron ===
+=== End ./test-bin/bu_inter-apron ===
 === Begin ./test-bin/cfg ===
 CFG
 x0:
@@ -1327,6 +1259,8 @@ bb2={i -> [0, 99]; k -> [0, +oo]}
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
 === End ./test-bin/disintervals ===
+=== Begin ./test-bin/elina-octagons ===
+=== End ./test-bin/elina-octagons ===
 === Begin ./test-bin/elina_domains ===
 === End ./test-bin/elina_domains ===
 === Begin ./test-bin/entailment ===
@@ -1386,6 +1320,8 @@ bb2=({b1 -> true; bf -> false; bt -> true}, {i -> [0, 99]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 === End ./test-bin/flat_bool_domain1 ===
+=== Begin ./test-bin/flat_bool_domain1-boxes ===
+=== End ./test-bin/flat_bool_domain1-boxes ===
 === Begin ./test-bin/flat_bool_domain2 ===
 entry:
   i = 0;
@@ -1565,6 +1501,8 @@ user-defined assertion checker
 0  Number of total unreachable checks
 
 === End ./test-bin/flat_bool_domain5 ===
+=== Begin ./test-bin/flat_bool_domain5-boxes ===
+=== End ./test-bin/flat_bool_domain5-boxes ===
 === Begin ./test-bin/flat_bool_domain6 ===
 Invariants using Product(Boolean,SparseDBM)
 Abstract trace: bb1 bb4 bb2 bb3
@@ -1617,8 +1555,6 @@ ret:
 ({}, {})
 ({}, {})
 === End ./test-bin/intrinsics ===
-=== Begin ./test-bin/lddtests ===
-=== End ./test-bin/lddtests ===
 === Begin ./test-bin/live-1 ===
 entry:
   i = 0;
@@ -1892,10 +1828,14 @@ user-defined assertion checker
 0  Number of total unreachable checks
 
 === End ./test-bin/powerset ===
-=== Begin ./test-bin/precond-1 ===
-=== End ./test-bin/precond-1 ===
-=== Begin ./test-bin/precond-2 ===
-=== End ./test-bin/precond-2 ===
+=== Begin ./test-bin/precond-1-apron ===
+=== End ./test-bin/precond-1-apron ===
+=== Begin ./test-bin/precond-1-elina ===
+=== End ./test-bin/precond-1-elina ===
+=== Begin ./test-bin/precond-2-apron ===
+=== End ./test-bin/precond-2-apron ===
+=== Begin ./test-bin/precond-2-elina ===
+=== End ./test-bin/precond-2-elina ===
 === Begin ./test-bin/region-1 ===
 entry:
   region_init(region_0:region(int));
@@ -2571,6 +2511,10 @@ user-defined assertion checker
 0  Number of total unreachable checks
 
 === End ./test-bin/soct ===
+=== Begin ./test-bin/soct-apron ===
+=== End ./test-bin/soct-apron ===
+=== Begin ./test-bin/soct-elina ===
+=== End ./test-bin/soct-elina ===
 === Begin ./test-bin/td_inter_1 ===
 z:int32 declare foo(x:int32)
 entry:
@@ -2657,6 +2601,10 @@ Running top-down inter-procedural analysis with SplitDBM
  0  Number of total warning checks
  0  Number of total unreachable checks
 === End ./test-bin/td_inter_1 ===
+=== Begin ./test-bin/td_inter_1-apron ===
+=== End ./test-bin/td_inter_1-apron ===
+=== Begin ./test-bin/td_inter_1-elina ===
+=== End ./test-bin/td_inter_1-elina ===
 === Begin ./test-bin/td_inter_2 ===
 (x_out:int32,y_out:int32) declare loop(x_in:int32,y_in:int32)
 entry:
@@ -3126,6 +3074,8 @@ bb1_t={i -> [0, 6136154492292301/562949953421312]}
 Abstract trace: entry (bb1 bb1_t)^{3} bb1_f ret
 
 === End ./test-bin/test1-real ===
+=== Begin ./test-bin/test1-real-apron ===
+=== End ./test-bin/test1-real-apron ===
 === Begin ./test-bin/test2 ===
 loop1_entry:
   i = 0;
@@ -3236,6 +3186,10 @@ bb1={x -> [0, +oo]; y -> [0, 1/2]}
 Abstract trace: entry (bb1)^{3}
 
 === End ./test-bin/test2-real ===
+=== Begin ./test-bin/test2-real-apron ===
+=== End ./test-bin/test2-real-apron ===
+=== Begin ./test-bin/test2-real-boxes ===
+=== End ./test-bin/test2-real-boxes ===
 === Begin ./test-bin/test3 ===
 entry:
   i = 0;
@@ -3402,6 +3356,10 @@ body={x -> [1, +oo]; y -> [0, +oo]}
 Abstract trace: entry (header body)^{3} exit
 
 === End ./test-bin/test3-real ===
+=== Begin ./test-bin/test3-real-apron ===
+=== End ./test-bin/test3-real-apron ===
+=== Begin ./test-bin/test3-real-boxes ===
+=== End ./test-bin/test3-real-boxes ===
 === Begin ./test-bin/test4 ===
 entry:
   i = 0;
@@ -3469,8 +3427,10 @@ loop_t={i -> [0, 10]; p -> [0, 0] | [4, 4] | [8, 8] | [12, 12] | [16, +oo]}
 Abstract trace: entry (loop_head loop_t)^{4} loop_f ret
 
 === End ./test-bin/test4 ===
-=== Begin ./test-bin/test4-real ===
-=== End ./test-bin/test4-real ===
+=== Begin ./test-bin/test4-real-apron ===
+=== End ./test-bin/test4-real-apron ===
+=== Begin ./test-bin/test4-real-elina ===
+=== End ./test-bin/test4-real-elina ===
 === Begin ./test-bin/test5 ===
 entry:
   i = 0;
@@ -3777,7 +3737,6 @@ Unit tests for array adaptive domain
 ({}, {A[4...7] -> [5, 5]; B[0...3] -> [66, 66]}) & ({}, {A[4...7] -> [5, 5]; C[8...11] -> [32, 32]})=({}, {B[0...3] -> [66, 66]; C[8...11] -> [32, 32]; A[4...7] -> [5, 5]})
 === End ./test-bin/unittests-array-adaptive ===
 === Begin ./test-bin/unittests-backward ===
-============================
 Test using ArrayAdaptive(ArraySmashing(Intervals))
 EXPECTED: {M[4..7] >= 1} 
 RESULT: {M[4...7] -> [1, +oo]}
@@ -3794,6 +3753,10 @@ Test using ArrayAdaptive(ArraySmashing(Intervals))
 EXPECTED: {y >= 2, ...}
 RESULT: {x -> [2, +oo]; y -> [2, +oo]}
 === End ./test-bin/unittests-backward ===
+=== Begin ./test-bin/unittests-backward-apron ===
+=== End ./test-bin/unittests-backward-apron ===
+=== Begin ./test-bin/unittests-backward-elina ===
+=== End ./test-bin/unittests-backward-elina ===
 === Begin ./test-bin/unittests-boxes ===
 === End ./test-bin/unittests-boxes ===
 === Begin ./test-bin/unittests-linear-constraints ===
@@ -3947,6 +3910,10 @@ Before renaming {x -> t0[_x0], y -> t1[_x1]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 After rename x with w and y with z={z -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 After rename x with w={y -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 === End ./test-bin/unittests-rename ===
+=== Begin ./test-bin/unittests-rename-apron ===
+=== End ./test-bin/unittests-rename-apron ===
+=== Begin ./test-bin/unittests-rename-elina ===
+=== End ./test-bin/unittests-rename-elina ===
 === Begin ./test-bin/unittests-uf ===
 === Join === 
 {x -> *(8,5), y -> 8} | {x -> *($VAR_0,5), y -> $VAR_0} = {x -> *($VAR_0,5), y -> $VAR_0}

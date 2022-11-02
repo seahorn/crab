@@ -43,6 +43,7 @@ z_cfg_t *prog(variable_factory_t &vfac) {
 }
 
 int main(int argc, char **argv) {
+#ifdef HAVE_ELINA  
   bool stats_enabled = false;
   if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
     return 0;
@@ -60,33 +61,14 @@ int main(int argc, char **argv) {
   //   through blocks bb1 and bb2 one of the two constraints is true
   //   so we never infer bottom.
 
-#ifdef HAVE_APRON
-  {
-    z_box_apron_domain_t initial_states;
-    z_var x(vfac["x"], crab::INT_TYPE, 32);
-    backward_run<z_box_apron_domain_t>(cfg, cfg->entry(), initial_states, 1, 2,
-                                       20, stats_enabled);
-  }
-#endif
-#ifdef HAVE_ELINA
-  {
-    z_oct_elina_domain_t initial_states;
-    z_var x(vfac["x"], crab::INT_TYPE, 32);
-    backward_run<z_oct_elina_domain_t>(cfg, cfg->entry(), initial_states, 1, 2,
-                                       20, stats_enabled);
-  }
-#endif
-#ifdef HAVE_LDD
-  {
-    z_boxes_domain_t initial_states;
-    z_var x(vfac["x"], crab::INT_TYPE, 32);
-    backward_run<z_boxes_domain_t>(cfg, cfg->entry(), initial_states, 1, 2, 20,
-                                   stats_enabled);
-  }
-#endif
+  z_oct_elina_domain_t initial_states;
+  z_var x(vfac["x"], crab::INT_TYPE, 32);
+  backward_run<z_oct_elina_domain_t>(cfg, cfg->entry(), initial_states, 1, 2,
+				     20, stats_enabled);
 
   // free the CFG
   delete cfg;
+#endif
 
   return 0;
 }
