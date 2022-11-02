@@ -1,0 +1,505 @@
+=== Begin ./test-bin/pplite_domains ===
+entry:
+  k = 0;
+  i = 0;
+  goto bb1;
+bb1:
+  goto bb1_t,bb1_f;
+bb1_t:
+  assume(i <= 99);
+  goto bb2;
+bb2:
+  i = i+1;
+  k = k+1;
+  goto bb1;
+bb1_f:
+  assume(-i <= -100);
+  goto ret;
+ret:
+
+
+Invariants using ApronNewPolka
+entry={}
+bb1={-i+k = 0; i <= 100; -i <= 0}
+bb1_f={-i+k = 0; i <= 100; -i <= 0}
+ret={k = 100; i = 100}
+bb1_t={-i+k = 0; i <= 100; -i <= 0}
+bb2={-i+k = 0; i <= 99; -i <= 0}
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
+Invariants using ApronPPLitePoly
+entry={}
+bb1={i-k = 0; -i <= 0; i <= 100}
+bb1_f={i-k = 0; -i <= 0; i <= 100}
+ret={k = 100; i = 100}
+bb1_t={i-k = 0; -i <= 0; i <= 100}
+bb2={i-k = 0; -i <= 0; i <= 99}
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
+Invariants using ApronPPLiteFPoly
+entry={}
+bb1={i-k = 0; -i <= 0; i <= 100}
+bb1_f={i-k = 0; -i <= 0; i <= 100}
+ret={k = 100; i = 100}
+bb1_t={i-k = 0; -i <= 0; i <= 100}
+bb2={i-k = 0; -i <= 0; i <= 99}
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
+Invariants using ApronPPLitePSet
+entry={}
+bb1={k = 0; i = 0} or 
+{k = 1; i = 1} or 
+{k = 2; i = 2} or 
+{k = 3; i = 3} or 
+{k = 4; i = 4} or 
+{i-k = 0; i <= 100; -i <= -5}
+bb1_f={k = 0; i = 0} or 
+{k = 1; i = 1} or 
+{k = 2; i = 2} or 
+{k = 3; i = 3} or 
+{k = 4; i = 4} or 
+{i-k = 0; i <= 100; -i <= -5}
+ret={k = 100; i = 100}
+bb1_t={k = 0; i = 0} or 
+{k = 1; i = 1} or 
+{k = 2; i = 2} or 
+{k = 3; i = 3} or 
+{k = 4; i = 4} or 
+{i-k = 0; i <= 100; -i <= -5}
+bb2={k = 0; i = 0} or 
+{k = 1; i = 1} or 
+{k = 2; i = 2} or 
+{k = 3; i = 3} or 
+{k = 4; i = 4} or 
+{i-k = 0; -i <= -5; i <= 99}
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
+loop1_entry:
+  i = 0;
+  k = 30;
+  goto loop1_bb1;
+loop1_bb1:
+  goto loop1_bb1_t,loop1_bb1_f;
+loop1_bb1_t:
+  assume(i <= 9);
+  goto loop1_bb2;
+loop1_bb2:
+  i = i+1;
+  goto loop1_bb1;
+loop1_bb1_f:
+  assume(-i <= -10);
+  goto loop2_entry;
+loop2_entry:
+  j = 0;
+  goto loop2_bb1;
+loop2_bb1:
+  goto loop2_bb1_t,loop2_bb1_f;
+loop2_bb1_t:
+  assume(j <= 9);
+  goto loop2_bb2;
+loop2_bb2:
+  j = j+1;
+  goto loop2_bb1;
+loop2_bb1_f:
+  assume(-j <= -10);
+  goto ret;
+ret:
+
+
+Invariants using ApronNewPolka
+loop1_entry={}
+loop1_bb1={k = 30; i <= 10; -i <= 0}
+loop1_bb1_f={k = 30; i <= 10; -i <= 0}
+loop2_entry={k = 30; i = 10}
+loop2_bb1={k = 30; i = 10; j <= 10; -j <= 0}
+loop2_bb1_f={k = 30; i = 10; j <= 10; -j <= 0}
+ret={k = 30; j = 10; i = 10}
+loop2_bb1_t={k = 30; i = 10; j <= 10; -j <= 0}
+loop2_bb2={k = 30; i = 10; j <= 9; -j <= 0}
+loop1_bb1_t={k = 30; i <= 10; -i <= 0}
+loop1_bb2={k = 30; i <= 9; -i <= 0}
+Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
+
+Invariants using ApronPPLitePoly
+loop1_entry={}
+loop1_bb1={k = 30; -i <= 0; i <= 10}
+loop1_bb1_f={k = 30; -i <= 0; i <= 10}
+loop2_entry={k = 30; i = 10}
+loop2_bb1={k = 30; i = 10; -j <= 0; j <= 10}
+loop2_bb1_f={k = 30; i = 10; -j <= 0; j <= 10}
+ret={k = 30; j = 10; i = 10}
+loop2_bb1_t={k = 30; i = 10; -j <= 0; j <= 10}
+loop2_bb2={k = 30; i = 10; -j <= 0; j <= 9}
+loop1_bb1_t={k = 30; -i <= 0; i <= 10}
+loop1_bb2={k = 30; -i <= 0; i <= 9}
+Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
+
+Invariants using ApronPPLiteFPoly
+loop1_entry={}
+loop1_bb1={-i <= 0; i <= 10; k = 30}
+loop1_bb1_f={-i <= 0; i <= 10; k = 30}
+loop2_entry={i = 10; k = 30}
+loop2_bb1={i = 10; -j <= 0; j <= 10; k = 30}
+loop2_bb1_f={i = 10; -j <= 0; j <= 10; k = 30}
+ret={i = 10; j = 10; k = 30}
+loop2_bb1_t={i = 10; -j <= 0; j <= 10; k = 30}
+loop2_bb2={i = 10; -j <= 0; j <= 9; k = 30}
+loop1_bb1_t={-i <= 0; i <= 10; k = 30}
+loop1_bb2={-i <= 0; i <= 9; k = 30}
+Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
+
+Invariants using ApronPPLitePSet
+loop1_entry={}
+loop1_bb1={k = 30; i = 0} or 
+{k = 30; i = 1} or 
+{k = 30; i = 2} or 
+{k = 30; i = 3} or 
+{k = 30; i = 4} or 
+{k = 30; i <= 10; -i <= -5}
+loop1_bb1_f={k = 30; i = 0} or 
+{k = 30; i = 1} or 
+{k = 30; i = 2} or 
+{k = 30; i = 3} or 
+{k = 30; i = 4} or 
+{k = 30; i <= 10; -i <= -5}
+loop2_entry={k = 30; i = 10}
+loop2_bb1={k = 30; j = 0; i = 10} or 
+{k = 30; j = 1; i = 10} or 
+{k = 30; j = 2; i = 10} or 
+{k = 30; j = 3; i = 10} or 
+{k = 30; j = 4; i = 10} or 
+{k = 30; i = 10; j <= 10; -j <= -5}
+loop2_bb1_f={k = 30; j = 0; i = 10} or 
+{k = 30; j = 1; i = 10} or 
+{k = 30; j = 2; i = 10} or 
+{k = 30; j = 3; i = 10} or 
+{k = 30; j = 4; i = 10} or 
+{k = 30; i = 10; j <= 10; -j <= -5}
+ret={k = 30; j = 10; i = 10}
+loop2_bb1_t={k = 30; j = 0; i = 10} or 
+{k = 30; j = 1; i = 10} or 
+{k = 30; j = 2; i = 10} or 
+{k = 30; j = 3; i = 10} or 
+{k = 30; j = 4; i = 10} or 
+{k = 30; i = 10; j <= 10; -j <= -5}
+loop2_bb2={k = 30; j = 0; i = 10} or 
+{k = 30; j = 1; i = 10} or 
+{k = 30; j = 2; i = 10} or 
+{k = 30; j = 3; i = 10} or 
+{k = 30; j = 4; i = 10} or 
+{k = 30; i = 10; -j <= -5; j <= 9}
+loop1_bb1_t={k = 30; i = 0} or 
+{k = 30; i = 1} or 
+{k = 30; i = 2} or 
+{k = 30; i = 3} or 
+{k = 30; i = 4} or 
+{k = 30; i <= 10; -i <= -5}
+loop1_bb2={k = 30; i = 0} or 
+{k = 30; i = 1} or 
+{k = 30; i = 2} or 
+{k = 30; i = 3} or 
+{k = 30; i = 4} or 
+{k = 30; -i <= -5; i <= 9}
+Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
+
+entry:
+  i = 0;
+  goto loop1_head;
+loop1_head:
+  goto loop1_t,loop1_f;
+loop1_t:
+  assume(i <= 10);
+  goto loop1_body;
+loop1_body:
+  i = i+1;
+  goto loop1_body_t,loop1_body_f;
+loop1_body_t:
+  assume(-i <= -9);
+  i = 0;
+  goto loop1_body_x;
+loop1_body_x:
+  goto loop1_head;
+loop1_body_f:
+  assume(i <= 8);
+  goto loop1_body_x;
+loop1_f:
+  assume(-i <= -11);
+  goto cont;
+cont:
+  goto loop2_head;
+loop2_head:
+  goto loop2_t,loop2_f;
+loop2_t:
+  assume(i <= 100);
+  goto loop2_body;
+loop2_body:
+  i = i-1;
+  goto loop2_head;
+loop2_f:
+  assume(-i <= -101);
+  goto ret;
+ret:
+
+
+Invariants using ApronNewPolka
+entry={}
+loop1_head={i <= 8; -i <= 0}
+loop1_f={i <= 8; -i <= 0}
+cont=_|_
+loop2_head=_|_
+loop2_f=_|_
+ret=_|_
+loop2_t=_|_
+loop2_body=_|_
+loop1_t={i <= 8; -i <= 0}
+loop1_body={i <= 8; -i <= 0}
+loop1_body_f={i <= 9; -i <= -1}
+loop1_body_x={i <= 8; -i <= 0}
+loop1_body_t={i <= 9; -i <= -1}
+Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
+
+Invariants using ApronPPLitePoly
+entry={}
+loop1_head={i <= 8; -i <= 0}
+loop1_f={i <= 8; -i <= 0}
+cont=_|_
+loop2_head=_|_
+loop2_f=_|_
+ret=_|_
+loop2_t=_|_
+loop2_body=_|_
+loop1_t={i <= 8; -i <= 0}
+loop1_body={i <= 8; -i <= 0}
+loop1_body_f={i <= 9; -i <= -1}
+loop1_body_x={-i <= 0; i <= 8}
+loop1_body_t={i <= 9; -i <= -1}
+Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
+
+Invariants using ApronPPLiteFPoly
+entry={}
+loop1_head={-i <= 0; i <= 8}
+loop1_f={-i <= 0; i <= 8}
+cont=_|_
+loop2_head=_|_
+loop2_f=_|_
+ret=_|_
+loop2_t=_|_
+loop2_body=_|_
+loop1_t={-i <= 0; i <= 8}
+loop1_body={-i <= 0; i <= 8}
+loop1_body_f={-i <= -1; i <= 9}
+loop1_body_x={-i <= 0; i <= 8}
+loop1_body_t={-i <= -1; i <= 9}
+Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
+
+Invariants using ApronPPLitePSet
+entry={}
+loop1_head={i = 0} or 
+{i = 1} or 
+{i = 2} or 
+{i = 3} or 
+{i = 4} or 
+{-i <= -5; i <= 8}
+loop1_f={i = 0} or 
+{i = 1} or 
+{i = 2} or 
+{i = 3} or 
+{i = 4} or 
+{-i <= -5; i <= 8}
+cont=_|_
+loop2_head=_|_
+loop2_f=_|_
+ret=_|_
+loop2_t=_|_
+loop2_body=_|_
+loop1_t={i = 0} or 
+{i = 1} or 
+{i = 2} or 
+{i = 3} or 
+{i = 4} or 
+{-i <= -5; i <= 8}
+loop1_body={i = 0} or 
+{i = 1} or 
+{i = 2} or 
+{i = 3} or 
+{i = 4} or 
+{-i <= -5; i <= 8}
+loop1_body_f={i = 1} or 
+{i = 2} or 
+{i = 3} or 
+{i = 4} or 
+{i = 5} or 
+{-i <= -6; i <= 9}
+loop1_body_x={i = 0} or 
+{i = 1} or 
+{i = 2} or 
+{i = 3} or 
+{i = 4} or 
+{i = 5} or 
+{-i <= -6; i <= 8}
+loop1_body_t={i = 1} or 
+{i = 2} or 
+{i = 3} or 
+{i = 4} or 
+{i = 5} or 
+{-i <= -6; i <= 9}
+Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
+
+entry:
+  i = 0;
+  p = 0;
+  goto loop_head;
+loop_head:
+  goto loop_t,loop_f;
+loop_t:
+  assume(i <= 9);
+  goto loop_body;
+loop_body:
+  i = i+1;
+  p = p+4;
+  goto loop_head;
+loop_f:
+  assume(-i <= -10);
+  goto ret;
+ret:
+
+
+Invariants using ApronNewPolka
+entry={}
+loop_head={-4*i+p = 0; i <= 10; -i <= 0}
+loop_f={-4*i+p = 0; i <= 10; -i <= 0}
+ret={p = 40; i = 10}
+loop_t={-4*i+p = 0; i <= 10; -i <= 0}
+loop_body={-4*i+p = 0; i <= 9; -i <= 0}
+Abstract trace: entry (loop_head loop_t loop_body)^{3} loop_f ret
+
+Invariants using ApronPPLitePoly
+entry={}
+loop_head={4*i-p = 0; -p <= 0; p <= 40}
+loop_f={4*i-p = 0; -p <= 0; p <= 40}
+ret={p = 40; i = 10}
+loop_t={4*i-p = 0; -p <= 0; p <= 40}
+loop_body={4*i-p = 0; -i <= 0; i <= 9}
+Abstract trace: entry (loop_head loop_t loop_body)^{3} loop_f ret
+
+Invariants using ApronPPLiteFPoly
+entry={}
+loop_head={4*i-p = 0; -i <= 0; i <= 10}
+loop_f={4*i-p = 0; -i <= 0; i <= 10}
+ret={p = 40; i = 10}
+loop_t={4*i-p = 0; -i <= 0; i <= 10}
+loop_body={4*i-p = 0; -i <= 0; i <= 9}
+Abstract trace: entry (loop_head loop_t loop_body)^{3} loop_f ret
+
+Invariants using ApronPPLitePSet
+entry={}
+loop_head={p = 0; i = 0} or 
+{p = 4; i = 1} or 
+{p = 8; i = 2} or 
+{p = 12; i = 3} or 
+{p = 16; i = 4} or 
+{4*i-p = 0; i <= 10; -i <= -5}
+loop_f={p = 0; i = 0} or 
+{p = 4; i = 1} or 
+{p = 8; i = 2} or 
+{p = 12; i = 3} or 
+{p = 16; i = 4} or 
+{4*i-p = 0; i <= 10; -i <= -5}
+ret={p = 40; i = 10}
+loop_t={p = 0; i = 0} or 
+{p = 4; i = 1} or 
+{p = 8; i = 2} or 
+{p = 12; i = 3} or 
+{p = 16; i = 4} or 
+{4*i-p = 0; i <= 10; -i <= -5}
+loop_body={p = 0; i = 0} or 
+{p = 4; i = 1} or 
+{p = 8; i = 2} or 
+{p = 12; i = 3} or 
+{p = 16; i = 4} or 
+{4*i-p = 0; -i <= -5; i <= 9}
+Abstract trace: entry (loop_head loop_t loop_body)^{3} loop_f ret
+
+entry:
+  k = 0;
+  i = 0;
+  goto bb1;
+bb1:
+  goto bb1_t,bb1_f;
+bb1_t:
+  assume(i != 9);
+  goto bb2;
+bb2:
+  i = i+1;
+  k = k+1;
+  goto bb1;
+bb1_f:
+  assume(i = 9);
+  goto ret;
+ret:
+
+
+Invariants using ApronPPLitePoly
+entry={}
+bb1={i-k = 0; -i <= 0}
+bb1_f={i-k = 0; -i <= 0}
+ret={k = 9; i = 9}
+bb1_t={i-k = 0; -i <= 0}
+bb2={i-k = 0; -i <= 0}
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
+Invariants using ApronPPLitePoly
+entry={}
+bb1={i-k = 0; -i <= 0}
+bb1_f={i-k = 0; -i <= 0}
+ret={k = 9; i = 9}
+bb1_t={i-k = 0; -i <= 0}
+bb2={i-k = 0; -i <= 0}
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
+Invariants using ApronPPLiteFPoly
+entry={}
+bb1={i-k = 0; -i <= 0}
+bb1_f={i-k = 0; -i <= 0}
+ret={k = 9; i = 9}
+bb1_t={i-k = 0; -i <= 0}
+bb2={i-k = 0; -i <= 0}
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
+Invariants using ApronPPLitePSet
+entry={}
+bb1={k = 0; i = 0} or 
+{k = 1; i = 1} or 
+{k = 2; i = 2} or 
+{k = 3; i = 3} or 
+{k = 4; i = 4} or 
+{i-k = 0; -i <= -5}
+bb1_f={k = 0; i = 0} or 
+{k = 1; i = 1} or 
+{k = 2; i = 2} or 
+{k = 3; i = 3} or 
+{k = 4; i = 4} or 
+{i-k = 0; -i <= -5}
+ret={k = 9; i = 9}
+bb1_t={k = 0; i = 0} or 
+{k = 1; i = 1} or 
+{k = 2; i = 2} or 
+{k = 3; i = 3} or 
+{k = 4; i = 4} or 
+{i-k = 0; -i <= -5}
+bb2={k = 0; i = 0} or 
+{k = 1; i = 1} or 
+{k = 2; i = 2} or 
+{k = 3; i = 3} or 
+{k = 4; i = 4} or 
+{i-k = 0; -i <= -5}
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
+Before expand x into z:{y = 5; x = 5}
+After expand x into z: {z = 5; y = 5; x = 5}
+Copy before: {y = 5; x = 5}
+Join: {x = 5; y = 5}
+{x = 5}
+{x = 6}
+{x = 5}
+=== End ./test-bin/pplite_domains ===

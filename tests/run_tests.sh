@@ -3,7 +3,7 @@
 usage() {
     echo "Usage: $0 EXPECTED_OUTPUT BUILD_DIR"
     echo "where"
-    echo "   EXPECTED_OUTPUT = expected_results.[apron|elina|boxes].out"
+    echo "   EXPECTED_OUTPUT = expected_results.[apron|pplite|elina|boxes].out"
     echo "   BUILD_DIR is the build directory (e.g., build) where tests are located"
 }
 
@@ -32,8 +32,8 @@ lib=$(basename -- "$OLDLOG")
 lib="${lib##expected_results.}"
 lib="${lib%.out}"
 
-if [[ $lib != "apron" ]] && [[ $lib != "boxes" ]] && [[ $lib != "elina" ]] && [[ $lib != "out" ]]; then
-    echo "First parameter should be expected_results.[apron|elina|boxes].out but it is $OLDLOG"
+if [[ $lib != "apron" ]] && [[ $lib != "pplite" ]] && [[ $lib != "boxes" ]] && [[ $lib != "elina" ]] && [[ $lib != "out" ]]; then
+    echo "First parameter should be expected_results.[apron|pplite|elina|boxes].out but it is $OLDLOG"
     exit 1
 fi    
 
@@ -49,14 +49,14 @@ NEWLOG=results_${timestamp}.out
 for test in $DIR/test-bin/*
 do
   if [[ $lib == "out" ]]; then
-      if [[ $test != *"apron"* ]] && [[ $test != *"boxes"* ]] && [[ $test != *"elina"* ]]; then    
+      if [[ $test != *"apron"* ]] && [[ $test != *"pplite"* ]] && [[ $test != *"boxes"* ]] && [[ $test != *"elina"* ]]; then    
 	  echo "Running $test"
 	  echo "=== Begin $test ===" >> $NEWLOG
 	  $test >> $NEWLOG 2>/dev/null
 	  echo "=== End $test ===" >> $NEWLOG
       fi
   else
-      # lib should be apron, boxes, or elina
+      # lib should be apron, pplite, boxes, or elina
       if [[ $test == *"$lib"* ]]; then    
 	  echo "Running $test"
 	  echo "=== Begin $test ===" >> $NEWLOG
