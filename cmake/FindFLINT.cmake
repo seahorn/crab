@@ -6,7 +6,7 @@ if (NOT FLINT_FOUND)
 
   find_path(FLINT_INCLUDES
     NAMES flint/flint.h
-    HINTS "${FLINT_ROOT}/flint"
+    HINTS "${FLINT_ROOT}/include"
     DOC "Path to flint include directory"
   )
 
