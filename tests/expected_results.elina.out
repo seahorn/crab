@@ -182,7 +182,7 @@ user-defined assertion checker
 0  Number of total unreachable checks
 
 === End ./test-bin/bakhirkin-elina ===
-=== Begin ./test-bin/elina_domains ===
+=== Begin ./test-bin/elina-domains ===
 entry:
   k = 0;
   i = 0;
@@ -476,7 +476,7 @@ bb1_t={i-k = 0; -i <= 0}
 bb2={i-k = 0; -k <= 0}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
-=== End ./test-bin/elina_domains ===
+=== End ./test-bin/elina-domains ===
 === Begin ./test-bin/elina-octagons ===
 entry:
   k = 200;

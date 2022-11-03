@@ -1,162 +1,4 @@
-=== Begin ./test-bin/apron-octagons ===
-entry:
-  k = 200;
-  n = 100;
-  x = 0;
-  y = k;
-  goto loop;
-loop:
-  goto loop_body_1,ret;
-loop_body_1:
-  assume(-n+x <= -1);
-  goto loop_body_2;
-loop_body_2:
-  x = x+1;
-  goto loop_body_3;
-loop_body_3:
-  t = 2*x;
-  goto loop_body_4;
-loop_body_4:
-  y = -t+200;
-  goto loop;
-ret:
-  assume(n-x <= 0);
-  assert(-k+x+y <= 0);
-
-
-Invariants using ApronOctagon
-Abstract trace: entry (loop loop_body_1 loop_body_2 loop_body_3 loop_body_4)^{3} ret
-user-defined assertion checker
-1  Number of total safe checks
-0  Number of total error checks
-0  Number of total warning checks
-0  Number of total unreachable checks
-
-entry:
-  k = 200;
-  n = 100;
-  x = 0;
-  y = k;
-  goto loop;
-loop:
-  goto loop_body_1,ret;
-loop_body_1:
-  assume(-n+x <= -1);
-  goto loop_body_2;
-loop_body_2:
-  x = x+1;
-  goto loop_body_3;
-loop_body_3:
-  goto loop_body_4;
-loop_body_4:
-  y = k-2*x;
-  goto loop;
-ret:
-  assume(n-x <= 0);
-  assert(-k+x+y <= 0);
-
-
-Invariants using ApronOctagon
-Abstract trace: entry (loop loop_body_1 loop_body_2 loop_body_3 loop_body_4)^{3} ret
-user-defined assertion checker
-1  Number of total safe checks
-0  Number of total error checks
-0  Number of total warning checks
-0  Number of total unreachable checks
-
-entry:
-  x = 0;
-  y = 200;
-  goto loop;
-loop:
-  goto loop_body_1,ret;
-loop_body_1:
-  assume(x <= 99);
-  goto loop_body_2;
-loop_body_2:
-  x1 = x;
-  goto loop_body_3;
-loop_body_3:
-  x1 = x1+1;
-  goto loop_body_4;
-loop_body_4:
-  y = -2*x1+200;
-  x = x1;
-  goto loop;
-ret:
-  assume(-x <= -100);
-  assert(x+y <= 200);
-
-
-Invariants using ApronOctagon
-Abstract trace: entry (loop loop_body_1 loop_body_2 loop_body_3 loop_body_4)^{3} ret
-user-defined assertion checker
-1  Number of total safe checks
-0  Number of total error checks
-0  Number of total warning checks
-0  Number of total unreachable checks
-
-entry:
-  k = 200;
-  n = 100;
-  x = 0;
-  y = k;
-  goto loop;
-loop:
-  goto loop_body_1,ret;
-loop_body_1:
-  assume(-n+x <= -1);
-  goto loop_body_2;
-loop_body_2:
-  x = x+1;
-  goto loop_body_3;
-loop_body_3:
-  t = 2*x;
-  goto loop_body_4;
-loop_body_4:
-  y = k+t;
-  goto loop;
-ret:
-  assume(n-x <= 0);
-  assert(k+x-y <= 0);
-
-
-Invariants using ApronOctagon
-Abstract trace: entry (loop loop_body_1 loop_body_2 loop_body_3 loop_body_4)^{3} ret
-user-defined assertion checker
-1  Number of total safe checks
-0  Number of total error checks
-0  Number of total warning checks
-0  Number of total unreachable checks
-
-entry:
-  x = 0;
-  y = 200;
-  goto loop;
-loop:
-  goto loop_body,ret;
-loop_body:
-  assume(x <= 99);
-  x1 = x+1;
-  y1 = -2*x1+200;
-  x = x1;
-  y = y1;
-  goto loop;
-ret:
-  assume(-x <= -100);
-  assert(x+y <= 200);
-
-
-Invariants using ApronOctagon
-Abstract trace: entry (loop loop_body)^{3} ret
-user-defined assertion checker
-1  Number of total safe checks
-0  Number of total error checks
-0  Number of total warning checks
-0  Number of total unreachable checks
-
-=== End ./test-bin/apron-octagons ===
-=== Begin ./test-bin/apron_domains ===
+=== Begin ./test-bin/apron-domains ===
 entry:
   k = 0;
   i = 0;
@@ -517,7 +359,165 @@ bb1_t={-i+k = 0; -i <= 0}
 bb2={-i+k = 0; -i <= 0}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
-=== End ./test-bin/apron_domains ===
+=== End ./test-bin/apron-domains ===
+=== Begin ./test-bin/apron-octagons ===
+entry:
+  k = 200;
+  n = 100;
+  x = 0;
+  y = k;
+  goto loop;
+loop:
+  goto loop_body_1,ret;
+loop_body_1:
+  assume(-n+x <= -1);
+  goto loop_body_2;
+loop_body_2:
+  x = x+1;
+  goto loop_body_3;
+loop_body_3:
+  t = 2*x;
+  goto loop_body_4;
+loop_body_4:
+  y = -t+200;
+  goto loop;
+ret:
+  assume(n-x <= 0);
+  assert(-k+x+y <= 0);
+
+
+Invariants using ApronOctagon
+Abstract trace: entry (loop loop_body_1 loop_body_2 loop_body_3 loop_body_4)^{3} ret
+user-defined assertion checker
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+entry:
+  k = 200;
+  n = 100;
+  x = 0;
+  y = k;
+  goto loop;
+loop:
+  goto loop_body_1,ret;
+loop_body_1:
+  assume(-n+x <= -1);
+  goto loop_body_2;
+loop_body_2:
+  x = x+1;
+  goto loop_body_3;
+loop_body_3:
+  goto loop_body_4;
+loop_body_4:
+  y = k-2*x;
+  goto loop;
+ret:
+  assume(n-x <= 0);
+  assert(-k+x+y <= 0);
+
+
+Invariants using ApronOctagon
+Abstract trace: entry (loop loop_body_1 loop_body_2 loop_body_3 loop_body_4)^{3} ret
+user-defined assertion checker
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+entry:
+  x = 0;
+  y = 200;
+  goto loop;
+loop:
+  goto loop_body_1,ret;
+loop_body_1:
+  assume(x <= 99);
+  goto loop_body_2;
+loop_body_2:
+  x1 = x;
+  goto loop_body_3;
+loop_body_3:
+  x1 = x1+1;
+  goto loop_body_4;
+loop_body_4:
+  y = -2*x1+200;
+  x = x1;
+  goto loop;
+ret:
+  assume(-x <= -100);
+  assert(x+y <= 200);
+
+
+Invariants using ApronOctagon
+Abstract trace: entry (loop loop_body_1 loop_body_2 loop_body_3 loop_body_4)^{3} ret
+user-defined assertion checker
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+entry:
+  k = 200;
+  n = 100;
+  x = 0;
+  y = k;
+  goto loop;
+loop:
+  goto loop_body_1,ret;
+loop_body_1:
+  assume(-n+x <= -1);
+  goto loop_body_2;
+loop_body_2:
+  x = x+1;
+  goto loop_body_3;
+loop_body_3:
+  t = 2*x;
+  goto loop_body_4;
+loop_body_4:
+  y = k+t;
+  goto loop;
+ret:
+  assume(n-x <= 0);
+  assert(k+x-y <= 0);
+
+
+Invariants using ApronOctagon
+Abstract trace: entry (loop loop_body_1 loop_body_2 loop_body_3 loop_body_4)^{3} ret
+user-defined assertion checker
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+entry:
+  x = 0;
+  y = 200;
+  goto loop;
+loop:
+  goto loop_body,ret;
+loop_body:
+  assume(x <= 99);
+  x1 = x+1;
+  y1 = -2*x1+200;
+  x = x1;
+  y = y1;
+  goto loop;
+ret:
+  assume(-x <= -100);
+  assert(x+y <= 200);
+
+
+Invariants using ApronOctagon
+Abstract trace: entry (loop loop_body)^{3} ret
+user-defined assertion checker
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+=== End ./test-bin/apron-octagons ===
 === Begin ./test-bin/backward-1-apron ===
 entry:
   goto bb1,bb2;
