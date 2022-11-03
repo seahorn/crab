@@ -1,8 +1,17 @@
-# Building Crab with Docker and running tests #
+# Building Docker image for Crab dependencies #
+
 
 ```shell
-docker build --build-arg UBUNTU=xenial --build-arg BUILD_TYPE=Release -t seahorn/crab_apron:xenial -f docker/crab.apron.Dockerfile .
-docker run -v `pwd`:/host -it seahorn/crab_apron:xenial
+$ docker build --build-arg UBUNTU=bionic -t seahorn/buildpack-deps-crab:bionic -f docker/buildpack-deps-crab.Dockerfile .
+$ docker push seahorn/buildpack-deps-crab:bionic
+```
+
+
+# Building Docker image for Crab and running tests #
+
+```shell
+docker build --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab:bionic -f docker/crab.Dockerfile .
+docker run -v `pwd`:/host -it seahorn/crab:bionic
 ```
 
 This will automatically download all dependencies from a base image

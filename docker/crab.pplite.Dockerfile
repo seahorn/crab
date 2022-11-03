@@ -1,5 +1,5 @@
 #
-# Dockerfile for Crab image with apron and boxes libraries.
+# Dockerfile for Crab image with pplite library.
 #
 # produces package in /crab/build
 # Arguments:
@@ -26,17 +26,15 @@ RUN cmake -GNinja \
           -DCMAKE_INSTALL_PREFIX=run \
           -DCMAKE_CXX_COMPILER=g++-6 \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-          -DCRAB_USE_LDD=ON \
-          -DCRAB_USE_APRON=ON \
+          -DCRAB_USE_APRON=ON -DCRAB_USE_PPLITE=ON \
 	  -DCRAB_ENABLE_TESTS=ON \
           ../ && \
-    cmake --build . --target ldd  && cmake .. && \
     cmake --build . --target apron  && cmake .. && \
+    cmake --build . --target pplite  && cmake .. && \
     cmake --build . --target install
 
 # Run tests
-RUN /crab/tests/run_tests.sh /crab/tests/expected_results.apron.out /crab/build
-RUN /crab/tests/run_tests.sh /crab/tests/expected_results.boxes.out /crab/build
+RUN /crab/tests/run_tests.sh /crab/tests/expected_results.pplite.out /crab/build
 
 WORKDIR /crab
 

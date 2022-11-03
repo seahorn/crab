@@ -1,45 +1,17 @@
 #
-# Dockerfile for Crab binary without external domain libraries.
+# Dockerfile for Crab image without external libraries.
 #
 # produces package in /crab/build
 # Arguments:
-#  - UBUNTU:     xenial, bionic
-#  - BUILD_TYPE: debug, release
-#  - BRANCH
+#  - UBUNTU:     xenial, bionic (default)
+#  - BUILD_TYPE: Debug, Release (default)
+#  - BRANCH:     master (default)
 #
 
 ARG UBUNTU
 
 # Pull base image.
-FROM buildpack-deps:$UBUNTU
-
-ARG BUILD_TYPE
-RUN echo "Build type set to: $BUILD_TYPE" && \
-     # Install deps.
-    apt-get update && \
-    apt-get install -yqq software-properties-common && \
-    add-apt-repository -y ppa:mhier/libboost-latest && \     
-    apt-get update && \
-    apt-get install -yqq cmake cmake-data g++-5 \
-                         ninja-build libstdc++5 \
-			 libboost1.68-dev \
-                         libgmp-dev libmpfr-dev \
-			 lcov ggcov 
-
-WORKDIR /tmp/dockerutils
-
-# Create a helper script that works as switch (VAL) { Key0 : Val0, ...}.
-# This is to work around docker limitations and pass right correct flag to the
-# python configuration script.
-RUN echo '#!/bin/sh' > switch.sh && \ 
-    echo 'VAL=$1;shift;while test $# -gt 0;do if [ "$1" = "$VAL" ];then echo $2;exit 0;fi;shift;shift;done' >> switch.sh && \
-    chmod +x switch.sh && \
-    /tmp/dockerutils/switch.sh $BUILD_TYPE Debug "debug" Release "rel" Coverage "rel" \
-    > /tmp/dockerutils/dt_out.txt && \
-    export BT=$(cat /tmp/dockerutils/dt_out.txt) && \
-    export UB=$(lsb_release --a 2>&1 | cut -f2 | tail -n 1) && \
-    echo "$UB"_"$BT" > /tmp/dockerutils/prefix.txt && \
-    cat /tmp/dockerutils/prefix.txt 
+FROM seahorn/buildpack-deps-crab:$UBUNTU
 
 ARG BRANCH=master
 RUN cd / && rm -rf /crab && \
@@ -52,7 +24,7 @@ ARG BUILD_TYPE
 RUN cmake -GNinja \
           -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
           -DCMAKE_INSTALL_PREFIX=run \
-          -DCMAKE_CXX_COMPILER=g++-5 \
+          -DCMAKE_CXX_COMPILER=g++-6 \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
 	  -DCRAB_ENABLE_TESTS=ON \
           ../ && \
