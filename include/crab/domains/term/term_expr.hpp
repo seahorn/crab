@@ -123,7 +123,7 @@ bool term<Num, Ftor>::operator<(const term_t &other) const {
   switch (kind()) {
   case TERM_CONST: {
     return term_const(this) < term_const(&other);
-  } break;
+  } 
   case TERM_VAR: {
     return term_var(this) < term_var(&other);
   }
@@ -144,6 +144,8 @@ bool term<Num, Ftor>::operator<(const term_t &other) const {
     return false;
   }
   }
+  // unreachable but it silences Wreturn-type warning.
+  return false;
 }
 
 template <typename TermTable> class congruence_closure_solver;
