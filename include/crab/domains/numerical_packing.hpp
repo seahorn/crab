@@ -606,14 +606,28 @@ public:
       o << "{";
       pack_vars_t packs_vars = m_packs.equiv_classes_elems();
       bool first_pack = true;
+
+      /// Sort to print deterministically
+      std::vector<typename union_find_domain_t::element_t> sorted_pack_reps;
+      sorted_pack_reps.reserve(packs_vars.size());
       for (auto kv : packs_vars) {
+	sorted_pack_reps.push_back(kv.first);
+      }
+      std::sort(sorted_pack_reps.begin(), sorted_pack_reps.end());
+
+      for (auto rep: sorted_pack_reps) {
+	auto it = packs_vars.find(rep);
+	if (it == packs_vars.end()) {
+	  continue;
+	}
+	
         if (!first_pack) {
           o << ",";
         } else {
           first_pack = false;
         }
-        const pack_t &pack = m_packs.get_equiv_class(kv.first);
-        typename union_find_domain_t::element_set_t pack_vars = kv.second;
+        const pack_t &pack = m_packs.get_equiv_class(rep);
+        typename union_find_domain_t::element_set_t pack_vars = it->second;
         o << "Pack({";
         bool first_e = true;
         for (auto const &v : pack_vars) {

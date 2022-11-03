@@ -3845,7 +3845,7 @@ EXPECTED={({x},{x->[5,10]}),({y},{y->10}),({z},{z->0})} ACTUAL={Pack({x},{x -> [
 EXPECTED={({x,y},{x->10, y->10}), ({z},{z->0})} ACTUAL={Pack({x,y},{y -> [10, 10], x -> [10, 10]}),Pack({z},{z -> [0, 0]})
 EXPECTED={({x},{x->10}), ({z},{z->0})} ACTUAL={Pack({x},{x -> [10, 10]}),Pack({z},{z -> [0, 0]})
 EXPECTED={({w},{w->5}),({z},{z->10})} ACTUAL={Pack({w},{w -> [5, 5]}),Pack({z},{z -> [10, 10]})
-EXPECTED={({w},{w->5}),({z},{z->10}), ({x,y},{x=y})} ACTUAL={Pack({w},{w -> [5, 5]}),Pack({z},{z -> [10, 10]}),Pack({x,y},{x-y<=0, y-x<=0})
+EXPECTED={({w},{w->5}),({z},{z->10}), ({x,y},{x=y})} ACTUAL={Pack({x,y},{x-y<=0, y-x<=0}),Pack({w},{w -> [5, 5]}),Pack({z},{z -> [10, 10]})
 === End ./test-bin/unittests-num-packing ===
 === Begin ./test-bin/unittests-regions ===
 Join of
