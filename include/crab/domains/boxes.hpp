@@ -742,8 +742,6 @@ private:
                     Ldd_Ite(get_ldd_man(), &*c, &*mk_true(x), &*mk_false(x)));
 
     }
-    default:
-      CRAB_ERROR("Unknown boolean operator");
     }
   }
   

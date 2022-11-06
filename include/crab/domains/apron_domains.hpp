@@ -1407,8 +1407,6 @@ public:
     case OP_ASHR:
       xi = yi.AShr(zi);
       break;
-    default:
-      CRAB_ERROR("apron operation not supported");
     }
     set(x, xi);
   }
@@ -1441,8 +1439,6 @@ public:
     case OP_ASHR:
       xi = yi.AShr(zi);
       break;
-    default:
-      CRAB_ERROR("apron operation not supported");
     }
     set(x, xi);
   }
