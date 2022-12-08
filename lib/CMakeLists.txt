@@ -13,6 +13,7 @@ add_library(Crab ${CRAB_LIBS_TYPE}
   interval.cpp
   interval_congruence.cpp
   region_info.cpp
+  object_info.cpp
   sign.cpp
   small_range.cpp
   term_operators.cpp

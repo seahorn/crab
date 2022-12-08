@@ -195,16 +195,20 @@ public:
 
 class object_domain_params {
   bool m_reduce_everywhere;
+  bool m_singletons_in_base;
 
   friend class crab_domain_params;  
 public:
-  object_domain_params() : m_reduce_everywhere(false) {}
-  object_domain_params(bool reduce_everywhere) 
-    : m_reduce_everywhere(reduce_everywhere) {}
+  object_domain_params()
+      : m_reduce_everywhere(false), m_singletons_in_base(false) {}
+  object_domain_params(bool reduce_everywhere, bool singletons_in_base)
+      : m_reduce_everywhere(reduce_everywhere),
+        m_singletons_in_base(singletons_in_base) {}
 
   bool reduce_everywhere() const {
     return m_reduce_everywhere;
   }
+  bool singletons_in_base() const { return m_singletons_in_base; }
   void update_params(const object_domain_params& p);
   void write(crab::crab_os &o) const;
 };
@@ -310,16 +314,10 @@ class crab_domain_params: public elina_domain_params,
 			  public boxes_domain_params,
 			  public powerset_domain_params,
 			  public region_domain_params,
-<<<<<<< HEAD
         public object_domain_params,
 			  public zones_domain_params,
 			  public oct_domain_params,
 			  public fixed_tvpi_domain_params {
-=======
-			  public object_domain_params,
-			  public zones_domain_params,
-			  public oct_domain_params {
->>>>>>> b517f04a (fix(params): fix order of initializating object params)
 public:
   // To resolve ambiguous name lookup
   using elina_domain_params::update_params;
@@ -362,6 +360,7 @@ public:
      - region.is_dereferenceable: bool
      - region.skip_unknown_regions: bool
      - object.reduce_everywhere: bool
+     - object.singletons_in_base: bool
      - zones.chrome_dijkstra: bool
      - zones.widen_restabilize: bool
      - zones.special_assign: bool

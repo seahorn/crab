@@ -54,10 +54,10 @@ public:
   const boolean_value &cachedirty_val() const { return m_product.second().second(); }
 
   bool operator<=(const object_info &other) const {
-    return m_product <= other.m_product;
+    return refcount_val() <= other.refcount_val();
   }
   bool operator==(const object_info &other) const {
-    return (operator<=(other) && other.operator<=(*this));
+    return (m_product <= other.m_product && other.m_product <= m_product);
   }
   void operator|=(const object_info &other) { m_product |= other.m_product; }
   object_info operator|(const object_info &other) const { return object_info(m_product | other.m_product); }
@@ -73,6 +73,14 @@ public:
     dom.write(o);
     return o;
   }
+};
+
+class id_val_generator_t {
+private:
+  static uint32_t m_next_val;
+
+public:
+  static uint32_t get_next_val() { return m_next_val++; }
 };
 } // end namespace region_domain_impl
 } // end namespace domains

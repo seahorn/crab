@@ -782,6 +782,17 @@ public:
     }        
     return nullptr;
   }
+
+  const var_set_t *get_variables(const variable_t &x) const {
+    auto it = m_var_map.find(x);
+    if (it != m_var_map.end()) {
+      auto itrev = m_rev_var_map.find(it->second);
+      if (itrev != m_rev_var_map.end()) {
+        return (itrev->second.empty() ? nullptr : &(itrev->second));
+      }
+    }
+    return nullptr;
+  }
   /* End uf-domain API */
 
   

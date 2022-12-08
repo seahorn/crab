@@ -48,8 +48,9 @@ constexpr term_operator_t TERM_OP_XOR(13);
 constexpr term_operator_t TERM_OP_SHL(14);
 constexpr term_operator_t TERM_OP_LSHR(15);
 constexpr term_operator_t TERM_OP_ASHR(16);
-constexpr term_operator_t TERM_OP_FUNCTION(17);  
-  
+constexpr term_operator_t TERM_OP_FUNCTION(17);
+constexpr term_operator_t TERM_OP_DEPEND(18);
+
 /* Convert between Crab operators and term domain uninterpreted functors */
 term_operator_t conv2termop(arith_operation_t op);
 term_operator_t conv2termop(bitwise_operation_t op);
