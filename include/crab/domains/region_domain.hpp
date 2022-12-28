@@ -790,45 +790,7 @@ public:
     }
 
     CRAB_LOG("region", crab::outs() << "Join " << *this << " and " << o << "=");
-
-    if (!crab_domain_params_man::get().region_refine_uninitialized_regions()) {
-      do_join(o);
-      CRAB_LOG("region", crab::outs() << "Result=" << *this << "\n");
-      return;
-    }
-
-    /// Optional optimization to improve precision although unsound,
-    /// in general.
-
-    variable_vector_t left_regions, right_regions;
-    bool refine_left = can_propagate_initialized_regions(
-        m_rgn_env, o.m_rgn_env, left_regions);
-    bool refine_right = can_propagate_initialized_regions(
-        o.m_rgn_env, m_rgn_env, right_regions);
-
-    /// The code is complicated to achieve a zero-cost abstraction. If
-    /// we cannot improve invariants on the right operand we avoid
-    /// making a copy of it.
-    if (refine_left && !refine_right) {
-      m_ghost_var_man.merge(left_regions, o.m_ghost_var_man,
-			    m_base_dom, o.m_base_dom);
-      do_join(o);
-    } else if (!refine_left && refine_right) {
-      region_domain_t right(o);
-      right.m_ghost_var_man.merge(right_regions, m_ghost_var_man,
-				  right.m_base_dom, m_base_dom);
-      do_join(right);
-    } else if (refine_left && refine_right) {
-      region_domain_t right(o);
-      m_ghost_var_man.merge(left_regions, right.m_ghost_var_man,
-			    m_base_dom, right.m_base_dom);
-      right.m_ghost_var_man.merge(right_regions, m_ghost_var_man,
-				  right.m_base_dom, m_base_dom);
-      do_join(right);
-    } else {
-      do_join(o);
-    }
-
+    do_join(o);
     CRAB_LOG("region", crab::outs() << "Result=" << *this << "\n");
   }
 
@@ -851,67 +813,11 @@ public:
 
     auto base_dom_op = [](const base_abstract_domain_t &v1,
                           const base_abstract_domain_t &v2) { return v1 | v2; };
-
-    if (!crab_domain_params_man::get().region_refine_uninitialized_regions()) {
-      region_domain_t res(std::move(
-          do_join_or_widening(*this, o, true /*is join*/, base_dom_op)));
-      CRAB_LOG("region", crab::outs() << "Result=" << res << "\n");
-      return res;
-    }
-
-    /// Optional optimization to improve precision although unsound,
-    /// in general
-
-    variable_vector_t left_regions, right_regions;
-    bool refine_left = can_propagate_initialized_regions(
-        m_rgn_env, o.m_rgn_env, left_regions);
-    bool refine_right = can_propagate_initialized_regions(
-        o.m_rgn_env, m_rgn_env, right_regions);
-
-    /// The code is complicated to achieve a zero-cost abstraction. If
-    /// we cannot improve invariants then we try to avoid making copies
-    /// of left and/or right operands.
-
-    if (refine_left && !refine_right) {
-      /// Refine left by propagating information from right's regions
-      region_domain_t left(*this);
-      left.m_ghost_var_man.merge(left_regions, o.m_ghost_var_man,
-				 left.m_base_dom, o.m_base_dom);
-      region_domain_t res(std::move(
-          do_join_or_widening(left, o, true /*is join*/, base_dom_op)));
-      CRAB_LOG("region", crab::outs() << "Result=" << res << "\n");
-      return res;
-    } else if (!refine_left && refine_right) {
-      /// Refine right by propagating information from left's regions
-      region_domain_t right(o);
-      right.m_ghost_var_man.merge(right_regions, m_ghost_var_man,
-				  right.m_base_dom, m_base_dom);
-      region_domain_t res(std::move(
-          do_join_or_widening(*this, right, true /*is join*/, base_dom_op)));
-      CRAB_LOG("region", crab::outs() << "Result=" << res << "\n");
-      return res;
-
-    } else if (refine_left && refine_right) {
-      // Refine both left and right
-      region_domain_t left(*this);
-      region_domain_t right(o);
-      left.m_ghost_var_man.merge(left_regions, right.m_ghost_var_man,
-				 left.m_base_dom, right.m_base_dom);
-      right.m_ghost_var_man.merge(right_regions,
-				  left.m_ghost_var_man,
-				  right.m_base_dom, left.m_base_dom);
-      region_domain_t res(std::move(
-          do_join_or_widening(left, right, true /*is join*/, base_dom_op)));
-      CRAB_LOG("region", crab::outs() << "Result=" << res << "\n");
-      return res;
-
-    } else {
-      region_domain_t res(std::move(
-          do_join_or_widening(*this, o, true /*is join*/, base_dom_op)));
-
-      CRAB_LOG("region", crab::outs() << "Result=" << res << "\n");
-      return res;
-    }
+    region_domain_t res(std::move(
+       do_join_or_widening(*this, o, true /*is join*/, base_dom_op)));
+    
+    CRAB_LOG("region", crab::outs() << "Result=" << res << "\n");
+    return res;
   }
 
   region_domain_t operator&(const region_domain_t &o) const override {

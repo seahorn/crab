@@ -64,7 +64,6 @@ void powerset_domain_params::write(crab::crab_os &o) const {
 void region_domain_params::update_params(const region_domain_params &params) {
   m_allocation_sites = params.region_allocation_sites();
   m_deallocation = params.region_deallocation();
-  m_refine_uninitialized_regions = params.region_refine_uninitialized_regions();
   m_tag_analysis = params.region_tag_analysis();
   m_is_dereferenceable = params.region_is_dereferenceable();
   m_skip_unknown_regions = params.region_skip_unknown_regions(); 
@@ -74,7 +73,6 @@ void region_domain_params::write(crab::crab_os &o) const {
   o << "Region parameters:\n";
   o << "\tallocation_sites=" << m_allocation_sites << "\n";
   o << "\tdeallocation=" << m_deallocation << "\n";
-  o << "\trefine_uninitialized_regions=" << m_refine_uninitialized_regions << "\n";
   o << "\ttag_analysis=" << m_tag_analysis << "\n";
   o << "\tis_dereferenceable=" << m_is_dereferenceable << "\n";
   o << "\tskip_unknown_regions=" << m_skip_unknown_regions << "\n";
@@ -152,7 +150,6 @@ void crab_domain_params::update_params(const crab_domain_params &p) {
 			     p.powerset_max_disjuncts());
   region_domain_params r_p(p.region_allocation_sites(),
 			   p.region_deallocation(),
-			   p.region_refine_uninitialized_regions(),
 			   p.region_tag_analysis(),
 			   p.region_is_dereferenceable(),
 			   p.region_skip_unknown_regions());
@@ -244,8 +241,6 @@ void crab_domain_params::set_param(const std::string &param, const std::string &
     region_domain_params::m_allocation_sites = to_bool(val);
   } else if (param == "region.deallocation") {
     region_domain_params::m_deallocation = to_bool(val);
-  } else if (param == "region.refine_uninitialized_regions") {
-    region_domain_params::m_refine_uninitialized_regions = to_bool(val);
   } else if (param == "region.tag_analysis") {
     region_domain_params::m_tag_analysis = to_bool(val);
   } else if (param == "region.is_dereferenceable") {

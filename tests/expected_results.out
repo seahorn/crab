@@ -2082,9 +2082,9 @@ bb9:
 Invariants using RegionDomain(SplitDBM)
 Abstract trace: entry (bb2_loop bb3 bb5)^{4} bb4 (bb6_loop bb8 bb9)^{2} bb7 exit
 user-defined assertion checker
-1  Number of total safe checks
+0  Number of total safe checks
 0  Number of total error checks
-1  Number of total warning checks
+2  Number of total warning checks
 0  Number of total unreachable checks
 
 === End ./test-bin/region-3 ===
@@ -2143,7 +2143,7 @@ bb9_assert:
   goto bb6_loop;
 
 Invariants using RegionDomain(Product(Boolean,Intervals))
-Abstract trace: entry (bb2_loop bb3 bb5)^{4} bb4 (bb6_loop bb8 bb9 bb9_assert)^{1} bb7 exit
+Abstract trace: entry (bb2_loop bb3 bb5)^{4} bb4 (bb6_loop bb8 bb9 bb9_assert)^{2} bb7 exit
 user-defined assertion checker
 1  Number of total safe checks
 0  Number of total error checks
@@ -3852,12 +3852,12 @@ Join of
 	{x -> [5, +oo]; y -> [10, +oo]}
 and
 	{x -> [5, +oo]; region_0 -> [34, 34]} =
-	{x -> [5, +oo]; region_0 -> [34, 34]}
+	{x -> [5, +oo]}
 Join of
 	{x -> [5, +oo]; y -> [10, +oo]}
 and
 	{x -> [5, +oo]; region_0 -> [34, 34]} =
-	{x -> [5, +oo]; region_0 -> [34, 34]}
+	{x -> [5, +oo]}
 Unit test 1 for select_ref
 entry:
   region_init(rgn1:region(int));

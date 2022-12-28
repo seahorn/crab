@@ -29,7 +29,7 @@ int main() {
   List aux = l;
   while (aux) {
     __CRAB_assert(aux->f <= N-1); // WARNING
-    __CRAB_assert(aux->s <= N*3); // SAFE
+    __CRAB_assert(aux->s <= N*3); // SAFE BUT FIRST LOOP NEEDS TO BE UNROLLED ONCE
     aux = aux->n;
   }
 }
@@ -140,7 +140,6 @@ int main() {
 int main(int argc, char **argv) {
   region_domain_params p(true/*allocation_sites*/,
 			 true/*deallocation*/,
-			 true/*refine_uninitialized_regions*/,
 			 true/*tag_analysis*/,
 			 false/*is_dereferenceable*/,
 			 true/*skip_unknown_regions*/);

@@ -153,7 +153,6 @@ int main() {
 int main(int argc, char **argv) {
   region_domain_params p(true/*allocation_sites*/,
 			 true/*deallocation*/,
-			 true/*refine_uninitialized_regions*/,
 			 true/*tag_analysis*/,
 			 false/*is_dereferenceable*/,
 			 true/*skip_unknown_regions*/);
@@ -170,7 +169,7 @@ int main(int argc, char **argv) {
     z_rgn_bool_int_t init;
     run_and_check(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
     //run(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
-    // EXPECTED TO PROVE ASSERTION
+    // EXPECTED TO PROVE ASSERTION 
     delete p1;
   }
 

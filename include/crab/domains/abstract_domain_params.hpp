@@ -146,8 +146,6 @@ class region_domain_params {
   bool m_allocation_sites;
   // reason about is_unfreed_or_null and unfreed_or_null intrinsics
   bool m_deallocation;
-  // improve precision but it might not be sound
-  bool m_refine_uninitialized_regions;
   // reason about add_tag and does_not_have_tag intrinsics
   bool m_tag_analysis;
   // reason about is_dereferenceable intrinsics
@@ -160,20 +158,17 @@ public:
   region_domain_params()
     : m_allocation_sites(true),
       m_deallocation(false),
-      m_refine_uninitialized_regions(false),
       m_tag_analysis(true),
       m_is_dereferenceable(false),
       m_skip_unknown_regions(true) {
   }
   region_domain_params(bool allocation_sites,
 		       bool deallocation,
-		       bool refine_uninitialized_regions,
 		       bool tag_analysis,
 		       bool is_dereferenceable,
 		       bool skip_unknown_regions)
     : m_allocation_sites(allocation_sites),
       m_deallocation(deallocation),
-      m_refine_uninitialized_regions(refine_uninitialized_regions),
       m_tag_analysis(tag_analysis),
       m_is_dereferenceable(is_dereferenceable),
       m_skip_unknown_regions(skip_unknown_regions) {
@@ -184,9 +179,6 @@ public:
   }
   bool region_deallocation() const {
     return m_deallocation;
-  }
-  bool region_refine_uninitialized_regions() const {
-    return m_refine_uninitialized_regions;
   }
   bool region_tag_analysis() const {
     return m_tag_analysis;
@@ -341,7 +333,6 @@ public:
      - powerset.max_disjuncts: unsigned
      - region.allocations_sites: bool
      - region.deallocation: bool
-     - region.refine_uninitialized_regions: bool
      - region.tag_analysis: bool
      - region.is_dereferenceable: bool
      - region.skip_unknown_regions: bool

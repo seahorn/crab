@@ -99,7 +99,6 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
 int main(int argc, char **argv) {
   region_domain_params p(true/*allocation_sites*/,
 			 true/*deallocation*/,
-			 true/*refine_uninitialized_regions*/,
 			 true/*tag_analysis*/,
 			 false/*is_dereferenceable*/,
 			 true/*skip_unknown_regions*/);

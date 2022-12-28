@@ -121,7 +121,6 @@ z_cfg_t *prog2(variable_factory_t &vfac, crab::tag_manager &as_man) {
 int main(int argc, char **argv) {
   region_domain_params p(true/*allocation_sites*/,
 			 true/*deallocation*/,
-			 true/*refine_uninitialized_regions*/,
 			 true/*tag_analysis*/,
 			 false/*is_dereferenceable*/,
 			 true/*skip_unknown_regions*/);
