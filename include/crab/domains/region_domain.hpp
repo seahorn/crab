@@ -1183,7 +1183,7 @@ public:
     auto old_rgn_info = m_rgn_env.at(rgn);
     m_rgn_env.set(rgn,
                        region_domain_impl::region_info(
-                           old_rgn_info.refcount_val().increment(),
+                           old_rgn_info.refcount_val().increment(ref),
                            old_rgn_info.init_val(), old_rgn_info.type_val()));
 
     if (crab_domain_params_man::get().region_allocation_sites()) {
@@ -1617,7 +1617,7 @@ public:
         // Update region counting
         auto old_rgn2_info = m_rgn_env.at(rgn2);
         m_rgn_env.set(rgn2, region_domain_impl::region_info(
-                                     old_rgn2_info.refcount_val().increment(),
+                                     old_rgn2_info.refcount_val().increment(ref2),
                                      old_rgn2_info.init_val(),
                                      old_rgn2_info.type_val()));
       }
@@ -1789,7 +1789,7 @@ public:
       auto old_rgn_info = m_rgn_env.at(rgn);
       m_rgn_env.set(rgn,
                          region_domain_impl::region_info(
-                             old_rgn_info.refcount_val().increment(),
+                             old_rgn_info.refcount_val().increment(ref_var),
                              old_rgn_info.init_val(), old_rgn_info.type_val()));
     }
   }

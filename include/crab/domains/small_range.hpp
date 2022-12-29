@@ -1,16 +1,34 @@
 #pragma once
 
-#include <crab/support/os.hpp>
 #include <crab/domains/lattice_domain.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/os.hpp>
+#include <crab/types/indexable.hpp> // for ikos::index_t
+
+#include <boost/optional.hpp>
 
 namespace crab {
 namespace domains {
 /*
- * Class that represents the range of intervals
- * {[0,0], [1,1], [0,1], [0,+oo], [1,+oo]}
+ * This class models an abstract counter for variables. The typical
+ * application is to count how many variables satisfy a property.
+ * 
+ * Initially, a counter can be set to 0. This class only
+ * provides one operation to increment abstractly the counter.
+ *
+ * The possible abstract values for a counter are:
+ * 
+ *  {0, 1(V), [0,1](V), [1,+oo], [0,+oo]}
+ *
+ * where:
+ *
+ * 0       : the counter value is zero.
+ * 1(V)    : the counter value is one and the variable is known to be V
+ * [0,1](V): zero or one. If it is one then the variable is V
+ * [1,+oo] : one or more
+ * [0,+oo] : zero or more  (this is the top element)
  */
 class small_range: public lattice_domain_api<small_range> {
-  
   using kind_t = enum {
     Bottom,
     ExactlyZero,
@@ -20,89 +38,30 @@ class small_range: public lattice_domain_api<small_range> {
     OneOrMore
   };
 
-  kind_t m_value;
+  // --- The counter value
+  kind_t m_kind;
+  // --- It represents V if [0,1] or 1
+  boost::optional<ikos::index_t> m_value;
+  
+  small_range(kind_t k);
+  small_range(kind_t k, ikos::index_t val);
+  static small_range zeroOrMore();
 
-  small_range(kind_t v);
-
-  /*
-      [0,0] | [0,0] = [0,0]
-      [0,0] | [1,1] = [0,1]
-      [0,0] | [0,1] = [0,1]
-      [0,0] | [0,+oo] = [0,+oo]
-      [0,0] | [1,+oo] = [0,+oo]
-  */
+  /** helpers for join and meet **/
   small_range join_zero_with(const small_range &other) const;
-
-  /*
-      [1,1] | [0,0] = [0,1]
-      [1,1] | [1,1] = [1,+oo]
-      [1,1] | [0,1] = [0,+oo]
-      [1,1] | [0,+oo] = [0,+oo]
-      [1,1] | [1,+oo] = [1,+oo]
-  */
   small_range join_one_with(const small_range &other) const;
-
-  /*
-      [0,1] | [0,0] = [0,1]
-      [0,1] | [1,1] = [0,+oo]
-      [0,1] | [0,1] = [0,+oo]
-      [0,1] | [0,+oo] = [0,+oo]
-      [0,1] | [1,+oo] = [0,+oo]
-  */
   small_range join_zero_or_one_with(const small_range &other) const;
-
-  /*
-      [1,+oo] | [0,0] = [0,+oo]
-      [1,+oo] | [1,1] = [1,+oo]
-      [1,+oo] | [0,1] = [0,+oo]
-      [1,+oo] | [0,+oo] = [0,+oo]
-      [1,+oo] | [1,+oo] = [1,+oo]
-  */
   small_range join_one_or_more_with(const small_range &other) const;
-
-  /*
-      [0,0] & [0,0] = [0,0]
-      [0,0] & [1,1] = _|_
-      [0,0] & [0,1] = [0,0]
-      [0,0] & [0,+oo] = [0,0]
-      [0,0] & [1,+oo] = _|_
-  */
   small_range meet_zero_with(const small_range &other) const;
-
-  /*
-      [1,1] & [0,0] = _|_
-      [1,1] & [1,1] = [1,1]
-      [1,1] & [0,1] = [1,1]
-      [1,1] & [0,+oo] = [1,1]
-      [1,1] & [1,+oo] = [1,1]
-  */
   small_range meet_one_with(const small_range &other) const;
-
-  /*
-      [0,1] & [0,0] = [0,0]
-      [0,1] & [1,1] = [1,1]
-      [0,1] & [0,1] = [0,1]
-      [0,1] & [0,+oo] = [0,1]
-      [0,1] & [1,+oo] = [1,1]
-  */
   small_range meet_zero_or_one_with(const small_range &other) const;
-
-  /*
-      [1,+oo] & [0,0] = _|_
-      [1,+oo] & [1,1] = [1,1]
-      [1,+oo] & [0,1] = [1,1]
-      [1,+oo] & [0,+oo] = [1,+oo]
-      [1,+oo] & [1,+oo] = [1,+oo]
-  */
   small_range meet_one_or_more_with(const small_range &other) const;
 
 public:
-  small_range();
-
+  small_range(); // counter initialized to top
   static small_range bottom();
   static small_range top();
   static small_range zero();
-  static small_range one();
   static small_range oneOrMore();
 
   small_range(const small_range &other) = default;
@@ -110,50 +69,47 @@ public:
   small_range &operator=(const small_range &other) = default;
   small_range &operator=(small_range &&other) = default;
 
-  small_range make_top() const override;
-
-  small_range make_bottom() const override;
-
-  void set_to_top() override;
-
-  void set_to_bottom() override;
-  
-  bool is_bottom() const override;
-
-  bool is_top() const override;
-
   bool is_zero() const;
-
   bool is_one() const;
 
-  /*
-     [0,+oo]
-       |   \
-       |    \
-      [0,1] [1,+oo]
-       / \ /
-      0   1
-   */
+  /** lattice operations **/
+  small_range make_top() const override;
+  small_range make_bottom() const override;
+  void set_to_top() override;
+  void set_to_bottom() override;
+  bool is_bottom() const override;
+  bool is_top() const override;  
   bool operator<=(const small_range &other) const override;
-
   bool operator==(const small_range &other) const;
-
   void operator|=(const small_range &other) override;
-  
   small_range operator|(const small_range &other) const override;
-
   small_range operator||(const small_range &other) const override;
-
   small_range operator&(const small_range &other) const override;
-
   small_range operator&&(const small_range &other) const override;
 
-  small_range increment(void);
-
-  void write(crab_os &o) const override;
+  /** Increment a counter **/
+  template<typename VariableName>
+  small_range increment(const VariableName &v) {
+    if (!is_bottom()) {
+      if (m_kind == ExactlyZero) {
+	m_kind = ExactlyOne;
+	m_value = v.index();
+      } else if (m_kind == ExactlyOne || m_kind == ZeroOrMore ||
+		 m_kind == ZeroOrOne || m_kind == OneOrMore) {
+	if (!(m_kind == ExactlyOne && m_value.value() == v.index())) {
+	  m_kind = OneOrMore;
+	  m_value = boost::none;
+	}
+      } else {
+	CRAB_ERROR("small_range::increment unreachable");
+      }
+    }
+    return *this;    
+  }
 
   std::string domain_name() const override;
-  
+
+  void write(crab_os &o) const override;  
   friend crab_os &operator<<(crab_os &o, const small_range &v) {
     v.write(o);
     return o;
