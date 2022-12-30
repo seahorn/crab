@@ -351,6 +351,9 @@ private:
                     statement_t *s = kv.second;
                     bool res = this->dominates(n, m, idom);
                     if (res) {
+		      CRAB_LOG("backward",
+			       crab::outs() << "Backward analysis proved " << *s
+			       << " because " << n << " dominates " << m << "\n";);
                       this->m_proved_assertions.insert(s);
                     }
                     return res;
@@ -422,24 +425,28 @@ public:
            unsigned int widening_delay = 1,
            unsigned int descending_iters = UINT_MAX, size_t jump_set_size = 0) {
 
-    CRAB_LOG("backward", crab::outs()
-                             << "Initial states=" << init_states << "\n");
+    CRAB_LOG("backward", crab::outs() << "Running forward+backward analysis ";
+	     if (m_cfg.has_func_decl()) {
+	       auto const& fdecl = m_cfg.get_func_decl();
+	       crab::outs() << " on " << fdecl << " ";
+	     }
+	     crab::outs() << "with initial states=" << init_states << "\n");
 
     // return true if fixpo[node] is strictly more precise than old fixpo[node]
     auto refine =
         [](const basic_block_label_t &node, const assumption_map_t &old_table,
            const bwd_fixpoint_iterator_t &fixpo, assumption_map_t &new_table) {
-          AbsDom y = fixpo[node];
+          AbsDom new_val = fixpo[node];
           auto it = old_table.find(node);
           if (it == old_table.end()) {
-            new_table.insert({node, y});
+            new_table.insert({node, new_val});
             return true;
           } else {
-            AbsDom x = it->second;
-            AbsDom x_narrowing_y = x && y;
-            new_table.insert({node, x_narrowing_y});
-            return (!(x <= x_narrowing_y));
-          }
+            AbsDom old_val = it->second;
+            AbsDom refined_val = old_val && new_val;
+            new_table.insert({node, refined_val});
+            return (!(old_val <= refined_val));
+	  }
         };
 
     if (!only_forward && !m_cfg.has_exit()) {

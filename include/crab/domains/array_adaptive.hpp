@@ -2206,19 +2206,34 @@ public:
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const array_adaptive_domain_t &inv) override {
-    m_base_dom.backward_assign(x, e, inv.m_base_dom);
+    auto s = rename_with_meet_semantics(inv);
+    m_base_dom = std::move(s.left_dom);
+    m_array_map = std::move(s.array_map);
+    m_cell_ghost_man = std::move(s.cell_ghost_man);
+    
+    m_base_dom.backward_assign(x, e, s.right_dom);
   }
 
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, number_t z,
                       const array_adaptive_domain_t &inv) override {
-    m_base_dom.backward_apply(op, x, y, z, inv.m_base_dom);
+    auto s = rename_with_meet_semantics(inv);
+    m_base_dom = std::move(s.left_dom);
+    m_array_map = std::move(s.array_map);
+    m_cell_ghost_man = std::move(s.cell_ghost_man);
+    
+    m_base_dom.backward_apply(op, x, y, z, s.right_dom);
   }
 
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const array_adaptive_domain_t &inv) override {
-    m_base_dom.backward_apply(op, x, y, z, inv.m_base_dom);
+    auto s = rename_with_meet_semantics(inv);
+    m_base_dom = std::move(s.left_dom);
+    m_array_map = std::move(s.array_map);
+    m_cell_ghost_man = std::move(s.cell_ghost_man);
+    
+    m_base_dom.backward_apply(op, x, y, z, s.right_dom);    
   }
 
   void apply(int_conv_operation_t op, const variable_t &dst,
@@ -2300,28 +2315,48 @@ public:
   backward_assign_bool_cst(const variable_t &lhs,
                            const linear_constraint_t &rhs,
                            const array_adaptive_domain_t &inv) override {
-    m_base_dom.backward_assign_bool_cst(lhs, rhs, inv.m_base_dom);
+    auto s = rename_with_meet_semantics(inv);
+    m_base_dom = std::move(s.left_dom);
+    m_array_map = std::move(s.array_map);
+    m_cell_ghost_man = std::move(s.cell_ghost_man);
+    
+    m_base_dom.backward_assign_bool_cst(lhs, rhs, s.right_dom);
   }
 
   virtual void
   backward_assign_bool_ref_cst(const variable_t &lhs,
                                const reference_constraint_t &rhs,
                                const array_adaptive_domain_t &inv) override {
-    m_base_dom.backward_assign_bool_ref_cst(lhs, rhs, inv.m_base_dom);
+    auto s = rename_with_meet_semantics(inv);
+    m_base_dom = std::move(s.left_dom);
+    m_array_map = std::move(s.array_map);
+    m_cell_ghost_man = std::move(s.cell_ghost_man);
+    
+    m_base_dom.backward_assign_bool_ref_cst(lhs, rhs, s.right_dom);
   }
 
   virtual void
   backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                            bool is_not_rhs,
                            const array_adaptive_domain_t &inv) override {
-    m_base_dom.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv.m_base_dom);
+    auto s = rename_with_meet_semantics(inv);
+    m_base_dom = std::move(s.left_dom);
+    m_array_map = std::move(s.array_map);
+    m_cell_ghost_man = std::move(s.cell_ghost_man);
+    
+    m_base_dom.backward_assign_bool_var(lhs, rhs, is_not_rhs, s.right_dom);
   }
 
   virtual void
   backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
                              const variable_t &y, const variable_t &z,
                              const array_adaptive_domain_t &inv) override {
-    m_base_dom.backward_apply_binary_bool(op, x, y, z, inv.m_base_dom);
+    auto s = rename_with_meet_semantics(inv);
+    m_base_dom = std::move(s.left_dom);
+    m_array_map = std::move(s.array_map);
+    m_cell_ghost_man = std::move(s.cell_ghost_man);
+    
+    m_base_dom.backward_apply_binary_bool(op, x, y, z, s.right_dom);
   }
 
   /// array_adaptive is a functor domain that implements all
@@ -2761,8 +2796,9 @@ public:
     crab::CrabStats::count(domain_name() + ".count.backward_array_init");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_array_init");
 
-    if (is_bottom())
+    if (is_bottom()) {
       return;
+    }
 
     // make all array cells uninitialized
     const array_state &as = lookup_array_state(a);
@@ -2796,10 +2832,10 @@ public:
     }
 
     auto s = rename_with_meet_semantics(invariant);
-    std::swap(m_base_dom, s.left_dom);
-    std::swap(m_array_map, s.array_map);
-    std::swap(m_cell_ghost_man, s.cell_ghost_man);
-
+    m_base_dom = std::move(s.left_dom);
+    m_array_map = std::move(s.array_map);
+    m_cell_ghost_man = std::move(s.cell_ghost_man);
+       
     const array_state &as = lookup_array_state(a);
     if (as.is_smashed()) {
       CRAB_WARN("array_adaptive::backward_array_load not implemented if array "
@@ -2852,10 +2888,10 @@ public:
     }
 
     auto s = rename_with_meet_semantics(invariant);
-    std::swap(m_base_dom, s.left_dom);
-    std::swap(m_array_map, s.array_map);
-    std::swap(m_cell_ghost_man, s.cell_ghost_man);
-
+    m_base_dom = std::move(s.left_dom);
+    m_array_map = std::move(s.array_map);
+    m_cell_ghost_man = std::move(s.cell_ghost_man);
+    
     uint64_t e_sz = check_and_get_elem_size(elem_size);
     const array_state &as = lookup_array_state(a);
     if (as.is_smashed()) {
