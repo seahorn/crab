@@ -47,9 +47,21 @@ using z_interval_domain_t = interval_domain<z_number, varname_t>;
 using z_constant_domain_t = constant_domain<z_number, varname_t>;  
 using z_ric_domain_t = numerical_congruence_domain<z_interval_domain_t>;
 using z_dbm_graph_t = DBM_impl::DefaultParams<z_number, DBM_impl::GraphRep::adapt_ss>;
-using z_dbm_domain_t = sparse_dbm_domain<z_number, varname_t, z_dbm_graph_t>;
-using z_sdbm_domain_t = split_dbm_domain<z_number, varname_t, z_dbm_graph_t>;
-using z_soct_domain_t = split_oct_domain<z_number, varname_t, z_dbm_graph_t>;  
+class SparseDBMParams {
+public:
+  enum { implement_inter_transformers = 1 };
+};
+class SplitDBMParams {
+public:
+  enum { implement_inter_transformers = 1 };
+};
+class SplitOctParams {
+public:
+  enum { implement_inter_transformers = 1 };
+};
+using z_dbm_domain_t = sparse_dbm_domain<z_number, varname_t, z_dbm_graph_t, SparseDBMParams>;
+using z_sdbm_domain_t = split_dbm_domain<z_number, varname_t, z_dbm_graph_t, SplitDBMParams>;
+using z_soct_domain_t = split_oct_domain<z_number, varname_t, z_dbm_graph_t, SplitOctParams>;  
 using z_boxes_domain_t = boxes_domain<z_number, varname_t>;
 using z_dis_interval_domain_t = dis_interval_domain<z_number, varname_t>;
 using z_box_apron_domain_t = apron_domain<z_number, varname_t, APRON_INT>;
