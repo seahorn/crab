@@ -20,6 +20,7 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/term/term_expr.hpp>
 #include <crab/domains/term/term_operators.hpp>
 #include <crab/support/debug.hpp>
@@ -40,11 +41,16 @@
 namespace crab {
 namespace domains {
 
-template <typename Number, typename VariableName>
+class UFDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+  
+template <typename Number, typename VariableName, typename Params = UFDefaultParams>
 class uf_domain final
-    : public abstract_domain_api<uf_domain<Number, VariableName>> {
+  : public abstract_domain_api<uf_domain<Number, VariableName, Params>> {
 
-  using uf_domain_t = uf_domain<Number, VariableName>;
+  using uf_domain_t = uf_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<uf_domain_t>;
 
 public:
@@ -1142,6 +1148,21 @@ public:
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
+  // call operations
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const uf_domain_t &caller) override {
+    inter_abstract_operations<uf_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const uf_domain_t &callee) override {
+    inter_abstract_operations<uf_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+
+  
   // Region operations
   virtual void region_init(const variable_t &reg) override {
     // do nothing
@@ -1433,8 +1454,8 @@ public:
   std::string domain_name() const override { return "UFDomain"; }
 }; // class uf_domain
 
-template <typename Number, typename VariableName>
-struct abstract_domain_traits<uf_domain<Number, VariableName>> {
+template <typename Number, typename VariableName, typename Params>
+struct abstract_domain_traits<uf_domain<Number, VariableName, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 }; // end uf_domain

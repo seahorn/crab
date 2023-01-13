@@ -280,8 +280,7 @@ public:
                   const boost::optional<variable_t> &rgn2) override {
     CRAB_ERROR(not_implemented_msg());
   }
-  boolean_value is_null_ref(const variable_t &ref) override {
-    CRAB_ERROR("mierda");
+  boolean_value is_null_ref(const variable_t &ref) override {    
     CRAB_ERROR(not_implemented_msg());
   }
   bool
@@ -324,6 +323,14 @@ public:
                           const variable_vector_t &outputs,
                           const Derived &invariant) override {
     CRAB_ERROR(not_implemented_msg());
+  }
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const Derived &caller) override {
+    CRAB_ERROR(not_implemented_msg());    
+  }
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const Derived &callee) override {
+    CRAB_ERROR(not_implemented_msg());        
   }
   void write(crab_os &o) const override { CRAB_ERROR(not_implemented_msg()); }
   std::string domain_name() const override {
