@@ -28,6 +28,7 @@
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/constant.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -36,17 +37,22 @@ namespace crab {
 
 namespace domains {
 
+class ArraySmashingDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+  
 // All arrays are `smashed` into a single summarized variable.
-template <typename BaseNumDomain>
+template <typename BaseNumDomain, typename Params = ArraySmashingDefaultParams>
 class array_smashing final
-    : public abstract_domain_api<array_smashing<BaseNumDomain>> {
+  : public abstract_domain_api<array_smashing<BaseNumDomain, Params>> {
 
 public:
   using number_t = typename BaseNumDomain::number_t;
   using varname_t = typename BaseNumDomain::varname_t;
 
 private:
-  using array_smashing_t = array_smashing<BaseNumDomain>;
+  using array_smashing_t = array_smashing<BaseNumDomain, Params>;
   using abstract_domain_t = abstract_domain_api<array_smashing_t>;
 
 public:
@@ -198,6 +204,10 @@ private:
         m_base_dom(std::move(base_dom)) {}
 
 public:
+  /// array_smashing is a functor domain that implements all
+  /// standard operations except region/reference operations.
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(array_smashing_t)
+
   array_smashing() {}
 
   array_smashing make_top() const override { return array_smashing(); }
@@ -683,9 +693,18 @@ public:
     CRAB_WARN("backward_array_assign in array smashing domain not implemented");
   }
 
-  /// array_smashing is a functor domain that implements all
-  /// operations except region/reference operations.
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(array_smashing_t)
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const array_smashing_t &caller) override {
+    inter_abstract_operations<array_smashing_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const array_smashing_t &callee) override {
+    inter_abstract_operations<array_smashing_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
     return filter_ghost_vars(
@@ -765,34 +784,11 @@ public:
 
 }; // end array_smashing
 
-template <typename BaseDomain>
-struct abstract_domain_traits<array_smashing<BaseDomain>> {
+template <typename BaseDomain, typename Params>
+struct abstract_domain_traits<array_smashing<BaseDomain, Params>> {
   using number_t = typename BaseDomain::number_t;
   using varname_t = typename BaseDomain::varname_t;
 };
-
-// template <typename BaseDom>
-// class checker_domain_traits<array_smashing<BaseDom>> {
-// public:
-//   using this_type = array_smashing<BaseDom>;
-//   using linear_constraint_t = typename this_type::linear_constraint_t;
-//   using disjunctive_linear_constraint_system_t =
-//       typename this_type::disjunctive_linear_constraint_system_t;
-//   static bool entail(this_type &lhs,
-//                      const disjunctive_linear_constraint_system_t &rhs) {
-//     BaseDom &lhs_dom = lhs.get_content_domain();
-//     return checker_domain_traits<BaseDom>::entail(lhs_dom, rhs);
-//   }
-//   static bool entail(const disjunctive_linear_constraint_system_t &lhs,
-//                      this_type &rhs) {
-//     BaseDom &rhs_dom = rhs.get_content_domain();
-//     return checker_domain_traits<BaseDom>::entail(lhs, rhs_dom);
-//   }
-//   static bool intersect(this_type &inv, const linear_constraint_t &cst) {
-//     BaseDom &dom = inv.get_content_domain();
-//     return checker_domain_traits<BaseDom>::intersect(dom, cst);
-//   }
-// };
 
 } // namespace domains
 } // namespace crab

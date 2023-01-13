@@ -5,6 +5,7 @@
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/intervals.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -16,12 +17,14 @@ template <typename Number> class ElinaDefaultParams {
 public:
   // use integers with truncation rounding
   enum { use_integers = 1 };
+  enum { implement_inter_transformers = 0 };  
 };
 
 template <> class ElinaDefaultParams<ikos::q_number> {
 public:
   // use reals
   enum { use_integers = 0 };
+  enum { implement_inter_transformers = 0 };  
 };
 } // namespace domains
 } // namespace crab
@@ -910,6 +913,13 @@ private:
   }
 
 public:
+  /// Elina domains implement only standard abstract operations of a
+  /// numerical domain so it is intended to be used as a leaf domain
+  /// in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(elina_domain_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(elina_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(elina_domain_t)
+  
   elina_domain(bool isBot = false)
       : m_apstate(elinaPtr(get_man(),
                            (isBot ? elina_abstract0_bottom(get_man(), 0, 0)
@@ -1647,7 +1657,20 @@ public:
 
   DEFAULT_SELECT(elina_domain_t)
   DEFAULT_WEAK_ASSIGN(elina_domain_t)      
-  
+
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const elina_domain_t &caller) override {
+    inter_abstract_operations<elina_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const elina_domain_t &callee) override {
+    inter_abstract_operations<elina_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const elina_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_assign");
@@ -1785,13 +1808,6 @@ public:
     CRAB_LOG("elina", crab::outs() << "--- " << x << ":=_bwd " << y << op << z
                                    << " --> " << *this << "\n";);
   }
-
-  /// Elina domains implement only standard abstract operations of a
-  /// numerical domain so it is intended to be used as a leaf domain
-  /// in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(elina_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(elina_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(elina_domain_t)
   
   interval_domain_t to_interval_domain() {
     crab::CrabStats::count(domain_name() + ".count.to_interval_domain");

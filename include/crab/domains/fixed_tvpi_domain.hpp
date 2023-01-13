@@ -2,13 +2,14 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/os.hpp>
 #include <string>
 
 namespace crab {
 namespace domains {
-
+  
 /**
  ** This domain when instantiated with the Octagon domain simulates
  ** the Two Variables Per Inequalities (tvpi)
@@ -47,11 +48,17 @@ namespace domains {
  ** and x/3 so at the join point of the if-then-else we lose track of
  ** them. 
  **/
-template<typename OctLikeDomain>
-class fixed_tvpi_domain
-    : public abstract_domain_api<fixed_tvpi_domain<OctLikeDomain>> {
+
+class FixedTPVIDefaultParams {
 public:
-  using fixed_tvpi_domain_t = fixed_tvpi_domain<OctLikeDomain>;
+  enum { implement_inter_transformers = 0 };
+};
+  
+template<typename OctLikeDomain, typename Params = FixedTPVIDefaultParams>
+class fixed_tvpi_domain
+  : public abstract_domain_api<fixed_tvpi_domain<OctLikeDomain, Params>> {
+public:
+  using fixed_tvpi_domain_t = fixed_tvpi_domain<OctLikeDomain, Params>;
   using abstract_domain_api_t = abstract_domain_api<fixed_tvpi_domain_t>;
   using typename abstract_domain_api_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_api_t::interval_t;
@@ -269,6 +276,11 @@ private:
   fixed_tvpi_domain(base_domain_t &&num) : m_base_absval(std::move(num)) {}
 
 public:
+  DEFAULT_SELECT(fixed_tvpi_domain_t)
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)
+  
   fixed_tvpi_domain() {}
 
   fixed_tvpi_domain(const fixed_tvpi_domain_t &o) = default;
@@ -578,11 +590,19 @@ public:
     CRAB_WARN(domain_name(), "::backward_apply not implemented");
   }
 
-  DEFAULT_SELECT(fixed_tvpi_domain_t)
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const fixed_tvpi_domain_t &caller) override {
+    inter_abstract_operations<fixed_tvpi_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
 
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const fixed_tvpi_domain_t &callee) override {
+    inter_abstract_operations<fixed_tvpi_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   linear_constraint_system_t to_linear_constraint_system() const override {
 
     if (is_bottom()) {
@@ -691,8 +711,8 @@ public:
   }
 };
   
-template<typename OctLikeDomain>
-struct abstract_domain_traits<fixed_tvpi_domain<OctLikeDomain>> {
+template<typename OctLikeDomain, typename Params>
+struct abstract_domain_traits<fixed_tvpi_domain<OctLikeDomain, Params>> {
   using number_t = typename OctLikeDomain::number_t;
   using varname_t = typename OctLikeDomain::varname_t;
 };

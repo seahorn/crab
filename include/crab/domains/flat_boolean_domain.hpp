@@ -11,17 +11,24 @@
 #include <crab/domains/combined_domains.hpp>
 #include <crab/domains/discrete_domains.hpp>
 #include <crab/domains/intervals.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
 namespace crab {
 namespace domains {
+class FlatBoolDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+
+  
 // A simple flat 3-valued boolean abstract domain
-template <typename Number, typename VariableName>
+template <typename Number, typename VariableName, typename Params = FlatBoolDefaultParams>
 class flat_boolean_domain final
-    : public abstract_domain_api<flat_boolean_domain<Number, VariableName>> {
-  using flat_boolean_domain_t = flat_boolean_domain<Number, VariableName>;
+  : public abstract_domain_api<flat_boolean_domain<Number, VariableName, Params>> {
+  using flat_boolean_domain_t = flat_boolean_domain<Number, VariableName, Params>;
 
 public:
   using abstract_domain_t = abstract_domain_api<flat_boolean_domain_t>;
@@ -47,6 +54,13 @@ private:
   flat_boolean_domain(separate_domain_t env) : m_env(env) {}
 
 public:
+  /// flat_boolean_domain implements only boolean operations.  It is
+  /// intended to be used as part of a reduced product with a
+  /// another domain.
+  NUMERICAL_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
+
   flat_boolean_domain_t make_top() const override {
     return flat_boolean_domain_t(separate_domain_t::top());
   }
@@ -359,13 +373,19 @@ public:
     *this = *this & inv;
   }
 
-  /// flat_boolean_domain implements only boolean operations.  It is
-  /// intended to be used as part of a reduced product with a
-  /// another domain.
-  NUMERICAL_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const flat_boolean_domain_t &caller) override {
+    inter_abstract_operations<flat_boolean_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
 
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const flat_boolean_domain_t &callee) override {
+    inter_abstract_operations<flat_boolean_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   // not part of the numerical_domains api but it should be
   void set(const variable_t &x, interval_t intv) {}
 
@@ -482,8 +502,8 @@ public:
 
 }; // class flat_boolean_domain
 
-template <typename Number, typename VariableName>
-struct abstract_domain_traits<flat_boolean_domain<Number, VariableName>> {
+template <typename Number, typename VariableName, typename Params>
+struct abstract_domain_traits<flat_boolean_domain<Number, VariableName, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 };
@@ -538,16 +558,17 @@ struct abstract_domain_traits<flat_boolean_domain<Number, VariableName>> {
 // - all region/reference operations 
 //
 //
-template <typename Dom>
+template <typename Dom, typename Params = FlatBoolDefaultParams>
 class flat_boolean_numerical_domain final
-    : public abstract_domain_api<flat_boolean_numerical_domain<Dom>> {
-  using bool_num_domain_t = flat_boolean_numerical_domain<Dom>;
+  : public abstract_domain_api<flat_boolean_numerical_domain<Dom, Params>> {
+  using bool_num_domain_t = flat_boolean_numerical_domain<Dom, Params>;
   using abstract_domain_t = abstract_domain_api<bool_num_domain_t>;
 
 public:
   using number_t = typename Dom::number_t;
   using varname_t = typename Dom::varname_t;
-  using bool_domain_t = flat_boolean_domain<number_t, varname_t>;
+  // Configurated flat_boolean_domain to not implement call transformers
+  using bool_domain_t = flat_boolean_domain<number_t, varname_t, FlatBoolDefaultParams>;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_t::interval_t;
   using typename abstract_domain_t::linear_constraint_system_t;
@@ -911,6 +932,7 @@ private:
         m_unchanged_vars(std::move(unchanged_vars)) {}
 
 public:
+  
   bool_num_domain_t make_top() const override {
     reduced_domain_product2_t prod;
     prod.set_to_top();
@@ -1625,6 +1647,27 @@ public:
     m_product.backward_array_assign(lhs, rhs, invariant.m_product);
   }
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const bool_num_domain_t &caller) override {
+    // The transformer for a call is not delegated to the subdomains.
+    // Instead, if Params::implement_inter_transformers is enabled
+    // then the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.        
+    inter_abstract_operations<bool_num_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const bool_num_domain_t &callee) override {
+    // The transformer for a call is not delegated to the subdomains.
+    // Instead, if Params::implement_inter_transformers is enabled
+    // then the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.        
+    inter_abstract_operations<bool_num_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   // region/reference api
   void region_init(const variable_t &reg) override {
     m_product.region_init(reg);
@@ -1860,34 +1903,12 @@ public:
   }
 }; // class flat_boolean_numerical_domain
   
-template <typename Num>
-struct abstract_domain_traits<flat_boolean_numerical_domain<Num>> {
+template <typename Num, typename Params>
+struct abstract_domain_traits<flat_boolean_numerical_domain<Num, Params>> {
   using number_t = typename Num::number_t;
   using varname_t = typename Num::varname_t;
 };
 
-// template <typename Dom>
-// class checker_domain_traits<flat_boolean_numerical_domain<Dom>> {
-// public:
-//   using this_type = flat_boolean_numerical_domain<Dom>;
-//   using linear_constraint_t = typename this_type::linear_constraint_t;
-//   using disjunctive_linear_constraint_system_t =
-//       typename this_type::disjunctive_linear_constraint_system_t;
-//   static bool entail(this_type &lhs,
-//                      const disjunctive_linear_constraint_system_t &rhs) {
-//     Dom &lhs_dom = lhs.second();
-//     return checker_domain_traits<Dom>::entail(lhs_dom, rhs);
-//   }
-//   static bool entail(const disjunctive_linear_constraint_system_t &lhs,
-//                      this_type &rhs) {
-//     Dom &rhs_dom = rhs.second();
-//     return checker_domain_traits<Dom>::entail(lhs, rhs_dom);
-//   }
-//   static bool intersect(this_type &inv, const linear_constraint_t &cst) {
-//     Dom &dom = inv.second();
-//     return checker_domain_traits<Dom>::intersect(dom, cst);
-//   }
-// };
 
 } // end namespace domains
 } // end namespace crab

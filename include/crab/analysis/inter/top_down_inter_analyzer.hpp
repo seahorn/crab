@@ -28,6 +28,7 @@
 #include <crab/analysis/inter/inter_params.hpp>
 #include <crab/cg/cg_bgl.hpp> // for wto of callgraphs
 #include <crab/fixpoint/wto.hpp>
+#include <crab/domains/inter_abstract_operations_callsite_info.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -57,9 +58,6 @@ static const std::string TimerInterStoreSumQueue =
     TimerInter + "." + "store_summary.enqueue";
 static const std::string TimerInterAnalyzeFunc =
     TimerInter + "." + "analyze_function";
-static const std::string TimerInterRestrict = TimerInter + "." + "callee_entry";
-static const std::string TimerInterExtend =
-    TimerInter + "." + "callee_continuation";
 
 namespace top_down_inter_impl {
 
@@ -942,7 +940,7 @@ template <typename CallGraph, typename AbsDom>
 class top_down_inter_transformer final
     : public intra_abs_transformer<
           typename CallGraph::node_t::cfg_t::basic_block_t, AbsDom> {
-
+  
   using cg_node_t = typename CallGraph::node_t;
   using cfg_t = typename cg_node_t::cfg_t;
   using wto_cg_t = ikos::wto<CallGraph>;
@@ -1042,206 +1040,6 @@ private:
                fdecl.get_outputs().end());
   }
 
-  /**
-   *  Restrict operation.
-   *
-   * Produce a new abstract state at the callee for the entry block.
-   *  - caller_dom: abstract state at the caller before the call.
-   *  - callee_dom: initial state at the callee (by default top)
-   **/
-  static AbsDom get_callee_entry(const callsite_t &cs, const fdecl_t &fdecl,
-                                 AbsDom caller_dom, AbsDom callee_dom) {
-    crab::ScopedCrabStats __st__(TimerInterRestrict);
-
-    // caller_dom.normalize();
-    if (caller_dom.is_bottom()) {
-      return caller_dom;
-    }
-    CRAB_LOG("inter-restrict",
-             errs() << "Inv at the caller: " << caller_dom << "\n");
-    // propagate from actual to formal parameters
-    CRAB_LOG("inter-restrict",
-             errs() << "Unifying formal and actual parameters\n";);
-    for (unsigned i = 0, e = fdecl.get_inputs().size(); i < e; ++i) {
-      const variable_t &formal = fdecl.get_inputs()[i];
-      const variable_t &actual = cs.get_args()[i];
-      if (!(formal == actual)) {
-        CRAB_LOG("inter-restrict",
-                 errs() << "\t" << formal << ":" << formal.get_type()
-		        << " and " << actual << ":" << actual.get_type() << "\n";);
-        inter_transformer_helpers<AbsDom>::unify(caller_dom, formal, actual);
-	if (::crab::CrabSanityCheckFlag) {	
-	  if (caller_dom.is_bottom()) {
-	    CRAB_ERROR("Obtained bottom after unification");
-	  }
-	}
-      }
-    }
-    CRAB_LOG("inter-restrict", errs() << "Inv after formal/actual unification: "
-                                      << caller_dom << "\n";);
-    // Meet
-    callee_dom &= caller_dom;
-    CRAB_LOG("inter-restrict",
-             errs() << "Inv after meet with callee  " << callee_dom << "\n";);
-    // project onto **input** formal parameters
-    callee_dom.project(fdecl.get_inputs());
-    CRAB_LOG("inter-restrict",
-             errs() << "Inv at the callee after projecting onto formals: ";
-             for (auto &v
-                  : fdecl.get_inputs()) { errs() << v << ";"; } errs()
-             << "\n"
-             << callee_dom << "\n";);
-
-    return callee_dom;
-  }
-
-  static std::vector<variable_t> set_difference(std::vector<variable_t> v1,
-                                                std::vector<variable_t> v2) {
-    std::vector<variable_t> out;
-    std::sort(v1.begin(), v1.end());
-    std::sort(v2.begin(), v2.end());
-    std::set_difference(v1.begin(), v1.end(), v2.begin(), v2.end(),
-                        std::back_inserter(out));
-
-    return out;
-  }
-
-  static std::vector<variable_t> set_intersection(std::vector<variable_t> v1,
-                                                  std::vector<variable_t> v2) {
-    std::vector<variable_t> out;
-    std::sort(v1.begin(), v1.end());
-    std::sort(v2.begin(), v2.end());
-    std::set_intersection(v1.begin(), v1.end(), v2.begin(), v2.end(),
-                          std::back_inserter(out));
-    return out;
-  }
-
-  /**
-   * Extend operation
-   *
-   * Produce a new abstract state at the caller for the call
-   * continuation.
-   * - caller_dom: abstract state at the caller before the call
-   * - sum_out_dom: abstract state at the exit block of the callee
-   *   but already projected onto formal parameters of the function.
-   * - sum_out_variables is fdecl.get_inputs() U
-   *   fdecl.get_outputs(). We pass them explicitly to avoid to
-   *   concatenate them again here.
-   *
-   * This code should work even if callsite lhs variables and actual
-   * parameters are not disjoint.
-   **/
-  static AbsDom get_caller_continuation(
-      const callsite_t &cs, const fdecl_t &fdecl, AbsDom caller_dom,
-      const std::vector<variable_t> &sum_out_variables, AbsDom sum_out_dom) {
-
-    crab::ScopedCrabStats __st__(TimerInterExtend);
-
-    if (caller_dom.is_bottom()) {
-      return caller_dom;
-    }
-
-    if (sum_out_dom.is_bottom()) {
-      return sum_out_dom;
-    }
-
-    CRAB_LOG("inter-extend",
-             crab::outs() << "[INTER] Computing continuation for " << cs << "\n"
-                          << "\tCaller before the call=" << caller_dom << "\n"
-                          << "\tCallee exit=" << sum_out_dom << "\n";);
-
-    // make sure **output** actual parameters are unconstrained
-    caller_dom.forget(cs.get_lhs());
-
-    CRAB_LOG("inter-extend", crab::outs()
-                                 << "Caller after forgetting lhs variables="
-                                 << caller_dom << "\n";);
-
-    // Wire-up outputs: propagate from callee's outputs to caller's
-    // lhs of the callsite
-    for (unsigned i = 0, e = fdecl.get_outputs().size(); i < e; ++i) {
-      const variable_t &out_formal = fdecl.get_outputs()[i];
-      const variable_t &out_actual = cs.get_lhs()[i];
-      if (!(out_formal == out_actual)) {
-        CRAB_LOG("inter-extend", crab::outs()
-                                     << "Unifying output " << out_actual
-                                     << ":= " << out_formal << "\n";);
-        inter_transformer_helpers<AbsDom>::unify(sum_out_dom, out_actual,
-                                                 out_formal);
-      }
-    }
-
-    // Wire-up inputs (propagate from callee's inputs to caller's
-    // inputs at callsite) and remove the callee variables from the
-    // caller continuation. This is needed to propagate up new
-    // input-output relationships and also although an input variable
-    // cannot be re-assigned its value can be further constrained via
-    // assume's.
-    //
-    // This step is a bit tricky because of two things we need to consider:
-    // 1) We cannot forget a callee variable if it appears on the callsite
-    // 2) We cannot propagate up if a callsite input parameter is
-    //    killed at the callsite (i.e., re-defined via callsite output)
-    std::set<variable_t> cs_in_args(cs.get_args().begin(), cs.get_args().end());
-    std::vector<variable_t> killed_cs_in_args =
-        set_intersection(cs.get_args(), cs.get_lhs());
-
-    // Variables that appear both as callsite argument and callee's
-    // formal parameter so they shouldn't be forgotten.
-    std::vector<variable_t> caller_and_callee_vars;
-    caller_and_callee_vars.reserve(fdecl.get_inputs().size());
-    for (unsigned i = 0, e = fdecl.get_inputs().size(); i < e; ++i) {
-      const variable_t &in_formal = fdecl.get_inputs()[i];
-      if (cs_in_args.count(in_formal) > 0) {
-        caller_and_callee_vars.push_back(in_formal);
-      } else {
-        const variable_t &in_actual = cs.get_args()[i];
-        auto lower = std::lower_bound(killed_cs_in_args.begin(),
-                                      killed_cs_in_args.end(), in_actual);
-        if (lower == killed_cs_in_args.end() ||
-            in_actual < *lower) { // not found
-          // the formal parameter will be forgotten so we need to
-          // unify it with the corresponding actual parameter at the
-          // callsite to propagate up new relationships created in the
-          // callee.
-          //
-          // Note that this can destroy relationships of the actual
-          // parameter at the caller before the call but the meet will
-          // restore them later.
-          //
-          CRAB_LOG("inter-extend", crab::outs()
-                                       << "Unifying input " << in_actual
-                                       << ":=" << in_formal << "\n";);
-          inter_transformer_helpers<AbsDom>::unify(sum_out_dom, in_actual,
-                                                   in_formal);
-        }
-      }
-    }
-
-    caller_and_callee_vars.insert(caller_and_callee_vars.end(),
-                                  cs.get_lhs().begin(), cs.get_lhs().end());
-    auto local_vars = set_difference(sum_out_variables, caller_and_callee_vars);
-    // Forget callee's local variables
-    sum_out_dom.forget(local_vars);
-
-    CRAB_LOG("inter-extend", crab::outs()
-                                 << "Forgotten all local callee variables {";
-             for (auto const &v
-                  : local_vars) { crab::outs() << v << ";"; } crab::outs()
-             << "}\n";);
-
-    CRAB_LOG("inter-extend2", crab::outs()
-                                  << "Meet caller with callee:\n"
-                                  << "CALLER:" << caller_dom << "\n"
-                                  << "CALLEE:" << sum_out_dom << "\n";);
-
-    // Meet with the caller
-    caller_dom &= sum_out_dom;
-
-    CRAB_LOG("inter-extend", crab::outs() << caller_dom << "\n";);
-    return caller_dom;
-  }
-
   /* Analysis of a callsite */
   void analyze_callee(const callsite_t &cs, cg_node_t callee_cg_node) {
     // 1. Get CFG from the callee
@@ -1251,28 +1049,30 @@ private:
     const fdecl_t &fdecl = callee_cfg.get_func_decl();
 
     // 2. Generate initial abstract state for the callee
-    AbsDom caller_dom(this->get_abs_value());
+    AbsDom caller(this->get_abs_value());
 
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
-      pre_bot = caller_dom.is_bottom();
+      pre_bot = caller.is_bottom();
     }
 
     const bool recursive_call_being_analyzed =
         (m_ctx.analyze_recursive_functions() &&
          m_ctx.get_widening_set().count(callee_cg_node) > 0);
 
-    AbsDom callee_entry = make_top();
+    AbsDom callee_at_entry = make_top();
     if (m_ctx.analyze_recursive_functions() ||
 	m_ctx.get_widening_set().count(callee_cg_node) <= 0) {
       // If we do not analyze precisely recursive functions then we
       // must start the analysis of a recursive procedure without
       // propagating from caller to callee (i.e., top).
-      callee_entry = get_callee_entry(cs, fdecl, caller_dom, make_top());
+      domains::callsite_info<variable_t> callsite {cs.get_func_name(), cs.get_args(), cs.get_lhs(),
+						   fdecl.get_inputs(), fdecl.get_outputs()};
+      callee_at_entry.callee_entry(callsite, caller);
     }
 
     if (::crab::CrabSanityCheckFlag) {
-      bool post_bot = callee_entry.is_bottom();
+      bool post_bot = callee_at_entry.is_bottom();
       if (!(pre_bot || !post_bot)) {
         CRAB_ERROR(
             "Invariant became bottom after propagating from actual to formals ",
@@ -1280,9 +1080,9 @@ private:
       }
     }
 
-    AbsDom callee_exit = make_top();
-    std::vector<variable_t> callee_exit_vars;
-    get_fdecl_parameters(fdecl, callee_exit_vars);
+    AbsDom callee_at_exit = make_top();
+    std::vector<variable_t> callee_at_exit_vars;
+    get_fdecl_parameters(fdecl, callee_at_exit_vars);
 
     crab::CrabStats::resume(TimerInterCheckCache);
     // 3. Check if the same call context has been seen already
@@ -1311,18 +1111,18 @@ private:
 		   crab::outs() << "Approximate ";		   
 		 }
                  crab::outs() << "checking if\n"
-		              << callee_entry << "\nis subsumed by summary "
+		              << callee_at_entry << "\nis subsumed by summary "
 		              << i << "\n";
                  call_contexts[i]->write(crab::outs()); crab::outs() << "\n";);
 	
-        if (call_contexts[i]->is_subsumed(callee_entry,
+        if (call_contexts[i]->is_subsumed(callee_at_entry,
                                           use_exact_subsumption)) {
           CRAB_LOG("inter-subsume", crab::outs() << "succeed!\n";);
           CRAB_VERBOSE_IF(1, get_msg_stream()
                                  << "++ Skip redundant analysis of function  "
                                  << cs.get_func_name() << "\n";);
 
-          callee_exit = call_contexts[i]->get_post_summary();
+          callee_at_exit = call_contexts[i]->get_post_summary();
           call_context_already_seen = true;
           break;
         } else {
@@ -1351,16 +1151,16 @@ private:
       if (it != func_fixpoint_table.end()) {
         // ### Precise analysis of recursive call ###
         // 4.a Replace recursive call with a pre-fixpoint.
-        callee_exit = it->second.get_exit();
-        abs_dom_t callee_init(callee_entry);
-	callee_init |= it->second.get_entry();
+        callee_at_exit = it->second.get_exit();
+        abs_dom_t callee_at_entry_copy(callee_at_entry);
+	callee_at_entry_copy |= it->second.get_entry();
 	// Super important for termination
-        it->second.set_entry(std::move(callee_init)); 
-        CRAB_LOG("inter", callee_entry = it->second.get_entry();
+        it->second.set_entry(std::move(callee_at_entry_copy)); 
+        CRAB_LOG("inter", callee_at_entry = it->second.get_entry();
                  crab::outs()
                  << "[INTER] Replaced recursive call  \"" << cs
-                 << "\" with pre-fixpoint=" << callee_exit << "\n"
-                 << "Next analysis with entry=" << callee_entry << "\n");
+                 << "\" with pre-fixpoint=" << callee_at_exit << "\n"
+                 << "Next analysis with entry=" << callee_at_entry << "\n");
 	assert(!callee_analysis);
       } else {
 	if (m_ctx.find_call_stack(callee_cg_node)) {
@@ -1374,7 +1174,7 @@ private:
 	  // 
 	  // When the checker runs on bar we won't have a summary for
 	  // foo since its analysis is not completed yet.
-	  callee_exit.set_to_top();
+	  callee_at_exit.set_to_top();
           crab::CrabStats::count("Interprocedural.num_recursive_callsites");
 	  CRAB_VERBOSE_IF(1, get_msg_stream()
 			  << "++ Skipped analysis of recursive callee \""
@@ -1394,12 +1194,12 @@ private:
 	  // The callee can be a recursive function but this call does
 	  // not produce a cycle yet so we can analyze it.
 	  
-	  abs_dom_t callee_init(callee_entry);
-	  this->set_abs_value(std::move(callee_init));
+	  abs_dom_t callee_at_entry_copy(callee_at_entry);
+	  this->set_abs_value(std::move(callee_at_entry_copy));
 
 	  CRAB_LOG("inter", crab::outs() << "[INTER] Started \"";
 		   crab::outs()
-		   << cs << "\" with entry=" << callee_entry << "\n";);
+		   << cs << "\" with entry=" << callee_at_entry << "\n";);
 
 	  m_ctx.get_call_stack().push_back(callee_cg_node);
 	  callee_analysis = top_down_inter_impl::analyze_function<
@@ -1411,17 +1211,17 @@ private:
 	  // recursive and its fixpoint converges in one iteration which
 	  // should only happen if the invariants are bottom.
 	  if (callee_analysis && callee_cfg.has_exit()) {
-	    callee_exit = callee_analysis->get_post(callee_cfg.exit());
+	    callee_at_exit = callee_analysis->get_post(callee_cfg.exit());
 	    CRAB_LOG("inter", crab::outs()
 		     << "[INTER] Finished \"" << cs
-		     << "\" with exit=" << callee_exit << "\n";);
+		     << "\" with exit=" << callee_at_exit << "\n";);
 	    
 	  } else {
 	    // if the callee has not exit is because it's a noreturn function.
-	    callee_exit.set_to_bottom();
+	    callee_at_exit.set_to_bottom();
 	    CRAB_LOG("inter", crab::outs()
 		     << "[INTER] Finished \"" << cs
-		     << "\" with exit=" << callee_exit
+		     << "\" with exit=" << callee_at_exit
 		     << ": the callee has no exit block.\n";);
 	  }
 	  
@@ -1429,9 +1229,9 @@ private:
 	    // After the analysis of the recursive function converges,
 	    // We cannot store the summary with the initial abstract
 	    // state before the fixpoint started. Instead, we need to
-	    // update "callee_entry" by taking the invariant at the
+	    // update "callee_at_entry" by taking the invariant at the
 	    // entry of the function after the fixpoint converged.
-	    callee_entry = callee_analysis->get_pre(callee_cfg.entry());
+	    callee_at_entry = callee_analysis->get_pre(callee_cfg.entry());
 	  }
 	  
 	  CRAB_LOG("inter2", if (callee_analysis) {
@@ -1441,7 +1241,7 @@ private:
 	}
       }  // end analysis of callee
       
-      callee_exit.project(callee_exit_vars);
+      callee_at_exit.project(callee_at_exit_vars);
 
 
       // Check if the fixpoint of node has been stabilized.
@@ -1473,7 +1273,7 @@ private:
 	crab::CrabStats::resume(TimerInterStoreSum);
 	invariant_map_t pre_invariants, post_invariants;
 	calling_context_ptr cc(new calling_context_t(
-            fdecl, callee_entry, callee_exit,
+            fdecl, callee_at_entry, callee_at_exit,
             false /*ignore pre_invariants, post_invariants*/,
             std::move(pre_invariants), std::move(post_invariants)));
 
@@ -1483,8 +1283,8 @@ private:
 			<< fdecl.get_func_name() << "\n";);
 	CRAB_LOG("inter",
 		 crab::outs() << fdecl << "\n"
-		 << "=== Preconditions  ===\n" << callee_entry << "\n"
-		 << "=== Postconditions ===\n" << callee_exit << "\n"
+		 << "=== Preconditions  ===\n" << callee_at_entry << "\n"
+		 << "=== Postconditions ===\n" << callee_at_exit << "\n"
 		 << "=====================\n";);
       }
 
@@ -1538,17 +1338,24 @@ private:
 
     pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
-      pre_bot = callee_exit.is_bottom();
+      pre_bot = callee_at_exit.is_bottom();
     }
 
-    // 6. Generate abstract state for the continuation at the caller
-    AbsDom caller_cont_dom = get_caller_continuation(
-        cs, fdecl, caller_dom, callee_exit_vars, callee_exit);
 
+    CRAB_LOG("inter-extend",
+             crab::outs() << "[INTER] Computing continuation for " << cs << "\n"
+                          << "\tCaller before the call=" << caller << "\n"
+                          << "\tCallee exit=" << callee_at_exit << "\n";);
+    
+    // 6. Generate abstract state for the continuation at the caller
+    domains::callsite_info<variable_t> callsite {cs.get_func_name(), cs.get_args(), cs.get_lhs(),
+						 fdecl.get_inputs(), fdecl.get_outputs()};
+    caller.caller_continuation(callsite, callee_at_exit);
+						     
     if (::crab::CrabSanityCheckFlag && !recursive_call_being_analyzed) {
       // If the function is recursive, then caller_cont_dom can be
       // bottom, even after the first fixpoint iteration.
-      bool post_bot = caller_cont_dom.is_bottom();
+      bool post_bot = caller.is_bottom();
       if (!(pre_bot || !post_bot)) {
         CRAB_ERROR("Invariant became bottom after propagating from formals to "
                    "actuals ",
@@ -1557,8 +1364,8 @@ private:
     }
 
     CRAB_LOG("inter", crab::outs() << "[INTER] Continuation for \"" << cs
-                                   << "\"=" << caller_cont_dom << "\n";);
-    this->set_abs_value(std::move(caller_cont_dom));
+                                   << "\"=" << caller << "\n";);
+    this->set_abs_value(std::move(caller));
   }
 
 public:
@@ -1748,8 +1555,6 @@ public:
     crab::CrabStats::start(TimerInterStoreSum);
     crab::CrabStats::start(TimerInterStoreSumQueue);
     crab::CrabStats::start(TimerInterAnalyzeFunc);
-    crab::CrabStats::start(TimerInterRestrict);
-    crab::CrabStats::start(TimerInterExtend);
 
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
     crab::CrabStats::resume(TimerCallGraphTC);

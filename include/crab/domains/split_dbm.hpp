@@ -25,6 +25,7 @@
 #include <crab/domains/graphs/graph_ops.hpp>
 #include <crab/domains/graphs/graph_views.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -47,15 +48,20 @@
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
 namespace crab {
-
 namespace domains {
 
+class SplitDBMDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+  
 template <class Number, class VariableName,
-          class Params = DBM_impl::DefaultParams<Number>>
+          class DBMParams = DBM_impl::DefaultParams<Number>,
+	  class DomainParams = SplitDBMDefaultParams>
 class split_dbm_domain final
     : public abstract_domain_api<
-          split_dbm_domain<Number, VariableName, Params>> {
-  using DBM_t = split_dbm_domain<Number, VariableName, Params>;
+          split_dbm_domain<Number, VariableName, DBMParams, DomainParams>> {
+  using DBM_t = split_dbm_domain<Number, VariableName, DBMParams, DomainParams>;
   using abstract_domain_t = abstract_domain_api<DBM_t>;
 
 public:
@@ -75,8 +81,8 @@ public:
 
 private:
   using bound_t = ikos::bound<number_t>;
-  using Wt = typename Params::Wt;
-  using graph_t = typename Params::graph_t;
+  using Wt = typename DBMParams::Wt;
+  using graph_t = typename DBMParams::graph_t;
   using ntow = DBM_impl::NtoW<number_t, Wt>;
   using vert_id = typename graph_t::vert_id;
   using wt_ref_t = typename graph_t::wt_ref_t;
@@ -1292,6 +1298,13 @@ protected:
   }
 
 public:
+  /// split_dbm_domain implements only standard abstract operations
+  /// of a numerical domain so it is intended to be used as a leaf
+  /// domain in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
+  
   split_dbm_domain(bool is_bottom = false) : _is_bottom(is_bottom) {
     g.growTo(1); // Allocate the zero vector
     potential.push_back(Wt(0));
@@ -2457,6 +2470,19 @@ public:
 	     << *this << "\n");
   }
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const DBM_t &caller) override {
+    inter_abstract_operations<DBM_t, DomainParams::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const DBM_t &callee) override {
+    inter_abstract_operations<DBM_t, DomainParams::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   void operator+=(const linear_constraint_system_t &csts) override {
     if (is_bottom())
       return;
@@ -2649,12 +2675,6 @@ public:
     set(x, xi);
   }
 
-  /// split_dbm_domain implements only standard abstract operations
-  /// of a numerical domain so it is intended to be used as a leaf
-  /// domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
   DEFAULT_SELECT(DBM_t)
   DEFAULT_WEAK_ASSIGN(DBM_t)
     
@@ -2894,16 +2914,16 @@ public:
   std::string domain_name() const override { return "SplitDBM"; }
 }; // class split_dbm_domain
 
-template <typename Number, typename VariableName, typename Params>
-struct abstract_domain_traits<split_dbm_domain<Number, VariableName, Params>> {
+template <typename Number, typename VariableName, typename DBMParams, typename DomainParams>
+struct abstract_domain_traits<split_dbm_domain<Number, VariableName, DBMParams, DomainParams>> {
   using number_t = Number;
   using varname_t = VariableName;
 };
 
-template <typename Number, typename VariableName, typename Params>
-class reduced_domain_traits<split_dbm_domain<Number, VariableName, Params>> {
+template <typename Number, typename VariableName, typename DBMParams, typename DomainParams>
+class reduced_domain_traits<split_dbm_domain<Number, VariableName, DBMParams, DomainParams>> {
 public:
-  using sdbm_domain_t = split_dbm_domain<Number, VariableName, Params>;
+  using sdbm_domain_t = split_dbm_domain<Number, VariableName, DBMParams, DomainParams>;
   using variable_t = typename sdbm_domain_t::variable_t;
   using linear_constraint_system_t =
       typename sdbm_domain_t::linear_constraint_system_t;

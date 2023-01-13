@@ -12,6 +12,7 @@
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/sign.hpp>
 #include <crab/support/stats.hpp>
@@ -20,12 +21,16 @@
 
 namespace crab {
 namespace domains {
-
-template <typename Number, typename VariableName>
-class sign_domain final : public crab::domains::abstract_domain_api<
-                              sign_domain<Number, VariableName>> {
+class SignDefaultParams {
 public:
-  using sign_domain_t = sign_domain<Number, VariableName>;
+  enum { implement_inter_transformers = 0 };
+};
+
+template <typename Number, typename VariableName, typename Params = SignDefaultParams>
+class sign_domain final : public crab::domains::abstract_domain_api<
+                          sign_domain<Number, VariableName, Params>> {
+public:
+  using sign_domain_t = sign_domain<Number, VariableName, Params>;
   using abstract_domain_t = crab::domains::abstract_domain_api<sign_domain_t>;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_t::interval_t;
@@ -266,6 +271,13 @@ private:
   }
 
 public:
+  /// sign_domain implements only standard abstract operations of
+  /// a numerical domain so it is intended to be used as a leaf domain
+  /// in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(sign_domain_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(sign_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(sign_domain_t)
+  
   sign_domain_t make_top() const override {
     return sign_domain_t(separate_domain_t::top());
   }
@@ -634,13 +646,19 @@ public:
     }
   }
 
-  /// sign_domain implements only standard abstract operations of
-  /// a numerical domain so it is intended to be used as a leaf domain
-  /// in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(sign_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(sign_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(sign_domain_t)
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const sign_domain_t &caller) override {
+    inter_abstract_operations<sign_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
 
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const sign_domain_t &callee) override {
+    inter_abstract_operations<sign_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+ 
   void forget(const variable_vector_t &variables) override {
     if (is_bottom() || is_top()) {
       return;
@@ -738,8 +756,8 @@ public:
 
 namespace crab {
 namespace domains {
-template <typename Number, typename VariableName>
-struct abstract_domain_traits<sign_domain<Number, VariableName>> {
+template <typename Number, typename VariableName, typename Params>
+struct abstract_domain_traits<sign_domain<Number, VariableName, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 };

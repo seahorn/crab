@@ -47,20 +47,31 @@
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/support/stats.hpp>
 
+namespace crab {
+namespace domains {
+class IntervalsDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+  enum { max_reduction_cycles = 10};  
+};
+} // end namespace domains
+} // end namespace crab
+
 namespace ikos {
 
 template <typename Number, typename VariableName,
-          std::size_t max_reduction_cycles = 10>
+	  typename Params = crab::domains::IntervalsDefaultParams>
 class interval_domain final
     : public crab::domains::abstract_domain_api<
-          interval_domain<Number, VariableName, max_reduction_cycles>> {
+          interval_domain<Number, VariableName, Params>> {
 public:
   using interval_domain_t =
-      interval_domain<Number, VariableName, max_reduction_cycles>;
+      interval_domain<Number, VariableName, Params>;
   using abstract_domain_t =
       crab::domains::abstract_domain_api<interval_domain_t>;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -99,7 +110,7 @@ private:
     return r;
   }
   void add(const linear_constraint_system_t &csts,
-           std::size_t threshold = max_reduction_cycles) {
+           std::size_t threshold = Params::max_reduction_cycles) {
     if (!this->is_bottom()) {
       // XXX: filter out unsigned linear inequalities
       linear_constraint_system_t signed_csts;
@@ -127,6 +138,13 @@ private:
   }
 
 public:
+  /// interval_domain implements only standard abstract operations of
+  /// a numerical domain so it is intended to be used as a leaf domain
+  /// in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)
+  
   interval_domain_t make_top() const override {
     return interval_domain_t(separate_domain_t::top());
   }
@@ -535,14 +553,21 @@ public:
       set(lhs, this->operator[](e1) | this->operator[](e2));
     }
   }
-  
-  /// interval_domain implements only standard abstract operations of
-  /// a numerical domain so it is intended to be used as a leaf domain
-  /// in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)
 
+  void callee_entry(const crab::domains::callsite_info<variable_t> &callsite,
+		    const interval_domain_t &caller) override {
+    crab::domains::inter_abstract_operations<interval_domain_t,
+					     Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const crab::domains::callsite_info<variable_t> &callsite,
+			   const interval_domain_t &callee) override {
+    crab::domains::inter_abstract_operations<interval_domain_t,
+					     Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
   
   void forget(const variable_vector_t &variables) override {
     if (is_bottom() || is_top()) {
@@ -636,8 +661,8 @@ public:
 namespace crab {
 namespace domains {
 
-template <typename Number, typename VariableName>
-struct abstract_domain_traits<ikos::interval_domain<Number, VariableName>> {
+template <typename Number, typename VariableName, typename Params>
+struct abstract_domain_traits<ikos::interval_domain<Number, VariableName, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 };

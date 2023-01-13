@@ -14,6 +14,7 @@
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/domains/intervals.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/support/debug.hpp>
@@ -1065,10 +1066,16 @@ inline dis_q_interval_t upper_half_line(const dis_q_interval_t &i,
 namespace crab {
 namespace domains {
 
-template <typename Number, typename VariableName>
+class DisIntervalsDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+  
+template <typename Number, typename VariableName,
+	  typename Params = DisIntervalsDefaultParams>
 class dis_interval_domain final
-    : public abstract_domain_api<dis_interval_domain<Number, VariableName>> {
-  using dis_interval_domain_t = dis_interval_domain<Number, VariableName>;
+  : public abstract_domain_api<dis_interval_domain<Number, VariableName, Params>> {
+  using dis_interval_domain_t = dis_interval_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<dis_interval_domain_t>;
 
 public:
@@ -1101,6 +1108,13 @@ private:
   dis_interval_domain(separate_domain_t env) : _env(env) {}
 
 public:
+  /// dis_interval_domain implements only standard abstract operations
+  /// of a numerical domain so it is intended to be used as a leaf
+  /// domain in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
+  
   dis_interval_domain_t make_top() const override {
     return dis_interval_domain_t(separate_domain_t::top());
   }
@@ -1460,14 +1474,20 @@ public:
   }
 
   DEFAULT_SELECT(dis_interval_domain_t)
-  
-  /// dis_interval_domain implements only standard abstract operations
-  /// of a numerical domain so it is intended to be used as a leaf
-  /// domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const dis_interval_domain_t &caller) override {
+    inter_abstract_operations<dis_interval_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const dis_interval_domain_t &callee) override {
+    inter_abstract_operations<dis_interval_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   void expand(const variable_t &x, const variable_t &new_x) override {
     crab::CrabStats::count(domain_name() + ".count.expand");
     crab::ScopedCrabStats __st__(domain_name() + ".expand");
@@ -1572,8 +1592,8 @@ public:
   std::string domain_name() const override { return "DisjunctiveIntervals"; }
 };
 
-template <typename Number, typename VariableName>
-struct abstract_domain_traits<dis_interval_domain<Number, VariableName>> {
+template <typename Number, typename VariableName, typename Params>
+struct abstract_domain_traits<dis_interval_domain<Number, VariableName, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 };

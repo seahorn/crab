@@ -9,6 +9,7 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/intervals.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -19,9 +20,13 @@
 #include <crab/domains/dummy_abstract_domain.hpp>
 namespace crab {
 namespace domains {
-template <typename N, typename V>
+class BoxesDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};  
+template <typename N, typename V, typename P = BoxesDefaultParams>
 class boxes_domain final
-    : public dummy_abstract_domain<boxes_domain<N, V>> {
+    : public dummy_abstract_domain<boxes_domain<N, V, P>> {
 public:
   std::string not_implemented_msg() const override {
     return "No LDD. Run cmake with -DCRAB_USE_LDD=ON";
@@ -45,10 +50,13 @@ public:
 #include <boost/optional.hpp>
 
 namespace crab {
-
 namespace domains {
-
 using namespace crab::domains::ldd;
+
+class BoxesDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
 
 /*
  * The wrapper has two global datastructures:
@@ -61,12 +69,12 @@ using namespace crab::domains::ldd;
  *
  * FIXME: Ldd_TermReplace seems to leak memory sometimes.
  */
-template <typename Number, typename VariableName>
+template <typename Number, typename VariableName, typename Params = BoxesDefaultParams>
 class boxes_domain final
-    : public abstract_domain_api<boxes_domain<Number, VariableName>> {
+  : public abstract_domain_api<boxes_domain<Number, VariableName, Params>> {
 
   using interval_domain_t = ikos::interval_domain<Number, VariableName>;
-  using boxes_domain_t = boxes_domain<Number, VariableName>;
+  using boxes_domain_t = boxes_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<boxes_domain_t>;
 
 public:
@@ -755,6 +763,12 @@ private:
   }
   
 public:
+  /// Boxes domain implements only standard abstract operations of a
+  /// numerical domain plus boolean operations. It is intended to be
+  /// used as a leaf domain in the hierarchy of domains.
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(boxes_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(boxes_domain_t)
+  
   static void clear_global_state() { s_var_map.clear(); }
 
   boxes_domain() : m_ldd(lddPtr(get_ldd_man(), Ldd_GetTrue(get_ldd_man()))) {}
@@ -1667,12 +1681,19 @@ public:
     CRAB_WARN("boxes backward boolean apply not implemented");
   }
 
-  /// Boxes domain implements only standard abstract operations of a
-  /// numerical domain plus boolean operations. It is intended to be
-  /// used as a leaf domain in the hierarchy of domains.
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(boxes_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(boxes_domain_t)
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const boxes_domain_t &caller) override {
+    inter_abstract_operations<boxes_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
 
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const boxes_domain_t &callee) override {
+    inter_abstract_operations<boxes_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   DEFAULT_SELECT(boxes_domain_t)
   DEFAULT_SELECT_BOOL(boxes_domain_t)
   DEFAULT_WEAK_ASSIGN(boxes_domain_t)
@@ -1755,83 +1776,19 @@ public:
   std::string domain_name() const override { return "Boxes"; }
 };
 
-template <typename N, typename V>
-LddManager *boxes_domain<N, V>::s_ldd_man = nullptr;
+template <typename N, typename V, typename P>
+LddManager *boxes_domain<N, V, P>::s_ldd_man = nullptr;
 
-template <typename N, typename V>
-typename boxes_domain<N, V>::var_map_t boxes_domain<N, V>::s_var_map;
+template <typename N, typename V, typename P>
+typename boxes_domain<N, V, P>::var_map_t boxes_domain<N, V, P>::s_var_map;
 
-template <typename Number, typename VariableName>
-class special_domain_traits<boxes_domain<Number, VariableName>> {
+template <typename Number, typename VariableName, typename Params>
+class special_domain_traits<boxes_domain<Number, VariableName, Params>> {
 public:
   static void clear_global_state(void) {
-    boxes_domain<Number, VariableName>::clear_global_state();
+    boxes_domain<Number, VariableName, Params>::clear_global_state();
   }
 };
-
-// template <typename Number, typename VariableName>
-// class checker_domain_traits<boxes_domain<Number, VariableName>> {
-// public:
-//   using this_type = boxes_domain<Number, VariableName>;
-//   using linear_constraint_t = typename this_type::linear_constraint_t;
-//   using disjunctive_linear_constraint_system_t =
-//       typename this_type::disjunctive_linear_constraint_system_t;
-//   static bool entail(this_type &lhs,
-//                      const disjunctive_linear_constraint_system_t &rhs) {
-//     // -- trivial cases first
-//     if (rhs.is_false()) {
-//       return false;
-//     } else if (rhs.is_true()) {
-//       return true;
-//     } else if (lhs.is_bottom()) {
-//       return true;
-//     } else if (lhs.is_top()) {
-//       return false;
-//     }
-//     this_type inv;
-//     inv.set_to_bottom();
-//     for (auto const &csts : rhs) {
-//       this_type conj;
-//       conj += csts;
-//       inv |= conj;
-//     }
-//     return (lhs & inv.complement()).is_bottom();
-//   }
-//   static bool entail(const disjunctive_linear_constraint_system_t &lhs,
-//                      this_type &rhs) {
-//     // -- trivial cases first
-//     if (rhs.is_bottom()) {
-//       return false;
-//     } else if (rhs.is_top()) {
-//       return true;
-//     } else if (lhs.is_false()) {
-//       return true;
-//     } else if (lhs.is_true()) {
-//       return false;
-//     }
-//     this_type inv;
-//     inv.set_to_bottom();
-//     for (auto const &csts : lhs) {
-//       this_type conj;
-//       conj += csts;
-//       inv |= conj;
-//     }
-//     return (inv & rhs.complement()).is_bottom();
-//   }
-//   static bool intersect(this_type &inv, const linear_constraint_t &cst) {
-//     // default code
-
-//     // -- trivial cases first
-//     if (inv.is_bottom() || cst.is_contradiction())
-//       return false;
-//     if (inv.is_top() || cst.is_tautology())
-//       return true;
-
-//     this_type cst_inv;
-//     cst_inv += cst;
-//     return (!(cst_inv & inv).is_bottom());
-//   }
-// };
   
 } // namespace domains
 } // namespace crab
@@ -1839,8 +1796,8 @@ public:
 
 namespace crab {
 namespace domains {
-template <typename Number, typename VariableName>
-struct abstract_domain_traits<boxes_domain<Number, VariableName>> {
+template <typename Number, typename VariableName, typename Params>
+struct abstract_domain_traits<boxes_domain<Number, VariableName, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 };

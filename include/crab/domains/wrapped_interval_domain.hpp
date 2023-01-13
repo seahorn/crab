@@ -12,6 +12,7 @@
 #include <crab/domains/combined_domains.hpp>
 #include <crab/domains/discrete_domains.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/wrapped_interval.hpp>
@@ -22,14 +23,20 @@
 
 namespace crab {
 namespace domains {
+class WrappedIntervalsDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+  enum { max_reduction_cycles = 10 };
+};
 
+  
 template <typename Number, typename VariableName,
-          std::size_t max_reduction_cycles = 10>
+	  typename Params = WrappedIntervalsDefaultParams>
 class wrapped_interval_domain final
     : public abstract_domain_api<
-          wrapped_interval_domain<Number, VariableName, max_reduction_cycles>> {
+          wrapped_interval_domain<Number, VariableName, Params>> {
   using wrapped_interval_domain_t =
-      wrapped_interval_domain<Number, VariableName, max_reduction_cycles>;
+      wrapped_interval_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<wrapped_interval_domain_t>;
 
 public:
@@ -63,7 +70,7 @@ private:
   wrapped_interval_domain(separate_domain_t env) : _env(env) {}
 
   void add(const linear_constraint_system_t &csts,
-           std::size_t threshold = max_reduction_cycles) {
+           std::size_t threshold = Params::max_reduction_cycles) {
     if (!this->is_bottom()) {
       solver_t solver(csts, threshold);
       solver.run(this->_env);
@@ -88,6 +95,13 @@ private:
   }
 
 public:
+  /// wrapped_interval_domain implements only standard abstract
+  /// operations of a numerical domain so it is intended to be used as
+  /// a leaf domain in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
+  
   wrapped_interval_domain_t make_top() const override {
     return wrapped_interval_domain_t(separate_domain_t::top());
   }
@@ -532,12 +546,21 @@ public:
     CRAB_WARN("Backward apply for wrapped intervals not implemented");
   }
 
-  /// wrapped_interval_domain implements only standard abstract
-  /// operations of a numerical domain so it is intended to be used as
-  /// a leaf domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const wrapped_interval_domain_t &caller) override {
+    inter_abstract_operations<wrapped_interval_domain_t,
+			      Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const wrapped_interval_domain_t &callee) override {
+    inter_abstract_operations<wrapped_interval_domain_t,
+			      Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   DEFAULT_SELECT(wrapped_interval_domain_t)
   
   void forget(const variable_vector_t &variables) override {
@@ -641,15 +664,15 @@ public:
 
 }; // class wrapped_interval_domain
 
-template <typename Number, typename VariableName>
-struct abstract_domain_traits<wrapped_interval_domain<Number, VariableName>> {
+template <typename Number, typename VariableName, typename Params>
+struct abstract_domain_traits<wrapped_interval_domain<Number, VariableName, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 };
 
-template <typename Number, typename VariableName>
+template <typename Number, typename VariableName, typename Params>
 class constraint_simp_domain_traits<
-    wrapped_interval_domain<Number, VariableName>> {
+     wrapped_interval_domain<Number, VariableName, Params>> {
 public:
   using linear_constraint_t = ikos::linear_constraint<Number, VariableName>;
   using linear_constraint_system_t =
@@ -875,12 +898,11 @@ inline crab_os &operator<<(crab_os &o, const wrapped_interval_limit_value &v) {
     is assigned to a constant value.
 **/
 template <typename Number, typename VariableName,
-          std::size_t max_reduction_cycles = 10>
+	  typename Params = WrappedIntervalsDefaultParams>
 class wrapped_interval_with_history_domain final
     : public abstract_domain_api<wrapped_interval_with_history_domain<
-          Number, VariableName, max_reduction_cycles>> {
-  using this_type = wrapped_interval_with_history_domain<Number, VariableName,
-                                                         max_reduction_cycles>;
+          Number, VariableName, Params>> {
+  using this_type = wrapped_interval_with_history_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<this_type>;
 
 public:
@@ -898,7 +920,7 @@ public:
   using varname_t = VariableName;
   using wrapped_interval_t = wrapped_interval<number_t>;
   using wrapped_interval_domain_t =
-      wrapped_interval_domain<number_t, varname_t, max_reduction_cycles>;
+      wrapped_interval_domain<number_t, varname_t, Params>;
 
 private:
   using separate_domain_t =
@@ -986,6 +1008,13 @@ private:
   }
 
 public:
+  /// wrapped_interval_domain implements only standard abstract
+  /// operations of a numerical domain so it is intended to be used as
+  /// a leaf domain in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(this_type)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(this_type)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(this_type)
+  
   this_type make_top() const override {
     wrapped_interval_domain_t wid;
     wid.set_to_top();
@@ -1328,12 +1357,6 @@ public:
                                           << k << " => " << *this << "\n";);
   }
 
-  /// wrapped_interval_domain implements only standard abstract
-  /// operations of a numerical domain so it is intended to be used as
-  /// a leaf domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(this_type)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(this_type)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(this_type)
   DEFAULT_SELECT(this_type)
   
   void write(crab_os &o) const override {
@@ -1369,9 +1392,7 @@ public:
   }
   /* end intrinsics operations */
 
-  // checker_domain_traits
-
-  bool entail(const linear_constraint_t &cst) {
+  bool entails(const linear_constraint_t &cst) const override {
     if (is_bottom())
       return true;
     if (cst.is_tautology())
@@ -1389,6 +1410,27 @@ public:
            cst_inv.get_wrapped_interval_domain();
   }
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const this_type &caller) override {
+    // The transformer for a call is not delegated to the subdomains.
+    // Instead, if Params::implement_inter_transformers is enabled
+    // then the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.            
+    inter_abstract_operations<this_type, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const this_type &callee) override {
+    // The transformer for a call is not delegated to the subdomains.
+    // Instead, if Params::implement_inter_transformers is enabled
+    // then the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.        
+    inter_abstract_operations<this_type, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   void expand(const variable_t &x, const variable_t &new_x) override {
     crab::CrabStats::count(domain_name() + ".count.expand");
     crab::ScopedCrabStats __st__(domain_name() + ".expand");
@@ -1453,46 +1495,10 @@ public:
   }
 };
 
-template <typename N, typename V, std::size_t M>
-struct abstract_domain_traits<wrapped_interval_with_history_domain<N, V, M>> {
+template <typename N, typename V, typename P>
+struct abstract_domain_traits<wrapped_interval_with_history_domain<N, V, P>> {
   using number_t = N;
   using varname_t = V;
-};
-
-template <typename N, typename V, std::size_t M>
-class checker_domain_traits<wrapped_interval_with_history_domain<N, V, M>> {
-public:
-  using this_type = wrapped_interval_with_history_domain<N, V, M>;
-  using linear_constraint_t = typename this_type::linear_constraint_t;
-  using disjunctive_linear_constraint_system_t =
-      typename this_type::disjunctive_linear_constraint_system_t;
-
-  static bool entail(this_type &lhs,
-                     const disjunctive_linear_constraint_system_t &rhs) {
-    CRAB_ERROR(
-        "TODO: entail operation in wrapper_interval_with_history_domain");
-  }
-
-  static bool entail(const disjunctive_linear_constraint_system_t &lhs,
-                     this_type &rhs) {
-    CRAB_ERROR(
-        "TODO: entail operation in wrapper_interval_with_history_domain");
-  }
-
-  static bool entail(this_type &lhs, const linear_constraint_t &rhs) {
-    return lhs.entail(rhs);
-  }
-
-  static bool intersect(this_type &inv, const linear_constraint_t &cst) {
-    // default code
-    if (inv.is_bottom() || cst.is_contradiction())
-      return false;
-    if (inv.is_top() || cst.is_tautology())
-      return true;
-    this_type cst_inv;
-    cst_inv += cst;
-    return (!(cst_inv & inv).is_bottom());
-  }
 };
 
 /*
@@ -1503,10 +1509,10 @@ public:
    machine arithmetics) while gaining some extra (sound)
    (in)equalities inferred by the numerical domain.
 */
-template <typename NumDom, std::size_t max_reduction_cycles = 10>
+template <typename NumDom, typename Params = WrappedIntervalsDefaultParams>
 class wrapped_numerical_domain final
-    : public abstract_domain_api<wrapped_numerical_domain<NumDom>> {
-  using wrapped_numerical_domain_t = wrapped_numerical_domain<NumDom>;
+  : public abstract_domain_api<wrapped_numerical_domain<NumDom, Params>> {
+  using wrapped_numerical_domain_t = wrapped_numerical_domain<NumDom, Params>;
   using abstract_domain_t = abstract_domain_api<wrapped_numerical_domain_t>;
 
 public:
@@ -1526,8 +1532,7 @@ public:
 
 private:
   using wrapped_interval_domain_t =
-      wrapped_interval_with_history_domain<number_t, varname_t,
-                                           max_reduction_cycles>;
+      wrapped_interval_with_history_domain<number_t, varname_t, Params>;
   using wrapped_interval_t = wrapped_interval<number_t>;
   using signedness_t = enum { UNKNOWN_SIGNEDNESS, SIGNED, UNSIGNED };
   using reduced_domain_product2_t =
@@ -2159,6 +2164,30 @@ public:
   virtual void
   backward_array_assign(const variable_t &lhs, const variable_t &rhs,
                         const wrapped_numerical_domain_t &invariant) override {}
+
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const wrapped_numerical_domain_t &caller) override {
+    // The transformer for a call is not delegated to the subdomain.
+    // Instead, if Params::implement_inter_transformers is enabled
+    // then the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.    
+    inter_abstract_operations<wrapped_numerical_domain_t,
+			      Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const wrapped_numerical_domain_t &callee) override {
+    // The transformer for a call is not delegated to the subdomain.
+    // Instead, if Params::implement_inter_transformers is enabled
+    // then the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.        
+    inter_abstract_operations<wrapped_numerical_domain_t,
+			      Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   // region/reference api
   void region_init(const variable_t &reg) override {
     _product.region_init(reg);
@@ -2259,33 +2288,10 @@ public:
   }
 }; // class wrapped_numerical_domain
 
-template <typename AbsDom>
-struct abstract_domain_traits<wrapped_numerical_domain<AbsDom>> {
+template <typename AbsDom, typename Params>
+struct abstract_domain_traits<wrapped_numerical_domain<AbsDom, Params>> {
   using number_t = typename AbsDom::number_t;
   using varname_t = typename AbsDom::varname_t;
-};
-
-template <typename AbsDom>
-class checker_domain_traits<wrapped_numerical_domain<AbsDom>> {
-public:
-  using this_type = wrapped_numerical_domain<AbsDom>;
-  using linear_constraint_t = typename this_type::linear_constraint_t;
-  using disjunctive_linear_constraint_system_t =
-      typename this_type::disjunctive_linear_constraint_system_t;
-
-  static bool entail(this_type &lhs,
-                     const disjunctive_linear_constraint_system_t &rhs) {
-    return checker_domain_traits<AbsDom>::entail(lhs.second(), rhs);
-  }
-
-  static bool entail(const disjunctive_linear_constraint_system_t &lhs,
-                     this_type &rhs) {
-    return checker_domain_traits<AbsDom>::entail(lhs, rhs.second());
-  }
-
-  static bool intersect(this_type &inv, const linear_constraint_t &cst) {
-    return checker_domain_traits<AbsDom>::intersect(inv.second(), cst);
-  }
 };
 
 } // namespace domains
