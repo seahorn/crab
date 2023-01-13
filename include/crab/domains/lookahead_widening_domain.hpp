@@ -2,6 +2,7 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/combined_domains.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/os.hpp>
 #include <string>
@@ -9,15 +10,20 @@
 namespace crab {
 namespace domains {
 
+class LookaheadWideningDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+  
 /*
  * Lookahead widening domain based on the paper "Lookahead Widening"
  * by D. Gopan and T. Reps published in CAV 2006.
  */
-template <class Dom>
+template <class Dom, class Params = LookaheadWideningDefaultParams>
 class lookahead_widening_domain
-    : public abstract_domain_api<lookahead_widening_domain<Dom>> {
+  : public abstract_domain_api<lookahead_widening_domain<Dom, Params>> {
 public:
-  using this_type = lookahead_widening_domain<Dom>;
+  using this_type = lookahead_widening_domain<Dom, Params>;
   using abstract_domain_api_t = abstract_domain_api<this_type>;
   using typename abstract_domain_api_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_api_t::interval_t;
@@ -63,6 +69,13 @@ private:
   }
 
 public:
+  // TODO: we should implement these operations
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(this_type)
+  // TODO: we should implement these operations
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(this_type)
+  // TODO: we should implement these operations
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(this_type)
+  
   lookahead_widening_domain(bool is_bottom = false)
       : m_product(product_domain_t()), m_is_bottom(is_bottom) {}
 
@@ -329,13 +342,19 @@ public:
     CRAB_WARN(domain_name(), "::backward_apply not implemented");
   }
 
-  // TODO: we should implement these operations
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(this_type)
-  // TODO: we should implement these operations
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(this_type)
-  // TODO: we should implement these operations
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(this_type)
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const this_type &caller) override {
+    inter_abstract_operations<this_type, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
 
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const this_type &callee) override {
+    inter_abstract_operations<this_type, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   linear_constraint_system_t to_linear_constraint_system() const override {
     if (is_bottom()) {
       return linear_constraint_system_t(linear_constraint_t::get_false());
@@ -418,8 +437,8 @@ public:
   }
 };
 
-template <typename Domain>
-struct abstract_domain_traits<lookahead_widening_domain<Domain>> {
+template <typename Domain, typename Params>
+struct abstract_domain_traits<lookahead_widening_domain<Domain, Params>> {
   using number_t = typename Domain::number_t;
   using varname_t = typename Domain::varname_t;
 };

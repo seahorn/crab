@@ -45,6 +45,7 @@
 #include <crab/domains/graphs/graph_ops.hpp>
 #include <crab/domains/graphs/graph_views.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -242,12 +243,18 @@ public:
 };
 } // end namespace split_octagons_impl
 
+class SplitOctDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+  
 template <class Number, class VariableName,
-          class Params = DBM_impl::DefaultParams<Number>>
+          class DBMParams = DBM_impl::DefaultParams<Number>,
+	  class DomainParams = SplitOctDefaultParams>
 class split_oct_domain final
     : public abstract_domain_api<
-          split_oct_domain<Number, VariableName, Params>> {
-  using split_oct_domain_t = split_oct_domain<Number, VariableName, Params>;
+      split_oct_domain<Number, VariableName, DBMParams, DomainParams>> {
+  using split_oct_domain_t = split_oct_domain<Number, VariableName, DBMParams, DomainParams>;
   using abstract_domain_t = abstract_domain_api<split_oct_domain_t>;
 
 public:
@@ -267,8 +274,8 @@ public:
 
 private:
   using bound_t = ikos::bound<number_t>;
-  using Wt = typename Params::Wt;
-  using graph_t = typename Params::graph_t;
+  using Wt = typename DBMParams::Wt;
+  using graph_t = typename DBMParams::graph_t;
   using wt_ref_t = typename graph_t::wt_ref_t;  
   using ntow = DBM_impl::NtoW<number_t, Wt>;
   using vert_id = typename graph_t::vert_id;
@@ -1944,6 +1951,13 @@ private:
   }
 
 public:
+  /// split_oct_domain_t implements only standard abstract operations
+  /// of a numerical domain so it is intended to be used as a leaf
+  /// domain in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(split_oct_domain_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(split_oct_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(split_oct_domain_t)
+  
   split_oct_domain(bool is_bottom = false) : m_is_bottom(is_bottom) {}
 
   split_oct_domain(const split_oct_domain_t &o)
@@ -3497,6 +3511,19 @@ public:
                                                                 z, inv);
   }
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const split_oct_domain_t &caller) override {
+    inter_abstract_operations<split_oct_domain_t, DomainParams::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const split_oct_domain_t &callee) override {
+    inter_abstract_operations<split_oct_domain_t, DomainParams::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   void expand(const variable_t &x, const variable_t &y) override {
     crab::CrabStats::count(domain_name() + ".count.expand");
     crab::ScopedCrabStats __st__(domain_name() + ".expand");
@@ -3596,13 +3623,7 @@ public:
     std::swap(m_vert_map, new_vert_map);
     CRAB_LOG("octagon", crab::outs() << "RESULT=" << *this << "\n");
   }
-
-  /// split_oct_domain_t implements only standard abstract operations
-  /// of a numerical domain so it is intended to be used as a leaf
-  /// domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(split_oct_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(split_oct_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(split_oct_domain_t)
+  
   DEFAULT_SELECT(split_oct_domain_t)
   DEFAULT_WEAK_ASSIGN(split_oct_domain_t)  
 
@@ -3770,8 +3791,8 @@ public:
 
 }; // end class split_oct_domain
 
-template <typename Number, typename VariableName, typename Params>
-struct abstract_domain_traits<split_oct_domain<Number, VariableName, Params>> {
+template <typename Number, typename VariableName, typename DBMParams, typename DomainParams>
+struct abstract_domain_traits<split_oct_domain<Number, VariableName, DBMParams, DomainParams>> {
   using number_t = Number;
   using varname_t = VariableName;
 };

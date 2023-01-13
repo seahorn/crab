@@ -52,6 +52,7 @@
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/array_smashing.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/patricia_trees.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -67,9 +68,9 @@
 
 namespace crab {
 namespace domains {
-
+  
 // forward declaration
-template <typename Domain> class array_adaptive_domain;
+template <typename Domain, typename Params> class array_adaptive_domain;
 
 namespace array_adaptive_impl {
 
@@ -268,7 +269,7 @@ inline Set set_difference(Set &s1, const typename Set::key_type &e) {
  */
 class offset_map_t {
 private:
-  template <typename Dom> friend class crab::domains::array_adaptive_domain;
+  template <typename Dom, typename Params> friend class crab::domains::array_adaptive_domain;
 
   using cell_set_t = std::set<cell_t>;
 
@@ -844,16 +845,21 @@ public:
 
 } // end namespace array_adaptive_impl
 
-template <typename NumDomain>
+class ArrayAdaptDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+  
+template <typename NumDomain, typename Params = ArrayAdaptDefaultParams>
 class array_adaptive_domain final
-    : public abstract_domain_api<array_adaptive_domain<NumDomain>> {
+  : public abstract_domain_api<array_adaptive_domain<NumDomain, Params>> {
 
 public:
   using number_t = typename NumDomain::number_t;
   using varname_t = typename NumDomain::varname_t;
 
 private:
-  using array_adaptive_domain_t = array_adaptive_domain<NumDomain>;
+  using array_adaptive_domain_t = array_adaptive_domain<NumDomain, Params>;
   using abstract_domain_t = abstract_domain_api<array_adaptive_domain_t>;
 
 public:
@@ -1674,6 +1680,10 @@ private:
         m_cell_ghost_man(std::move(cgman)) {}
 
 public:
+  /// array_adaptive is a functor domain that implements all
+  /// standard operations except region/reference operations.
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(array_adaptive_domain_t)
+  
   array_adaptive_domain(bool is_bottom = false) {
     if (is_bottom) {
       m_base_dom.set_to_bottom();
@@ -2358,11 +2368,7 @@ public:
     
     m_base_dom.backward_apply_binary_bool(op, x, y, z, s.right_dom);
   }
-
-  /// array_adaptive is a functor domain that implements all
-  /// operations except region/reference operations.
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(array_adaptive_domain_t)
-
+  
   // array_operators_api
 
   // array_init returns a fresh array where all elements between
@@ -3008,6 +3014,20 @@ public:
     CRAB_WARN("backward_array_assign in array_adaptive domain not implemented");
   }
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const array_adaptive_domain_t &caller) override {
+    inter_abstract_operations<array_adaptive_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const array_adaptive_domain_t &callee) override {
+    inter_abstract_operations<array_adaptive_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+
+  
   linear_constraint_system_t to_linear_constraint_system() const override {
     crab::CrabStats::count(domain_name() +
                            ".count.to_linear_constraint_system");
@@ -3143,35 +3163,11 @@ public:
 
 }; // end array_adaptive_domain
 
-template <typename Dom>
-struct abstract_domain_traits<array_adaptive_domain<Dom>> {
+template <typename Dom, typename Params>
+struct abstract_domain_traits<array_adaptive_domain<Dom, Params>> {
   using number_t = typename Dom::number_t;
   using varname_t = typename Dom::varname_t;
 };
-
-// template <typename Dom>
-// class checker_domain_traits<array_adaptive_domain<Dom>> {
-// public:
-//   using this_type = array_adaptive_domain<Dom>;
-//   using base_domain_t = typename this_type::base_domain_t;
-//   using linear_constraint_t = typename this_type::linear_constraint_t;
-//   using disjunctive_linear_constraint_system_t =
-//       typename this_type::disjunctive_linear_constraint_system_t;
-//   static bool entail(this_type &lhs,
-//                      const disjunctive_linear_constraint_system_t &rhs) {
-//     base_domain_t &lhs_dom = lhs.get_content_domain();
-//     return checker_domain_traits<base_domain_t>::entail(lhs_dom, rhs);
-//   }
-//   static bool entail(const disjunctive_linear_constraint_system_t &lhs,
-//                      this_type &rhs) {
-//     base_domain_t &rhs_dom = rhs.get_content_domain();
-//     return checker_domain_traits<base_domain_t>::entail(lhs, rhs_dom);
-//   }
-//   static bool intersect(this_type &inv, const linear_constraint_t &cst) {
-//     base_domain_t &dom = inv.get_content_domain();
-//     return checker_domain_traits<base_domain_t>::intersect(dom, cst);
-//   }
-// };
 
 } // namespace domains
 } // namespace crab

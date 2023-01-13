@@ -39,6 +39,7 @@
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/intervals.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/term/inverse.hpp>
 #include <crab/domains/term/simplify.hpp>
 #include <crab/domains/term/term_expr.hpp>
@@ -81,11 +82,17 @@ public:
 };
 } // namespace term
 
-template <class Info, class Abs> class TermNormalizer;
+template <class Info, class Abs, class DomainParams> class TermNormalizer;
 
-template <typename Info>
-class term_domain final : public abstract_domain_api<term_domain<Info>> {
-  friend class TermNormalizer<Info, typename Info::domain_t>;
+class TermDomainDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+
+  
+template <typename Info, typename DomainParams = TermDomainDefaultParams>
+class term_domain final : public abstract_domain_api<term_domain<Info, DomainParams>> {
+  friend class TermNormalizer<Info, typename Info::domain_t, DomainParams>;
 
   // Number and VariableName can be different from
   // dom_t::number_t and dom_t::varname_t although currently
@@ -99,7 +106,7 @@ class term_domain final : public abstract_domain_api<term_domain<Info>> {
   using domvar_set_t = ikos::patricia_tree_set<dom_var_t>;
   using bound_t = ikos::bound<Number>;
 
-  using term_domain_t = term_domain<Info>;
+  using term_domain_t = term_domain<Info, DomainParams>;
   using abstract_domain_t = abstract_domain_api<term_domain_t>;
 
 public:
@@ -690,6 +697,12 @@ private:
   }
 
 public:
+  /// term_domain implements standard abstract operations of a
+  /// numerical domain and some array operations. It is intended to be
+  /// used as a leaf domain in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
+  
   term_domain_t make_top() const override { return term_domain_t(true); }
 
   term_domain_t make_bottom() const override { return term_domain_t(false); }
@@ -1498,11 +1511,28 @@ public:
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
                              const term_domain_t &invariant) override {}
 
-  /// term_domain implements standard abstract operations of a
-  /// numerical domain and some array operations. It is intended to be
-  /// used as a leaf domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const term_domain_t &caller) override {
+    // The transformer for a call is not delegated to the subdomain.
+    // Instead, if DomainParams::implement_inter_transformers is
+    // enabled then the transformer is implemented by reducing to
+    // calls to project, meet, forget, etc.
+    inter_abstract_operations<term_domain_t, DomainParams::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const term_domain_t &callee) override {
+    // The transformer for a call is not delegated to the subdomain.
+    // Instead, if DomainParams::implement_inter_transformers is
+    // enabled then the transformer is implemented by reducing to
+    // calls to project, meet, forget, etc.
+    inter_abstract_operations<term_domain_t, DomainParams::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
+  
   DEFAULT_SELECT(term_domain_t)
   DEFAULT_WEAK_ASSIGN(term_domain_t)
 
@@ -1662,7 +1692,7 @@ public:
   void normalize() override {
     crab::CrabStats::count(domain_name() + ".count.normalize");
     crab::ScopedCrabStats __st__(domain_name() + ".normalize");
-    TermNormalizer<Info, typename Info::domain_t>::normalize(*this);
+    TermNormalizer<Info, typename Info::domain_t, DomainParams>::normalize(*this);
   }
 
   void minimize() override {}
@@ -1805,9 +1835,9 @@ public:
 
 // Propagate information from tightened terms to
 // parents/children.
-template <class Info, class Abs> class TermNormalizer {
+template <class Info, class Abs, class DomainParams> class TermNormalizer {
 public:
-  using term_domain_t = typename term_domain<Info>::term_domain_t;
+  using term_domain_t = typename term_domain<Info, DomainParams>::term_domain_t;
   using term_id_t = typename term_domain_t::term_id_t;
   using dom_t = Abs;
   using ttbl_t = typename term_domain_t::ttbl_t;
@@ -1949,10 +1979,10 @@ public:
 // Specialized implementation for interval domain.
 // GKG: Should modify to work with any independent attribute domain.
 #ifdef USE_TERM_INTERVAL_NORMALIZER
-template <class Info, class Num, class Var>
-class TermNormalizer<Info, ikos::interval_domain<Num, Var>> {
+template <class Info, class Num, class Var, class DomainParams>
+class TermNormalizer<Info, ikos::interval_domain<Num, Var>, DomainParams> {
 public:
-  using term_domain_t = typename term_domain<Info>::term_domain_t;
+  using term_domain_t = typename term_domain<Info, DomainParams>::term_domain_t;
   using term_id_t = typename term_domain_t::term_id_t;
   using dom_t = ikos::interval_domain<Num, Var>;
   using var_t = typename term_domain_t::dom_var_t;
@@ -2065,14 +2095,16 @@ public:
 };
 #endif
 
-template <typename Info> struct abstract_domain_traits<term_domain<Info>> {
+template <typename Info, typename DomainParams>
+struct abstract_domain_traits<term_domain<Info, DomainParams>> {
   using number_t = typename Info::Number;
   using varname_t = typename Info::VariableName;
 }; // end term_domain
 
-template <typename Info> class reduced_domain_traits<term_domain<Info>> {
+template <typename Info, typename DomainParams>
+class reduced_domain_traits<term_domain<Info, DomainParams>> {
 public:
-  using term_domain_t = term_domain<Info>;
+  using term_domain_t = term_domain<Info, DomainParams>;
   using variable_t = typename term_domain_t::variable_t;
   using linear_constraint_system_t =
       typename term_domain_t::linear_constraint_system_t;
