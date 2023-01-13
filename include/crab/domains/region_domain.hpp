@@ -4,6 +4,7 @@
 #include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/boolean.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/small_range.hpp>
 #include <crab/domains/types.hpp>
@@ -639,6 +640,7 @@ private:
   }
 
 public:
+
   region_domain_t make_top() const override { return region_domain_t(true); }
 
   region_domain_t make_bottom() const override {
@@ -1917,6 +1919,7 @@ public:
       }
     }
   }
+  
   void operator+=(const linear_constraint_system_t &csts) override {
     crab::CrabStats::count(domain_name() + ".count.add_constraints");
     crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
@@ -2392,6 +2395,35 @@ public:
     }
   }
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const region_domain_t &caller) override {
+    // The transformer for a call is not delegated to the subdomains.
+    // Instead, the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.
+    // 
+    // The region domain always implements the transformers for calls
+    // since it's commonly used at the top of the hierarchy of
+    // domains.    
+    inter_abstract_operations<region_domain_t,
+			      true /*implement call transformers*/>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const region_domain_t &callee) override {
+    // The transformer for a call is not delegated to the subdomains.
+    // Instead, the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.
+    // 
+    // The region domain always implements the transformers for calls
+    // since it's commonly used at the top of the hierarchy of
+    // domains.    
+    inter_abstract_operations<region_domain_t,
+			      true /*implement call transformers*/>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   void forget(const variable_vector_t &variables) override {
     if (is_bottom() || is_top()) {
       return;
