@@ -18,6 +18,7 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/lattice_domain.hpp>
 #include <crab/support/stats.hpp>
 
@@ -236,15 +237,44 @@ public:
 
 }; // class basic_domain_product2
 
+namespace reduced_product_impl {
+class default_params {
+public:
+  enum { left_propagate_equalities = 1 };
+  enum { right_propagate_equalities = 1 };
+  enum { left_propagate_inequalities = 1 };
+  enum { right_propagate_inequalities = 1 };
+  enum { left_propagate_intervals = 1 };
+  enum { right_propagate_intervals = 1 };
+  enum { disable_reduction = 0 };
+  enum { apply_reduction_only_add_constraint = 0 };
+  enum { implement_inter_transformers = 0 };  
+};
+
+class term_dbm_params {
+public:
+  enum { left_propagate_equalities = 1 };
+  enum { right_propagate_equalities = 1 };
+  enum { left_propagate_inequalities = 0 };
+  enum { right_propagate_inequalities = 0 };
+  enum { left_propagate_intervals = 0 };
+  enum { right_propagate_intervals = 0 };
+  enum { disable_reduction = 0 };
+  enum { apply_reduction_only_add_constraint = 1 };
+  enum { implement_inter_transformers = 0 };  
+};
+} // namespace reduced_product_impl
+
+  
 // Reduced product of two arbitrary domains with all operations.
 template <typename Number, typename VariableName, typename Domain1,
-          typename Domain2>
+          typename Domain2, typename Params = reduced_product_impl::default_params>
 class reduced_domain_product2 final
     : public abstract_domain_api<
-          reduced_domain_product2<Number, VariableName, Domain1, Domain2>> {
+  reduced_domain_product2<Number, VariableName, Domain1, Domain2, Params>> {
 public:
   using reduced_domain_product2_t =
-      reduced_domain_product2<Number, VariableName, Domain1, Domain2>;
+    reduced_domain_product2<Number, VariableName, Domain1, Domain2, Params>;
   using abstract_domain_t = abstract_domain_api<reduced_domain_product2_t>;
   using first_type = Domain1;
   using second_type = Domain2;
@@ -279,6 +309,7 @@ private:
   }
 
 public:
+
   reduced_domain_product2_t make_top() const override {
     basic_domain_product2_t dom_prod;
     return reduced_domain_product2_t(dom_prod.make_top());
@@ -814,6 +845,27 @@ public:
     reduce();
   }
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const reduced_domain_product2_t &caller) override {
+    // The transformer for a call is not delegated to the subdomains.
+    // Instead, if Params::implement_inter_transformers is enabled
+    // then the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.
+    inter_abstract_operations<reduced_domain_product2_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const reduced_domain_product2_t &callee) override {
+    // The transformer for a call is not delegated to the subdomains.
+    // Instead, if Params::implement_inter_transformers is enabled
+    // then the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.    
+    inter_abstract_operations<reduced_domain_product2_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   virtual void forget(const variable_vector_t &variables) override {
     m_product.first().forget(variables);
     m_product.second().forget(variables);
@@ -890,7 +942,7 @@ public:
 					  invariant.second());
   }
   /* end intrinsics operations */
-
+  
   void write(crab::crab_os &o) const override { m_product.write(o); }
 
   std::string domain_name() const override {
@@ -898,32 +950,6 @@ public:
   }
 
 }; // class reduced_domain_product2
-
-namespace reduced_product_impl {
-class default_params {
-public:
-  enum { left_propagate_equalities = 1 };
-  enum { right_propagate_equalities = 1 };
-  enum { left_propagate_inequalities = 1 };
-  enum { right_propagate_inequalities = 1 };
-  enum { left_propagate_intervals = 1 };
-  enum { right_propagate_intervals = 1 };
-  enum { disable_reduction = 0 };
-  enum { apply_reduction_only_add_constraint = 0 };
-};
-
-class term_dbm_params {
-public:
-  enum { left_propagate_equalities = 1 };
-  enum { right_propagate_equalities = 1 };
-  enum { left_propagate_inequalities = 0 };
-  enum { right_propagate_inequalities = 0 };
-  enum { left_propagate_intervals = 0 };
-  enum { right_propagate_intervals = 0 };
-  enum { disable_reduction = 0 };
-  enum { apply_reduction_only_add_constraint = 1 };
-};
-} // namespace reduced_product_impl
 
 // This domain is similar to reduced_domain_product2 but it combines two
 // numerical domains and it defines a more precise, customizable
@@ -959,7 +985,7 @@ public:
 
 private:
   using reduced_domain_product2_t =
-      reduced_domain_product2<number_t, varname_t, Domain1, Domain2>;
+    reduced_domain_product2<number_t, varname_t, Domain1, Domain2, Params>;
 
   reduced_domain_product2_t m_product;
 
@@ -1094,6 +1120,14 @@ private:
   }
 
 public:
+  /// reduced_numerical_domain_product2 implements only standard
+  /// abstract operations of a numerical domain so it is intended to be
+  /// used as a leaf domain in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(reduced_numerical_domain_product2_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(reduced_numerical_domain_product2_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(
+      reduced_numerical_domain_product2_t)
+  
   reduced_numerical_domain_product2_t make_top() const override {
     reduced_domain_product2_t dom_prod;
     return reduced_numerical_domain_product2_t(dom_prod.make_top());
@@ -1376,15 +1410,7 @@ public:
       reduce_variable(lhs);
     }
   }
-  
-  /// reduced_numerical_domain_product2 implements only standard
-  /// abstract operations of a numerical domain so it is intended to be
-  /// used as a leaf domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(reduced_numerical_domain_product2_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(reduced_numerical_domain_product2_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(
-      reduced_numerical_domain_product2_t)
-
+    
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
     m_product.rename(from, to);
@@ -1407,6 +1433,27 @@ public:
   }
   /* end intrinsics operations */
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const reduced_numerical_domain_product2_t &caller) override {
+    // The transformer for a call is not delegated to the subdomains.
+    // Instead, if Params::implement_inter_transformers is enabled
+    // then the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.
+    inter_abstract_operations<reduced_numerical_domain_product2_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const reduced_numerical_domain_product2_t &callee) override {
+    // The transformer for a call is not delegated to the subdomains.
+    // Instead, if Params::implement_inter_transformers is enabled
+    // then the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.    
+    inter_abstract_operations<reduced_numerical_domain_product2_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+    
   void forget(const variable_vector_t &variables) override {
     m_product.forget(variables);
   }
@@ -1447,9 +1494,9 @@ public:
 
 
 template <typename Number, typename VariableName, typename Domain1,
-          typename Domain2>
+          typename Domain2, typename Params>
 struct abstract_domain_traits<
-    reduced_domain_product2<Number, VariableName, Domain1, Domain2>> {
+  reduced_domain_product2<Number, VariableName, Domain1, Domain2, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 };
