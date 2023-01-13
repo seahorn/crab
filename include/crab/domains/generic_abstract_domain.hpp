@@ -205,6 +205,13 @@ private:
     virtual void
     backward_array_assign(const variable_t &a, const variable_t &b,
                           const abstract_domain_concept &invariant) = 0;
+
+    virtual void callee_entry(const callsite_info<variable_t> &callsite,
+			      const abstract_domain_concept &caller) = 0;
+			      
+    virtual void caller_continuation(const callsite_info<variable_t> &callsite,
+				     const abstract_domain_concept &callee) = 0;
+				         
     virtual void operator-=(const variable_t &v) = 0;
     virtual interval_t operator[](const variable_t &v) = 0;
     virtual interval_t at(const variable_t &v) const = 0;    
@@ -594,6 +601,22 @@ private:
       m_inv.backward_array_assign(
           a, b, static_cast<const abstract_domain_model *>(&invariant)->m_inv);
     }
+
+    
+    void callee_entry(const callsite_info<variable_t> &callsite,
+		      const abstract_domain_concept &caller) override {
+		      
+      m_inv.callee_entry(callsite,
+			 static_cast<const abstract_domain_model *>(&caller)->m_inv);
+    }
+
+    void caller_continuation(const callsite_info<variable_t> &callsite,
+			     const abstract_domain_concept &callee) override {
+			     
+      m_inv.caller_continuation(callsite,
+				static_cast<const abstract_domain_model *>(&callee)->m_inv);
+    }
+    
     void operator-=(const variable_t &v) override { m_inv.operator-=(v); }
     interval_t operator[](const variable_t &v) override {
       return m_inv.operator[](v);
@@ -938,6 +961,18 @@ public:
                              const abstract_domain &invariant) override {
     m_concept->backward_array_assign(a, b, *invariant.m_concept);
   }
+
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const abstract_domain &caller) override {
+    m_concept->callee_entry(callsite, *caller.m_concept);
+  }
+  
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const abstract_domain &callee) override {
+    m_concept->caller_continuation(callsite, *callee.m_concept);
+  }
+
+  
   void operator-=(const variable_t &v) override { m_concept->operator-=(v); }
   interval_t operator[](const variable_t &v) override {
     return m_concept->operator[](v);
@@ -1441,6 +1476,20 @@ public:
     norm().backward_array_assign(a, b, invariant.norm());
   }
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const abstract_domain_ref &caller) override {
+		    
+    detach();
+    norm().callee_entry(callsite, caller.norm()); 
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const abstract_domain_ref &callee) override {
+    detach();
+    norm().caller_continuation(callsite, callee.norm()); 
+  }
+  
+  
   void operator-=(const variable_t &v) override {
     detach();
     norm().operator-=(v);

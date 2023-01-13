@@ -2,6 +2,7 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/os.hpp>
 
@@ -32,15 +33,22 @@ template <typename D> class partition;
  * widening in the base domain.  The concretization is the union of
  * all partitions.
  */
-template <typename NumDomain> class product_value_partitioning_domain;
+template <typename NumDomain, typename Params>
+class product_value_partitioning_domain;
 
-template <typename NumDomain>
+class ValPartitioningDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+
+  
+template <typename NumDomain, typename Params = ValPartitioningDefaultParams>
 class value_partitioning_domain final
-    : public abstract_domain_api<value_partitioning_domain<NumDomain>> {
-  friend class product_value_partitioning_domain<NumDomain>;
+  : public abstract_domain_api<value_partitioning_domain<NumDomain, Params>> {
+  friend class product_value_partitioning_domain<NumDomain, Params>;
 
 public:
-  using value_partitioning_domain_t = value_partitioning_domain<NumDomain>;
+  using value_partitioning_domain_t = value_partitioning_domain<NumDomain, Params>;
   using abstract_domain_api_t =
       abstract_domain_api<value_partitioning_domain_t>;
   using typename abstract_domain_api_t::disjunctive_linear_constraint_system_t;
@@ -199,6 +207,10 @@ private:
   }
 
 public:
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(value_partitioning_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(value_partitioning_domain_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(value_partitioning_domain_t)
+    
   value_partitioning_domain() : m_variable(boost::none) {
     m_partitions.reserve(1);
     m_partitions.emplace_back(partition_t::top());
@@ -710,10 +722,20 @@ public:
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const value_partitioning_domain_t &caller) override {
+    inter_abstract_operations<value_partitioning_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const value_partitioning_domain_t &callee) override {
+    inter_abstract_operations<value_partitioning_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   DEFAULT_SELECT(value_partitioning_domain_t)
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(value_partitioning_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(value_partitioning_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(value_partitioning_domain_t)
 
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
@@ -956,8 +978,8 @@ public:
 };
 } // namespace value_partitioning_domain_impl
 
-template <typename Domain>
-struct abstract_domain_traits<value_partitioning_domain<Domain>> {
+template <typename Domain, typename Params>
+struct abstract_domain_traits<value_partitioning_domain<Domain, Params>> {
   using number_t = typename Domain::number_t;
   using varname_t = typename Domain::varname_t;
 };
@@ -973,12 +995,12 @@ struct abstract_domain_traits<value_partitioning_domain<Domain>> {
  * domain is less precise than other disjunctive domain constructions
  * such as the reduced cardinal power.
  */
-template <typename NumDomain>
+template <typename NumDomain, typename Params = ValPartitioningDefaultParams>
 class product_value_partitioning_domain final
-    : public abstract_domain_api<product_value_partitioning_domain<NumDomain>> {
+  : public abstract_domain_api<product_value_partitioning_domain<NumDomain, Params>> {
 
 public:
-  using this_type = product_value_partitioning_domain<NumDomain>;
+  using this_type = product_value_partitioning_domain<NumDomain, Params>;
   using abstract_domain_api_t = abstract_domain_api<this_type>;
   using typename abstract_domain_api_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_api_t::linear_constraint_system_t;
@@ -992,7 +1014,8 @@ public:
   using typename abstract_domain_api_t::variable_vector_t;
   using typename abstract_domain_api_t::varname_t;
   using interval_t = ikos::interval<number_t>;
-  using value_partitioning_domain_t = value_partitioning_domain<NumDomain>;
+  // value_partitioning_domain does not implement call transformers
+  using value_partitioning_domain_t = value_partitioning_domain<NumDomain, ValPartitioningDefaultParams>;
 
 private:
   NumDomain m_absval;
@@ -1469,6 +1492,10 @@ private:
   }
   
 public:
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(this_type)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(this_type)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(this_type)
+  
   product_value_partitioning_domain() {
     NumDomain top;
     m_absval = std::move(top);
@@ -1835,10 +1862,29 @@ public:
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const this_type &caller) override {
+    // The transformer for a call is not delegated to the subdomain.
+    // Instead, if Params::implement_inter_transformers is enabled
+    // then the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.        
+    inter_abstract_operations<this_type, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const this_type &callee) override {
+    // The transformer for a call is not delegated to the subdomain.
+    // Instead, if Params::implement_inter_transformers is enabled
+    // then the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.        
+    inter_abstract_operations<this_type, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+
+  
   DEFAULT_SELECT(this_type)
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(this_type)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(this_type)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(this_type)
 
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
@@ -2059,8 +2105,8 @@ public:
   }
 };
 
-template <typename Domain>
-struct abstract_domain_traits<product_value_partitioning_domain<Domain>> {
+template <typename Domain, typename Params>
+struct abstract_domain_traits<product_value_partitioning_domain<Domain, Params>> {
   using number_t = typename Domain::number_t;
   using varname_t = typename Domain::varname_t;
 };

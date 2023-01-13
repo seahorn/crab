@@ -8,17 +8,23 @@
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/combined_domains.hpp>
 #include <crab/domains/constant_domain.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/sign_domain.hpp>
 #include <crab/support/stats.hpp>
 
 namespace crab {
 namespace domains {
 
-template <typename Number, typename VariableName>
+class SignConstantDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+  
+template <typename Number, typename VariableName, typename Params = SignConstantDefaultParams>
 class sign_constant_domain final
-    : public abstract_domain_api<sign_constant_domain<Number, VariableName>> {
+  : public abstract_domain_api<sign_constant_domain<Number, VariableName, Params>> {
 
-  using signed_constant_domain_t = sign_constant_domain<Number, VariableName>;
+  using signed_constant_domain_t = sign_constant_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<signed_constant_domain_t>;
 
 public:
@@ -74,6 +80,13 @@ private:
   }
 
 public:
+  /// sign_constant_domain implements only standard abstract
+  /// operations of a numerical domain so it is intended to be used as
+  /// a leaf domain in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(signed_constant_domain_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(signed_constant_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(signed_constant_domain_t)
+  
   signed_constant_domain_t make_top() const override {
     reduced_domain_product2_t dom_prod;
     return signed_constant_domain_t(dom_prod.make_top());
@@ -257,13 +270,19 @@ public:
     reduce_variable(lhs);
   }
 
-  /// sign_constant_domain implements only standard abstract
-  /// operations of a numerical domain so it is intended to be used as
-  /// a leaf domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(signed_constant_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(signed_constant_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(signed_constant_domain_t)
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const signed_constant_domain_t &caller) override {
+    inter_abstract_operations<signed_constant_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
 
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const signed_constant_domain_t &callee) override {
+    inter_abstract_operations<signed_constant_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   void forget(const variable_vector_t &variables) override {
     m_product.forget(variables);
   }
@@ -319,8 +338,8 @@ public:
 
 namespace crab {
 namespace domains {
-template <typename Number, typename VariableName>
-struct abstract_domain_traits<sign_constant_domain<Number, VariableName>> {
+template <typename Number, typename VariableName, typename Params>
+struct abstract_domain_traits<sign_constant_domain<Number, VariableName, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 };
