@@ -48,6 +48,7 @@
 #include <algorithm>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/optional.hpp>
+#include <boost/pool/pool_alloc.hpp>
 #include <memory>
 #include <type_traits>
 #include <vector>
@@ -447,7 +448,7 @@ inline bool zero_bit(index_t k, index_t m) { return (k & m) == 0; }
 inline bool match_prefix(index_t k, index_t p, index_t m) {
   return mask(k, m) == p;
 }
-
+  
 template <typename Key, typename Value, typename ValueEqual> class tree {
 public:
   using tree_t = tree<Key, Value, ValueEqual>;
@@ -712,6 +713,41 @@ public:
 
 }; // class leaf
 
+
+template <typename Key, typename Value, typename ValueEqual, bool FastPoolAllocator = true>
+class patricia_tree_allocator {
+public:
+  using tree_t = tree<Key, Value, ValueEqual>;
+  using node_t = node<Key, Value, ValueEqual>;
+  using leaf_t = leaf<Key, Value, ValueEqual>;
+  using ptr_t = std::shared_ptr<tree_t>;
+  using mem_allocator_t = typename std::conditional<FastPoolAllocator,
+						  boost::fast_pool_allocator<tree_t>,
+						  boost::pool_allocator<tree_t>>::type;    
+private:
+  static mem_allocator_t& get_allocator() {
+    static mem_allocator_t allocator;
+    return allocator;
+  }
+  
+public:
+
+  template<class... Args>
+  static ptr_t allocate_node(Args &&... args) {
+    return std::allocate_shared<node_t, mem_allocator_t>
+      (get_allocator(), std::forward<Args>(args)...);
+       
+  }
+
+  template<class... Args>
+  static ptr_t allocate_leaf(Args &&... args) {
+    return std::allocate_shared<leaf_t, mem_allocator_t>
+      (get_allocator(), std::forward<Args>(args)...);
+       
+  }
+};
+
+  
 template <typename Key, typename Value, typename ValueEqual>
 typename tree<Key, Value, ValueEqual>::ptr
 tree<Key, Value, ValueEqual>::make_node(
@@ -719,11 +755,13 @@ tree<Key, Value, ValueEqual>::make_node(
     typename tree<Key, Value, ValueEqual>::ptr left_branch,
     typename tree<Key, Value, ValueEqual>::ptr right_branch) {
   using tree_ptr = typename tree<Key, Value, ValueEqual>::ptr;
+  using pt_allocator_t = patricia_tree_allocator<Key, Value, ValueEqual>;
+  
   tree_ptr n;
   if (left_branch) {
     if (right_branch) {
-      n = std::make_shared<node<Key, Value, ValueEqual>>(
-          prefix, branching_bit, left_branch, right_branch);
+      //n = std::make_shared<node<Key, Value, ValueEqual>>(prefix, branching_bit, left_branch, right_branch);
+      n = pt_allocator_t::allocate_node(prefix, branching_bit, left_branch, right_branch);
     } else {
       n = left_branch;
     }
@@ -740,7 +778,9 @@ tree<Key, Value, ValueEqual>::make_node(
 template <typename Key, typename Value, typename ValueEqual>
 typename tree<Key, Value, ValueEqual>::ptr
 tree<Key, Value, ValueEqual>::make_leaf(const Key &key, const Value &value) {
-  return std::make_shared<leaf<Key, Value, ValueEqual>>(key, value);
+  using pt_allocator_t = patricia_tree_allocator<Key, Value, ValueEqual>;
+  //return std::make_shared<leaf<Key, Value, ValueEqual>>(key, value);
+  return pt_allocator_t::allocate_leaf(key, value);
 }
 
 template <typename Key, typename Value, typename ValueEqual>
