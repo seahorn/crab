@@ -473,28 +473,28 @@ public:
   using member_map_t = std::map<term_id_t, std::vector<term_id_t>>;
 
 private:
-  TermTable *_ttbl;
-  ccpar_map_t _ccpar_map;
-  find_map_t _find_map;
-  std::vector<equation_t> _eqs;
-  term_set_t _terms;
-  member_map_t _members;
+  TermTable &m_ttbl;
+  ccpar_map_t m_ccpar_map;
+  find_map_t m_parent_map;
+  std::vector<equation_t> m_equations;
+  term_set_t m_terms;
+  member_map_t m_members;
 
 public:
-  congruence_closure_solver(TermTable *ttbl) : _ttbl(ttbl) {}
+  congruence_closure_solver(TermTable &ttbl) : m_ttbl(ttbl) {}
 
   congruence_closure_solver(const this_type &o) = delete;
 
   this_type &operator=(const this_type &o) = delete;
 
   void operator+=(equation_t eq) {
-    _terms.insert(eq.first);
-    _terms.insert(eq.second);
-    _eqs.push_back(eq);
+    m_terms.insert(eq.first);
+    m_terms.insert(eq.second);
+    m_equations.push_back(eq);
   }
 
   void run() {
-    for (auto eq : _eqs) {
+    for (auto eq : m_equations) {
       term_id_t x = eq.first;
       term_id_t y = eq.second;
       merge(x, y);
@@ -512,29 +512,31 @@ public:
   term_id_t get_class(term_id_t t) { return find(t); }
 
   // return the members of an equivalence class of k
-  std::vector<term_id_t> &get_members(term_id_t t) {
-    auto it = _members.find(t);
-    if (it != _members.end()) {
+  const std::vector<term_id_t> &get_members(term_id_t t) {
+    auto it = m_members.find(t);
+    if (it != m_members.end()) {
       return it->second;
     } else {
       t = find(t); // find representative of the t's class
       std::vector<term_id_t> members;
-      for (auto x : _terms) {
+      for (auto x : m_terms) {
         if (find(x) == t /*find (t)*/)
           members.push_back(x);
       }
-      auto res = _members.insert(std::make_pair(t, members));
+      auto res = m_members.insert(std::make_pair(t, members));
       return (res.first)->second;
     }
   }
 
   // return the size of the equivalence class of k
-  size_t get_size(term_id_t t) { return get_members(t).size(); }
+  size_t get_size(term_id_t t) const {
+    return get_members(t).size();
+  }
 
   void write(crab_os &o) const {
-    for (auto t1 : _terms) {
+    for (auto t1 : m_terms) {
       o << "t" << t1 << " --> {";
-      for (auto t2 : _terms) {
+      for (auto t2 : m_terms) {
         if (find(t1) == find(t2))
           o << "t" << t2 << ";";
       }
@@ -543,14 +545,14 @@ public:
   }
 
   std::forward_list<term_id_t> &get_parents(term_id_t t) {
-    return _ttbl->parents(t);
+    return m_ttbl.parents(t);
   }
 
 private:
   term_set_t &get_ccpar(term_id_t t) {
-    auto it = _ccpar_map.find(t);
-    if (it == _ccpar_map.end()) {
-      auto res = _ccpar_map.insert(std::make_pair(t, term_set_t()));
+    auto it = m_ccpar_map.find(t);
+    if (it == m_ccpar_map.end()) {
+      auto res = m_ccpar_map.insert(std::make_pair(t, term_set_t()));
       return (res.first)->second;
     } else {
       return it->second;
@@ -559,9 +561,9 @@ private:
 
   // return the representative of i
   term_id_t find(term_id_t t) {
-    auto it = _find_map.find(t);
-    if (it == _find_map.end()) {
-      _find_map.insert(std::make_pair(t, t));
+    auto it = m_parent_map.find(t);
+    if (it == m_parent_map.end()) {
+      m_parent_map.insert(std::make_pair(t, t));
       return t;
     }
 
@@ -574,20 +576,20 @@ private:
 
   // i2 is the new representative
   void do_union(term_id_t t1, term_id_t t2) {
-    _find_map[t1] = _find_map[t2];
+    m_parent_map[t1] = m_parent_map[t2];
 
     term_set_t &ccpar1 = get_ccpar(t1);
     term_set_t &ccpar2 = get_ccpar(t2);
     ccpar2.insert(ccpar1.begin(), ccpar1.end());
 
-    term_t *t1_ptr = _ttbl->get_term_ptr(t1);
+    term_t *t1_ptr = m_ttbl.get_term_ptr(t1);
     assert(t1_ptr);
     if (t1_ptr->kind() == TERM_APP) {
       auto &t1_parents = get_parents(t1);
       ccpar2.insert(t1_parents.begin(), t1_parents.end());
     }
 
-    term_t *t2_ptr = _ttbl->get_term_ptr(t2);
+    term_t *t2_ptr = m_ttbl.get_term_ptr(t2);
     assert(t2_ptr);
     if (t2_ptr->kind() == TERM_APP) {
       auto &t2_parents = get_parents(t2);
@@ -599,8 +601,8 @@ private:
   // pre: t1 and t2 are TERM_APP
   bool is_congruent(term_id_t t1, term_id_t t2) {
 
-    term_t *t1_ptr = _ttbl->get_term_ptr(t1);
-    term_t *t2_ptr = _ttbl->get_term_ptr(t2);
+    term_t *t1_ptr = m_ttbl.get_term_ptr(t1);
+    term_t *t2_ptr = m_ttbl.get_term_ptr(t2);
 
     assert(t1_ptr->kind() == TERM_APP);
     assert(t2_ptr->kind() == TERM_APP);
