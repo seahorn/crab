@@ -1,12 +1,36 @@
 /*******************************************************************************
- * An abstract domain that lifts a value domain using term
- * equivalences based on the paper "An Abstract Domain of
+ * Abstract domain based on the paper "An Abstract Domain of
  * Uninterpreted Functions" by Gange, Navas, Schachte, Sondergaard,
  * and Stuckey published in VMCAI'16.
  *
  * Author: Graeme Gange (gkgange@unimelb.edu.au)
  *
  * Contributors: Jorge A. Navas (jorge.navas@sri.com)
+ *
+ * The "term" domain is a customized reduction between a Herbrand
+ * domain which maps variables to Herbrand terms
+ * (https://en.wikipedia.org/wiki/Herbrand_structure) and a numerical
+ * domain. The Herbrand domain infers equalities between variables
+ * (typically not inferable by common numerical domains) which are
+ * used to improve the numerical domain.
+ * 
+ * Note about how to read printed invariants.
+ *
+ * The term domain will print invariants in this form:
+ * 
+ * {x -> t1[_x1], y -> t0[_x0], z -> t0[_x0]}{_x0 -> [5, 10]; _x1 -> [10, 20]}
+ *
+ * The 1st component {x -> t1[_x1], y -> t0[_x0], z -> t0[_x0]}
+ * contains the term equivalences while the 2nd component is the
+ * numerical domain. For the 1st component, each program variable
+ * (x,y,z) is mapped to t[v] where t represents some term (the shape
+ * of the term is not printed) and v is a ghost variable that can
+ * appear on the 2nd component (the numerical abstract state).  The
+ * relevant information in the 1st compoment is when two variables are
+ * mapped to the same term (e.g., y and z in our example), meaning
+ * that they are equal. So, reading our sample invariant, we know that
+ * y and z are equal and their values range in [5,10]. About x the
+ * only thing we know is that its value ranges in [10,20].
  ******************************************************************************/
 
 #pragma once
@@ -586,8 +610,18 @@ private:
     if (non_var_terms.empty()) {
       return boost::optional<term_id_t>();
     } else {
-      // TODO: the heuristics as described in the VMCAI'16 paper
-      // that chooses the one that has more references each class.
+      // TODO: the heuristics as described in the VMCAI'16 paper that
+      // chooses the one that has more references each class.  For
+      // now, we just make sure that we always pick the same term in a
+      // deterministic way.
+      std::sort(non_var_terms.begin(), non_var_terms.end(),
+		[&ttbl](const term_id_t &t1, const term_id_t &t2) {
+		  term_t *t1_ptr = ttbl.get_term_ptr(t1);
+		  assert(t1_ptr);
+		  term_t *t2_ptr = ttbl.get_term_ptr(t2);
+		  assert(t2_ptr);
+		  return *t1_ptr < *t2_ptr;
+		});
       return *(non_var_terms.begin());
     }
   }
@@ -972,7 +1006,7 @@ public:
       }
 
       // compute equivalence classes
-      term::congruence_closure_solver<ttbl_t> solver(&out_ttbl);
+      term::congruence_closure_solver<ttbl_t> solver(out_ttbl);
       solver.run(eqs);
 
       std::vector<int> stack;
@@ -1191,7 +1225,7 @@ public:
           return;
 
         // congruence closure to compute equivalence classes
-        term::congruence_closure_solver<ttbl_t> solver(&_ttbl);
+        term::congruence_closure_solver<ttbl_t> solver(_ttbl);
         std::vector<std::pair<term_id_t, term_id_t>> eqs = {
             std::make_pair(tx, ty)};
         solver.run(eqs);
