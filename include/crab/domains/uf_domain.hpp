@@ -1,13 +1,19 @@
 /*******************************************************************************
- * Abstract domain described in Section 4 from the paper "An Abstract
+ * Abstract domain described in Section 3 in the paper "An Abstract
  * Domain of Uninterpreted Functions" by Gange, Navas, Schachte,
  * Sondergaard, and Stuckey published in VMCAI'16.
  *
- * Each program variable is mapped to a syntactic term (aka
- * uninterpreted function). The join is antiunification and the meet
- * is a pseudo-meet based on the classical congruence closure
- * algorithm. The domain is suitable to infer equalities between
- * variables.
+ * Each program variable is mapped to a Herbrand term
+ * (https://en.wikipedia.org/wiki/Herbrand_structure). The join is
+ * anti-unification and the meet is a pseudo-meet based on the
+ * classical congruence closure algorithm. The domain is suitable to
+ * infer equalities between variables.
+ * 
+ * TODO: conceptually uf_domain is a subset of term_domain because
+ *       uf_domain implements just the Herbrand domain. We need either
+ *       modify term_domain so that we can enable/disable the
+ *       reduction with the numerical domain or factorize common code
+ *       between uf_domain and term_domain to avoid duplication.
  ******************************************************************************/
 
 #pragma once
@@ -34,8 +40,6 @@
 namespace crab {
 namespace domains {
 
-// TODO: factorize code. uf_domain and term_domain share a lot of
-// code.
 template <typename Number, typename VariableName>
 class uf_domain final
     : public abstract_domain_api<uf_domain<Number, VariableName>> {
@@ -275,17 +279,29 @@ private:
     auto it = std::copy_if(terms.begin(), terms.end(), non_var_terms.begin(),
                            [&ttbl](term_id_t t) {
                              term_t *t_ptr = ttbl.get_term_ptr(t);
-                             return (t_ptr && t_ptr->kind() == term::TERM_APP);
+                             return (t_ptr && (t_ptr->kind() == term::TERM_APP));
                            });
     non_var_terms.resize(std::distance(non_var_terms.begin(), it));
     if (non_var_terms.empty()) {
       return boost::optional<term_id_t>();
     } else {
-      // TODO: the heuristics as described in the VMCAI'16 paper
-      // that chooses the one that has more references each class.
+      // TODO: the heuristics as described in the VMCAI'16 paper that
+      // chooses the one that has more references each class.  For
+      // now, we just make sure that we always pick the same term in a
+      // deterministic way.
+      std::sort(non_var_terms.begin(), non_var_terms.end(),
+		[&ttbl](const term_id_t &t1, const term_id_t &t2) {
+		  term_t *t1_ptr = ttbl.get_term_ptr(t1);
+		  assert(t1_ptr);
+		  term_t *t2_ptr = ttbl.get_term_ptr(t2);
+		  assert(t2_ptr);
+		  return *t1_ptr < *t2_ptr;
+		});
+
       return *(non_var_terms.begin());
     }
   }
+
 
   // helper for pseudo-meet
   term_id_t build_dag_term(ttbl_t &ttbl, int t,
@@ -312,7 +328,7 @@ private:
     }
 
     stack.push_back(t);
-    auto membs = solver.get_members(t);
+    auto membs = solver.get_members(t);   
     boost::optional<term_id_t> f = choose_non_var(ttbl, membs);
 
     if (!f) {
@@ -326,27 +342,26 @@ private:
                             << "t" << (res.first)->second << "\n";);
       return (res.first)->second;
     } else {
-      // traverse recursively the term
       term_t *f_ptr = ttbl.get_term_ptr(*f);
+      // traverse recursively the term
       CRAB_LOG("uf-meet",
-               crab::outs()
-                   << "build_dag_term. Traversing recursively the term "
-                   << "t" << *f << ":";
-               crab::outs() << *f_ptr << "\n";);
+		 crab::outs()
+		 << "build_dag_term. Traversing recursively the term "
+		 << "t" << *f << ":";
+		 crab::outs() << *f_ptr << "\n";);
       const std::vector<term_id_t> &args(term::term_args(f_ptr));
       std::vector<term_id_t> res_args;
       res_args.reserve(args.size());
       for (term_id_t c : args) {
-        res_args.push_back(build_dag_term(ttbl, solver.get_class(c), solver,
-                                          out_ttbl, stack, cache));
+	res_args.push_back(build_dag_term(ttbl, solver.get_class(c), solver,
+					  out_ttbl, stack, cache));
       }
-      auto res = cache.insert(std::make_pair(
-          t, out_ttbl.apply_ftor(term::term_ftor(f_ptr), res_args)));
+      auto res = cache.insert(std::make_pair(t, out_ttbl.apply_ftor(term::term_ftor(f_ptr), res_args)));
       stack.pop_back();
-      CRAB_LOG("uf-meet", crab::outs()
-                              << "build_dag_term. Finished recursive case: ";
-               crab::outs() << "t" << t << " --> "
-                            << "t" << (res.first)->second << "\n";);
+      CRAB_LOG("uf-meet",
+	       crab::outs() << "build_dag_term. Finished recursive case: "
+		              << "t" << t << " --> "
+		              << "t" << (res.first)->second << "\n";);
       return (res.first)->second;
     }
   }
@@ -455,6 +470,7 @@ public:
     } else if (o.is_bottom() || is_top()) {
       return;
     } else {
+      // FIXME: avoid this copy
       uf_domain_t right(o);
       ttbl_t out_tbl;
       var_map_t out_vmap;
@@ -539,7 +555,36 @@ public:
     return *this | other;
   }
 
-  // Meet
+  /**
+   * Meet
+   *
+   * Since the domain is purely syntactic two different terms can
+   * represent the same concrete expression. For instance,
+   * '+'(TERM(y), TERM(z)) and '+'(TERM(z), TERM(y)) are equivalent
+   * assuming that '+' is the arithmetic addition over integers since
+   * that "+' is commutative. However, as Herbrand terms the
+   * unification of '+'(TERM(y), TERM(z)) and '+'(TERM(z), TERM(y))
+   * would fail because they are syntactically different. The other
+   * tricky thing with using unification (most general unifier) as
+   * meet is that the mgu of two finite terms might not be another
+   * finite term but instead by a rational term which is beyond what
+   * the domain can express. As a result, to ensure both soundness and
+   * termination, the meet is quite imprecise. The algorithm for the
+   * meet is defined in Fig 6, Sec 3 in the VMCAI'16 paper.
+   * 
+   * The meet described in the paper (and implemented here) is a bit
+   * more precise but in the worst case does the following simple
+   * thing:
+   *
+   *    meet({x -> TERM1}, {x-> TERM2}) = {x -> TERM1}
+   *
+   *    assuming TERM1 << TERM2 for some term ordering <<.
+   *
+   * This is even the case if TERM1 and TERM2 are two different
+   * uninterpreted **symbols**.  That is,
+   * 
+   *    meet({x -> a}, {x-> b}) = {x -> a} assuming a << b.
+   **/
   uf_domain_t operator&(const uf_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
@@ -562,7 +607,7 @@ public:
         out_ttbl.copy_term(o.m_ttbl, tx, copy_map);
       }
 
-      // build unifications between terms from this and o
+      // build unifications between terms from left and right
       std::vector<std::pair<term_id_t, term_id_t>> eqs;
       for (auto p : m_var_map) {
         variable_t v(p.first);
@@ -574,27 +619,33 @@ public:
       }
 
       // compute equivalence classes
-      term::congruence_closure_solver<ttbl_t> solver(&out_ttbl);
+      term::congruence_closure_solver<ttbl_t> solver(out_ttbl);
       solver.run(eqs);
 
       // new map from variable to an acyclic term
       for (auto p : m_var_map) {
         const variable_t &v = p.first;
         term_id_t t_old = p.second;
-        term_id_t t_new = build_dag_term(out_ttbl, solver.get_class(t_old),
-                                         solver, out_ttbl, stack, cache);
+        term_id_t t_new;
+	if (o.m_var_map.find(v) == o.m_var_map.end()) {
+	  // only on left
+	  t_new = t_old;
+	} else {
+	  // both operands
+	  t_new = build_dag_term(out_ttbl, solver.get_class(t_old),
+				 solver, out_ttbl, stack, cache);
+	}
         out_vmap[v] = t_new;
         add_rev_var_map(out_rvmap, t_new, v);
       }
       for (auto p : o.m_var_map) {
-        variable_t v(p.first);
-        if (out_vmap.find(v) != out_vmap.end())
-          continue;
-        term_id_t t_old(copy_map[p.second]);
-        term_id_t t_new = build_dag_term(out_ttbl, solver.get_class(t_old),
-                                         solver, out_ttbl, stack, cache);
-        out_vmap[v] = t_new;
-        add_rev_var_map(out_rvmap, t_new, v);
+        const variable_t &v = p.first;
+        if (out_vmap.find(v) == out_vmap.end()) {
+	  // only on right operand
+	  term_id_t t_new(copy_map[p.second]);
+	  out_vmap[v] = t_new;
+	  add_rev_var_map(out_rvmap, t_new, v);
+	}
       }
 
       for (auto p : out_vmap) {
@@ -830,7 +881,7 @@ public:
         std::vector<int> stack;
         std::map<int, term_id_t> cache;
         // congruence closure to compute equivalence classes
-        term::congruence_closure_solver<ttbl_t> solver(&m_ttbl);
+        term::congruence_closure_solver<ttbl_t> solver(m_ttbl);
         std::vector<std::pair<term_id_t, term_id_t>> eqs = {{tx, ty}};
         solver.run(eqs);
 
