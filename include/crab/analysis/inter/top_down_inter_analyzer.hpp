@@ -1081,43 +1081,17 @@ void extract_callsite_info(CallGraph &cg, GlobalCtx &ctx) {
   using fdecl_t = typename cfg_t::fdecl_t;
   using callsite_info_t = typename GlobalCtx::callsite_info_t;
   using region_equiv_class_t = typename GlobalCtx::region_equiv_class_t;
-  using cfg_visit_map_t = std::unordered_map<cfg_t, bool>;
-  using cfg_queue_map_t = std::queue<cfg_t>;
 
-  cfg_queue_map_t queue_map;
-  cfg_visit_map_t visit_map;
-
-  auto entries = cg.entries();
-  if (entries.empty()) {
-    return;
-  }
-  // FIXME: We don't maintain an object to track all cfgs.
-  // To iterate all cfgs, we starts at the entry node of the call graph.
-  // Performing a DFS on the call graph to extract all cfgs.
-  for (auto entry : entries) {
-    cfg_t caller_cfg = entry.get_cfg();
-    visit_map.insert({caller_cfg, false});
-    queue_map.push(caller_cfg);
-  }
-  while (!queue_map.empty()) {
-    const cfg_t &caller_cfg = queue_map.front();
-    queue_map.pop();
-    auto it = visit_map.find(caller_cfg);
-    if (it != visit_map.end()) {
-      if (it->second == true) {
-        continue;
-      }
-      it->second = true;
-    }
+  // Iterate all cfgs through the call graph
+  for (auto const &node : boost::make_iterator_range(cg.nodes())) {
+    const cfg_t &caller_cfg = node.get_cfg();
     for (auto const &bb : caller_cfg) {
       for (auto const &stmt : bb) {
         if (stmt.is_callsite()) {
           const callsite_t &cs = static_cast<const callsite_t &>(stmt);
           // get callee's cfg
           if (cg.has_callee(cs)) {
-            cfg_t callee_cfg = cg.get_callee(cs).get_cfg();
-            visit_map.insert({callee_cfg, false});
-            queue_map.push(callee_cfg);
+            const cfg_t &callee_cfg = cg.get_callee(cs).get_cfg();
             const fdecl_t &fdecl = callee_cfg.get_func_decl();
             region_equiv_class_t formal_cls, actual_cls, ret_cls, lhs_cls;
             group_regions_by_dsa_intrinsics(callee_cfg, cs.get_args(),
