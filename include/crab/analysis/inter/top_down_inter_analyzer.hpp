@@ -381,6 +381,7 @@ class global_context {
 public:
   using callgraph_node_t = typename CallGraph::node_t;
   using cfg_t = typename callgraph_node_t::cfg_t;
+  using variable_t = typename cfg_t::variable_t;
   using abs_dom_t = AbsDom;
   using invariant_map_t = InvariantMap;
 
@@ -416,6 +417,14 @@ public:
   using func_fixpoint_map_t =
       std::unordered_map<callgraph_node_t, func_fixpoint_map_entry_t>;
 
+  using variable_vector_t = std::vector<variable_t>;
+  using region_equiv_class_t = std::vector<variable_vector_t>;
+  using callsite_t = typename cfg_t::basic_block_t::callsite_t;
+  using callsite_or_fdecl_t = crab::cfg::callsite_or_fdecl<cfg_t>;
+  using callsite_info_t = domains::callsite_info<variable_t>;
+  using callsite_info_map_t =
+      std::unordered_map<const callsite_t *, callsite_info_t>;
+
 private:
   /*
    * To deal with loops and recursive functions we compute WTOs (weak
@@ -426,6 +435,8 @@ private:
 
   // -- widening points of the callgraph (extracted from *all* entries' WTOs)
   std::set<callgraph_node_t> m_widening_set;
+  // -- map each call site statement to static callsite info
+  callsite_info_map_t m_callsite_info_map;
   // -- map each callgraph entry to its WTO
   wto_cg_map_t m_wto_cg_map;
   // -- to break cycles if no precise support for recursive functions
@@ -584,8 +595,32 @@ public:
 
   std::set<callgraph_node_t> &get_widening_set() { return m_widening_set; }
 
+  const callsite_info_map_t &get_callsite_info_map() const {
+    return m_callsite_info_map;
+  }
+
+  callsite_info_map_t &get_callsite_info_map() { return m_callsite_info_map; }
+
   const std::set<callgraph_node_t> &get_widening_set() const {
     return m_widening_set;
+  }
+
+  callsite_info_t &get_call_site_info(const callsite_t &callsite) {
+    auto it = m_callsite_info_map.find(&callsite);
+    if (it != m_callsite_info_map.end()) {
+      return it->second;
+    }
+    CRAB_ERROR("The callsite info for ", callsite,
+               " should be computed before the anlaysis");
+  }
+
+  const callsite_info_t &get_call_site_info(const callsite_t &callsite) const {
+    auto it = m_callsite_info_map.find(&callsite);
+    if (it != m_callsite_info_map.end()) {
+      return it->second;
+    }
+    CRAB_ERROR("The callsite info for ", callsite,
+               " should be computed before the anlaysis");
   }
 
   // Return the current entry node of the analysis
@@ -929,6 +964,185 @@ analyze_function(CallGraphNode cg_node,
   return analyzer;
 }
 
+/// @brief wrapper to group regions variables in parameter lists based on
+/// target's dsa intrinsics
+/// @param tgt_cfg the cfg for target function
+/// @param src_params the paramters appeared in the source function
+/// @param tgt_params the paramters appeared in the target function
+/// @param src_cls the equivalence classes for grouping source regions
+/// @param tgt_cls the equivalence classes for grouping target regions
+template <typename CFG, typename Variable>
+void group_regions_by_dsa_intrinsics(
+    const CFG &tgt_cfg, const std::vector<Variable> &src_params,
+    const std::vector<Variable> &tgt_params,
+    std::vector<std::vector<Variable>> &src_cls,
+    std::vector<std::vector<Variable>> &tgt_cls) {
+
+  using basic_block_t = typename CFG::basic_block_t;
+  using intrinsic_statement_t = typename basic_block_t::intrinsic_t;
+  using variable_or_constant_t =
+      typename intrinsic_statement_t::variable_or_constant_t;
+  // Helper lambda functions for logging
+  auto print_var_vector = [](crab::crab_os &o,
+                             const std::vector<Variable> &vec) {
+    typename std::vector<Variable>::const_iterator it;
+    o << "[";
+    for (it = vec.begin(); it != vec.end(); it++) {
+      if (it != vec.begin())
+        o << ",";
+      o << (*it);
+    }
+    o << "]";
+  };
+  auto print_var_or_const_vector =
+      [](crab::crab_os &o, const std::vector<variable_or_constant_t> &vec) {
+        typename std::vector<variable_or_constant_t>::const_iterator it;
+        o << "[";
+        for (it = vec.begin(); it != vec.end(); it++) {
+          if (it != vec.begin())
+            o << ",";
+          o << (*it);
+        }
+        o << "]";
+      };
+
+  CRAB_LOG("inter-group", errs() << "Ins: ";
+           print_var_vector(errs(), src_params); errs() << "\n";);
+  CRAB_LOG("inter-group", errs() << "Outs: ";
+           print_var_vector(errs(), tgt_params); errs() << "\n";);
+
+  // Step 1. get all dsa intrinsic statements
+  const basic_block_t &entry_bb = tgt_cfg.get_node(tgt_cfg.entry());
+  std::vector<intrinsic_statement_t> intrinsic_stmts;
+  intrinsic_stmts.reserve(entry_bb.size());
+  for (auto const &stmt : entry_bb) {
+    if (stmt.is_intrinsic()) {
+      auto intrinsic_stmt = dynamic_cast<const intrinsic_statement_t &>(stmt);
+      if (intrinsic_stmt.get_intrinsic_name() == "regions_from_memory_object") {
+        intrinsic_stmts.push_back(intrinsic_stmt);
+      }
+    }
+  }
+
+  // Step 2. construct the equivalence classes for grouping input/output
+  // regions Note that, the order of the output regions in the parameter list
+  // is the same as the output list in the dsa intrinsic
+  // The worst case of the following loop is O(m * n) where m is the number of
+  // parameters and n is the number of dsa intrinsic statements
+  unsigned int index = 0, param_lst_sz = src_params.size();
+  while (index < param_lst_sz) {
+    if (!tgt_params[index].get_type().is_region()) {
+      // skip for reference and scalar variables
+      index++;
+      continue;
+    }
+    for (auto const &intrinsic_stmt : intrinsic_stmts) {
+      // each intrinsic contains only region variables
+      std::vector<Variable> srcs, tgts;
+      const unsigned intrinsic_arg_sz = intrinsic_stmt.get_num_args();
+      auto const &args = intrinsic_stmt.get_args();
+      srcs.reserve(intrinsic_arg_sz);
+      tgts.reserve(intrinsic_arg_sz);
+      if (intrinsic_arg_sz > 0 && index < param_lst_sz &&
+          args[0].get_variable() == tgt_params[index]) {
+        // If the region which the current index refers belongs to some dsa
+        // intrinsic, add this group into the equivalence sets
+        CRAB_LOG("inter-group", errs() << "Intrinsic: ";
+                 print_var_or_const_vector(errs(), args); errs() << "\n";);
+        for (unsigned j = 0; j < intrinsic_arg_sz; j++) {
+          srcs.push_back(src_params[index]);
+          tgts.push_back(tgt_params[index]);
+          index++;
+        }
+      }
+      if (srcs.size() > 0) {
+        src_cls.push_back(srcs);
+        tgt_cls.push_back(tgts);
+      }
+    }
+    index++;
+  }
+}
+
+// Wrapper to retrieve all callsite info from intrisinc statements.
+// The callsite info will be stored inside an object of class
+// domains::callsite_info for each callsite statement. This analysis is
+// performed before the inter-procedural analysis. input: global_context a.
+// iterate all cfg inside wto of cfgs b. for each cfg, visit callsite statement
+// c. for each callsite statement, get callee'cfg
+// d. store callsite info
+template <typename CallGraph, typename GlobalCtx>
+void extract_callsite_info(CallGraph &cg, GlobalCtx &ctx) {
+  using cfg_t = typename CallGraph::cfg_t;
+  // using cfg_ref_t = crab::cfg::cfg_ref<cfg_t>;
+  using callsite_or_fdecl_t = crab::cfg::callsite_or_fdecl<cfg_t>;
+  using variable_t = typename cfg_t::variable_t;
+  using callsite_t = typename cfg_t::basic_block_t::callsite_t;
+  using fdecl_t = typename cfg_t::fdecl_t;
+  using callsite_info_t = typename GlobalCtx::callsite_info_t;
+  using region_equiv_class_t = typename GlobalCtx::region_equiv_class_t;
+  using cfg_visit_map_t = std::unordered_map<cfg_t, bool>;
+  using cfg_queue_map_t = std::queue<cfg_t>;
+
+  cfg_queue_map_t queue_map;
+  cfg_visit_map_t visit_map;
+
+  auto entries = cg.entries();
+  if (entries.empty()) {
+    return;
+  }
+  // FIXME: We don't maintain an object to track all cfgs.
+  // To iterate all cfgs, we starts at the entry node of the call graph.
+  // Performing a DFS on the call graph to extract all cfgs.
+  for (auto entry : entries) {
+    cfg_t caller_cfg = entry.get_cfg();
+    visit_map.insert({caller_cfg, false});
+    queue_map.push(caller_cfg);
+  }
+  while (!queue_map.empty()) {
+    const cfg_t &caller_cfg = queue_map.front();
+    queue_map.pop();
+    auto it = visit_map.find(caller_cfg);
+    if (it != visit_map.end()) {
+      if (it->second == true) {
+        continue;
+      }
+      it->second = true;
+    }
+    for (auto const &bb : caller_cfg) {
+      for (auto const &stmt : bb) {
+        if (stmt.is_callsite()) {
+          const callsite_t &cs = static_cast<const callsite_t &>(stmt);
+          // get callee's cfg
+          if (cg.has_callee(cs)) {
+            cfg_t callee_cfg = cg.get_callee(cs).get_cfg();
+            visit_map.insert({callee_cfg, false});
+            queue_map.push(callee_cfg);
+            const fdecl_t &fdecl = callee_cfg.get_func_decl();
+            region_equiv_class_t formal_cls, actual_cls, ret_cls, lhs_cls;
+            group_regions_by_dsa_intrinsics(callee_cfg, cs.get_args(),
+                                            fdecl.get_inputs(), actual_cls,
+                                            formal_cls);
+            group_regions_by_dsa_intrinsics(caller_cfg, fdecl.get_outputs(),
+                                            cs.get_lhs(), ret_cls, lhs_cls);
+            callsite_info_t callsite_info{cs.get_func_name(),
+                                          cs.get_args(),
+                                          cs.get_lhs(),
+                                          fdecl.get_inputs(),
+                                          fdecl.get_outputs(),
+                                          actual_cls,
+                                          lhs_cls,
+                                          formal_cls,
+                                          ret_cls};
+            auto &callsite_info_map = ctx.get_callsite_info_map();
+            callsite_info_map.insert({&cs, callsite_info});
+          }
+        }
+      }
+    }
+  }
+}
+
 /*
    All the state of the inter-procedural analysis is kept in this
    transformer. This allows us to use the intra-procedural analysis
@@ -1119,8 +1333,8 @@ private:
       // If we do not analyze precisely recursive functions then we
       // must start the analysis of a recursive procedure without
       // propagating from caller to callee (i.e., top).
-      domains::callsite_info<variable_t> callsite {cs.get_func_name(), cs.get_args(), cs.get_lhs(),
-						   fdecl.get_inputs(), fdecl.get_outputs()};
+      const domains::callsite_info<variable_t> &callsite =
+          m_ctx.get_call_site_info(cs);
       callee_at_entry.callee_entry(callsite, caller);
     }
 
@@ -1356,8 +1570,8 @@ private:
                           << "\tCallee exit=" << callee_at_exit << "\n";);
     
     // 6. Generate abstract state for the continuation at the caller
-    domains::callsite_info<variable_t> callsite {cs.get_func_name(), cs.get_args(), cs.get_lhs(),
-						 fdecl.get_inputs(), fdecl.get_outputs()};
+    const domains::callsite_info<variable_t> &callsite =
+        m_ctx.get_call_site_info(cs);
     caller.caller_continuation(callsite, callee_at_exit);
 						     
     if (::crab::CrabSanityCheckFlag && !inside_recursive_call) {
@@ -1604,6 +1818,9 @@ public:
           crab::outs() << cg_node.name() << ";";
         } crab::outs() << "}\n";);
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Done.\n";);
+
+    top_down_inter_impl::extract_callsite_info<CallGraph, global_context_t>(
+        m_cg, m_ctx);
 
     if (entries.empty()) {
       CRAB_WARN("Found no entry points in the call graph.");
