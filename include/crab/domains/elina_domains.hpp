@@ -601,6 +601,33 @@ private:
     return res;
   }
 
+  bound_t scalar2bound(elina_scalar_t *scalar) const {
+    switch(elina_scalar_infty(scalar)) {
+    case -1: /* -oo */
+      return bound_t::minus_infinity();
+    case 1:  /* +oo */
+      return bound_t::plus_infinity();
+    default: /* finite */
+      assert(elina_scalar_infty(scalar) == 0);
+      
+      switch(scalar->discr) {
+      case ELINA_SCALAR_DOUBLE: {
+	number_t val;
+	convert_elina_number(scalar->val.dbl, val);
+	return bound_t(val);
+      }
+      case ELINA_SCALAR_MPQ: {
+	number_t val;
+	convert_elina_number(scalar->val.mpq, val);
+	return bound_t(val);
+      }
+      default:
+	CRAB_ERROR("elina translation only covers double or mpq scalars");
+      }
+    }
+  }    
+
+  
   void dump(const var_map_t &m, elina_state_ptr apstate) const {
     crab::outs() << "\nNumber of dimensions=" << get_dims(apstate) << "\n";
     crab::outs() << "variable map [";
@@ -1307,76 +1334,26 @@ public:
 
     if (is_bottom()) {
       return interval_t::bottom();
-    }
-
-    if (is_top()) {
+    } else if (is_top()) {
       return interval_t::top();
     }
 
     if (auto dim = get_var_dim(v)) {
-
       elina_interval_t *intv =
           elina_abstract0_bound_dimension(get_man(), &*m_apstate, *dim);
+
       if (elina_interval_is_top(intv)) {
         elina_interval_free(intv);
         return interval_t::top();
+      } else {
+	bound_t lb = scalar2bound(intv->inf);
+	bound_t ub = scalar2bound(intv->sup);
+	elina_interval_free(intv);
+	return interval_t(lb,ub);
       }
-
-      elina_scalar_t *lb = intv->inf;
-      elina_scalar_t *ub = intv->sup;
-
-      if (lb->discr == ELINA_SCALAR_DOUBLE &&
-          ub->discr == ELINA_SCALAR_DOUBLE) {
-
-        if (elina_scalar_infty(lb) == -1) { // [-oo, k]
-          number_t sup;
-          convert_elina_number(ub->val.dbl, sup);
-          elina_interval_free(intv);
-          return interval_t(bound_t::minus_infinity(), sup);
-        } else if (elina_scalar_infty(ub) == 1) { // [k, +oo]
-          number_t inf;
-          convert_elina_number(lb->val.dbl, inf);
-          elina_interval_free(intv);
-          return interval_t(inf, bound_t::plus_infinity());
-
-        } else {
-          assert(elina_scalar_infty(lb) == 0); // lb is finite
-          assert(elina_scalar_infty(ub) == 0); // ub is finite
-          number_t inf, sup;
-          convert_elina_number(lb->val.dbl, inf);
-          convert_elina_number(ub->val.dbl, sup);
-          elina_interval_free(intv);
-          return interval_t(inf, sup);
-        }
-
-      } else if (lb->discr == ELINA_SCALAR_MPQ &&
-                 ub->discr == ELINA_SCALAR_MPQ) {
-
-        if (elina_scalar_infty(lb) == -1) { // [-oo, k]
-          number_t sup;
-          convert_elina_number(ub->val.mpq, sup);
-          elina_interval_free(intv);
-          return interval_t(bound_t::minus_infinity(), sup);
-
-        } else if (elina_scalar_infty(ub) == 1) { // [k, +oo]
-          number_t inf;
-          convert_elina_number(lb->val.mpq, inf);
-          elina_interval_free(intv);
-          return interval_t(inf, bound_t::plus_infinity());
-        } else {
-          assert(elina_scalar_infty(lb) == 0); // lb is finite
-          assert(elina_scalar_infty(ub) == 0); // ub is finite
-
-          number_t inf, sup;
-          convert_elina_number(lb->val.mpq, inf);
-          convert_elina_number(ub->val.mpq, sup);
-          elina_interval_free(intv);
-          return interval_t(inf, sup);
-        }
-      } else
-        CRAB_ERROR("elina translation only covers double or mpq scalars");
-    } else
+    } else {
       return interval_t::top();
+    }
   }
 
   void set(const variable_t &v, interval_t ival) {

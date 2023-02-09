@@ -551,6 +551,32 @@ private:
     return res;
   }
 
+  bound_t scalar2bound(ap_scalar_t *scalar) const {
+    switch(ap_scalar_infty(scalar)) {
+    case -1: /* -oo */
+      return bound_t::minus_infinity();
+    case 1:  /* +oo */
+      return bound_t::plus_infinity();
+    default: /* finite */
+      assert(ap_scalar_infty(scalar) == 0);
+      
+      switch(scalar->discr) {
+      case AP_SCALAR_DOUBLE: {
+	number_t val;
+	convert_apron_number(scalar->val.dbl, val);
+	return bound_t(val);
+      }
+      case AP_SCALAR_MPQ: {
+	number_t val;
+	convert_apron_number(scalar->val.mpq, val);
+	return bound_t(val);
+      }
+      default:
+	CRAB_ERROR("apron translation only covers double or mpq scalars");
+      }
+    }
+  }    
+
   void dump(const var_map_t &m, ap_state_ptr apstate) {
     crab::outs() << "\nNumber of dimensions=" << get_dims(apstate) << "\n";
     crab::outs() << "variable map [";
@@ -1046,71 +1072,28 @@ public:
     crab::CrabStats::count(domain_name() + ".count.to_intervals");
     crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
 
-    if (is_bottom())
+    if (is_bottom()) {
       return interval_t::bottom();
+    } else if (is_top()) {
+      return interval_t::top();
+    }
 
     if (auto dim = get_var_dim(v)) {
-
       ap_interval_t *intv =
-          ap_abstract0_bound_dimension(get_man(), &*m_apstate, *dim);
+	ap_abstract0_bound_dimension(get_man(), &*m_apstate, *dim);
+      
       if (ap_interval_is_top(intv)) {
         ap_interval_free(intv);
         return interval_t::top();
+      } else {
+	bound_t lb = scalar2bound(intv->inf);
+	bound_t ub = scalar2bound(intv->sup);
+	ap_interval_free(intv);
+	return interval_t(lb,ub);
       }
-
-      ap_scalar_t *lb = intv->inf;
-      ap_scalar_t *ub = intv->sup;
-
-      if (lb->discr == AP_SCALAR_DOUBLE && ub->discr == AP_SCALAR_DOUBLE) {
-
-        if (ap_scalar_infty(lb) == -1) { // [-oo, k]
-          number_t sup;
-          convert_apron_number(ub->val.dbl, sup);
-          ap_interval_free(intv);
-          return interval_t(bound_t::minus_infinity(), sup);
-        } else if (ap_scalar_infty(ub) == 1) { // [k, +oo]
-          number_t inf;
-          convert_apron_number(lb->val.dbl, inf);
-          ap_interval_free(intv);
-          return interval_t(inf, bound_t::plus_infinity());
-
-        } else {
-          assert(ap_scalar_infty(lb) == 0); // lb is finite
-          assert(ap_scalar_infty(ub) == 0); // ub is finite
-          number_t inf, sup;
-          convert_apron_number(lb->val.dbl, inf);
-          convert_apron_number(ub->val.dbl, sup);
-          ap_interval_free(intv);
-          return interval_t(inf, sup);
-        }
-
-      } else if (lb->discr == AP_SCALAR_MPQ && ub->discr == AP_SCALAR_MPQ) {
-
-        if (ap_scalar_infty(lb) == -1) { // [-oo, k]
-          number_t sup;
-          convert_apron_number(ub->val.mpq, sup);
-          ap_interval_free(intv);
-          return interval_t(bound_t::minus_infinity(), sup);
-
-        } else if (ap_scalar_infty(ub) == 1) { // [k, +oo]
-          number_t inf;
-          convert_apron_number(lb->val.mpq, inf);
-          ap_interval_free(intv);
-          return interval_t(inf, bound_t::plus_infinity());
-        } else {
-          assert(ap_scalar_infty(lb) == 0); // lb is finite
-          assert(ap_scalar_infty(ub) == 0); // ub is finite
-
-          number_t inf, sup;
-          convert_apron_number(lb->val.mpq, inf);
-          convert_apron_number(ub->val.mpq, sup);
-          ap_interval_free(intv);
-          return interval_t(inf, sup);
-        }
-      } else
-        CRAB_ERROR("apron translation only covers double or mpq scalars");
-    } else
+    } else {
       return interval_t::top();
+    }
   }
 
   void set(variable_t v, interval_t ival) {
