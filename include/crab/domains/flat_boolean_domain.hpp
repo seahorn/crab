@@ -932,7 +932,14 @@ private:
         m_unchanged_vars(std::move(unchanged_vars)) {}
 
 public:
-  
+  bool is_asc_phase() const override {
+    return m_product.second().is_asc_phase();
+  }
+
+  void set_phase(bool is_ascending) override {
+    m_product.second().set_phase(is_ascending);
+  }
+
   bool_num_domain_t make_top() const override {
     reduced_domain_product2_t prod;
     prod.set_to_top();
