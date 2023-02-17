@@ -309,6 +309,14 @@ private:
   }
 
 public:
+  bool is_asc_phase() const override {
+    return m_product.first().is_asc_phase()
+      || m_product.second().is_asc_phase();
+  }
+  void set_phase(bool is_ascending) override {
+    m_product.first().set_phase(is_ascending);
+    m_product.second().set_phase(is_ascending);
+  }
 
   reduced_domain_product2_t make_top() const override {
     basic_domain_product2_t dom_prod;
@@ -1128,6 +1136,16 @@ public:
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(
       reduced_numerical_domain_product2_t)
   
+  bool is_asc_phase() const override {
+    return m_product.first().is_asc_phase()
+      || m_product.second().is_asc_phase();
+  }
+
+  void set_phase(bool is_ascending) override {
+    m_product.first().set_phase(is_ascending);
+    m_product.second().set_phase(is_ascending);
+  }
+
   reduced_numerical_domain_product2_t make_top() const override {
     reduced_domain_product2_t dom_prod;
     return reduced_numerical_domain_product2_t(dom_prod.make_top());

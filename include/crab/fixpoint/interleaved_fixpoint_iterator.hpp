@@ -249,7 +249,7 @@ private:
       m_post.emplace(label, m_absval_fac.make_bottom());
     }
   }
-  
+
 public:
   interleaved_fwd_fixpoint_iterator(CFG cfg, AbstractValue absval_fac,
 				    const crab::fixpoint_parameters &params,
@@ -293,6 +293,9 @@ public:
   void run(AbstractValue init) {
     crab::ScopedCrabStats __st__("Fixpo");
 
+    // Decoupled approach: start in descending phase.
+    set_phase(false);
+
     CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Started analysis of "
                                               << func_name(m_cfg) << "\n");
     set_pre(m_cfg.entry(), init);
@@ -307,11 +310,17 @@ public:
     CRAB_LOG("fixpo-trace", crab::get_msg_stream()
                                 << "Fixpoint trace " << func_name(m_cfg) << ":\n"
                                 << m_wto << "\n";);
+    // Decoupled approach: make sure to end in descending phase
+    // (later queries on invariant tables will use the descending domain).
+    set_phase(false);
   }
 
   void run(basic_block_label_t entry, AbstractValue init,
            const assumption_map_t &assumptions) {
     crab::ScopedCrabStats __st__("Fixpo");
+
+    // Decoupled approach: start in descending phase.
+    set_phase(false);
 
     CRAB_VERBOSE_IF(
         1, crab::get_msg_stream()
@@ -330,6 +339,20 @@ public:
     CRAB_LOG("fixpo-trace", crab::get_msg_stream()
                                 << "Fixpoint trace " << func_name(m_cfg) << ":\n"
                                 << m_wto << "\n";);
+    // Decoupled approach: make sure to end in descending phase
+    // (later queries on invariant tables will use the descending domain).
+    set_phase(false);
+  }
+
+  inline bool is_asc_phase() const {
+    return m_absval_fac.is_asc_phase();
+  }
+  inline void set_phase(bool is_ascending) {
+    m_absval_fac.set_phase(is_ascending);
+    for (auto& p : m_pre)
+      p.second.set_phase(is_ascending);
+    for (auto& p : m_post)
+      p.second.set_phase(is_ascending);
   }
 
   void clear_pre() { m_pre.clear(); }
@@ -364,12 +387,22 @@ private:
   // Initial entry point of the analysis
   basic_block_label_t m_entry;
   // To be able to create bottom and top abstract values
-  const AbstractValue &m_absval_fac;
+  AbstractValue &m_absval_fac;
   const assumption_map_t *m_assumptions;
   // Used to skip the analysis until m_entry is found
   bool m_skip;
 
-  inline AbstractValue make_top() const { return m_absval_fac.make_top(); }
+  inline bool is_asc_phase() const {
+    return m_absval_fac.is_asc_phase();
+  }
+  // This method ensures that calls to make_top/bottom and
+  // queries to the invariant tables will do the right thing.
+  inline void set_phase(bool is_asc) {
+    m_absval_fac.set_phase(is_asc);
+    m_iterator->set_phase(is_asc);
+  }
+
+  inline AbstractValue make_top() const { return m_absval_fac.make_top(); } 
 
   inline AbstractValue make_bottom() const { return m_absval_fac.make_bottom(); }
 
@@ -441,12 +474,12 @@ private:
   };
 
 public:
-  wto_iterator(interleaved_iterator_t *iterator, const AbstractValue &absval_fac)
+  wto_iterator(interleaved_iterator_t *iterator, AbstractValue &absval_fac)
       : m_iterator(iterator), m_entry(m_iterator->get_cfg().entry()),
         m_absval_fac(absval_fac), m_assumptions(nullptr), m_skip(true) {}
 
   wto_iterator(interleaved_iterator_t *iterator, basic_block_label_t entry,
-               const AbstractValue &absval_fac, const assumption_map_t *assumptions)
+	       AbstractValue &absval_fac, const assumption_map_t *assumptions)
       : m_iterator(iterator), m_entry(entry), m_absval_fac(absval_fac),
         m_assumptions(assumptions), m_skip(true) {}
 
@@ -508,7 +541,7 @@ public:
     /** decide whether skip cycle or not **/
     bool entry_in_this_cycle = false;
     if (m_skip) {
-      // We only skip the analysis of cycle is m_entry is not a
+      // We only skip the analysis of cycle if m_entry is not a
       // component of it, included nested components.
       member_component_visitor vis(m_entry);
       cycle.accept(&vis);
@@ -531,6 +564,12 @@ public:
                << crab::basic_block_traits<basic_block_t>::to_string(head);
         auto &n = m_iterator->m_cfg.get_node(head);
         crab::outs() << " size=" << n.size() << "\n";);
+
+    // Handling ascending/descending phase for decoupled domain:
+    // first save phase of outer cycle and then start analysis
+    // of current cycle in ascending phase.
+    bool outer_cycle_phase = is_asc_phase();
+    set_phase(true /*is_asc*/);
 
     auto prev_nodes = m_iterator->m_cfg.prev_nodes(head);
     AbstractValue pre = std::move(make_bottom());
@@ -589,11 +628,17 @@ public:
     }
 
     if (m_iterator->m_params.get_descending_iterations() == 0) {
-      // no narrowing
+      // no narrowing: no need to enter descending phase;
+      // restore phase of outer cycle and return.
+      set_phase(outer_cycle_phase);
       return;
     }
 
     CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "Started narrowing phase\n";);
+
+    // Narrowing: switch to descending phase.
+    pre.set_phase(false /*is_asc*/);
+    set_phase(false /*is_asc*/);
 
     for (unsigned int iteration = 1;; ++iteration) {
       // Decreasing iteration sequence with narrowing
@@ -629,6 +674,9 @@ public:
             << "** Finished loop with head " << func_name(m_iterator->m_cfg)
             << "::" << crab::basic_block_traits<basic_block_t>::to_string(head)
             << "\n");
+    // End of descending phase for current cycle:
+    // restore phase of outer cycle.
+    set_phase(outer_cycle_phase);
   }
 
 }; // class wto_iterator
