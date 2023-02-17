@@ -640,6 +640,14 @@ private:
   }
 
 public:
+  
+  bool is_asc_phase() const override {
+    return m_base_dom.is_asc_phase();
+  }
+
+  void set_phase(bool is_ascending) override {
+    return m_base_dom.set_phase(is_ascending);
+  }
 
   region_domain_t make_top() const override { return region_domain_t(true); }
 
@@ -792,7 +800,7 @@ public:
     }
 
     CRAB_LOG("region", crab::outs() << "Join " << *this << " and " << o << "=");
-    do_join(o);
+      do_join(o);
     CRAB_LOG("region", crab::outs() << "Result=" << *this << "\n");
   }
 
@@ -816,10 +824,10 @@ public:
     auto base_dom_op = [](const base_abstract_domain_t &v1,
                           const base_abstract_domain_t &v2) { return v1 | v2; };
     region_domain_t res(std::move(
-       do_join_or_widening(*this, o, true /*is join*/, base_dom_op)));
-    
-    CRAB_LOG("region", crab::outs() << "Result=" << res << "\n");
-    return res;
+          do_join_or_widening(*this, o, true /*is join*/, base_dom_op)));
+
+      CRAB_LOG("region", crab::outs() << "Result=" << res << "\n");
+      return res;
   }
 
   region_domain_t operator&(const region_domain_t &o) const override {

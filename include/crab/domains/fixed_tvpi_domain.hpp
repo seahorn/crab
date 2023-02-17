@@ -282,6 +282,14 @@ public:
   fixed_tvpi_domain_t &operator=(const fixed_tvpi_domain_t &o) = default;
   fixed_tvpi_domain_t &operator=(fixed_tvpi_domain_t &&o) = default;
 
+  bool is_asc_phase() const override {
+    return m_base_absval.is_asc_phase();
+  }
+
+  void set_phase(bool is_ascending) override {
+    m_base_absval.set_phase(is_ascending);
+  }
+
   void set_to_top() override { m_base_absval.set_to_top(); }
 
   void set_to_bottom() override { m_base_absval.set_to_bottom(); }

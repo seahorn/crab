@@ -54,6 +54,8 @@ private:
     operator=(const abstract_domain_concept &) = delete;
     abstract_domain_concept &operator=(abstract_domain_concept &&) = delete;
     virtual std::unique_ptr<abstract_domain_concept> clone() const = 0;
+    virtual bool is_asc_phase() const = 0;
+    virtual void set_phase(bool) = 0;
     virtual std::unique_ptr<abstract_domain_concept> make_top() const = 0;
     virtual std::unique_ptr<abstract_domain_concept> make_bottom() const = 0;
     virtual void set_to_top() = 0;
@@ -251,6 +253,9 @@ private:
           new abstract_domain_model(m_inv));
       return std::move(res);
     }
+
+    bool is_asc_phase() const override { return m_inv.is_asc_phase(); }
+    void set_phase(bool is_asc) override { m_inv.set_phase(is_asc); }
 
     std::unique_ptr<abstract_domain_concept> make_top() const override {
       std::unique_ptr<abstract_domain_concept> res(
@@ -694,6 +699,9 @@ public:
 
   abstract_domain &operator=(abstract_domain &&o) = default;
 
+  bool is_asc_phase() const override { return m_concept->is_asc_phase(); }
+  void set_phase(bool is_asc) override { m_concept->set_phase(is_asc); }
+
   abstract_domain make_top() const override {
     return abstract_domain(std::move(m_concept->make_top()));
   }
@@ -1100,6 +1108,14 @@ public:
   abstract_domain_ref(abstract_domain_ref &&o) = default;
 
   abstract_domain_ref &operator=(abstract_domain_ref &&o) = default;
+
+  bool is_asc_phase() const override {
+    return norm().is_asc_phase();
+  }
+  void set_phase(bool is_asc) override {
+    detach();
+    norm().set_phase(is_asc);
+  }
 
   abstract_domain_ref make_top() const override {
     return create(norm().make_top());

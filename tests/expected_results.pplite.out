@@ -74,6 +74,15 @@ bb2={k = 0; i = 0} or
 {i-k = 0; -i <= -5; i <= 99}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
+Invariants using Decoupled(ApronIntervals,ApronPPLitePoly)
+entry={}
+bb1={-i <= 0; i <= 100; 199*i-10000*k <= 0}
+bb1_f={-i <= 0; i <= 100; 199*i-10000*k <= 0}
+ret={i = 100; -100*k <= -199}
+bb1_t={-i <= 0; i <= 100; 199*i-10000*k <= 0}
+bb2={-i <= 0; 199*i-10000*k <= 0; i <= 99}
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
 loop1_entry:
   i = 0;
   k = 30;
