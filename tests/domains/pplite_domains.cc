@@ -237,6 +237,10 @@ int main(int argc, char **argv) {
       z_pset_pplite_domain_t init;
       run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     }
+    {
+      z_decoupled_box_poly_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
     delete cfg;
   }
 
