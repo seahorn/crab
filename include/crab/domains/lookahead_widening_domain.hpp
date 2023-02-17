@@ -84,6 +84,16 @@ public:
   this_type &operator=(const this_type &o) = default;
   this_type &operator=(this_type &&o) = default;
 
+  bool is_asc_phase() const override {
+    return m_product.first().is_asc_phase()
+      || m_product.second().is_asc_phase();
+  }
+
+  void set_phase(bool is_ascending) override {
+    m_product.first().set_phase(is_ascending);
+    m_product.second().set_phase(is_ascending);
+  }
+
   void set_to_top() override {
     m_product.set_to_top();
     m_is_bottom = false;

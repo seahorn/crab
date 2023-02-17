@@ -16,7 +16,8 @@ namespace crab {
 namespace domains {
 using apron_domain_id_t
 = enum { APRON_INT, APRON_OCT, APRON_PK,
-         APRON_PPLITE_POLY, APRON_PPLITE_FPOLY, APRON_PPLITE_PSET
+         APRON_PPLITE_POLY, APRON_PPLITE_FPOLY,
+         APRON_PPLITE_PSET, APRON_PPLITE_FPSET
 };
 
 template <typename Number> class ApronDefaultParams {
@@ -102,7 +103,9 @@ private:
   using bound_t = ikos::bound<number_t>;
   using var_map_t = boost::bimap<variable_t, ap_dim_t>;
   using binding_t = typename var_map_t::value_type;
+  using params_t = Params;
 
+  static constexpr apron_domain_id_t apron_id = ApronDom;
   static ap_manager_t *s_apman;
 
   ap_state_ptr m_apstate;
@@ -111,6 +114,10 @@ private:
   bool is_real() const { return std::is_same<Number, ikos::q_number>::value; }
 
   bool is_integer() const { return !is_real(); }
+
+  static bool is_disjunctive(apron_domain_id_t id = apron_id) {
+    return (id == APRON_PPLITE_PSET) || (id == APRON_PPLITE_FPSET);
+  }
 
   static ap_manager_t *get_man() {
 #ifdef HAVE_PPLITE
@@ -127,7 +134,7 @@ private:
         };
 #endif // HAVE_PPLITE
     if (!s_apman) {
-      switch (ApronDom) {
+      switch (apron_id) {
       case APRON_INT:
         s_apman = box_manager_alloc();
         break;
@@ -146,6 +153,9 @@ private:
         break;
       case APRON_PPLITE_PSET:
         s_apman = pplite_manager_alloc("P_Set");
+        break;
+      case APRON_PPLITE_FPSET:
+        s_apman = pplite_manager_alloc("FP_Set");
         break;
 #endif // HAVE_PPLITE
       default:
@@ -968,7 +978,7 @@ public:
           apPtr(get_man(), ap_abstract0_copy(get_man(), &*o.m_apstate));
 
       var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, y);
-      switch (ApronDom) {
+      switch (apron_id) {
       case APRON_OCT:
         return apron_domain_t(
             apPtr(get_man(), ap_abstract0_oct_narrowing(get_man(), &*x, &*y)),
@@ -979,6 +989,7 @@ public:
       case APRON_PPLITE_POLY:
       case APRON_PPLITE_FPOLY:
       case APRON_PPLITE_PSET:
+      case APRON_PPLITE_FPSET:
 #endif // HAVE_PPLITE
       default:
         // CRAB_WARN("used meet instead of narrowing: \n",
@@ -1635,9 +1646,9 @@ public:
 
   disjunctive_linear_constraint_system_t
   to_disjunctive_linear_constraint_system() const override {
+    if (is_disjunctive()) {
 #ifdef HAVE_PPLITE
-    // Ad-hoc handling for PSet (which is disjunctive).
-    if (ApronDom == APRON_PPLITE_PSET) {
+      // Ad-hoc handling PPLite's powersets
       if (is_bottom()) {
         return disjunctive_linear_constraint_system_t(true /*is_false*/);
       } else if (is_top()) {
@@ -1656,15 +1667,17 @@ public:
         }
         return res;
       }
-    }
 #endif // HAVE_PPLITE
-    auto lin_csts = to_linear_constraint_system();
-    if (lin_csts.is_false()) {
-      return disjunctive_linear_constraint_system_t(true /*is_false*/);
-    } else if (lin_csts.is_true()) {
-      return disjunctive_linear_constraint_system_t(false /*is_false*/);
     } else {
-      return disjunctive_linear_constraint_system_t(lin_csts);
+      // Not a disjunctive domain
+      auto lin_csts = to_linear_constraint_system();
+      if (lin_csts.is_false()) {
+        return disjunctive_linear_constraint_system_t(true /*is_false*/);
+      } else if (lin_csts.is_true()) {
+        return disjunctive_linear_constraint_system_t(false /*is_false*/);
+      } else {
+        return disjunctive_linear_constraint_system_t(lin_csts);
+      }
     }
   }
 
@@ -1793,23 +1806,19 @@ public:
     } else if (is_top()) {
       o << "{}";
       return;
+    } else if (is_disjunctive()) {
+      // Ad-hoc handling for PPLite's powersets
+      auto inv = to_disjunctive_linear_constraint_system();
+      o << inv;
+      return;
     } else {
-      // dump();
-#ifdef HAVE_PPLITE
-      // Ad-hoc handling for PSet (which is disjunctive).
-      if (ApronDom == APRON_PPLITE_PSET) {
-        auto inv = to_disjunctive_linear_constraint_system();
-        o << inv;
-        return;
-      }
-#endif
       linear_constraint_system_t inv = to_linear_constraint_system();
       o << inv;
     }
   }
 
   std::string domain_name() const override {
-    switch (ApronDom) {
+    switch (apron_id) {
     case APRON_INT:
       return "ApronIntervals";
     case APRON_OCT:
@@ -1823,11 +1832,94 @@ public:
       return "ApronPPLiteFPoly";
     case APRON_PPLITE_PSET:
       return "ApronPPLitePSet";
+    case APRON_PPLITE_FPSET:
+      return "ApronPPLiteFPSet";
 #endif // HAVE_PPLITE
     default:
       CRAB_ERROR("Unknown apron domain");
     }
   }
+
+  // This friend declaration is needed for method convert_to(),
+  // i.e., for efficient domain conversions between different apron domains.
+  template <typename, typename, apron_domain_id_t, typename>
+  friend class apron_domain;
+
+  template <typename OtherApronDomain>
+  OtherApronDomain convert_to() const {
+    using SrcDom = apron_domain_t;
+    using DstDom = OtherApronDomain;
+    constexpr auto src_id = SrcDom::apron_id;
+    constexpr auto dst_id = DstDom::apron_id;
+    static_assert(std::is_same<SrcDom::number_t,
+                               typename DstDom::number_t>::value &&
+                  std::is_same<SrcDom::varname_t,
+                               typename DstDom::varname_t>::value &&
+                  (src_id != dst_id) &&
+                  std::is_same<SrcDom::params_t,
+                               typename DstDom::params_t>::value,
+                  "conversion only allowed between different "
+                  "apron domain having identical Number, VarName "
+                  "and Params template parameters");
+    const auto& src = *this;
+
+    // Special case for the bottom element: it is simpler and also safer,
+    // since Apron's to_box() can not distinguish bottom/top 0-dim elements
+    // (see https://github.com/antoinemine/apron/issues/58).
+    if (src.is_bottom())
+      return DstDom(true /*is_bot*/);
+
+    auto src_man = src.get_man();
+    ap_state src_val = &*src.m_apstate;
+    auto ap_dims = ap_abstract0_dimension(src_man, src_val);
+    auto idim = ap_dims.intdim;
+    auto rdim = ap_dims.realdim;
+
+    // Special case for 0-dim top elements: up to version 0.9.13,
+    // Apron's of_box() for the box domain is incorrectly constructing
+    // a bottom element (see https://github.com/antoinemine/apron/issues/58).
+    if (idim + rdim == 0)
+      return DstDom(false /*is_bot*/);
+
+    auto dst_man = DstDom::get_man();
+    ap_state dst_val;
+
+    if (src_id == APRON_INT || dst_id == APRON_INT) {
+      // Exploit ad-hoc conversions from/to box
+      auto itvs = ap_abstract0_to_box(src_man, src_val);
+      dst_val = ap_abstract0_of_box(dst_man, idim, rdim, itvs);
+      ap_interval_array_free(itvs, idim + rdim);
+    } else if (dst_id == APRON_OCT) {
+      CRAB_ERROR("Conversion from polyhedra to octagon not implemented");
+    } else if (not is_disjunctive(src_id)) {
+      // src is an octagon/polyhedron, dst is a (set of) polyhedron
+      auto lca = ap_abstract0_to_lincons_array(src_man, src_val);
+      dst_val = ap_abstract0_of_lincons_array(dst_man, idim, rdim, &lca);
+      ap_lincons0_array_clear(&lca);
+    } else {
+#ifdef HAVE_PPLITE
+      assert(is_disjunctive(src_id));
+      // src is a PolySet, dst is a (set of) polyhedron
+      auto num_disj = ap_pplite_poly_num_disjuncts(src_man, src_val);
+      assert(num_disj > 0);
+      for (auto d = 0; d < num_disj; ++d) {
+        auto lca = ap_pplite_poly_disj_to_lincons_array(src_man, src_val, d);
+        auto poly = ap_abstract0_of_lincons_array(dst_man, idim, rdim, &lca);
+        ap_lincons0_array_clear(&lca);
+        // First disjunct is assigned to dst_val, others are joined.
+        if (d == 0) {
+          dst_val = poly;
+        } else {
+          dst_val = ap_abstract0_join(dst_man, true, dst_val, poly);
+          ap_abstract0_free(dst_man, poly);
+        }
+      }
+#endif
+    }
+    auto dst_var_map = src.m_var_map;
+    return DstDom(apPtr(dst_man, dst_val), std::move(dst_var_map));
+  }
+
 };
 
 // --- global datastructures

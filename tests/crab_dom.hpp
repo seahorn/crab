@@ -9,6 +9,7 @@
 #include <crab/domains/combined_domains.hpp>
 #include <crab/domains/combined_congruences.hpp>
 #include <crab/domains/constant_domain.hpp>
+#include <crab/domains/decoupled_domains.hpp>
 #include <crab/domains/dis_intervals.hpp>
 #include <crab/domains/elina_domains.hpp>
 #include <crab/domains/fixed_tvpi_domain.hpp>
@@ -153,6 +154,17 @@ using q_pset_pplite_domain_t = apron_domain<q_number, varname_t, APRON_PPLITE_PS
 using q_oct_apron_domain_t = apron_domain<q_number, varname_t, APRON_OCT>;
 using q_pk_elina_domain_t = elina_domain<q_number, varname_t, ELINA_PK>;
 using q_oct_elina_domain_t = elina_domain<q_number, varname_t, ELINA_OCT>;
+
+/* DEBUGGING */
+using z_dummy_decoupled_box_domain_t
+  = decoupled_domain<dummy_asc_dsc_pair<z_box_apron_domain_t>>;
+
+using z_decoupled_box_poly_domain_t
+  = decoupled_domain<apron_asc_dsc_pair<z_box_apron_domain_t,
+                                        z_poly_pplite_domain_t>>;
+using z_decoupled_box_pset_domain_t
+  = decoupled_domain<apron_asc_dsc_pair<z_box_apron_domain_t,
+                                        z_pset_pplite_domain_t>>;
 
 /*===================================================================*/
 // Wrapper for an arbitrary abstract domain
