@@ -1692,6 +1692,13 @@ public:
     }
   }
 
+  bool is_asc_phase() const override {
+    return m_base_dom.is_asc_phase();
+  }
+  void set_phase(bool is_ascending) override {
+    m_base_dom.set_phase(is_ascending);
+  }
+
   array_adaptive_domain make_top() const override {
     array_adaptive_domain out(false);
     return out;
@@ -2243,7 +2250,7 @@ public:
     m_array_map = std::move(s.array_map);
     m_cell_ghost_man = std::move(s.cell_ghost_man);
     
-    m_base_dom.backward_apply(op, x, y, z, s.right_dom);    
+    m_base_dom.backward_apply(op, x, y, z, s.right_dom);   
   }
 
   void apply(int_conv_operation_t op, const variable_t &dst,
@@ -2841,7 +2848,7 @@ public:
     m_base_dom = std::move(s.left_dom);
     m_array_map = std::move(s.array_map);
     m_cell_ghost_man = std::move(s.cell_ghost_man);
-       
+
     const array_state &as = lookup_array_state(a);
     if (as.is_smashed()) {
       CRAB_WARN("array_adaptive::backward_array_load not implemented if array "
@@ -2897,7 +2904,7 @@ public:
     m_base_dom = std::move(s.left_dom);
     m_array_map = std::move(s.array_map);
     m_cell_ghost_man = std::move(s.cell_ghost_man);
-    
+
     uint64_t e_sz = check_and_get_elem_size(elem_size);
     const array_state &as = lookup_array_state(a);
     if (as.is_smashed()) {
