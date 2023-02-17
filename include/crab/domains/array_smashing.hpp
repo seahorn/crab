@@ -210,6 +210,14 @@ public:
 
   array_smashing() {}
 
+  bool is_asc_phase() const override {
+    return m_base_dom.is_asc_phase();
+  }
+
+  void set_phase(bool is_ascending) override {
+    m_base_dom.set_phase(is_ascending);
+  }
+
   array_smashing make_top() const override { return array_smashing(); }
 
   array_smashing make_bottom() const override {

@@ -20,7 +20,7 @@ namespace domains {
 
 template <class Dom> struct abstract_domain_traits;
 template <class Number, class VariableName> class abstract_domain_results_api;
-  
+
 /**
  * All abstract domains must derive from the abstract_domain_api class
  * and expose publicly all its public typedef's.
@@ -53,7 +53,8 @@ template <class Number, class VariableName> class abstract_domain_results_api;
  * (4) (only forward) Region and reference operations
  * (5) (forward and backward) Array operations
  * (6) Transfer functions for function calls (inter_abstract_operations_api)
- *
+ * (7) (decoupled) Phase operations 
+ * 
  * Where forward (backward) means forward (backward) semantics. Note
  * that abstract_domain_api only provide backward transformers for
  * numerical, Boolean, and array operations.
@@ -80,6 +81,22 @@ public:
 
   abstract_domain_api() = default;
   virtual ~abstract_domain_api() = default;
+
+  /************************ Decoupled phase operations ************************/
+
+  virtual bool is_asc_phase() const {
+    // Assume by default the descending (i.e., more precise) phase;
+    // the ascending phase will be entered when actually starting
+    // a post-fixpoint ascending iteration (with widening).
+    return false;
+  }
+  virtual void set_phase(bool is_ascending) {
+    (void) is_ascending;
+    // Default: do nothing at all.
+    // Must be overridden by the decoupled domain template, as well as
+    // domains possibly *containing* an instance of the decoupled domain
+    // (e.g., reduced products).
+  }
 
   /**************************** Lattice operations ****************************/
 
