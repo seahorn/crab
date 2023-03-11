@@ -117,8 +117,6 @@ private:
       case ELINA_PK:
         s_apman = opt_pk_manager_alloc(false);
         break;
-      default:
-        CRAB_ERROR("unknown elina domain");
       }
     }
     return s_apman;
@@ -1203,7 +1201,6 @@ public:
             std::move(m));
       case ELINA_ZONES:
       case ELINA_PK:
-      default:
         // CRAB_WARN("used meet instead of narrowing: \n",
         //           "make sure only a finite number of descending iterations
         //           are run.");
@@ -1608,8 +1605,6 @@ public:
     case OP_ASHR:
       xi = yi.AShr(zi);
       break;
-    default:
-      CRAB_ERROR("elina operation not supported");
     }
     set(x, xi);
   }
@@ -1646,8 +1641,6 @@ public:
     case OP_ASHR:
       xi = yi.AShr(zi);
       break;
-    default:
-      CRAB_ERROR("elina operation not supported");
     }
     set(x, xi);
   }
@@ -1995,8 +1988,6 @@ public:
       return "ElinaOctagon";
     case ELINA_PK:
       return "ElinaPolyhedra";
-    default:
-      CRAB_ERROR("Unknown elina domain");
     }
   }
 };
