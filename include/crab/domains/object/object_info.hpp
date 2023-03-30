@@ -40,6 +40,8 @@ public:
     object_info res;
     return res;
   }
+  void set_to_top() { m_product.set_to_top(); }
+  void set_to_bottom() { m_product.set_to_bottom(); }
   bool is_bottom() const { return m_product.is_bottom(); }
   bool is_top() const { return m_product.is_top(); }
 
@@ -73,6 +75,7 @@ public:
     dom.write(o);
     return o;
   }
+  std::string domain_name(void) const { return "Object Info"; }
 };
 
 class id_val_generator_t {
