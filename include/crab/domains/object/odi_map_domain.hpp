@@ -387,6 +387,9 @@ public:
   // Join
   odi_map_domain_t join(const odi_map_domain_t &o, const object_domain_t &left,
                         const object_domain_t &right) const {
+    crab::CrabStats::count(domain_name() + ".count.join");
+    crab::ScopedCrabStats __st__(domain_name() + ".join");
+
     if (is_bottom()) {
       return o;
     } else if (o.is_bottom()) {
@@ -403,6 +406,9 @@ public:
   // Self join
   void compound_join(const odi_map_domain_t &o, const object_domain_t &left,
                      const object_domain_t &right) {
+    crab::CrabStats::count(domain_name() + ".count.join");
+    crab::ScopedCrabStats __st__(domain_name() + ".join");
+
     if (is_bottom()) { // this is bot, assign this by o
       *this = o;
     } else if (o.is_bottom()) { // o is bot, nothing change
@@ -417,6 +423,9 @@ public:
   // Meet
   odi_map_domain_t meet(const odi_map_domain_t &o, object_domain_t &left,
                         object_domain_t &right) const {
+    crab::CrabStats::count(domain_name() + ".count.meet");
+    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+
     if (is_bottom() || o.is_top()) { // bot & o or this & top, return this
       return *this;
     } else if (o.is_bottom() || is_top()) { // this & bot or top & o, return o
@@ -437,6 +446,9 @@ public:
   // Self meet
   void compound_meet(const odi_map_domain_t &o, object_domain_t &left,
                      object_domain_t &right) {
+    crab::CrabStats::count(domain_name() + ".count.meet");
+    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+
     if (is_bottom() || o.is_top()) { // bot & o or this & top, return this
       return;
     } else if (o.is_bottom() || is_top()) { // this & bot or top & o, return o
@@ -455,6 +467,9 @@ public:
   odi_map_domain_t widening(const odi_map_domain_t &o,
                             const object_domain_t &left,
                             const object_domain_t &right) const {
+    crab::CrabStats::count(domain_name() + ".count.widening");
+    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+
     if (is_bottom()) {
       return o;
     } else if (o.is_bottom()) {
@@ -472,6 +487,9 @@ public:
   template <typename Thresholds>
   odi_map_domain_t widening_thresholds(const odi_map_domain_t &o,
                                        const Thresholds &ts) const {
+    crab::CrabStats::count(domain_name() + ".count.widening");
+    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+
     if (is_bottom()) {
       return o;
     } else if (o.is_bottom()) {
@@ -488,6 +506,8 @@ public:
   // Narrowing
   odi_map_domain_t narrowing(const odi_map_domain_t &o, object_domain_t &left,
                              object_domain_t &right) const {
+    crab::CrabStats::count(domain_name() + ".count.narrowing");
+    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
     if (is_bottom() || o.is_top()) {
       return *this;
     } else if (o.is_bottom() || is_top()) {
@@ -508,6 +528,9 @@ public:
   // Project onto
   // NOTE: this operation is on key not on values
   void project(const std::vector<key_t> &keys) {
+    crab::CrabStats::count(domain_name() + ".count.project");
+    crab::ScopedCrabStats __st__(domain_name() + ".project");
+
     if (is_bottom() || is_top()) {
       return;
     }
@@ -541,6 +564,9 @@ public:
   // Forget
   // NOTE: this operation is on key not on values
   void operator-=(const key_t &k) {
+    crab::CrabStats::count(domain_name() + ".count.operator-=");
+    crab::ScopedCrabStats __st__(domain_name() + ".operator-=");
+
     if (!is_bottom()) {
       m_odi_map.remove(k);
     }
@@ -548,6 +574,9 @@ public:
 
   // NOTE: this operation is on key not on values
   void forget(const std::vector<key_t> &keys) {
+    crab::CrabStats::count(domain_name() + ".count.forget");
+    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+
     if (!is_bottom()) {
       for (auto &key : keys) {
         m_odi_map.remove(key);
