@@ -562,7 +562,7 @@ public:
   /// @note  if x does not exist, nothing changed.
   ///        if y \in some cls, forget it from cls, add y into x's class
   void add(const element_t &x, const element_t &y) {
-    if (is_bottom() || is_top()) {
+    if (is_bottom() || is_top() || x == y) {
       return;
     }
     if (!contains(x)) {
