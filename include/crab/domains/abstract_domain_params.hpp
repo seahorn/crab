@@ -195,19 +195,23 @@ public:
 
 class object_domain_params {
   bool m_reduce_everywhere;
+  bool m_reduce_before_checks;
   bool m_singletons_in_base;
 
   friend class crab_domain_params;  
 public:
   object_domain_params()
       : m_reduce_everywhere(false), m_singletons_in_base(false) {}
-  object_domain_params(bool reduce_everywhere, bool singletons_in_base)
+  object_domain_params(bool reduce_everywhere, bool reduce_before_checks,
+                       bool singletons_in_base)
       : m_reduce_everywhere(reduce_everywhere),
+        m_reduce_before_checks(reduce_before_checks),
         m_singletons_in_base(singletons_in_base) {}
 
   bool reduce_everywhere() const {
     return m_reduce_everywhere;
   }
+  bool reduce_before_checks() const { return m_reduce_before_checks; }
   bool singletons_in_base() const { return m_singletons_in_base; }
   void update_params(const object_domain_params& p);
   void write(crab::crab_os &o) const;
@@ -360,6 +364,7 @@ public:
      - region.is_dereferenceable: bool
      - region.skip_unknown_regions: bool
      - object.reduce_everywhere: bool
+     - object.reduce_before_checks: bool
      - object.singletons_in_base: bool
      - zones.chrome_dijkstra: bool
      - zones.widen_restabilize: bool

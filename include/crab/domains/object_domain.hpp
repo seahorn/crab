@@ -1011,7 +1011,6 @@ private:
     }
     boost::optional<ghost_variables_eq_t> rgn_eq_gvars = get_eq_gvars(rgn);
     eq_flds_dom.set(rgn_eq_gvars.value().get_var(), *reg_symb);
-    m_odi_map.odi_val_write(crab::outs(), out_prod);
     if (rgn_eq_gvars.value().has_offset_and_size()) {
       if (offset_size_symb == boost::none) {
         offset_size_symb = std::make_pair(
@@ -1047,6 +1046,9 @@ private:
 
   /// @brief commit all caches on the odi map
   void commit_all_caches() {
+    crab::CrabStats::count(domain_name() + ".count.commit_cache");
+    crab::ScopedCrabStats __st__(domain_name() + ".commit_cache");
+
     // NOTE: my solution is copying original map into a new one
     // patricia_tree does not have mutable iterator
     // at the end, swap those two maps.
@@ -1576,9 +1578,6 @@ public:
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
 
-    CRAB_LOG("object-leq", crab::outs() << "Inclusion test:\n\t" << *this
-                                        << "\n\t" << o << "\n";);
-
     if (is_bottom() || o.is_top()) {
       CRAB_LOG("object-leq", crab::outs() << "Result1=1\n";);
       return true;
@@ -1587,7 +1586,30 @@ public:
       return false;
     }
 
-    return less_than_eq(*this, o);
+    CRAB_LOG("object-leq", crab::outs() << "Inclusion test:\n\t" << *this
+                                        << "\n\t" << o << "\n";);
+
+    auto leq_lambda = [this](const object_domain_t &left, const object_domain_t &right) -> bool {
+      return less_than_eq(left, right);
+    };
+
+    if (commit_is_required() && o.commit_is_required()) {
+      object_domain_t left(*this);
+      object_domain_t right(o);
+      left.commit_all_caches();
+      right.commit_all_caches();
+      return leq_lambda(left, right);
+    } else if (commit_is_required()) {
+      object_domain_t left(*this);
+      left.commit_all_caches();
+      return leq_lambda(left, o);
+    } else if (o.commit_is_required()) {
+      object_domain_t right(o);
+      right.commit_all_caches();
+      return leq_lambda(*this, right);
+    } else {
+      return leq_lambda(*this, o);
+    }
   }
 
   void operator|=(const object_domain_t &o) override {
@@ -2298,7 +2320,9 @@ public:
       }
 
       // REDUCTION: perform reduction
-      perform_reduction(true);
+      if (crab_domain_params_man::get().reduce_before_checks()) {
+        perform_reduction(true);
+      }
 
       auto lin_cst = m_ghost_var_num_man.ghosting_ref_cst_to_linear_cst(
           ref_cst, ghost_variable_kind::ADDRESS);
@@ -2450,7 +2474,7 @@ public:
           lhs_rgn_eq_gvars.value().assign(prod_value_ref.second().second(),
                                           rhs_rgn_eq_gvars.value());
         }
-        m_addrs_dom.expand(get_base_addr_or_fail(*rhs_id_opt),
+        m_addrs_dom.expand(get_or_insert_base_addr(*rhs_id_opt),
                            get_or_insert_base_addr(lhs_id));
       }
       m_odi_map.set(lhs_id, odi_domain_product_t(obj_info_ref, prod_value_ref));
@@ -2680,7 +2704,9 @@ public:
 
     if (!is_bottom()) {
       // REDUCTION: perform reduction
-      perform_reduction(true);
+      if (crab_domain_params_man::get().reduce_before_checks()) {
+        perform_reduction(true);
+      }
 
       auto b_csts = m_ghost_var_num_man.rename_linear_cst_sys(csts);
       m_base_dom += b_csts;
@@ -2750,7 +2776,9 @@ public:
 
     if (!is_bottom()) {
       // REDUCTION: perform reduction
-      perform_reduction(true);
+      if (crab_domain_params_man::get().reduce_before_checks()) {
+        perform_reduction(true);
+      }
 
       m_base_dom.assume_bool(get_or_insert_gvars(v).get_var(), is_negated);
       m_is_bottom = m_base_dom.is_bottom();
@@ -2883,8 +2911,8 @@ public:
 
   // Forget v
   void operator-=(const variable_t &v) override {
-    crab::CrabStats::count(domain_name() + ".count.-=");
-    crab::ScopedCrabStats __st__(domain_name() + ".-=");
+    crab::CrabStats::count(domain_name() + ".count.operator-=");
+    crab::ScopedCrabStats __st__(domain_name() + ".operator-=");
 
     if (is_bottom() || is_top()) {
       return;
@@ -3493,11 +3521,23 @@ public:
     if (src_rgns.size() == 0 || src_rgns.size() != dst_rgns.size()) {
       return;
     }
+    // the regions might contain unknown region which are not considered,
+    // filter them out
+    equiv_class_regions_t src_rgns_no_unknown, dst_rgns_no_unknown;
+    src_rgns_no_unknown.reserve(src_rgns.size());
+    dst_rgns_no_unknown.reserve(dst_rgns.size());
+    for (unsigned i = 0, len = src_rgns.size(); i < len; ++i) {
+      if (src_dom.is_unknown_region(src_rgns[i]) && dst_dom.is_unknown_region(dst_rgns[i])) {
+        continue;
+      }
+      src_rgns_no_unknown.push_back(src_rgns[i]);
+      dst_rgns_no_unknown.push_back(dst_rgns[i]);
+    }
     // precondition: the rgns from source is formed as some object
-    obj_id_t src_id = src_dom.get_obj_id_or_fail(src_rgns[0]);
-    auto dst_id_opt = dst_dom.get_obj_id(dst_rgns[0]);
+    obj_id_t src_id = src_dom.get_obj_id_or_fail(src_rgns_no_unknown[0]);
+    auto dst_id_opt = dst_dom.get_obj_id(dst_rgns_no_unknown[0]);
     if (dst_id_opt == boost::none) {
-      dst_id_opt = dst_dom.create_new_obj_id(dst_rgns[0]);
+      dst_id_opt = dst_dom.create_new_obj_id(dst_rgns_no_unknown[0]);
       for (auto fld : dst_rgns) {
         dst_dom.update_fields_id_map(fld, *dst_id_opt);
       }
@@ -3515,24 +3555,26 @@ public:
     if (num_refs.is_one() &&
         crab_domain_params_man::get().singletons_in_base()) {
       base_abstract_domain_t tmp = src_dom.m_base_dom;
-      for (unsigned i = 0, len = src_rgns.size(); i < len; ++i) {
-        tmp.expand(src_rgns[i], dst_rgns[i]);
+      for (unsigned i = 0, len = src_rgns_no_unknown.size(); i < len; ++i) {
+        tmp.expand(src_rgns_no_unknown[i], dst_rgns_no_unknown[i]);
       }
-      dst_dom.m_ghost_var_num_man.project(dst_rgns, tmp);
+      dst_dom.m_ghost_var_num_man.project(dst_rgns_no_unknown, tmp);
       dst_dom.m_base_dom &= tmp;
     } else { // num_refs > 1
-      for (unsigned i = 0, len = src_rgns.size(); i < len; ++i) {
-        prod_value_ref.first().expand(src_rgns[i], dst_rgns[i]);
-        prod_value_ref.second().first().expand(src_rgns[i], dst_rgns[i]);
-        prod_value_ref.second().second().expand(src_rgns[i], dst_rgns[i]);
+      for (unsigned i = 0, len = src_rgns_no_unknown.size(); i < len; ++i) {
+        prod_value_ref.first().expand(src_rgns_no_unknown[i], dst_rgns_no_unknown[i]);
+        prod_value_ref.second().first().expand(src_rgns_no_unknown[i], dst_rgns_no_unknown[i]);
+        prod_value_ref.second().second().expand(src_rgns_no_unknown[i], dst_rgns_no_unknown[i]);
       }
-      dst_dom.m_ghost_var_num_man.project(dst_rgns, prod_value_ref.first());
-      dst_dom.m_ghost_var_num_man.project(dst_rgns,
+      dst_dom.m_ghost_var_num_man.project(dst_rgns_no_unknown, prod_value_ref.first());
+      dst_dom.m_ghost_var_num_man.project(dst_rgns_no_unknown,
                                           prod_value_ref.second().first());
-      dst_dom.m_ghost_var_eq_man.project(dst_rgns,
+      dst_dom.m_ghost_var_eq_man.project(dst_rgns_no_unknown,
                                          prod_value_ref.second().second());
-      dst_dom.m_addrs_dom.expand(src_dom.get_base_addr_or_fail(src_id),
-                                 dst_dom.get_or_insert_base_addr(*dst_id_opt));
+      if (auto src_base_addr_opt = src_dom.get_base_addr(src_id)) {
+        dst_dom.m_addrs_dom.expand(*src_base_addr_opt,
+                                  dst_dom.get_or_insert_base_addr(*dst_id_opt));
+      }
     }
     dst_dom.m_odi_map.set(*dst_id_opt,
                           odi_domain_product_t(prod_info_ref, prod_value_ref));

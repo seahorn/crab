@@ -80,12 +80,14 @@ void region_domain_params::write(crab::crab_os &o) const {
 
 void object_domain_params::update_params(const object_domain_params &params) {
   m_reduce_everywhere = params.reduce_everywhere();
+  m_reduce_before_checks = params.reduce_before_checks();
   m_singletons_in_base = params.singletons_in_base();
 }
 
 void object_domain_params::write(crab::crab_os &o) const {
   o << "Object parameters:\n";
   o << "\treduce_everywhere=" << m_reduce_everywhere << "\n";
+  o << "\treduce_before_checks=" << m_reduce_before_checks << "\n";
   o << "\tsingletons_in_base=" << m_singletons_in_base << "\n";
 }
 
@@ -164,7 +166,8 @@ void crab_domain_params::update_params(const crab_domain_params &p) {
 			   p.region_tag_analysis(),
 			   p.region_is_dereferenceable(),
 			   p.region_skip_unknown_regions());
-  object_domain_params obj_p(p.reduce_everywhere(), p.singletons_in_base());
+  object_domain_params obj_p(p.reduce_everywhere(), p.reduce_before_checks(),
+                             p.singletons_in_base());
   zones_domain_params z_p(p.zones_chrome_dijkstra(),
 			  p.zones_widen_restabilize(),
 			  p.zones_special_assign(),
@@ -262,6 +265,8 @@ void crab_domain_params::set_param(const std::string &param, const std::string &
     region_domain_params::m_skip_unknown_regions = to_bool(val);
   } else if (param == "object.reduce_everywhere") {
     object_domain_params::m_reduce_everywhere = to_bool(val);
+  } else if (param == "object.reduce_before_checks") {
+    object_domain_params::m_reduce_before_checks = to_bool(val);
   } else if (param == "object.singletons_in_base") {
     object_domain_params::m_singletons_in_base = to_bool(val);
   } else if (param == "zones.chrome_dijkstra") {
@@ -279,9 +284,9 @@ void crab_domain_params::set_param(const std::string &param, const std::string &
   } else if (param == "oct.special_assign") {
     oct_domain_params::m_special_assign = to_bool(val);
   } else if (param == "oct.close_bounds_inline") {
-    oct_domain_params::m_close_bounds_inline = to_bool(val);    
+    oct_domain_params::m_close_bounds_inline = to_bool(val);
   } else if (param == "fixed_tvpi.coefficients") {
-    fixed_tvpi_domain_params::m_coefficients = to_list_of_unsigned(val);    
+    fixed_tvpi_domain_params::m_coefficients = to_list_of_unsigned(val);
   } else {
     CRAB_WARN("Ignored unsupported parameter ",  param);
   }
