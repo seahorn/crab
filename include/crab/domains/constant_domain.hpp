@@ -251,20 +251,26 @@ public:
   void operator-=(const variable_t &v) override {
     crab::CrabStats::count(domain_name() + ".count.forget");
     crab::ScopedCrabStats __st__(domain_name() + ".forget");
-    m_env -= v;
+    if (!is_bottom()) {
+      m_env -= v;
+    }
   }
 
   interval_t operator[](const variable_t &v) override { return at(v); }
 
   interval_t at(const variable_t &v) const override {
-    constant_t c = m_env.at(v);
-    if (c.is_bottom()) {
+    if (is_bottom()) {
       return interval_t::bottom();
-    } else if (c.is_top()) {
-      return interval_t::top();
     } else {
-      assert(c.is_constant());
-      return interval_t(c.get_constant());
+      constant_t c = m_env.at(v);
+      if (c.is_bottom()) {
+	return interval_t::bottom();
+      } else if (c.is_top()) {
+	return interval_t::top();
+      } else {
+	assert(c.is_constant());
+	return interval_t(c.get_constant());
+      }
     }
   }
 
@@ -279,20 +285,24 @@ public:
   void assign(const variable_t &x, const linear_expression_t &e) override {
     crab::CrabStats::count(domain_name() + ".count.assign");
     crab::ScopedCrabStats __st__(domain_name() + ".assign");
-    if (boost::optional<variable_t> v = e.get_variable()) {
-      m_env.set(x, m_env.at(*v));
-    } else {
-      m_env.set(x, eval(e));
+    if (!is_bottom()) {
+      if (boost::optional<variable_t> v = e.get_variable()) {
+	m_env.set(x, m_env.at(*v));
+      } else {
+	m_env.set(x, eval(e));
+      }
     }
   }
 
   void weak_assign(const variable_t &x, const linear_expression_t &e) override {
     crab::CrabStats::count(domain_name() + ".count.weak_assign");
     crab::ScopedCrabStats __st__(domain_name() + ".weak_assign");
-    if (boost::optional<variable_t> v = e.get_variable()) {
-      m_env.join(x, m_env.at(*v));
-    } else {
-      m_env.join(x, eval(e));
+    if (!is_bottom()) {    
+      if (boost::optional<variable_t> v = e.get_variable()) {
+	m_env.join(x, m_env.at(*v));
+      } else {
+	m_env.join(x, eval(e));
+      }
     }
   }
   
@@ -521,16 +531,18 @@ public:
   void project(const variable_vector_t &variables) override {
     crab::CrabStats::count(domain_name() + ".count.project");
     crab::ScopedCrabStats __st__(domain_name() + ".project");
-
-    m_env.project(variables);
+    if (!is_bottom()) {
+      m_env.project(variables);
+    }
   }
 
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
     crab::CrabStats::count(domain_name() + ".count.rename");
     crab::ScopedCrabStats __st__(domain_name() + ".rename");
-
-    m_env.rename(from, to);
+    if (!is_bottom()) {
+      m_env.rename(from, to);
+    }
   }
 
   void expand(const variable_t &x, const variable_t &new_x) override {
