@@ -83,9 +83,14 @@ private:
       CRAB_ERROR("Coefficient must be greater than 1");
     }
     auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
-    std::string ghost_name =
-        ".tvpi.ghost_var(" + std::to_string(coefficient) + ")";
-    return variable_t(vfac.get(v.name(), ghost_name), v.get_type());
+
+    std::string str_coefficient = std::to_string(coefficient);
+    std::string suffix;
+    suffix.reserve(std::strlen(".tvpi.var(") + str_coefficient.size() + 1 + 1); 
+    suffix.append(".tvpi.var(");
+    suffix.append(str_coefficient);
+    suffix.append(")");
+    return variable_t(vfac.get_or_insert_varname(v.name(), suffix), v.get_type());
   }
 
   // (TODO): needed for pretty-printing
