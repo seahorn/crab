@@ -1451,20 +1451,25 @@ public:
        /// -- tmp := f(a,i)
       term_id_t t_uf(build_function(term_of_var(a), build_linexpr(i)));
       // FIXME:
-      // 1. we are creating a fresh varname each time we are called.
-      // 2. we are creating an untyped variable. This is ok if the
+      // 1. We are creating a fresh varname each time we are called.
+      // We intentionally tell the variable factory not to remember
+      // the varname by calling make_temporary_varname() instead of
+      // make_varname(). As a result, the varname won't show up when
+      // the method get_shadow_vars() is called.
+      //  
+      // 2. We are creating an untyped variable. This is ok if the
       // underlying domain is, for instance, intervals but it will
       // fail if we use a more type-dependent numerical domain such as
       // wrapped intervals.
-      variable_t tmp(vfac.get());
+      variable_t tmp(vfac.make_temporary_varname());
       // forget tmp
-      this->operator-=(tmp);
+      this->operator-=(tmp);      
       // forget the old value for t_uf, otherwise we can get
       // incorrectly bottom when we add the constraint val == tmp.
       _impl -= domvar_of_term(t_uf);
       rebind_var(tmp, t_uf);
       /// -- assume(tmp == val)
-      this->operator+=(val == tmp);
+      this->operator+=(val == tmp);      
     }
     check_terms(__LINE__);
     CRAB_LOG("term", crab::outs() << a << "[" << i << "]:=" << val << " -- "

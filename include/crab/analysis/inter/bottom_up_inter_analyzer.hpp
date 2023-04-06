@@ -151,17 +151,24 @@ public:
     m_internal_inputs.reserve(m_inputs.size());
     m_internal_outputs.reserve(m_outputs.size());
 
-    std::string prefix = "$";
     unsigned i = 0;
     for (auto v : m_inputs) {
       auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
-      variable_t fresh_v(vfac.get(prefix + std::to_string(i)), v.get_type());
+      std::string arg_name;
+      arg_name.reserve(5+2); // expect 99999 arguments as max + 1 ($) + 1
+      arg_name.append("$");      
+      arg_name.append(std::to_string(i));
+      variable_t fresh_v(vfac.make_varname(std::move(arg_name)), v.get_type());
       m_internal_inputs.push_back(fresh_v);
       i++;
     }
     for (auto v : m_outputs) {
       auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
-      variable_t fresh_v(vfac.get(prefix + std::to_string(i)), v.get_type());
+      std::string arg_name;
+      arg_name.reserve(5+2); // expect 99999 arguments as max + 1 ($) + 1
+      arg_name.append("$");      
+      arg_name.append(std::to_string(i));
+      variable_t fresh_v(vfac.make_varname(std::move(arg_name)), v.get_type());
       m_internal_outputs.push_back(fresh_v);
       i++;
     }

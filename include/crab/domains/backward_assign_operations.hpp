@@ -60,7 +60,7 @@ public:
     if (std::find(e.variables_begin(), e.variables_end(), x) !=
         e.variables_end()) {
       auto &vfac = const_cast<varname_t *>(&(x.name()))->get_var_factory();
-      variable_t old_x(vfac.get(), x.get_type());
+      variable_t old_x(vfac.make_temporary_varname(), x.get_type());
       std::map<variable_t, variable_t> renaming_map;
       renaming_map.insert({x, old_x});
       linear_expression_t renamed_e = e.rename(renaming_map);

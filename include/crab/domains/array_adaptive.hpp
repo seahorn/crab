@@ -30,17 +30,14 @@
  *   variable. This is managed by cell_ghost_man.
  *
  * - Ghost variables are created by the same variable factory used to
- *   generate the CrabIR. We don't reuse ghost variables so there is a
- *   small risk of running out of ghost variables. If that happens, a
- *   runtime error will be reported.
+ *   generate the CrabIR. 
  *
- * - POSSIBLE BREAK OF MODULARITY of the base domain: A more important
- *   issue is that currently we pass ghost scalar variables to the
- *   base domain that can change during the analysis. If the base
- *   domain uses these ghost variables to create new ghost variables
- *   we will get into trouble. Currently, these ghost scalars are
- *   passed directly to boolean/numerical abstract domains so we
- *   should be fine with current Crab domains because they don't
+ * - POSSIBLE BREAK OF MODULARITY of the base domain: the adaptive
+ *   array domain passes ghost scalar variables to the base domain. If
+ *   the base domain uses these ghost variables to create new ghost
+ *   variables we will get into trouble. Currently, these ghost
+ *   scalars are passed directly to boolean/numerical abstract domains
+ *   so we should be fine with current Crab domains because they don't
  *   create ghost variables but this needs to be revisited anytime a
  *   new domain is plugin.
  ******************************************************************************/
@@ -626,7 +623,7 @@ template <typename Domain> class cell_ghost_man {
     std::string vname = mk_scalar_name(a.name(), c.get_offset(), c.get_size());
     variable_type_kind vtype_kind = get_array_element_type(a.get_type());
     variable_t scalar_var(
-        vfac.get(vname), vtype_kind,
+	vfac.make_varname(std::move(vname)), vtype_kind,
         (vtype_kind == BOOL_TYPE
              ? 1
              : (vtype_kind == INT_TYPE ? 8 * c.get_size() : 0)));
@@ -680,7 +677,8 @@ public:
           if (v1 != *v2) {
             assert(v1.name().str() == (*v2).name().str());
             assert(v1.get_type() == (*v2).get_type());
-            variable_t outv(vfac.get(v1.name().str()), v1.get_type());
+	    std::string name = v1.name().str();
+            variable_t outv(vfac.make_varname(std::move(name)), v1.get_type());
             old_ghost_vars_left.push_back(v1);
             old_ghost_vars_right.push_back(*v2);
             new_ghost_vars.push_back(outv);
@@ -727,7 +725,8 @@ public:
             // same key but different ghost -> create a fresh common ghost
             assert(v1.name().str() == (*v2).name().str());
             assert(v1.get_type() == (*v2).get_type());
-            variable_t outv(vfac.get(v1.name().str()), v1.get_type());
+	    std::string name = v1.name().str();	    
+            variable_t outv(vfac.make_varname(std::move(name)), v1.get_type());
             old_ghost_vars_left.push_back(v1);
             old_ghost_vars_right.push_back(*v2);
             new_ghost_vars.push_back(outv);
@@ -2478,7 +2477,7 @@ public:
             // (summarized) variable
             auto &vfac =
                 const_cast<varname_t *>(&(a.name()))->get_var_factory();
-            variable_t tmp_var(vfac.get(), a.get_type());
+            variable_t tmp_var(vfac.make_temporary_varname(), a.get_type());
             bool found_cell_without_scalar = false;
             for (unsigned k = 0, num_cells = cells.size(); k < num_cells; ++k) {
               const cell_t &c = cells[k];
