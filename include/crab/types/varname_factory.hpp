@@ -48,19 +48,19 @@ private:
 
   indexed_varname() = delete;
   
-  // first constructor
+  // first constructor: non-T varname
   indexed_varname(ikos::index_t id, variable_factory_t *vfac, std::string &&name)
       : m_s(boost::none),
 	m_id(id),
         m_name(std::make_shared<std::string>(std::move(name))),
         m_vfac(vfac) {}
-  // second constructor
+  // second constructor: non-T varname
   indexed_varname(ikos::index_t id, variable_factory_t *vfac)
       : m_s(boost::none),
 	m_id(id),
         m_name(nullptr),
         m_vfac(vfac) {}
-  // third constructor
+  // third constructor: non-T varname
   indexed_varname(ikos::index_t id, variable_factory_t *vfac,
 		  const indexed_varname &other, const std::string &suffix)
     : m_s(boost::none),
@@ -72,7 +72,7 @@ private:
     m_name->append(other_name);
     m_name->append(suffix);
   }
-  // fourth constructor
+  // fourth constructor: T varname
   indexed_varname(T s, ikos::index_t id, variable_factory_t *vfac)
       : m_s(s),
 	m_id(id),
@@ -156,14 +156,26 @@ template <typename T> struct hash<crab::var_factory_impl::indexed_varname<T>> {
 namespace crab {
 namespace var_factory_impl {
 
-// This variable factory (it's actually a factory of
-// indexed_varname's) creates a new indexed_variable associated to an
-// element of type T if provided. It can also create indexed_varname's
-// that are not associated to an element of type T. We call them
-// shadow variables.
-//
-// The factory uses a counter of type index_t to generate variable
-// id's that always increases.
+/**
+*  This variable factory, which is actually a factory of
+*  indexed_varname's (varname), creates a new varname associated to an
+*  element of type T if provided (we call it T-varname). It can also
+*  create a varname that is not associated to an element of type T (we
+*  call them shadow variable or non-T varname).
+*
+*  A T-varname is useful to keep the correspondence between, for
+*  instance, LLVM values to CrabIR variables. This is neat when
+*  translating from CrabIR to LLVM bitcode because we don't need a
+*  inverse map to map back CrabIR variables to LLVM Value's.
+* 
+*  A non-T varname is useful in at least two cases: (1) the frontend
+*  needs to create fresh variables that do not have a correspondence
+*  with a T element, and (2) an abstract domain needs to generate at
+*  analysis time ghost variables.
+*
+*  The factory uses a counter of type index_t to generate variable
+*  id's that always increases.
+**/
 template <class T> class variable_factory {
   using variable_factory_t = variable_factory<T>;
   using t_map_t = std::unordered_map<T, indexed_varname<T>>;
@@ -172,12 +184,18 @@ template <class T> class variable_factory {
                          std::map<std::string, indexed_varname<T>>>;
   // global counter to generate indexes
   ikos::index_t m_next_id;
-  // (cached) indexed_varname's associated with a T-instance.
+  // (cached) T-varname
   t_map_t m_map;
-  // (non-cached) fresh indexed_varname's.
-  std::vector<indexed_varname<T>> m_shadow_vars;
-  // (cached) indexed_varname's associated with another indexed_varname.
+  // (cached) non-T varname
   shadow_map_t m_shadow_map;
+  // (non-cached) non-T varname.
+  // REVISIT(PERFORMANCE): this was kept originally to tell Clam which
+  // variables should be hidden when pretty printing invariants
+  // However, since then, more and more abstract domains create
+  // uncached ghost variables so the size of m_shadow_vars might be a
+  // concern.
+  std::vector<indexed_varname<T>> m_shadow_vars;
+  
   mutable std::unordered_map<std::string, std::string> m_renaming_map;
 
   ikos::index_t get_and_increment_id(void) {
