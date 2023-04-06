@@ -113,7 +113,8 @@ private:
     // variable for the same array variable.
     auto &vfac =
         const_cast<varname_t *>(&(array_var.name()))->get_var_factory();
-    return variable_t(vfac.get(array_var.name(), ".smashed"), ghost_ty);
+    std::string suffix(".smashed");
+    return variable_t(vfac.get_or_insert_varname(array_var.name(), suffix), ghost_ty);
   }
 
   // Convert elem_size to an uint64_t
@@ -583,8 +584,7 @@ public:
       // into a non-summarized variable lhs. Simply m_base_dom.assign(lhs,a)
       // is not sound.
       auto &vfac = const_cast<varname_t *>(&(a.name()))->get_var_factory();
-      variable_t copy_scalar_var(vfac.get(scalar_var.name(), ".copy"),
-                                 scalar_var.get_type());
+      variable_t copy_scalar_var(vfac.make_temporary_varname(), scalar_var.get_type());
       m_base_dom.expand(scalar_var, copy_scalar_var);
       auto ty = scalar_var.get_type();
       if (ty.is_bool()) {

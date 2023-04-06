@@ -118,7 +118,7 @@ public:
       if (role == "") {
         return name;
       } else {
-        return alloc.get(name, role);
+        return alloc.get_or_insert_varname(name, role);
       }
     };
     return ghost_variables_t::create(vfac, alloc_fn, v.name(), m_get_type(v));
@@ -173,7 +173,12 @@ public:
     auto &vfac = gvars.get_vfac();
     auto alloc_fn = [](GhostDomainVarAlloc &alloc, const ghost_varname_t &name,
                        const std::string &role) {
-      return alloc.get(name, role + ".dup");
+      const char* DUP = ".dup";
+      std::string s;
+      s.reserve(role.size() + std::strlen(DUP) + 1);
+      s.append(role);
+      s.append(DUP);
+      return alloc.get_or_insert_varname(name, s);
     };
     return ghost_variables_t::create(vfac, alloc_fn, gvars);
   }
