@@ -62,6 +62,10 @@ public:
     return it->second;
   }
 
+  const checks_db_t& get_all_checks() const {
+    return m_db;
+  }
+  
   unsigned get_total_safe() const { return m_total_safe + m_total_unreach; }
 
   unsigned get_total_warning() const { return m_total_warn; }
