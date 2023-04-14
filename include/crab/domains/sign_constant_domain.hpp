@@ -19,6 +19,9 @@ class SignConstantDefaultParams {
 public:
   enum { implement_inter_transformers = 0 };
 };
+
+#define SIGN_CONSTANT_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
   
 template <typename Number, typename VariableName, typename Params = SignConstantDefaultParams>
 class sign_constant_domain final
@@ -56,8 +59,7 @@ private:
       : m_product(std::move(product)) {}
 
   void reduce_variable(const variable_t &v) {
-    crab::CrabStats::count(domain_name() + ".count.reduce");
-    crab::ScopedCrabStats __st__(domain_name() + ".reduce");
+    SIGN_CONSTANT_DOMAIN_SCOPED_STATS(".reduce");
 
     if (is_bottom()) {
       return;
@@ -310,7 +312,13 @@ public:
     return m_product.to_disjunctive_linear_constraint_system();
   }
 
-  std::string domain_name() const override { return m_product.domain_name(); }
+  std::string domain_name() const override {
+    #if 1
+    return "Sign+Const";
+    #else  
+    return m_product.domain_name();
+    #endif
+  }
 
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {

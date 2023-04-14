@@ -175,6 +175,18 @@ public:
   const wto_t &get_wto() const { return this->get_wto(); }
 };
 
+
+#define FWD_BACK_FWD_PHASE "Fwd+Back.FwdPhase"
+#define FWD_BACK_BACK_PHASE "Fwd+Back.BackPhase"
+#define FWD_BACK_MIN_INVARIANTS "Fwd+Back.MinInv"
+#define FWD_BACK_CHECK_REFINE "Fwd+Back.CheckRefine"
+#define FWD_BACK_DOM_TREE "Fwd+Back.DomTree"  
+const std::string FWD_BACK_TOTAL_RUNS("Fwd+Back.totalruns");  
+const std::string FWD_BACK_ITERATIONS("Fwd+Back.iterations");
+
+#define FWD_BACK_TIMER_STATS(NAME) CRAB_SCOPED_TIMER_STATS(NAME, 0)
+#define FWD_BACK_COUNT_STATS(NAME) CRAB_COUNT_STATS(NAME, 0)
+
 /**
  * A refining forward-backward analyzer based on Cousot&Cousot
  * (JLP'92 and ASE'99, section 4).
@@ -442,7 +454,7 @@ public:
       only_forward = true;
     }
 
-    crab::CrabStats::count("CombinedForwardBackward.invocations");
+    FWD_BACK_COUNT_STATS(FWD_BACK_TOTAL_RUNS);
 
     // number of refinement iterations
     unsigned iters = 0;
@@ -451,15 +463,13 @@ public:
     // immediate dominance tree
     idom_tree_t idom_tree;
 
-    crab::CrabStats::resume("CombinedForwardBackward.GatherAssertions");
     gather_assertions();
     CRAB_LOG("backward", crab::outs()
                              << "Found " << m_unproven_assertions.size()
                              << " assertions.\n";);
-    crab::CrabStats::stop("CombinedForwardBackward.GatherAssertions");
 
     if (!m_unproven_assertions.empty() && !only_forward) {
-      crab::CrabStats::resume("CombinedForwardBackward.DominatorTree");
+      //crab::ScopedCrabStats __st__(FWD_BACK_DOM_TREE, false);
       std::unordered_map<basic_block_label_t, basic_block_label_t> idom_map;
       crab::analyzer::graph_algo::dominator_tree(m_cfg, m_cfg.entry(),
                                                  idom_map);
@@ -489,7 +499,6 @@ public:
                  }
                  crab::outs() << "}\n";
                });
-      crab::CrabStats::stop("CombinedForwardBackward.DominatorTree");
     }
     assumption_map_t refined_assumptions(assumptions.begin(), assumptions.end());
 
@@ -497,11 +506,9 @@ public:
     std::unique_ptr<bwd_analyzer_t> B = nullptr;
     while (true) {
       iters++;
-      crab::CrabStats::count("CombinedForwardBackward.iterations");
+      FWD_BACK_COUNT_STATS(FWD_BACK_ITERATIONS);
       CRAB_VERBOSE_IF(1, get_msg_stream() << "Iteration " << iters << "\n"
                                           << "Started forward analysis.\n";);
-
-      crab::CrabStats::resume("CombinedForwardBackward.ForwardPass");
 
       F.clear();
       if(B) {
@@ -510,11 +517,13 @@ public:
       
       // run forward analysis refined with preconditions from error
       // states
-      F.run(entry, init_states, refined_assumptions);
+      {
+	FWD_BACK_TIMER_STATS(FWD_BACK_FWD_PHASE);
+	F.run(entry, init_states, refined_assumptions);
+      }
       if (!params.get_use_refined_invariants() && iters == 1) {
         store_results(F);
       }
-      crab::CrabStats::stop("CombinedForwardBackward.ForwardPass");
 
       CRAB_VERBOSE_IF(1, get_msg_stream() << "Finished forward analysis.\n";);
 
@@ -548,22 +557,22 @@ public:
 			     false, fixpo_params));
       }
 
-      crab::CrabStats::resume("CombinedForwardBackward.BackwardPass");
       // run backward analysis computing necessary preconditions
       // refined with results from the forward analysis.
       const invariant_map_t &fwd_invariants = F.get_pre_invariants();
-      crab::CrabStats::resume("CombinedForwardBackward.MinimizeInvariants");
       // Important for apron and elina domains.
       invariant_map_t minimized_fwd_invariants;
       for (auto &kv : fwd_invariants) {
+	FWD_BACK_TIMER_STATS(FWD_BACK_MIN_INVARIANTS);
         AbsDom dom(kv.second);
         dom.minimize();
         minimized_fwd_invariants.insert({kv.first, dom});
       }
-      crab::CrabStats::stop("CombinedForwardBackward.MinimizeInvariants");
       // A final state is safe so we start from bottom
-      B->run_backward(m_absval_fac.make_bottom(), minimized_fwd_invariants);
-      crab::CrabStats::stop("CombinedForwardBackward.BackwardPass");
+      {
+	FWD_BACK_TIMER_STATS(FWD_BACK_BACK_PHASE);      
+	B->run_backward(m_absval_fac.make_bottom(), minimized_fwd_invariants);
+      }
 
       CRAB_VERBOSE_IF(1, get_msg_stream() << "Finished backward analysis.\n";);
 
@@ -578,10 +587,10 @@ public:
           } crab::outs()
           << "\n");
 
-      crab::CrabStats::resume("CombinedForwardBackward.CheckRefinement");
       assumption_map_t new_refined_assumptions;
       bool more_refinement = false;
       for (auto it = m_cfg.begin(), et = m_cfg.end(); it != et; ++it) {
+	FWD_BACK_TIMER_STATS(FWD_BACK_CHECK_REFINE);
         more_refinement |= refine(it->label(), refined_assumptions, *B,
                                   new_refined_assumptions);
       }
@@ -599,7 +608,6 @@ public:
             crab::outs()
                 << "Backward analysis cannot refine more forward analysis.\n");
       }
-      crab::CrabStats::stop("CombinedForwardBackward.CheckRefinement");
 
       if (!more_refinement || iters > params.get_max_refine_iterations()) {
         if (more_refinement) {
