@@ -230,8 +230,13 @@ public:
   }
 
   std::string domain_name() const override {
-    std::string name =
-        "Product(" + m_first.domain_name() + "," + m_second.domain_name() + ")";
+    std::string name1 = m_first.domain_name();
+    std::string name2 = m_second.domain_name();
+    std::string name;
+    name.reserve(name1.size() + name2.size() + 2);
+    name.append(name1);
+    name.append("+");
+    name.append(name2);
     return name;
   }
 
@@ -959,6 +964,9 @@ public:
 
 }; // class reduced_domain_product2
 
+#define COMBINED_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  
 // This domain is similar to reduced_domain_product2 but it combines two
 // numerical domains and it defines a more precise, customizable
 // reduction operation.
@@ -1023,8 +1031,7 @@ private:
   }
 
   void reduce_variable(const variable_t &v) {
-    crab::CrabStats::count(domain_name() + ".count.reduce");
-    crab::ScopedCrabStats __st__(domain_name() + ".reduce");
+    COMBINED_DOMAIN_SCOPED_STATS(".reduce");
 
     if (!is_bottom() && !Params::disable_reduction) {
 
@@ -1079,12 +1086,11 @@ private:
           }
         }
 
-        {
-          std::string k(domain_name() + ".count.reduce.equalities_from_" +
-                        m_product.first().domain_name());
-          crab::CrabStats::uset(k, crab::CrabStats::get(k) +
-                                       filtered_csts1.size());
-        }
+        // {
+        //   std::string k(domain_name() + ".count.reduce.equalities_from_" +
+        //                 m_product.first().domain_name());
+        //   crab::CrabStats::uset(k, crab::CrabStats::get(k) + filtered_csts1.size());
+	// }
         inv2 += filtered_csts1;
 
         for (auto &c2 : csts2) {
@@ -1095,11 +1101,11 @@ private:
             filtered_csts2 += c2;
           }
         }
-        {
-          std::string k(domain_name() + ".count.reduce.equalities_from_" +
-                        m_product.second().domain_name());
-          crab::CrabStats::uset(k, crab::CrabStats::get(k) + csts2.size());
-        }
+        // {
+        //   std::string k(domain_name() + ".count.reduce.equalities_from_" +
+        //                 m_product.second().domain_name());
+        //   crab::CrabStats::uset(k, crab::CrabStats::get(k) + csts2.size());
+	// }
         inv1 += filtered_csts2;
       } else if (Params::left_propagate_equalities ||
                  Params::left_propagate_inequalities) {
@@ -1108,9 +1114,10 @@ private:
             !Params::left_propagate_inequalities;
         crab::domains::reduced_domain_traits<Domain1>::extract(
             inv1, v, csts1, propagate_only_equalities);
-        std::string k(domain_name() + ".count.reduce.equalities_from_" +
-                      m_product.first().domain_name());
-        crab::CrabStats::uset(k, crab::CrabStats::get(k) + csts1.size());
+	
+        // std::string k(domain_name() + ".count.reduce.equalities_from_" +
+        //               m_product.first().domain_name());
+        // crab::CrabStats::uset(k, crab::CrabStats::get(k) + csts1.size());
         inv2 += csts1;
       } else if (Params::right_propagate_equalities ||
                  Params::right_propagate_inequalities) {
@@ -1119,9 +1126,9 @@ private:
             !Params::right_propagate_inequalities;
         crab::domains::reduced_domain_traits<Domain2>::extract(
             inv2, v, csts2, propagate_only_equalities);
-        std::string k(domain_name() + ".count.reduce.equalities_from_" +
-                      m_product.second().domain_name());
-        crab::CrabStats::uset(k, crab::CrabStats::get(k) + csts2.size());
+        // std::string k(domain_name() + ".count.reduce.equalities_from_" +
+        //               m_product.second().domain_name());
+        // crab::CrabStats::uset(k, crab::CrabStats::get(k) + csts2.size());
         inv1 += csts2;
       }
     }
@@ -1500,11 +1507,13 @@ public:
   }
 
   std::string domain_name() const override {
-    const Domain1 &dom1 = m_product.first();
-    const Domain2 &dom2 = m_product.second();
-
-    std::string name =
-        "ReducedProduct(" + dom1.domain_name() + "," + dom2.domain_name() + ")";
+    std::string name1 = m_product.first().domain_name();
+    std::string name2 = m_product.second().domain_name();
+    std::string name;
+    name.reserve(name1.size() + name2.size() + 2);
+    name.append(name1);
+    name.append("+");
+    name.append(name2);
     return name;
   }
 

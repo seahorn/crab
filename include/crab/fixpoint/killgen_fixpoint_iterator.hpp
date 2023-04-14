@@ -148,7 +148,7 @@ public:
   }
 
   void run() {
-    crab::ScopedCrabStats __st__(m_analysis.name());
+    crab::ScopedCrabStats __st__(m_analysis.name(), "", false);
 
     m_analysis.init_fixpoint();
 
