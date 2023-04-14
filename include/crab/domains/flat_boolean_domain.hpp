@@ -23,6 +23,7 @@ public:
   enum { implement_inter_transformers = 0 };
 };
 
+#define BOOL_DOMAIN_SCOPED_STATS(NAME) CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
   
 // A simple flat 3-valued boolean abstract domain
 template <typename Number, typename VariableName, typename Params = FlatBoolDefaultParams>
@@ -82,13 +83,11 @@ public:
   flat_boolean_domain() : m_env(separate_domain_t::top()) {}
 
   flat_boolean_domain(const flat_boolean_domain_t &e) : m_env(e.m_env) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    BOOL_DOMAIN_SCOPED_STATS(".copy");
   }
 
   flat_boolean_domain_t &operator=(const flat_boolean_domain_t &o) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    BOOL_DOMAIN_SCOPED_STATS(".copy");
     if (this != &o)
       m_env = o.m_env;
     return *this;
@@ -111,15 +110,13 @@ public:
   bool is_top() const override { return m_env.is_top(); }
 
   bool operator<=(const flat_boolean_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.leq");
-    crab::ScopedCrabStats __st__(domain_name() + ".leq");
+    BOOL_DOMAIN_SCOPED_STATS(".leq");
     return (m_env <= o.m_env);
   }
 
   flat_boolean_domain_t
   operator|(const flat_boolean_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    BOOL_DOMAIN_SCOPED_STATS(".join");
 
     flat_boolean_domain_t res(m_env | o.m_env);
     CRAB_LOG("flat-boolean", crab::outs() << "After join " << *this << " and "
@@ -128,8 +125,7 @@ public:
   }
 
   void operator|=(const flat_boolean_domain_t &o) override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    BOOL_DOMAIN_SCOPED_STATS(".join");
 
     CRAB_LOG("flat-boolean",
              crab::outs() << "After join " << *this << " and " << o << "=");
@@ -139,8 +135,7 @@ public:
   
   flat_boolean_domain_t
   operator&(const flat_boolean_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    BOOL_DOMAIN_SCOPED_STATS(".meet");
 
     flat_boolean_domain_t res(m_env & o.m_env);
     CRAB_LOG("flat-boolean", crab::outs() << "After meet " << *this << " and "
@@ -149,8 +144,7 @@ public:
   }
 
   void operator&=(const flat_boolean_domain_t &o) override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    BOOL_DOMAIN_SCOPED_STATS(".meet");
 
     CRAB_LOG("flat-boolean",
              crab::outs() << "After meet " << *this << " and " << o << "=");
@@ -161,8 +155,7 @@ public:
 
   flat_boolean_domain_t
   operator||(const flat_boolean_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    BOOL_DOMAIN_SCOPED_STATS(".widening");
 
     flat_boolean_domain_t res(m_env || o.m_env);
     CRAB_LOG("flat-boolean", crab::outs()
@@ -184,14 +177,12 @@ public:
 
   flat_boolean_domain_t
   operator&&(const flat_boolean_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
+    BOOL_DOMAIN_SCOPED_STATS(".narrowing");
     return (m_env && o.m_env);
   }
 
   void operator-=(const variable_t &v) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    BOOL_DOMAIN_SCOPED_STATS(".forget");
     if (!is_bottom())
       m_env -= v;
   }
@@ -224,8 +215,7 @@ public:
 
   void assign_bool_var(const variable_t &x, const variable_t &y,
                        bool is_not_y) override {
-    crab::CrabStats::count(domain_name() + ".count.assign_bool_var");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_var");
+    BOOL_DOMAIN_SCOPED_STATS(".assign_bool_var");
     m_env.set(x, (is_not_y ? m_env.at(y).Negate() : m_env.at(y)));
     CRAB_LOG("flat-boolean", auto bx = m_env.at(x);
              crab::outs() << "After " << x << ":=";
@@ -236,8 +226,7 @@ public:
 
   void weak_assign_bool_var(const variable_t &x, const variable_t &y,
 			    bool is_not_y) override {
-    crab::CrabStats::count(domain_name() + ".count.weak_assign_bool_var");
-    crab::ScopedCrabStats __st__(domain_name() + ".weak_assign_bool_var");
+    BOOL_DOMAIN_SCOPED_STATS(".weak_assign_bool_var");
     m_env.join(x, (is_not_y ? m_env.at(y).Negate() : m_env.at(y)));
     CRAB_LOG("flat-boolean", auto bx = m_env.at(x);
              crab::outs() << "After " << "weak_assign(" << x << ",";
@@ -248,8 +237,7 @@ public:
   
   void apply_binary_bool(bool_operation_t op, const variable_t &x,
                          const variable_t &y, const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply_binary_bool");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply_binary_bool");
+    BOOL_DOMAIN_SCOPED_STATS(".bin_bool");
 
     switch (op) {
     case OP_BAND:
@@ -269,8 +257,7 @@ public:
   }
 
   void assume_bool(const variable_t &x, bool is_negated) override {
-    crab::CrabStats::count(domain_name() + ".count.assume_bool");
-    crab::ScopedCrabStats __st__(domain_name() + ".assume_bool");
+    BOOL_DOMAIN_SCOPED_STATS(".assume_bool");
 
     if (!is_negated)
       m_env.set(x, m_env.at(x) & boolean_value::get_true());
@@ -319,10 +306,10 @@ public:
   void backward_assign_bool_cst(const variable_t &lhs,
                                 const linear_constraint_t &rhs,
                                 const flat_boolean_domain_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_assign_bool_cst");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign_bool_cst");
-    if (is_bottom())
+    BOOL_DOMAIN_SCOPED_STATS(".backward_assign_bool_cst");
+    if (is_bottom()) {
       return;
+    }
 
     /* nothing to do: flat_boolean_domain ignores this */
     m_env -= lhs;
@@ -331,10 +318,10 @@ public:
   void backward_assign_bool_ref_cst(const variable_t &lhs,
                                     const reference_constraint_t &rhs,
                                     const flat_boolean_domain_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_assign_bool_cst");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign_bool_cst");
-    if (is_bottom())
+    BOOL_DOMAIN_SCOPED_STATS(".backward_assign_bool_cst");
+    if (is_bottom()) {
       return;
+    }
 
     /* nothing to do: flat_boolean_domain ignores this */
     m_env -= lhs;
@@ -343,11 +330,12 @@ public:
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                 bool is_not_rhs,
                                 const flat_boolean_domain_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_assign_bool_var");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign_bool_var");
+    BOOL_DOMAIN_SCOPED_STATS(".backward_assign_bool_var");
 
-    if (is_bottom())
+    if (is_bottom()) {      
       return;
+    }
+    
     /* TODO(backward)
        assume(lhs == rhs);
        assume(lhs == not(rhs))
@@ -359,11 +347,11 @@ public:
   void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
                                   const variable_t &y, const variable_t &z,
                                   const flat_boolean_domain_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply_binary_bool");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply_binary_bool");
+    BOOL_DOMAIN_SCOPED_STATS(".backward_bin_bool");
 
-    if (is_bottom())
+    if (is_bottom()) {
       return;
+    }
 
     /* TODO(backward)
        if x is true and op=AND then y=true and z=true
@@ -375,6 +363,7 @@ public:
 
   void callee_entry(const callsite_info<variable_t> &callsite,
 		    const flat_boolean_domain_t &caller) override {
+    BOOL_DOMAIN_SCOPED_STATS(".callee_entry");
     inter_abstract_operations<flat_boolean_domain_t, Params::implement_inter_transformers>::
       callee_entry(callsite, caller, *this);
       
@@ -382,6 +371,7 @@ public:
 
   void caller_continuation(const callsite_info<variable_t> &callsite,
 			   const flat_boolean_domain_t &callee) override {
+    BOOL_DOMAIN_SCOPED_STATS(".caller_cont");    
     inter_abstract_operations<flat_boolean_domain_t, Params::implement_inter_transformers>::    
       caller_continuation(callsite, callee, *this);
   }
@@ -389,19 +379,14 @@ public:
   // not part of the numerical_domains api but it should be
   void set(const variable_t &x, interval_t intv) {}
 
-  std::string domain_name() const override { return "Boolean"; }
+  std::string domain_name() const override { return "Bool"; }
 
   void write(crab_os &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.write");
-    crab::ScopedCrabStats __st__(domain_name() + ".write");
-
     m_env.write(o);
   }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
-    crab::CrabStats::count(domain_name() +
-                           ".count.to_linear_constraint_system");
-    crab::ScopedCrabStats __st__(domain_name() +
+    BOOL_DOMAIN_SCOPED_STATS(
                                  ".to_linear_constraint_system");
 
     if (is_bottom())
@@ -439,8 +424,7 @@ public:
 
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
-    crab::CrabStats::count(domain_name() + ".count.rename");
-    crab::ScopedCrabStats __st__(domain_name() + ".rename");
+    BOOL_DOMAIN_SCOPED_STATS(".rename");
 
     m_env.rename(from, to);
   }
@@ -449,14 +433,14 @@ public:
   void intrinsic(std::string name,
 		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented by Boolean");
   }
 
   void backward_intrinsic(std::string name,
 			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const flat_boolean_domain_t &invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented by Boolean");
   }
   /* end intrinsics operations */
 
@@ -471,8 +455,7 @@ public:
   }
 
   void project(const variable_vector_t &variables) override {
-    crab::CrabStats::count(domain_name() + ".count.project");
-    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    BOOL_DOMAIN_SCOPED_STATS(".project");
 
     if (is_bottom() || is_top()) {
       return;
@@ -486,8 +469,7 @@ public:
   }
 
   void expand(const variable_t &x, const variable_t &new_x) override {
-    crab::CrabStats::count(domain_name() + ".count.expand");
-    crab::ScopedCrabStats __st__(domain_name() + ".expand");
+    BOOL_DOMAIN_SCOPED_STATS(".expand");
 
     if (is_bottom() || is_top()) {
       return;
@@ -508,6 +490,8 @@ struct abstract_domain_traits<flat_boolean_domain<Number, VariableName, Params>>
   using varname_t = VariableName;
 };
 
+#define BOOL_AND_NUM_DOMAIN_SCOPED_STATS(NAME) CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  
 // Simple reduced product of the flat boolean domain with an arbitrary
 // abstract domain.
 // 
@@ -1142,8 +1126,7 @@ public:
   }
 
   void operator+=(const linear_constraint_system_t &csts) override {
-    crab::CrabStats::count(domain_name() + ".count.add_constraint");
-    crab::ScopedCrabStats __st__(domain_name() + ".add_constraint");
+    BOOL_AND_NUM_DOMAIN_SCOPED_STATS(".add_cst");
 
     if (csts.is_true()) {
       return;
@@ -1276,8 +1259,7 @@ public:
     
   void assign_bool_cst(const variable_t &x,
                        const linear_constraint_t &cst) override {
-    crab::CrabStats::count(domain_name() + ".count.assign_bool_cst");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst");
+    BOOL_AND_NUM_DOMAIN_SCOPED_STATS(".assign_bool_cst");
 
     if (m_product.is_bottom()) {
       return;
@@ -1297,8 +1279,7 @@ public:
 
   void assign_bool_ref_cst(const variable_t &x,
                            const reference_constraint_t &cst) override {
-    crab::CrabStats::count(domain_name() + ".count.assign_bool_ref_cst");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_ref_cst");
+    BOOL_AND_NUM_DOMAIN_SCOPED_STATS(".assign_bool_ref_cst");
 
     if (is_bottom()) {
       return;
@@ -1319,8 +1300,7 @@ public:
 				 
   void assign_bool_var(const variable_t &x, const variable_t &y,
                        bool is_negated) override {
-    crab::CrabStats::count(domain_name() + ".count.assign_bool_var");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_var");
+    BOOL_AND_NUM_DOMAIN_SCOPED_STATS(".assign_bool_var");
 
     if (is_bottom()) {
       return;
@@ -1348,8 +1328,7 @@ public:
   
   void apply_binary_bool(bool_operation_t op, const variable_t &x,
                          const variable_t &y, const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply_binary_bool");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply_binary_bool");
+    BOOL_AND_NUM_DOMAIN_SCOPED_STATS(".bin_bool");
 
     if (is_bottom()) {
       return;
@@ -1390,8 +1369,7 @@ public:
   }
 
   void assume_bool(const variable_t &x, bool is_negated) override {
-    crab::CrabStats::count(domain_name() + ".count.assume_bool");
-    crab::ScopedCrabStats __st__(domain_name() + ".assume_bool");
+    BOOL_AND_NUM_DOMAIN_SCOPED_STATS(".assume_bool");
 
     if (is_bottom()) {
       return;
@@ -1489,8 +1467,7 @@ public:
 
   void apply(int_conv_operation_t op, const variable_t &dst,
              const variable_t &src) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    BOOL_AND_NUM_DOMAIN_SCOPED_STATS(".apply");
 
     auto get_bitwidth = [](const variable_t v) {
       auto ty = v.get_type();
@@ -1659,7 +1636,8 @@ public:
     // The transformer for a call is not delegated to the subdomains.
     // Instead, if Params::implement_inter_transformers is enabled
     // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.        
+    // project, meet, forget, etc.
+    BOOL_AND_NUM_DOMAIN_SCOPED_STATS(".callee_entry");
     inter_abstract_operations<bool_num_domain_t, Params::implement_inter_transformers>::
       callee_entry(callsite, caller, *this);
       
@@ -1670,7 +1648,8 @@ public:
     // The transformer for a call is not delegated to the subdomains.
     // Instead, if Params::implement_inter_transformers is enabled
     // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.        
+    // project, meet, forget, etc.
+    BOOL_AND_NUM_DOMAIN_SCOPED_STATS(".caller_cont");
     inter_abstract_operations<bool_num_domain_t, Params::implement_inter_transformers>::    
       caller_continuation(callsite, callee, *this);
   }
@@ -1765,7 +1744,9 @@ public:
     return res;
   }
 
-  std::string domain_name() const override { return m_product.domain_name(); }
+  std::string domain_name() const override {
+    return m_product.domain_name();
+  }
 
 
   /* begin intrinsics operations */
@@ -1788,8 +1769,7 @@ public:
   void minimize() override { m_product.minimize(); }
 
   void forget(const variable_vector_t &variables) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    BOOL_AND_NUM_DOMAIN_SCOPED_STATS(".forget");
 
     if (is_bottom() || is_top()) {
       return;
@@ -1830,8 +1810,7 @@ public:
   }
 
   void project(const variable_vector_t &variables) override {
-    crab::CrabStats::count(domain_name() + ".count.project");
-    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    BOOL_AND_NUM_DOMAIN_SCOPED_STATS(".project");
 
     if (is_bottom() || is_top()) {
       return;
@@ -1889,8 +1868,7 @@ public:
   }
   
   void expand(const variable_t &x, const variable_t &new_x) override {
-    crab::CrabStats::count(domain_name() + ".count.expand");
-    crab::ScopedCrabStats __st__(domain_name() + ".expand");
+    BOOL_AND_NUM_DOMAIN_SCOPED_STATS(".expand");
 
     if (is_bottom() || is_top()) {
       return;
