@@ -85,9 +85,11 @@ private:
     auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
 
     std::string str_coefficient = std::to_string(coefficient);
+    const char* prefix = ".tvpi.var";
     std::string suffix;
-    suffix.reserve(std::strlen(".tvpi.var(") + str_coefficient.size() + 1 + 1); 
-    suffix.append(".tvpi.var(");
+    suffix.reserve(str_coefficient.size() + 12); 
+    suffix.append(prefix);
+    suffix.append("(");    
     suffix.append(str_coefficient);
     suffix.append(")");
     return variable_t(vfac.get_or_insert_varname(v.name(), suffix), v.get_type());
@@ -718,7 +720,7 @@ public:
     std::string base_name = absval.domain_name();
     const char* prefix = "TVPI"; 
     std::string name;
-    name.reserve(std::strlen(prefix) + base_name.size() + 3);
+    name.reserve(base_name.size() + 7);
     name.append(prefix);
     name.append("(");
     name.append(base_name);

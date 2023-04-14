@@ -969,7 +969,7 @@ public:
     std::string base_name = m_partitions[0].get_dom().domain_name();
     const char* prefix = "ValPart"; 
     std::string name;
-    name.reserve(std::strlen(prefix) + base_name.size() + 3);
+    name.reserve(base_name.size() + 10);
     name.append(prefix);
     name.append("(");
     name.append(base_name);
