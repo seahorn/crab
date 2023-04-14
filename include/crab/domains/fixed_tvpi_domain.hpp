@@ -691,15 +691,14 @@ public:
 
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    CRAB_WARN(domain_name(), "::instrinsic for ", name, " not implemented");
+    //CRAB_WARN(domain_name(), "::instrinsic for ", name, " not implemented");
   }
 
   void backward_intrinsic(std::string name,
                           const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const fixed_tvpi_domain_t &invariant) override {
-    CRAB_WARN(domain_name(), "::backward_intrinsic for ", name,
-              " not implemented");
+    //CRAB_WARN(domain_name(), "::backward_intrinsic for ", name, " not implemented");
   }
 
   void write(crab_os &o) const override {
@@ -719,8 +718,16 @@ public:
   }
 
   std::string domain_name() const override {
-    base_domain_t dom;
-    return "FixedTVPIDomain(" + dom.domain_name() + ")";
+    base_domain_t absval;
+    std::string base_name = absval.domain_name();
+    const char* prefix = "TVPI"; 
+    std::string name;
+    name.reserve(std::strlen(prefix) + base_name.size() + 3);
+    name.append(prefix);
+    name.append("(");
+    name.append(base_name);
+    name.append(")");
+    return name;
   }
 };
   

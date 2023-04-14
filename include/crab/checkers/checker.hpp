@@ -1,8 +1,8 @@
 #pragma once
 
-/*
-   A generic forward checker for properties
- */
+/**
+ *  A generic forward checker for properties
+ **/
 
 #include <crab/analysis/fwd_analyzer.hpp>
 #include <crab/analysis/inter/bottom_up_inter_analyzer.hpp>
@@ -77,7 +77,7 @@ public:
 
   virtual void run() override {
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Started property checker.\n";);
-    crab::ScopedCrabStats __st__("Checker");
+    crab::ScopedCrabStats __st__("Checker", false);
     cfg_t cfg = m_analyzer.get_cfg();
 
     // In some cases, the analyzer might know that an assertion is
@@ -91,8 +91,6 @@ public:
     for (auto &bb : cfg) {
       for (auto checker : this->m_checkers) {
         if (checker->is_interesting(bb)) {
-          crab::ScopedCrabStats __st__("Checker." +
-                                       checker->get_property_name());
           abs_dom_t inv = m_analyzer[bb.label()];
           abs_tr.set_abs_value(std::move(inv));
           // propagate forward the invariants from the block entry
@@ -129,7 +127,7 @@ public:
 
   virtual void run() override {
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Started property checker.\n";);
-    crab::ScopedCrabStats __st__("Checker");
+    crab::ScopedCrabStats __st__("Checker", false);
     cg_t &cg = m_analyzer.get_call_graph();
 
     abs_tr_t &abs_tr = m_analyzer.get_abs_transformer();
@@ -141,8 +139,6 @@ public:
         // intra-procedural analysis.
         std::set<const statement_t *> safe_assertions;
         for (auto checker : this->m_checkers) {
-          crab::ScopedCrabStats __st__("Checker." +
-                                       checker->get_property_name());
           abs_dom_t inv = m_analyzer.get_pre(cfg, bb.label());
           abs_tr.set_abs_value(std::move(inv));
           // propagate forward the invariants from the block entry

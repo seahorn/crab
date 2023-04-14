@@ -119,6 +119,9 @@ template<class Element, class Domain>
 struct uf_rename_element_in_domain {
   void operator()(Domain &dom, const Element&e, const Element &new_e) const {}
 };
+
+#define UNION_FIND_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_SCOPED_STATS(NAME, 0)
   
 template<class Element, class Domain,
 	 class MergeSemantics = uf_union_semantics<Domain>,
@@ -159,8 +162,7 @@ private:
   boost::optional<element_t>
   merge_elems(const element_set_t &elems,
 	      std::shared_ptr<domain_t> absval = nullptr) {
-    crab::CrabStats::count("union_find.count.merge_elements");
-    crab::ScopedCrabStats __st__("union_find.merge_elements");
+    UNION_FIND_DOMAIN_SCOPED_STATS("UnionFind.merge");
     
     auto it = elems.begin();
     auto et = elems.end();
@@ -229,8 +231,7 @@ private:
   // 1. Ensure that left and right have the same equivalence classes.
   // 2. Apply component-wise the join or the widening.
   union_find_domain_t join_or_widening(const union_find_domain_t &o, bool is_join) const {
-    crab::CrabStats::count("union_find.count.join_or_widening");
-    crab::ScopedCrabStats __st__("union_find.join_or_widening");
+    UNION_FIND_DOMAIN_SCOPED_STATS("UnionFind.join_widen");
     
     if (is_bottom()) {
       return o;
@@ -304,8 +305,7 @@ private:
   // 1. Ensure that left and right have the same equivalence classes.
   // 2. Apply component-wise the meet or the narrowing
   union_find_domain_t meet_or_narrowing(const union_find_domain_t &o, bool is_meet) const {
-    crab::CrabStats::count("union_find.count.meet_or_narrowing");
-    crab::ScopedCrabStats __st__("union_find.meet_or_narrowing");
+    UNION_FIND_DOMAIN_SCOPED_STATS("UnionFind.meet_narrow");
     
     if (is_bottom() || o.is_top()) {
       return *this;
@@ -406,8 +406,7 @@ public:
 
   // Pre-condition: !contains(v)
   void make(const element_t &v, std::shared_ptr<Domain> val) {
-    crab::CrabStats::count("union_find.count.make");
-    crab::ScopedCrabStats __st__("union_find.make");
+    UNION_FIND_DOMAIN_SCOPED_STATS("UnionFind.make");
 
     if (crab::CrabSanityCheckFlag) {
       if (is_bottom()) {
@@ -433,8 +432,7 @@ public:
   // Pre-condition: contains(v)
   // NOTE: it is not "const" because it does path-compression
   element_t &find(const element_t &v) {
-    crab::CrabStats::count("union_find.count.find");
-    crab::ScopedCrabStats __st__("union_find.find");
+    UNION_FIND_DOMAIN_SCOPED_STATS("UnionFind.find");
     
     auto it = m_parents.find(v);
     if (it == m_parents.end()) {
@@ -453,8 +451,7 @@ public:
   // Pre-condition: contains(v)
   // find operation without path-compression
   const element_t &find(const element_t &v) const {
-    crab::CrabStats::count("union_find.count.find");
-    crab::ScopedCrabStats __st__("union_find.find");
+    UNION_FIND_DOMAIN_SCOPED_STATS("UnionFind.find");
     
     auto it = m_parents.find(v);
     if (it == m_parents.end()) {
@@ -475,8 +472,7 @@ public:
   // it returns the representative of the new equivalence class,
   // otherwise, none.
   boost::optional<element_t> join(const element_t &x, const element_t &y) {
-    crab::CrabStats::count("union_find.count.union");
-    crab::ScopedCrabStats __st__("union_find.union");
+    UNION_FIND_DOMAIN_SCOPED_STATS("UnionFind.union");
     
     element_t rep_x = find(x);
     element_t rep_y = find(y);
@@ -605,8 +601,7 @@ public:
   // Build a map from representative to a set with all the elements
   // in the equivalence class.
   equivalence_class_elems_t equiv_classes_elems() {
-    crab::CrabStats::count("union_find.count.equiv_classes_elems");
-    crab::ScopedCrabStats __st__("union_find.equiv_classes_elems");
+    UNION_FIND_DOMAIN_SCOPED_STATS("UnionFind.eq_class");
     
     equivalence_class_elems_t res;
     for (auto &kv : m_parents) {
@@ -620,8 +615,7 @@ public:
 
   // Without path-compression
   equivalence_class_elems_t equiv_classes_elems() const {
-    crab::CrabStats::count("union_find.count.equiv_classes_elems");
-    crab::ScopedCrabStats __st__("union_find.equiv_classes_elems");
+    UNION_FIND_DOMAIN_SCOPED_STATS("UnionFind.eq_class");
     
     equivalence_class_elems_t res;
     for (auto &kv : m_parents) {
@@ -722,8 +716,7 @@ public:
   //    forall x,y \in elems(o) :: o.find(x) != o.find(y) =>
   //                              this.find(x) != this.find(y)
   bool operator<=(const union_find_domain_t &o) const {
-    crab::CrabStats::count("union_find.count.less_or_equal");
-    crab::ScopedCrabStats __st__("union_find.less_or_equal");
+    UNION_FIND_DOMAIN_SCOPED_STATS("UnionFind.leq");
     
     if (is_bottom() || o.is_top()) {
       return true;

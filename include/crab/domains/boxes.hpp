@@ -58,6 +58,9 @@ public:
   enum { implement_inter_transformers = 0 };
 };
 
+#define BOXES_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  
 /*
  * The wrapper has two global datastructures:
  * 1) a ldd manager and
@@ -165,8 +168,7 @@ private:
   }
 
   LddNodePtr project(variable_t v) const {
-    crab::CrabStats::count(domain_name() + ".count.project");
-    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    BOXES_DOMAIN_SCOPED_STATS(".project");
     
     std::vector<int> qvars;
     // num_of_vars is shared by all ldd's
@@ -219,8 +221,7 @@ private:
     if (!x) {
       // XXX: if we copy the SPECIAL var to v we forget the SPECIAL
       //      var after we copy.
-      crab::CrabStats::count(domain_name() + ".count.forget");
-      crab::ScopedCrabStats __st__(domain_name() + ".forget");
+      BOXES_DOMAIN_SCOPED_STATS(".forget");
       int dim = 0; // SPECIAL variable is dim 0
       m_ldd = lddPtr(get_ldd_man(),
                      Ldd_ExistsAbstract(get_ldd_man(), &*m_ldd, dim));
@@ -568,8 +569,7 @@ private:
   }
 
   interval_domain_t to_intervals(LddNodePtr &ldd) const {
-    crab::CrabStats::count(domain_name() + ".count.to_intervals");
-    crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
+    BOXES_DOMAIN_SCOPED_STATS(".to_intervals");
 
     interval_domain_t res; // top
 
@@ -808,15 +808,13 @@ public:
   boxes_domain(const boxes_domain_t &other)
       : // m_ldd(other.m_ldd)
         m_ldd(lddPtr(get_ldd_man(), &(*other.m_ldd))) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    BOXES_DOMAIN_SCOPED_STATS(".copy");
   }
 
   boxes_domain(boxes_domain_t &&other) : m_ldd(std::move(other.m_ldd)) {}
 
   boxes_domain_t &operator=(const boxes_domain_t &other) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    BOXES_DOMAIN_SCOPED_STATS(".copy");
     if (this != &other) {
       // m_ldd = other.m_ldd;
       m_ldd = lddPtr(get_ldd_man(), &(*other.m_ldd));
@@ -831,8 +829,7 @@ public:
   bool is_top() const override { return &*m_ldd == Ldd_GetTrue(get_ldd_man()); }
 
   bool operator<=(const boxes_domain_t &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.leq");
-    crab::ScopedCrabStats __st__(domain_name() + ".leq");
+    BOXES_DOMAIN_SCOPED_STATS(".leq");
 
     bool res = Ldd_TermLeq(get_ldd_man(), &(*m_ldd), &(*other.m_ldd));
 
@@ -847,8 +844,7 @@ public:
   }
 
   boxes_domain_t operator|(const boxes_domain_t &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    BOXES_DOMAIN_SCOPED_STATS(".join");
 
     return boxes_domain_t(join(m_ldd, other.m_ldd));
   }
@@ -858,16 +854,14 @@ public:
   }
   
   boxes_domain_t operator&(const boxes_domain_t &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    BOXES_DOMAIN_SCOPED_STATS(".meet");
 
     return boxes_domain_t(
         lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*m_ldd, &*other.m_ldd)));
   }
 
   boxes_domain_t operator||(const boxes_domain_t &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    BOXES_DOMAIN_SCOPED_STATS(".widening");
 
     // It is not necessarily true that the new value is bigger
     // than the old value so we apply
@@ -891,8 +885,7 @@ public:
   }
 
   boxes_domain_t operator&&(const boxes_domain_t &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
+    BOXES_DOMAIN_SCOPED_STATS(".narrowing");
 
     boxes_domain_t res(*this & other);
     // CRAB_WARN(" boxes narrowing operator replaced with meet");
@@ -904,8 +897,7 @@ public:
   }
 
   boxes_domain_t complement() const {
-    crab::CrabStats::count(domain_name() + ".count.complement");
-    crab::ScopedCrabStats __st__(domain_name() + ".complement");
+    BOXES_DOMAIN_SCOPED_STATS(".complement");
     LddNodePtr w = lddPtr(get_ldd_man(), Ldd_Not(&*m_ldd));
     boxes_domain_t res(w);
     CRAB_LOG("boxes", boxes_domain_t tmp(*this); crab::outs()
@@ -917,8 +909,7 @@ public:
   }
 
   void operator-=(const variable_t &var) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    BOXES_DOMAIN_SCOPED_STATS(".forget");
 
     if (is_bottom() || is_top())
       return;
@@ -929,8 +920,7 @@ public:
   }
 
   void forget(const variable_vector_t &variables) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    BOXES_DOMAIN_SCOPED_STATS(".forget");
 
     if (is_bottom() || is_top())
       return;
@@ -946,8 +936,7 @@ public:
   }
 
   void project(const variable_vector_t &variables) override {
-    crab::CrabStats::count(domain_name() + ".count.project");
-    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    BOXES_DOMAIN_SCOPED_STATS(".project");
 
     if (is_bottom() || is_top())
       return;
@@ -968,8 +957,7 @@ public:
   }
 
   void expand(const variable_t &v, const variable_t &new_v) override {
-    crab::CrabStats::count(domain_name() + ".count.expand");
-    crab::ScopedCrabStats __st__(domain_name() + ".expand");
+    BOXES_DOMAIN_SCOPED_STATS(".expand");
 
     if (is_top() || is_bottom())
       return;
@@ -987,8 +975,7 @@ public:
   }
 
   void operator+=(const linear_constraint_t &cst) {
-    crab::CrabStats::count(domain_name() + ".count.add_constraints");
-    crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
+    BOXES_DOMAIN_SCOPED_STATS(".add_cst");
 
     CRAB_LOG("boxes", crab::outs() << "--- assume(" << cst << ") --> ";);
 
@@ -1068,21 +1055,20 @@ public:
   void intrinsic(std::string name,
 		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented");
   }
 
   void backward_intrinsic(std::string name,
 			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const boxes_domain_t &invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented");
   }
   /* end intrinsics operations */
 
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
-    crab::CrabStats::count(domain_name() + ".count.rename");
-    crab::ScopedCrabStats __st__(domain_name() + ".rename");
+    BOXES_DOMAIN_SCOPED_STATS(".rename");
 
     assert(from.size() == to.size());
 
@@ -1101,8 +1087,7 @@ public:
   }
 
   void set(const variable_t &v, interval_t ival) {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    BOXES_DOMAIN_SCOPED_STATS(".assign");
 
     if (!is_bottom()) {
       m_ldd = apply_interval(v, ival);
@@ -1114,8 +1099,7 @@ public:
   }
 
   virtual interval_t at(const variable_t &v) const override {
-    crab::CrabStats::count(domain_name() + ".count.to_intervals");
-    crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
+    BOXES_DOMAIN_SCOPED_STATS(".to_intervals");
 
     if (is_bottom()) {
       return interval_t::bottom();
@@ -1135,8 +1119,7 @@ public:
   
   // x := e
   void assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    BOXES_DOMAIN_SCOPED_STATS(".assign");
 
     if (is_bottom()) {
       return;
@@ -1155,7 +1138,7 @@ public:
       auto it = e.begin();
       apply_ldd(x, it->second, it->first, e.constant());
     } else {
-      crab::ScopedCrabStats __st__(domain_name() + ".assign.converting_to_intervals");
+      BOXES_DOMAIN_SCOPED_STATS(".assign.converting_to_intervals");
       // Lose precision in the general case
       // XXX: we can probably do a bit better here
       m_ldd = apply_interval(x, eval_interval(e));
@@ -1168,8 +1151,7 @@ public:
   // x := y op k
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    BOXES_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom()) {
       return;
@@ -1225,8 +1207,7 @@ public:
   // x := y op z
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    BOXES_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom()) {
       return;
@@ -1320,8 +1301,7 @@ public:
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const boxes_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign");
+    BOXES_DOMAIN_SCOPED_STATS(".backward_assign");
 
     CRAB_LOG("boxes", crab::outs() << "Backward " << x << ":=" << e
                                    << "\n\tPOST=" << *this << "\n");
@@ -1332,8 +1312,7 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, number_t z,
                       const boxes_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    BOXES_DOMAIN_SCOPED_STATS(".backward_apply");
 
     CRAB_LOG("boxes", crab::outs() << "Backward " << x << ":=" << y << op << z
                                    << "\n\tPOST=" << *this << "\n");
@@ -1344,8 +1323,7 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const boxes_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    BOXES_DOMAIN_SCOPED_STATS(".backward_apply");
 
     CRAB_LOG("boxes", crab::outs() << "Backward " << x << ":=" << y << op << z
                                    << "\n\tPOST=" << *this << "\n");
@@ -1362,8 +1340,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    BOXES_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom())
       return;
@@ -1397,8 +1374,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    BOXES_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom())
       return;
@@ -1435,13 +1411,12 @@ public:
   ////////
   void assign_bool_cst(const variable_t &lhs,
                        const linear_constraint_t &cst) override {
+    BOXES_DOMAIN_SCOPED_STATS(".assign_bool_cst");
+    
     if (!m_bool_reasoning) {
       return;
     }
     
-    crab::CrabStats::count(domain_name() + ".count.assign_bool_cst");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst");
-
     auto is_interval_cst = [](const linear_constraint_t &c) {
     	   return (c.expression().size() == 1 &&
     		   (c.expression().begin()->first == number_t(1) ||
@@ -1461,8 +1436,7 @@ public:
     } else {
 
       if (is_interval_cst(cst)) {
-	crab::CrabStats::count(domain_name() + ".count.assign_bool_cst.interval");
-	crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst.interval");
+	BOXES_DOMAIN_SCOPED_STATS(".assign_bool_cst.interval");
       	/// Interval constraint
       	if (cst.is_inequality() && cst.is_unsigned()) {
       	  CRAB_WARN("unsigned inequality skipped in boxes domain");
@@ -1479,8 +1453,7 @@ public:
       	m_ldd = lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*m_ldd, &*ldd_rhs));
       } else {
       	/// Non-interval constraint
-	crab::CrabStats::count(domain_name() + ".count.assign_bool_cst.non-interval");
-	crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst.non-interval");
+	BOXES_DOMAIN_SCOPED_STATS(".assign_bool_cst.non-interval");
 	// Note that we could project away irrelevant variables before
 	// performing the join but this would lose precision.
         boxes_domain_t tt(*this);
@@ -1516,12 +1489,12 @@ public:
 
   void assign_bool_var(const variable_t &x, const variable_t &y,
                        bool is_not_y) override {
-    if (!m_bool_reasoning)
-      return;
+    BOXES_DOMAIN_SCOPED_STATS(".assign_bool_var");
     
-    crab::CrabStats::count(domain_name() + ".count.assign_bool_var");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_var");
-
+    if (!m_bool_reasoning) {
+      return;
+    }
+    
     if (is_bottom()) {
       return;
     }
@@ -1557,12 +1530,12 @@ public:
 
   void apply_binary_bool(bool_operation_t op, const variable_t &x,
                          const variable_t &y, const variable_t &z) override {
+    BOXES_DOMAIN_SCOPED_STATS(".apply_bin_bool");
 
-    if (!m_bool_reasoning)
+    if (!m_bool_reasoning) {
       return;
+    }
 
-    crab::CrabStats::count(domain_name() + ".count.apply_bin_bool");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply_bin_bool");
 
     if (is_bottom()) {
       return;
@@ -1609,11 +1582,12 @@ public:
   }
 
   void assume_bool(const variable_t &x, bool is_negated) override {
-    if (!m_bool_reasoning)
-      return;
+    BOXES_DOMAIN_SCOPED_STATS(".assume_bool");
 
-    crab::CrabStats::count(domain_name() + ".count.assume_bool");
-    crab::ScopedCrabStats __st__(domain_name() + ".assume_bool");
+    if (!m_bool_reasoning) {
+      return;
+    }
+
 
     if (is_bottom()) {
       return;
@@ -1683,6 +1657,7 @@ public:
 
   void callee_entry(const callsite_info<variable_t> &callsite,
 		    const boxes_domain_t &caller) override {
+    BOXES_DOMAIN_SCOPED_STATS(".callee_entry");    
     inter_abstract_operations<boxes_domain_t, Params::implement_inter_transformers>::
       callee_entry(callsite, caller, *this);
       
@@ -1690,6 +1665,7 @@ public:
 
   void caller_continuation(const callsite_info<variable_t> &callsite,
 			   const boxes_domain_t &callee) override {
+    BOXES_DOMAIN_SCOPED_STATS(".caller_cont");
     inter_abstract_operations<boxes_domain_t, Params::implement_inter_transformers>::    
       caller_continuation(callsite, callee, *this);
   }
@@ -1700,10 +1676,7 @@ public:
   DEFAULT_WEAK_BOOL_ASSIGN(boxes_domain_t)
   
   linear_constraint_system_t to_linear_constraint_system() const override {
-    crab::CrabStats::count(domain_name() +
-                           ".count.to_linear_constraint_system");
-    crab::ScopedCrabStats __st__(domain_name() +
-                                 ".to_linear_constraint_system");
+    BOXES_DOMAIN_SCOPED_STATS(".to_linear_constraint_system");
 
     linear_constraint_system_t csts;
 
@@ -1756,9 +1729,6 @@ public:
   }
 
   void write(crab_os &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.write");
-    crab::ScopedCrabStats __st__(domain_name() + ".write");
-
     if (is_top()) {
       o << "{}";
     } else if (is_bottom()) {

@@ -20,6 +20,9 @@
 namespace crab {
 namespace domains {
 
+#define DECOUPLING_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+
 // A dummy domain pair for the decoupled abstract domain, to be used
 // for debugging purposes: we use the very same domain for
 // the ascending and descending phases, so that alpha and gamma
@@ -104,8 +107,7 @@ public:
     if (m_asc_ptr == nullptr) {
       assert(m_dsc_ptr != nullptr);
       auto& ptr = const_cast<asc_dsc_state_t*>(this)->m_asc_ptr;
-      crab::CrabStats::count(domain_name() + ".count.alpha");
-      crab::ScopedCrabStats __st__(domain_name() + ".alpha");
+      DECOUPLING_DOMAIN_SCOPED_STATS(".alpha");
       ptr.reset(new asc_domain_t);
       *ptr = AscDscPair::alpha(*m_dsc_ptr);
     }
@@ -116,8 +118,7 @@ public:
     if (m_dsc_ptr == nullptr) {
       assert(m_asc_ptr != nullptr);
       auto& ptr = const_cast<asc_dsc_state_t*>(this)->m_dsc_ptr;
-      crab::CrabStats::count(domain_name() + ".count.gamma");
-      crab::ScopedCrabStats __st__(domain_name() + ".gamma");
+      DECOUPLING_DOMAIN_SCOPED_STATS(".gamma");
       ptr.reset(new dsc_domain_t);
       *ptr = AscDscPair::gamma(*m_asc_ptr);
     }
@@ -156,9 +157,17 @@ public:
   }
 
   std::string domain_name() const {
-    static std::string name = "Decoupled("
-      + asc_domain_t().domain_name() + ","
-      + dsc_domain_t().domain_name() + ")";
+    const char* prefix = "Decoupled";
+    std::string name1 = asc_domain_t().domain_name();
+    std::string name2 = dsc_domain_t().domain_name();
+    std::string name;
+    name.reserve(std::strlen(prefix) + name1.size() + name2.size() + 4);
+    name.append(prefix);
+    name.append("(");
+    name.append(name1);
+    name.append(",");
+    name.append(name2);
+    name.append(")");
     return name;
   }
 };

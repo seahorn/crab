@@ -867,7 +867,7 @@ public:
                                   const variable_or_constant_vector_t &inputs,
                                   const variable_vector_t &outputs,
                                   const powerset_domain_t &invariant) override {
-    CRAB_WARN(domain_name(), " does not implement backward operations");
+    //CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
   // Miscellaneous operations
@@ -1001,8 +1001,16 @@ public:
   }
 
   std::string domain_name() const override {
-    Domain dom;
-    return std::string("Powerset(") + dom.domain_name() + ")";
+    Domain absval;
+    std::string base_name = absval.domain_name();
+    const char* prefix = "PS"; 
+    std::string name;
+    name.reserve(std::strlen(prefix) + base_name.size() + 3);
+    name.append(prefix);
+    name.append("(");
+    name.append(base_name);
+    name.append(")");
+    return name;
   }
 };
 

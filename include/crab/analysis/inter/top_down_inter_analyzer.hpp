@@ -48,17 +48,18 @@
 namespace crab {
 namespace analyzer {
 
-static const std::string TimerCallGraphTC = "CallGraph type checking";
-static const std::string TimerInter = "Interprocedural";
-static const std::string TimerInterCheckCache =
-    TimerInter + "." + "lookup_summary";
-static const std::string TimerInterStoreSum =
-    TimerInter + "." + "store_summary";
-static const std::string TimerInterStoreSumQueue =
-    TimerInter + "." + "store_summary.enqueue";
-static const std::string TimerInterAnalyzeFunc =
-    TimerInter + "." + "analyze_function";
+#define TimerInter "Inter"  
+#define TimerInterCheckCache "Inter.lookup_summary"  
+#define TimerInterStoreSum "Inter.store_summary"
+#define TimerInterAnalyzeFunc "Inter.analyze_function"
+const std::string CounterRecursiveCalls("Inter.recursive_callsites");
+const std::string CounterReusedCalls("Inter.reused_callsites");
+const std::string CounterAnalyzedCalls("Inter.analyzed_callsites");
+const std::string CounterCalls("Inter.callsites");
 
+#define TD_INTER_TIMER_STATS(NAME) CRAB_SCOPED_TIMER_STATS(NAME, 0)
+#define TD_INTER_COUNT_STATS(NAME) CRAB_COUNT_STATS(NAME, 0)
+  
 namespace top_down_inter_impl {
 
 /**
@@ -299,8 +300,6 @@ public:
 
   virtual void add(calling_context_ptr_deque &ccs,
                    calling_context_ptr cc) override {
-    crab::ScopedCrabStats __st__(TimerInterStoreSumQueue);
-
     if (this->m_max_call_contexts == UINT_MAX) {
       ccs.push_back(std::move(cc));
       return;
@@ -320,8 +319,6 @@ public:
       ccs.pop_front();
       ccs.push_front(std::move(cc1->join_with(*cc2)));
       compress = true;
-      crab::CrabStats::count(
-          "Interprocedural.num_max_calling_contexts_reached");
       CRAB_LOG("inter",
                crab::outs()
                    << "[INTER] joining two oldest calling contexts\n";);
@@ -751,10 +748,11 @@ IntraCallSemAnalyzer *
 analyze_function(CallGraphNode cg_node,
                  typename IntraCallSemAnalyzer::abs_tr_t &abs_tr,
                  unsigned iteration) {
-  crab::ScopedCrabStats __st__(TimerInterAnalyzeFunc);
   using cfg_t = typename CallGraphNode::cfg_t;
   using abs_dom_t = typename IntraCallSemAnalyzer::abs_dom_t;
 
+  TD_INTER_TIMER_STATS(TimerInterAnalyzeFunc);
+  
   auto &ctx = abs_tr.get_context();
   cfg_t cfg = cg_node.get_cfg();
   assert(cfg.has_func_decl());
@@ -780,7 +778,7 @@ analyze_function(CallGraphNode cg_node,
           fixpoint_start(entry, exit);
       func_fixpoint_table.insert({cg_node, fixpoint_start});
       // increment the counter only the first time
-      crab::CrabStats::count("Interprocedural.num_recursive_callsites");	  
+      TD_INTER_COUNT_STATS(CounterRecursiveCalls);	  
     } else {
       entry = it->second.get_entry();
     }
@@ -1029,7 +1027,6 @@ private:
       calling_context_collection_t &ccs = it->second;
       cs_policy.add(ccs, std::move(cc));
     }
-    // crab::CrabStats::count("Interprocedural.num_calling_contexts");
   }
 
   static void get_fdecl_parameters(const fdecl_t &fdecl,
@@ -1040,6 +1037,66 @@ private:
                fdecl.get_outputs().end());
   }
 
+  // Return true if the same function has been analyzed with with an
+  // abstract state more general than callee_at_exit.
+  bool check_cache(const callsite_t &cs,
+		   cfg_t callee_cfg,
+		   const bool inside_recursive_call,
+		   const AbsDom &callee_at_entry,
+		   AbsDom &callee_at_exit) const {
+    TD_INTER_TIMER_STATS(TimerInterCheckCache);    
+    
+    
+    auto it = m_ctx.get_calling_context_table().find(callee_cfg);
+    if (it != m_ctx.get_calling_context_table().end()) {
+      auto &call_contexts = it->second;
+      CRAB_LOG("inter-subsume",
+	  crab::outs() << "[INTER] Subsumption check at " << cs << "\n";);      
+      CRAB_LOG("inter-subsume", if (call_contexts.empty()) {
+	  crab::outs() << "[INTER] There is no call contexts stored.\n";
+	});
+      for (unsigned i = 0, e = call_contexts.size(); i < e; ++i) {
+        // If the call is recursive then we cannot use exact
+        // subsumption. Otherwise, it's very likely that subsumption
+        // never succeeds. Apart from not having reusing, it will
+        // create problems during the checking phase which assumes
+        // that all function calls are always cached.
+        const bool use_exact_subsumption =
+            (!inside_recursive_call && m_ctx.exact_summary_reuse());
+
+        CRAB_LOG("inter-subsume",
+		 if (use_exact_subsumption) {
+		   crab::outs() << "Exact ";
+		 } else {
+		   crab::outs() << "Approximate ";		   
+		 }
+                 crab::outs() << "checking if\n"
+		              << callee_at_entry << "\nis subsumed by summary "
+		              << i << "\n";
+                 call_contexts[i]->write(crab::outs()); crab::outs() << "\n";);
+	
+        if (call_contexts[i]->is_subsumed(callee_at_entry,
+                                          use_exact_subsumption)) {
+          CRAB_LOG("inter-subsume", crab::outs() << "succeed!\n";);
+          CRAB_VERBOSE_IF(1, get_msg_stream()
+                                 << "++ Skip redundant analysis of function  "
+                                 << cs.get_func_name() << "\n";);
+
+          callee_at_exit = call_contexts[i]->get_post_summary();
+	  return true;
+          break;
+        } else {
+          CRAB_LOG("inter-subsume", crab::outs() << "failed!\n";);
+        }
+      }
+    } else {
+      CRAB_LOG("inter-subsume", 
+	       crab::outs() << "[INTER] There is no call contexts stored.\n";);
+    }
+    return false;
+  }
+
+  
   /* Analysis of a callsite */
   void analyze_callee(const callsite_t &cs, cg_node_t callee_cg_node) {
     // 1. Get CFG from the callee
@@ -1055,10 +1112,6 @@ private:
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = caller.is_bottom();
     }
-
-    const bool recursive_call_being_analyzed =
-        (m_ctx.analyze_recursive_functions() &&
-         m_ctx.get_widening_set().count(callee_cg_node) > 0);
 
     AbsDom callee_at_entry = make_top();
     if (m_ctx.analyze_recursive_functions() ||
@@ -1084,66 +1137,22 @@ private:
     std::vector<variable_t> callee_at_exit_vars;
     get_fdecl_parameters(fdecl, callee_at_exit_vars);
 
-    crab::CrabStats::resume(TimerInterCheckCache);
+    const bool inside_recursive_call =
+        (m_ctx.analyze_recursive_functions() &&
+         m_ctx.get_widening_set().count(callee_cg_node) > 0);
+    
     // 3. Check if the same call context has been seen already
-    bool call_context_already_seen = false;
-    auto it = m_ctx.get_calling_context_table().find(callee_cfg);
-    if (it != m_ctx.get_calling_context_table().end()) {
-      auto &call_contexts = it->second;
-      CRAB_LOG("inter-subsume",
-	  crab::outs() << "[INTER] Subsumption check at " << cs << "\n";);      
-      CRAB_LOG("inter-subsume", if (call_contexts.empty()) {
-	  crab::outs() << "[INTER] There is no call contexts stored.\n";
-	});
-      for (unsigned i = 0, e = call_contexts.size(); i < e; ++i) {
-        // If the call is recursive then we cannot use exact
-        // subsumption. Otherwise, it's very likely that subsumption
-        // never succeeds. Apart from not having reusing, it will
-        // create problems during the checking phase which assumes
-        // that all function calls are always cached.
-        const bool use_exact_subsumption =
-            (!recursive_call_being_analyzed && m_ctx.exact_summary_reuse());
-
-        CRAB_LOG("inter-subsume",
-		 if (use_exact_subsumption) {
-		   crab::outs() << "Exact ";
-		 } else {
-		   crab::outs() << "Approximate ";		   
-		 }
-                 crab::outs() << "checking if\n"
-		              << callee_at_entry << "\nis subsumed by summary "
-		              << i << "\n";
-                 call_contexts[i]->write(crab::outs()); crab::outs() << "\n";);
-	
-        if (call_contexts[i]->is_subsumed(callee_at_entry,
-                                          use_exact_subsumption)) {
-          CRAB_LOG("inter-subsume", crab::outs() << "succeed!\n";);
-          CRAB_VERBOSE_IF(1, get_msg_stream()
-                                 << "++ Skip redundant analysis of function  "
-                                 << cs.get_func_name() << "\n";);
-
-          callee_at_exit = call_contexts[i]->get_post_summary();
-          call_context_already_seen = true;
-          break;
-        } else {
-          CRAB_LOG("inter-subsume", crab::outs() << "failed!\n";);
-        }
-      }
-    } else {
-      CRAB_LOG("inter-subsume", 
-	       crab::outs() << "[INTER] There is no call contexts stored.\n";);
-    }
-    crab::CrabStats::stop(TimerInterCheckCache);
-
-    if (call_context_already_seen) {
+    bool cache_hit = check_cache(cs, callee_cfg,
+				 inside_recursive_call,
+				 callee_at_entry, callee_at_exit);    
+    if (cache_hit) {
       if (!m_ctx.get_is_checking_phase()) {
-        crab::CrabStats::count("Interprocedural.num_reused_callsites");
+        TD_INTER_COUNT_STATS(CounterReusedCalls);
       }
     } else {
       // if (m_ctx.get_is_checking_phase()) {
       //   CRAB_ERROR("in checking phase we should not analyze the callsite ", cs);
       // }
-      // crab::CrabStats::count("Interprocedural.num_analyzed_callsites");
 
       intra_analyzer_with_call_semantics_t *callee_analysis = nullptr;
       auto &func_fixpoint_table = m_ctx.get_func_fixpoint_table();
@@ -1175,7 +1184,7 @@ private:
 	  // When the checker runs on bar we won't have a summary for
 	  // foo since its analysis is not completed yet.
 	  callee_at_exit.set_to_top();
-          crab::CrabStats::count("Interprocedural.num_recursive_callsites");
+          TD_INTER_COUNT_STATS(CounterRecursiveCalls);
 	  CRAB_VERBOSE_IF(1, get_msg_stream()
 			  << "++ Skipped analysis of recursive callee \""
 			  << cs.get_func_name() << "\"\n";);
@@ -1187,7 +1196,7 @@ private:
 	    m_ctx.print_call_stack();
 	    CRAB_ERROR("in checking phase we should not analyze the callsite ", cs);
 	  }
-	  crab::CrabStats::count("Interprocedural.num_analyzed_callsites");
+	  TD_INTER_COUNT_STATS(CounterAnalyzedCalls);
 	  
 	  // 4.c Run intra analyzer on the callee
 	  // 
@@ -1225,7 +1234,7 @@ private:
 		     << ": the callee has no exit block.\n";);
 	  }
 	  
-	  if (callee_analysis && recursive_call_being_analyzed) {
+	  if (callee_analysis && inside_recursive_call) {
 	    // After the analysis of the recursive function converges,
 	    // We cannot store the summary with the initial abstract
 	    // state before the fixpoint started. Instead, we need to
@@ -1270,7 +1279,7 @@ private:
 
       if (callee_analysis && has_been_stabilized(callee_cg_node)) {
 	// 5. Add the new calling context.
-	crab::CrabStats::resume(TimerInterStoreSum);
+	TD_INTER_TIMER_STATS(TimerInterStoreSum);	
 	invariant_map_t pre_invariants, post_invariants;
 	calling_context_ptr cc(new calling_context_t(
             fdecl, callee_at_entry, callee_at_exit,
@@ -1278,7 +1287,6 @@ private:
             std::move(pre_invariants), std::move(post_invariants)));
 
 	add_calling_context(callee_cfg, std::move(cc));
-	crab::CrabStats::stop(TimerInterStoreSum);
 	CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Stored summary for "
 			<< fdecl.get_func_name() << "\n";);
 	CRAB_LOG("inter",
@@ -1334,7 +1342,7 @@ private:
 	// FIXME(07/23/21): free the analysis causes problems with curl program.
 	// callee_analysis->clear();
       }
-    } // end call_context_already_seen
+    } // end cache_hit
 
     pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
@@ -1352,7 +1360,7 @@ private:
 						 fdecl.get_inputs(), fdecl.get_outputs()};
     caller.caller_continuation(callsite, callee_at_exit);
 						     
-    if (::crab::CrabSanityCheckFlag && !recursive_call_being_analyzed) {
+    if (::crab::CrabSanityCheckFlag && !inside_recursive_call) {
       // If the function is recursive, then caller_cont_dom can be
       // bottom, even after the first fixpoint iteration.
       bool post_bot = caller.is_bottom();
@@ -1392,7 +1400,7 @@ public:
     }
 
     if (!m_ctx.get_is_checking_phase()) {
-      crab::CrabStats::count("Interprocedural.num_callsites");
+      TD_INTER_COUNT_STATS(CounterCalls);
     }
 
     cg_node_t callee_cg_node = m_cg.get_callee(cs);
@@ -1549,17 +1557,8 @@ public:
               params.only_main_as_entry, params.widening_delay,
               params.descending_iters, params.thresholds_size),
         m_abs_tr(new td_inter_abs_tr_t(m_cg, m_ctx, std::move(init))) {
-    crab::CrabStats::start(TimerCallGraphTC);
-    crab::CrabStats::start(TimerInter);
-    crab::CrabStats::start(TimerInterCheckCache);
-    crab::CrabStats::start(TimerInterStoreSum);
-    crab::CrabStats::start(TimerInterStoreSumQueue);
-    crab::CrabStats::start(TimerInterAnalyzeFunc);
-
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
-    crab::CrabStats::resume(TimerCallGraphTC);
     cg.type_check();
-    crab::CrabStats::stop(TimerCallGraphTC);
     CRAB_VERBOSE_IF(1, get_msg_stream() << "OK\n";);
   }
 
@@ -1573,8 +1572,7 @@ public:
    * entry, starting with init.
    **/
   void run(abs_dom_t init) override {
-    crab::ScopedCrabStats __st__(TimerInter);
-
+    CRAB_SCOPED_TIMER_STATS(TimerInter, 1)
     CRAB_VERBOSE_IF(
         1, get_msg_stream()
                << "Computing weak topological ordering of the callgraph ... \n";);

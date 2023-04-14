@@ -71,6 +71,9 @@ namespace domains {
 
 using namespace elina;
 
+#define ELINA_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  
 template <typename Number, typename VariableName, elina_domain_id_t ElinaDom,
           class Params = ElinaDefaultParams<Number>>
 class elina_domain final
@@ -931,16 +934,14 @@ public:
       : m_apstate(elinaPtr(get_man(),
                            elina_abstract0_copy(get_man(), &*(o.m_apstate)))),
         m_var_map(o.m_var_map) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    ELINA_DOMAIN_SCOPED_STATS(".copy");
   }
 
   elina_domain(elina_domain_t &&o)
       : m_apstate(std::move(o.m_apstate)), m_var_map(std::move(o.m_var_map)) {}
 
   elina_domain_t &operator=(const elina_domain_t &o) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    ELINA_DOMAIN_SCOPED_STATS(".copy");
     if (this != &o) {
       m_apstate =
           elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*(o.m_apstate)));
@@ -986,8 +987,7 @@ public:
   }
 
   bool operator<=(const elina_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.leq");
-    crab::ScopedCrabStats __st__(domain_name() + ".leq");
+    ELINA_DOMAIN_SCOPED_STATS(".leq");
 
     if (is_bottom())
       return true;
@@ -1010,8 +1010,7 @@ public:
   }
 
   void operator|=(const elina_domain_t &o) override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    ELINA_DOMAIN_SCOPED_STATS(".join");
 
     if (is_bottom()) {
       *this = o;
@@ -1033,8 +1032,7 @@ public:
   }
 
   elina_domain_t operator|(const elina_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    ELINA_DOMAIN_SCOPED_STATS(".join");
 
     if (is_bottom()) {
       return o;
@@ -1056,8 +1054,7 @@ public:
   }
   
   void operator&=(const elina_domain_t &o) override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    ELINA_DOMAIN_SCOPED_STATS(".meet");
 
     if (is_bottom() || o.is_top()) {
       // do nothing
@@ -1074,8 +1071,7 @@ public:
   }
   
   elina_domain_t operator&(const elina_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    ELINA_DOMAIN_SCOPED_STATS(".meet");
 
     if (is_bottom() || o.is_top()) {
       return *this;
@@ -1095,8 +1091,7 @@ public:
   }
 
   elina_domain_t operator||(const elina_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    ELINA_DOMAIN_SCOPED_STATS(".widening");
     // XXX: is_bottom will close the left operand
     // if (is_bottom())
     //	return o;
@@ -1133,8 +1128,7 @@ public:
   elina_domain_t widening_thresholds(
       const elina_domain_t &o,
       const thresholds<number_t> &ts) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    ELINA_DOMAIN_SCOPED_STATS(".widening");
 
     // XXX: is_bottom will close the left operand
     // if (is_bottom())
@@ -1189,8 +1183,7 @@ public:
   }
 
   elina_domain_t operator&&(const elina_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
+    ELINA_DOMAIN_SCOPED_STATS(".narrowing");
 
     if (is_bottom() || o.is_top()) {
       return *this;
@@ -1223,8 +1216,7 @@ public:
   }
 
   void project(const variable_vector_t &vars) override {
-    crab::CrabStats::count(domain_name() + ".count.project");
-    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    ELINA_DOMAIN_SCOPED_STATS(".project");
 
     if (is_bottom() || is_top())
       return;
@@ -1245,8 +1237,7 @@ public:
   }
 
   void forget(const variable_vector_t &vars) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    ELINA_DOMAIN_SCOPED_STATS(".forget");
 
     if (is_bottom() || is_top())
       return;
@@ -1296,8 +1287,7 @@ public:
   }
 
   void operator-=(const variable_t &var) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    ELINA_DOMAIN_SCOPED_STATS(".forget");
 
     if (is_bottom() || is_top())
       return;
@@ -1336,8 +1326,7 @@ public:
   }
   
   interval_t at(const variable_t &v) const override {
-    crab::CrabStats::count(domain_name() + ".count.to_intervals");
-    crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
+    ELINA_DOMAIN_SCOPED_STATS(".to_intervals");
 
     if (is_bottom()) {
       return interval_t::bottom();
@@ -1364,8 +1353,7 @@ public:
   }
 
   void set(const variable_t &v, interval_t ival) {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    ELINA_DOMAIN_SCOPED_STATS(".assign");
 
     if (is_bottom()) {
       return;
@@ -1400,8 +1388,7 @@ public:
 
   
   void operator+=(const linear_constraint_system_t &_csts) override {
-    crab::CrabStats::count(domain_name() + ".count.add_constraints");
-    crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
+    ELINA_DOMAIN_SCOPED_STATS(".add_cst");
 
     if (is_bottom())
       return;
@@ -1464,8 +1451,7 @@ public:
   DEFAULT_ENTAILS(elina_domain_t)
   
   void assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    ELINA_DOMAIN_SCOPED_STATS(".assign");
 
     if (is_bottom())
       return;
@@ -1489,8 +1475,7 @@ public:
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    ELINA_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom())
       return;
@@ -1534,8 +1519,7 @@ public:
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    ELINA_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom())
       return;
@@ -1585,8 +1569,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    ELINA_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom()) {
       return;
@@ -1621,8 +1604,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    ELINA_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom()) {
       return;
@@ -1660,6 +1642,7 @@ public:
 
   void callee_entry(const callsite_info<variable_t> &callsite,
 		    const elina_domain_t &caller) override {
+    ELINA_DOMAIN_SCOPED_STATS(".callee_entry");        
     inter_abstract_operations<elina_domain_t, Params::implement_inter_transformers>::
       callee_entry(callsite, caller, *this);
       
@@ -1667,14 +1650,14 @@ public:
 
   void caller_continuation(const callsite_info<variable_t> &callsite,
 			   const elina_domain_t &callee) override {
+    ELINA_DOMAIN_SCOPED_STATS(".caller_cont");    
     inter_abstract_operations<elina_domain_t, Params::implement_inter_transformers>::    
       caller_continuation(callsite, callee, *this);
   }
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const elina_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign");
+    ELINA_DOMAIN_SCOPED_STATS(".backward_assign");
 
     if (is_bottom()) {
       return;
@@ -1706,8 +1689,7 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, number_t z,
                       const elina_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    ELINA_DOMAIN_SCOPED_STATS(".backward_apply");
 
     CRAB_LOG("elina", crab::outs() << "--- " << x << " :=_bwd " << y << op << z
                                    << "\n";);
@@ -1762,8 +1744,7 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const elina_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    ELINA_DOMAIN_SCOPED_STATS(".backward_apply");
 
     if (is_bottom()) {
       return;
@@ -1810,8 +1791,7 @@ public:
   }
   
   interval_domain_t to_interval_domain() {
-    crab::CrabStats::count(domain_name() + ".count.to_interval_domain");
-    crab::ScopedCrabStats __st__(domain_name() + ".to_interval_domain");
+    ELINA_DOMAIN_SCOPED_STATS(".to_interval_domain");
 
     if (is_bottom())
       return interval_domain_t::bottom();
@@ -1825,9 +1805,7 @@ public:
   }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
-    crab::CrabStats::count(domain_name() +
-                           ".count.to_linear_constraint_system");
-    crab::ScopedCrabStats __st__(domain_name() +
+    ELINA_DOMAIN_SCOPED_STATS(
                                  ".to_linear_constraint_system");
 
     linear_constraint_system_t csts;
@@ -1862,8 +1840,7 @@ public:
 
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
-    crab::CrabStats::count(domain_name() + ".count.rename");
-    crab::ScopedCrabStats __st__(domain_name() + ".rename");
+    ELINA_DOMAIN_SCOPED_STATS(".rename");
 
     if (is_top() || is_bottom())
       return;
@@ -1910,8 +1887,7 @@ public:
   }
 
   void expand(const variable_t &x, const variable_t &dup) override {
-    crab::CrabStats::count(domain_name() + ".count.expand");
-    crab::ScopedCrabStats __st__(domain_name() + ".expand");
+    ELINA_DOMAIN_SCOPED_STATS(".expand");
 
     if (is_bottom() || is_top())
       return;
@@ -1933,16 +1909,14 @@ public:
   }
 
   void normalize() override {
-    crab::CrabStats::count(domain_name() + ".count.normalize");
-    crab::ScopedCrabStats __st__(domain_name() + ".normalize");
+    ELINA_DOMAIN_SCOPED_STATS(".normalize");
 
     elina_abstract0_canonicalize(get_man(), &*m_apstate);
   }
 
   // reduce the size of the internal representation
   void minimize() override {
-    crab::CrabStats::count(domain_name() + ".count.minimize");
-    crab::ScopedCrabStats __st__(domain_name() + ".minimize");
+    ELINA_DOMAIN_SCOPED_STATS(".minimize");
 
     std::vector<elina_dim_t> dims;
     var_map_t res;
@@ -1964,23 +1938,20 @@ public:
   void intrinsic(std::string name,
 		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
   void backward_intrinsic(std::string name,
 			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const elina_domain_t &invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
   /* end intrinsics operations */
 
   void dump() const { dump(m_var_map, m_apstate); }
 
   void write(crab_os &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.write");
-    crab::ScopedCrabStats __st__(domain_name() + ".write");
-
 #if 0
       o << "\nElina internal representation:";
       dump();
@@ -2001,9 +1972,9 @@ public:
     case ELINA_ZONES:
       return "ElinaZones";
     case ELINA_OCT:
-      return "ElinaOctagon";
+      return "ElinaOct";
     case ELINA_PK:
-      return "ElinaPolyhedra";
+      return "ElinaPk";
     }
   }
 };
