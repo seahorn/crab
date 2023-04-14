@@ -108,7 +108,7 @@ public:
       // unlikely prefix @V_
       std::string str_id(std::to_string(m_id));
       std::string name;
-      name.reserve(std::strlen("@V_") + str_id.size() + 1);
+      name.reserve(str_id.size() + 4);
       name.append("@V_");
       name.append(str_id);
       return rename(name);

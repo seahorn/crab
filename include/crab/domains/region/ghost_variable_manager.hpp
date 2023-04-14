@@ -175,7 +175,7 @@ public:
                        const std::string &role) {
       const char* DUP = ".dup";
       std::string s;
-      s.reserve(role.size() + std::strlen(DUP) + 1);
+      s.reserve(role.size() + 5);
       s.append(role);
       s.append(DUP);
       return alloc.get_or_insert_varname(name, s);

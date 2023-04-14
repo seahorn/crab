@@ -446,7 +446,7 @@ public:
     std::string base_name = absval.domain_name();
     const char* prefix = "LAWiden"; 
     std::string name;
-    name.reserve(std::strlen(prefix) + base_name.size() + 3);
+    name.reserve(base_name.size() + 10);
     name.append(prefix);
     name.append("(");
     name.append(base_name);

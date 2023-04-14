@@ -161,7 +161,7 @@ public:
     std::string name1 = asc_domain_t().domain_name();
     std::string name2 = dsc_domain_t().domain_name();
     std::string name;
-    name.reserve(std::strlen(prefix) + name1.size() + name2.size() + 4);
+    name.reserve(name1.size() + name2.size() + 13);
     name.append(prefix);
     name.append("(");
     name.append(name1);
