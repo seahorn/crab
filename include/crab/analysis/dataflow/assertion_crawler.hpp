@@ -887,7 +887,7 @@ public:
 
   virtual void init_fixpoint() override {
     if (!m_opt_only_data) {
-      crab::ScopedCrabStats __st__("Control-Dependency Graph");
+      crab::ScopedCrabStats __st__("Control-Dependency Graph", false);
       crab::analyzer::graph_algo::control_dep_graph(this->m_cfg, m_cdg);
     }
   }
@@ -1114,16 +1114,14 @@ public:
   void run(bool do_type_checking = true) {
     if (do_type_checking) {
       CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
-      crab::CrabStats::resume("CallGraph type checking");
       m_cg.type_check();
-      crab::CrabStats::stop("CallGraph type checking");
       CRAB_VERBOSE_IF(1, get_msg_stream() << "OK\n";);
     }
     
     CRAB_VERBOSE_IF(1, get_msg_stream()
                            << "Started inter-procedural assertion crawler analysis\n";);
     CRAB_LOG("assertion-crawler", m_cg.write(crab::outs()); crab::outs() << "\n");
-    crab::ScopedCrabStats __st__("InterAssertionCrawler");
+    crab::ScopedCrabStats __st__("InterAssertionCrawler", false);
 
     auto analyze = [this](cfg_t cfg) {
 		     assert(cfg.has_func_decl());

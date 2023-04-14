@@ -19,6 +19,9 @@ class NumCongruenceDefaultParams {
 public:
   enum { implement_inter_transformers = 0 };
 };  
+
+#define COMBINED_CONGRUENCES_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
   
 // Reduced product of a numerical domain with interval x congruences.
 template <typename NumAbsDom, typename Params = NumCongruenceDefaultParams>
@@ -55,8 +58,7 @@ private:
       : m_product(product) {}
 
   void reduce_variable(const variable_t &v) {
-    crab::CrabStats::count(domain_name() + ".count.reduce");
-    crab::ScopedCrabStats __st__(domain_name() + ".reduce");
+    COMBINED_CONGRUENCES_DOMAIN_SCOPED_STATS(".reduce");
 
     if (is_bottom()) {
       return;

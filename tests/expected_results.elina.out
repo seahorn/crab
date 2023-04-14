@@ -15,7 +15,7 @@ bb2:
   y = tmp-x;
   goto bb3;
 
-Invariants using ElinaOctagon
+Invariants using ElinaOct
 entry={}
 bb2={}
 bb3={x-y <= 0; -x-y <= 0; -y <= 0}
@@ -50,7 +50,7 @@ bb2:
   y = tmp-x;
   goto bb3;
 
-Invariants using ElinaOctagon
+Invariants using ElinaOct
 entry={}
 bb2={}
 bb3={x-y <= 0; -x-y <= 0; -y <= 0}
@@ -87,7 +87,7 @@ bb4:
   assert(y <= 100);
 
 
-Invariants using ElinaOctagon
+Invariants using ElinaOct
 bb1={}
 bb2={-x <= 0; x <= 100; x-y <= 0; -x-y <= 0; -y <= 0; x+y <= 200; -x+y <= 0; y <= 100}
 bb4={-x <= 0; x <= 100; x-y <= 0; -x-y <= 0; -y <= 0; x+y <= 200; -x+y <= 0; y <= 100}
@@ -119,7 +119,7 @@ bb4:
   assert(x <= 100);
 
 
-Invariants using ElinaOctagon
+Invariants using ElinaOct
 bb1={}
 bb2={-x <= 0; x <= 100}
 bb4={-x <= 0}
@@ -161,7 +161,7 @@ exit2:
 ret:
 
 
-Invariants using ElinaOctagon
+Invariants using ElinaOct
 entry={}
 header1={}
 exit1={}
@@ -202,7 +202,7 @@ bb1_f:
 ret:
 
 
-Invariants using ElinaOctagon
+Invariants using ElinaOct
 entry={}
 bb1={-i <= 0; i <= 100; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 200; -i+k <= 0; k <= 100}
 bb1_f={-i <= 0; i <= 100; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 200; -i+k <= 0; k <= 100}
@@ -211,7 +211,7 @@ bb1_t={-i <= 0; i <= 100; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 200; -i+k <= 0; k
 bb2={-i <= 0; i <= 99; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 198; -i+k <= 0; k <= 99}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
-Invariants using ElinaPolyhedra
+Invariants using ElinaPk
 entry={}
 bb1={i-k = 0; -i <= 0; i <= 100}
 bb1_f={i-k = 0; -i <= 0; i <= 100}
@@ -266,7 +266,7 @@ loop1_bb1_t={-k <= -30; k <= 30; -i <= 0; i <= 10}
 loop1_bb2={-k <= -30; k <= 30; -i <= 0; i <= 9}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 
-Invariants using ElinaOctagon
+Invariants using ElinaOct
 loop1_entry={}
 loop1_bb1={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i+k <= 30; k <= 30}
 loop1_bb1_f={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i+k <= 30; k <= 30}
@@ -280,7 +280,7 @@ loop1_bb1_t={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i
 loop1_bb2={-i <= 0; i <= 9; i-k <= -21; -i-k <= -30; -k <= -30; i+k <= 39; -i+k <= 30; k <= 30}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 
-Invariants using ElinaPolyhedra
+Invariants using ElinaPk
 loop1_entry={}
 loop1_bb1={-i <= 0; i <= 10; -k = -30}
 loop1_bb1_f={-i <= 0; i <= 10; -k = -30}
@@ -350,7 +350,7 @@ loop1_body_x={-i <= 0; i <= 8}
 loop1_body_t={-i <= -1; i <= 9}
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
-Invariants using ElinaOctagon
+Invariants using ElinaOct
 entry={}
 loop1_head={-i <= 0; i <= 8}
 loop1_f={-i <= 0; i <= 8}
@@ -367,7 +367,7 @@ loop1_body_x={-i <= 0; i <= 8}
 loop1_body_t={-i <= -1; i <= 9}
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
-Invariants using ElinaPolyhedra
+Invariants using ElinaPk
 entry={}
 loop1_head={-i <= 0; i <= 8}
 loop1_f={-i <= 0; i <= 8}
@@ -412,7 +412,7 @@ loop_t={-i <= 0; i <= 10; i-p <= 0; -p <= 0}
 loop_body={-i <= 0; i <= 9; i-p <= 0; -p <= 0}
 Abstract trace: entry (loop_head loop_t loop_body)^{3} loop_f ret
 
-Invariants using ElinaOctagon
+Invariants using ElinaOct
 entry={}
 loop_head={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
 loop_f={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
@@ -421,7 +421,7 @@ loop_t={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
 loop_body={-i <= 0; i <= 9; i-p <= 0; -i-p <= 0; -p <= 0}
 Abstract trace: entry (loop_head loop_t loop_body)^{3} loop_f ret
 
-Invariants using ElinaPolyhedra
+Invariants using ElinaPk
 entry={}
 loop_head={4*i-p = 0; -i <= 0; i <= 10}
 loop_f={4*i-p = 0; -i <= 0; i <= 10}
@@ -458,7 +458,7 @@ bb1_t={-i+k <= 0; -i <= 0; -k <= 0}
 bb2={-i+k <= 0; -i <= 0; -k <= 0}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
-Invariants using ElinaOctagon
+Invariants using ElinaOct
 entry={}
 bb1={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
 bb1_f={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
@@ -467,7 +467,7 @@ bb1_t={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
 bb2={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
-Invariants using ElinaPolyhedra
+Invariants using ElinaPk
 entry={}
 bb1={i-k = 0; -i <= 0}
 bb1_f={i-k = 0; -i <= 0}
@@ -503,7 +503,7 @@ ret:
   assert(-k+x+y <= 0);
 
 
-Invariants using ElinaOctagon
+Invariants using ElinaOct
 Abstract trace: entry (loop loop_body_1 loop_body_2 loop_body_3 loop_body_4)^{3} ret
 user-defined assertion checker
 1  Number of total safe checks
@@ -535,7 +535,7 @@ ret:
   assert(-k+x+y <= 0);
 
 
-Invariants using ElinaOctagon
+Invariants using ElinaOct
 Abstract trace: entry (loop loop_body_1 loop_body_2 loop_body_3 loop_body_4)^{3} ret
 user-defined assertion checker
 1  Number of total safe checks
@@ -567,7 +567,7 @@ ret:
   assert(x+y <= 200);
 
 
-Invariants using ElinaOctagon
+Invariants using ElinaOct
 Abstract trace: entry (loop loop_body_1 loop_body_2 loop_body_3 loop_body_4)^{3} ret
 user-defined assertion checker
 1  Number of total safe checks
@@ -600,7 +600,7 @@ ret:
   assert(k+x-y <= 0);
 
 
-Invariants using ElinaOctagon
+Invariants using ElinaOct
 Abstract trace: entry (loop loop_body_1 loop_body_2 loop_body_3 loop_body_4)^{3} ret
 user-defined assertion checker
 1  Number of total safe checks
@@ -626,7 +626,7 @@ ret:
   assert(x+y <= 200);
 
 
-Invariants using ElinaOctagon
+Invariants using ElinaOct
 Abstract trace: entry (loop loop_body)^{3} ret
 user-defined assertion checker
 1  Number of total safe checks
@@ -772,7 +772,7 @@ exit:
   assert(res = 41);
 
 
-Running top-down inter-procedural analysis with ElinaOctagon
+Running top-down inter-procedural analysis with ElinaOct
 16  Number of total safe checks
  0  Number of total error checks
  0  Number of total warning checks
@@ -804,7 +804,7 @@ RESULT={-x <= -1/2; x <= 1/2}
 === Begin ./test-bin/unittests-backward-elina ===
 === End ./test-bin/unittests-backward-elina ===
 === Begin ./test-bin/unittests-rename-elina ===
- ===== ElinaPolyhedra ====
+ ===== ElinaPk ====
 Before renaming {-y = -5; x <= 0}
 After rename x with w and y with z={w <= 0; -z = -5}
 After rename x with w={w <= 0; -y = -5}

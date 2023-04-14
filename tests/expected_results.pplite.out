@@ -18,7 +18,7 @@ bb1_f:
 ret:
 
 
-Invariants using ApronNewPolka
+Invariants using ApronPk
 entry={}
 bb1={-i+k = 0; i <= 100; -i <= 0}
 bb1_f={-i+k = 0; i <= 100; -i <= 0}
@@ -74,7 +74,7 @@ bb2={k = 0; i = 0} or
 {i-k = 0; -i <= -5; i <= 99}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
-Invariants using Decoupled(ApronIntervals,ApronPPLitePoly)
+Invariants using Decoupled(ApronInt,ApronPPLitePoly)
 entry={}
 bb1={-i <= 0; i <= 100; 199*i-10000*k <= 0}
 bb1_f={-i <= 0; i <= 100; 199*i-10000*k <= 0}
@@ -115,7 +115,7 @@ loop2_bb1_f:
 ret:
 
 
-Invariants using ApronNewPolka
+Invariants using ApronPk
 loop1_entry={}
 loop1_bb1={k = 30; i <= 10; -i <= 0}
 loop1_bb1_f={k = 30; i <= 10; -i <= 0}
@@ -250,7 +250,7 @@ loop2_f:
 ret:
 
 
-Invariants using ApronNewPolka
+Invariants using ApronPk
 entry={}
 loop1_head={i <= 8; -i <= 0}
 loop1_f={i <= 8; -i <= 0}
@@ -373,7 +373,7 @@ loop_f:
 ret:
 
 
-Invariants using ApronNewPolka
+Invariants using ApronPk
 entry={}
 loop_head={-4*i+p = 0; i <= 10; -i <= 0}
 loop_f={-4*i+p = 0; i <= 10; -i <= 0}
