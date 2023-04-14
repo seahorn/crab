@@ -1802,7 +1802,7 @@ public:
     std::string base_name = _impl.domain_name();
     const char* prefix = "Term"; 
     std::string name;
-    name.reserve(std::strlen(prefix) + base_name.size() + 3);
+    name.reserve(base_name.size() + 7);
     name.append(prefix);
     name.append("(");
     name.append(base_name);
