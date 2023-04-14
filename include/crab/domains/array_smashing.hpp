@@ -41,6 +41,9 @@ class ArraySmashingDefaultParams {
 public:
   enum { implement_inter_transformers = 0 };
 };
+
+#define ARRAY_SMASHING_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
   
 // All arrays are `smashed` into a single summarized variable.
 template <typename BaseNumDomain, typename Params = ArraySmashingDefaultParams>
@@ -240,15 +243,13 @@ public:
   array_smashing(const array_smashing_t &other)
       : m_last_access_env(other.m_last_access_env),
         m_base_dom(other.m_base_dom) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    ARRAY_SMASHING_DOMAIN_SCOPED_STATS(".copy");
   }
 
   array_smashing(array_smashing_t &&other) = default;
 
   array_smashing_t &operator=(const array_smashing_t &other) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    ARRAY_SMASHING_DOMAIN_SCOPED_STATS(".copy");
     if (this != &other) {
       m_last_access_env = other.m_last_access_env;
       m_base_dom = other.m_base_dom;
@@ -573,8 +574,7 @@ public:
   virtual void array_load(const variable_t &lhs, const variable_t &a,
                           const linear_expression_t &elem_size /*bytes*/,
                           const linear_expression_t &i) override {
-    crab::CrabStats::count(domain_name() + ".count.load");
-    crab::ScopedCrabStats __st__(domain_name() + ".load");
+    ARRAY_SMASHING_DOMAIN_SCOPED_STATS(".array_load");
 
     uint64_t size = check_and_get_elem_size(elem_size);
     if (equal_size(a, size)) {
@@ -607,8 +607,7 @@ public:
                            const linear_expression_t &i,
                            const linear_expression_t &val,
                            bool is_strong_update) override {
-    crab::CrabStats::count(domain_name() + ".count.store");
-    crab::ScopedCrabStats __st__(domain_name() + ".store");
+    ARRAY_SMASHING_DOMAIN_SCOPED_STATS(".array_store");
 
     uint64_t size = check_and_get_elem_size(elem_size);
     if (is_strong_update) {
@@ -633,8 +632,7 @@ public:
                                  const linear_expression_t &i,
                                  const linear_expression_t &j,
                                  const linear_expression_t &val) override {
-    crab::CrabStats::count(domain_name() + ".count.store");
-    crab::ScopedCrabStats __st__(domain_name() + ".store");
+    ARRAY_SMASHING_DOMAIN_SCOPED_STATS(".array_store_range");
 
     uint64_t size = check_and_get_elem_size(elem_size);
     if (equal_size(a, size)) {
@@ -786,8 +784,12 @@ public:
   void write(crab_os &o) const override { o << m_base_dom; }
 
   std::string domain_name() const override {
+    #if 1
+    return "ArraySmash";
+    #else
     std::string name("ArraySmashing(" + m_base_dom.domain_name() + ")");
     return name;
+    #endif 
   }
 
 }; // end array_smashing

@@ -45,6 +45,8 @@ class UFDefaultParams {
 public:
   enum { implement_inter_transformers = 0 };
 };
+
+#define HERBRAND_DOMAIN_SCOPED_STATS(NAME) CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
   
 template <typename Number, typename VariableName, typename Params = UFDefaultParams>
 class uf_domain final
@@ -417,14 +419,12 @@ public:
   uf_domain(const uf_domain_t &o)
       : m_is_bottom(o.m_is_bottom), m_ttbl(o.m_ttbl), m_var_map(o.m_var_map),
         m_rev_var_map(o.m_rev_var_map) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    HERBRAND_DOMAIN_SCOPED_STATS(".copy");
     check_terms(__LINE__);
   }
 
   uf_domain_t &operator=(const uf_domain_t &o) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    HERBRAND_DOMAIN_SCOPED_STATS(".copy");
 
     o.check_terms(__LINE__);
     if (this != &o) {
@@ -443,8 +443,7 @@ public:
 
   // Lattice operations
   bool operator<=(const uf_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.leq");
-    crab::ScopedCrabStats __st__(domain_name() + ".leq");
+    HERBRAND_DOMAIN_SCOPED_STATS(".leq");
 
     if (is_bottom()) {
       return true;
@@ -468,8 +467,7 @@ public:
   }
 
   void operator|=(const uf_domain_t &o) override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    HERBRAND_DOMAIN_SCOPED_STATS(".join");
 
     if (is_bottom() || o.is_top()) {
       *this = o;
@@ -506,8 +504,7 @@ public:
   }
 
   uf_domain_t operator|(const uf_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    HERBRAND_DOMAIN_SCOPED_STATS(".join");
 
     if (is_bottom() || o.is_top()) {
       return o;
@@ -592,8 +589,7 @@ public:
    *    meet({x -> a}, {x-> b}) = {x -> a} assuming a << b.
    **/
   uf_domain_t operator&(const uf_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    HERBRAND_DOMAIN_SCOPED_STATS(".meet");
 
     if (is_bottom() || o.is_top()) {
       return *this;
@@ -681,8 +677,7 @@ public:
 
   // Remove a variable from the scope
   void operator-=(const variable_t &v) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    HERBRAND_DOMAIN_SCOPED_STATS(".forget");
 
     auto it(m_var_map.find(v));
     if (it != m_var_map.end()) {
@@ -696,8 +691,7 @@ public:
   }
 
   void assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    HERBRAND_DOMAIN_SCOPED_STATS(".assign");
 
     if (!is_bottom()) {
       term_id_t tx(build_linexpr(e));
@@ -796,8 +790,7 @@ public:
   // x = y op z
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    HERBRAND_DOMAIN_SCOPED_STATS(".apply");
     check_terms(__LINE__);
 
     if (!is_bottom()) {
@@ -813,8 +806,7 @@ public:
   // x = y op k
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    HERBRAND_DOMAIN_SCOPED_STATS(".apply");
 
     if (!is_bottom()) {
       term_id_t tx(
@@ -828,8 +820,7 @@ public:
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const uf_domain_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign");
+    //HERBRAND_DOMAIN_SCOPED_STATS(".backward_assign");
     if (!is_bottom()) {
       CRAB_WARN("backward_assign not implemented by ", domain_name());
     }
@@ -838,8 +829,7 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, number_t z,
                       const uf_domain_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    //HERBRAND_DOMAIN_SCOPED_STATS(".backward_apply");
     if (!is_bottom()) {
       CRAB_WARN("backward_apply not implemented by ", domain_name());
     }
@@ -848,16 +838,14 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const uf_domain_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    //HERBRAND_DOMAIN_SCOPED_STATS(".backward_apply");
     if (!is_bottom()) {
       CRAB_WARN("backward_apply not implemented by ", domain_name());
     }
   }
 
   void operator+=(const linear_constraint_t &cst) {
-    crab::CrabStats::count(domain_name() + ".count.add_constraints");
-    crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
+    HERBRAND_DOMAIN_SCOPED_STATS(".add_cst");
 
     CRAB_LOG("uf", crab::outs()
                        << "*** Before assume " << cst << ":" << *this << "\n");
@@ -919,8 +907,7 @@ public:
   }
 
   interval_t at(const variable_t &x) const override {
-    crab::CrabStats::count(domain_name() + ".count.to_intervals");
-    crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
+    HERBRAND_DOMAIN_SCOPED_STATS(".to_intervals");
     if (is_bottom()) {
       return interval_t::bottom();
     } else {
@@ -938,8 +925,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    HERBRAND_DOMAIN_SCOPED_STATS(".apply");
 
     if (!is_bottom()) {
       term_id_t tx(
@@ -953,8 +939,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    HERBRAND_DOMAIN_SCOPED_STATS(".apply");
 
     if (!is_bottom()) {
       term_id_t tx(
@@ -979,8 +964,7 @@ public:
   virtual void array_load(const variable_t &lhs, const variable_t &a,
                           const linear_expression_t & /*elem_size*/,
                           const linear_expression_t &i) override {
-    crab::CrabStats::count(domain_name() + ".count.array_read");
-    crab::ScopedCrabStats __st__(domain_name() + ".array_read");
+    HERBRAND_DOMAIN_SCOPED_STATS(".array_read");
 
     if (!is_bottom()) {
       /**
@@ -1070,8 +1054,7 @@ public:
 
   virtual void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                bool is_not_rhs) override {
-    crab::CrabStats::count(domain_name() + ".count.assign_bool_var");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_var");
+    HERBRAND_DOMAIN_SCOPED_STATS(".assign_bool_var");
 
     if (!is_bottom()) {
       check_terms(__LINE__);
@@ -1098,8 +1081,7 @@ public:
   virtual void apply_binary_bool(bool_operation_t op, const variable_t &x,
                                  const variable_t &y,
                                  const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply_binary_bool");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply_binary_bool");
+    HERBRAND_DOMAIN_SCOPED_STATS(".bin_bool");
 
     if (!is_bottom()) {
       check_terms(__LINE__);
@@ -1151,6 +1133,7 @@ public:
   // call operations
   void callee_entry(const callsite_info<variable_t> &callsite,
 		    const uf_domain_t &caller) override {
+    HERBRAND_DOMAIN_SCOPED_STATS(".callee_entry");    
     inter_abstract_operations<uf_domain_t, Params::implement_inter_transformers>::
       callee_entry(callsite, caller, *this);
       
@@ -1158,6 +1141,7 @@ public:
 
   void caller_continuation(const callsite_info<variable_t> &callsite,
 			   const uf_domain_t &callee) override {
+    HERBRAND_DOMAIN_SCOPED_STATS(".caller_cont");        
     inter_abstract_operations<uf_domain_t, Params::implement_inter_transformers>::    
       caller_continuation(callsite, callee, *this);
   }
@@ -1190,8 +1174,7 @@ public:
 
   virtual void ref_load(const variable_t &ref, const variable_t &reg,
                         const variable_t &res) override {
-    crab::CrabStats::count(domain_name() + ".count.ref_load");
-    crab::ScopedCrabStats __st__(domain_name() + ".ref_load");
+    HERBRAND_DOMAIN_SCOPED_STATS(".ref_load");
 
     if (!is_bottom()) {
       /**
@@ -1260,8 +1243,7 @@ public:
   // Miscellaneous
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
-    crab::CrabStats::count(domain_name() + ".count.rename");
-    crab::ScopedCrabStats __st__(domain_name() + ".rename");
+    HERBRAND_DOMAIN_SCOPED_STATS(".rename");
 
     if (is_top() || is_bottom()) {
       return;
@@ -1317,8 +1299,7 @@ public:
   }
 
   void project(const variable_vector_t &variables) override {
-    crab::CrabStats::count(domain_name() + ".count.project");
-    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    HERBRAND_DOMAIN_SCOPED_STATS(".project");
 
     if (is_bottom() || is_top()) {
       return;
@@ -1341,8 +1322,7 @@ public:
   }
 
   void expand(const variable_t &x, const variable_t &y) override {
-    crab::CrabStats::count(domain_name() + ".count.expand");
-    crab::ScopedCrabStats __st__(domain_name() + ".expand");
+    HERBRAND_DOMAIN_SCOPED_STATS(".expand");
 
     if (is_bottom() || is_top()) {
       return;
@@ -1357,14 +1337,14 @@ public:
   /* begin intrinsics operations */
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
   void backward_intrinsic(std::string name,
                           const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const uf_domain_t &invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
   /* end intrinsics operations */
 
@@ -1373,9 +1353,6 @@ public:
 
   // Output function
   void write(crab_os &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.write");
-    crab::ScopedCrabStats __st__(domain_name() + ".write");
-
     if (is_bottom()) {
       o << "_|_";
       return;
@@ -1404,10 +1381,7 @@ public:
   }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
-    crab::CrabStats::count(domain_name() +
-                           ".count.to_linear_constraint_system");
-    crab::ScopedCrabStats __st__(domain_name() +
-                                 ".to_linear_constraint_system");
+    HERBRAND_DOMAIN_SCOPED_STATS(".to_linear_constraint_system");
 
     linear_constraint_system_t out_csts;
     if (is_bottom()) {
@@ -1451,7 +1425,7 @@ public:
     }
   }
 
-  std::string domain_name() const override { return "UFDomain"; }
+  std::string domain_name() const override { return "Herbrand"; }
 }; // class uf_domain
 
 template <typename Number, typename VariableName, typename Params>

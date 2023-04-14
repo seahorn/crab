@@ -631,8 +631,7 @@ public:
         _dfn_table(std::make_shared<dfn_table_t>()), _num(0),
         _stack(std::make_shared<stack_t>()),
         _nesting_table(std::make_shared<nesting_table_t>()) {
-    crab::ScopedCrabStats __st__("Fixpo.WTO");
-
+    //crab::ScopedCrabStats __st__("Fixpo.WTO");
     this->visit(g, entry(g), this->_wto_components);
     this->_dfn_table.reset();
     this->_stack.reset();
@@ -644,8 +643,7 @@ public:
         _dfn_table(std::make_shared<dfn_table_t>()), _num(0),
         _stack(std::make_shared<stack_t>()),
         _nesting_table(std::make_shared<nesting_table_t>()) {
-    crab::ScopedCrabStats __st__("Fixpo.WTO");
-
+    //crab::ScopedCrabStats __st__("Fixpo.WTO");
     this->visit(g, entry, this->_wto_components);
     this->_dfn_table.reset();
     this->_stack.reset();

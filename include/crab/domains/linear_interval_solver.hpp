@@ -112,7 +112,6 @@ private:
 
   // return true if bottom
   bool refine(const variable_t &v, Interval i, IntervalCollection &env) {
-    crab::ScopedCrabStats __st__("Linear Interval Solver.Solving refinement");
     CRAB_LOG("interval-solver",
              crab::outs() << "\tRefine " << v << " with " << i << "\n";);
     Interval old_i = env.at(v);
@@ -140,8 +139,6 @@ private:
 
   Interval compute_residual(const linear_constraint_t &cst,
                             const variable_t &pivot, IntervalCollection &env) {
-    crab::ScopedCrabStats __st__(
-        "Linear Interval Solver.Solving computing residual");
     namespace interval_traits = linear_interval_solver_impl;
     bitwidth_t w = get_bitwidth(pivot);
     Interval residual =
@@ -162,7 +159,6 @@ private:
 
   // return true if bottom found while propagation
   bool propagate(const linear_constraint_t &cst, IntervalCollection &env) {
-    crab::ScopedCrabStats __st__("Linear Interval Solver.Solving propagation");
     namespace interval_traits = linear_interval_solver_impl;
 
     CRAB_LOG("interval-solver",
@@ -258,9 +254,7 @@ public:
                          std::size_t max_cycles)
       : m_max_cycles(max_cycles), m_is_contradiction(false),
         m_is_large_system(false), m_op_count(0) {
-
-    crab::ScopedCrabStats __st_a__("Linear Interval Solver");
-    crab::ScopedCrabStats __st_b__("Linear Interval Solver.Preprocessing");
+    //crab::ScopedCrabStats __st__("IntervalSolver.pp", false);
     std::size_t op_per_cycle = 0;
     for (const linear_constraint_t &cst : csts) {
       if (cst.is_contradiction()) {
@@ -303,9 +297,7 @@ public:
   }
 
   void run(IntervalCollection &env) {
-    crab::ScopedCrabStats __st_a__("Linear Interval Solver");
-    crab::ScopedCrabStats __st_b__("Linear Interval Solver.Solving");
-
+    //crab::ScopedCrabStats __st__("IntervalSolver.solve", false);
     if (m_is_contradiction) {
       env.set_to_bottom();
     } else {
