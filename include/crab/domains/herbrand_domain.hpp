@@ -9,11 +9,11 @@
  * classical congruence closure algorithm. The domain is suitable to
  * infer equalities between variables.
  * 
- * TODO: conceptually uf_domain is a subset of term_domain because
- *       uf_domain implements just the Herbrand domain. We need either
+ * TODO: conceptually herbrand_domain is a subset of term_domain because
+ *       herbrand_domain implements just the Herbrand domain. We need either
  *       modify term_domain so that we can enable/disable the
  *       reduction with the numerical domain or factorize common code
- *       between uf_domain and term_domain to avoid duplication.
+ *       between herbrand_domain and term_domain to avoid duplication.
  ******************************************************************************/
 
 #pragma once
@@ -49,11 +49,11 @@ public:
 #define HERBRAND_DOMAIN_SCOPED_STATS(NAME) CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
   
 template <typename Number, typename VariableName, typename Params = UFDefaultParams>
-class uf_domain final
-  : public abstract_domain_api<uf_domain<Number, VariableName, Params>> {
+class herbrand_domain final
+  : public abstract_domain_api<herbrand_domain<Number, VariableName, Params>> {
 
-  using uf_domain_t = uf_domain<Number, VariableName, Params>;
-  using abstract_domain_t = abstract_domain_api<uf_domain_t>;
+  using herbrand_domain_t = herbrand_domain<Number, VariableName, Params>;
+  using abstract_domain_t = abstract_domain_api<herbrand_domain_t>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -104,9 +104,9 @@ private:
   var_map_t m_var_map;
   rev_var_map_t m_rev_var_map;
 
-  uf_domain(bool is_top) : m_is_bottom(!is_top) {}
+  herbrand_domain(bool is_top) : m_is_bottom(!is_top) {}
 
-  uf_domain(ttbl_t &&tbl, var_map_t &&vm, rev_var_map_t &&rvm)
+  herbrand_domain(ttbl_t &&tbl, var_map_t &&vm, rev_var_map_t &&rvm)
       : m_is_bottom(false), m_ttbl(std::move(tbl)), m_var_map(std::move(vm)),
         m_rev_var_map(std::move(rvm)) {
     check_terms(__LINE__);
@@ -400,30 +400,30 @@ private:
   }
 
 public:
-  uf_domain_t make_top() const override { return uf_domain_t(true); }
+  herbrand_domain_t make_top() const override { return herbrand_domain_t(true); }
 
-  uf_domain_t make_bottom() const override { return uf_domain_t(false); }
+  herbrand_domain_t make_bottom() const override { return herbrand_domain_t(false); }
 
   void set_to_top() override {
-    uf_domain abs(true);
+    herbrand_domain abs(true);
     std::swap(*this, abs);
   }
 
   void set_to_bottom() override {
-    uf_domain abs(false);
+    herbrand_domain abs(false);
     std::swap(*this, abs);
   }
 
-  uf_domain() : m_is_bottom(false) {}
+  herbrand_domain() : m_is_bottom(false) {}
 
-  uf_domain(const uf_domain_t &o)
+  herbrand_domain(const herbrand_domain_t &o)
       : m_is_bottom(o.m_is_bottom), m_ttbl(o.m_ttbl), m_var_map(o.m_var_map),
         m_rev_var_map(o.m_rev_var_map) {
     HERBRAND_DOMAIN_SCOPED_STATS(".copy");
     check_terms(__LINE__);
   }
 
-  uf_domain_t &operator=(const uf_domain_t &o) {
+  herbrand_domain_t &operator=(const herbrand_domain_t &o) {
     HERBRAND_DOMAIN_SCOPED_STATS(".copy");
 
     o.check_terms(__LINE__);
@@ -442,7 +442,7 @@ public:
   bool is_top() const override { return !m_var_map.size() && !is_bottom(); }
 
   // Lattice operations
-  bool operator<=(const uf_domain_t &o) const override {
+  bool operator<=(const herbrand_domain_t &o) const override {
     HERBRAND_DOMAIN_SCOPED_STATS(".leq");
 
     if (is_bottom()) {
@@ -451,8 +451,8 @@ public:
       return false;
     } else {
       // FIXME: avoid this copy
-      uf_domain_t left(*this);
-      uf_domain_t right(o);
+      herbrand_domain_t left(*this);
+      herbrand_domain_t right(o);
       typename ttbl_t::term_map_t gen_map /*unused*/;
 
       // Build up the mapping of right onto left, variable by variable.
@@ -466,7 +466,7 @@ public:
     }
   }
 
-  void operator|=(const uf_domain_t &o) override {
+  void operator|=(const herbrand_domain_t &o) override {
     HERBRAND_DOMAIN_SCOPED_STATS(".join");
 
     if (is_bottom() || o.is_top()) {
@@ -475,7 +475,7 @@ public:
       return;
     } else {
       // FIXME: avoid this copy
-      uf_domain_t right(o);
+      herbrand_domain_t right(o);
       ttbl_t out_tbl;
       var_map_t out_vmap;
       rev_var_map_t out_rvmap;
@@ -503,7 +503,7 @@ public:
     }
   }
 
-  uf_domain_t operator|(const uf_domain_t &o) const override {
+  herbrand_domain_t operator|(const herbrand_domain_t &o) const override {
     HERBRAND_DOMAIN_SCOPED_STATS(".join");
 
     if (is_bottom() || o.is_top()) {
@@ -512,8 +512,8 @@ public:
       return *this;
     } else {
       // FIXME: avoid this copy
-      uf_domain_t left(*this);
-      uf_domain_t right(o);
+      herbrand_domain_t left(*this);
+      herbrand_domain_t right(o);
       ttbl_t out_tbl;
       typename ttbl_t::gener_map_t gener_map /*unused*/;
       var_map_t out_vmap;
@@ -535,7 +535,7 @@ public:
         out_tbl.add_ref(p.second);
       }
 
-      uf_domain_t res(std::move(out_tbl), std::move(out_vmap),
+      herbrand_domain_t res(std::move(out_tbl), std::move(out_vmap),
                       std::move(out_rvmap));
 
       CRAB_LOG("uf", crab::outs() << "============ JOIN ==================";
@@ -548,12 +548,12 @@ public:
     }
   }
 
-  uf_domain_t operator||(const uf_domain_t &other) const override {
+  herbrand_domain_t operator||(const herbrand_domain_t &other) const override {
     return *this | other;
   }
 
-  uf_domain_t widening_thresholds(
-      const uf_domain_t &other,
+  herbrand_domain_t widening_thresholds(
+      const herbrand_domain_t &other,
       const thresholds<number_t> &ts) const override {
     return *this | other;
   }
@@ -588,7 +588,7 @@ public:
    * 
    *    meet({x -> a}, {x-> b}) = {x -> a} assuming a << b.
    **/
-  uf_domain_t operator&(const uf_domain_t &o) const override {
+  herbrand_domain_t operator&(const herbrand_domain_t &o) const override {
     HERBRAND_DOMAIN_SCOPED_STATS(".meet");
 
     if (is_bottom() || o.is_top()) {
@@ -654,7 +654,7 @@ public:
         out_ttbl.add_ref(p.second);
       }
 
-      uf_domain_t res(std::move(out_ttbl), std::move(out_vmap),
+      herbrand_domain_t res(std::move(out_ttbl), std::move(out_vmap),
                       std::move(out_rvmap));
 
       CRAB_LOG("uf", crab::outs() << "============ MEET ==================";
@@ -666,12 +666,12 @@ public:
     }
   }
 
-  void operator&=(const uf_domain_t &other) override {
+  void operator&=(const herbrand_domain_t &other) override {
     // TODO: avoid the copy of the left operand.
     *this = *this & other;
   }
   
-  uf_domain_t operator&&(const uf_domain_t &o) const override {
+  herbrand_domain_t operator&&(const herbrand_domain_t &o) const override {
     return *this & o;
   }
 
@@ -702,7 +702,7 @@ public:
     }
   }
 
-  DEFAULT_WEAK_ASSIGN(uf_domain_t)
+  DEFAULT_WEAK_ASSIGN(herbrand_domain_t)
   
   /* Begin uf-domain API */
 
@@ -819,7 +819,7 @@ public:
   }
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
-                       const uf_domain_t &inv) override {
+                       const herbrand_domain_t &inv) override {
     //HERBRAND_DOMAIN_SCOPED_STATS(".backward_assign");
     if (!is_bottom()) {
       CRAB_WARN("backward_assign not implemented by ", domain_name());
@@ -828,7 +828,7 @@ public:
 
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, number_t z,
-                      const uf_domain_t &inv) override {
+                      const herbrand_domain_t &inv) override {
     //HERBRAND_DOMAIN_SCOPED_STATS(".backward_apply");
     if (!is_bottom()) {
       CRAB_WARN("backward_apply not implemented by ", domain_name());
@@ -837,7 +837,7 @@ public:
 
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
-                      const uf_domain_t &inv) override {
+                      const herbrand_domain_t &inv) override {
     //HERBRAND_DOMAIN_SCOPED_STATS(".backward_apply");
     if (!is_bottom()) {
       CRAB_WARN("backward_apply not implemented by ", domain_name());
@@ -900,7 +900,7 @@ public:
     }
   }
 
-  DEFAULT_ENTAILS(uf_domain_t)
+  DEFAULT_ENTAILS(herbrand_domain_t)
   
   interval_t operator[](const variable_t &x) override {
     return at(x);
@@ -1007,13 +1007,13 @@ public:
                            const linear_expression_t &lb_idx,
                            const linear_expression_t &ub_idx,
                            const linear_expression_t &val,
-                           const uf_domain_t &invariant) override {
+                           const herbrand_domain_t &invariant) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
   void backward_array_load(const variable_t &lhs, const variable_t &a,
                            const linear_expression_t &elem_size,
                            const linear_expression_t &i,
-                           const uf_domain_t &invariant) override {
+                           const herbrand_domain_t &invariant) override {
     *this -= lhs;
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
@@ -1021,7 +1021,7 @@ public:
                             const linear_expression_t &elem_size,
                             const linear_expression_t &i,
                             const linear_expression_t &v, bool is_strong_update,
-                            const uf_domain_t &invariant) override {
+                            const herbrand_domain_t &invariant) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
   void backward_array_store_range(const variable_t &a,
@@ -1029,15 +1029,15 @@ public:
                                   const linear_expression_t &i,
                                   const linear_expression_t &j,
                                   const linear_expression_t &v,
-                                  const uf_domain_t &invariant) override {
+                                  const herbrand_domain_t &invariant) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
-                             const uf_domain_t &invariant) override {
+                             const herbrand_domain_t &invariant) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
-  DEFAULT_SELECT(uf_domain_t)
+  DEFAULT_SELECT(herbrand_domain_t)
 
   // boolean operators
   virtual void assign_bool_cst(const variable_t &lhs,
@@ -1076,7 +1076,7 @@ public:
   }
 
 
-  DEFAULT_WEAK_BOOL_ASSIGN(uf_domain_t)
+  DEFAULT_WEAK_BOOL_ASSIGN(herbrand_domain_t)
   
   virtual void apply_binary_bool(bool_operation_t op, const variable_t &x,
                                  const variable_t &y,
@@ -1106,19 +1106,19 @@ public:
   // backward boolean operators
   virtual void backward_assign_bool_cst(const variable_t &lhs,
                                         const linear_constraint_t &rhs,
-                                        const uf_domain_t &inv) override {
+                                        const herbrand_domain_t &inv) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
   virtual void backward_assign_bool_ref_cst(const variable_t &lhs,
                                             const reference_constraint_t &rhs,
-                                            const uf_domain_t &inv) override {
+                                            const herbrand_domain_t &inv) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
   virtual void backward_assign_bool_var(const variable_t &lhs,
                                         const variable_t &rhs, bool is_not_rhs,
-                                        const uf_domain_t &inv) override {
+                                        const herbrand_domain_t &inv) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
@@ -1126,23 +1126,23 @@ public:
                                           const variable_t &x,
                                           const variable_t &y,
                                           const variable_t &z,
-                                          const uf_domain_t &inv) override {
+                                          const herbrand_domain_t &inv) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
   // call operations
   void callee_entry(const callsite_info<variable_t> &callsite,
-		    const uf_domain_t &caller) override {
+		    const herbrand_domain_t &caller) override {
     HERBRAND_DOMAIN_SCOPED_STATS(".callee_entry");    
-    inter_abstract_operations<uf_domain_t, Params::implement_inter_transformers>::
+    inter_abstract_operations<herbrand_domain_t, Params::implement_inter_transformers>::
       callee_entry(callsite, caller, *this);
       
   }
 
   void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const uf_domain_t &callee) override {
+			   const herbrand_domain_t &callee) override {
     HERBRAND_DOMAIN_SCOPED_STATS(".caller_cont");        
-    inter_abstract_operations<uf_domain_t, Params::implement_inter_transformers>::    
+    inter_abstract_operations<herbrand_domain_t, Params::implement_inter_transformers>::    
       caller_continuation(callsite, callee, *this);
   }
 
@@ -1343,7 +1343,7 @@ public:
   void backward_intrinsic(std::string name,
                           const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
-                          const uf_domain_t &invariant) override {
+                          const herbrand_domain_t &invariant) override {
     //CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
   /* end intrinsics operations */
@@ -1426,13 +1426,13 @@ public:
   }
 
   std::string domain_name() const override { return "Herbrand"; }
-}; // class uf_domain
+}; // class herbrand_domain
 
 template <typename Number, typename VariableName, typename Params>
-struct abstract_domain_traits<uf_domain<Number, VariableName, Params>> {
+struct abstract_domain_traits<herbrand_domain<Number, VariableName, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
-}; // end uf_domain
+}; // end herbrand_domain
 
 } // namespace domains
 } // namespace crab
