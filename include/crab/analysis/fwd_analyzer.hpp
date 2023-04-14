@@ -63,7 +63,7 @@ private:
     if (!m_live) {
       return;
     }
-    crab::ScopedCrabStats __st__("Pruning dead variables");
+    crab::ScopedCrabStats __st__("Pruning dead variables", false);
     if (inv.is_bottom() || inv.is_top()) {
       return;
     }
@@ -95,17 +95,14 @@ private:
     CRAB_VERBOSE_IF(1, crab::outs() << "CFG with " << get_cfg().size()
                                     << " basic blocks\n";);
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking CFG ... ";);
-    crab::CrabStats::resume("CFG type checking");
     crab::cfg::type_checker<CFG> tc(get_cfg());
     tc.run();
-    crab::CrabStats::stop("CFG type checking");
     CRAB_VERBOSE_IF(1, get_msg_stream() << "OK\n";);
 
     if (::crab::CrabSanityCheckFlag) {
       // -- This sanity check typically flags whether a variable is
       //    used without proper definition.
       if (get_cfg().has_func_decl()) {
-        crab::CrabStats::resume("Live symbols sanity check");
         CRAB_VERBOSE_IF(1, get_msg_stream()
                                << "Live symbols sanity check ... ";);
         liveness_analysis<CFG> live_symbols(get_cfg(), false /* keep IN sets*/);
@@ -129,7 +126,6 @@ private:
           }
         }
         CRAB_VERBOSE_IF(1, crab::outs() << "\n";);
-        crab::CrabStats::stop("Live symbols sanity check");
       }
     }
 

@@ -41,6 +41,8 @@ public:
   enum { implement_inter_transformers = 0 };
 };
 
+#define VALUE_PARTITION_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
   
 template <typename NumDomain, typename Params = ValPartitioningDefaultParams>
 class value_partitioning_domain final
@@ -913,8 +915,15 @@ public:
   }
 
   std::string domain_name() const override {
-    return std::string("ValuePartitioning(") +
-           m_partitions[0].get_dom().domain_name() + ")";
+    std::string base_name = m_partitions[0].get_dom().domain_name();
+    const char* prefix = "ValPart"; 
+    std::string name;
+    name.reserve(std::strlen(prefix) + base_name.size() + 3);
+    name.append(prefix);
+    name.append("(");
+    name.append(base_name);
+    name.append(")");
+    return name;
   }
 };
 
@@ -1035,8 +1044,7 @@ private:
    *                                   m_product[j].get_variable())
    **/
   void normalize(product_value_partitioning_domain &val) const {
-    crab::CrabStats::count(domain_name() + ".count.normalize");
-    crab::ScopedCrabStats __st__(domain_name() + ".normalize");
+    VALUE_PARTITION_DOMAIN_SCOPED_STATS(".normalize");
 
     if (!has_partitions()) {
       return;
@@ -1506,15 +1514,13 @@ public:
   // product_value_partitioning_domain(const this_type &other):
   //   m_absval(other.m_absval),
   //   m_product(other.m_product) {
-  //   crab::CrabStats::count(domain_name() + ".count.copy");
-  //   crab::ScopedCrabStats __st__(domain_name() + ".copy");
+  //   VALUE_PARTITION_DOMAIN_SCOPED_STATS(".copy");
   // }
 
   this_type &operator=(const this_type &other) = default;
 
   // this_type &operator=(const this_type &other) {
-  //   crab::CrabStats::count(domain_name() + ".count.copy");
-  //   crab::ScopedCrabStats __st__(domain_name() + ".copy");
+  //   VALUE_PARTITION_DOMAIN_SCOPED_STATS(".copy");
   //   if (this != &other) {
   //     m_absval = other.m_absval;
   //     m_product = other.m_product;
@@ -1584,8 +1590,7 @@ public:
   }
 
   bool operator<=(const this_type &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.leq");
-    crab::ScopedCrabStats __st__(domain_name() + ".leq");
+    VALUE_PARTITION_DOMAIN_SCOPED_STATS(".leq");
 
     if (is_bottom() || other.is_top()) {
       return true;
@@ -1597,8 +1602,7 @@ public:
   }
 
   void operator|=(const this_type &other) override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    VALUE_PARTITION_DOMAIN_SCOPED_STATS(".join");
 
     if (is_bottom() || other.is_top()) {
       *this = other;
@@ -1616,8 +1620,7 @@ public:
   }
 
   this_type operator|(const this_type &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    VALUE_PARTITION_DOMAIN_SCOPED_STATS(".join");
 
     if (is_bottom() || other.is_top()) {
       return other;
@@ -1637,8 +1640,7 @@ public:
   }
 
   this_type operator&(const this_type &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    VALUE_PARTITION_DOMAIN_SCOPED_STATS(".meet");
 
     if (is_bottom() || other.is_top()) {
       return *this;
@@ -1658,8 +1660,7 @@ public:
   }
 
   void operator&=(const this_type &other) override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    VALUE_PARTITION_DOMAIN_SCOPED_STATS(".meet");
 
     if (is_bottom() || other.is_top()) {
       // do nothing
@@ -1677,8 +1678,7 @@ public:
   }
 
   this_type operator||(const this_type &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    VALUE_PARTITION_DOMAIN_SCOPED_STATS(".widening");
 
     if (is_bottom() || other.is_top()) {
       return other;
@@ -1699,8 +1699,7 @@ public:
 
   this_type widening_thresholds(const this_type &other,
                                 const thresholds<number_t> &ts) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    VALUE_PARTITION_DOMAIN_SCOPED_STATS(".widening");
 
     if (is_bottom() || other.is_top()) {
       return other;
@@ -1720,8 +1719,7 @@ public:
   }
 
   this_type operator&&(const this_type &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
+    VALUE_PARTITION_DOMAIN_SCOPED_STATS(".narrowing");
 
     if (is_bottom() || other.is_top()) {
       return *this;
@@ -1867,7 +1865,8 @@ public:
     // The transformer for a call is not delegated to the subdomain.
     // Instead, if Params::implement_inter_transformers is enabled
     // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.        
+    // project, meet, forget, etc.
+    VALUE_PARTITION_DOMAIN_SCOPED_STATS(".callee_entry");    
     inter_abstract_operations<this_type, Params::implement_inter_transformers>::
       callee_entry(callsite, caller, *this);
       
@@ -1878,7 +1877,8 @@ public:
     // The transformer for a call is not delegated to the subdomain.
     // Instead, if Params::implement_inter_transformers is enabled
     // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.        
+    // project, meet, forget, etc.
+    VALUE_PARTITION_DOMAIN_SCOPED_STATS(".caller_cont");        
     inter_abstract_operations<this_type, Params::implement_inter_transformers>::    
       caller_continuation(callsite, callee, *this);
   }
@@ -1923,7 +1923,7 @@ public:
                           const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const this_type &invariant) override {
-    CRAB_WARN(domain_name(), " does not implement backward operations");
+    //CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
   void operator-=(const variable_t &v) override {

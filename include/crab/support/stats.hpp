@@ -2,14 +2,14 @@
 
 #include <crab/support/os.hpp>
 
-#include <map>
+#include <unordered_map>
 #include <string>
 
 namespace crab {
 
 extern bool CrabStatsFlag;
 void CrabEnableStats(bool v = true);
-
+  
 class Stopwatch {
   long started;
   long finished;
@@ -33,8 +33,9 @@ inline crab_os &operator<<(crab_os &OS, const Stopwatch &sw) {
 }
 
 class CrabStats {
-  static std::map<std::string, unsigned> &getCounters();
-  static std::map<std::string, Stopwatch> &getTimers();
+  
+  static std::unordered_map<std::string, unsigned> &getCounters();
+  static std::unordered_map<std::string, Stopwatch> &getTimers();
 
 public:
   static void reset();
@@ -59,7 +60,52 @@ class ScopedCrabStats {
   std::string m_name;
 
 public:
-  ScopedCrabStats(const std::string &name, bool reset = false);
+  // Call count and resume on name+suffix
+  ScopedCrabStats(std::string &&name, const char* suffix, bool use_count = true);
+  // Call count and resume on name
+  ScopedCrabStats(const char* name, bool use_count = true);
   ~ScopedCrabStats();
 };
 } // namespace crab
+
+
+/**
+ * Some convenient macros
+ *
+ *   CRAB_SCOPED_STATS(name, active)
+ *     increase **both** timer and counter for name if active=1
+ *   CRAB_COUNT_STATS(name, active)
+ *     increment only counter for name if active=1
+ *   CRAB_SCOPED_TIMER_STATS(name, active)
+ *     increment only timer for name if active=1
+**/
+#include <crab/config.h>
+#ifdef CRAB_STATS
+#define CRAB_SCOPED_STATS(name, active) \
+  CRAB_SCOPED_STATS_(name, active)
+#define CRAB_SCOPED_STATS_(name, active) \
+  CRAB_SCOPED_STATS_ ## active(name)
+#define CRAB_SCOPED_STATS_0(name) 
+#define CRAB_SCOPED_STATS_1(name) \
+  crab::ScopedCrabStats __st__(name, true);
+
+#define CRAB_COUNT_STATS(name, active)		\
+  CRAB_COUNT_STATS_(name, active)
+#define CRAB_COUNT_STATS_(name, active) \
+  CRAB_COUNT_STATS_ ## active(name)
+#define CRAB_COUNT_STATS_0(name) 
+#define CRAB_COUNT_STATS_1(name) \
+  crab::CrabStats::count(name);
+
+#define CRAB_SCOPED_TIMER_STATS(name, active) \
+  CRAB_SCOPED_TIMER_STATS_(name, active)
+#define CRAB_SCOPED_TIMER_STATS_(name, active) \
+  CRAB_SCOPED_TIMER_STATS_ ## active(name)
+#define CRAB_SCOPED_TIMER_STATS_0(name) 
+#define CRAB_SCOPED_TIMER_STATS_1(name) \
+  crab::ScopedCrabStats __st__(name, false);
+#else
+#define CRAB_SCOPED_STATS(name, active) 
+#define CRAB_COUNT_STATS(name, active)
+#define CRAB_SCOPED_TIMER_STATS(name, active)
+#endif

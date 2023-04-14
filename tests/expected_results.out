@@ -1,6 +1,6 @@
 === Begin ./test-bin/array_adaptive1 ===
 Program 1: forall 0<= i< 10. a[i] = 123456
-Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+Invariants using ArrayAdapt
 entry=({}, {})
 bb1=({}, {i -> [0, 10]; A0.smashed -> [0, 123456]})
 bb1_f=({}, {i -> [0, 10]; A0.smashed -> [0, 123456]})
@@ -10,7 +10,7 @@ bb2=({}, {i -> [0, 9]; A0.smashed -> [0, 123456]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 2: forall 0<= i< 10. a[i] = b[i] = x and x = 123456
-Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+Invariants using ArrayAdapt
 entry=({}, {})
 bb1=({}, {i -> [0, 10]; A.smashed -> [0, 123456]; B.smashed -> [0, 123456]})
 bb1_f=({}, {i -> [0, 10]; A.smashed -> [0, 123456]; B.smashed -> [0, 123456]})
@@ -20,7 +20,7 @@ bb2=({}, {i -> [0, 9]; A.smashed -> [0, 123456]; B.smashed -> [0, 123456]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 3: forall 0<= i< 10. a[i] = 8 and b[i] = 5
-Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+Invariants using ArrayAdapt
 entry=({}, {})
 bb1=({}, {i -> [0, 10]; A.smashed -> [0, 8]; B.smashed -> [0, 5]})
 bb1_f=({}, {i -> [0, 10]; A.smashed -> [0, 8]; B.smashed -> [0, 5]})
@@ -30,7 +30,7 @@ bb2=({}, {i -> [0, 9]; A.smashed -> [0, 8]; B.smashed -> [0, 5]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 4: forall 0<= i < n. a[i] = 123456 (unbounded loop)
-Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+Invariants using ArrayAdapt
 entry=({}, {})
 bb1=({}, {i -> [0, +oo]; n -> [1, +oo]})
 bb1_f=({}, {i -> [0, +oo]; n -> [1, +oo]})
@@ -40,7 +40,7 @@ bb2=({}, {i -> [0, +oo]; n -> [1, +oo]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 5: for all 0<= i< 10. a[i] = 123456 (assume elem size=4 bytes)
-Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+Invariants using ArrayAdapt
 entry=({}, {})
 bb1=({}, {i -> [0, 10]; A.smashed -> [0, 123456]})
 bb1_f=({}, {i -> [0, 10]; A.smashed -> [0, 123456]})
@@ -50,7 +50,7 @@ bb2=({}, {i -> [0, 9]; A.smashed -> [0, 123456]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]
-Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+Invariants using ArrayAdapt
 entry=({}, {})
 bb1=({}, {i -> [1, +oo]; n -> [2, +oo]; val -> [89, 89]})
 bb1_f=({}, {i -> [1, +oo]; n -> [2, +oo]; val -> [89, 89]})
@@ -60,7 +60,7 @@ bb2=({}, {i -> [1, +oo]; n -> [2, +oo]; val -> [89, 89]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 7: forall 0<= i< 10 and i % 2 = 0. a[i] = 123456
-Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+Invariants using ArrayAdapt
 entry=({}, {})
 bb1=({}, {i -> [0, 11]; n -> [1, +oo]; A.smashed -> [0, 123456]})
 bb1_f=({}, {i -> [0, 11]; n -> [1, +oo]; A.smashed -> [0, 123456]})
@@ -70,7 +70,7 @@ bb2=({}, {i -> [0, 9]; n -> [1, +oo]; A.smashed -> [0, 123456]})
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
 Program 8: forall 0<= i < n. 1 <= a[i] <= 2
-Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+Invariants using ArrayAdapt
 entry=({}, {})
 bb1=({}, {i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]})
 bb1_f2=({}, {i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]})
@@ -84,7 +84,7 @@ bb2a=({}, {i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]})
 Abstract trace: entry (bb1 bb1_t bb2 bb2b bb2a)^{3} bb1_f2 bb1_f1 bb1_f ret
 
 Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)
-Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+Invariants using ArrayAdapt
 entry=({}, {})
 bb1=({}, {i -> [-1, 9]; A.smashed -> [0, 123456]})
 bb1_f=({}, {i -> [-1, 9]; A.smashed -> [0, 123456]})
@@ -94,7 +94,7 @@ bb2=({}, {i -> [0, 9]; A.smashed -> [0, 123456]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 11: forall 0<= i< 10. a[i] = true and b[i] = false
-Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+Invariants using ArrayAdapt
 entry=({}, {})
 bb1=({TRUE -> true; FALSE -> false; A.smashed -> true; B.smashed -> false}, {i -> [0, 10]})
 bb1_f=({TRUE -> true; FALSE -> false; A.smashed -> true; B.smashed -> false}, {i -> [0, 10]})
@@ -108,7 +108,7 @@ Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 ===================================
  Test 1 for array adaptive domain 
 ===================================
-Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+Invariants using ArrayAdapt
 Abstract trace: bb0 bb2 bb1 bb3
 user-defined assertion checker
 1  Number of total safe checks
@@ -119,7 +119,7 @@ user-defined assertion checker
 ===================================
  Test 2 for array adaptive domain 
 ===================================
-Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+Invariants using ArrayAdapt
 Abstract trace: bb0 bb2 bb1 bb3
 user-defined assertion checker
 1  Number of total safe checks
@@ -130,7 +130,7 @@ user-defined assertion checker
 ===================================
  Test 3 for array adaptive domain 
 ===================================
-Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+Invariants using ArrayAdapt
 Abstract trace: bb0 bb2 bb1 bb3
 user-defined assertion checker
 0  Number of total safe checks
@@ -141,7 +141,7 @@ user-defined assertion checker
 ===================================
  Test 4 for array adaptive domain 
 ===================================
-Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+Invariants using ArrayAdapt
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 user-defined assertion checker
 2  Number of total safe checks
@@ -152,7 +152,7 @@ user-defined assertion checker
 ===================================
  Test 5 for array adaptive domain 
 ===================================
-Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+Invariants using ArrayAdapt
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 user-defined assertion checker
 2  Number of total safe checks
@@ -163,7 +163,7 @@ user-defined assertion checker
 ===================================
  Test 6 for array adaptive domain 
 ===================================
-Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+Invariants using ArrayAdapt
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 user-defined assertion checker
 2  Number of total safe checks
@@ -174,7 +174,7 @@ user-defined assertion checker
 ===================================
  Test 7 for array adaptive domain 
 ===================================
-Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+Invariants using ArrayAdapt
 Abstract trace: entry ret
 user-defined assertion checker
 2  Number of total safe checks
@@ -185,7 +185,7 @@ user-defined assertion checker
 ===================================
  Test 8 for array adaptive domain 
 ===================================
-Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+Invariants using ArrayAdapt
 Abstract trace: entry ret
 user-defined assertion checker
 2  Number of total safe checks
@@ -196,7 +196,7 @@ user-defined assertion checker
 ===================================
  Test 9 for array adaptive domain 
 ===================================
-Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+Invariants using ArrayAdapt
 Abstract trace: entry ret
 user-defined assertion checker
 1  Number of total safe checks
@@ -207,7 +207,7 @@ user-defined assertion checker
 ===================================
  Test 10 for array adaptive domain 
 ===================================
-Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+Invariants using ArrayAdapt
 Abstract trace: bb0 bb2 bb1 bb3 bb4
 user-defined assertion checker
 0  Number of total safe checks
@@ -218,7 +218,7 @@ user-defined assertion checker
 ===================================
  Test 11 for array adaptive domain 
 ===================================
-Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+Invariants using ArrayAdapt
 Abstract trace: bb0 bb2 bb1 bb3 bb4
 user-defined assertion checker
 2  Number of total safe checks
@@ -229,7 +229,7 @@ user-defined assertion checker
 ===================================
  Test 12 for array adaptive domain 
 ===================================
-Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+Invariants using ArrayAdapt
 Abstract trace: bb0
 user-defined assertion checker
 4  Number of total safe checks
@@ -240,7 +240,7 @@ user-defined assertion checker
 ===================================
  Test 13 for array adaptive domain 
 ===================================
-Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+Invariants using ArrayAdapt
 Abstract trace: bb0
 user-defined assertion checker
 5  Number of total safe checks
@@ -251,7 +251,7 @@ user-defined assertion checker
 === End ./test-bin/array_adaptive2 ===
 === Begin ./test-bin/array_smashing ===
 Program 1: forall 0<= i< 10. a[i] = 123456
-Invariants using ArraySmashing(DisjunctiveIntervals)
+Invariants using ArraySmash
 entry={}
 bb1={n1 -> [1, 1]; i -> [0, 10]; A0_prop -> [0, 0]; A0.smashed -> [0, 0] | [123456, 123456]}
 bb1_f={n1 -> [1, 1]; i -> [0, 10]; A0_prop -> [0, 0]; A0.smashed -> [0, 0] | [123456, 123456]}
@@ -260,7 +260,7 @@ bb1_t={n1 -> [1, 1]; i -> [0, 10]; A0_prop -> [0, 0]; A0.smashed -> [0, 0] | [12
 bb2={n1 -> [1, 1]; i -> [0, 9]; A0_prop -> [0, 0]; A0.smashed -> [0, 0] | [123456, 123456]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
-Invariants using ArraySmashing(SplitDBM)
+Invariants using ArraySmash
 entry={}
 bb1={n1 -> [1, 1], i -> [0, 10], A0_prop -> [0, 0], A0.smashed -> [0, 123456], i-n1<=9, n1-i<=1, A0.smashed-i<=123455}
 bb1_f={n1 -> [1, 1], i -> [0, 10], A0_prop -> [0, 0], A0.smashed -> [0, 123456], i-n1<=9, n1-i<=1, A0.smashed-i<=123455}
@@ -270,7 +270,7 @@ bb2={n1 -> [1, 1], i -> [0, 9], A0_prop -> [0, 0], A0.smashed -> [0, 123456], i-
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 2: forall 0<= i< 10. a[i] = b[i] = x and x = 123456
-Invariants using ArraySmashing(DisjunctiveIntervals)
+Invariants using ArraySmash
 entry={}
 bb1={n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]; B.smashed -> [0, 0] | [123456, 123456]}
 bb1_f={n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]; B.smashed -> [0, 0] | [123456, 123456]}
@@ -279,7 +279,7 @@ bb1_t={n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456,
 bb2={n1 -> [1, 1]; i -> [0, 9]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]; B.smashed -> [0, 0] | [123456, 123456]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
-Invariants using ArraySmashing(SplitDBM)
+Invariants using ArraySmash
 entry={}
 bb1={n1 -> [1, 1], i -> [0, 10], A_p -> [0, 0], A.smashed -> [0, 123456], B.smashed -> [0, 123456], i-n1<=9, n1-i<=1, A.smashed-i<=123455, B.smashed-i<=123455}
 bb1_f={n1 -> [1, 1], i -> [0, 10], A_p -> [0, 0], A.smashed -> [0, 123456], B.smashed -> [0, 123456], i-n1<=9, n1-i<=1, A.smashed-i<=123455, B.smashed-i<=123455}
@@ -289,7 +289,7 @@ bb2={n1 -> [1, 1], i -> [0, 9], A_p -> [0, 0], A.smashed -> [0, 123456], B.smash
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 3: forall 0<= i< 10. a[i] = 8 and b[i] = 5
-Invariants using ArraySmashing(DisjunctiveIntervals)
+Invariants using ArraySmash
 entry={}
 bb1={n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [8, 8]; B.smashed -> [0, 0] | [5, 5]}
 bb1_f={n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [8, 8]; B.smashed -> [0, 0] | [5, 5]}
@@ -298,7 +298,7 @@ bb1_t={n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [8, 8]; 
 bb2={n1 -> [1, 1]; i -> [0, 9]; A_p -> [0, 0]; A.smashed -> [0, 0] | [8, 8]; B.smashed -> [0, 0] | [5, 5]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
-Invariants using ArraySmashing(SplitDBM)
+Invariants using ArraySmash
 entry={}
 bb1={n1 -> [1, 1], i -> [0, 10], A_p -> [0, 0], A.smashed -> [0, 8], B.smashed -> [0, 5], i-n1<=9, n1-i<=1, A.smashed-i<=7, B.smashed-i<=4}
 bb1_f={n1 -> [1, 1], i -> [0, 10], A_p -> [0, 0], A.smashed -> [0, 8], B.smashed -> [0, 5], i-n1<=9, n1-i<=1, A.smashed-i<=7, B.smashed-i<=4}
@@ -308,7 +308,7 @@ bb2={n1 -> [1, 1], i -> [0, 9], A_p -> [0, 0], A.smashed -> [0, 8], B.smashed ->
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 4: forall 0<= i < n. a[i] = 123456 (unbounded loop)
-Invariants using ArraySmashing(DisjunctiveIntervals)
+Invariants using ArraySmash
 entry={}
 bb1={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
 bb1_f={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
@@ -317,7 +317,7 @@ bb1_t={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [
 bb2={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
-Invariants using ArraySmashing(SplitDBM)
+Invariants using ArraySmash
 entry={}
 bb1={n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 123456], n1-i<=1, A.smashed-i<=123455, i-n<=0, A.smashed-n<=123455}
 bb1_f={n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 123456], n1-i<=1, A.smashed-i<=123455, i-n<=0, A.smashed-n<=123455}
@@ -327,7 +327,7 @@ bb2={n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0,
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 5: for all 0<= i< 10. a[i] = 123456 (assume elem size of 4 bytes)
-Invariants using ArraySmashing(DisjunctiveIntervals)
+Invariants using ArraySmash
 entry={}
 bb1={i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
 bb1_f={i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
@@ -336,7 +336,7 @@ bb1_t={i -> [0, 10]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
 bb2={i -> [0, 9]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
-Invariants using ArraySmashing(SplitDBM)
+Invariants using ArraySmash
 entry={}
 bb1={i -> [0, 10], A_p -> [0, 0], A.smashed -> [0, 123456], A.smashed-i<=123455}
 bb1_f={i -> [0, 10], A_p -> [0, 0], A.smashed -> [0, 123456], A.smashed-i<=123455}
@@ -346,7 +346,7 @@ bb2={i -> [0, 9], A_p -> [0, 0], A.smashed -> [0, 123456], A.smashed-i<=123455}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]
-Invariants using ArraySmashing(DisjunctiveIntervals)
+Invariants using ArraySmash
 entry={}
 bb1={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]; A.smashed -> [0, 0] | [89, 89]}
 bb1_f={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]; A.smashed -> [0, 0] | [89, 89]}
@@ -355,7 +355,7 @@ bb1_t={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89
 bb2={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]; A.smashed -> [0, 0] | [89, 89]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
-Invariants using ArraySmashing(SplitDBM)
+Invariants using ArraySmash
 entry={}
 bb1={n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], A_p -> [0, 0], val -> [89, 89], A.smashed -> [0, 89], n1-i<=0, i-n<=0}
 bb1_f={n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], A_p -> [0, 0], val -> [89, 89], A.smashed -> [0, 89], n1-i<=0, i-n<=0}
@@ -365,7 +365,7 @@ bb2={n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], A_p -> [0, 0], val -> [89, 89],
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 7: forall 0<= i< 10 and i % 2 = 0. a[i] = 123456
-Invariants using ArraySmashing(DisjunctiveIntervals)
+Invariants using ArraySmash
 entry={}
 bb1={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 11]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
 bb1_f={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 11]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
@@ -374,7 +374,7 @@ bb1_t={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 
 bb2={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 9]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
-Invariants using ArraySmashing(SplitDBM)
+Invariants using ArraySmash
 entry={}
 bb1={n1 -> [1, 1], n2 -> [2, 2], i -> [0, 11], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 123456], i-n2<=9, n2-i<=2, A.smashed-i<=123454}
 bb1_f={n1 -> [1, 1], n2 -> [2, 2], i -> [0, 11], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 123456], i-n2<=9, n2-i<=2, A.smashed-i<=123454}
@@ -384,7 +384,7 @@ bb2={n1 -> [1, 1], n2 -> [2, 2], i -> [0, 9], n -> [1, +oo], A_p -> [0, 0], A.sm
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 8: forall 0<= i < n. 1 <= a[i] <= 2
-Invariants using ArraySmashing(DisjunctiveIntervals)
+Invariants using ArraySmash
 entry={}
 bb1={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 2]}
 bb1_f2={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 2]}
@@ -397,7 +397,7 @@ bb2b={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]
 bb2a={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]; A.smashed -> [0, 2]}
 Abstract trace: entry (bb1 bb1_t bb2 bb2b bb2a)^{3} bb1_f2 bb1_f1 bb1_f ret
 
-Invariants using ArraySmashing(SplitDBM)
+Invariants using ArraySmash
 entry={}
 bb1={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 2], n1-i1<=1, A.smashed-i1<=2, A.smashed-i2<=1, n1-i2<=1, i1-n<=0, A.smashed-n<=1, i2-n<=0, n1-n<=0}
 bb1_f2={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A_p -> [0, 0], A.smashed -> [0, 2], n1-i1<=1, A.smashed-i1<=2, A.smashed-i2<=1, n1-i2<=1, i1-n<=0, A.smashed-n<=1, i2-n<=0, n1-n<=0}
@@ -411,7 +411,7 @@ bb2a={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A_p -> [0, 0]
 Abstract trace: entry (bb1 bb1_t bb2 bb2b bb2a)^{3} bb1_f2 bb1_f1 bb1_f ret
 
 Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)
-Invariants using ArraySmashing(DisjunctiveIntervals)
+Invariants using ArraySmash
 entry={}
 bb1={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
 bb1_f={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
@@ -420,7 +420,7 @@ bb1_t={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A_p -> [0, 0]; A.
 bb2={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [0, 9]; A_p -> [0, 0]; A.smashed -> [0, 0] | [123456, 123456]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
-Invariants using ArraySmashing(SplitDBM)
+Invariants using ArraySmash
 entry={}
 bb1={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [-1, 9], A_p -> [0, 0], A.smashed -> [0, 123456]}
 bb1_f={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [-1, 9], A_p -> [0, 0], A.smashed -> [0, 123456]}
@@ -430,7 +430,7 @@ bb2={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [0, 9], A_p -> [0, 0], A.sma
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 10: forall 0<= i< 10. a[i] = true and b[i] = false
-Invariants using ArraySmashing(Product(Boolean,SparseDBM))
+Invariants using ArraySmash
 entry=({}, {})
 bb1=({TRUE -> true; FALSE -> false; A.smashed -> true; B.smashed -> false}, {n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1})
 bb1_f=({TRUE -> true; FALSE -> false; A.smashed -> true; B.smashed -> false}, {n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1})
@@ -460,7 +460,7 @@ bb2:
   array_store(M,4,y,sz=4);
   goto bb3;
 
-Invariants using ArrayAdaptive(ArraySmashing(Intervals))
+Invariants using ArrayAdapt
 entry={}
 bb2={}
 bb3={M[4...7] -> [0, +oo]}
@@ -522,7 +522,7 @@ exit:
   w2:int32 = call foo(z2:int32);
 
 
-Running summary domain=SparseDBM and forward domain=Intervals
+Running summary domain=SparseDBM and forward domain=Int
 z:int32 declare foo(x:int32)
 exit={x -> [3, 8]; y -> [4, 9]; z -> [6, 11]}
 entry={x -> [3, 8]; y -> [4, 9]}
@@ -861,7 +861,7 @@ ret:
   assert(i = 0);
 
 
-Invariants using ConstantDomain
+Invariants using Const
 Abstract trace: entry (bb1 bb1_t bb2 bb4 bb3)^{1} bb1_f ret
 user-defined assertion checker
 1  Number of total safe checks
@@ -901,7 +901,7 @@ ret:
   assert(*i = 0);
 
 
-Invariants using RegionDomain(ConstantDomain)
+Invariants using Region
 Abstract trace: entry (bb1 bb1_t bb2 bb4 bb3)^{1} bb1_f ret
 user-defined assertion checker
 1  Number of total safe checks
@@ -1211,7 +1211,7 @@ bb1_f:
 ret:
 
 
-Invariants using DisjunctiveIntervals
+Invariants using DisInt
 entry={}
 bb1={i -> [0, 100]; k -> [0, +oo]}
 bb1_f={i -> [0, 100]; k -> [0, +oo]}
@@ -1229,7 +1229,7 @@ Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 {x -> [5, 5], y -> [0, 10]} entails y != 42
 === End ./test-bin/entailment ===
 === Begin ./test-bin/fixedtvpi ===
-Invariants using FixedTVPIDomain(SplitDBM)
+Invariants using TVPI(SplitDBM)
 entry=top
 loop_header={i -> [0, +oo], x -> [0, +oo], y -> [0, +oo], n -> [1, +oo], x.tvpi.var(4) -> [0, +oo], y.tvpi.var(4) -> [0, +oo], y.tvpi.var(8) -> [0, +oo], x.tvpi.var(4)-i<=0, y.tvpi.var(8)-i<=0, i-x<=0, x.tvpi.var(4)-x<=0, y.tvpi.var(4)-x<=0, y.tvpi.var(8)-x<=0, i-y<=0, x-y<=0, x.tvpi.var(4)-y<=0, y.tvpi.var(4)-y<=0, y.tvpi.var(8)-y<=0, i-n<=0, x.tvpi.var(4)-n<=0, y.tvpi.var(8)-n<=0, i-x.tvpi.var(4)<=0, y.tvpi.var(8)-x.tvpi.var(4)<=0, i-y.tvpi.var(4)<=0, x.tvpi.var(4)-y.tvpi.var(4)<=0, y.tvpi.var(8)-y.tvpi.var(4)<=0, i-y.tvpi.var(8)<=0, x.tvpi.var(4)-y.tvpi.var(8)<=0}
 loop_exit={i -> [0, +oo], x -> [0, +oo], y -> [0, +oo], n -> [1, +oo], x.tvpi.var(4) -> [0, +oo], y.tvpi.var(4) -> [0, +oo], y.tvpi.var(8) -> [0, +oo], x.tvpi.var(4)-i<=0, y.tvpi.var(8)-i<=0, i-x<=0, x.tvpi.var(4)-x<=0, y.tvpi.var(4)-x<=0, y.tvpi.var(8)-x<=0, i-y<=0, x-y<=0, x.tvpi.var(4)-y<=0, y.tvpi.var(4)-y<=0, y.tvpi.var(8)-y<=0, i-n<=0, x.tvpi.var(4)-n<=0, y.tvpi.var(8)-n<=0, i-x.tvpi.var(4)<=0, y.tvpi.var(8)-x.tvpi.var(4)<=0, i-y.tvpi.var(4)<=0, x.tvpi.var(4)-y.tvpi.var(4)<=0, y.tvpi.var(8)-y.tvpi.var(4)<=0, i-y.tvpi.var(8)<=0, x.tvpi.var(4)-y.tvpi.var(8)<=0}
@@ -1237,7 +1237,7 @@ exit={i -> [1, +oo], x -> [4, +oo], y -> [8, +oo], n -> [1, +oo], x.tvpi.var(4) 
 loop_body={i -> [0, +oo], x -> [0, +oo], y -> [0, +oo], n -> [1, +oo], x.tvpi.var(4) -> [0, +oo], y.tvpi.var(4) -> [0, +oo], y.tvpi.var(8) -> [0, +oo], x.tvpi.var(4)-i<=0, y.tvpi.var(8)-i<=0, i-x<=0, x.tvpi.var(4)-x<=0, y.tvpi.var(4)-x<=0, y.tvpi.var(8)-x<=0, i-y<=0, x-y<=0, x.tvpi.var(4)-y<=0, y.tvpi.var(4)-y<=0, y.tvpi.var(8)-y<=0, i-n<=0, x.tvpi.var(4)-n<=0, y.tvpi.var(8)-n<=0, i-x.tvpi.var(4)<=0, y.tvpi.var(8)-x.tvpi.var(4)<=0, i-y.tvpi.var(4)<=0, x.tvpi.var(4)-y.tvpi.var(4)<=0, y.tvpi.var(8)-y.tvpi.var(4)<=0, i-y.tvpi.var(8)<=0, x.tvpi.var(4)-y.tvpi.var(8)<=0}
 Abstract trace: entry (loop_header loop_body)^{4} loop_exit exit
 
-Invariants using FixedTVPIDomain(SplitDBM)
+Invariants using TVPI(SplitDBM)
 Abstract trace: entry (loop_header loop_body)^{4} loop_exit exit
 user-defined assertion checker
 2  Number of total safe checks
@@ -1245,7 +1245,7 @@ user-defined assertion checker
 0  Number of total warning checks
 0  Number of total unreachable checks
 
-Invariants using FixedTVPIDomain(SplitDBM)
+Invariants using TVPI(SplitDBM)
 entry=top
 loop_header={i -> [0, +oo], x -> [0, +oo], n -> [1, +oo], i-x<=0, i-n<=0}
 loop_exit={i -> [0, +oo], x -> [0, +oo], n -> [1, +oo], i-x<=0, i-n<=0}
@@ -1256,7 +1256,7 @@ loop_body_tail={i -> [1, +oo], x -> [2, +oo], n -> [1, +oo], i-x<=-1, i-n<=0}
 loop_body_then={x -> [0, +oo], n -> [1, +oo], i -> [1, +oo], i-x<=1, i-n<=0}
 Abstract trace: entry (loop_header loop_body loop_body_else loop_body_then loop_body_tail)^{4} loop_exit exit
 
-Invariants using FixedTVPIDomain(SplitDBM)
+Invariants using TVPI(SplitDBM)
 Abstract trace: entry (loop_header loop_body loop_body_else loop_body_then loop_body_tail)^{4} loop_exit exit
 user-defined assertion checker
 0  Number of total safe checks
@@ -1270,13 +1270,13 @@ Check3 passed
 {y.tvpi.var(2) -> [0, 3], x -> [0, 3], x.tvpi.var(2) -> [0, +oo], y -> [0, 6], x-y.tvpi.var(2)<=0, y.tvpi.var(2)-x<=0}
 === End ./test-bin/fixedtvpi ===
 === Begin ./test-bin/fixedtvpi2 ===
-Invariants using FixedTVPIDomain(SplitDBM)
+Invariants using TVPI(SplitDBM)
 entry=top
 header_1={x-y.tvpi.var(2)<=0, y.tvpi.var(2)-x<=0, z-z2.tvpi.var(2)<=0, z2.tvpi.var(2)-z<=0}
 exit={x-y.tvpi.var(2)<=0, y.tvpi.var(2)-x<=0, z-z2.tvpi.var(2)<=0, x-z2.tvpi.var(2)<=-3, y.tvpi.var(2)-z2.tvpi.var(2)<=-3, z2.tvpi.var(2)-z<=0, x-z<=-3, y.tvpi.var(2)-z<=-3, x.tvpi.var(3)-z.tvpi.var(3)<=-1}
 Abstract trace: entry header_1 exit
 
-Invariants using FixedTVPIDomain(SplitDBM)
+Invariants using TVPI(SplitDBM)
 Abstract trace: entry header_1 exit
 user-defined assertion checker
 3  Number of total safe checks
@@ -1284,7 +1284,7 @@ user-defined assertion checker
 0  Number of total warning checks
 0  Number of total unreachable checks
 
-Invariants using FixedTVPIDomain(SplitDBM)
+Invariants using TVPI(SplitDBM)
 entry=top
 bb_1={x -> [0, 4], x.tvpi.var(2) -> [0, 2], x.tvpi.var(3) -> [0, +oo], y -> [2, 2], y.tvpi.var(2) -> [1, 1]}
 bb_2={x -> [0, 4], x.tvpi.var(2) -> [0, 2], x.tvpi.var(3) -> [0, +oo], y -> [2, 2], y.tvpi.var(2) -> [1, 1], z -> [0, 8], z.tvpi.var(2) -> [0, 4], z.tvpi.var(2)-x<=0, x-z.tvpi.var(2)<=0}
@@ -1292,7 +1292,7 @@ bb_3={x -> [0, 4], x.tvpi.var(2) -> [0, 2], x.tvpi.var(3) -> [0, +oo], y -> [2, 
 exit={x -> [0, 4], x.tvpi.var(2) -> [0, 2], x.tvpi.var(3) -> [0, +oo], y -> [2, 2], y.tvpi.var(2) -> [1, 1], z -> [0, 8], z.tvpi.var(2) -> [0, 4], m -> [0, +oo], m.tvpi.var(2) -> [0, +oo], j -> [-1, 3], k -> [-2, 6], k.tvpi.var(2) -> [-1, 3], z.tvpi.var(2)-x<=0, j-x<=-1, k.tvpi.var(2)-x<=-1, x-z.tvpi.var(2)<=0, j-z.tvpi.var(2)<=-1, k.tvpi.var(2)-z.tvpi.var(2)<=-1, z-m<=0, z.tvpi.var(2)-m.tvpi.var(2)<=0, x-m.tvpi.var(2)<=0, j-m.tvpi.var(2)<=-1, k.tvpi.var(2)-m.tvpi.var(2)<=-1, z.tvpi.var(3)-m.tvpi.var(3)<=0, x-j<=1, z.tvpi.var(2)-j<=1, k.tvpi.var(2)-j<=0, j-k.tvpi.var(2)<=0, x-k.tvpi.var(2)<=1, z.tvpi.var(2)-k.tvpi.var(2)<=1}
 Abstract trace: entry bb_1 bb_2 bb_3 exit
 
-Invariants using FixedTVPIDomain(SplitDBM)
+Invariants using TVPI(SplitDBM)
 Abstract trace: entry bb_1 bb_2 bb_3 exit
 user-defined assertion checker
 1  Number of total safe checks
@@ -1300,13 +1300,13 @@ user-defined assertion checker
 0  Number of total warning checks
 0  Number of total unreachable checks
 
-Invariants using FixedTVPIDomain(SplitDBM)
+Invariants using TVPI(SplitDBM)
 entry=top
 header_1={n-y.tvpi.var(2)<=0, y.tvpi.var(2)-n<=0}
 exit={n-y.tvpi.var(2)<=0, x.tvpi.var(2)-y.tvpi.var(2)<=0, z.tvpi.var(2)-y.tvpi.var(2)<=0, m.tvpi.var(2)-y.tvpi.var(2)<=0, z'.tvpi.var(2)-y.tvpi.var(2)<=0, y.tvpi.var(2)-n<=0, x.tvpi.var(2)-n<=0, z.tvpi.var(2)-n<=0, m.tvpi.var(2)-n<=0, z'.tvpi.var(2)-n<=0, y-x<=0, z-x<=0, x-y<=0, z-y<=0, y.tvpi.var(2)-x.tvpi.var(2)<=0, n-x.tvpi.var(2)<=0, z.tvpi.var(2)-x.tvpi.var(2)<=0, m.tvpi.var(2)-x.tvpi.var(2)<=0, z'.tvpi.var(2)-x.tvpi.var(2)<=0, x-z<=0, y-z<=0, x.tvpi.var(2)-z.tvpi.var(2)<=0, y.tvpi.var(2)-z.tvpi.var(2)<=0, n-z.tvpi.var(2)<=0, m.tvpi.var(2)-z.tvpi.var(2)<=0, z'.tvpi.var(2)-z.tvpi.var(2)<=0, y.tvpi.var(2)-m.tvpi.var(2)<=0, n-m.tvpi.var(2)<=0, x.tvpi.var(2)-m.tvpi.var(2)<=0, z.tvpi.var(2)-m.tvpi.var(2)<=0, z'.tvpi.var(2)-m.tvpi.var(2)<=0, m-z'<=0, z'-m<=0, m.tvpi.var(2)-z'.tvpi.var(2)<=0, y.tvpi.var(2)-z'.tvpi.var(2)<=0, n-z'.tvpi.var(2)<=0, x.tvpi.var(2)-z'.tvpi.var(2)<=0, z.tvpi.var(2)-z'.tvpi.var(2)<=0}
 Abstract trace: entry header_1 exit
 
-Invariants using FixedTVPIDomain(SplitDBM)
+Invariants using TVPI(SplitDBM)
 Abstract trace: entry header_1 exit
 user-defined assertion checker
 2  Number of total safe checks
@@ -1346,7 +1346,7 @@ bb1_f:
 ret:
 
 
-Invariants using Intervals
+Invariants using Int
 entry={}
 bb1={i -> [0, +oo]}
 bb1_f={i -> [0, +oo]}
@@ -1355,7 +1355,7 @@ bb1_t={i -> [0, +oo]}
 bb2={i -> [0, +oo]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
-Invariants using Product(Boolean,SparseDBM)
+Invariants using Bool+SparseDBM
 entry=({}, {})
 bb1=({bf -> false; bt -> true}, {i -> [0, 101]})
 bb1_f=({bf -> false; bt -> true}, {i -> [0, 101]})
@@ -1387,7 +1387,7 @@ ret:
   assert(i = 10);
 
 
-Invariants using Product(Boolean,Intervals)
+Invariants using Bool+Int
 entry=({}, {})
 bb1=({b -> true}, {i -> [0, 11]; n -> [10, 10]})
 bb1_f=({b -> true}, {i -> [0, 11]; n -> [10, 10]})
@@ -1424,7 +1424,7 @@ ret:
   assert(i = 10);
 
 
-Invariants using Product(Boolean,Intervals)
+Invariants using Bool+Int
 entry=({}, {})
 entry_cnt=({}, {i -> [0, 0]})
 bb1=({b -> true}, {i -> [0, +oo]})
@@ -1459,7 +1459,7 @@ ret:
   assert(i = 10);
 
 
-Invariants using Product(Boolean,Intervals)
+Invariants using Bool+Int
 entry=({}, {})
 bb1=({b1 -> true}, {i -> [0, +oo]; n1 -> [9, 9]})
 bb1_f=({b1 -> true}, {i -> [0, +oo]; n1 -> [9, 9]})
@@ -1468,7 +1468,7 @@ bb1_t=({b1 -> true}, {i -> [0, +oo]; n1 -> [9, 9]})
 bb2=({b1 -> true}, {i -> [0, +oo]; n -> [0, +oo]; n1 -> [9, 9]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
-Invariants using Product(Boolean,SparseDBM)
+Invariants using Bool+SparseDBM
 entry=({}, {})
 bb1=({b1 -> true}, {i -> [0, 10], n -> [9, 9], n1 -> [9, 9], n1-i<=9, n-i<=9, n1-n<=0, i-n<=1, n-n1<=0, i-n1<=1})
 bb1_f=({b1 -> true}, {i -> [0, 10], n -> [9, 9], n1 -> [9, 9], n1-i<=9, n-i<=9, n1-n<=0, i-n<=1, n-n1<=0, i-n1<=1})
@@ -1494,7 +1494,7 @@ exit:
   assert(x <= 10);
 
 
-Invariants using Product(Boolean,Intervals)
+Invariants using Bool+Int
 Abstract trace: entry exit
 user-defined assertion checker
 2  Number of total safe checks
@@ -1515,7 +1515,7 @@ exit:
   assert(x <= 10);
 
 
-Invariants using Product(Boolean,Intervals)
+Invariants using Bool+Int
 Abstract trace: entry exit
 user-defined assertion checker
 2  Number of total safe checks
@@ -1535,7 +1535,7 @@ exit:
   assert(x <= 10);
 
 
-Invariants using Product(Boolean,Intervals)
+Invariants using Bool+Int
 Abstract trace: entry exit
 user-defined assertion checker
 0  Number of total safe checks
@@ -1545,7 +1545,7 @@ user-defined assertion checker
 
 === End ./test-bin/flat_bool_domain5 ===
 === Begin ./test-bin/flat_bool_domain6 ===
-Invariants using Product(Boolean,SparseDBM)
+Invariants using Bool+SparseDBM
 Abstract trace: bb1 bb4 bb2 bb3
 user-defined assertion checker
 2  Number of total safe checks
@@ -1555,7 +1555,7 @@ user-defined assertion checker
 
 === End ./test-bin/flat_bool_domain6 ===
 === Begin ./test-bin/flat_bool_domain7 ===
-Invariants using Product(Boolean,SparseDBM)
+Invariants using Bool+SparseDBM
 Abstract trace: entry exit
 user-defined assertion checker
 3  Number of total safe checks
@@ -1657,7 +1657,7 @@ bb3:
   y = y-1;
   goto bb4;
 
-Invariants using SplitOctagons
+Invariants using SplitOct
 entry={}
 bb1={-x <= 0; -y <= 0; -x+y <= 0; -x-y <= 0}
 bb3={-x <= 0; -y <= 0; -x+y <= 0; -x-y <= 0}
@@ -1669,7 +1669,7 @@ bb6={-x <= 0; -y <= 0; -x+y <= 1; -x-y <= -1}
 bb2={-x <= 0; -y <= 0; -x+y <= 0; -x-y <= 0}
 Abstract trace: entry (bb1 bb3 bb2 bb4 bb5 bb6)^{5} bb7 exit
 
-Invariants using LookaheadWideningDomain(SplitOctagons)
+Invariants using LAWiden(SplitOct)
 entry=top
 bb1={-x <= 0; x <= 102; -y <= 0; y <= 51; -x+y <= 0; -x-y <= 0; x+y <= 102; x+y <= 153}
 bb3={-x <= 0; x <= 102; -y <= 0; y <= 51; -x+y <= 0; -x-y <= 0; x+y <= 102; x+y <= 153}
@@ -1793,7 +1793,7 @@ l1_dont_reset:
   assume(i <= 9);
   goto l1;
 
-Invariants using Intervals
+Invariants using Int
 Abstract trace: entry (l1 (l2 l2_body)^{12} l2_exit l1_dont_reset l1_reset)^{3}
 user-defined assertion checker
 2  Number of total safe checks
@@ -1823,7 +1823,7 @@ l2_exit:
   i = i-j+1;
   goto l1;
 
-Invariants using Intervals
+Invariants using Int
 Abstract trace: entry (l1 (l2 l2_body)^{13} l2_exit)^{3}
 user-defined assertion checker
 0  Number of total safe checks
@@ -1859,7 +1859,7 @@ l2_exit:
   i = i-j+11;
   goto l1;
 
-Invariants using Intervals
+Invariants using Int
 Abstract trace: entry (l1 (l2 l2_body)^{15} l2_exit)^{4}
 user-defined assertion checker
 1  Number of total safe checks
@@ -1906,7 +1906,7 @@ b1_ff:
   assume(nd1 <= 0);
   goto b2;
 
-Invariants using Powerset(ArrayAdaptive(ArraySmashing(Intervals)))
+Invariants using PS(ArrayAdapt)
 Abstract trace: entry b1 b1_ff b1_tt b2 b2_ff b2_tt b3 b3_ff b3_tt exit
 user-defined assertion checker
 1  Number of total safe checks
@@ -1914,7 +1914,7 @@ user-defined assertion checker
 0  Number of total warning checks
 0  Number of total unreachable checks
 
-Invariants using Intervals
+Invariants using Int
 Abstract trace: entry b1 b1_ff b1_tt b2 b2_ff b2_tt b3 b3_ff b3_tt exit
 user-defined assertion checker
 0  Number of total safe checks
@@ -1965,7 +1965,7 @@ ret:
   assert(-*x+*y <= 0);
 
 
-Invariants using RegionDomain(SplitDBM)
+Invariants using Region
 Abstract trace: entry (bb1 bb1_t bb2)^{5} bb1_f bb3 ret
 user-defined assertion checker
 1  Number of total safe checks
@@ -2019,7 +2019,7 @@ ret:
   assert(-*x+*y <= 0);
 
 
-Invariants using RegionDomain(SplitDBM)
+Invariants using Region
 Abstract trace: entry (bb1 bb1_t bb2)^{5} bb1_f ret
 user-defined assertion checker
 3  Number of total safe checks
@@ -2079,7 +2079,7 @@ bb9:
   (region_field_f:region(int),ref1:ref) := gep_ref(region_field_f:region(int),ref9:ref);
   goto bb6_loop;
 
-Invariants using RegionDomain(SplitDBM)
+Invariants using Region
 Abstract trace: entry (bb2_loop bb3 bb5)^{4} bb4 (bb6_loop bb8 bb9)^{2} bb7 exit
 user-defined assertion checker
 0  Number of total safe checks
@@ -2142,7 +2142,7 @@ bb9_assert:
   (region_field_f:region(int),ref1:ref) := gep_ref(region_field_f:region(int),ref9:ref);
   goto bb6_loop;
 
-Invariants using RegionDomain(Product(Boolean,Intervals))
+Invariants using Region
 Abstract trace: entry (bb2_loop bb3 bb5)^{4} bb4 (bb6_loop bb8 bb9 bb9_assert)^{2} bb7 exit
 user-defined assertion checker
 1  Number of total safe checks
@@ -2204,7 +2204,7 @@ bb9_assert:
   (region_field_f:region(int),ref1:ref) := gep_ref(region_field_f:region(int),ref9:ref);
   goto bb6_loop;
 
-Invariants using RegionDomain(Product(Boolean,Intervals))
+Invariants using Region
 Abstract trace: entry (bb2_loop bb3 bb5)^{4} bb4 (bb6_loop bb8 bb9 bb9_assert)^{2} bb7 exit
 user-defined assertion checker
 0  Number of total safe checks
@@ -2264,7 +2264,7 @@ ret:
   assert(-*x+*y <= 0);
 
 
-Invariants using RegionDomain(SignDomain)
+Invariants using Region
 Abstract trace: entry (bb1 bb1_t bb2)^{2} bb1_f bb3 ret
 user-defined assertion checker
 5  Number of total safe checks
@@ -2328,7 +2328,7 @@ ret:
   assert(z = 100);
 
 
-Invariants using RegionDomain(Product(SignDomain,ConstantDomain))
+Invariants using Region
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f bb3 ret
 user-defined assertion checker
 6  Number of total safe checks
@@ -2431,7 +2431,7 @@ ret:
   assert(b1);
 
 
-Invariants using RegionDomain(Product(Boolean,Intervals))
+Invariants using Region
 Abstract trace: entry (bb1 bb1_t bb2)^{5} bb1_f bb3 ret
 user-defined assertion checker
 4  Number of total safe checks
@@ -2466,7 +2466,7 @@ ret:
   assert(-k+x+y <= 0);
 
 
-Invariants using SplitOctagons
+Invariants using SplitOct
 Abstract trace: entry (loop loop_body_1 loop_body_2 loop_body_3 loop_body_4)^{4} ret
 user-defined assertion checker
 1  Number of total safe checks
@@ -2498,7 +2498,7 @@ ret:
   assert(-k+x+y <= 0);
 
 
-Invariants using SplitOctagons
+Invariants using SplitOct
 Abstract trace: entry (loop loop_body_1 loop_body_2 loop_body_3 loop_body_4)^{4} ret
 user-defined assertion checker
 1  Number of total safe checks
@@ -2530,7 +2530,7 @@ ret:
   assert(x+y <= 200);
 
 
-Invariants using SplitOctagons
+Invariants using SplitOct
 Abstract trace: entry (loop loop_body_1 loop_body_2 loop_body_3 loop_body_4)^{4} ret
 user-defined assertion checker
 1  Number of total safe checks
@@ -2563,7 +2563,7 @@ ret:
   assert(k+x-y <= 0);
 
 
-Invariants using SplitOctagons
+Invariants using SplitOct
 Abstract trace: entry (loop loop_body_1 loop_body_2 loop_body_3 loop_body_4)^{4} ret
 user-defined assertion checker
 1  Number of total safe checks
@@ -2589,7 +2589,7 @@ ret:
   assert(x+y <= 200);
 
 
-Invariants using SplitOctagons
+Invariants using SplitOct
 Abstract trace: entry (loop loop_body)^{4} ret
 user-defined assertion checker
 1  Number of total safe checks
@@ -2773,7 +2773,7 @@ exit:
   assert(-lhs < 0);
 
 
-Running top-down inter-procedural analysis with RegionDomain(SplitDBM)
+Running top-down inter-procedural analysis with Region
 2  Number of total safe checks
 0  Number of total error checks
 0  Number of total warning checks
@@ -2803,7 +2803,7 @@ exit:
   assert(-lhs < 0);
 
 
-Running top-down inter-procedural analysis with RegionDomain(SplitDBM)
+Running top-down inter-procedural analysis with Region
 2  Number of total safe checks
 0  Number of total error checks
 0  Number of total warning checks
@@ -2949,7 +2949,7 @@ bb1_f:
 ret:
 
 
-Invariants using Intervals
+Invariants using Int
 x0={}
 bb1={i -> [0, 100]; k -> [50, 50]}
 bb1_f={i -> [0, 100]; k -> [50, 50]}
@@ -2957,7 +2957,7 @@ ret={i -> [100, 100]; k -> [50, 50]}
 bb1_t={i -> [0, 100]; k -> [50, 50]}
 Abstract trace: x0 (bb1 bb1_t)^{3} bb1_f ret
 
-Invariants using Term(Intervals)
+Invariants using Term(Int)
 x0={}
 bb1={i -> t0[_y1], k -> t1[_y0]}{_y0 -> [50, 50]; _y1 -> [0, 100]}
 bb1_f={i -> t0[_y1], k -> t1[_y0]}{_y0 -> [50, 50]; _y1 -> [0, 100]}
@@ -2988,7 +2988,7 @@ p_neg:
   z = z*-1;
   goto exit;
 
-Invariants using Intervals
+Invariants using Int
 p0={}
 p_neg={y -> [-1, 1]; z -> [-50, 50]}
 exit={y -> [-1, 1]; z -> [-50, 50]}
@@ -2996,7 +2996,7 @@ ret={y -> [-1, 1]; z -> [-50, 50]; z0 -> [-50, 50]; y0 -> [-1, 1]}
 p_pos={y -> [-1, 1]; z -> [-50, 50]}
 Abstract trace: p0 p_neg p_pos exit ret
 
-Invariants using Term(Intervals)
+Invariants using Term(Int)
 p0={}
 p_neg={y -> t1[_x1], z -> t2[_x2]}{_x0 -> [50, 50]; _x1 -> [-1, 1]; _x2 -> [-50, 50]}
 exit={y -> t0[_y0], z -> t3[_y3]}{_y0 -> [-1, 1]; _y1 -> [-50, 50]; _y2 -> [-1, 1]; _y3 -> [0, 50]}
@@ -3035,7 +3035,7 @@ bb1_f:
 ret:
 
 
-Invariants using Intervals
+Invariants using Int
 entry={}
 bb1={i -> [0, 100]}
 bb1_f={i -> [0, 100]}
@@ -3051,7 +3051,7 @@ ret={i -> [100, 100]}
 bb1_t={i -> [0, 100]}
 Abstract trace: entry (bb1 bb1_t)^{3} bb1_f ret
 
-Invariants using Term(Intervals)
+Invariants using Term(Int)
 entry={}
 bb1={i -> t0[_y1], x -> t1[_y2], y -> t1[_y2], z -> t2[_y3], w -> t2[_y3], s -> t3[_y0], t -> t3[_y0]}{_y1 -> [0, 100]}
 bb1_f={i -> t0[_y1], x -> t1[_y2], y -> t1[_y2], z -> t2[_y3], w -> t2[_y3], s -> t3[_y0], t -> t3[_y0]}{_y1 -> [0, 100]}
@@ -3079,7 +3079,7 @@ bb1_f:
 ret:
 
 
-Invariants using Intervals
+Invariants using Int
 x0={}
 bb1={i -> [0, 101]; k -> [2147483648, 2147483648]}
 bb1_f={i -> [0, 101]; k -> [2147483648, 2147483648]}
@@ -3103,7 +3103,7 @@ ret={i -> [100, 101], k -> [2147483648, 2147483648]}
 bb1_t={i -> [0, 101], k -> [2147483648, 2147483648]}
 Abstract trace: x0 (bb1 bb1_t)^{3} bb1_f ret
 
-Invariants using Product(Intervals,Congruences)
+Invariants using Int+Cong
 x0=({}, {})
 bb1=({i -> [0, 101]; k -> [2147483648, 2147483648]}, {k -> 2147483648})
 bb1_f=({i -> [0, 101]; k -> [2147483648, 2147483648]}, {k -> 2147483648})
@@ -3111,7 +3111,7 @@ ret=({i -> [100, 101]; k -> [2147483648, 2147483648]}, {k -> 2147483648})
 bb1_t=({i -> [0, 101]; k -> [2147483648, 2147483648]}, {k -> 2147483648})
 Abstract trace: x0 (bb1 bb1_t)^{4} bb1_f ret
 
-Invariants using Term(Intervals)
+Invariants using Term(Int)
 x0={}
 bb1={i -> t0[_y1], k -> t1[_y0]}{_y0 -> [2147483648, 2147483648]; _y1 -> [0, 101]}
 bb1_f={i -> t0[_y1], k -> t1[_y0]}{_y0 -> [2147483648, 2147483648]; _y1 -> [0, 101]}
@@ -3119,7 +3119,7 @@ ret={i -> t0[_y1], k -> t1[_y0]}{_y0 -> [2147483648, 2147483648]; _y1 -> [100, 1
 bb1_t={i -> t0[_y1], k -> t1[_y0]}{_y0 -> [2147483648, 2147483648]; _y1 -> [0, 101]}
 Abstract trace: x0 (bb1 bb1_t)^{4} bb1_f ret
 
-Invariants using DisjunctiveIntervals
+Invariants using DisInt
 x0={}
 bb1={i -> [0, 101]; k -> [2147483648, 2147483648]}
 bb1_f={i -> [0, 101]; k -> [2147483648, 2147483648]}
@@ -3144,7 +3144,7 @@ bb1_f:
 ret:
 
 
-Invariants using Intervals
+Invariants using Int
 entry={}
 bb1={i -> [0, 6136154492292301/562949953421312]}
 bb1_f={i -> [0, 6136154492292301/562949953421312]}
@@ -3180,7 +3180,7 @@ loop2_bb1_f:
 ret:
 
 
-Invariants using Intervals
+Invariants using Int
 loop1_entry={}
 loop1_bb1={i -> [0, 10]; k -> [30, 30]}
 loop1_bb1_f={i -> [0, 10]; k -> [30, 30]}
@@ -3213,7 +3213,7 @@ loop2_bb1_t={i -> [10, 10], j -> [0, 10], k -> [30, 30]}
 loop1_bb1_t={i -> [0, 10], k -> [30, 30]}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t)^{3} loop1_bb1_f (loop2_bb1 loop2_bb1_t)^{3} loop2_bb1_f ret
 
-Invariants using Product(Intervals,Congruences)
+Invariants using Int+Cong
 loop1_entry=({}, {})
 loop1_bb1=({i -> [0, 10]; k -> [30, 30]}, {k -> 30})
 loop1_bb1_f=({i -> [0, 10]; k -> [30, 30]}, {k -> 30})
@@ -3224,7 +3224,7 @@ loop2_bb1_t=({i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}, {i -> 10; k -> 30})
 loop1_bb1_t=({i -> [0, 10]; k -> [30, 30]}, {k -> 30})
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t)^{3} loop1_bb1_f (loop2_bb1 loop2_bb1_t)^{3} loop2_bb1_f ret
 
-Invariants using Term(Intervals)
+Invariants using Term(Int)
 loop1_entry={}
 loop1_bb1={i -> t0[_y0], k -> t1[_y1]}{_y0 -> [0, 10]; _y1 -> [30, 30]}
 loop1_bb1_f={i -> t0[_y0], k -> t1[_y1]}{_y0 -> [0, 10]; _y1 -> [30, 30]}
@@ -3235,7 +3235,7 @@ loop2_bb1_t={i -> t0[_x0], j -> t1[_x2], k -> t2[_x1]}{_x0 -> [10, 10]; _x1 -> [
 loop1_bb1_t={i -> t0[_y0], k -> t1[_y1]}{_y0 -> [0, 10]; _y1 -> [30, 30]}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t)^{3} loop1_bb1_f (loop2_bb1 loop2_bb1_t)^{3} loop2_bb1_f ret
 
-Invariants using DisjunctiveIntervals
+Invariants using DisInt
 loop1_entry={}
 loop1_bb1={i -> [0, 10]; k -> [30, 30]}
 loop1_bb1_f={i -> [0, 10]; k -> [30, 30]}
@@ -3257,7 +3257,7 @@ bb1:
   y = y/2;
   goto bb1;
 
-Invariants using Intervals
+Invariants using Int
 entry={}
 bb1={x -> [0, +oo]; y -> [0, 1/2]}
 Abstract trace: entry (bb1)^{3}
@@ -3303,7 +3303,7 @@ loop2_f:
 ret:
 
 
-Invariants using Intervals
+Invariants using Int
 entry={}
 loop1_head={i -> [0, 8]}
 loop1_f={i -> [0, 8]}
@@ -3354,7 +3354,7 @@ loop1_body_x={i -> [0, 8]}
 loop1_body_t={i -> [1, 9]}
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
-Invariants using Product(Intervals,Congruences)
+Invariants using Int+Cong
 entry=({}, {})
 loop1_head=({i -> [0, 8]}, {})
 loop1_f=({i -> [0, 8]}, {})
@@ -3371,7 +3371,7 @@ loop1_body_x=({i -> [0, 8]}, {})
 loop1_body_t=({i -> [1, 9]}, {})
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
-Invariants using Term(Intervals)
+Invariants using Term(Int)
 entry={}
 loop1_head={i -> t0[_z0]}{_z0 -> [0, 8]}
 loop1_f={i -> t0[_z0]}{_z0 -> [0, 8]}
@@ -3388,7 +3388,7 @@ loop1_body_x={i -> t0[_x0]}{_x0 -> [0, 8]}
 loop1_body_t={i -> t2[_z2]}{_z0 -> [0, 8]; _z1 -> [1, 1]; _z2 -> [1, 9]}
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
-Invariants using DisjunctiveIntervals
+Invariants using DisInt
 entry={}
 loop1_head={i -> [0, 8]}
 loop1_f={i -> [0, 8]}
@@ -3421,7 +3421,7 @@ exit:
   assert(-x+y <= 0);
 
 
-Invariants using Intervals
+Invariants using Int
 entry={}
 header={x -> [1, +oo]; y -> [0, +oo]}
 exit={x -> [1, +oo]; y -> [0, +oo]}
@@ -3447,7 +3447,7 @@ loop_f:
 ret:
 
 
-Invariants using Intervals
+Invariants using Int
 entry={}
 loop_head={i -> [0, 10]; p -> [0, +oo]}
 loop_f={i -> [0, 10]; p -> [0, +oo]}
@@ -3471,7 +3471,7 @@ ret={i -> [10, 10], p -> [10, +oo], i-p<=0}
 loop_t={i -> [0, 10], p -> [0, +oo], i-p<=0}
 Abstract trace: entry (loop_head loop_t)^{3} loop_f ret
 
-Invariants using Product(Intervals,Congruences)
+Invariants using Int+Cong
 entry=({}, {})
 loop_head=({i -> [0, 10]; p -> [0, +oo]}, {p -> 4Z+0})
 loop_f=({i -> [0, 10]; p -> [0, +oo]}, {p -> 4Z+0})
@@ -3479,7 +3479,7 @@ ret=({i -> [10, 10]; p -> [0, +oo]}, {i -> 10; p -> 4Z+0})
 loop_t=({i -> [0, 10]; p -> [0, +oo]}, {p -> 4Z+0})
 Abstract trace: entry (loop_head loop_t)^{4} loop_f ret
 
-Invariants using Term(Intervals)
+Invariants using Term(Int)
 entry={}
 loop_head={i -> t0[_y0], p -> t1[_y1]}{_y0 -> [0, 10]; _y1 -> [0, +oo]}
 loop_f={i -> t0[_y0], p -> t1[_y1]}{_y0 -> [0, 10]; _y1 -> [0, +oo]}
@@ -3487,7 +3487,7 @@ ret={i -> t0[_y0], p -> t1[_y1]}{_y0 -> [10, 10]; _y1 -> [0, +oo]}
 loop_t={i -> t0[_y0], p -> t1[_y1]}{_y0 -> [0, 10]; _y1 -> [0, +oo]}
 Abstract trace: entry (loop_head loop_t)^{4} loop_f ret
 
-Invariants using DisjunctiveIntervals
+Invariants using DisInt
 entry={}
 loop_head={i -> [0, 10]; p -> [0, 0] | [4, 4] | [8, 8] | [12, 12] | [16, +oo]}
 loop_f={i -> [0, 10]; p -> [0, 0] | [4, 4] | [8, 8] | [12, 12] | [16, +oo]}
@@ -3548,7 +3548,7 @@ bb1_t={i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<
 bb2={i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f exit ret
 
-Invariants using Term(DisjunctiveIntervals)
+Invariants using Term(DisInt)
 entry={}
 bb1={i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [0, 100]; _y1 -> [1, +oo]}
 bb1_f={i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [0, 100]; _y1 -> [1, +oo]}
@@ -3558,7 +3558,7 @@ bb1_t={i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0
 bb2={i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [0, 99]; _y1 -> [1, +oo]}
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f exit ret
 
-Invariants using ReducedProduct(Term(DisjunctiveIntervals),SplitDBM)
+Invariants using Term(DisInt)+SplitDBM
 entry=({}, {})
 bb1=({i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [0, 100]; _y1 -> [1, +oo]}, {i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0, w-z<=0, z-w<=0})
 bb1_f=({i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [0, 100]; _y1 -> [1, +oo]}, {i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0, w-z<=0, z-w<=0})
@@ -3603,7 +3603,7 @@ ret:
 
 
 Starting at the entry of CFG:
-Invariants using Intervals
+Invariants using Int
 loop1_entry={}
 loop1_bb1={i -> [0, 10]; k -> [30, 30]}
 loop1_bb1_f={i -> [0, 10]; k -> [30, 30]}
@@ -3618,7 +3618,7 @@ loop1_bb2={i -> [0, 9]; k -> [30, 30]}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 
 Starting at the entry of the second loop:
-Invariants using Intervals
+Invariants using Int
 loop1_entry=_|_
 loop1_bb1=_|_
 loop1_bb1_f=_|_
@@ -3633,7 +3633,7 @@ loop1_bb2=_|_
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2) loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 
 Starting at the middle of the second loop:
-Invariants using Intervals
+Invariants using Int
 loop1_entry=_|_
 loop1_bb1=_|_
 loop1_bb1_f=_|_
@@ -3715,7 +3715,7 @@ l_5:
   n = 0;
   goto l_6;
 
-Invariants using Intervals
+Invariants using Int
 entry={}
 l_1={n -> [0, +oo]}
 l_2={n -> [0, +oo]}
@@ -3725,7 +3725,7 @@ l_6={n -> [0, 60]}
 l_4={n -> [0, +oo]}
 Abstract trace: entry (l_1 l_2 l_3 l_5 l_4 l_6)^{3}
 
-Invariants using Intervals
+Invariants using Int
 entry={}
 l_1={n -> [0, 60]}
 l_2={n -> [0, 60]}
@@ -3802,19 +3802,19 @@ Unit tests for array adaptive domain
 ({}, {A[4...7] -> [5, 5]; B[0...3] -> [66, 66]}) & ({}, {A[4...7] -> [5, 5]; C[8...11] -> [32, 32]})=({}, {B[0...3] -> [66, 66]; C[8...11] -> [32, 32]; A[4...7] -> [5, 5]})
 === End ./test-bin/unittests-array-adaptive ===
 === Begin ./test-bin/unittests-backward ===
-Test using ArrayAdaptive(ArraySmashing(Intervals))
+Test using ArrayAdapt
 EXPECTED: {M[4..7] >= 1} 
 RESULT: {M[4...7] -> [1, +oo]}
 ============================
-Test using ArrayAdaptive(ArraySmashing(Intervals))
+Test using ArrayAdapt
 EXPECTED: {z >= 2, ...}
 RESULT: {x -> [2, +oo]; y -> [1, +oo]; z -> [2, +oo]}
 ============================
-Test using ArrayAdaptive(ArraySmashing(Intervals))
+Test using ArrayAdapt
 EXPECTED: _|_
 RESULT: _|_
 ============================
-Test using ArrayAdaptive(ArraySmashing(Intervals))
+Test using ArrayAdapt
 EXPECTED: {y >= 2, ...}
 RESULT: {x -> [2, +oo]; y -> [2, +oo]}
 === End ./test-bin/unittests-backward ===
@@ -3874,7 +3874,7 @@ entry:
 exit:
   assert(ref1 != NULL_REF);
 
-Invariants using RegionDomain(Intervals)
+Invariants using Region
 Abstract trace: entry exit
 user-defined assertion checker
 1  Number of total safe checks
@@ -3893,7 +3893,7 @@ entry:
 exit:
   assert(ref1 != NULL_REF);
 
-Invariants using RegionDomain(Product(Boolean,Intervals))
+Invariants using Region
 Abstract trace: entry exit
 user-defined assertion checker
 0  Number of total safe checks
@@ -3913,7 +3913,7 @@ entry:
 exit:
   assert(ref1 == NULL_REF);
 
-Invariants using RegionDomain(Intervals)
+Invariants using Region
 Abstract trace: entry exit
 user-defined assertion checker
 1  Number of total safe checks
@@ -3933,7 +3933,7 @@ entry:
 exit:
   assert(ref1 != NULL_REF);
 
-Invariants using RegionDomain(Product(Boolean,Intervals))
+Invariants using Region
 Abstract trace: entry exit
 user-defined assertion checker
 1  Number of total safe checks
@@ -3950,7 +3950,7 @@ entry:
 exit:
   assert(ref1 != NULL_REF);
 
-Invariants using RegionDomain(Product(Boolean,Intervals))
+Invariants using Region
 Abstract trace: entry exit
 user-defined assertion checker
 1  Number of total safe checks
@@ -3965,7 +3965,7 @@ After renaming {x0,x1} with {y0,y1}=({}, {y0 -> [5, 5]; y1 -> [10, 10]})
 After renaming {rgn1,rgn2} with {rgn3,rgn4}=({}, {rgn3 -> [20, 20]; rgn4 -> [30, 30]})
 === End ./test-bin/unittests-regions ===
 === Begin ./test-bin/unittests-rename ===
- ===== Intervals ====
+ ===== Int ====
 Before renaming {x -> [-oo, 0]; y -> [5, 5]}
 After rename x with w and y with z={z -> [5, 5]; w -> [-oo, 0]}
 After rename x with w={y -> [5, 5]; w -> [-oo, 0]}
@@ -3977,7 +3977,7 @@ After rename x with w={w -> [-oo, 0], y -> [5, 5]}
 Before renaming {x -> [-oo, 0], y -> [5, 5], x-y<=-5}
 After rename x with w and y with z={w -> [-oo, 0], z -> [5, 5], w-z<=-5}
 After rename x with w={w -> [-oo, 0], y -> [5, 5], w-y<=-5}
- ===== Term(Intervals) ====
+ ===== Term(Int) ====
 Before renaming {x -> t0[_x0], y -> t1[_x1]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 After rename x with w and y with z={z -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 After rename x with w={y -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
@@ -4213,7 +4213,7 @@ bb_nd_ff:
   x = 100;
   goto bb1;
 
-Invariants using Intervals
+Invariants using Int
 entry={}
 bb_nd={y -> [-10, -10]}
 bb_nd_ff={y -> [-10, -10]}
@@ -4225,7 +4225,7 @@ bb2={x -> [0, +oo]; y -> [-10, -10]}
 bb_nd_tt={y -> [-10, -10]}
 Abstract trace: entry bb_nd bb_nd_ff bb_nd_tt (bb1 bb1_t bb2)^{3} bb1_f ret
 
-Invariants using WrappedIntervals
+Invariants using WrappedInt
 entry={}
 bb_nd={y -> [[-10, -10]]_8}
 bb_nd_ff={y -> [[-10, -10]]_8}
@@ -4252,7 +4252,7 @@ then:
   x = -10;
   goto ret;
 
-Invariants using WrappedIntervals
+Invariants using WrappedInt
 entry={}
 then={x -> [[-128, -128]]_8}
 ret={x -> [[10, 10]]_8}

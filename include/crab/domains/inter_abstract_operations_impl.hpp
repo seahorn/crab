@@ -95,9 +95,6 @@ void inter_abstract_operations<Domain, true>::callee_entry(
 
   using variable_t = typename Domain::variable_t;
 
-  crab::CrabStats::count(_caller.domain_name() + ".callee_entry");
-  crab::ScopedCrabStats __st__(_caller.domain_name() + ".callee_entry");
-
   if (_caller.is_bottom()) {
     callee_at_entry.set_to_bottom();
     return;
@@ -150,11 +147,6 @@ void inter_abstract_operations<Domain, true>::caller_continuation(
     const Domain &_callee_at_exit, Domain &caller) {
 
   using variable_t = typename Domain::variable_t;
-
-  crab::CrabStats::count(_callee_at_exit.domain_name() +
-                         ".caller_continuation");
-  crab::ScopedCrabStats __st__(_callee_at_exit.domain_name() +
-                               ".caller_continuation");
 
   if (caller.is_bottom()) {
     return;

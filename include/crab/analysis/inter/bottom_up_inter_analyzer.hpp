@@ -27,6 +27,8 @@
 #include <unordered_map>
 #include <vector>
 
+#define BU_INTER_TIMER_STATS(NAME) CRAB_SCOPED_TIMER_STATS(NAME, 0)
+
 namespace crab {
 namespace analyzer {
 namespace inter_analyzer_impl {
@@ -724,9 +726,7 @@ public:
     m_fixpo_params.get_max_thresholds() = params.thresholds_size;
       
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
-    crab::CrabStats::resume("CallGraph type checking");
     cg.type_check();
-    crab::CrabStats::stop("CallGraph type checking");
     CRAB_VERBOSE_IF(1, get_msg_stream() << "OK\n";);
   }
 
@@ -757,7 +757,7 @@ public:
                            << "Started inter-procedural analysis\n";);
     CRAB_LOG("inter", m_cg.write(crab::outs()); crab::outs() << "\n");
 
-    crab::ScopedCrabStats __st__("Inter");
+    CRAB_SCOPED_TIMER_STATS("Inter", 1)
 
     bool has_noedges = true;
     for (auto const &n : boost::make_iterator_range(m_cg.nodes())) {
@@ -776,7 +776,7 @@ public:
       CRAB_LOG("inter", m_cg.write(crab::outs()); crab::outs() << "\n";);
 
       for (auto &v : boost::make_iterator_range(m_cg.nodes())) {
-        crab::ScopedCrabStats __st__("Inter.TopDown");
+	BU_INTER_TIMER_STATS("Inter.TopDown");	
 
         auto cfg = v.get_cfg();
         assert(cfg.has_func_decl());
@@ -802,7 +802,7 @@ public:
 
     CRAB_VERBOSE_IF(1, get_msg_stream() << "== Bottom-up phase ...\n";);
     for (auto const &n : rev_order) {
-      crab::ScopedCrabStats __st__("Inter.BottomUp");
+      BU_INTER_TIMER_STATS("Inter.BottomUp");
       std::vector<cg_node_t> &scc_mems = Scc_g.get_component_members(n);
       for (auto m : scc_mems) {
 
@@ -845,8 +845,6 @@ public:
 
             // --- project onto formal parameters and return values
             BU_Dom summary = a.get_post(cfg.exit());
-            // crab::CrabStats::count(BU_Dom::getDomainName() +
-            // ".count.project");
             summary.project(formals);
             m_summ_tbl.insert(fdecl, summary, inputs, outputs);
           }
@@ -858,7 +856,7 @@ public:
     bool is_root = true;
     for (auto n :
          boost::make_iterator_range(rev_order.rbegin(), rev_order.rend())) {
-      crab::ScopedCrabStats __st__("Inter.TopDown");
+      BU_INTER_TIMER_STATS("Inter.TopDown");
       std::vector<cg_node_t> &scc_mems = Scc_g.get_component_members(n);
 
       // The SCC is recursive if it has more than one element or

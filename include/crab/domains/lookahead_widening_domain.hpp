@@ -423,7 +423,7 @@ public:
                           const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const this_type &invariant) override {
-    CRAB_WARN(domain_name(), "::backward_intrinsic not implemented");
+    //CRAB_WARN(domain_name(), "::backward_intrinsic not implemented");
   }
 
   void write(crab_os &o) const override {
@@ -443,7 +443,15 @@ public:
 
   std::string domain_name() const override {
     Dom absval;
-    return "LookaheadWideningDomain(" + absval.domain_name() + ")";
+    std::string base_name = absval.domain_name();
+    const char* prefix = "LAWiden"; 
+    std::string name;
+    name.reserve(std::strlen(prefix) + base_name.size() + 3);
+    name.append(prefix);
+    name.append("(");
+    name.append(base_name);
+    name.append(")");
+    return name;
   }
 };
 
