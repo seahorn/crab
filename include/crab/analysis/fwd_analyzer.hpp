@@ -91,9 +91,9 @@ private:
     return res;
   }
 
-  void process_pre(const basic_block_label_t &node, abs_dom_t inv) override {}
+  void process_pre(const basic_block_label_t &node, const abs_dom_t &inv) override {}
 
-  void process_post(const basic_block_label_t &node, abs_dom_t inv) override {}
+  void process_post(const basic_block_label_t &node, const abs_dom_t &inv) override {}
 
   /*
    * Keep these methods private for now and remove them if nobody

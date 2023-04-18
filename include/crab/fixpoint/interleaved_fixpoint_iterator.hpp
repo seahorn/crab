@@ -156,8 +156,8 @@ private:
     }
   }
 
-  inline AbstractValue get(const invariant_table_t &table,
-                           basic_block_label_t node) const {
+  inline const AbstractValue& get(const invariant_table_t &table,
+				  basic_block_label_t node) const {
     FIXPOINT_SCOPED_STATS("Fixpo.invLookup");
     return table.at(node);
   }
@@ -282,10 +282,10 @@ public:
   const wto_t &get_wto() const { return m_wto; }
 
   /* Begin access methods for getting invariants */
-  AbstractValue get_pre(basic_block_label_t node) const {
+  const AbstractValue &get_pre(basic_block_label_t node) const {
     return get(m_pre, node);
   }
-  AbstractValue get_post(basic_block_label_t node) const {
+  const AbstractValue &get_post(basic_block_label_t node) const {
     return get(m_post, node);
   }
   const invariant_table_t &get_pre_invariants() const { return m_pre; }
@@ -425,7 +425,7 @@ private:
 
   inline AbstractValue make_bottom() const { return m_init_inv.make_bottom(); }
 
-  inline AbstractValue strengthen(basic_block_label_t n, AbstractValue inv) {
+  inline void strengthen(AbstractValue &inv, basic_block_label_t n) {
     FIXPOINT_SCOPED_STATS("Fixpo.strengthen");
 
     if (m_assumptions) {
@@ -434,12 +434,11 @@ private:
         CRAB_VERBOSE_IF(3, crab::outs() << "Before assumption at " << n << ":"
                                         << inv << "\n");
 
-        inv = inv & it->second;
+        inv &= it->second;
         CRAB_VERBOSE_IF(3, crab::outs() << "After assumption at " << n << ":"
                                         << inv << "\n");
       }
     }
-    return inv;
   }
 
   inline void compute_post(basic_block_label_t node, AbstractValue inv) {
@@ -523,7 +522,7 @@ public:
       pre = m_iterator->get_pre(node);
       if (m_assumptions && !m_assumptions->empty()) {
         // no necessary but it might avoid copies
-        pre = strengthen(node, pre);
+        strengthen(pre, node);
         m_iterator->set_pre(node, pre);
       }
     } else {
@@ -537,7 +536,7 @@ public:
       }
       if (m_assumptions && !m_assumptions->empty()) {
         // no necessary but it might avoid copies
-        pre = strengthen(node, pre);
+        strengthen(pre, node);
       }
       m_iterator->set_pre(node, pre);
     }
@@ -610,8 +609,7 @@ public:
       }
     }
     if (m_assumptions && !m_assumptions->empty()) {
-      // no necessary but it might avoid copies
-      pre = strengthen(head, pre);
+      strengthen(pre, head);
     }
 
     for (unsigned int iteration = 1;; ++iteration) {
