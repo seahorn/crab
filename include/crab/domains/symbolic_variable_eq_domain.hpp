@@ -67,6 +67,35 @@ template <class SYMBVAR> SYMBVAR make_fresh_var_symbol() {
   return SYMBVAR(term::term_op_val_generator_t::get_next_val());
 }
 
+template <class Domain> class equivalence_class {
+private:
+  std::size_t m_size;
+  std::shared_ptr<Domain> m_val;
+
+  // Copy-on-write: call always this function before get_absval() if
+  // m_val might be modified.
+  void detach_absval() { m_val.reset(new Domain(*m_val)); }
+
+public:
+  explicit equivalence_class(std::shared_ptr<Domain> val)
+      : m_size(0), m_val(val) {} // avoid copy initilization
+
+  std::size_t &get_size() { return m_size; }
+
+  std::size_t get_size() const { return m_size; }
+
+  std::shared_ptr<Domain> detach_and_get_absval() {
+    if (m_val.use_count() > 1) {
+      detach_absval();
+    }
+    return m_val;
+  }
+
+  std::shared_ptr<const Domain> get_absval() const { return m_val; }
+
+  void set_absval(std::shared_ptr<Domain> val) { m_val = val; }
+}; // end class equivalence_class
+
 template <typename Key, typename Value>
 void print_unordered_map(crab::crab_os &o,
                          std::unordered_map<Key, Value> const &m) {
@@ -81,6 +110,9 @@ void print_unordered_map(crab::crab_os &o,
   o << "}";
 }
 } // namespace symbolic_variable_equiality_domain_impl
+
+#define SVEQ_DOMAIN_SCOPED_STATS(NAME) CRAB_DOMAIN_SCOPED_STATS(NAME, 1)
+#define SVEQ_COUNT_STATS(NAME) CRAB_DOMAIN_COUNT_STATS(NAME, 0)
 
 /// @brief An abstract domain represents equalities used in analyses such as
 /// allocation-site abstraction or domain reduction. In short, giving two
@@ -106,7 +138,8 @@ public:
   using domain_t = class symbolic_variable_equiality_domain_impl::symbolic_var;
   using var_id = typename domain_t::var_id;
   using parents_map_t = std::unordered_map<element_t, element_t>;
-  using equivalence_class_t = equivalence_class<domain_t>;
+  using equivalence_class_t =
+      symbolic_variable_equiality_domain_impl::equivalence_class<domain_t>;
   using equivalence_class_elems_t =
       std::unordered_map<element_t, element_set_t>;
 
@@ -140,6 +173,8 @@ private:
   //            └─┘      └─┘          └─┘
   // Note that, { 6 } |-> #var3 will be removed after normalization since
   // it does not caputre any relations between elements.
+  // The implementation is path compression based.
+  // There is no tree like representation for each equivalent class
 
   /// @brief a helper method to empty the disjoin set
   void clear() {
@@ -151,12 +186,11 @@ private:
   /// elements in the equivalence class.
   /// @return a map computed as brief described.
   equivalence_class_elems_t equiv_classes_elems() {
-    crab::CrabStats::count("union_find.count.equiv_classes_elems");
-    crab::ScopedCrabStats __st__("union_find.equiv_classes_elems");
+    SVEQ_DOMAIN_SCOPED_STATS(".classes");
 
     equivalence_class_elems_t res;
     for (auto &kv : m_parents) {
-      element_t &rep = find(kv.second);
+      element_t &rep = kv.second; // already path compressed
       element_set_t &s = res[rep];
       auto it = std::upper_bound(s.begin(), s.end(), kv.first);
       s.insert(it, kv.first);
@@ -168,12 +202,11 @@ private:
   /// elements in the equivalence class **without path-compression**
   /// @return a map computed as brief described.
   equivalence_class_elems_t equiv_classes_elems() const {
-    crab::CrabStats::count("union_find.count.equiv_classes_elems");
-    crab::ScopedCrabStats __st__("union_find.equiv_classes_elems");
+    SVEQ_DOMAIN_SCOPED_STATS(".classes");
 
     equivalence_class_elems_t res;
     for (auto &kv : m_parents) {
-      element_t rep = find(kv.second);
+      element_t rep = kv.second; // already path compressed
       element_set_t &s = res[rep];
       auto it = std::upper_bound(s.begin(), s.end(), kv.first);
       s.insert(it, kv.first);
@@ -195,63 +228,120 @@ private:
     element_set_t out;
     out.reserve(m_parents.size());
     for (auto &kv : m_parents) {
-      element_t rep = find(kv.second);
+      element_t rep = kv.second;
       if (rep == e_rep) {
         auto it = std::upper_bound(out.begin(), out.end(), kv.first);
         out.insert(it, kv.first);
       }
     }
-    return out;
+    return std::move(out);
   }
+
+
+  // this_domain_t join(const this_domain_t &left,
+  //                    const this_domain_t &right) const {
+  //   equivalence_class_elems_t left_equiv_classes = left.equiv_classes_elems();
+  //   equivalence_class_elems_t right_equiv_classes = right.equiv_classes_elems();
+  //   this_domain_t res;
+  //   var_id current_id = 0;
+  //   for (auto &left_kv : left_equiv_classes) {
+  //     const element_set_t &left_set = left_kv.second;
+  //     for (auto &right_kv : right_equiv_classes) {
+  //       const element_set_t &right_set = right_kv.second;
+  //       element_set_t out_set;
+  //       out_set.reserve(std::min(left_set.size(), right_set.size()));
+  //       CRAB_LOG("symb-var-join", crab::outs() << "intersect left: ";
+  //                print_elems_vector(crab::outs(), left_set);
+  //                crab::outs() << ", right: ";
+  //                print_elems_vector(crab::outs(), right_set);
+  //                crab::outs() << "\n";);
+  //       // set_intersection is a linear time operation
+  //       std::set_intersection(left_set.begin(), left_set.end(),
+  //                             right_set.begin(), right_set.end(),
+  //                             std::back_inserter(out_set));
+  //       CRAB_LOG("symb-var-join", crab::outs() << "output: ";
+  //                print_elems_vector(crab::outs(), out_set);
+  //                crab::outs() << "\n";);
+  //       if (out_set.size() > 1) {
+  //         // select one element as representative
+  //         const element_t &rep = out_set[0];
+  //         std::shared_ptr<domain_t> absval_ptr =
+  //             std::make_shared<domain_t>(current_id);
+  //         equivalence_class_t new_val(absval_ptr);
+  //         res.m_classes.insert({rep, new_val});
+  //         for (auto &v : out_set) {
+  //           res.m_parents.insert({v, rep});
+  //         }
+  //         current_id++;
+  //       }
+  //     }
+  //   }
+  //   res.normalize();
+  //   return res;
+  // }
 
   /// @brief a helper method for domain operation join
   /// @param left one abstract state
   /// @param right one abstract state
   /// @return a new abstract state saved the joined result
-  /// TODO: This operation is not an optimal solution. This computation does
-  /// not follow the feature of union-find data structure.
-  /// The solution is computing the intersection of two equivalence classes
+  ///
+  /// Join: Computing the intersection of two equivalence classes
   /// to find least common elements. It only computes a set of
   /// equivalence classes where each class is subset of two classes from the
   /// given two abstract states. That is, the result of the join only remains
   /// equalities appeared both in left and in right states.
   /// Formally, forall cls_x \in left. forall cls_y \in right ::
   ///           cls_x ^ cls_y
+  /// 
+  /// This operation is running on Quadratic Time -- O(n^2).
+  /// The computation follows the structure of unordered_map.
+  /// The operation requires to construct a new unordered_map.
+  /// TODO: to improve sharable results, we need to change data structure.
   this_domain_t join(const this_domain_t &left,
-                     const this_domain_t &right) const {
-    equivalence_class_elems_t left_equiv_classes = left.equiv_classes_elems();
-    equivalence_class_elems_t right_equiv_classes = right.equiv_classes_elems();
+                         const this_domain_t &right) const {
     this_domain_t res;
     var_id current_id = 0;
-    for (auto &left_kv : left_equiv_classes) {
-      const element_set_t &left_set = left_kv.second;
-      for (auto &right_kv : right_equiv_classes) {
-        const element_set_t &right_set = right_kv.second;
-        element_set_t out_set;
-        out_set.reserve(std::min(left_set.size(), right_set.size()));
-        CRAB_LOG("symb-var-join", crab::outs() << "intersect left: ";
-                 print_elems_vector(crab::outs(), left_set);
-                 crab::outs() << ", right: ";
-                 print_elems_vector(crab::outs(), right_set);
-                 crab::outs() << "\n";);
-        // set_intersection is a linear time operation
-        std::set_intersection(left_set.begin(), left_set.end(),
-                              right_set.begin(), right_set.end(),
-                              std::back_inserter(out_set));
-        CRAB_LOG("symb-var-join", crab::outs() << "output: ";
-                 print_elems_vector(crab::outs(), out_set);
-                 crab::outs() << "\n";);
-        if (out_set.size() > 1) {
-          // select one element as representative
-          const element_t &rep = out_set[0];
+    // res.dump();
+    // for (auto &kv : left.m_parents) { // for each k , v
+    for (auto it = left.m_parents.begin(); it != left.m_parents.end(); it++) {
+      const element_t &k = it->first;
+      const element_t &v = it->second;
+      if (k == v) {
+        continue;
+      }
+      auto it_k = right.m_parents.find(k);
+      auto it_v = right.m_parents.find(v);
+      // check if k == v exists in another map
+      if (it_k != right.m_parents.end() && it_v != right.m_parents.end() &&
+          it_k->second == it_v->second) {
+        res.m_parents.insert({v, k}); // insert new pair <v, k>
+        if (!res.contains(k)) {
           std::shared_ptr<domain_t> absval_ptr =
-              std::make_shared<domain_t>(domain_t(current_id));
-          equivalence_class_t new_val = equivalence_class_t(absval_ptr);
-          res.m_classes.insert({rep, new_val});
-          for (auto &v : out_set) {
-            res.m_parents.insert({v, rep});
-          }
+              std::make_shared<domain_t>(current_id);
+          res.make_set(k, absval_ptr);
           current_id++;
+        }
+      }
+      // for (auto &kv2 : left.m_parents) { // for each k2 , v2
+      for (auto it2 = std::next(it); it2 != left.m_parents.end(); it2++) {
+        const element_t &k2 = it2->first;
+        const element_t &v2 = it2->second;
+        if (v != v2 || (k == k2 && v == v2)) {
+          // not in k's class or
+          // k2, v2 is the same as k, v
+          continue;
+        }
+        // check if k2 == k exists in another map
+        auto it_k2 = right.m_parents.find(k2);
+        if (it_k != right.m_parents.end() && it_k2 != right.m_parents.end() &&
+            it_k2->second == it_k->second) {
+          res.m_parents.insert({k2, k}); // insert new pair <k2, k>
+          if (!res.contains(k)) {
+            std::shared_ptr<domain_t> absval_ptr =
+                std::make_shared<domain_t>(current_id);
+            res.make_set(k, absval_ptr);
+            current_id++;
+          }
         }
       }
     }
@@ -302,8 +392,8 @@ private:
           // select one element as representative
           const element_t &rep = out_set[0];
           std::shared_ptr<domain_t> absval_ptr =
-              std::make_shared<domain_t>(domain_t(current_id));
-          equivalence_class_t new_val = equivalence_class_t(absval_ptr);
+              std::make_shared<domain_t>(current_id);
+          equivalence_class_t new_val(absval_ptr);
           res.m_classes.insert({rep, new_val});
           for (auto &v : out_set) {
             res.m_parents.insert({v, rep});
@@ -402,47 +492,29 @@ public:
     return rep_x == rep_y;
   }
 
-  /// @brief find the representative with path-compression
-  /// @param v an element in some set
-  /// @attention v must constain in current domain; otherwise, an error returns
-  /// @return returns the representative of the set that contains the element v
-  /// NOTE: it is not "const" because it does path-compression
-  element_t &find(const element_t &v) {
-    crab::CrabStats::count("union_find.count.find");
-    crab::ScopedCrabStats __st__("union_find.find");
-
-    auto it = m_parents.find(v);
-    if (it == m_parents.end()) {
-      CRAB_ERROR(domain_name(), "::", __func__, " on a non-existing elem ", v,
-                 " in ", *this);
-    }
-    element_t &parent = it->second;
-    if (v == parent) {
-      return parent;
-    } else {
-      return parent = find(parent);
-    }
-  }
-
   /// @brief find the representative without path-compression
   /// @param v an element in some set
   /// @attention v must constain in current domain; otherwise, an error returns
   /// @return returns the representative of the set that contains the element v
   element_t find(const element_t &v) const {
-    crab::CrabStats::count("union_find.count.find");
-    crab::ScopedCrabStats __st__("union_find.find");
+    SVEQ_DOMAIN_SCOPED_STATS(".find");
 
     auto it = m_parents.find(v);
     if (it == m_parents.end()) {
       CRAB_ERROR(domain_name(), "::", __func__, " on a non-existing elem ", v,
                  " in ", *this);
     }
-    const element_t &parent = it->second;
-    if (v == parent) {
-      return parent;
-    } else {
-      return find(parent);
+    return it->second;
+  }
+
+  boost::optional<element_t> find_opt(const element_t &v) const {
+    SVEQ_DOMAIN_SCOPED_STATS(".find");
+
+    auto it = m_parents.find(v);
+    if (it == m_parents.end()) {
+      return boost::none;
     }
+    return it->second;
   }
 
   /// @brief union two sets
@@ -456,23 +528,26 @@ public:
     }
     equivalence_class_t &ec_x = m_classes.at(rep_x);
     equivalence_class_t &ec_y = m_classes.at(rep_y);
-    // Check the rank for two sets.
-    // The rank is the depth of the tree
-    if (ec_x.get_rank() > ec_y.get_rank()) {
-      // merge elements in set rep_y to set rep_x
-      std::shared_ptr<domain_t> dom_x = ec_x.detach_and_get_absval();
-      std::shared_ptr<const domain_t> dom_y = ec_y.get_absval();
-      m_parents.at(rep_y) = rep_x;
+    // Check the size for two sets.
+    // merge smaller set to larger one
+    if (ec_x.get_size() < ec_y.get_size()) {
+      // std::shared_ptr<domain_t> dom_x = ec_x.detach_and_get_absval();
+      // std::shared_ptr<const domain_t> dom_y = ec_y.get_absval();
+      element_set_t y_cls = get_all_members_from_an_equiv_class(y);
+      for (auto &v : y_cls) {
+        m_parents.at(v) = rep_x;
+      }
       m_classes.erase(rep_y);
+      ec_x.get_size() += ec_y.get_size();
     } else {
-      // merge elements in set rep_x to set rep_y
-      std::shared_ptr<const domain_t> dom_x = ec_x.get_absval();
-      std::shared_ptr<domain_t> dom_y = ec_y.detach_and_get_absval();
-      m_parents.at(rep_x) = rep_y;
-      if (ec_x.get_rank() == ec_y.get_rank()) {
-        ec_y.get_rank()++;
+      // std::shared_ptr<const domain_t> dom_x = ec_x.get_absval();
+      // std::shared_ptr<domain_t> dom_y = ec_y.detach_and_get_absval();
+      element_set_t x_cls = get_all_members_from_an_equiv_class(x);
+      for (auto &v : x_cls) {
+        m_parents.at(v) = rep_y;
       }
       m_classes.erase(rep_x);
+      ec_y.get_size() += ec_x.get_size();
     }
   }
 
@@ -486,7 +561,8 @@ public:
       return;
     }
 
-    std::shared_ptr<domain_t> absval_ptr = std::make_shared<domain_t>(absval);
+    std::shared_ptr<domain_t> absval_ptr =
+        std::make_shared<domain_t>(std::move(absval));
 
     if (!contains(x)) {
       make_set(x, absval_ptr);
@@ -582,34 +658,11 @@ public:
   symbolic_variable_equiality_domain(
       lattice_val val = lattice_val::neither_top_nor_bot)
       : m_val(val) {}
-  symbolic_variable_equiality_domain(const this_domain_t &o)
-      : m_parents(o.m_parents), m_classes(o.m_classes), m_val(o.m_val) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
-  }
+  symbolic_variable_equiality_domain(const this_domain_t &o) = default;
 
-  symbolic_variable_equiality_domain(this_domain_t &&o)
-      : m_parents(std::move(o.m_parents)), m_classes(std::move(o.m_classes)),
-        m_val(o.m_val) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
-  }
-  this_domain_t &operator=(const this_domain_t &o) {
-    if (this != &o) {
-      m_parents = o.m_parents;
-      m_classes = o.m_classes;
-      m_val = o.m_val;
-    }
-    return *this;
-  }
-  this_domain_t &operator=(this_domain_t &&o) {
-    if (this != &o) {
-      m_parents = std::move(o.m_parents);
-      m_classes = std::move(o.m_classes);
-      m_val = o.m_val;
-    }
-    return *this;
-  }
+  symbolic_variable_equiality_domain(this_domain_t &&o) = default;
+  this_domain_t &operator=(const this_domain_t &o) = default;
+  this_domain_t &operator=(this_domain_t &&o) = default;
 
   bool is_bottom() const { return m_val == lattice_val::bottom; }
 
@@ -628,8 +681,7 @@ public:
   void set_neither_top_or_bottom() { m_val = lattice_val::neither_top_nor_bot; }
 
   bool operator<=(const this_domain_t &e) const {
-    crab::CrabStats::count(domain_name() + ".count.leq");
-    crab::ScopedCrabStats __st__(domain_name() + ".leq");
+    SVEQ_DOMAIN_SCOPED_STATS(".leq");
     if (is_bottom() || e.is_top()) {
       // _|_ <= e || this <= top
       return true;
@@ -664,8 +716,7 @@ public:
   }
 
   this_domain_t operator|(const this_domain_t &e) const {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    SVEQ_DOMAIN_SCOPED_STATS(".join");
     if (is_bottom()) {
       return e;
     } else if (e.is_bottom()) {
@@ -679,8 +730,7 @@ public:
   }
 
   void operator|=(const this_domain_t &e) {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    SVEQ_DOMAIN_SCOPED_STATS(".join");
     if (is_bottom()) {
       *this = e;
     } else if (e.is_bottom()) {
@@ -688,14 +738,12 @@ public:
     } else if (is_top() || e.is_top()) {
       set_to_top();
     } else {
-      // TODO: improve performance
       *this = join(*this, e);
     }
   }
 
   this_domain_t operator&(const this_domain_t &e) const {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    SVEQ_DOMAIN_SCOPED_STATS(".meet");
     if (is_bottom() || e.is_top()) {
       return *this;
     } else if (e.is_bottom() || is_top()) {
@@ -706,14 +754,12 @@ public:
   }
 
   this_domain_t operator||(const this_domain_t &e) const {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    SVEQ_DOMAIN_SCOPED_STATS(".widening");
     return *this;
   }
 
   this_domain_t operator&&(const this_domain_t &e) const {
-    crab::CrabStats::count(domain_name() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
+    SVEQ_DOMAIN_SCOPED_STATS(".narrowing");
     return *this;
   }
 
@@ -751,26 +797,21 @@ public:
   /// @note  if v \in cls \land v is representative, select a new representative
   ///        before removing v.
   void operator-=(const element_t &v) {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    SVEQ_DOMAIN_SCOPED_STATS(".forget");
     if (is_bottom() || is_top()) {
       return;
     }
+    CRAB_LOG("symb-var-eq", crab::outs() << "Forgetting " << v << ": ";
+             dump(););
 
     if (contains(v)) {
-      if (m_parents.at(v) != v) {
-        // v is not a representative
-        element_t rep_v = find(v);
-        for (auto &kv : m_parents) {
-          // set all elements referring v to v's parent
-          if (kv.second == v) {
-            m_parents.at(kv.first) = rep_v;
-          }
-        }
-      } else {
+      // v is not a representative, jusrt remove v
+      // if not, pick a new one and update all members
+      if (m_parents.at(v) == v) {
         // v is the representative of the equivalence class
         boost::optional<element_t> new_rep;
         for (auto &kv : m_parents) {
+          // search element which is not v but in v's class
           if (kv.first != v && kv.second == v) {
             if (!new_rep) {
               // choose the first one as representative
@@ -785,6 +826,7 @@ public:
       m_parents.erase(v);
     }
     normalize();
+    CRAB_LOG("symb-var-eq", crab::outs() << "After forget "; dump(););
   }
 
   /// @brief alternative operation to forget a set of elements
@@ -804,14 +846,14 @@ public:
   /// @note  After project operation, the state only keeps equivalence classes
   ///        for element in vector elements
   void project(const std::vector<element_t> &elements) {
-    crab::CrabStats::count(domain_name() + ".count.project");
-    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    SVEQ_DOMAIN_SCOPED_STATS(".project");
 
     if (is_bottom() || is_top()) {
       return;
     }
-    CRAB_LOG("symb-var-eq", crab::outs()
-                                << "Before projection " << *this << "\n";);
+    CRAB_LOG("symb-var-eq", crab::outs() << "Projecting ";
+             print_elems_vector(crab::outs(), elements); crab::outs() << "\n";
+             dump(););
     // group elements based on current equivalence classes
     equivalence_class_elems_t elems;
 
@@ -821,8 +863,7 @@ public:
       if (contains(v)) {
         element_t rep = find(v);
         element_set_t &s = elems[rep];
-        auto it = std::upper_bound(s.begin(), s.end(), v);
-        s.insert(it, v);
+        s.push_back(v);
       }
     }
 
@@ -841,18 +882,16 @@ public:
         res.m_parents.insert({e, new_rep});
       }
       equivalence_class_t ec = m_classes.at(rep);
-      res.m_classes.insert({new_rep, std::move(ec)});
+      res.m_classes.insert({new_rep, ec});
     }
     std::swap(res, *this);
-    CRAB_LOG("symb-var-eq", crab::outs()
-                                << "After projection " << *this << "\n";);
     normalize();
+    CRAB_LOG("symb-var-eq", crab::outs() << "After projection "; dump(););
   }
 
   void rename(const std::vector<element_t> &old_elements,
               const std::vector<element_t> &new_elements) {
-    crab::CrabStats::count(domain_name() + ".count.rename");
-    crab::ScopedCrabStats __st__(domain_name() + ".rename");
+    SVEQ_DOMAIN_SCOPED_STATS(".rename");
 
     if (is_top() || is_bottom()) {
       return;
@@ -904,11 +943,14 @@ public:
   /// @note  perform normalization to eliminate any class such as:
   ///          {v3}=>#var5
   void normalize() {
+    SVEQ_DOMAIN_SCOPED_STATS(".normalize");
     // FIXME: change this
     return;
 
     CRAB_LOG("symb-var-eq", crab::outs()
                                 << "Before normalization " << *this << "\n";);
+    // TODO: could implement to check each size of class instead of creating
+    // equivalence_class_elems_t map
     equivalence_class_elems_t equiv_classes = equiv_classes_elems();
     for (auto &kv : equiv_classes) {
       const element_t &rep = kv.first;
@@ -948,13 +990,27 @@ public:
     return o;
   }
 
-  friend class crab::crab_os &operator<<(crab::crab_os &o,
-                                         const parents_map_t &map) {
-    symbolic_variable_equiality_domain_impl::print_unordered_map(o, map);
-    return o;
+  void dump() const {
+    if (is_top()) {
+      crab::outs() << "{}";
+    } else if (is_bottom()) {
+      crab::outs() << "_|_";
+    } else {
+      equivalence_class_elems_t equiv_classes = equiv_classes_elems();
+      crab::outs() << "(EquivClass=";
+      print_equiv_classes(crab::outs(), equiv_classes, true);
+      crab::outs() << ", DomainVal=";
+      print_classes_vals(crab::outs());
+      crab::outs() << ")";
+      crab::outs() << "HashTable=";
+      symbolic_variable_equiality_domain_impl::print_unordered_map<element_t,
+                                                                   element_t>(
+          crab::outs(), m_parents);
+    }
+    crab::outs() << "\n";
   }
 
-  std::string domain_name() const { return "SymbolicVarEqDomain"; }
+  std::string domain_name() const { return "EqDomain"; }
   /**------------------ End domain APIs ------------------**/
   // WARN: a special function to check equivalence classes over two domain
   // values

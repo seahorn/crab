@@ -22,10 +22,13 @@ namespace object_domain_impl {
 /// Here we make a faster comparison by checking address only.
 template <class AbsDom> struct object_equal_to {
   bool operator()(const AbsDom &v1, const AbsDom &v2) const {
-    // return v1 <= v2 && v2 <= v1;
-    return &v1 == &v2;
+    bool res = v1 == v2;
+    return res;
   }
 };
+
+#define ODI_DOMAIN_SCOPED_STATS(NAME) CRAB_DOMAIN_SCOPED_STATS(NAME, 1)
+#define ODI_COUNT_STATS(NAME) CRAB_DOMAIN_COUNT_STATS(NAME, 0)
 
 /* Environment from Key to Value with all lattice operations */
 
@@ -41,13 +44,16 @@ private:
   using number_t = typename ObjectDom::number_t;
   using varname_t = typename ObjectDom::varname_t;
   using eq_domain_t = typename ObjectDom::eq_fields_abstract_domain_t;
+  using ghost_variables_eq_t = typename ObjectDom::ghost_variables_eq_t;
+  using usymb_t = typename eq_domain_t::domain_t;
   // Map types
   using odi_info_t = typename object_domain_impl::object_info;
   using odi_value_t =
       // basic_domain_product2 is a product domain without reduction
       basic_domain_product2<BaseAbsDom,
                             basic_domain_product2<BaseAbsDom, eq_domain_t>>;
-  using map_value_t = basic_domain_product2<odi_info_t, odi_value_t>;
+  using map_raw_value_t = basic_domain_product2<odi_info_t, odi_value_t>;
+  using map_value_t = std::shared_ptr<map_raw_value_t>;
   using patricia_tree_t =
       ikos::patricia_tree<Key, map_value_t, object_equal_to<map_value_t>>;
   using binary_op_t = typename patricia_tree_t::binary_op_t;
@@ -57,11 +63,15 @@ private:
   using base_dom_variable_t = typename BaseAbsDom::variable_t;
   using base_dom_variable_vector_t = std::vector<base_dom_variable_t>;
 
+  enum cache_status_t { LEFT_ONLY, RIGHT_ONLY, LEFT_AND_RIGHT, NONE };
+
 public:
-  using odi_map_domain_t = odi_map_domain<Key, ObjectDom, BaseAbsDom>;
   using object_domain_t = ObjectDom;
-  using iterator = typename patricia_tree_t::iterator;
   using key_t = Key;
+  using base_domain_t = BaseAbsDom;
+  using odi_map_domain_t =
+      odi_map_domain<key_t, object_domain_t, base_domain_t>;
+  using iterator = typename patricia_tree_t::iterator;
   using mapped_type = map_value_t;
 
 private:
@@ -91,6 +101,8 @@ private:
   private:
     const object_domain_t &m_left;
     const object_domain_t &m_right;
+    base_domain_t &m_l_base_dom;
+    base_domain_t &m_r_base_dom;
     bool m_is_join;
 
     /// @brief A special operation for the case where
@@ -105,7 +117,7 @@ private:
         const odi_value_t &non_single_odi) const {
       odi_value_t res_prod = non_single_odi;
       // Project on fields only
-      BaseAbsDom singleton_base = s_single.project_singleton(key);
+      base_domain_t singleton_base = s_single.project_singleton(key);
 
       if (m_is_join) {
         res_prod.first() |= singleton_base;
@@ -122,30 +134,134 @@ private:
     /// @return a new odi after join or widening
     map_value_t join_or_widen_odi(const key_t &key, const map_value_t &l,
                                   const map_value_t &r) {
-      const odi_info_t &l_obj_info = l.first();
-      const odi_value_t &l_odi_val = l.second();
-      const odi_info_t &r_obj_info = r.first();
-      const odi_value_t &r_odi_val = r.second();
+      ODI_DOMAIN_SCOPED_STATS(".join");
+
+      const odi_info_t &l_obj_info = l->first();
+      const odi_value_t &l_odi_val = l->second();
+      const odi_info_t &r_obj_info = r->first();
+      const odi_value_t &r_odi_val = r->second();
       const small_range &l_num_refs = l_obj_info.refcount_val();
       const small_range &r_num_refs = r_obj_info.refcount_val();
-      map_value_t out_val;
+      map_raw_value_t out_val;
+      cache_status_t status = cache_status_t::NONE;
+      // commit cache if dirty
+      if (l_num_refs == small_range::oneOrMore() &&
+          l_obj_info.cachedirty_val().is_true()) {
+        status = cache_status_t::LEFT_ONLY;
+      }
+      if (r_num_refs == small_range::oneOrMore() &&
+          r_obj_info.cachedirty_val().is_true()) {
+        status = status == cache_status_t::LEFT_ONLY
+                     ? cache_status_t::LEFT_AND_RIGHT
+                     : cache_status_t::RIGHT_ONLY;
+      }
+
       if (!crab_domain_params_man::get().singletons_in_base()) {
-        // pairwise join
-        out_val.second() =
-            m_is_join ? l_odi_val | r_odi_val : l_odi_val || r_odi_val;
+        switch (status) {
+        case LEFT_ONLY: {
+          odi_value_t new_l_odi_val = l_odi_val;
+          m_left.commit_cache_if_dirty(m_l_base_dom, new_l_odi_val, l_obj_info,
+                                       key);
+          // pairwise join
+          out_val.second() = m_is_join ? new_l_odi_val | r_odi_val
+                                       : new_l_odi_val || r_odi_val;
+        } break;
+        case RIGHT_ONLY: {
+          odi_value_t new_r_odi_val = r_odi_val;
+          m_right.commit_cache_if_dirty(m_r_base_dom, new_r_odi_val, r_obj_info,
+                                        key);
+          // pairwise join
+          out_val.second() = m_is_join ? l_odi_val | new_r_odi_val
+                                       : l_odi_val || new_r_odi_val;
+        } break;
+        case LEFT_AND_RIGHT: {
+          odi_value_t new_l_odi_val = l_odi_val;
+          m_left.commit_cache_if_dirty(m_l_base_dom, new_l_odi_val, l_obj_info,
+                                       key);
+          odi_value_t new_r_odi_val = r_odi_val;
+          m_right.commit_cache_if_dirty(m_r_base_dom, new_r_odi_val, r_obj_info,
+                                        key);
+          // pairwise join
+          out_val.second() = m_is_join ? new_l_odi_val | new_r_odi_val
+                                       : new_l_odi_val || new_r_odi_val;
+        } break;
+        case NONE: {
+          // pairwise join
+          out_val.second() =
+              m_is_join ? l_odi_val | r_odi_val : l_odi_val || r_odi_val;
+        } break;
+        default:
+          // this is an unreachable default clause
+          CRAB_ERROR(typeid(join_or_widening_op).name(), "::", __func__,
+                     "Unhandled special enum constant!");
+          break;
+        }
       } else {
         // NOTE: if we keep singleton object in the base, the join operation
         // should cover the case for singleton with non singleton
         if (l_num_refs.is_one() && r_num_refs == small_range::oneOrMore()) {
-          out_val.second() = join_or_widen_singleton_with_non_singleton(
-              key, m_left, r_odi_val);
+          if (r_obj_info.cachedirty_val().is_true()) {
+            odi_value_t new_r_odi_val = r_odi_val;
+            m_right.commit_cache_if_dirty(m_r_base_dom, new_r_odi_val,
+                                          r_obj_info, key);
+            out_val.second() = join_or_widen_singleton_with_non_singleton(
+                key, m_left, new_r_odi_val);
+          } else {
+            out_val.second() = join_or_widen_singleton_with_non_singleton(
+                key, m_left, r_odi_val);
+          }
         } else if (r_num_refs.is_one() &&
                    l_num_refs == small_range::oneOrMore()) {
-          out_val.second() = join_or_widen_singleton_with_non_singleton(
-              key, m_right, l_odi_val);
+          if (l_obj_info.cachedirty_val().is_true()) {
+            odi_value_t new_l_odi_val = l_odi_val;
+            m_left.commit_cache_if_dirty(m_l_base_dom, new_l_odi_val,
+                                         l_obj_info, key);
+            out_val.second() = join_or_widen_singleton_with_non_singleton(
+                key, m_right, new_l_odi_val);
+          } else {
+            out_val.second() = join_or_widen_singleton_with_non_singleton(
+                key, m_right, l_odi_val);
+          }
         } else {
-          out_val.second() =
-              m_is_join ? l_odi_val | r_odi_val : l_odi_val || r_odi_val;
+          switch (status) {
+          case LEFT_ONLY: {
+            odi_value_t new_l_odi_val = l_odi_val;
+            m_left.commit_cache_if_dirty(m_l_base_dom, new_l_odi_val,
+                                         l_obj_info, key);
+            // pairwise join
+            out_val.second() = m_is_join ? new_l_odi_val | r_odi_val
+                                         : new_l_odi_val || r_odi_val;
+          } break;
+          case RIGHT_ONLY: {
+            odi_value_t new_r_odi_val = r_odi_val;
+            m_right.commit_cache_if_dirty(m_r_base_dom, new_r_odi_val,
+                                          r_obj_info, key);
+            // pairwise join
+            out_val.second() = m_is_join ? l_odi_val | new_r_odi_val
+                                         : l_odi_val || new_r_odi_val;
+          } break;
+          case LEFT_AND_RIGHT: {
+            odi_value_t new_l_odi_val = l_odi_val;
+            m_left.commit_cache_if_dirty(m_l_base_dom, new_l_odi_val,
+                                         l_obj_info, key);
+            odi_value_t new_r_odi_val = r_odi_val;
+            m_right.commit_cache_if_dirty(m_r_base_dom, new_r_odi_val,
+                                          r_obj_info, key);
+            // pairwise join
+            out_val.second() = m_is_join ? new_l_odi_val | new_r_odi_val
+                                         : new_l_odi_val || new_r_odi_val;
+          } break;
+          case NONE: {
+            // pairwise join
+            out_val.second() =
+                m_is_join ? l_odi_val | r_odi_val : l_odi_val || r_odi_val;
+          } break;
+          default:
+            // this is an unreachable default clause
+            CRAB_ERROR(typeid(join_or_widening_op).name(), "::", __func__,
+                       "Unhandled special enum constant!");
+            break;
+          }
         }
       }
       // After the join / widening, update the object info
@@ -154,14 +270,19 @@ private:
                                    boolean_value::get_false(),
                                    // Cache is not dirty
                                    boolean_value::get_false());
-      return out_val;
+      return std::make_shared<map_raw_value_t>(out_val);
     }
+
+    std::string domain_name() const { return "ODI"; }
 
   protected:
     virtual std::pair<bool, boost::optional<map_value_t>>
     apply(const Key &key, const map_value_t &x, const map_value_t &y) override {
+      if (x == y) {
+        return {false, boost::optional<map_value_t>(x)};
+      }
       map_value_t z = join_or_widen_odi(key, x, y);
-      if (z.is_top()) {
+      if (z->is_top()) {
         return {false, boost::optional<map_value_t>()};
       } else {
         return {false, boost::optional<map_value_t>(z)};
@@ -172,15 +293,19 @@ private:
 
   public:
     join_or_widening_op(const object_domain_t &left,
-                        const object_domain_t &right, bool is_join)
-        : m_left(left), m_right(right), m_is_join(is_join) {}
+                        const object_domain_t &right, base_domain_t &l_base_dom,
+                        base_domain_t &r_base_dom, bool is_join)
+        : m_left(left), m_right(right), m_l_base_dom(l_base_dom),
+          m_r_base_dom(r_base_dom), m_is_join(is_join) {}
   }; // class join_op
 
   /// @brief A special class to compute meet / narrowing when merging two trees
   class meet_or_narrow_op : public binary_op_t {
   private:
-    object_domain_t &m_left;
-    object_domain_t &m_right;
+    const object_domain_t &m_left;
+    const object_domain_t &m_right;
+    base_domain_t &m_l_base_dom;
+    base_domain_t &m_r_base_dom;
     bool m_is_meet;
 
     /// @brief A special operation for the case where
@@ -190,13 +315,17 @@ private:
     /// @param single the state containing singleton object
     /// @param non_single the state containing non-singleton
     void meet_or_narrow_non_singleton_with_singleton(
-        const key_t &key, object_domain_t &single,
+        const key_t &key, base_domain_t &single,
         const odi_value_t &non_single) const {
-      const BaseAbsDom &summary = non_single.first();
+      const base_domain_t &summary = non_single.first();
 
       // Be careful of the following operation if type of base dom and object
       // dom are different
-      single.meet_or_narrow_base(summary, m_is_meet);
+      if (m_is_meet) {
+        single &= summary;
+      } else {
+        single = single && summary;
+      }
     }
 
     /// @brief the meet or narrowing odi
@@ -206,28 +335,131 @@ private:
     /// @return a new odi after meet or narrowing
     map_value_t meet_or_narrow_odi(const key_t &key, const map_value_t &l,
                                    const map_value_t &r) {
-      const odi_info_t &l_obj_info = l.first();
-      const odi_value_t &l_odi_val = l.second();
-      const odi_info_t &r_obj_info = r.first();
-      const odi_value_t &r_odi_val = r.second();
+      const odi_info_t &l_obj_info = l->first();
+      const odi_value_t &l_odi_val = l->second();
+      const odi_info_t &r_obj_info = r->first();
+      const odi_value_t &r_odi_val = r->second();
       const small_range &l_num_refs = l_obj_info.refcount_val();
       const small_range &r_num_refs = r_obj_info.refcount_val();
-      map_value_t out_val;
+      map_raw_value_t out_val;
+      cache_status_t status = cache_status_t::NONE;
+      // commit cache if dirty
+      if (l_num_refs == small_range::oneOrMore() &&
+          l_obj_info.cachedirty_val().is_true()) {
+        status = cache_status_t::LEFT_ONLY;
+      }
+      if (r_num_refs == small_range::oneOrMore() &&
+          r_obj_info.cachedirty_val().is_true()) {
+        status = status == cache_status_t::LEFT_ONLY
+                     ? cache_status_t::LEFT_AND_RIGHT
+                     : cache_status_t::RIGHT_ONLY;
+      }
       if (!crab_domain_params_man::get().singletons_in_base()) {
-        // pairwise join
-        out_val.second() =
-            m_is_meet ? l_odi_val & r_odi_val : l_odi_val && r_odi_val;
+        switch (status) {
+        case LEFT_ONLY: {
+          odi_value_t new_l_odi_val = l_odi_val;
+          m_left.commit_cache_if_dirty(m_l_base_dom, new_l_odi_val, l_obj_info,
+                                       key);
+          // pairwise meet
+          out_val.second() = m_is_meet ? new_l_odi_val & r_odi_val
+                                       : new_l_odi_val && r_odi_val;
+        } break;
+        case RIGHT_ONLY: {
+          odi_value_t new_r_odi_val = r_odi_val;
+          m_right.commit_cache_if_dirty(m_r_base_dom, new_r_odi_val, r_obj_info,
+                                        key);
+          // pairwise meet
+          out_val.second() = m_is_meet ? l_odi_val & new_r_odi_val
+                                       : l_odi_val && new_r_odi_val;
+        } break;
+        case LEFT_AND_RIGHT: {
+          odi_value_t new_l_odi_val = l_odi_val;
+          m_left.commit_cache_if_dirty(m_l_base_dom, new_l_odi_val, l_obj_info,
+                                       key);
+          odi_value_t new_r_odi_val = r_odi_val;
+          m_right.commit_cache_if_dirty(m_r_base_dom, new_r_odi_val, r_obj_info,
+                                        key);
+          // pairwise meet
+          out_val.second() = m_is_meet ? new_l_odi_val & new_r_odi_val
+                                       : new_l_odi_val && new_r_odi_val;
+        } break;
+        case NONE: {
+          // pairwise meet
+          out_val.second() =
+              m_is_meet ? l_odi_val & r_odi_val : l_odi_val && r_odi_val;
+        } break;
+        default:
+          // this is an unreachable default clause
+          CRAB_ERROR(typeid(meet_or_narrow_op).name(), "::", __func__,
+                     "Unhandled special enum constant!");
+          break;
+        }
       } else {
         // NOTE: if we keep singleton object in the base, the meet operation
         // should cover the case for singleton with non singleton
         if (l_num_refs.is_one() && r_num_refs == small_range::oneOrMore()) {
-          meet_or_narrow_non_singleton_with_singleton(key, m_left, r_odi_val);
+          if (r_obj_info.cachedirty_val().is_true()) {
+            odi_value_t new_r_odi_val = r_odi_val;
+            m_right.commit_cache_if_dirty(m_r_base_dom, new_r_odi_val,
+                                          r_obj_info, key);
+            meet_or_narrow_non_singleton_with_singleton(key, m_l_base_dom,
+                                                        new_r_odi_val);
+          } else {
+            meet_or_narrow_non_singleton_with_singleton(key, m_l_base_dom,
+                                                        r_odi_val);
+          }
         } else if (r_num_refs.is_one() &&
                    l_num_refs == small_range::oneOrMore()) {
-          meet_or_narrow_non_singleton_with_singleton(key, m_right, l_odi_val);
+          if (l_obj_info.cachedirty_val().is_true()) {
+            odi_value_t new_l_odi_val = l_odi_val;
+            m_left.commit_cache_if_dirty(m_l_base_dom, new_l_odi_val,
+                                         l_obj_info, key);
+            meet_or_narrow_non_singleton_with_singleton(key, m_r_base_dom,
+                                                        new_l_odi_val);
+          } else {
+            meet_or_narrow_non_singleton_with_singleton(key, m_r_base_dom,
+                                                        l_odi_val);
+          }
         } else {
-          out_val.second() =
-              m_is_meet ? l_odi_val & r_odi_val : l_odi_val && r_odi_val;
+          switch (status) {
+          case LEFT_ONLY: {
+            odi_value_t new_l_odi_val = l_odi_val;
+            m_left.commit_cache_if_dirty(m_l_base_dom, new_l_odi_val,
+                                         l_obj_info, key);
+            // pairwise meet
+            out_val.second() = m_is_meet ? new_l_odi_val & r_odi_val
+                                         : new_l_odi_val && r_odi_val;
+          } break;
+          case RIGHT_ONLY: {
+            odi_value_t new_r_odi_val = r_odi_val;
+            m_right.commit_cache_if_dirty(m_r_base_dom, new_r_odi_val,
+                                          r_obj_info, key);
+            // pairwise meet
+            out_val.second() = m_is_meet ? l_odi_val & new_r_odi_val
+                                         : l_odi_val && new_r_odi_val;
+          } break;
+          case LEFT_AND_RIGHT: {
+            odi_value_t new_l_odi_val = l_odi_val;
+            m_left.commit_cache_if_dirty(m_l_base_dom, new_l_odi_val,
+                                         l_obj_info, key);
+            odi_value_t new_r_odi_val = r_odi_val;
+            m_right.commit_cache_if_dirty(m_r_base_dom, new_r_odi_val,
+                                          r_obj_info, key);
+            // pairwise meet
+            out_val.second() = m_is_meet ? new_l_odi_val & new_r_odi_val
+                                         : new_l_odi_val && new_r_odi_val;
+          } break;
+          case NONE: {
+            // pairwise meet
+            out_val.second() =
+                m_is_meet ? l_odi_val & r_odi_val : l_odi_val && r_odi_val;
+          } break;
+          default:
+            // this is an unreachable default clause
+            CRAB_ERROR(typeid(meet_or_narrow_op).name(), "::", __func__,
+                       "Unhandled special enum constant!");
+            break;
+          }
         }
       }
       out_val.first() = odi_info_t(l_num_refs & r_num_refs,
@@ -235,14 +467,17 @@ private:
                                    boolean_value::get_false(),
                                    // Cache is not dirty
                                    boolean_value::get_false());
-      return out_val;
+      return std::make_shared<map_raw_value_t>(out_val);
     }
 
   protected:
     virtual std::pair<bool, boost::optional<map_value_t>>
     apply(const Key &key, const map_value_t &x, const map_value_t &y) override {
+      if (x == y) {
+        return {false, boost::optional<map_value_t>(x)};
+      }
       map_value_t z = meet_or_narrow_odi(key, x, y);
-      if (z.is_top()) {
+      if (z->is_top()) {
         return {false, boost::optional<map_value_t>()};
       } else {
         return {false, boost::optional<map_value_t>(z)};
@@ -252,9 +487,11 @@ private:
     virtual bool default_is_absorbing() override { return false; }
 
   public:
-    meet_or_narrow_op(object_domain_t &left, object_domain_t &right,
+    meet_or_narrow_op(const object_domain_t &left, const object_domain_t &right,
+                      base_domain_t &l_base_dom, base_domain_t &r_base_dom,
                       bool is_meet)
-        : m_left(left), m_right(right), m_is_meet(is_meet) {}
+        : m_left(left), m_right(right), m_l_base_dom(l_base_dom),
+          m_r_base_dom(r_base_dom), m_is_meet(is_meet) {}
   }; // class meet_or_narrow_op
 
   /// @brief A special class to compute widening with thresholds when merging
@@ -271,8 +508,8 @@ private:
     virtual std::pair<bool, boost::optional<map_value_t>>
     apply(const Key & /*key*/, const map_value_t &x,
           const map_value_t &y) override {
-      map_value_t z = x.widening_thresholds(y, m_ts);
-      if (z.is_top()) {
+      map_value_t z = x->widening_thresholds(*y, m_ts);
+      if (z->is_top()) {
         return {false, boost::optional<map_value_t>()};
       } else {
         return {false, boost::optional<map_value_t>(z)};
@@ -285,10 +522,13 @@ private:
   /// @brief A special class to operator \subseteq when merging two trees
   class inclusion_test_op : public partial_order_t {
     virtual bool leq(const map_value_t &x, const map_value_t &y) override {
-      const odi_info_t &l_obj_info = x.first();
-      const odi_value_t &l_odi_val = x.second();
-      const odi_info_t &r_obj_info = y.first();
-      const odi_value_t &r_odi_val = y.second();
+      if (x == y) {
+        return true;
+      }
+      const odi_info_t &l_obj_info = x->first();
+      const odi_value_t &l_odi_val = x->second();
+      const odi_info_t &r_obj_info = y->first();
+      const odi_value_t &r_odi_val = y->second();
       bool res = l_obj_info <= r_obj_info;
       res &= l_odi_val.first() <= r_odi_val.first();
       res &= l_odi_val.second().first() <= r_odi_val.second().first();
@@ -335,7 +575,7 @@ private:
         k.write(o);
         o << " -> ";
         map_value_t v = it->second;
-        v.write(o);
+        v->write(o);
         ++it;
         if (it != end) {
           o << "; ";
@@ -372,6 +612,11 @@ public:
     m_odi_map.clear();
   }
 
+  void set_to_top() {
+    m_is_bottom = false;
+    m_odi_map.clear();
+  }
+
   // Inclusion test
   bool operator<=(const odi_map_domain_t &o) const {
     if (is_bottom() || o.is_top()) {
@@ -386,16 +631,20 @@ public:
 
   // Join
   odi_map_domain_t join(const odi_map_domain_t &o, const object_domain_t &left,
-                        const object_domain_t &right) const {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+                        const object_domain_t &right, base_domain_t &l_base_dom,
+                        base_domain_t &r_base_dom) const {
+    ODI_DOMAIN_SCOPED_STATS(".join");
 
     if (is_bottom()) {
       return o;
     } else if (o.is_bottom()) {
       return *this;
+    } else if (is_top() || o.is_top()) {
+      odi_map_domain_t abs;
+      abs.set_to_top();
+      return abs;
     } else {
-      join_or_widening_op jop(left, right, true);
+      join_or_widening_op jop(left, right, l_base_dom, r_base_dom, true);
       bool is_bottom = false /*unused*/;
       patricia_tree_t res =
           apply_operation(jop, m_odi_map, o.m_odi_map, is_bottom);
@@ -405,33 +654,34 @@ public:
 
   // Self join
   void compound_join(const odi_map_domain_t &o, const object_domain_t &left,
-                     const object_domain_t &right) {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+                     const object_domain_t &right, base_domain_t &l_base_dom,
+                     base_domain_t &r_base_dom) {
+    ODI_DOMAIN_SCOPED_STATS(".join");
 
     if (is_bottom()) { // this is bot, assign this by o
       *this = o;
     } else if (o.is_bottom()) { // o is bot, nothing change
-      return;
+    } else if (is_top() || o.is_top()) {
+      set_to_top();
     } else {
-      join_or_widening_op jop(left, right, true);
+      join_or_widening_op jop(left, right, l_base_dom, r_base_dom, true);
       bool is_bottom = false /*unused*/;
       apply_self_operation(jop, m_odi_map, o.m_odi_map, is_bottom);
     }
   }
 
   // Meet
-  odi_map_domain_t meet(const odi_map_domain_t &o, object_domain_t &left,
-                        object_domain_t &right) const {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+  odi_map_domain_t meet(const odi_map_domain_t &o, const object_domain_t &left,
+                        const object_domain_t &right, base_domain_t &l_base_dom,
+                        base_domain_t &r_base_dom) const {
+    ODI_DOMAIN_SCOPED_STATS(".meet");
 
     if (is_bottom() || o.is_top()) { // bot & o or this & top, return this
       return *this;
     } else if (o.is_bottom() || is_top()) { // this & bot or top & o, return o
       return o;
     } else {
-      meet_or_narrow_op mop(left, right, true);
+      meet_or_narrow_op mop(left, right, l_base_dom, r_base_dom, true);
       bool is_bottom;
       patricia_tree_t res =
           apply_operation(mop, m_odi_map, o.m_odi_map, is_bottom);
@@ -444,17 +694,17 @@ public:
   }
 
   // Self meet
-  void compound_meet(const odi_map_domain_t &o, object_domain_t &left,
-                     object_domain_t &right) {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+  void compound_meet(const odi_map_domain_t &o, const object_domain_t &left,
+                     const object_domain_t &right, base_domain_t &l_base_dom,
+                     base_domain_t &r_base_dom) {
+    ODI_DOMAIN_SCOPED_STATS(".meet");
 
     if (is_bottom() || o.is_top()) { // bot & o or this & top, return this
       return;
     } else if (o.is_bottom() || is_top()) { // this & bot or top & o, return o
       *this = o;
     } else {
-      meet_or_narrow_op mop(left, right, true);
+      meet_or_narrow_op mop(left, right, l_base_dom, r_base_dom, true);
       bool is_bottom = false /*unused*/;
       apply_self_operation(mop, m_odi_map, o.m_odi_map, is_bottom);
       if (is_bottom) {
@@ -466,16 +716,17 @@ public:
   // Widening
   odi_map_domain_t widening(const odi_map_domain_t &o,
                             const object_domain_t &left,
-                            const object_domain_t &right) const {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+                            const object_domain_t &right,
+                            base_domain_t &l_base_dom,
+                            base_domain_t &r_base_dom) const {
+    ODI_DOMAIN_SCOPED_STATS(".widening");
 
     if (is_bottom()) {
       return o;
     } else if (o.is_bottom()) {
       return *this;
     } else {
-      join_or_widening_op wop(left, right, false);
+      join_or_widening_op wop(left, right, l_base_dom, r_base_dom, false);
       bool is_bottom = false /*unused*/;
       patricia_tree_t res =
           apply_operation(wop, m_odi_map, o.m_odi_map, is_bottom);
@@ -487,8 +738,7 @@ public:
   template <typename Thresholds>
   odi_map_domain_t widening_thresholds(const odi_map_domain_t &o,
                                        const Thresholds &ts) const {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    ODI_DOMAIN_SCOPED_STATS(".widening");
 
     if (is_bottom()) {
       return o;
@@ -504,16 +754,18 @@ public:
   }
 
   // Narrowing
-  odi_map_domain_t narrowing(const odi_map_domain_t &o, object_domain_t &left,
-                             object_domain_t &right) const {
-    crab::CrabStats::count(domain_name() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
+  odi_map_domain_t narrowing(const odi_map_domain_t &o,
+                             const object_domain_t &left,
+                             const object_domain_t &right,
+                             base_domain_t &l_base_dom,
+                             base_domain_t &r_base_dom) const {
+    ODI_DOMAIN_SCOPED_STATS(".narrowing");
     if (is_bottom() || o.is_top()) {
       return *this;
     } else if (o.is_bottom() || is_top()) {
       return o;
     } else {
-      meet_or_narrow_op nop(left, right, false);
+      meet_or_narrow_op nop(left, right, l_base_dom, r_base_dom, false);
       bool is_bottom;
       patricia_tree_t res =
           apply_operation(nop, m_odi_map, o.m_odi_map, is_bottom);
@@ -564,8 +816,7 @@ public:
   // Forget
   // NOTE: this operation is on key not on values
   void operator-=(const key_t &k) {
-    crab::CrabStats::count(domain_name() + ".count.operator-=");
-    crab::ScopedCrabStats __st__(domain_name() + ".operator-=");
+    ODI_DOMAIN_SCOPED_STATS(".forget");
 
     if (!is_bottom()) {
       m_odi_map.remove(k);
@@ -574,8 +825,7 @@ public:
 
   // NOTE: this operation is on key not on values
   void forget(const std::vector<key_t> &keys) {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    ODI_DOMAIN_SCOPED_STATS(".forget");
 
     if (!is_bottom()) {
       for (auto &key : keys) {
@@ -620,14 +870,16 @@ public:
   /// @brief update odi map by a new <obj_id, <info, value>>
   /// @param key object id
   /// @param v the new value by a product of <info, value>
-  void set(const key_t &key, const map_value_t &v) {
+  void set(const key_t &key, map_raw_value_t &&v) {
+    ODI_DOMAIN_SCOPED_STATS(".set");
     if (!is_bottom()) {
       if (v.is_bottom()) {
         set_to_bottom();
       } else if (v.is_top()) {
         m_odi_map.remove(key);
       } else {
-        m_odi_map.insert(key, v);
+        map_value_t v_ptr = std::make_shared<map_raw_value_t>(std::move(v));
+        m_odi_map.insert(key, v_ptr);
       }
     }
   }
@@ -640,24 +892,30 @@ public:
   /// @param k object id
   /// @return a pointer to const if the value exists
   /// The value to the map is a constant object which should not be modified
-  const map_value_t *find(const key_t &k) const {
+  const map_raw_value_t *find(const key_t &k) const {
     assert(!is_bottom());
-    return m_odi_map.find(k);
+    auto val_ptr = m_odi_map.find(k);
+    if (val_ptr) {
+      return val_ptr->get();
+    } else {
+      return nullptr;
+    }
   }
 
   /// @brief find a value by giving a key, otherwise, return a top value
   /// @param k object id
   /// @return a value if the key exists or a top if it does not
-  map_value_t at(const key_t &k) const {
+  map_raw_value_t at(const key_t &k) const {
     if (is_bottom()) {
-      map_value_t res;
+      map_raw_value_t res;
       return res.make_bottom();
     } else {
       boost::optional<map_value_t> v = m_odi_map.lookup(k);
       if (v) {
-        return *v;
+        map_value_t val_ptr = *v;
+        return *val_ptr;
       } else {
-        map_value_t res;
+        map_raw_value_t res;
         return res.make_top();
       }
     }
@@ -678,12 +936,18 @@ public:
   /// @brief get all object ids from the map
   /// @return a vector stored all keys
   std::vector<key_t> keys() const {
-    std::vector<key_t> keys;
-    for (auto kv : m_odi_map) {
-      const key_t &key = kv.first;
-      keys.push_back(key);
+    if (is_bottom()) {
+      return {};
+    } else if (is_top()) {
+      CRAB_ERROR(domain_name(), "::", __func__, " is undefined if top");
+    } else {
+      std::vector<key_t> keys;
+      for (auto kv : m_odi_map) {
+        const key_t &key = kv.first;
+        keys.push_back(key);
+      }
+      return keys;
     }
-    return keys;
   }
 
   /// @brief a special log method for <SUM_DOM, CACHE_DOM, UF_DOM>
@@ -702,7 +966,7 @@ public:
   /// @brief a special log method for <info, value>
   /// @param o crab ostream
   /// @param prod the value stored on the map
-  void odi_write(crab_os &o, const map_value_t &prod) const {
+  void odi_write(crab_os &o, const map_raw_value_t &prod) const {
     const odi_info_t &obj_info = prod.first();
     const odi_value_t &obj_val = prod.second();
     o << "(";
@@ -720,7 +984,112 @@ public:
     }
   }
 
+  void odi_write(crab_os &o, const map_value_t &prod) const {
+    odi_write(o, *prod);
+  }
+
+  void dump() const { write(crab::outs()); }
+
   /**------------------ End Map APIs ------------------**/
+
+  /**------------------ Begin Cache APIs ------------------**/
+  // commit cache contents into summary
+  void commit_cache(base_domain_t &summary, base_domain_t &cache) const {
+    // join summary with cache
+    summary |= cache;
+  }
+
+  // update cache contents from summary to cache
+  void update_cache(base_domain_t &summary, base_domain_t &cache) const {
+    // copy summary to cache
+    cache = summary;
+  }
+
+  void commit_cache_if_dirty(const odi_info_t &obj_info,
+                             odi_value_t &obj_val) const {
+    ODI_DOMAIN_SCOPED_STATS(".commit_cache");
+    base_domain_t &sum = obj_val.first();
+    base_domain_t &cache = obj_val.second().first();
+    eq_domain_t &eq_fld = obj_val.second().second();
+    if (obj_info.cachedirty_val().is_true()) {
+      // commit cache if the cache is dirty
+      commit_cache(sum, cache);
+    }
+    // (2) clear cache domain
+    cache.set_to_top();
+    // (3) clear eq field domain
+    eq_fld.set_to_top();
+  }
+
+  bool invalidate_cache_if_miss(
+      key_t &key, object_domain_t &abs_state,
+      ghost_variables_eq_t &&rgn_eq_gvars, boost::optional<usymb_t> &reg_symb,
+      boost::optional<std::pair<usymb_t, usymb_t>> &offset_size_symb,
+      bool is_ref_mru) {
+    const map_raw_value_t *obj_prod_ref = find(key);
+
+    bool update_new_mru = false;
+    // retrieve an abstract object info
+    if (!obj_prod_ref) {
+      CRAB_ERROR(domain_name(), "::", __func__, ": accessing ", key,
+                 " is not found on the odi map");
+    }
+
+    odi_info_t out_obj_info = obj_prod_ref->first();
+    auto cache_used = out_obj_info.cacheused_val();
+
+    // NOTE: copy the object value is required
+    odi_value_t out_prod = obj_prod_ref->second();
+    eq_domain_t &eq_flds_dom = out_prod.second().second();
+
+    /* Cache missed condition:
+        cache is empty or current reference does not refer to the mru object
+    */
+    if (cache_used.is_false() || is_ref_mru == false) {
+      if (out_obj_info.refcount_val() == small_range::oneOrMore()) {
+        // Step1: commit cache if the cache is dirty
+        abs_state.commit_cache_if_dirty(out_prod, out_obj_info, key);
+      }
+      // Step2: update cache for new MRU object)
+      update_cache(out_prod.first(), out_prod.second().first());
+      // Step3: update address dom and object info
+      update_new_mru = true;
+
+      out_obj_info =
+          object_domain_impl::object_info(out_obj_info.refcount_val(),
+                                          // Cache is used
+                                          boolean_value::get_true(),
+                                          // Cache is not dirty
+                                          boolean_value::get_false());
+    }
+    // Step4: update field == reg, the equality represents either:
+    //        reg := load_ref(ref, field), or
+    //        store_ref(ref, field, reg)
+    if (reg_symb == boost::none) {
+      reg_symb =
+          abs_state.get_or_insert_symbol(eq_flds_dom, rgn_eq_gvars.get_var());
+    }
+    eq_flds_dom.set(rgn_eq_gvars.get_var(), *reg_symb);
+    if (rgn_eq_gvars.has_offset_and_size()) {
+      if (offset_size_symb == boost::none) {
+        offset_size_symb = std::make_pair(
+            abs_state.get_or_insert_symbol(
+                eq_flds_dom, rgn_eq_gvars.get_offset_and_size().get_offset()),
+            abs_state.get_or_insert_symbol(
+                eq_flds_dom, rgn_eq_gvars.get_offset_and_size().get_size()));
+      }
+      eq_flds_dom.set(rgn_eq_gvars.get_offset_and_size().get_offset(),
+                      std::get<0>(*offset_size_symb));
+      eq_flds_dom.set(rgn_eq_gvars.get_offset_and_size().get_size(),
+                      std::get<1>(*offset_size_symb));
+    }
+
+    // Step5: update odi map
+    set(key, map_raw_value_t(std::move(out_obj_info), std::move(out_prod)));
+
+    return update_new_mru;
+  }
+  /**------------------ End Cache APIs ------------------**/
 }; // class odi_map_domain
 } // end namespace object_domain_impl
 } // end namespace domains
