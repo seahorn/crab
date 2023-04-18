@@ -70,6 +70,15 @@ public:
     }
   }
 
+  basic_domain_product2(const Domain1 &first, const Domain2 &second,
+                        const bool &apply_reduction = true)
+      : m_is_bottom(false), m_first(first), m_second(second) {
+    if (apply_reduction) {
+      // we don't apply normalization when widening
+      canonicalize();
+    }
+  }
+
   basic_domain_product2(const basic_domain_product2_t &other) = default;
   basic_domain_product2(basic_domain_product2_t &&other) = default;
   basic_domain_product2_t &
