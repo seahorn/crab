@@ -194,24 +194,26 @@ public:
 };
 
 class object_domain_params {
-  bool m_reduce_everywhere;
-  bool m_reduce_before_checks;
+public:
+  enum reduction_level_t {
+    NO_REDUCTION = -1,
+    REDUCTION_BEFORE_CHECK,
+    FULL_REDUCTION,
+  };
+private:
+  reduction_level_t m_reduction_level;
   bool m_singletons_in_base;
 
   friend class crab_domain_params;  
 public:
   object_domain_params()
-      : m_reduce_everywhere(false), m_singletons_in_base(false) {}
-  object_domain_params(bool reduce_everywhere, bool reduce_before_checks,
+      : m_reduction_level(reduction_level_t::NO_REDUCTION), m_singletons_in_base(false) {}
+  object_domain_params(reduction_level_t reduction_level,
                        bool singletons_in_base)
-      : m_reduce_everywhere(reduce_everywhere),
-        m_reduce_before_checks(reduce_before_checks),
+      : m_reduction_level(reduction_level),
         m_singletons_in_base(singletons_in_base) {}
 
-  bool reduce_everywhere() const {
-    return m_reduce_everywhere;
-  }
-  bool reduce_before_checks() const { return m_reduce_before_checks; }
+  reduction_level_t reduction_level() const { return m_reduction_level; }
   bool singletons_in_base() const { return m_singletons_in_base; }
   void update_params(const object_domain_params& p);
   void write(crab::crab_os &o) const;
