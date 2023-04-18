@@ -3818,6 +3818,29 @@ Test using ArrayAdapt
 EXPECTED: {y >= 2, ...}
 RESULT: {x -> [2, +oo]; y -> [2, +oo]}
 === End ./test-bin/unittests-backward ===
+=== Begin ./test-bin/unittests-herbrand ===
+=== Join === 
+{x -> *(8,5), y -> 8} | {x -> *($VAR_0,5), y -> $VAR_0} = {x -> *($VAR_0,5), y -> $VAR_0}
+{x -> 1} | {x -> +(1,1)} = {x -> $VAR_0}
+=== Equalities/Disequalities === 
+Extracting equalities from {y -> $VAR_0, x1 -> *($VAR_0,5), x2 -> *($VAR_0,5), x3 -> *($VAR_0,8)}={x1-x2 = 0}
+After adding x1-x2 = 0 --> {y -> $VAR_0, x1 -> *($VAR_0,5), x2 -> *($VAR_0,5), x3 -> *($VAR_0,8)}
+After adding x1-x2 != 0 --> _|_
+=== Project === 
+Before project {x -> 5, y -> 5, z -> 9}
+After project {x -> 5, y -> 5}
+==== Meet ====
+Meet
+  {x -> 5, y -> +(5,3), w -> 5, z -> 3} 
+  {x -> +(8,2), y -> 8, w -> 8, z -> 2}
+Result={x -> +($VAR_0,$VAR_1), y -> +($VAR_0,$VAR_1), w -> +($VAR_0,$VAR_1), z -> $VAR_1}
+Meet
+  {x -> 5, y -> +(5,10), w -> 5, z -> 10} 
+  {x -> +(7,10), y -> 7, w -> 7, z -> 10}
+Result={x -> +($VAR_0,$VAR_1), y -> +($VAR_0,$VAR_1), w -> +($VAR_0,$VAR_1), z -> $VAR_1}
+==== Boolean operations ====
+Extracting equalities from {b1 -> $VAR_1, b2 -> band($VAR_1,$VAR_0), b3 -> band($VAR_1,$VAR_0), b4 -> $VAR_0, b5 -> $VAR_0, b6 -> bor($VAR_1,$VAR_0), b7 -> bxor($VAR_1,$VAR_0)}={b2-b3 = 0; b4-b5 = 0}
+=== End ./test-bin/unittests-herbrand ===
 === Begin ./test-bin/unittests-linear-constraints ===
 Before normalize constraints {x <= 8; -y <= -5; y <= 6; -x <= -8; -v <= -9888; z = 10; w <= 0; v <= 9888}
 After normalize constraints {x = 8; v = 9888; -y <= -5; y <= 6; z = 10; w <= 0}
@@ -3979,29 +4002,6 @@ Before renaming {x -> t0[_x0], y -> t1[_x1]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 After rename x with w and y with z={z -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 After rename x with w={y -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 === End ./test-bin/unittests-rename ===
-=== Begin ./test-bin/unittests-uf ===
-=== Join === 
-{x -> *(8,5), y -> 8} | {x -> *($VAR_0,5), y -> $VAR_0} = {x -> *($VAR_0,5), y -> $VAR_0}
-{x -> 1} | {x -> +(1,1)} = {x -> $VAR_0}
-=== Equalities/Disequalities === 
-Extracting equalities from {y -> $VAR_0, x1 -> *($VAR_0,5), x2 -> *($VAR_0,5), x3 -> *($VAR_0,8)}={x1-x2 = 0}
-After adding x1-x2 = 0 --> {y -> $VAR_0, x1 -> *($VAR_0,5), x2 -> *($VAR_0,5), x3 -> *($VAR_0,8)}
-After adding x1-x2 != 0 --> _|_
-=== Project === 
-Before project {x -> 5, y -> 5, z -> 9}
-After project {x -> 5, y -> 5}
-==== Meet ====
-Meet
-  {x -> 5, y -> +(5,3), w -> 5, z -> 3} 
-  {x -> +(8,2), y -> 8, w -> 8, z -> 2}
-Result={x -> +($VAR_0,$VAR_1), y -> +($VAR_0,$VAR_1), w -> +($VAR_0,$VAR_1), z -> $VAR_1}
-Meet
-  {x -> 5, y -> +(5,10), w -> 5, z -> 10} 
-  {x -> +(7,10), y -> 7, w -> 7, z -> 10}
-Result={x -> +($VAR_0,$VAR_1), y -> +($VAR_0,$VAR_1), w -> +($VAR_0,$VAR_1), z -> $VAR_1}
-==== Boolean operations ====
-Extracting equalities from {b1 -> $VAR_1, b2 -> band($VAR_1,$VAR_0), b3 -> band($VAR_1,$VAR_0), b4 -> $VAR_0, b5 -> $VAR_0, b6 -> bor($VAR_1,$VAR_0), b7 -> bxor($VAR_1,$VAR_0)}={b2-b3 = 0; b4-b5 = 0}
-=== End ./test-bin/unittests-uf ===
 === Begin ./test-bin/unittests-union-find ===
 Dom1={{v1}=>{x -> [5, 5]; y -> [10, 10]},{v2}=>{x -> [5, 5]; y -> [10, 10]},{v3}=>{x -> [5, 5]; y -> [10, 10]},{v4}=>{x -> [5, 5]; y -> [10, 10]}}
 After join v1 and v2={{v1,v2}=>{x -> [5, 5]; y -> [10, 10]},{v3}=>{x -> [5, 5]; y -> [10, 10]},{v4}=>{x -> [5, 5]; y -> [10, 10]}}
