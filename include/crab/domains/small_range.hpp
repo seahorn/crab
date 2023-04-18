@@ -62,6 +62,7 @@ public:
   static small_range bottom();
   static small_range top();
   static small_range zero();
+  static small_range one();
   static small_range oneOrMore();
 
   small_range(const small_range &other) = default;
