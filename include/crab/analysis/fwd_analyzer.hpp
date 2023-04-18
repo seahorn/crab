@@ -86,9 +86,9 @@ private:
     return res;
   }
 
-  void process_pre(const basic_block_label_t &node, abs_dom_t inv) override {}
+  void process_pre(const basic_block_label_t &node, const abs_dom_t &inv) override {}
 
-  void process_post(const basic_block_label_t &node, abs_dom_t inv) override {}
+  void process_post(const basic_block_label_t &node, const abs_dom_t &inv) override {}
 
   void init_fwd_analyzer() {
     assert(m_abs_tr);

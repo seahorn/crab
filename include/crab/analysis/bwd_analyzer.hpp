@@ -102,13 +102,14 @@ class necessary_preconditions_fixpoint_iterator
   }
 
   virtual void process_pre(const bb_label_t & /*node*/,
-                           AbsDom /*postcond*/) override {}
+                           const AbsDom &/*postcond*/) override {}
 
   /**
    *  Store necessary preconditions
    **/
-  virtual void process_post(const bb_label_t &node, AbsDom precond) override {
-    m_preconditions.insert(std::make_pair(node, precond));
+  virtual void process_post(const bb_label_t &node, const AbsDom &precond) override {
+    AbsDom copy_precond(precond);
+    m_preconditions.insert({node, std::move(copy_precond)});
   }
 
 public:
