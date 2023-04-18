@@ -49,9 +49,9 @@ public:
   virtual AbstractValue analyze(const basic_block_label_t &,
                                 AbstractValue &&) = 0;
 
-  virtual void process_pre(const basic_block_label_t &, AbstractValue) = 0;
+  virtual void process_pre(const basic_block_label_t &, const AbstractValue&) = 0;
 
-  virtual void process_post(const basic_block_label_t &, AbstractValue) = 0;
+  virtual void process_post(const basic_block_label_t &, const AbstractValue&) = 0;
 
   virtual ~fixpoint_iterator() {}
 
