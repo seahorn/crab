@@ -264,6 +264,7 @@ small_range small_range::meet_one_or_more_with(const small_range &other) const {
 small_range small_range::bottom() { return small_range(Bottom); }
 small_range small_range::top() { return small_range(ZeroOrMore); }
 small_range small_range::zero() { return small_range(ExactlyZero); }
+small_range small_range::one() { return small_range(ExactlyOne); }
 small_range small_range::oneOrMore() { return small_range(OneOrMore); }
 small_range small_range::zeroOrMore() { return small_range(ZeroOrMore); }  
 small_range small_range::make_bottom() const {
