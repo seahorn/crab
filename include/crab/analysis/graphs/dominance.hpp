@@ -126,9 +126,9 @@ void dominance(G g, typename G::node_t entry, VectorMap &df) {
   using basic_block_t = typename G::basic_block_t;
   // map node to its idom node
   std::unordered_map<node_t, node_t> idom;
-  crab::CrabStats::resume("Dominator Tree");
+  //crab::CrabStats::resume("Dominator Tree");
   dominator_tree(g, entry, idom);
-  crab::CrabStats::stop("Dominator Tree");
+  //crab::CrabStats::stop("Dominator Tree");
   // // map node n to all its immediate dominated nodes
   // std::unordered_map<node_t, std::vector<node_t> > dominated;
   // for (auto v: boost::make_iterator_range(vertices(g))) {
@@ -138,7 +138,7 @@ void dominance(G g, typename G::node_t entry, VectorMap &df) {
   //   }
   // }
 
-  crab::CrabStats::resume("Dominance Frontier");
+  //crab::CrabStats::resume("Dominance Frontier");
   // computer dominance frontier
   // use the iterative solution from Cooper/Torczon
   for (auto n : boost::make_iterator_range(vertices(g))) {
@@ -156,7 +156,7 @@ void dominance(G g, typename G::node_t entry, VectorMap &df) {
       }
     }
   } // end outer for
-  crab::CrabStats::stop("Dominance Frontier");
+  //crab::CrabStats::stop("Dominance Frontier");
 
   CRAB_LOG("dominance", for (auto &kv
                              : df) {

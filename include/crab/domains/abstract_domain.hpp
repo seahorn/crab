@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain_operators.hpp>
+#include <crab/domains/inter_abstract_operations_callsite_info.hpp>
 #include <crab/domains/boolean.hpp>
 #include <crab/fixpoint/thresholds.hpp>
 #include <crab/types/linear_constraints.hpp>
@@ -9,6 +10,7 @@
 #include <crab/types/tag.hpp>
 
 #include <vector>
+#include <string>
 
 namespace crab {
 
@@ -18,7 +20,7 @@ namespace domains {
 
 template <class Dom> struct abstract_domain_traits;
 template <class Number, class VariableName> class abstract_domain_results_api;
-  
+
 /**
  * All abstract domains must derive from the abstract_domain_api class
  * and expose publicly all its public typedef's.
@@ -50,14 +52,16 @@ template <class Number, class VariableName> class abstract_domain_results_api;
  * (3) (forward and backward) Boolean operations
  * (4) (only forward) Region and reference operations
  * (5) (forward and backward) Array operations
+ * (6) Transfer functions for function calls (inter_abstract_operations_api)
+ * (7) (decoupled) Phase operations 
  * 
- * Where forward (backward) means forward (backward) semantics. The
- * abstract_domain_api API doesn't provide backward versions for (4)
- * but it should. 
+ * Where forward (backward) means forward (backward) semantics. Note
+ * that abstract_domain_api only provide backward transformers for
+ * numerical, Boolean, and array operations.
  **/
 template <class Dom> class abstract_domain_api:
-  public abstract_domain_results_api<typename abstract_domain_traits<Dom>::number_t,
-				     typename abstract_domain_traits<Dom>::varname_t> {
+    public abstract_domain_results_api<typename abstract_domain_traits<Dom>::number_t,
+				       typename abstract_domain_traits<Dom>::varname_t> {
 public:
   using number_t = typename abstract_domain_traits<Dom>::number_t;
   using varname_t = typename abstract_domain_traits<Dom>::varname_t;
@@ -77,6 +81,22 @@ public:
 
   abstract_domain_api() = default;
   virtual ~abstract_domain_api() = default;
+
+  /************************ Decoupled phase operations ************************/
+
+  virtual bool is_asc_phase() const {
+    // Assume by default the descending (i.e., more precise) phase;
+    // the ascending phase will be entered when actually starting
+    // a post-fixpoint ascending iteration (with widening).
+    return false;
+  }
+  virtual void set_phase(bool is_ascending) {
+    (void) is_ascending;
+    // Default: do nothing at all.
+    // Must be overridden by the decoupled domain template, as well as
+    // domains possibly *containing* an instance of the decoupled domain
+    // (e.g., reduced products).
+  }
 
   /**************************** Lattice operations ****************************/
 
@@ -310,6 +330,31 @@ public:
   virtual void backward_array_assign(const variable_t &a, const variable_t &b,
                                      const Dom &invariant) = 0;
 
+  /**************************** Function call operations ****************/
+  /**
+   * Upon completion, @this is the abstract state at the callee for
+   * the entry block.
+   *
+   *  - @this: initial state at the callee (usually top)   
+   *  - @caller: abstract state at the caller before the call.
+   **/
+  virtual void callee_entry(const callsite_info<variable_t> &callsite,
+			    const Dom &caller) = 0 ;
+  
+  /**
+   * Upon completion, @this is the abstract state at the
+   * caller after the execution of the call finished.
+   *
+   * - @this: abstract state at the caller before the call
+   * - @callee: abstract state at the exit block of the callee
+   *   but already projected onto formal parameters of the function.
+   *
+   * This code should work even if input and output parameters at the
+   * callsite are not disjoint.
+   **/
+  virtual void caller_continuation(const callsite_info<variable_t> &callsite,
+				   const Dom &callee) = 0;
+  
   /**************************** Miscellaneous operations ****************/
   // Forget v
   virtual void operator-=(const variable_t &v) = 0;
@@ -374,7 +419,7 @@ public:
                                    const abstract_domain_api<Dom> &dom) {
     dom.write(o);
     return o;
-  }
+  }  
 };
 
 /* 
@@ -409,9 +454,7 @@ public:
   
 };
 
-
-#include "./abstract_domain_macros.def"
+#include "abstract_domain_macros.def"
   
 } // end namespace domains
 } // end namespace crab
-

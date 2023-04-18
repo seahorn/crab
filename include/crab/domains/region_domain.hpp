@@ -4,6 +4,7 @@
 #include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/boolean.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/small_range.hpp>
 #include <crab/domains/types.hpp>
@@ -95,6 +96,9 @@ namespace domains {
 /// };
 ///
 
+#define REGION_DOMAIN_SCOPED_STATS(NAME) CRAB_DOMAIN_SCOPED_STATS(NAME, 1)
+#define REGION_COUNT_STATS(NAME) CRAB_DOMAIN_COUNT_STATS(NAME, 0)
+  
 template <typename Params>
 class region_domain final : public abstract_domain_api<region_domain<Params>> {
   using region_domain_t = region_domain<Params>;
@@ -639,6 +643,15 @@ private:
   }
 
 public:
+  
+  bool is_asc_phase() const override {
+    return m_base_dom.is_asc_phase();
+  }
+
+  void set_phase(bool is_ascending) override {
+    return m_base_dom.set_phase(is_ascending);
+  }
+
   region_domain_t make_top() const override { return region_domain_t(true); }
 
   region_domain_t make_bottom() const override {
@@ -663,8 +676,7 @@ public:
         m_base_dom(o.m_base_dom), m_rgn_env(o.m_rgn_env),
         m_tag_env(o.m_tag_env), m_alloc_env(o.m_alloc_env),
         m_rgn_equiv_classes(o.m_rgn_equiv_classes) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    REGION_DOMAIN_SCOPED_STATS(".copy");
   }
   region_domain(region_domain_t &&o)
       : m_is_bottom(o.m_is_bottom),
@@ -676,8 +688,7 @@ public:
         m_rgn_equiv_classes(std::move(o.m_rgn_equiv_classes)) {}
 
   region_domain_t &operator=(const region_domain_t &o) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    REGION_DOMAIN_SCOPED_STATS(".copy");
     if (this != &o) {
       m_is_bottom = o.m_is_bottom;
       m_ghost_var_man = o.m_ghost_var_man;
@@ -720,8 +731,7 @@ public:
   }
 
   bool operator<=(const region_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.leq");
-    crab::ScopedCrabStats __st__(domain_name() + ".leq");
+    REGION_DOMAIN_SCOPED_STATS(".leq");
 
     CRAB_LOG("region-leq", crab::outs() << "Inclusion test:\n\t" << *this
                                         << "\n\t" << o << "\n";);
@@ -775,8 +785,7 @@ public:
   }
 
   void operator|=(const region_domain_t &o) override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    REGION_DOMAIN_SCOPED_STATS(".join");
 
     // Trivial cases first
     if (is_bottom()) {
@@ -790,13 +799,12 @@ public:
     }
 
     CRAB_LOG("region", crab::outs() << "Join " << *this << " and " << o << "=");
-    do_join(o);
+      do_join(o);
     CRAB_LOG("region", crab::outs() << "Result=" << *this << "\n");
   }
 
   region_domain_t operator|(const region_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    REGION_DOMAIN_SCOPED_STATS(".join");
 
     // Trivial cases first
     if (is_bottom()) {
@@ -814,15 +822,14 @@ public:
     auto base_dom_op = [](const base_abstract_domain_t &v1,
                           const base_abstract_domain_t &v2) { return v1 | v2; };
     region_domain_t res(std::move(
-       do_join_or_widening(*this, o, true /*is join*/, base_dom_op)));
-    
-    CRAB_LOG("region", crab::outs() << "Result=" << res << "\n");
-    return res;
+          do_join_or_widening(*this, o, true /*is join*/, base_dom_op)));
+
+      CRAB_LOG("region", crab::outs() << "Result=" << res << "\n");
+      return res;
   }
 
   region_domain_t operator&(const region_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    REGION_DOMAIN_SCOPED_STATS(".meet");
 
     if (is_bottom() || o.is_top()) {
       return *this;
@@ -849,8 +856,7 @@ public:
   }
   
   region_domain_t operator||(const region_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    REGION_DOMAIN_SCOPED_STATS(".widening");
 
     // Trivial cases first: we don't cover cases where one operand is
     // top because is_top() calls the base domain which we don't know
@@ -878,8 +884,7 @@ public:
   region_domain_t
   widening_thresholds(const region_domain_t &o,
                       const thresholds<number_t> &thresholds) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    REGION_DOMAIN_SCOPED_STATS(".widening");
 
     // Trivial cases first: we don't cover cases where one operand is
     // top because is_top() calls the base domain which we don't know
@@ -906,8 +911,7 @@ public:
   }
 
   region_domain_t operator&&(const region_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
+    REGION_DOMAIN_SCOPED_STATS(".narrowing");
 
     if (is_bottom() || o.is_top()) {
       return *this;
@@ -927,8 +931,7 @@ public:
   }
 
   void operator-=(const variable_t &v) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    REGION_DOMAIN_SCOPED_STATS(".forget");
 
     if (!is_bottom()) {
       if (v.get_type().is_region()) {
@@ -951,8 +954,7 @@ public:
 
   // Initialize region rgn.
   void region_init(const variable_t &rgn) override {
-    crab::CrabStats::count(domain_name() + ".count.region_init");
-    crab::ScopedCrabStats __st__(domain_name() + ".region_init");
+    REGION_DOMAIN_SCOPED_STATS(".region_init");
 
     ERROR_IF_NOT_REGION(rgn, __LINE__);
 
@@ -992,12 +994,12 @@ public:
     if (!(rgn.get_type().is_unknown_region())) {
       // Assign ghost variables to rgn for modeling its content
       get_or_insert_gvars(rgn);
-      crab::CrabStats::count(domain_name() +
-                             ".count.region_init.typed_regions");
+      REGION_COUNT_STATS(".region_init.typed_regions");
+                             
     } else {
       // We cannot assign ghost variables if the region is unknown
-      crab::CrabStats::count(domain_name() +
-                             ".count.region_init.unknown_regions");
+      REGION_COUNT_STATS(".region_init.unknown_regions");
+                             
     }
     CRAB_LOG("region", crab::outs()
                            << "After region_init(" << rgn << ":"
@@ -1006,8 +1008,7 @@ public:
 
   void region_copy(const variable_t &lhs_rgn,
                    const variable_t &rhs_rgn) override {
-    crab::CrabStats::count(domain_name() + ".count.region_copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".region_copy");
+    REGION_DOMAIN_SCOPED_STATS(".region_copy");
 
     /* These are ensured by well-typed Crab CFGs */
     ERROR_IF_NOT_REGION(lhs_rgn, __LINE__);
@@ -1060,8 +1061,7 @@ public:
     // A region_cast is used to cast unknown regions to typed regions,
     // or viceversa.
 
-    crab::CrabStats::count(domain_name() + ".count.region_cast");
-    crab::ScopedCrabStats __st__(domain_name() + ".region_cast");
+    REGION_DOMAIN_SCOPED_STATS(".region_cast");
 
     /* These are ensured by well-typed Crab CFGs */
     ERROR_IF_NOT_REGION(src_rgn, __LINE__);
@@ -1124,15 +1124,13 @@ public:
       const type_value &dst_dyn_type = old_dst_rgn_info.type_val();
       if (!has_dynamic_type(dst_rgn, dst_dyn_type)) {
         // skip assign ghost variables
-        crab::CrabStats::count(domain_name() + ".count.region_cast.skipped");
+        REGION_COUNT_STATS(".region_cast.skipped");
       } else {
         if (type_value(src_rgn.get_type()) <= dst_dyn_type) {
           // make sure dynamic types of src and dst are compatible
           assign_regions(dst_rgn, src_rgn, src_rgn.get_type());
         } else {
-          crab::CrabStats::count(
-              domain_name() +
-              ".count.region_cast.skipped.inconsistent_dynamic_type");
+          REGION_COUNT_STATS(".region_cast.skipped.inconsistent_dynamic_type");
         }
       }
     } else {
@@ -1146,15 +1144,13 @@ public:
 
       if (!has_dynamic_type(src_rgn, src_rgn_info.type_val())) {
         // skip assign ghost variables
-        crab::CrabStats::count(domain_name() + ".count.region_cast.skipped");
+        REGION_COUNT_STATS(".region_cast.skipped");
       } else {
         if (type_value(dst_rgn.get_type()) <= src_rgn_info.type_val()) {
           // make sure dynamic types of src and dst are compatible
           assign_regions(dst_rgn, src_rgn, dst_rgn.get_type());
         } else {
-          crab::CrabStats::count(
-              domain_name() +
-              ".count.region_cast.skipped.inconsistent_dynamic_type");
+          REGION_COUNT_STATS(".region_cast.skipped.inconsistent_dynamic_type");
         }
       }
     }
@@ -1169,8 +1165,7 @@ public:
   void ref_make(const variable_t &ref, const variable_t &rgn,
                 const variable_or_constant_t &size,
                 const allocation_site &as) override {
-    crab::CrabStats::count(domain_name() + ".count.ref_make");
-    crab::ScopedCrabStats __st__(domain_name() + ".ref_make");
+    REGION_DOMAIN_SCOPED_STATS(".ref_make");
 
     ERROR_IF_NOT_REGION(rgn, __LINE__);
     ERROR_IF_NOT_REF(ref, __LINE__);
@@ -1206,8 +1201,7 @@ public:
   }
 
   void ref_free(const variable_t &rgn, const variable_t &ref) override {
-    crab::CrabStats::count(domain_name() + ".count.ref_free");
-    crab::ScopedCrabStats __st__(domain_name() + ".ref_free");
+    REGION_DOMAIN_SCOPED_STATS(".ref_free");
 
     ERROR_IF_NOT_REGION(rgn, __LINE__);
     ERROR_IF_NOT_REF(ref, __LINE__);
@@ -1239,8 +1233,7 @@ public:
   // stored in res.
   void ref_load(const variable_t &ref, const variable_t &rgn,
                 const variable_t &res) override {
-    crab::CrabStats::count(domain_name() + ".count.ref_load");
-    crab::ScopedCrabStats __st__(domain_name() + ".ref_load");
+    REGION_DOMAIN_SCOPED_STATS(".ref_load");
 
     ERROR_IF_NOT_REGION(rgn, __LINE__);
     ERROR_IF_ARRAY_REGION(rgn, __LINE__);
@@ -1265,8 +1258,7 @@ public:
       CRAB_LOG("region-load", CRAB_WARN("region_domain::ref_load: reference ",
                                         ref, " is null."););
       // set_to_bottom();
-      crab::CrabStats::count(domain_name() +
-                             ".count.ref_load.skipped.null_reference");
+      REGION_COUNT_STATS(".ref_load.skipped.null_reference");
       gvars_res.forget(m_base_dom);
       return;
     }
@@ -1285,8 +1277,7 @@ public:
       CRAB_LOG(
           "region-load",
           CRAB_WARN("region_domain::ref_load: skip unknown region ", rgn););
-      crab::CrabStats::count(domain_name() +
-                             ".count.ref_load.skipped.untracked_region");
+      REGION_COUNT_STATS(".ref_load.skipped.untracked_region");
       gvars_res.forget(m_base_dom);
       return;
     }
@@ -1302,8 +1293,7 @@ public:
 
       if (rgn_ty.is_top()) {
         gvars_res.forget(m_base_dom);
-        crab::CrabStats::count(domain_name() +
-                               ".count.ref_load.skipped.dynamic_type_is_top");
+	REGION_COUNT_STATS(".ref_load.skipped.dynamic_type_is_top");
         return;
       }
 
@@ -1315,9 +1305,7 @@ public:
                            " which is not compatible with the type of the lhs ",
                            res.get_type()););
 
-        crab::CrabStats::count(
-            domain_name() +
-            ".count.ref_load.skipped.inconsistent_dynamic_type");
+        REGION_COUNT_STATS(".ref_load.skipped.inconsistent_dynamic_type");
         gvars_res.forget(m_base_dom);
         return;
       }
@@ -1329,7 +1317,7 @@ public:
 	// We consider that if the region has a zero refcounter then
 	// we can perform strong read. This might be unsound so at
 	// least we print a warning.	
-	CRAB_WARN(domain_name(), "::ref_load from a region with zero refcounter. "
+	CRAB_WARN("ref_load from a region with zero refcounter. "
 		  "Perhaps region objects are allocated outside the code under analysis."); 
       }
       // strong read
@@ -1363,8 +1351,7 @@ public:
   // Write the content of val to the address pointed by ref in rgn.
   void ref_store(const variable_t &ref, const variable_t &rgn,
                  const variable_or_constant_t &val) override {
-    crab::CrabStats::count(domain_name() + ".count.ref_store");
-    crab::ScopedCrabStats __st__(domain_name() + ".ref_store");
+    REGION_DOMAIN_SCOPED_STATS(".ref_store");
 
     ERROR_IF_NOT_REGION(rgn, __LINE__);
     ERROR_IF_ARRAY_REGION(rgn, __LINE__);
@@ -1394,8 +1381,7 @@ public:
       CRAB_LOG("region-store", CRAB_WARN("region_domain::ref_store: reference ",
                                          ref, " is null. "););
       // set_to_bottom();
-      crab::CrabStats::count(domain_name() +
-                             ".count.ref_store.skipped.null_reference");
+      REGION_COUNT_STATS(".ref_store.skipped.null_reference");
       forget_region_ghost_vars(rgn);
       return;
     }
@@ -1415,8 +1401,7 @@ public:
                    rgn, " is bottom");
       }
       if (rgn_ty.is_top()) {
-        crab::CrabStats::count(domain_name() +
-                               ".count.ref_store.skipped.dynamic_type_is_top");
+        REGION_COUNT_STATS(".ref_store.skipped.dynamic_type_is_top");
         forget_region_ghost_vars(rgn);
         m_rgn_env.set(rgn, new_rgn_info);
         return;
@@ -1444,9 +1429,7 @@ public:
             CRAB_LOG("region-store",
                      crab::outs() << "Skipped the write of a value of type "
                                   << val.get_type() << "\n";);
-            crab::CrabStats::count(
-                domain_name() +
-                ".count.ref_store.skipped.inconsistent_dynamic_type");
+            REGION_COUNT_STATS(".ref_store.skipped.inconsistent_dynamic_type");
             m_rgn_env.set(rgn, new_rgn_info);
             return;
           } else if (val.get_type().is_reference()) {
@@ -1477,9 +1460,7 @@ public:
                           " because the region has the dynamic type ", rgn_ty,
                           " and it is not compatible with the type of the lhs ",
                           val.get_type()););
-            crab::CrabStats::count(
-                domain_name() +
-                ".count.ref_store.skipped.inconsistent_dynamic_type");
+            REGION_COUNT_STATS(".ref_store.skipped.inconsistent_dynamic_type");
             forget_region_ghost_vars(rgn);
             m_rgn_env.set(rgn, new_rgn_info);
             return;
@@ -1493,8 +1474,7 @@ public:
       CRAB_LOG(
           "region-store",
           CRAB_WARN("region_domain::ref_store: skip unknown region ", rgn););
-      crab::CrabStats::count(domain_name() +
-                             ".count.ref_store.skipped.untracked_region");
+      REGION_COUNT_STATS(".ref_store.skipped.untracked_region");
       // don't return yet
     }
 
@@ -1514,7 +1494,7 @@ public:
 	// We consider that if the region has a zero refcounter then
 	// we can perform strong update. This might be unsound so at
 	// least we print a warning.	
-	CRAB_WARN(domain_name(), "::ref_store from a region with zero refcounter. "
+	CRAB_WARN("ref_store from a region with zero refcounter. "
 		  "Perhaps region objects are allocated outside the code under analysis."); 
       }
       
@@ -1580,8 +1560,7 @@ public:
   void ref_gep(const variable_t &ref1, const variable_t &rgn1,
                const variable_t &ref2, const variable_t &rgn2,
                const linear_expression_t &offset) override {
-    crab::CrabStats::count(domain_name() + ".count.ref_gep");
-    crab::ScopedCrabStats __st__(domain_name() + ".ref_gep");
+    REGION_DOMAIN_SCOPED_STATS(".ref_gep");
 
     ERROR_IF_NOT_REGION(rgn1, __LINE__);
     ERROR_IF_NOT_REGION(rgn2, __LINE__);
@@ -1661,8 +1640,7 @@ public:
   }
 
   void ref_assume(const reference_constraint_t &ref_cst) override {
-    crab::CrabStats::count(domain_name() + ".count.ref_assume");
-    crab::ScopedCrabStats __st__(domain_name() + ".ref_assume");
+    REGION_DOMAIN_SCOPED_STATS(".ref_assume");
 
     CRAB_LOG("region",
              crab::outs() << "ref_assume(" << ref_cst << ")" << *this << "\n";);
@@ -1742,8 +1720,7 @@ public:
 
   void ref_to_int(const variable_t &rgn, const variable_t &ref_var,
                   const variable_t &int_var) override {
-    crab::CrabStats::count(domain_name() + ".count.ref_to_int");
-    crab::ScopedCrabStats __st__(domain_name() + ".ref_to_int");
+    REGION_DOMAIN_SCOPED_STATS(".ref_to_int");
 
     ERROR_IF_NOT_REF(ref_var, __LINE__);
     ERROR_IF_NOT_INT(int_var, __LINE__);
@@ -1761,8 +1738,7 @@ public:
 
   void int_to_ref(const variable_t &int_var, const variable_t &rgn,
                   const variable_t &ref_var) override {
-    crab::CrabStats::count(domain_name() + ".count.int_to_ref");
-    crab::ScopedCrabStats __st__(domain_name() + ".int_to_ref");
+    REGION_DOMAIN_SCOPED_STATS(".int_to_ref");
 
     ERROR_IF_NOT_REF(ref_var, __LINE__);
     ERROR_IF_NOT_INT(int_var, __LINE__);
@@ -1801,9 +1777,7 @@ public:
   // arithmetic operations
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    REGION_DOMAIN_SCOPED_STATS(".apply");
 
     if (!is_bottom()) {
       m_base_dom.apply(op, get_or_insert_gvars(x).get_var(),
@@ -1816,8 +1790,7 @@ public:
   }
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    REGION_DOMAIN_SCOPED_STATS(".apply");
 
     if (!is_bottom()) {
       m_base_dom.apply(op, get_or_insert_gvars(x).get_var(),
@@ -1829,8 +1802,7 @@ public:
     }
   }
   void assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    REGION_DOMAIN_SCOPED_STATS(".assign");
 
     if (!is_bottom()) {
       auto b_e = rename_linear_expr(e);
@@ -1871,8 +1843,7 @@ public:
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const region_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign");
+    REGION_DOMAIN_SCOPED_STATS(".backward_assign");
 
     if (!is_bottom()) {
       auto b_e = rename_linear_expr(e);
@@ -1887,8 +1858,7 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, number_t z,
                       const region_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    REGION_DOMAIN_SCOPED_STATS(".backward_apply");
 
     if (!is_bottom()) {
       m_base_dom.backward_apply(op, get_or_insert_gvars(x).get_var(),
@@ -1903,8 +1873,7 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const region_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    REGION_DOMAIN_SCOPED_STATS(".backward_apply");
 
     if (!is_bottom()) {
       m_base_dom.backward_apply(op, get_or_insert_gvars(x).get_var(),
@@ -1917,9 +1886,9 @@ public:
       }
     }
   }
+  
   void operator+=(const linear_constraint_system_t &csts) override {
-    crab::CrabStats::count(domain_name() + ".count.add_constraints");
-    crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
+    REGION_DOMAIN_SCOPED_STATS(".add_cst");
 
     if (!is_bottom()) {
       auto b_csts = rename_linear_cst_sys(csts);
@@ -1939,8 +1908,7 @@ public:
   #if 0
   // not part of the numerical_domains api but it should be  
   void set(const variable_t &x, interval_t intv) {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    REGION_DOMAIN_SCOPED_STATS(".assign");
 
     if (!is_bottom()) {
       if (intv.is_bottom()) {
@@ -1987,8 +1955,7 @@ public:
   // int cast operations and bitwise operations
   void apply(int_conv_operation_t op, const variable_t &dst,
              const variable_t &src) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    REGION_DOMAIN_SCOPED_STATS(".apply");
 
     if (!is_bottom()) {
       m_base_dom.apply(op, get_or_insert_gvars(dst).get_var(),
@@ -2001,8 +1968,7 @@ public:
   }
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    REGION_DOMAIN_SCOPED_STATS(".apply");
 
     if (!is_bottom()) {
       m_base_dom.apply(op, get_or_insert_gvars(x).get_var(),
@@ -2016,8 +1982,7 @@ public:
   }
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              number_t z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    REGION_DOMAIN_SCOPED_STATS(".apply");
 
     if (!is_bottom()) {
       m_base_dom.apply(op, get_or_insert_gvars(x).get_var(),
@@ -2032,8 +1997,7 @@ public:
   // boolean operations
   void assign_bool_cst(const variable_t &lhs,
                        const linear_constraint_t &rhs) override {
-    crab::CrabStats::count(domain_name() + ".count.assign_bool_cst");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst");
+    REGION_DOMAIN_SCOPED_STATS(".assign_bool_cst");
 
     if (!is_bottom()) {
       auto b_rhs = rename_linear_cst(rhs);
@@ -2047,8 +2011,7 @@ public:
 
   void assign_bool_ref_cst(const variable_t &lhs,
                            const reference_constraint_t &rhs) override {
-    crab::CrabStats::count(domain_name() + ".count.assign_bool_cst");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst");
+    REGION_DOMAIN_SCOPED_STATS(".assign_bool_cst");
 
     if (!is_bottom()) {
 
@@ -2089,8 +2052,7 @@ public:
 
   void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                        bool is_not_rhs) override {
-    crab::CrabStats::count(domain_name() + ".count.assign_bool_var");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_var");
+    REGION_DOMAIN_SCOPED_STATS(".assign_bool_var");
 
     if (!is_bottom()) {
       m_base_dom.assign_bool_var(get_or_insert_gvars(lhs).get_var(),
@@ -2110,8 +2072,7 @@ public:
   
   void apply_binary_bool(bool_operation_t op, const variable_t &x,
                          const variable_t &y, const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply_binary_bool");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply_binary_bool");
+    REGION_DOMAIN_SCOPED_STATS(".bin_bool");
 
     if (!is_bottom()) {
       m_base_dom.apply_binary_bool(op, get_or_insert_gvars(x).get_var(),
@@ -2124,8 +2085,7 @@ public:
     }
   }
   void assume_bool(const variable_t &v, bool is_negated) override {
-    crab::CrabStats::count(domain_name() + ".count.assume_bool");
-    crab::ScopedCrabStats __st__(domain_name() + ".assume_bool");
+    REGION_DOMAIN_SCOPED_STATS(".assume_bool");
 
     if (!is_bottom()) {
       m_base_dom.assume_bool(get_or_insert_gvars(v).get_var(), is_negated);
@@ -2149,8 +2109,7 @@ public:
   void backward_assign_bool_cst(const variable_t &lhs,
                                 const linear_constraint_t &rhs,
                                 const region_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_assign_bool_cst");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign_bool_cst");
+    REGION_DOMAIN_SCOPED_STATS(".backward_assign_bool_cst");
 
     if (!is_bottom()) {
       auto b_rhs = rename_linear_cst(rhs);
@@ -2165,8 +2124,7 @@ public:
   void backward_assign_bool_ref_cst(const variable_t &lhs,
                                     const reference_constraint_t &rhs,
                                     const region_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_assign_bool_cst");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign_bool_cst");
+    REGION_DOMAIN_SCOPED_STATS(".backward_assign_bool_cst");
 
     if (!is_bottom()) {
       auto b_rhs = convert_ref_cst_to_linear_cst(rhs, ghost_variable_kind::ADDRESS);
@@ -2181,8 +2139,7 @@ public:
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                 bool is_not_rhs,
                                 const region_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_assign_bool_var");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign_bool_var");
+    REGION_DOMAIN_SCOPED_STATS(".backward_assign_bool_var");
 
     if (!is_bottom()) {
       m_base_dom.backward_assign_bool_var(get_or_insert_gvars(lhs).get_var(),
@@ -2196,8 +2153,7 @@ public:
   void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
                                   const variable_t &y, const variable_t &z,
                                   const region_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply_binary_bool");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply_binary_bool");
+    REGION_DOMAIN_SCOPED_STATS(".backward_bin_bool");
 
     if (!is_bottom()) {
       m_base_dom.backward_apply_binary_bool(
@@ -2215,8 +2171,7 @@ public:
                   const linear_expression_t &lb_idx,
                   const linear_expression_t &ub_idx,
                   const linear_expression_t &val) override {
-    crab::CrabStats::count(domain_name() + ".count.array_init");
-    crab::ScopedCrabStats __st__(domain_name() + ".array_init");
+    REGION_DOMAIN_SCOPED_STATS(".array_init");
 
     if (!is_bottom()) {
       auto b_elem_size = rename_linear_expr(elem_size);
@@ -2233,8 +2188,7 @@ public:
   void array_load(const variable_t &lhs, const variable_t &a,
                   const linear_expression_t &elem_size,
                   const linear_expression_t &i) override {
-    crab::CrabStats::count(domain_name() + ".count.array_load");
-    crab::ScopedCrabStats __st__(domain_name() + ".array_load");
+    REGION_DOMAIN_SCOPED_STATS(".array_load");
 
     if (!is_bottom()) {
       auto b_elem_size = rename_linear_expr(elem_size);
@@ -2249,8 +2203,7 @@ public:
   void array_store(const variable_t &a, const linear_expression_t &elem_size,
                    const linear_expression_t &i, const linear_expression_t &v,
                    bool is_strong_update) override {
-    crab::CrabStats::count(domain_name() + ".count.array_store");
-    crab::ScopedCrabStats __st__(domain_name() + ".array_store");
+    REGION_DOMAIN_SCOPED_STATS(".array_store");
 
     if (!is_bottom()) {
       auto b_elem_size = rename_linear_expr(elem_size);
@@ -2268,8 +2221,7 @@ public:
                          const linear_expression_t &i,
                          const linear_expression_t &j,
                          const linear_expression_t &v) override {
-    crab::CrabStats::count(domain_name() + ".count.array_store_range");
-    crab::ScopedCrabStats __st__(domain_name() + ".array_store_range");
+    REGION_DOMAIN_SCOPED_STATS(".array_store_range");
 
     if (!is_bottom()) {
       auto b_elem_size = rename_linear_expr(elem_size);
@@ -2284,8 +2236,7 @@ public:
     }
   }
   void array_assign(const variable_t &lhs, const variable_t &rhs) override {
-    crab::CrabStats::count(domain_name() + ".count.array_assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".array_assign");
+    REGION_DOMAIN_SCOPED_STATS(".array_assign");
 
     if (!is_bottom()) {
       m_base_dom.array_assign(get_or_insert_gvars(lhs).get_var(),
@@ -2301,8 +2252,7 @@ public:
                            const linear_expression_t &ub_idx,
                            const linear_expression_t &val,
                            const region_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_array_init");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_array_init");
+    REGION_DOMAIN_SCOPED_STATS(".backward_array_init");
 
     if (!is_bottom()) {
       auto b_elem_size = rename_linear_expr(elem_size);
@@ -2321,8 +2271,7 @@ public:
                            const linear_expression_t &elem_size,
                            const linear_expression_t &i,
                            const region_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_array_load");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_array_load");
+    REGION_DOMAIN_SCOPED_STATS(".backward_array_load");
 
     if (!is_bottom()) {
       auto b_elem_size = rename_linear_expr(elem_size);
@@ -2340,8 +2289,7 @@ public:
                             const linear_expression_t &i,
                             const linear_expression_t &v, bool is_strong_update,
                             const region_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_array_store");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_array_store");
+    REGION_DOMAIN_SCOPED_STATS(".backward_array_store");
 
     if (!is_bottom()) {
       auto b_elem_size = rename_linear_expr(elem_size);
@@ -2361,8 +2309,7 @@ public:
                                   const linear_expression_t &j,
                                   const linear_expression_t &v,
                                   const region_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_array_store_range");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_array_store_range");
+    REGION_DOMAIN_SCOPED_STATS(".backward_array_store_range");
 
     if (!is_bottom()) {
       auto b_elem_size = rename_linear_expr(elem_size);
@@ -2379,8 +2326,7 @@ public:
   }
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
                              const region_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_array_assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_array_assign");
+    REGION_DOMAIN_SCOPED_STATS(".backward_array_assign");
 
     if (!is_bottom()) {
       m_base_dom.backward_array_assign(get_or_insert_gvars(lhs).get_var(),
@@ -2392,6 +2338,37 @@ public:
     }
   }
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const region_domain_t &caller) override {
+    // The transformer for a call is not delegated to the subdomains.
+    // Instead, the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.
+    // 
+    // The region domain always implements the transformers for calls
+    // since it's commonly used at the top of the hierarchy of
+    // domains.
+    REGION_DOMAIN_SCOPED_STATS(".callee_entry");        
+    inter_abstract_operations<region_domain_t,
+			      true /*implement call transformers*/>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const region_domain_t &callee) override {
+    // The transformer for a call is not delegated to the subdomains.
+    // Instead, the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.
+    // 
+    // The region domain always implements the transformers for calls
+    // since it's commonly used at the top of the hierarchy of
+    // domains.
+    REGION_DOMAIN_SCOPED_STATS(".caller_cont");    
+    inter_abstract_operations<region_domain_t,
+			      true /*implement call transformers*/>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   void forget(const variable_vector_t &variables) override {
     if (is_bottom() || is_top()) {
       return;
@@ -2418,8 +2395,7 @@ public:
   }
 
   void project(const variable_vector_t &variables) override {
-    crab::CrabStats::count(domain_name() + ".count.project");
-    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    REGION_DOMAIN_SCOPED_STATS(".project");
 
     if (is_bottom() || is_top()) {
       return;
@@ -2443,8 +2419,7 @@ public:
   void minimize() override {}
 
   void expand(const variable_t &x, const variable_t &new_x) override {
-    crab::CrabStats::count(domain_name() + ".count.expand");
-    crab::ScopedCrabStats __st__(domain_name() + ".expand");
+    REGION_DOMAIN_SCOPED_STATS(".expand");
 
     if (is_bottom() || is_top()) {
       return;
@@ -2454,8 +2429,7 @@ public:
 
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
-    crab::CrabStats::count(domain_name() + ".count.rename");
-    crab::ScopedCrabStats __st__(domain_name() + ".rename");
+    REGION_DOMAIN_SCOPED_STATS(".rename");
 
     if (is_bottom() || is_top()) {
       return;
@@ -2854,7 +2828,11 @@ public:
   }
 
   std::string domain_name() const override {
-    return "RegionDomain(" + m_base_dom.domain_name() + ")";
+    #if 1
+    return "Region";
+    #else
+    return "Region(" + m_base_dom.domain_name() + ")";
+    #endif 
   }
 
   void write(crab_os &o) const override {

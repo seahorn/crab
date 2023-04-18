@@ -25,6 +25,9 @@ public:
   constexpr uint32_t value() const { return m_value; }
   constexpr bool is_reserved() const { return m_reserved;}
   constexpr static uint32_t first_nonreserved_value() { return 100;}  
+  bool operator==(const term_operator_t o) const {
+    return o.m_value == this->m_value;
+  }
   friend crab::crab_os &operator<<(crab::crab_os &o, term_operator_t op);
 };
 
@@ -45,8 +48,9 @@ constexpr term_operator_t TERM_OP_XOR(13);
 constexpr term_operator_t TERM_OP_SHL(14);
 constexpr term_operator_t TERM_OP_LSHR(15);
 constexpr term_operator_t TERM_OP_ASHR(16);
-constexpr term_operator_t TERM_OP_FUNCTION(17);  
-  
+constexpr term_operator_t TERM_OP_FUNCTION(17);
+constexpr term_operator_t TERM_OP_DEPEND(18);
+
 /* Convert between Crab operators and term domain uninterpreted functors */
 term_operator_t conv2termop(arith_operation_t op);
 term_operator_t conv2termop(bitwise_operation_t op);
@@ -54,6 +58,13 @@ term_operator_t conv2termop(bool_operation_t op);
 boost::optional<arith_operation_t> conv2arith(term_operator_t op);
 boost::optional<bitwise_operation_t> conv2bitwise(term_operator_t op);
 boost::optional<bool_operation_t> conv2bool(term_operator_t op);
+
+class term_op_val_generator_t {
+private:
+  static uint32_t m_next_val;
+public:
+  static uint32_t get_next_val() { return m_next_val ++; }
+};
 } // end namespace term
 } // end namespace domains
 } // end namespace crab

@@ -12,6 +12,7 @@
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/sign.hpp>
 #include <crab/support/stats.hpp>
@@ -20,12 +21,19 @@
 
 namespace crab {
 namespace domains {
-
-template <typename Number, typename VariableName>
-class sign_domain final : public crab::domains::abstract_domain_api<
-                              sign_domain<Number, VariableName>> {
+class SignDefaultParams {
 public:
-  using sign_domain_t = sign_domain<Number, VariableName>;
+  enum { implement_inter_transformers = 0 };
+};
+
+#define SIGN_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  
+template <typename Number, typename VariableName, typename Params = SignDefaultParams>
+class sign_domain final : public crab::domains::abstract_domain_api<
+                          sign_domain<Number, VariableName, Params>> {
+public:
+  using sign_domain_t = sign_domain<Number, VariableName, Params>;
   using abstract_domain_t = crab::domains::abstract_domain_api<sign_domain_t>;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_t::interval_t;
@@ -266,6 +274,13 @@ private:
   }
 
 public:
+  /// sign_domain implements only standard abstract operations of
+  /// a numerical domain so it is intended to be used as a leaf domain
+  /// in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(sign_domain_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(sign_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(sign_domain_t)
+  
   sign_domain_t make_top() const override {
     return sign_domain_t(separate_domain_t::top());
   }
@@ -291,15 +306,13 @@ public:
   sign_domain() : m_env(separate_domain_t::top()) {}
 
   sign_domain(const sign_domain_t &e) : m_env(e.m_env) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    SIGN_DOMAIN_SCOPED_STATS(".copy");
   }
 
   sign_domain(sign_domain_t &&e) : m_env(std::move(e.m_env)) {}
 
   sign_domain_t &operator=(const sign_domain_t &o) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    SIGN_DOMAIN_SCOPED_STATS(".copy");
     if (this != &o) {
       m_env = o.m_env;
     }
@@ -318,14 +331,12 @@ public:
   bool is_top() const override { return m_env.is_top(); }
 
   bool operator<=(const sign_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.leq");
-    crab::ScopedCrabStats __st__(domain_name() + ".leq");
+    SIGN_DOMAIN_SCOPED_STATS(".leq");
     return (m_env <= o.m_env);
   }
 
   void operator|=(const sign_domain_t &o) override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    SIGN_DOMAIN_SCOPED_STATS(".join");
     CRAB_LOG("sign-domain",
              crab::outs() << "Join " << m_env << " and " << o.m_env << "\n";);
     m_env = m_env | o.m_env;
@@ -333,14 +344,12 @@ public:
   }
 
   sign_domain_t operator|(const sign_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    SIGN_DOMAIN_SCOPED_STATS(".join");
     return (m_env | o.m_env);
   }
 
   void operator&=(const sign_domain_t &o) override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    SIGN_DOMAIN_SCOPED_STATS(".meet");
     CRAB_LOG("sign-domain",
              crab::outs() << "Meet " << m_env << " and " << o.m_env << "\n";);
     m_env = m_env & o.m_env;
@@ -348,34 +357,29 @@ public:
   }
   
   sign_domain_t operator&(const sign_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    SIGN_DOMAIN_SCOPED_STATS(".meet");
     return (m_env & o.m_env);
   }
 
   sign_domain_t operator||(const sign_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    SIGN_DOMAIN_SCOPED_STATS(".widening");
     return (m_env | o.m_env);
   }
 
   sign_domain_t
   widening_thresholds(const sign_domain_t &o,
                       const thresholds<number_t> &ts) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    SIGN_DOMAIN_SCOPED_STATS(".widening");
     return (m_env | o.m_env);
   }
 
   sign_domain_t operator&&(const sign_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
+    SIGN_DOMAIN_SCOPED_STATS(".narrowing");
     return (m_env & o.m_env);
   }
 
   void operator-=(const variable_t &v) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    SIGN_DOMAIN_SCOPED_STATS(".forget");
     if (!is_bottom()) {    
       m_env -= v;
     }
@@ -392,16 +396,14 @@ public:
   }
 
   void operator+=(const linear_constraint_system_t &csts) override {
-    crab::CrabStats::count(domain_name() + ".count.add_constraints");
-    crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
+    SIGN_DOMAIN_SCOPED_STATS(".add_cst");
     solve_constraints(csts);
   }
 
   DEFAULT_ENTAILS(sign_domain_t)
   
   void assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    SIGN_DOMAIN_SCOPED_STATS(".assign");
     CRAB_LOG("sign-domain", crab::outs() << x << " := " << e << "\n";);
     if (!is_bottom()) {    
       if (boost::optional<variable_t> v = e.get_variable()) {
@@ -414,8 +416,7 @@ public:
   }
 
   void weak_assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(domain_name() + ".count.weak_assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".weak_assign");
+    SIGN_DOMAIN_SCOPED_STATS(".weak_assign");
     CRAB_LOG("sign-domain", crab::outs() << "weak_assign(" << x << "," << e << ")\n";);
     if (!is_bottom()) {        
       if (boost::optional<variable_t> v = e.get_variable()) {
@@ -430,8 +431,7 @@ public:
 
   void apply(crab::domains::arith_operation_t op, const variable_t &x,
              const variable_t &y, const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    SIGN_DOMAIN_SCOPED_STATS(".apply");
     if (!is_bottom()) {        
       sign_t yi = m_env.at(y);
       sign_t zi = m_env.at(z);
@@ -465,8 +465,7 @@ public:
 
   void apply(crab::domains::arith_operation_t op, const variable_t &x,
              const variable_t &y, number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    SIGN_DOMAIN_SCOPED_STATS(".apply");
     if (!is_bottom()) {        
       sign_t yi = m_env.at(y);
       sign_t zi(k);
@@ -502,37 +501,31 @@ public:
   // intrinsics operations
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
   void backward_intrinsic(std::string name,
                           const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const sign_domain_t &invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
   // backward arithmetic operations
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const sign_domain_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign");
     // TODO
   }
 
   void backward_apply(crab::domains::arith_operation_t op, const variable_t &x,
                       const variable_t &y, number_t z,
                       const sign_domain_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
     // TODO
   }
 
   void backward_apply(crab::domains::arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const sign_domain_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
     // TODO
   }
 
@@ -545,8 +538,7 @@ public:
   // bitwise operations
   void apply(crab::domains::bitwise_operation_t op, const variable_t &x,
              const variable_t &y, const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    SIGN_DOMAIN_SCOPED_STATS(".apply");
     if (!is_bottom()) {        
       sign_t yi = m_env.at(y);
       sign_t zi = m_env.at(z);
@@ -578,8 +570,7 @@ public:
 
   void apply(crab::domains::bitwise_operation_t op, const variable_t &x,
              const variable_t &y, number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    SIGN_DOMAIN_SCOPED_STATS(".apply");
     if (!is_bottom()) {            
       sign_t yi = m_env.at(y);
       sign_t zi(k);
@@ -612,8 +603,7 @@ public:
   virtual void select(const variable_t &lhs, const linear_constraint_t &cond,
                       const linear_expression_t &e1,
                       const linear_expression_t &e2) override {
-    crab::CrabStats::count(domain_name() + ".count.select");
-    crab::ScopedCrabStats __st__(domain_name() + ".select");
+    SIGN_DOMAIN_SCOPED_STATS(".select");
 
     if (!is_bottom()) {
       sign_domain_t inv1(*this);
@@ -634,13 +624,21 @@ public:
     }
   }
 
-  /// sign_domain implements only standard abstract operations of
-  /// a numerical domain so it is intended to be used as a leaf domain
-  /// in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(sign_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(sign_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(sign_domain_t)
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const sign_domain_t &caller) override {
+    SIGN_DOMAIN_SCOPED_STATS(".callee_entry");
+    inter_abstract_operations<sign_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
 
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const sign_domain_t &callee) override {
+    SIGN_DOMAIN_SCOPED_STATS(".caller_cont");    
+    inter_abstract_operations<sign_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+ 
   void forget(const variable_vector_t &variables) override {
     if (is_bottom() || is_top()) {
       return;
@@ -651,8 +649,7 @@ public:
   }
 
   void project(const variable_vector_t &variables) override {
-    crab::CrabStats::count(domain_name() + ".count.project");
-    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    SIGN_DOMAIN_SCOPED_STATS(".project");
     if (!is_bottom()) {
       m_env.project(variables);
     }
@@ -660,16 +657,14 @@ public:
 
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
-    crab::CrabStats::count(domain_name() + ".count.rename");
-    crab::ScopedCrabStats __st__(domain_name() + ".rename");
+    SIGN_DOMAIN_SCOPED_STATS(".rename");
     if (!is_bottom()) {
       m_env.rename(from, to);
     }
   }
 
   void expand(const variable_t &x, const variable_t &new_x) override {
-    crab::CrabStats::count(domain_name() + ".count.expand");
-    crab::ScopedCrabStats __st__(domain_name() + ".expand");
+    SIGN_DOMAIN_SCOPED_STATS(".expand");
     if (is_bottom() || is_top()) {
       return;
     }
@@ -681,16 +676,11 @@ public:
   void minimize() override {}
 
   void write(crab::crab_os &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.write");
-    crab::ScopedCrabStats __st__(domain_name() + ".write");
     m_env.write(o);
   }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
-    crab::CrabStats::count(domain_name() +
-                           ".count.to_linear_constraint_system");
-    crab::ScopedCrabStats __st__(domain_name() +
-                                 ".to_linear_constraint_system");
+    SIGN_DOMAIN_SCOPED_STATS(".to_linear_constraint_system");
     linear_constraint_system_t csts;
     if (this->is_bottom()) {
       csts += linear_constraint_t::get_false();
@@ -730,7 +720,7 @@ public:
     }
   }
 
-  std::string domain_name() const override { return "SignDomain"; }
+  std::string domain_name() const override { return "Sign"; }
 
 }; // class sign_domain
 } // namespace domains
@@ -738,8 +728,8 @@ public:
 
 namespace crab {
 namespace domains {
-template <typename Number, typename VariableName>
-struct abstract_domain_traits<sign_domain<Number, VariableName>> {
+template <typename Number, typename VariableName, typename Params>
+struct abstract_domain_traits<sign_domain<Number, VariableName, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 };

@@ -4,11 +4,17 @@
 #include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
 namespace crab {
 namespace domains {
+
+class PowersetDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
 
 /*
  * The powerset domain consists of all possible subsets made from a
@@ -18,14 +24,14 @@ namespace domains {
  * for the powerset domain. The current widening smashes all disjuncts
  * before calling the widening of the base domain.
  */
-template <typename Domain>
+template <typename Domain, typename Params = PowersetDefaultParams>
 class powerset_domain final
-    : public abstract_domain_api<powerset_domain<Domain>> {
+  : public abstract_domain_api<powerset_domain<Domain, Params>> {
 
 public:
   using number_t = typename Domain::number_t;
   using varname_t = typename Domain::varname_t;
-  using powerset_domain_t = powerset_domain<Domain>;
+  using powerset_domain_t = powerset_domain<Domain, Params>;
   using abstract_domain_t = abstract_domain_api<powerset_domain_t>;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_t::interval_t;
@@ -195,6 +201,7 @@ private:
   }
 
 public:
+  
   powerset_domain() {
     Domain disjunct; // top by default
     m_disjuncts.push_back(disjunct);
@@ -823,6 +830,27 @@ public:
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const powerset_domain_t &caller) override {
+    // The transformer for a call is not delegated to the subdomain.
+    // Instead, if Params::implement_inter_transformers is enabled
+    // then the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.    
+    inter_abstract_operations<powerset_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const powerset_domain_t &callee) override {
+    // The transformer for a call is not delegated to the subdomain.
+    // Instead, if Params::implement_inter_transformers is enabled
+    // then the transformer is implemented by reducing to calls to
+    // project, meet, forget, etc.        
+    inter_abstract_operations<powerset_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   // Intrinsics
 
   virtual void intrinsic(std::string name,
@@ -839,7 +867,7 @@ public:
                                   const variable_or_constant_vector_t &inputs,
                                   const variable_vector_t &outputs,
                                   const powerset_domain_t &invariant) override {
-    CRAB_WARN(domain_name(), " does not implement backward operations");
+    //CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
   // Miscellaneous operations
@@ -973,13 +1001,21 @@ public:
   }
 
   std::string domain_name() const override {
-    Domain dom;
-    return std::string("Powerset(") + dom.domain_name() + ")";
+    Domain absval;
+    std::string base_name = absval.domain_name();
+    const char* prefix = "PS"; 
+    std::string name;
+    name.reserve(base_name.size() + 5);
+    name.append(prefix);
+    name.append("(");
+    name.append(base_name);
+    name.append(")");
+    return name;
   }
 };
 
-template <typename Domain>
-struct abstract_domain_traits<powerset_domain<Domain>> {
+template <typename Domain, typename Params>
+struct abstract_domain_traits<powerset_domain<Domain, Params>> {
   using number_t = typename Domain::number_t;
   using varname_t = typename Domain::varname_t;
 };

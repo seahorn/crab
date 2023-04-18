@@ -218,7 +218,7 @@ public:
   void exec() {
     m_live->exec();
     if (!m_ignore_dead) {
-      crab::ScopedCrabStats __st__("Liveness.precompute_dead_variables");
+      crab::ScopedCrabStats __st__("Liveness.precompute_dead_variables", false);
       /** Remove dead variables locally **/
       for (auto &bb : boost::make_iterator_range(m_cfg.begin(), m_cfg.end())) {
         varset_domain_t live_set = m_live->get(bb.label());

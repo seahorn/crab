@@ -14,6 +14,7 @@
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/domains/intervals.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/support/debug.hpp>
@@ -1065,10 +1066,19 @@ inline dis_q_interval_t upper_half_line(const dis_q_interval_t &i,
 namespace crab {
 namespace domains {
 
-template <typename Number, typename VariableName>
+class DisIntervalsDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+
+#define DIS_INTERVALS_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  
+template <typename Number, typename VariableName,
+	  typename Params = DisIntervalsDefaultParams>
 class dis_interval_domain final
-    : public abstract_domain_api<dis_interval_domain<Number, VariableName>> {
-  using dis_interval_domain_t = dis_interval_domain<Number, VariableName>;
+  : public abstract_domain_api<dis_interval_domain<Number, VariableName, Params>> {
+  using dis_interval_domain_t = dis_interval_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<dis_interval_domain_t>;
 
 public:
@@ -1101,6 +1111,13 @@ private:
   dis_interval_domain(separate_domain_t env) : _env(env) {}
 
 public:
+  /// dis_interval_domain implements only standard abstract operations
+  /// of a numerical domain so it is intended to be used as a leaf
+  /// domain in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
+  
   dis_interval_domain_t make_top() const override {
     return dis_interval_domain_t(separate_domain_t::top());
   }
@@ -1122,13 +1139,11 @@ public:
   dis_interval_domain() : _env(separate_domain_t::top()) {}
 
   dis_interval_domain(const dis_interval_domain_t &o) : _env(o._env) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".copy");
   }
 
   dis_interval_domain_t &operator=(const dis_interval_domain_t &o) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".copy");
     if (this != &o)
       this->_env = o._env;
     return *this;
@@ -1143,8 +1158,7 @@ public:
   iterator end() { return this->_env.end(); }
 
   bool operator<=(const dis_interval_domain_t &e) const override {
-    crab::CrabStats::count(domain_name() + ".count.leq");
-    crab::ScopedCrabStats __st__(domain_name() + ".leq");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".leq");
 
     // crab::outs() << "*** Leq " << *this << " and " << e << "\n";
     bool res = this->_env <= e._env;
@@ -1158,8 +1172,7 @@ public:
 
   dis_interval_domain_t
   operator|(const dis_interval_domain_t &e) const override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".join");
 
     // crab::outs() << "*** Join " << *this << " and " << e << "\n";
     dis_interval_domain_t res(this->_env | e._env);
@@ -1173,8 +1186,7 @@ public:
   
   dis_interval_domain_t
   operator&(const dis_interval_domain_t &e) const override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".meet");
 
     // crab::outs() << "*** Meet " << *this << " and " << e << "\n";
     dis_interval_domain_t res(this->_env & e._env);
@@ -1184,8 +1196,7 @@ public:
 
   dis_interval_domain_t
   operator||(const dis_interval_domain_t &e) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".widening");
 
     // crab::outs() << "*** Widening " << *this << " and " << e << "\n";
     dis_interval_domain_t res(this->_env || e._env);
@@ -1196,8 +1207,7 @@ public:
   dis_interval_domain_t
   widening_thresholds(const dis_interval_domain_t &e,
                       const thresholds<number_t> &ts) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".widening");
 
     // crab::outs() << "*** Widening w/ thresholds " << *this << " and " << e <<
     // "\n";
@@ -1208,8 +1218,7 @@ public:
 
   dis_interval_domain_t
   operator&&(const dis_interval_domain_t &e) const override {
-    crab::CrabStats::count(domain_name() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".narrowing");
 
     // crab::outs() << "*** Narrowing " << *this << " and " << e << "\n";
     dis_interval_domain_t res(this->_env && e._env);
@@ -1218,8 +1227,7 @@ public:
   }
 
   void operator-=(const variable_t &v) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".forget");
 
     this->_env -= v;
   }
@@ -1227,8 +1235,7 @@ public:
   interval_t operator[](const variable_t &v) override { return at(v); }
 
   interval_t at(const variable_t &v) const override {
-    crab::CrabStats::count(domain_name() + ".count.to_intervals");
-    crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".to_intervals");
 
     if (is_bottom()) {
       return interval_t::bottom();
@@ -1239,15 +1246,13 @@ public:
   }
 
   void set(const variable_t &v, interval_t intv) {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".assign");
 
     this->_env.set(v, dis_interval_t(intv));
   }
 
   void operator+=(const linear_constraint_system_t &csts) override {
-    crab::CrabStats::count(domain_name() + ".count.add_constraints");
-    crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".add_cst");
 
     if (!this->is_bottom()) {
       // crab::outs() << "*** add constraints " << csts << " in " << *this <<
@@ -1271,8 +1276,7 @@ public:
   DEFAULT_ENTAILS(dis_interval_domain_t)
 
   void assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".assign");
 
     if (boost::optional<variable_t> v = e.get_variable()) {
       this->_env.set(x, this->_env.at(*v));
@@ -1285,8 +1289,7 @@ public:
   }
 
   void weak_assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(domain_name() + ".count.weak_assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".weak_assign");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".weak_assign");
 
     if (boost::optional<variable_t> v = e.get_variable()) {
       this->_env.join(x, this->_env.at(*v));
@@ -1300,8 +1303,7 @@ public:
   
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".apply");
 
     // crab::outs() << "*** " << x << ":=" << y << op << z << " in " << *this <<
     // "\n";
@@ -1337,8 +1339,7 @@ public:
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".apply");
 
     // crab::outs() << "*** " << x << ":=" << y << op << z << " in " << *this <<
     // "\n";
@@ -1399,8 +1400,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".apply");
 
     dis_interval_t yi = this->_env.at(y);
     dis_interval_t zi = this->_env.at(z);
@@ -1430,8 +1430,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".apply");
 
     dis_interval_t yi = this->_env.at(y);
     dis_interval_t zi(k);
@@ -1460,17 +1459,24 @@ public:
   }
 
   DEFAULT_SELECT(dis_interval_domain_t)
-  
-  /// dis_interval_domain implements only standard abstract operations
-  /// of a numerical domain so it is intended to be used as a leaf
-  /// domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const dis_interval_domain_t &caller) override {
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".callee_entry");    
+    inter_abstract_operations<dis_interval_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const dis_interval_domain_t &callee) override {
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".caller_cont");
+    inter_abstract_operations<dis_interval_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   void expand(const variable_t &x, const variable_t &new_x) override {
-    crab::CrabStats::count(domain_name() + ".count.expand");
-    crab::ScopedCrabStats __st__(domain_name() + ".expand");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".expand");
 
     if (is_bottom() || is_top()) {
       return;
@@ -1479,8 +1485,7 @@ public:
   }
 
   void project(const variable_vector_t &variables) override {
-    crab::CrabStats::count(domain_name() + ".count.project");
-    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".project");
 
     _env.project(variables);
   }
@@ -1496,8 +1501,7 @@ public:
   }
 
   void normalize() override {
-    crab::CrabStats::count(domain_name() + ".count.normalize");
-    crab::ScopedCrabStats __st__(domain_name() + ".normalize");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".normalize");
     if (is_bottom() || is_top())
       return;
     separate_domain_t env;
@@ -1514,28 +1518,26 @@ public:
   /* begin intrinsics operations */
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented by DisInt");
   }
 
   void backward_intrinsic(std::string name,
                           const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const dis_interval_domain_t &invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented by DisInt");
   }
   /* end intrinsics operations */
 
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
-    crab::CrabStats::count(domain_name() + ".count.rename");
-    crab::ScopedCrabStats __st__(domain_name() + ".rename");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".rename");
 
     _env.rename(from, to);
   }
 
   interval_domain_t approx() const {
-    crab::CrabStats::count(domain_name() + ".count.approx");
-    crab::ScopedCrabStats __st__(domain_name() + ".approx");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".approx");
 
     interval_domain_t res;
     if (_env.is_bottom()) {
@@ -1552,10 +1554,7 @@ public:
   }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
-    crab::CrabStats::count(domain_name() +
-                           ".count.to_linear_constraint_system");
-    crab::ScopedCrabStats __st__(domain_name() +
-                                 ".to_linear_constraint_system");
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".to_linear_constraint_system");
 
     interval_domain_t intervals = this->approx();
     return intervals.to_linear_constraint_system();
@@ -1569,11 +1568,11 @@ public:
 
   void write(crab_os &o) const override { this->_env.write(o); }
 
-  std::string domain_name() const override { return "DisjunctiveIntervals"; }
+  std::string domain_name() const override { return "DisInt"; }
 };
 
-template <typename Number, typename VariableName>
-struct abstract_domain_traits<dis_interval_domain<Number, VariableName>> {
+template <typename Number, typename VariableName, typename Params>
+struct abstract_domain_traits<dis_interval_domain<Number, VariableName, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 };

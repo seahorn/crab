@@ -193,6 +193,32 @@ public:
   void write(crab::crab_os &o) const;
 };
 
+class object_domain_params {
+public:
+  enum reduction_level_t {
+    NO_REDUCTION = -1,
+    REDUCTION_BEFORE_CHECK,
+    FULL_REDUCTION,
+  };
+private:
+  reduction_level_t m_reduction_level;
+  bool m_singletons_in_base;
+
+  friend class crab_domain_params;  
+public:
+  object_domain_params()
+      : m_reduction_level(reduction_level_t::NO_REDUCTION), m_singletons_in_base(false) {}
+  object_domain_params(reduction_level_t reduction_level,
+                       bool singletons_in_base)
+      : m_reduction_level(reduction_level),
+        m_singletons_in_base(singletons_in_base) {}
+
+  reduction_level_t reduction_level() const { return m_reduction_level; }
+  bool singletons_in_base() const { return m_singletons_in_base; }
+  void update_params(const object_domain_params& p);
+  void write(crab::crab_os &o) const;
+};
+
 class zones_domain_params {
   bool m_chrome_dijkstra;
   bool m_widen_restabilize;
@@ -294,6 +320,7 @@ class crab_domain_params: public elina_domain_params,
 			  public boxes_domain_params,
 			  public powerset_domain_params,
 			  public region_domain_params,
+        public object_domain_params,
 			  public zones_domain_params,
 			  public oct_domain_params,
 			  public fixed_tvpi_domain_params {
@@ -304,6 +331,7 @@ public:
   using boxes_domain_params::update_params;
   using powerset_domain_params::update_params;
   using region_domain_params::update_params;
+  using object_domain_params::update_params;
   using zones_domain_params::update_params;
   using oct_domain_params::update_params;
   using fixed_tvpi_domain_params::update_params;
@@ -314,6 +342,7 @@ public:
       boxes_domain_params(),
       powerset_domain_params(),
       region_domain_params(),
+      object_domain_params(),
       zones_domain_params(),
       oct_domain_params(),
       fixed_tvpi_domain_params() {
@@ -336,6 +365,9 @@ public:
      - region.tag_analysis: bool
      - region.is_dereferenceable: bool
      - region.skip_unknown_regions: bool
+     - object.reduce_everywhere: bool
+     - object.reduce_before_checks: bool
+     - object.singletons_in_base: bool
      - zones.chrome_dijkstra: bool
      - zones.widen_restabilize: bool
      - zones.special_assign: bool

@@ -9,6 +9,7 @@
 #include <crab/domains/combined_domains.hpp>
 #include <crab/domains/combined_congruences.hpp>
 #include <crab/domains/constant_domain.hpp>
+#include <crab/domains/decoupled_domains.hpp>
 #include <crab/domains/dis_intervals.hpp>
 #include <crab/domains/elina_domains.hpp>
 #include <crab/domains/fixed_tvpi_domain.hpp>
@@ -25,6 +26,7 @@
 #include <crab/domains/split_oct.hpp>
 #include <crab/domains/term_equiv.hpp>
 #include <crab/domains/wrapped_interval_domain.hpp>
+#include <crab/domains/object_domain.hpp>
 
 namespace crab {
 
@@ -47,19 +49,42 @@ using z_interval_domain_t = interval_domain<z_number, varname_t>;
 using z_constant_domain_t = constant_domain<z_number, varname_t>;  
 using z_ric_domain_t = numerical_congruence_domain<z_interval_domain_t>;
 using z_dbm_graph_t = DBM_impl::DefaultParams<z_number, DBM_impl::GraphRep::adapt_ss>;
-using z_dbm_domain_t = sparse_dbm_domain<z_number, varname_t, z_dbm_graph_t>;
-using z_sdbm_domain_t = split_dbm_domain<z_number, varname_t, z_dbm_graph_t>;
-using z_soct_domain_t = split_oct_domain<z_number, varname_t, z_dbm_graph_t>;  
+class SparseDBMParams {
+public:
+  enum { implement_inter_transformers = 1 };
+};
+class SplitDBMParams {
+public:
+  enum { implement_inter_transformers = 1 };
+};
+class SplitOctParams {
+public:
+  enum { implement_inter_transformers = 1 };
+};
+class ApronParams {
+public:
+  enum { use_integers = 1 };  
+  enum { implement_inter_transformers = 1 };
+};
+class ElinaParams {
+public:
+  enum { use_integers = 1 };    
+  enum { implement_inter_transformers = 1 };
+};
+  
+using z_dbm_domain_t = sparse_dbm_domain<z_number, varname_t, z_dbm_graph_t, SparseDBMParams>;
+using z_sdbm_domain_t = split_dbm_domain<z_number, varname_t, z_dbm_graph_t, SplitDBMParams>;
+using z_soct_domain_t = split_oct_domain<z_number, varname_t, z_dbm_graph_t, SplitOctParams>;  
 using z_boxes_domain_t = boxes_domain<z_number, varname_t>;
 using z_dis_interval_domain_t = dis_interval_domain<z_number, varname_t>;
 using z_box_apron_domain_t = apron_domain<z_number, varname_t, APRON_INT>;
-using z_oct_apron_domain_t = apron_domain<z_number, varname_t, APRON_OCT>;
+using z_oct_apron_domain_t = apron_domain<z_number, varname_t, APRON_OCT, ApronParams>;
 using z_pk_apron_domain_t = apron_domain<z_number, varname_t, APRON_PK>;
 using z_poly_pplite_domain_t = apron_domain<z_number, varname_t, APRON_PPLITE_POLY>;
 using z_fpoly_pplite_domain_t = apron_domain<z_number, varname_t, APRON_PPLITE_FPOLY>;
 using z_pset_pplite_domain_t = apron_domain<z_number, varname_t, APRON_PPLITE_PSET>;
 using z_zones_elina_domain_t = elina_domain<z_number, varname_t, ELINA_ZONES>;
-using z_oct_elina_domain_t = elina_domain<z_number, varname_t, ELINA_OCT>;
+using z_oct_elina_domain_t = elina_domain<z_number, varname_t, ELINA_OCT, ElinaParams>;
 using z_pk_elina_domain_t = elina_domain<z_number, varname_t, ELINA_PK>;
 using z_term_domain_t =
     term_domain<term::TDomInfo<z_number, varname_t, z_interval_domain_t>>;
@@ -142,10 +167,41 @@ using q_oct_apron_domain_t = apron_domain<q_number, varname_t, APRON_OCT>;
 using q_pk_elina_domain_t = elina_domain<q_number, varname_t, ELINA_PK>;
 using q_oct_elina_domain_t = elina_domain<q_number, varname_t, ELINA_OCT>;
 
+/* DEBUGGING */
+using z_dummy_decoupled_box_domain_t
+  = decoupled_domain<dummy_asc_dsc_pair<z_box_apron_domain_t>>;
+
+using z_decoupled_box_poly_domain_t
+  = decoupled_domain<apron_asc_dsc_pair<z_box_apron_domain_t,
+                                        z_poly_pplite_domain_t>>;
+using z_decoupled_box_pset_domain_t
+  = decoupled_domain<apron_asc_dsc_pair<z_box_apron_domain_t,
+                                        z_pset_pplite_domain_t>>;
+
 /*===================================================================*/
 // Wrapper for an arbitrary abstract domain
 /*===================================================================*/
 using z_abs_domain_t = abstract_domain_ref<z_var>;
 using q_abs_domain_t = abstract_domain_ref<q_var>;
 } // namespace domain_impl
+
+namespace object_domain_impl {
+using namespace crab::cfg_impl;
+using namespace crab::domains;
+using namespace ikos;
+template<class BaseAbsDom>
+struct TestObjectParams {
+  using number_t = z_number;
+  using varname_t = crab::cfg_impl::varname_t;
+  using varname_allocator_t = crab::var_factory_impl::str_var_alloc_col;  
+  using base_abstract_domain_t = BaseAbsDom;
+  using field_abstract_domain_t = BaseAbsDom;
+};
+
+using z_obj_sdbm_params_t = TestObjectParams<
+  split_dbm_domain<z_number, typename domain_impl::var_allocator::varname_t, domain_impl::z_dbm_graph_t>>;
+using z_obj_sdbm_t = object_domain<z_obj_sdbm_params_t>;
+using z_obj_zones_params_t = TestObjectParams<domain_impl::z_soct_domain_t>;
+using z_obj_zones_t = object_domain<z_obj_zones_params_t>;
+} // namespace object_domain_impl
 } // namespace crab

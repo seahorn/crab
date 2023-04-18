@@ -78,6 +78,24 @@ void region_domain_params::write(crab::crab_os &o) const {
   o << "\tskip_unknown_regions=" << m_skip_unknown_regions << "\n";
 }
 
+void object_domain_params::update_params(const object_domain_params &params) {
+  m_reduction_level = params.reduction_level();
+  m_singletons_in_base = params.singletons_in_base();
+}
+
+void object_domain_params::write(crab::crab_os &o) const {
+  o << "Object parameters:\n";
+  o << "\treduce_level=";
+  if (m_reduction_level == object_domain_params::reduction_level_t::NO_REDUCTION) {
+    o << "NO_REDUCTION\n";
+  } else if (m_reduction_level == object_domain_params::reduction_level_t::REDUCTION_BEFORE_CHECK) {
+    o << "REDUCTION_BEFORE_CHECK\n";
+  } else {
+    o << "FULL_REDUCTION\n";
+  }
+  o << "\tsingletons_in_base=" << m_singletons_in_base << "\n";
+}
+
 void zones_domain_params::update_params(const zones_domain_params &params) {
   m_chrome_dijkstra = params.zones_chrome_dijkstra();
   m_widen_restabilize = params.zones_widen_restabilize();
@@ -153,6 +171,7 @@ void crab_domain_params::update_params(const crab_domain_params &p) {
 			   p.region_tag_analysis(),
 			   p.region_is_dereferenceable(),
 			   p.region_skip_unknown_regions());
+  object_domain_params obj_p(p.reduction_level(), p.singletons_in_base());
   zones_domain_params z_p(p.zones_chrome_dijkstra(),
 			  p.zones_widen_restabilize(),
 			  p.zones_special_assign(),
@@ -168,6 +187,7 @@ void crab_domain_params::update_params(const crab_domain_params &p) {
   boxes_domain_params::update_params(b_p);
   powerset_domain_params::update_params(p_p);
   region_domain_params::update_params(r_p);
+  object_domain_params::update_params(obj_p);
   zones_domain_params::update_params(z_p);
   oct_domain_params::update_params(o_p);
   fixed_tvpi_domain_params::update_params(tvpi_p);
@@ -215,6 +235,18 @@ static std::vector<unsigned> to_list_of_unsigned(const std::string &val) {
   }
   return res;
 }
+
+static object_domain_params::reduction_level_t to_reduction_level_enum(const std::string &val) {
+  if (val == "NONE") {
+    return object_domain_params::reduction_level_t::NO_REDUCTION;
+  } else if (val == "OPT") {
+    return object_domain_params::reduction_level_t::REDUCTION_BEFORE_CHECK;
+  } else if (val == "FULL") {
+    return object_domain_params::reduction_level_t::FULL_REDUCTION;
+  } else {
+    CRAB_ERROR("parameter value ", val, " should be either NONE, OPT, FULL");
+  }
+}
   
 void crab_domain_params::set_param(const std::string &param, const std::string &val) {
   if (param == "elina.use_tree_expressions") {
@@ -247,6 +279,10 @@ void crab_domain_params::set_param(const std::string &param, const std::string &
     region_domain_params::m_is_dereferenceable = to_bool(val);
   } else if (param == "region.skip_unknown_regions") {
     region_domain_params::m_skip_unknown_regions = to_bool(val);
+  } else if (param == "object.reduction_level") {
+    object_domain_params::m_reduction_level = to_reduction_level_enum(val);
+  } else if (param == "object.singletons_in_base") {
+    object_domain_params::m_singletons_in_base = to_bool(val);
   } else if (param == "zones.chrome_dijkstra") {
     zones_domain_params::m_chrome_dijkstra = to_bool(val);
   } else if (param == "zones.widen_restabilize") {
@@ -256,15 +292,15 @@ void crab_domain_params::set_param(const std::string &param, const std::string &
   } else if (param == "zones.close_bounds_inline") {
     zones_domain_params::m_close_bounds_inline = to_bool(val);
   } else if (param == "oct.chrome_dijkstra") {
-    oct_domain_params::m_chrome_dijkstra = to_bool(val);    
+    oct_domain_params::m_chrome_dijkstra = to_bool(val);
   } else if (param == "oct.widen_restabilize") {
-    oct_domain_params::m_widen_restabilize = to_bool(val);    
+    oct_domain_params::m_widen_restabilize = to_bool(val);
   } else if (param == "oct.special_assign") {
-    oct_domain_params::m_special_assign = to_bool(val);    
+    oct_domain_params::m_special_assign = to_bool(val);
   } else if (param == "oct.close_bounds_inline") {
-    oct_domain_params::m_close_bounds_inline = to_bool(val);    
+    oct_domain_params::m_close_bounds_inline = to_bool(val);
   } else if (param == "fixed_tvpi.coefficients") {
-    fixed_tvpi_domain_params::m_coefficients = to_list_of_unsigned(val);    
+    fixed_tvpi_domain_params::m_coefficients = to_list_of_unsigned(val);
   } else {
     CRAB_WARN("Ignored unsupported parameter ",  param);
   }
@@ -276,6 +312,7 @@ void crab_domain_params::write(crab::crab_os &o) const {
   boxes_domain_params::write(o);
   powerset_domain_params::write(o);
   region_domain_params::write(o);
+  object_domain_params::write(o);
   zones_domain_params::write(o);
   oct_domain_params::write(o);
   fixed_tvpi_domain_params::write(o);

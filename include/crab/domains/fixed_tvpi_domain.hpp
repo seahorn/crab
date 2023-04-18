@@ -2,13 +2,14 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/os.hpp>
 #include <string>
 
 namespace crab {
 namespace domains {
-
+  
 /**
  ** This domain when instantiated with the Octagon domain simulates
  ** the Two Variables Per Inequalities (tvpi)
@@ -47,11 +48,17 @@ namespace domains {
  ** and x/3 so at the join point of the if-then-else we lose track of
  ** them. 
  **/
-template<typename OctLikeDomain>
-class fixed_tvpi_domain
-    : public abstract_domain_api<fixed_tvpi_domain<OctLikeDomain>> {
+
+class FixedTPVIDefaultParams {
 public:
-  using fixed_tvpi_domain_t = fixed_tvpi_domain<OctLikeDomain>;
+  enum { implement_inter_transformers = 0 };
+};
+  
+template<typename OctLikeDomain, typename Params = FixedTPVIDefaultParams>
+class fixed_tvpi_domain
+  : public abstract_domain_api<fixed_tvpi_domain<OctLikeDomain, Params>> {
+public:
+  using fixed_tvpi_domain_t = fixed_tvpi_domain<OctLikeDomain, Params>;
   using abstract_domain_api_t = abstract_domain_api<fixed_tvpi_domain_t>;
   using typename abstract_domain_api_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_api_t::interval_t;
@@ -76,9 +83,16 @@ private:
       CRAB_ERROR("Coefficient must be greater than 1");
     }
     auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
-    std::string ghost_name =
-        ".tvpi.ghost_var(" + std::to_string(coefficient) + ")";
-    return variable_t(vfac.get(v.name(), ghost_name), v.get_type());
+
+    std::string str_coefficient = std::to_string(coefficient);
+    const char* prefix = ".tvpi.var";
+    std::string suffix;
+    suffix.reserve(str_coefficient.size() + 12); 
+    suffix.append(prefix);
+    suffix.append("(");    
+    suffix.append(str_coefficient);
+    suffix.append(")");
+    return variable_t(vfac.get_or_insert_varname(v.name(), suffix), v.get_type());
   }
 
   // (TODO): needed for pretty-printing
@@ -269,12 +283,25 @@ private:
   fixed_tvpi_domain(base_domain_t &&num) : m_base_absval(std::move(num)) {}
 
 public:
+  DEFAULT_SELECT(fixed_tvpi_domain_t)
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)
+  
   fixed_tvpi_domain() {}
 
   fixed_tvpi_domain(const fixed_tvpi_domain_t &o) = default;
   fixed_tvpi_domain(fixed_tvpi_domain_t &&o) = default;
   fixed_tvpi_domain_t &operator=(const fixed_tvpi_domain_t &o) = default;
   fixed_tvpi_domain_t &operator=(fixed_tvpi_domain_t &&o) = default;
+
+  bool is_asc_phase() const override {
+    return m_base_absval.is_asc_phase();
+  }
+
+  void set_phase(bool is_ascending) override {
+    m_base_absval.set_phase(is_ascending);
+  }
 
   void set_to_top() override { m_base_absval.set_to_top(); }
 
@@ -578,11 +605,19 @@ public:
     CRAB_WARN(domain_name(), "::backward_apply not implemented");
   }
 
-  DEFAULT_SELECT(fixed_tvpi_domain_t)
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const fixed_tvpi_domain_t &caller) override {
+    inter_abstract_operations<fixed_tvpi_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
 
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const fixed_tvpi_domain_t &callee) override {
+    inter_abstract_operations<fixed_tvpi_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   linear_constraint_system_t to_linear_constraint_system() const override {
 
     if (is_bottom()) {
@@ -658,15 +693,14 @@ public:
 
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    CRAB_WARN(domain_name(), "::instrinsic for ", name, " not implemented");
+    //CRAB_WARN(domain_name(), "::instrinsic for ", name, " not implemented");
   }
 
   void backward_intrinsic(std::string name,
                           const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const fixed_tvpi_domain_t &invariant) override {
-    CRAB_WARN(domain_name(), "::backward_intrinsic for ", name,
-              " not implemented");
+    //CRAB_WARN(domain_name(), "::backward_intrinsic for ", name, " not implemented");
   }
 
   void write(crab_os &o) const override {
@@ -686,13 +720,21 @@ public:
   }
 
   std::string domain_name() const override {
-    base_domain_t dom;
-    return "FixedTVPIDomain(" + dom.domain_name() + ")";
+    base_domain_t absval;
+    std::string base_name = absval.domain_name();
+    const char* prefix = "TVPI"; 
+    std::string name;
+    name.reserve(base_name.size() + 7);
+    name.append(prefix);
+    name.append("(");
+    name.append(base_name);
+    name.append(")");
+    return name;
   }
 };
   
-template<typename OctLikeDomain>
-struct abstract_domain_traits<fixed_tvpi_domain<OctLikeDomain>> {
+template<typename OctLikeDomain, typename Params>
+struct abstract_domain_traits<fixed_tvpi_domain<OctLikeDomain, Params>> {
   using number_t = typename OctLikeDomain::number_t;
   using varname_t = typename OctLikeDomain::varname_t;
 };

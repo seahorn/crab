@@ -5,6 +5,7 @@
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/intervals.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/numbers/bignums.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -15,19 +16,22 @@ namespace crab {
 namespace domains {
 using apron_domain_id_t
 = enum { APRON_INT, APRON_OCT, APRON_PK,
-         APRON_PPLITE_POLY, APRON_PPLITE_FPOLY, APRON_PPLITE_PSET
+         APRON_PPLITE_POLY, APRON_PPLITE_FPOLY,
+         APRON_PPLITE_PSET, APRON_PPLITE_FPSET
 };
 
 template <typename Number> class ApronDefaultParams {
 public:
   // use integers with truncation rounding
   enum { use_integers = 1 };
+  enum { implement_inter_transformers = 0 };
 };
 
 template <> class ApronDefaultParams<ikos::q_number> {
 public:
   // use reals
   enum { use_integers = 0 };
+  enum { implement_inter_transformers = 0 };  
 };
 } // namespace domains
 } // namespace crab
@@ -60,6 +64,9 @@ public:
 #include <crab/domains/apron/apron.hpp>
 
 #include <type_traits>
+
+#define APRON_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
 
 /**
  * If template parameter Number is ikos::q_number then the Elina
@@ -99,7 +106,9 @@ private:
   using bound_t = ikos::bound<number_t>;
   using var_map_t = boost::bimap<variable_t, ap_dim_t>;
   using binding_t = typename var_map_t::value_type;
+  using params_t = Params;
 
+  static constexpr apron_domain_id_t apron_id = ApronDom;
   static ap_manager_t *s_apman;
 
   ap_state_ptr m_apstate;
@@ -108,6 +117,10 @@ private:
   bool is_real() const { return std::is_same<Number, ikos::q_number>::value; }
 
   bool is_integer() const { return !is_real(); }
+
+  static bool is_disjunctive(apron_domain_id_t id = apron_id) {
+    return (id == APRON_PPLITE_PSET) || (id == APRON_PPLITE_FPSET);
+  }
 
   static ap_manager_t *get_man() {
 #ifdef HAVE_PPLITE
@@ -124,7 +137,7 @@ private:
         };
 #endif // HAVE_PPLITE
     if (!s_apman) {
-      switch (ApronDom) {
+      switch (apron_id) {
       case APRON_INT:
         s_apman = box_manager_alloc();
         break;
@@ -142,7 +155,10 @@ private:
         s_apman = pplite_manager_alloc("F_Poly");
         break;
       case APRON_PPLITE_PSET:
-        s_apman = pplite_manager_alloc("PSet");
+        s_apman = pplite_manager_alloc("P_Set");
+        break;
+      case APRON_PPLITE_FPSET:
+        s_apman = pplite_manager_alloc("FP_Set");
         break;
 #endif // HAVE_PPLITE
       default:
@@ -677,6 +693,13 @@ private:
   }
 
 public:
+  /// Apron domains implement only standard abstract operations of a
+  /// numerical domain so it is intended to be used as a leaf domain
+  /// in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(apron_domain_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(apron_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(apron_domain_t)
+  
   apron_domain(bool isBot = false)
       : m_apstate(
             apPtr(get_man(), (isBot ? ap_abstract0_bottom(get_man(), 0, 0)
@@ -688,16 +711,14 @@ public:
       : m_apstate(
             apPtr(get_man(), ap_abstract0_copy(get_man(), &*(o.m_apstate)))),
         m_var_map(o.m_var_map) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    APRON_DOMAIN_SCOPED_STATS(".copy");
   }
 
   apron_domain(apron_domain_t &&o)
       : m_apstate(std::move(o.m_apstate)), m_var_map(std::move(o.m_var_map)) {}
 
   apron_domain_t &operator=(const apron_domain_t &o) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    APRON_DOMAIN_SCOPED_STATS(".copy");
     if (this != &o) {
       m_apstate =
           apPtr(get_man(), ap_abstract0_copy(get_man(), &*(o.m_apstate)));
@@ -743,8 +764,7 @@ public:
   }
 
   bool operator<=(const apron_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.leq");
-    crab::ScopedCrabStats __st__(domain_name() + ".leq");
+    APRON_DOMAIN_SCOPED_STATS(".leq");
 
     if (is_bottom())
       return true;
@@ -767,8 +787,7 @@ public:
   }
 
   void operator|=(const apron_domain_t &o) override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    APRON_DOMAIN_SCOPED_STATS(".join");
 
     if (is_bottom()) {
       *this = o;
@@ -788,8 +807,7 @@ public:
   }
 
   apron_domain_t operator|(const apron_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    APRON_DOMAIN_SCOPED_STATS(".join");
 
     if (is_bottom()) {
       return o;
@@ -811,8 +829,7 @@ public:
   }
 
   void operator&=(const apron_domain_t &o) override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    APRON_DOMAIN_SCOPED_STATS(".meet");
 
     if (is_bottom() || o.is_top()) {
       // do nothing
@@ -829,8 +846,7 @@ public:
   }
   
   apron_domain_t operator&(const apron_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    APRON_DOMAIN_SCOPED_STATS(".meet");
 
     if (is_bottom() || o.is_top()) {
       return *this;
@@ -850,8 +866,7 @@ public:
   }
 
   apron_domain_t operator||(const apron_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    APRON_DOMAIN_SCOPED_STATS(".widening");
 
     // if (is_bottom())
     //   return o;
@@ -890,8 +905,7 @@ public:
   apron_domain_t widening_thresholds(
       const apron_domain_t &o,
       const thresholds<number_t> &ts) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    APRON_DOMAIN_SCOPED_STATS(".widening");
 
     // if (is_bottom())
     //   return o;
@@ -944,8 +958,7 @@ public:
   }
 
   apron_domain_t operator&&(const apron_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
+    APRON_DOMAIN_SCOPED_STATS(".narrowing");
 
     if (is_bottom() || o.is_top()) {
       return *this;
@@ -958,7 +971,7 @@ public:
           apPtr(get_man(), ap_abstract0_copy(get_man(), &*o.m_apstate));
 
       var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, y);
-      switch (ApronDom) {
+      switch (apron_id) {
       case APRON_OCT:
         return apron_domain_t(
             apPtr(get_man(), ap_abstract0_oct_narrowing(get_man(), &*x, &*y)),
@@ -969,6 +982,7 @@ public:
       case APRON_PPLITE_POLY:
       case APRON_PPLITE_FPOLY:
       case APRON_PPLITE_PSET:
+      case APRON_PPLITE_FPSET:
 #endif // HAVE_PPLITE
       default:
         // CRAB_WARN("used meet instead of narrowing: \n",
@@ -982,8 +996,7 @@ public:
   }
 
   void forget(const variable_vector_t &vars) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    APRON_DOMAIN_SCOPED_STATS(".forget");
 
     std::vector<ap_dim_t> vector_dims;
     std::set<ap_dim_t> set_dims;
@@ -1043,8 +1056,7 @@ public:
 
   // remove all variables except vars
   void project(const variable_vector_t &vars) override {
-    crab::CrabStats::count(domain_name() + ".count.project");
-    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    APRON_DOMAIN_SCOPED_STATS(".project");
 
     if (is_bottom() || is_top())
       return;
@@ -1069,8 +1081,7 @@ public:
   }
   
   virtual interval_t at(const variable_t &v) const override {
-    crab::CrabStats::count(domain_name() + ".count.to_intervals");
-    crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
+    APRON_DOMAIN_SCOPED_STATS(".to_intervals");
 
     if (is_bottom()) {
       return interval_t::bottom();
@@ -1097,8 +1108,7 @@ public:
   }
 
   void set(variable_t v, interval_t ival) {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    APRON_DOMAIN_SCOPED_STATS(".assign");
 
     variable_t vv(v);
 
@@ -1127,8 +1137,7 @@ public:
   }
 
   void operator+=(const linear_constraint_system_t &_csts) override {
-    crab::CrabStats::count(domain_name() + ".count.add_constraints");
-    crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
+    APRON_DOMAIN_SCOPED_STATS(".add_cst");
 
     if (is_bottom())
       return;
@@ -1216,8 +1225,7 @@ public:
   DEFAULT_ENTAILS(apron_domain_t)
   
   void assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    APRON_DOMAIN_SCOPED_STATS(".assign");
 
     if (is_bottom())
       return;
@@ -1236,8 +1244,7 @@ public:
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    APRON_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom())
       return;
@@ -1298,8 +1305,7 @@ public:
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    APRON_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom())
       return;
@@ -1364,8 +1370,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    APRON_DOMAIN_SCOPED_STATS(".apply");
 
     // Convert to intervals and perform the operation
     interval_t yi = operator[](y);
@@ -1396,8 +1401,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    APRON_DOMAIN_SCOPED_STATS(".apply");
 
     // Convert to intervals and perform the operation
     interval_t yi = operator[](y);
@@ -1431,8 +1435,7 @@ public:
   
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const apron_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign");
+    APRON_DOMAIN_SCOPED_STATS(".backward_assign");
 
     if (is_bottom()) {
       return;
@@ -1464,8 +1467,7 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, number_t z,
                       const apron_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    APRON_DOMAIN_SCOPED_STATS(".backward_apply");
 
     if (is_bottom()) {
       return;
@@ -1519,8 +1521,7 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const apron_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    APRON_DOMAIN_SCOPED_STATS(".backward_apply");
 
     if (is_bottom()) {
       return;
@@ -1572,16 +1573,24 @@ public:
     }
   }
 
-  /// Apron domains implement only standard abstract operations of a
-  /// numerical domain so it is intended to be used as a leaf domain
-  /// in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(apron_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(apron_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(apron_domain_t)
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const apron_domain_t &caller) override {
+    APRON_DOMAIN_SCOPED_STATS(".callee_entry");    
+    inter_abstract_operations<apron_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const apron_domain_t &callee) override {
+    APRON_DOMAIN_SCOPED_STATS(".caller_cont");        
+    inter_abstract_operations<apron_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+
   
   interval_domain_t to_interval_domain() {
-    crab::CrabStats::count(domain_name() + ".count.to_interval_domain");
-    crab::ScopedCrabStats __st__(domain_name() + ".to_interval_domain");
+    APRON_DOMAIN_SCOPED_STATS(".to_interval_domain");
 
     interval_domain_t res; // top
     if (is_bottom()) {
@@ -1598,9 +1607,7 @@ public:
   }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
-    crab::CrabStats::count(domain_name() +
-                           ".count.to_linear_constraint_system");
-    crab::ScopedCrabStats __st__(domain_name() +
+    APRON_DOMAIN_SCOPED_STATS(
                                  ".to_linear_constraint_system");
 
     linear_constraint_system_t csts;
@@ -1622,9 +1629,9 @@ public:
 
   disjunctive_linear_constraint_system_t
   to_disjunctive_linear_constraint_system() const override {
+    if (is_disjunctive()) {
 #ifdef HAVE_PPLITE
-    // Ad-hoc handling for PSet (which is disjunctive).
-    if (ApronDom == APRON_PPLITE_PSET) {
+      // Ad-hoc handling PPLite's powersets
       if (is_bottom()) {
         return disjunctive_linear_constraint_system_t(true /*is_false*/);
       } else if (is_top()) {
@@ -1643,22 +1650,23 @@ public:
         }
         return res;
       }
-    }
 #endif // HAVE_PPLITE
-    auto lin_csts = to_linear_constraint_system();
-    if (lin_csts.is_false()) {
-      return disjunctive_linear_constraint_system_t(true /*is_false*/);
-    } else if (lin_csts.is_true()) {
-      return disjunctive_linear_constraint_system_t(false /*is_false*/);
     } else {
-      return disjunctive_linear_constraint_system_t(lin_csts);
+      // Not a disjunctive domain
+      auto lin_csts = to_linear_constraint_system();
+      if (lin_csts.is_false()) {
+        return disjunctive_linear_constraint_system_t(true /*is_false*/);
+      } else if (lin_csts.is_true()) {
+        return disjunctive_linear_constraint_system_t(false /*is_false*/);
+      } else {
+        return disjunctive_linear_constraint_system_t(lin_csts);
+      }
     }
   }
 
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
-    crab::CrabStats::count(domain_name() + ".count.rename");
-    crab::ScopedCrabStats __st__(domain_name() + ".rename");
+    APRON_DOMAIN_SCOPED_STATS(".rename");
 
     if (is_top() || is_bottom())
       return;
@@ -1705,8 +1713,7 @@ public:
   }
 
   void expand(const variable_t &x, const variable_t &dup) override {
-    crab::CrabStats::count(domain_name() + ".count.expand");
-    crab::ScopedCrabStats __st__(domain_name() + ".expand");
+    APRON_DOMAIN_SCOPED_STATS(".expand");
 
     if (is_bottom() || is_top())
       return;
@@ -1727,16 +1734,14 @@ public:
   }
 
   void normalize() override {
-    crab::CrabStats::count(domain_name() + ".count.normalize");
-    crab::ScopedCrabStats __st__(domain_name() + ".normalize");
+    APRON_DOMAIN_SCOPED_STATS(".normalize");
 
     ap_abstract0_canonicalize(get_man(), &*m_apstate);
   }
 
   // reduce the size of the internal representation
   void minimize() override {
-    crab::CrabStats::count(domain_name() + ".count.minimize");
-    crab::ScopedCrabStats __st__(domain_name() + ".minimize");
+    APRON_DOMAIN_SCOPED_STATS(".minimize");
 
     std::vector<ap_dim_t> dims;
     var_map_t res;
@@ -1759,50 +1764,43 @@ public:
   void intrinsic(std::string name, 
 		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented");
   }
 
   void backward_intrinsic(std::string name,
 			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const apron_domain_t &invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented");
   }
   /* end intrinsics operations */
 
   void write(crab_os &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.write");
-    crab::ScopedCrabStats __st__(domain_name() + ".write");
-
     if (is_bottom()) {
       o << "_|_";
       return;
     } else if (is_top()) {
       o << "{}";
       return;
+    } else if (is_disjunctive()) {
+      // Ad-hoc handling for PPLite's powersets
+      auto inv = to_disjunctive_linear_constraint_system();
+      o << inv;
+      return;
     } else {
-      // dump();
-#ifdef HAVE_PPLITE
-      // Ad-hoc handling for PSet (which is disjunctive).
-      if (ApronDom == APRON_PPLITE_PSET) {
-        auto inv = to_disjunctive_linear_constraint_system();
-        o << inv;
-        return;
-      }
-#endif
       linear_constraint_system_t inv = to_linear_constraint_system();
       o << inv;
     }
   }
 
   std::string domain_name() const override {
-    switch (ApronDom) {
+    switch (apron_id) {
     case APRON_INT:
-      return "ApronIntervals";
+      return "ApronInt";
     case APRON_OCT:
-      return "ApronOctagon";
+      return "ApronOct";
     case APRON_PK:
-      return "ApronNewPolka";
+      return "ApronPk";
 #ifdef HAVE_PPLITE
     case APRON_PPLITE_POLY:
       return "ApronPPLitePoly";
@@ -1810,11 +1808,94 @@ public:
       return "ApronPPLiteFPoly";
     case APRON_PPLITE_PSET:
       return "ApronPPLitePSet";
+    case APRON_PPLITE_FPSET:
+      return "ApronPPLiteFPSet";
 #endif // HAVE_PPLITE
     default:
       CRAB_ERROR("Unknown apron domain");
     }
   }
+
+  // This friend declaration is needed for method convert_to(),
+  // i.e., for efficient domain conversions between different apron domains.
+  template <typename, typename, apron_domain_id_t, typename>
+  friend class apron_domain;
+
+  template <typename OtherApronDomain>
+  OtherApronDomain convert_to() const {
+    using SrcDom = apron_domain_t;
+    using DstDom = OtherApronDomain;
+    constexpr auto src_id = SrcDom::apron_id;
+    constexpr auto dst_id = DstDom::apron_id;
+    static_assert(std::is_same<SrcDom::number_t,
+                               typename DstDom::number_t>::value &&
+                  std::is_same<SrcDom::varname_t,
+                               typename DstDom::varname_t>::value &&
+                  (src_id != dst_id) &&
+                  std::is_same<SrcDom::params_t,
+                               typename DstDom::params_t>::value,
+                  "conversion only allowed between different "
+                  "apron domain having identical Number, VarName "
+                  "and Params template parameters");
+    const auto& src = *this;
+
+    // Special case for the bottom element: it is simpler and also safer,
+    // since Apron's to_box() can not distinguish bottom/top 0-dim elements
+    // (see https://github.com/antoinemine/apron/issues/58).
+    if (src.is_bottom())
+      return DstDom(true /*is_bot*/);
+
+    auto src_man = src.get_man();
+    ap_state src_val = &*src.m_apstate;
+    auto ap_dims = ap_abstract0_dimension(src_man, src_val);
+    auto idim = ap_dims.intdim;
+    auto rdim = ap_dims.realdim;
+
+    // Special case for 0-dim top elements: up to version 0.9.13,
+    // Apron's of_box() for the box domain is incorrectly constructing
+    // a bottom element (see https://github.com/antoinemine/apron/issues/58).
+    if (idim + rdim == 0)
+      return DstDom(false /*is_bot*/);
+
+    auto dst_man = DstDom::get_man();
+    ap_state dst_val;
+
+    if (src_id == APRON_INT || dst_id == APRON_INT) {
+      // Exploit ad-hoc conversions from/to box
+      auto itvs = ap_abstract0_to_box(src_man, src_val);
+      dst_val = ap_abstract0_of_box(dst_man, idim, rdim, itvs);
+      ap_interval_array_free(itvs, idim + rdim);
+    } else if (dst_id == APRON_OCT) {
+      CRAB_ERROR("Conversion from polyhedra to octagon not implemented");
+    } else if (not is_disjunctive(src_id)) {
+      // src is an octagon/polyhedron, dst is a (set of) polyhedron
+      auto lca = ap_abstract0_to_lincons_array(src_man, src_val);
+      dst_val = ap_abstract0_of_lincons_array(dst_man, idim, rdim, &lca);
+      ap_lincons0_array_clear(&lca);
+    } else {
+#ifdef HAVE_PPLITE
+      assert(is_disjunctive(src_id));
+      // src is a PolySet, dst is a (set of) polyhedron
+      auto num_disj = ap_pplite_poly_num_disjuncts(src_man, src_val);
+      assert(num_disj > 0);
+      for (auto d = 0; d < num_disj; ++d) {
+        auto lca = ap_pplite_poly_disj_to_lincons_array(src_man, src_val, d);
+        auto poly = ap_abstract0_of_lincons_array(dst_man, idim, rdim, &lca);
+        ap_lincons0_array_clear(&lca);
+        // First disjunct is assigned to dst_val, others are joined.
+        if (d == 0) {
+          dst_val = poly;
+        } else {
+          dst_val = ap_abstract0_join(dst_man, true, dst_val, poly);
+          ap_abstract0_free(dst_man, poly);
+        }
+      }
+#endif
+    }
+    auto dst_var_map = src.m_var_map;
+    return DstDom(apPtr(dst_man, dst_val), std::move(dst_var_map));
+  }
+
 };
 
 // --- global datastructures

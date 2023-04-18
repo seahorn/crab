@@ -118,7 +118,7 @@ public:
       if (role == "") {
         return name;
       } else {
-        return alloc.get(name, role);
+        return alloc.get_or_insert_varname(name, role);
       }
     };
     return ghost_variables_t::create(vfac, alloc_fn, v.name(), m_get_type(v));
@@ -149,13 +149,13 @@ public:
     }
   }
 
-  void forget(const variable_t &var, GhostDomain &val) {
+  void forget(const variable_t &var, GhostDomain &val) const {
     if (boost::optional<ghost_variables_t> gvars = get(var)) {
       (*gvars).forget(val);
     }
   }
 
-  void project(const variable_vector_t &vars, GhostDomain &val) {
+  void project(const variable_vector_t &vars, GhostDomain &val) const {
     ghost_variable_vector_t gvars_vec;
     for (auto const &v : vars) {
       if (boost::optional<ghost_variables_t> gvars = get(v)) {
@@ -173,7 +173,12 @@ public:
     auto &vfac = gvars.get_vfac();
     auto alloc_fn = [](GhostDomainVarAlloc &alloc, const ghost_varname_t &name,
                        const std::string &role) {
-      return alloc.get(name, role + ".dup");
+      const char* DUP = ".dup";
+      std::string s;
+      s.reserve(role.size() + 5);
+      s.append(role);
+      s.append(DUP);
+      return alloc.get_or_insert_varname(name, s);
     };
     return ghost_variables_t::create(vfac, alloc_fn, gvars);
   }
