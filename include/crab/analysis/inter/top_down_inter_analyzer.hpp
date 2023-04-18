@@ -1043,13 +1043,12 @@ void group_regions_by_dsa_intrinsics(
       auto const &args = intrinsic_stmt.get_args();
       srcs.reserve(intrinsic_arg_sz);
       tgts.reserve(intrinsic_arg_sz);
-      if (intrinsic_arg_sz > 0 && index < param_lst_sz &&
-          args[0].get_variable() == tgt_params[index]) {
-        // If the region which the current index refers belongs to some dsa
-        // intrinsic, add this group into the equivalence sets
-        CRAB_LOG("inter-group", errs() << "Intrinsic: ";
+      CRAB_LOG("inter-group", errs() << "Intrinsic: ";
                  print_var_or_const_vector(errs(), args); errs() << "\n";);
-        for (unsigned j = 0; j < intrinsic_arg_sz; j++) {
+      for (unsigned j = 0; j < intrinsic_arg_sz; j++) {
+        // If the region whose current index refers belongs to some dsa
+        // intrinsic, add this group into the equivalence sets
+        if (index < param_lst_sz && args[j].get_variable() == tgt_params[index]) {
           srcs.push_back(src_params[index]);
           tgts.push_back(tgt_params[index]);
           index++;
@@ -1074,9 +1073,6 @@ void group_regions_by_dsa_intrinsics(
 template <typename CallGraph, typename GlobalCtx>
 void extract_callsite_info(CallGraph &cg, GlobalCtx &ctx) {
   using cfg_t = typename CallGraph::cfg_t;
-  // using cfg_ref_t = crab::cfg::cfg_ref<cfg_t>;
-  using callsite_or_fdecl_t = crab::cfg::callsite_or_fdecl<cfg_t>;
-  using variable_t = typename cfg_t::variable_t;
   using callsite_t = typename cfg_t::basic_block_t::callsite_t;
   using fdecl_t = typename cfg_t::fdecl_t;
   using callsite_info_t = typename GlobalCtx::callsite_info_t;
@@ -1104,10 +1100,10 @@ void extract_callsite_info(CallGraph &cg, GlobalCtx &ctx) {
                                           cs.get_lhs(),
                                           fdecl.get_inputs(),
                                           fdecl.get_outputs(),
-                                          actual_cls,
-                                          lhs_cls,
-                                          formal_cls,
-                                          ret_cls};
+                                          std::move(actual_cls),
+                                          std::move(lhs_cls),
+                                          std::move(formal_cls),
+                                          std::move(ret_cls)};
             auto &callsite_info_map = ctx.get_callsite_info_map();
             callsite_info_map.insert({&cs, callsite_info});
           }

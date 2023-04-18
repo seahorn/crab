@@ -17,10 +17,10 @@ template <class Variable> class callsite_info {
   const std::vector<Variable> &m_caller_out_params;
   const std::vector<Variable> &m_callee_in_params;
   const std::vector<Variable> &m_callee_out_params;
-  const std::vector<std::vector<Variable>> &m_caller_in_groups;
-  const std::vector<std::vector<Variable>> &m_caller_out_groups;
-  const std::vector<std::vector<Variable>> &m_callee_in_groups;
-  const std::vector<std::vector<Variable>> &m_callee_out_groups;
+  const std::vector<std::vector<Variable>> m_caller_in_groups;
+  const std::vector<std::vector<Variable>> m_caller_out_groups;
+  const std::vector<std::vector<Variable>> m_callee_in_groups;
+  const std::vector<std::vector<Variable>> m_callee_out_groups;
 
 public:
   callsite_info(const std::string &function,
@@ -28,10 +28,10 @@ public:
                 const std::vector<Variable> &caller_out_params,
                 const std::vector<Variable> &callee_in_params,
                 const std::vector<Variable> &callee_out_params,
-                const std::vector<std::vector<Variable>> &m_caller_in_groups,
-                const std::vector<std::vector<Variable>> &m_caller_out_groups,
-                const std::vector<std::vector<Variable>> &m_callee_in_groups,
-                const std::vector<std::vector<Variable>> &m_callee_out_groups);
+                std::vector<std::vector<Variable>> &&m_caller_in_groups,
+                std::vector<std::vector<Variable>> &&m_caller_out_groups,
+                std::vector<std::vector<Variable>> &&m_callee_in_groups,
+                std::vector<std::vector<Variable>> &&m_callee_out_groups);
 
   const std::vector<Variable> &get_caller_in_params() const;
   const std::vector<Variable> &get_caller_out_params() const;
@@ -53,18 +53,18 @@ callsite_info<Variable>::callsite_info(
     const std::vector<Variable> &caller_out_params,
     const std::vector<Variable> &callee_in_params,
     const std::vector<Variable> &callee_out_params,
-    const std::vector<std::vector<Variable>> &caller_in_groups,
-    const std::vector<std::vector<Variable>> &caller_out_groups,
-    const std::vector<std::vector<Variable>> &callee_in_groups,
-    const std::vector<std::vector<Variable>> &callee_out_groups)
+    std::vector<std::vector<Variable>> &&caller_in_groups,
+    std::vector<std::vector<Variable>> &&caller_out_groups,
+    std::vector<std::vector<Variable>> &&callee_in_groups,
+    std::vector<std::vector<Variable>> &&callee_out_groups)
     : m_function(function), m_caller_in_params(caller_in_params),
       m_caller_out_params(caller_out_params),
       m_callee_in_params(callee_in_params),
       m_callee_out_params(callee_out_params),
-      m_caller_in_groups(caller_in_groups),
-      m_caller_out_groups(caller_out_groups),
-      m_callee_in_groups(callee_in_groups),
-      m_callee_out_groups(callee_out_groups) {
+      m_caller_in_groups(std::move(caller_in_groups)),
+      m_caller_out_groups(std::move(caller_out_groups)),
+      m_callee_in_groups(std::move(callee_in_groups)),
+      m_callee_out_groups(std::move(callee_out_groups)) {
   check_consistency();
 }
 
