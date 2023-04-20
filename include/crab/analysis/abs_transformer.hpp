@@ -368,8 +368,13 @@ public:
 
   void set_abs_value(abs_dom_t &&inv) { m_inv = std::move(inv); }
 
-  abs_dom_t get_abs_value() const { return m_inv; }
-  abs_dom_t &get_abs_value() { return m_inv; }
+  abs_dom_t &get_abs_value() {
+    return m_inv;
+  }
+
+  const abs_dom_t &get_abs_value() const {
+    return m_inv;
+  }
 
   virtual void exec(bin_op_t &stmt) override {
     bool pre_bot = false;

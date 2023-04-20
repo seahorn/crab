@@ -81,6 +81,9 @@ private:
     for (auto &s : b) {
       s.accept(&*m_abs_tr);
     }
+    // We cannot avoid the copy of res because we cannot move
+    // m_abs_tr->get_abs_value() because m_abs_tr->get_abs_value()
+    // might be called later.
     abs_dom_t &res = m_abs_tr->get_abs_value();
     prune_dead_variables(node, res);
     return res;
