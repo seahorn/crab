@@ -41,7 +41,7 @@ public:
     if (s.op() == cfg::BINOP_SDIV || s.op() == cfg::BINOP_UDIV ||
         s.op() == cfg::BINOP_SREM || s.op() == cfg::BINOP_UREM) {
 
-      auto &inv = this->m_abs_tr->get_abs_value();
+      auto const &inv = this->m_abs_tr->get_abs_value();
       if (inv.is_bottom()) {
         this->m_db.add(check_kind::CRAB_UNREACH, s.get_debug_info());
         return;
@@ -56,7 +56,7 @@ public:
           this->m_db.add(check_kind::CRAB_SAFE, s.get_debug_info());
         }
       } else if (auto var = divisor_expr.get_variable()) {
-        interval_t divisor_intv = inv[(*var)];
+        interval_t divisor_intv = inv.at(*var);
         if (auto divisor = divisor_intv.singleton()) {
           if (*divisor == number_t(0)) {
             lin_cst_t e_cst(*var != number_t(0));
