@@ -73,7 +73,7 @@ public:
       crab::crab_string_os os;
       if (this->m_verbose >= 3) {
         os << "Property : " << cst << "\n";
-        auto &inv = this->m_abs_tr->get_abs_value();
+        auto const &inv = this->m_abs_tr->get_abs_value();
         os << "Invariant: " << inv << "\n";
         os << "Note: it was proven by the forward+backward analysis";
       }
@@ -84,7 +84,7 @@ public:
           crab::crab_string_os os;
           if (this->m_verbose >= 3) {
             os << "Property : " << cst << "\n";
-            auto &inv = this->m_abs_tr->get_abs_value();
+            auto const &inv = this->m_abs_tr->get_abs_value();
             os << "Invariant: " << inv;
           }
           this->add_safe(os.str(), &s);
@@ -92,7 +92,7 @@ public:
           crab::crab_string_os os;
           if (this->m_verbose >= 2) {
             os << "Property : " << cst << "\n";
-            auto &inv = this->m_abs_tr->get_abs_value();
+            auto const &inv = this->m_abs_tr->get_abs_value();
             os << "Invariant: " << inv;
           }
           this->add_warning(os.str(), &s);
@@ -105,7 +105,7 @@ public:
         return;
       }
 
-      const abs_dom_t &inv = this->m_abs_tr->get_abs_value();
+      auto const &inv = this->m_abs_tr->get_abs_value();
       if (entails(inv, cst)) {
         crab::crab_string_os os;
         if (this->m_verbose >= 3) {

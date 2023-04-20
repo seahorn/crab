@@ -86,7 +86,7 @@ private:
     for (auto &s : b) {
       s.accept(&*m_abs_tr);
     }
-    abs_dom_t &res = m_abs_tr->get_abs_value();
+    abs_dom_t res = std::move(m_abs_tr->get_abs_value());
     prune_dead_variables(node, res);
     return res;
   }
