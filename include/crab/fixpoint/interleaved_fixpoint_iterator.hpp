@@ -418,7 +418,7 @@ private:
     }
   }
 
-  inline void compute_post(basic_block_label_t node, AbstractValue inv) {
+  inline void compute_post(AbstractValue &&inv, basic_block_label_t node) {
     { 
       FIXPOINT_SCOPED_STATS("Fixpo.computePost");
       CRAB_VERBOSE_IF(
@@ -429,10 +429,15 @@ private:
         crab::outs() << " size=" << n.size() << "\n";);
 
       CRAB_VERBOSE_IF(4, crab::outs() << "PRE Invariants:\n" << inv << "\n");
-      inv = m_iterator->analyze(node, std::move(inv));
+      inv = std::move(m_iterator->analyze(node, std::move(inv)));
       CRAB_VERBOSE_IF(3, crab::outs() << "POST Invariants:\n" << inv << "\n");
     }
     m_iterator->set_post(node, std::move(inv));
+  }
+
+  // inv passed by value because it will be used after the call to compute_post
+  inline void compute_post(basic_block_label_t node, AbstractValue inv) {
+    compute_post(std::move(inv), node);
   }
 
   // Simple visitor to check if node is a member of the wto component.
@@ -518,7 +523,7 @@ public:
       m_iterator->set_pre(node, pre);
     }
 
-    compute_post(node, pre);
+    compute_post(std::move(pre), node);
   }
 
   virtual void visit(wto_cycle_t &cycle) override {
