@@ -64,8 +64,9 @@ public:
   }
 
   virtual void check(assert_t &s) override {
-    if (!this->m_abs_tr)
+    if (!this->m_abs_tr) {
       return;
+    }
 
     const lin_cst_t &cst = s.constraint();
 
@@ -97,6 +98,7 @@ public:
           }
           this->add_warning(os.str(), &s);
         }
+	s.accept(&*this->m_abs_tr); // propagate invariants to the next stmt
         return;
       }
 
