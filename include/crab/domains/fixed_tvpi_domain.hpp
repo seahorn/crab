@@ -148,14 +148,8 @@ private:
 
   linear_constraint_t rewrite_linear_constraint(const linear_constraint_t &cst,
                                                 unsigned coefficient) const {
-    if (cst.is_equality() || cst.is_disequation()) {
-      return linear_constraint_t(
+    return linear_constraint_t(
           rewrite_linear_expression(cst.expression(), coefficient), cst.kind());
-    } else {
-      return linear_constraint_t(
-          rewrite_linear_expression(cst.expression(), coefficient), cst.kind(),
-          cst.is_signed());
-    }
   }
 
   void rewrite_assign(const variable_t &x, const linear_expression_t &e,
@@ -422,12 +416,14 @@ public:
           set_to_bottom();
           break;
         }
+	
         if (cst.is_tautology()) {
           continue;
         }
 
         CRAB_LOG("fixed-tvpi", crab::outs() << "fixed_tvpi_domain processing "
                                             << cst << "\n");
+	
         m_base_absval += cst;
         if (m_base_absval.is_bottom()) {
           break;

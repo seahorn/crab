@@ -863,11 +863,6 @@ protected:
       return false;
     }
 
-    if (cst.is_inequality() && cst.is_unsigned()) {
-      CRAB_WARN("unsigned inequality ", cst, " skipped by ", domain_name());      
-      return false;
-    }
-    
     std::vector<std::pair<variable_t, Wt>> lbs, ubs;
     std::vector<diffcst_t> diffcsts;
 
@@ -2400,12 +2395,6 @@ public:
       return;
     }
     
-    // XXX: we do nothing with unsigned linear inequalities
-    if (cst.is_inequality() && cst.is_unsigned()) {
-      CRAB_WARN("unsigned inequality ", cst, " skipped by split_dbm domain");
-      return;
-    }
-
     if (is_bottom()) {
       return;
     }

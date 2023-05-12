@@ -8,6 +8,18 @@ using namespace crab::domain_impl;
 
 z_cfg_t *prog1(variable_factory_t &vfac) {
 
+  /* APLAS'12 example
+     x and y are int8
+     
+     y = -10;
+     assume(x >= 0 && x <= 100);
+     while (x >= y) {
+        x = x - y;
+     }
+       
+     The expected result at the end is x=[-128,-119]
+  */
+  
   // Defining program variables
   z_var x(vfac["x"], crab::INT_TYPE, 8);
   z_var y(vfac["y"], crab::INT_TYPE, 8);
@@ -49,7 +61,17 @@ z_cfg_t *prog1(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *prog2(variable_factory_t &vfac, bool is_signed) {
+z_cfg_t *prog2(variable_factory_t &vfac) {
+  /*
+     x= 127;
+     x= x+1;
+     if (x <= 1) {
+       x = 10;
+     } else {
+       x = -10;
+     }
+
+   */
   // Defining program variables
   z_var x(vfac["x"], crab::INT_TYPE, 8);
   // entry and exit block
@@ -68,19 +90,9 @@ z_cfg_t *prog2(variable_factory_t &vfac, bool is_signed) {
   entry.assign(x, z_number(127));
   entry.add(x, x, 1);
   z_lin_cst_t c1(x <= z_number(1));
-  if (is_signed) {
-    c1.set_signed();
-  } else {
-    c1.set_unsigned();
-  }
   bb_if.assume(c1);
   bb_if.assign(x, z_number(10));
   z_lin_cst_t c2(x >= z_number(2));
-  if (is_signed) {
-    c2.set_signed();
-  } else {
-    c2.set_unsigned();
-  }
   bb_then.assume(c2);
   bb_then.assign(x, z_number(-10));
   return cfg;
@@ -110,15 +122,7 @@ int main(int argc, char **argv) {
   }
   {
     variable_factory_t vfac;
-    z_cfg_t *cfg = prog2(vfac, true);
-    crab::outs() << *cfg << "\n";
-    z_wrapped_interval_domain_t init;
-    run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-    delete cfg;
-  }
-  {
-    variable_factory_t vfac;
-    z_cfg_t *cfg = prog2(vfac, false);
+    z_cfg_t *cfg = prog2(vfac); 
     crab::outs() << *cfg << "\n";
     z_wrapped_interval_domain_t init;
     run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);

@@ -125,10 +125,6 @@ private:
       if (is_bottom()) {
         return;
       }
-      if (c.is_inequality() && c.is_unsigned()) {
-        // we don't handle unsigned constraints
-        continue;
-      }
       if (c.is_tautology()) {
         continue;
       }

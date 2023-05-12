@@ -91,7 +91,7 @@ private:
 
   interval_t operator[](linear_expression_t expr) {
     interval_t r(expr.constant());
-    for (typename linear_expression_t::iterator it = expr.begin();
+    for (typename linear_expression_t::const_iterator it = expr.begin();
          it != expr.end(); ++it) {
       interval_t c(it->first);
       r += c * this->_env.at(it->second);
@@ -101,21 +101,16 @@ private:
   void add(const linear_constraint_system_t &csts,
            std::size_t threshold = max_reduction_cycles) {
     if (!this->is_bottom()) {
-      // XXX: filter out unsigned linear inequalities
-      linear_constraint_system_t signed_csts;
+      linear_constraint_system_t pp_csts;
       for (auto const &c : csts) {
-        if (c.is_inequality() && c.is_unsigned()) {
-          // CRAB_WARN("unsigned inequality skipped");
-          continue;
-        }
 	if (c.is_disequation()) {
 	  // We try to convert a disequation into a strict inequality
 	  crab::domains::constraint_simp_domain_traits<interval_domain_t>::
-	    lower_disequality(*this, c, signed_csts);
+	    lower_disequality(*this, c, pp_csts);
 	}
-        signed_csts += c;
+        pp_csts += c;
       }
-      solver_t solver(signed_csts, threshold);
+      solver_t solver(pp_csts, threshold);
       solver.run(this->_env);
     }
   }

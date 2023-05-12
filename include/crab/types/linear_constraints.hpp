@@ -61,7 +61,6 @@
 namespace ikos {
 
 template <typename Number, typename VariableName> class linear_expression {
-
 public:
   using number_t = Number;
   using varname_t = VariableName;
@@ -118,12 +117,8 @@ private:
   };
 
 public:
-  using iterator =
-      boost::transform_iterator<tr_value_ty, typename map_t::iterator>;
   using const_iterator =
       boost::transform_iterator<tr_value_ty, typename map_t::const_iterator>;
-  using var_iterator =
-      boost::transform_iterator<get_var, typename map_t::iterator>;
   using const_var_iterator =
       boost::transform_iterator<get_var, typename map_t::const_iterator>;
   using const_var_range = boost::iterator_range<const_var_iterator>;
@@ -157,14 +152,6 @@ public:
   }
 
   const_iterator end() const {
-    return boost::make_transform_iterator(_map->end(), tr_value_ty());
-  }
-
-  iterator begin() {
-    return boost::make_transform_iterator(_map->begin(), tr_value_ty());
-  }
-
-  iterator end() {
     return boost::make_transform_iterator(_map->end(), tr_value_ty());
   }
 
@@ -330,14 +317,6 @@ public:
 
   linear_expression_t operator*(int64_t n) const {
     return operator*(Number(n));
-  }
-
-  var_iterator variables_begin() {
-    return boost::make_transform_iterator(_map->begin(), get_var());
-  }
-
-  var_iterator variables_end() {
-    return boost::make_transform_iterator(_map->end(), get_var());
   }
 
   const_var_iterator variables_begin() const {
@@ -587,6 +566,9 @@ operator-(crab::variable<Number, VariableName> x,
   return linear_expression<Number, VariableName>(Number(1), x).operator-(e);
 }
 
+/**
+* Represent a *signed* linear constraint c1*k1 + ... + cn*kn + k <= 0
+**/
 template <typename Number, typename VariableName>
 class linear_constraint {
 
@@ -597,31 +579,18 @@ public:
   using variable_t = crab::variable<Number, VariableName>;
   using linear_expression_t = linear_expression<Number, VariableName>;
   using kind_t = enum { EQUALITY, DISEQUATION, INEQUALITY, STRICT_INEQUALITY };
-  using iterator = typename linear_expression_t::iterator;
   using const_iterator = typename linear_expression_t::const_iterator;
   using const_var_range = typename linear_expression_t::const_var_range;
 
 private:
   kind_t _kind;
   linear_expression_t _expr;
-  // This flag has meaning only if _kind == INEQUALITY or STRICT_INEQUALITY.
-  // If true the inequality is signed otherwise unsigned.
-  // By default all constraints are signed.
-  bool _signedness;
-
+  
 public:
-  linear_constraint() : _kind(EQUALITY), _signedness(true) {}
+  linear_constraint() : _kind(EQUALITY) {}
 
   linear_constraint(const linear_expression_t &expr, kind_t kind)
-      : _kind(kind), _expr(expr), _signedness(true) {}
-
-  linear_constraint(const linear_expression_t &expr, kind_t kind,
-                    bool signedness)
-      : _kind(kind), _expr(expr), _signedness(signedness) {
-    if (_kind != INEQUALITY && _kind != STRICT_INEQUALITY) {
-      CRAB_ERROR("Only inequalities can have signedness information");
-    }
-  }
+      : _kind(kind), _expr(expr) {}
 
   linear_constraint(const linear_constraint_t &c) = default;
 
@@ -683,38 +652,9 @@ public:
 
   kind_t kind() const { return this->_kind; }
 
-  bool is_signed() const {
-    if (_kind != INEQUALITY && _kind != STRICT_INEQUALITY) {
-      CRAB_WARN("Only inequalities have signedness");
-    }
-    return _signedness;
-  }
-
-  bool is_unsigned() const { return (!is_signed()); }
-
-  void set_signed() {
-    if (_kind == INEQUALITY || _kind == STRICT_INEQUALITY) {
-      _signedness = true;
-    } else {
-      CRAB_WARN("Only inequalities have signedness");
-    }
-  }
-
-  void set_unsigned() {
-    if (_kind == INEQUALITY || _kind == STRICT_INEQUALITY) {
-      _signedness = false;
-    } else {
-      CRAB_WARN("Only inequalities have signedness");
-    }
-  }
-
   const_iterator begin() const { return this->_expr.begin(); }
 
   const_iterator end() const { return this->_expr.end(); }
-
-  iterator begin() { return this->_expr.begin(); }
-
-  iterator end() { return this->_expr.end(); }
 
   Number constant() const { return -this->_expr.constant(); }
 
@@ -722,17 +662,13 @@ public:
 
   // syntactic equality
   bool equal(const linear_constraint_t &o) const {
-    return (_kind == o._kind && _signedness == o._signedness &&
-            _expr.equal(o._expr));
+    return (_kind == o._kind && _expr.equal(o._expr)); 
   }
 
   size_t hash() const {
     size_t res = 0;
     boost::hash_combine(res, _expr);
     boost::hash_combine(res, _kind);
-    if (_kind == INEQUALITY || _kind == STRICT_INEQUALITY) {
-      boost::hash_combine(res, _signedness);
-    }
     return res;
   }
 
@@ -741,13 +677,8 @@ public:
       return true;
     } else if (_kind > o._kind) {
       return false;
-    } else if (_signedness < o._signedness) {
-      return true;
-    } else if (_signedness > o._signedness) {
-      return false;
     } else {
       assert(_kind == o._kind);
-      assert(_signedness == o._signedness);
       return _expr.lexicographical_compare(o._expr); 
     }
   }
@@ -765,7 +696,7 @@ public:
   template <typename RenamingMap>
   linear_constraint_t rename(const RenamingMap &map) const {
     linear_expression_t e = this->_expr.rename(map);
-    return linear_constraint_t(e, this->_kind, is_signed());
+    return linear_constraint_t(e, this->_kind);
   }
 
   void write(crab::crab_os &o) const {
@@ -778,19 +709,11 @@ public:
       o << e;
       switch (this->_kind) {
       case INEQUALITY: {
-        if (is_signed()) {
-          o << " <= ";
-        } else {
-          o << " <=_u ";
-        }
-        break;
+	o << " <= ";
+	break;
       }
       case STRICT_INEQUALITY: {
-        if (is_signed()) {
-          o << " < ";
-        } else {
-          o << " <_u ";
-        }
+	o << " < ";
         break;
       }
       case EQUALITY: {
@@ -829,8 +752,7 @@ negate_inequality(const linear_constraint<Number, VariableName> &c) {
   assert(c.is_inequality());
   // default implementation: negate(e <= 0) = e > 0
   linear_expression_t e(-c.expression());
-  return linear_constraint_t(e, linear_constraint_t::kind_t::STRICT_INEQUALITY,
-                             c.is_signed());
+  return linear_constraint_t(e, linear_constraint_t::kind_t::STRICT_INEQUALITY);
 }
 
 // Specialized version for z_number
@@ -842,8 +764,7 @@ negate_inequality(const linear_constraint<z_number, VariableName> &c) {
   assert(c.is_inequality());
   // negate(e <= 0) = e >= 1
   linear_expression_t e(-(c.expression() - 1));
-  return linear_constraint_t(e, linear_constraint_t::kind_t::INEQUALITY,
-                             c.is_signed());
+  return linear_constraint_t(e, linear_constraint_t::kind_t::INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
@@ -865,8 +786,7 @@ linear_constraint<z_number, VariableName> strict_to_non_strict_inequality(
   assert(c.is_strict_inequality());
   // e < 0 --> e <= -1
   linear_expression_t e(c.expression() + 1);
-  return linear_constraint_t(e, linear_constraint_t::kind_t::INEQUALITY,
-                             c.is_signed());
+  return linear_constraint_t(e, linear_constraint_t::kind_t::INEQUALITY);
 }
 } // end namespace linear_constraint_impl
 
@@ -889,7 +809,7 @@ linear_constraint<Number, VariableName>::negate() const {
     case STRICT_INEQUALITY: {
       // negate(x + y < 0)  <-->  x + y >= 0 <--> -x -y <= 0
       linear_expression_t e = -this->_expr;
-      return linear_constraint_t(e, INEQUALITY, is_signed());
+      return linear_constraint_t(e, INEQUALITY);
     }
     case EQUALITY:
       return linear_constraint_t(this->_expr, DISEQUATION);
@@ -1495,10 +1415,10 @@ public:
 
   linear_constraint_system(linear_constraint_system_t &&o) = default;
 
-  linear_constraint_system_t &
+  linear_constraint_system_t&
   operator=(const linear_constraint_system_t &o) = default;
 
-  linear_constraint_system_t &
+  linear_constraint_system_t&
   operator=(linear_constraint_system_t &&o) = default;
 
   linear_constraint_system_t &operator+=(const linear_constraint_t &c) {
@@ -1548,20 +1468,18 @@ public:
         } else {
           // we found exp<=0 and -exp<= 0
           unsigned j = index_map[-exp];
-          if (_csts[i].is_signed() == _csts[j].is_signed()) {
-            toremove[i] = true;
-            toremove[j] = true;
-            bool insert_pos = true;
-            if (exp.size() == 1 && (*(exp.begin())).first < 0) {
-              // unary equality: we choose the one with the positive position.
-              insert_pos = false;
-            }
-            if (!insert_pos) {
-              out += linear_constraint_t(-exp, linear_constraint_t::EQUALITY);
-            } else {
-              out += linear_constraint_t(exp, linear_constraint_t::EQUALITY);
-            }
-          }
+	  toremove[i] = true;
+	  toremove[j] = true;
+	  bool insert_pos = true;
+	  if (exp.size() == 1 && (*(exp.begin())).first < 0) {
+	    // unary equality: we choose the one with the positive position.
+	    insert_pos = false;
+	  }
+	  if (!insert_pos) {
+	    out += linear_constraint_t(-exp, linear_constraint_t::EQUALITY);
+	  } else {
+	    out += linear_constraint_t(exp, linear_constraint_t::EQUALITY);
+	  }
         }
       }
     }
@@ -1587,16 +1505,13 @@ public:
   // XXX: We can keep track of whether the system is false in an
   // incremental manner.
   bool is_false() const {
-    if (_csts.empty())
+    if (_csts.empty()) {
       return false; // empty is considered true
-
-    for (auto it = this->begin(); it != this->end(); ++it) {
-      auto c = *it;
-      if (!c.is_contradiction()) {
-        return false;
-      }
+    } else {
+      return std::any_of(begin(), end(), [](const linear_constraint_t &c) {
+	return c.is_contradiction();
+      });
     }
-    return true; // all constraints are false
   }
 
   bool is_true() const { return _csts.empty(); }
@@ -1726,36 +1641,40 @@ public:
     return r;
   }
 
-  // To enumerate all the conjunctions
+  // To enumerate all the disjunctions
   const_iterator begin() const {
-    if (is_false())
+    if (is_false()) {
       CRAB_ERROR(
           "Disjunctive Linear constraint: trying to call begin() when false");
+    }
     return _csts.begin();
   }
 
   const_iterator end() const {
-    if (is_false())
+    if (is_false()) {
       CRAB_ERROR(
           "Disjunctive Linear constraint: trying to call end() when false");
+    }
     return _csts.end();
   }
 
   iterator begin() {
-    if (is_false())
+    if (is_false()) {
       CRAB_ERROR(
           "Disjunctive Linear constraint: trying to call begin() when false");
+    }
     return _csts.begin();
   }
 
   iterator end() {
-    if (is_false())
+    if (is_false()) {
       CRAB_ERROR(
           "Disjunctive Linear constraint: trying to call end() when false");
+    }
     return _csts.end();
   }
 
-  // Return the number of conjunctions
+  // Return the number of disjunctions
   std::size_t size() const { return _csts.size(); }
 
   void write(crab::crab_os &o) const {

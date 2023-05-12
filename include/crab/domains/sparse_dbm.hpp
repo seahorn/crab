@@ -1791,12 +1791,6 @@ public:
       return;
     }
     
-    // XXX: we do nothing with unsigned linear inequalities
-    if (cst.is_inequality() && cst.is_unsigned()) {
-      CRAB_WARN("unsigned inequality ", cst, " skipped by split_dbm domain");
-      return;
-    }
-    
     if (is_bottom()) {
       return;
     }

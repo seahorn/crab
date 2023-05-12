@@ -1410,10 +1410,6 @@ public:
     //      them.
     linear_constraint_system_t csts;
     for (auto const &c : _csts) {
-      if (c.is_inequality() && c.is_unsigned()) {
-        CRAB_WARN("unsigned inequality skipped");
-        continue;
-      }
       if (c.is_strict_inequality()) {
         // We try to convert a strict to non-strict.
         csts +=

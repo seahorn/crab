@@ -328,15 +328,8 @@ public:
     if (boost::optional<linear_expression_t> e =
             rev_rename_linear_expr(cst.expression(), ignore_references)) {
 
-      if (cst.is_inequality() || cst.is_strict_inequality()) {
-        return linear_constraint_t(
-            *e, (typename linear_constraint_t::kind_t)cst.kind(),
-            cst.is_signed());
-
-      } else {
-        return linear_constraint_t(
+      return linear_constraint_t(
             *e, (typename linear_constraint_t::kind_t)cst.kind());
-      }
     } else {
       return boost::optional<linear_constraint_t>();
     }
@@ -860,17 +853,9 @@ public:
   }
 
   ghost_linear_constraint_t rename_linear_cst(const linear_constraint_t &cst) {
-    if (cst.is_inequality() || cst.is_strict_inequality()) {
-      return ghost_linear_constraint_t(
-          rename_linear_expr(cst.expression()),
-          (typename ghost_linear_constraint_t::kind_t)cst.kind(),
-          cst.is_signed());
-
-    } else {
-      return ghost_linear_constraint_t(
+     return ghost_linear_constraint_t(
           rename_linear_expr(cst.expression()),
           (typename ghost_linear_constraint_t::kind_t)cst.kind());
-    }
   }
 
   ghost_linear_constraint_system_t
@@ -923,15 +908,8 @@ public:
     if (boost::optional<linear_expression_t> e =
             rev_rename_linear_expr(cst.expression(), ignore_references)) {
 
-      if (cst.is_inequality() || cst.is_strict_inequality()) {
-        return linear_constraint_t(
-            *e, (typename linear_constraint_t::kind_t)cst.kind(),
-            cst.is_signed());
-
-      } else {
-        return linear_constraint_t(
+      return linear_constraint_t(
             *e, (typename linear_constraint_t::kind_t)cst.kind());
-      }
     } else {
       return boost::optional<linear_constraint_t>();
     }

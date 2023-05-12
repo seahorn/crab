@@ -3836,6 +3836,9 @@ Checking if {x <= 8,-y <= -5} <= {x <= 8,y <= 6,-y <= -5,-x <= -8}=1
 --------------
 {x <= 8,y <= 6,-y <= -5,-x <= -8} | {...}={...}
 --------------
+{-x <= 0; false}
+is false=1
+--------------
 === End ./test-bin/unittests-linear-constraints ===
 === Begin ./test-bin/unittests-num-packing ===
 EXPECTED={({x,y},{x=y})} ACTUAL={Pack({x,y},{x-y<=0, y-x<=0})
@@ -4253,28 +4256,6 @@ Invariants using WrappedIntervals
 entry={}
 then={x -> [[-128, -128]]_8}
 ret={x -> [[10, 10]]_8}
-if={x -> [[-128, -128]]_8}
-Abstract trace: entry then if ret
-
-entry:
-  x = 127;
-  x = x+1;
-  goto if,then;
-if:
-  assume(x <=_u 1);
-  x = 10;
-  goto ret;
-ret:
-
-then:
-  assume(-x <=_u -2);
-  x = -10;
-  goto ret;
-
-Invariants using WrappedIntervals
-entry={}
-then={x -> [[-128, -128]]_8}
-ret={x -> [[-10, -10]]_8}
 if={x -> [[-128, -128]]_8}
 Abstract trace: entry then if ret
 

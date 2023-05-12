@@ -65,7 +65,7 @@ private:
   void add(const linear_constraint_system_t &csts,
            std::size_t threshold = max_reduction_cycles) {
     if (!this->is_bottom()) {
-      solver_t solver(csts, threshold);
+      solver_t solver(csts, threshold);      
       solver.run(this->_env);
     }
   }
@@ -1932,7 +1932,9 @@ public:
       // rectify of the "unsound" numerical domain
       signedness_t signedness = UNKNOWN_SIGNEDNESS;
       if (c.is_inequality() || c.is_strict_inequality()) {
-        signedness = c.is_signed() ? SIGNED : UNSIGNED;
+	// linear_constraint_t is always signed
+        // signedness = c.is_signed() ? SIGNED : UNSIGNED;
+	signedness = SIGNED;
       }
       for (auto const &v : c.variables()) {
         rectify(v, signedness);
@@ -2014,7 +2016,9 @@ public:
 
     signedness_t signedness = UNKNOWN_SIGNEDNESS;
     if (cst.is_inequality() || cst.is_strict_inequality()) {
-      signedness = cst.is_signed() ? SIGNED : UNSIGNED;
+      // linear_constraint_t is always signed
+      //signedness = cst.is_signed() ? SIGNED : UNSIGNED;
+      signedness = SIGNED;
     }
     for (auto const &v : cst.variables()) {
       rectify(v, signedness);

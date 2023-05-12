@@ -987,13 +987,6 @@ public:
       return;
     }
 
-    // XXX: we do nothing with unsigned linear inequalities
-    // TODO: we can express these constraints with more disjunctions.
-    if (cst.is_inequality() && cst.is_unsigned()) {
-      CRAB_WARN("unsigned inequality skipped in boxes domain");
-      return;
-    }
-
     linear_expression_t exp = cst.expression();
     unsigned int size = exp.size();
     if (size == 1) {
@@ -1450,10 +1443,6 @@ public:
 	crab::CrabStats::count(domain_name() + ".count.assign_bool_cst.interval");
 	crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst.interval");
       	/// Interval constraint
-      	if (cst.is_inequality() && cst.is_unsigned()) {
-      	  CRAB_WARN("unsigned inequality skipped in boxes domain");
-      	  return;
-     	}
       	linear_expression_t exp = cst.expression();
         number_t cx = exp.begin()->first;
       	variable_t vx = exp.begin()->second;

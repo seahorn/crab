@@ -2906,7 +2906,7 @@ public:
     if (is_bottom()) {
       return;
     }
-    
+
     normalize();
     if (cst.is_inequality()) {
       if (!add_linear_leq(cst.expression())) {

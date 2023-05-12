@@ -1250,21 +1250,9 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
 
     if (!this->is_bottom()) {
-      // crab::outs() << "*** add constraints " << csts << " in " << *this <<
-      // "\n";
       const size_t threshold = 10; // make this template parameter
-      // XXX: filter out unsigned linear inequalities
-      linear_constraint_system_t signed_csts;
-      for (auto const &c : csts) {
-        if (c.is_inequality() && c.is_unsigned()) {
-          CRAB_WARN("unsigned inequality skipped");
-          continue;
-        }
-        signed_csts += c;
-      }
-      solver_t solver(signed_csts, threshold);
+      solver_t solver(csts, threshold);
       solver.run(this->_env);
-      // crab::outs() << "result=" << *this << "\n";
     }
   }
 

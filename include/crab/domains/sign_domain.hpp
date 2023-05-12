@@ -126,9 +126,6 @@ private:
 
     if (!is_bottom()) {
       for (auto const &c : csts) {
-        if (c.is_inequality() && c.is_unsigned()) {
-          continue;
-        }
         if (c.is_tautology()) {
           continue;
         }

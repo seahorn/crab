@@ -113,11 +113,11 @@ private:
   // return true if bottom
   bool refine(const variable_t &v, Interval i, IntervalCollection &env) {
     crab::ScopedCrabStats __st__("Linear Interval Solver.Solving refinement");
-    CRAB_LOG("integer-solver",
+    CRAB_LOG("interval-solver",
              crab::outs() << "\tRefine " << v << " with " << i << "\n";);
     Interval old_i = env.at(v);
     Interval new_i = old_i & i;
-    CRAB_LOG("integer-solver",
+    CRAB_LOG("interval-solver",
              crab::outs() << "\tOld=" << old_i << " New=" << new_i << "\n";);
     if (new_i.is_bottom()) {
       return true;
@@ -165,8 +165,8 @@ private:
     crab::ScopedCrabStats __st__("Linear Interval Solver.Solving propagation");
     namespace interval_traits = linear_interval_solver_impl;
 
-    CRAB_LOG("integer-solver",
-             crab::outs() << "Integer solver processing " << cst << "\n";);
+    CRAB_LOG("interval-solver",
+             crab::outs() << "Interval solver processing " << cst << "\n";);
 
     for (auto kv : cst) {
       Number c = kv.first;
@@ -186,13 +186,13 @@ private:
       } else if (cst.is_inequality()) {
         if (c > 0) {
           if (refine(pivot,
-                     interval_traits::lower_half_line(rhs, cst.is_signed()),
+                     interval_traits::lower_half_line(rhs, true /*cst is always signed*/),
                      env)) {
             return true;
           }
         } else {
           if (refine(pivot,
-                     interval_traits::upper_half_line(rhs, cst.is_signed()),
+                     interval_traits::upper_half_line(rhs, true /*cst is always signed*/),
                      env)) {
             return true;
           }
