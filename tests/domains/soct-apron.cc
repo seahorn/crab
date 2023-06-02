@@ -94,9 +94,6 @@ void run_and_compare(crab::cfg_impl::z_cfg_t* cfg,
   typename analyzer_1_t::assumption_map_t assumptions1;
   typename analyzer_2_t::assumption_map_t assumptions2;
 
-  typedef crab::cfg::cfg_ref<crab::cfg_impl::z_cfg_t> cfg_ref_t;
-
-  
   // Run with Dom1
   Dom1 inv1;
   analyzer_1_t a1(*cfg, inv1,
