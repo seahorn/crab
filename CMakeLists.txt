@@ -44,6 +44,8 @@ option(CRAB_ENABLE_ASAN "Enable Address Sanitizer" OFF)
 option(CRAB_USE_GENERIC_WRAPPER
   "If tests enabled then use the generic abstract domain" OFF)
 
+# Enforce c++11
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 #--------------- TESTS ----------------------------#
 if (CRAB_ENABLE_TESTS)
   #Setup CMake to run tests
@@ -287,22 +289,6 @@ else()
   set(CRAB_STATS FALSE)
 endif()
     
-#------ Compiler options for Crab -------------------#
-# Enforce c++11
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-# Do not use add_definition for warning flags. add_definition is
-# intended for -D flags.
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs")
-else ()
-  if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sometimes-uninitialized")    
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-uninitialized")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedef")
-  endif ()
-endif ()
-
 #------- Create CRAB_LIBS and CRAB_INCLUDE_DIRS for Crab clients -------#
 set (CRAB_DEPS_LIBS
   ${LDD_LIBRARY} 
