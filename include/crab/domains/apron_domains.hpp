@@ -1625,8 +1625,8 @@ public:
 
   disjunctive_linear_constraint_system_t
   to_disjunctive_linear_constraint_system() const override {
+#ifdef HAVE_PPLITE    
     if (is_disjunctive()) {
-#ifdef HAVE_PPLITE
       // Ad-hoc handling PPLite's powersets
       if (is_bottom()) {
         return disjunctive_linear_constraint_system_t(true /*is_false*/);
@@ -1646,17 +1646,16 @@ public:
         }
         return res;
       }
+    }
 #endif // HAVE_PPLITE
+    // Not a disjunctive domain
+    auto lin_csts = to_linear_constraint_system();
+    if (lin_csts.is_false()) {
+      return disjunctive_linear_constraint_system_t(true /*is_false*/);
+    } else if (lin_csts.is_true()) {
+      return disjunctive_linear_constraint_system_t(false /*is_false*/);
     } else {
-      // Not a disjunctive domain
-      auto lin_csts = to_linear_constraint_system();
-      if (lin_csts.is_false()) {
-        return disjunctive_linear_constraint_system_t(true /*is_false*/);
-      } else if (lin_csts.is_true()) {
-        return disjunctive_linear_constraint_system_t(false /*is_false*/);
-      } else {
-        return disjunctive_linear_constraint_system_t(lin_csts);
-      }
+      return disjunctive_linear_constraint_system_t(lin_csts);
     }
   }
 
