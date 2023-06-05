@@ -358,11 +358,11 @@ public:
 
   offset_map_t(const offset_map_t &o);
 
-  offset_map_t(const offset_map_t &&o);
+  offset_map_t(offset_map_t &&o);
 
   offset_map_t &operator=(const offset_map_t &o);
 
-  offset_map_t &operator=(const offset_map_t &&o);
+  offset_map_t &operator=(offset_map_t &&o);
 
   bool empty() const;
 
@@ -1012,13 +1012,6 @@ private:
       do_sanity_checks();
     }
 
-    array_state(const array_state &&o)
-        : m_is_smashed(std::move(o.m_is_smashed)),
-          m_element_sz(std::move(o.m_element_sz)),
-          m_offset_map(std::move(o.m_offset_map)) {
-      do_sanity_checks();
-    }
-
     array_state &operator=(const array_state &o) {
       if (this != &o) {
         m_is_smashed = o.m_is_smashed;
@@ -1029,15 +1022,8 @@ private:
       return *this;
     }
 
-    array_state &operator=(const array_state &&o) {
-      if (this != &o) {
-        m_is_smashed = std::move(o.m_is_smashed);
-        m_element_sz = std::move(o.m_element_sz);
-        m_offset_map = std::move(o.m_offset_map);
-      }
-      do_sanity_checks();
-      return *this;
-    }
+    array_state(array_state &&o) = default;
+    array_state &operator=(array_state &&o) = default;
 
     /*** begin mergeable_map API ***/
     array_state join(const variable_t &v, const array_state &o,
@@ -1255,9 +1241,6 @@ private:
 
     array_state_map_t(const array_state_map_t &o) : m_tree(o.m_tree) {}
 
-    array_state_map_t(const array_state_map_t &&o)
-        : m_tree(std::move(o.m_tree)) {}
-
     array_state_map_t &operator=(const array_state_map_t &o) {
       if (this != &o) {
         m_tree = o.m_tree;
@@ -1265,12 +1248,8 @@ private:
       return *this;
     }
 
-    array_state_map_t &operator=(const array_state_map_t &&o) {
-      if (this != &o) {
-        m_tree = std::move(o.m_tree);
-      }
-      return *this;
-    }
+    array_state_map_t(array_state_map_t&& o) = default;
+    array_state_map_t& operator=(array_state_map_t&& o) = default;
 
     iterator begin() const { return m_tree.begin(); }
 
@@ -1727,10 +1706,6 @@ public:
     ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".copy");
   }
 
-  array_adaptive_domain(const array_adaptive_domain_t &&other)
-      : m_base_dom(std::move(other.m_base_dom)),
-        m_array_map(std::move(other.m_array_map)),
-        m_cell_ghost_man(std::move(other.m_cell_ghost_man)) {}
 
   array_adaptive_domain_t &operator=(const array_adaptive_domain_t &other) {
     ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".copy");
@@ -1742,14 +1717,8 @@ public:
     return *this;
   }
 
-  array_adaptive_domain_t &operator=(const array_adaptive_domain_t &&other) {
-    if (this != &other) {
-      m_base_dom = std::move(other.m_base_dom);
-      m_array_map = std::move(other.m_array_map);
-      m_cell_ghost_man = std::move(other.m_cell_ghost_man);
-    }
-    return *this;
-  }
+  array_adaptive_domain(array_adaptive_domain_t &&other) = default;
+  array_adaptive_domain_t &operator=(array_adaptive_domain_t &&other) = default;
 
   bool is_bottom() const override { return (m_base_dom.is_bottom()); }
 
@@ -1781,7 +1750,7 @@ public:
     }
   }
 
-  bool operator==(array_adaptive_domain_t other) {
+  bool operator==(const array_adaptive_domain_t &other) {
     return (m_base_dom <= other.m_base_dom && other.m_base_dom <= m_base_dom);
   }
 

@@ -163,17 +163,21 @@ public:
 
   interval_domain() : _env(separate_domain_t::top()) {}
 
-  interval_domain(const interval_domain_t &e) : _env(e._env) {
+  interval_domain(const interval_domain_t &o) : _env(o._env) {
     INTERVALS_DOMAIN_SCOPED_STATS(".copy");
   }
 
   interval_domain_t &operator=(const interval_domain_t &o) {
     INTERVALS_DOMAIN_SCOPED_STATS(".copy");
-    if (this != &o)
+    if (this != &o) {
       this->_env = o._env;
+    }
     return *this;
   }
 
+  interval_domain(interval_domain_t &&o) = default;
+  interval_domain_t &operator=(interval_domain_t &&o) = default;
+  
   iterator begin() { return this->_env.begin(); }
 
   iterator end() { return this->_env.end(); }

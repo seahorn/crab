@@ -177,7 +177,6 @@ public:
     CONSTANT_DOMAIN_SCOPED_STATS(".copy");
   }
 
-  constant_domain(constant_domain_t &&e) : m_env(std::move(e.m_env)) {}
 
   constant_domain_t &operator=(const constant_domain_t &o) {
     CONSTANT_DOMAIN_SCOPED_STATS(".copy");
@@ -187,12 +186,8 @@ public:
     return *this;
   }
 
-  constant_domain_t &operator=(constant_domain_t &&o) {
-    if (this != &o) {
-      m_env = std::move(o.m_env);
-    }
-    return *this;
-  }
+  constant_domain(constant_domain_t &&o) = default;  
+  constant_domain_t &operator=(constant_domain_t &&o) = default;
 
   constant_t get_constant(const variable_t &v) const { return m_env.at(v); }
 

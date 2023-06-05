@@ -246,7 +246,6 @@ public:
     ARRAY_SMASHING_DOMAIN_SCOPED_STATS(".copy");
   }
 
-  array_smashing(array_smashing_t &&other) = default;
 
   array_smashing_t &operator=(const array_smashing_t &other) {
     ARRAY_SMASHING_DOMAIN_SCOPED_STATS(".copy");
@@ -257,6 +256,7 @@ public:
     return *this;
   }
 
+  array_smashing(array_smashing_t &&other) = default;  
   array_smashing_t &operator=(array_smashing_t &&other) = default;
 
   bool is_bottom() const override { return m_base_dom.is_bottom(); }

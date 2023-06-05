@@ -131,12 +131,15 @@ public:
       : m_product(other.m_product) {}
 
   rnc_domain_t &operator=(const rnc_domain_t &other) {
-    if (this != &other)
+    if (this != &other) {
       m_product = other.m_product;
-
+    }
     return *this;
   }
 
+  numerical_congruence_domain(rnc_domain_t &&other) = default;
+  rnc_domain_t &operator=(rnc_domain_t &&other) = default;
+  
   bool is_bottom() const override { return m_product.is_bottom(); }
 
   bool is_top() const override { return m_product.is_top(); }

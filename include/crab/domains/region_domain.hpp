@@ -678,14 +678,6 @@ public:
         m_rgn_equiv_classes(o.m_rgn_equiv_classes) {
     REGION_DOMAIN_SCOPED_STATS(".copy");
   }
-  region_domain(region_domain_t &&o)
-      : m_is_bottom(o.m_is_bottom),
-        m_ghost_var_man(std::move(o.m_ghost_var_man)),
-        m_base_dom(std::move(o.m_base_dom)),
-        m_rgn_env(std::move(o.m_rgn_env)),
-        m_tag_env(std::move(o.m_tag_env)),
-        m_alloc_env(std::move(o.m_alloc_env)),
-        m_rgn_equiv_classes(std::move(o.m_rgn_equiv_classes)) {}
 
   region_domain_t &operator=(const region_domain_t &o) {
     REGION_DOMAIN_SCOPED_STATS(".copy");
@@ -701,18 +693,8 @@ public:
     return *this;
   }
 
-  region_domain_t &operator=(region_domain_t &&o) {
-    if (this != &o) {
-      m_is_bottom = std::move(o.m_is_bottom);
-      m_ghost_var_man = std::move(o.m_ghost_var_man);
-      m_base_dom = std::move(o.m_base_dom);
-      m_rgn_env = std::move(o.m_rgn_env);
-      m_tag_env = std::move(o.m_tag_env);
-      m_alloc_env = std::move(o.m_alloc_env);
-      m_rgn_equiv_classes = std::move(o.m_rgn_equiv_classes);
-    }
-    return *this;
-  }
+  region_domain(region_domain_t &&o) = default;
+  region_domain_t &operator=(region_domain_t &&o) = default;
 
   bool is_bottom() const override { return m_is_bottom; }
 
