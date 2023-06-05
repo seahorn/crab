@@ -1311,7 +1311,6 @@ public:
       : vert_map(o.vert_map), rev_map(o.rev_map), g(o.g),
         potential(o.potential), unstable(o.unstable), _is_bottom(false) {
     SPLIT_DBM_DOMAIN_SCOPED_STATS(".copy");
-
     CRAB_LOG("zones-split-size",
 	     auto p = size();
 	     print_dbm_size(p.first, p.second));
@@ -1327,12 +1326,10 @@ public:
       : vert_map(std::move(o.vert_map)), rev_map(std::move(o.rev_map)),
         g(std::move(o.g)), potential(std::move(o.potential)),
         unstable(std::move(o.unstable)), _is_bottom(o._is_bottom) {
-    SPLIT_DBM_DOMAIN_SCOPED_STATS(".copy");
   }
 
   split_dbm_domain &operator=(const split_dbm_domain &o) {
     SPLIT_DBM_DOMAIN_SCOPED_STATS(".copy");
-
     if (this != &o) {
       if (o._is_bottom) {
         set_to_bottom();
@@ -1355,8 +1352,6 @@ public:
   }
 
   split_dbm_domain &operator=(split_dbm_domain &&o) {
-    SPLIT_DBM_DOMAIN_SCOPED_STATS(".copy");
-
     if (o._is_bottom) {
       set_to_bottom();
     } else {
