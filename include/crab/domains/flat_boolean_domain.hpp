@@ -88,11 +88,15 @@ public:
 
   flat_boolean_domain_t &operator=(const flat_boolean_domain_t &o) {
     BOOL_DOMAIN_SCOPED_STATS(".copy");
-    if (this != &o)
+    if (this != &o) {
       m_env = o.m_env;
+    }
     return *this;
   }
 
+  flat_boolean_domain(flat_boolean_domain_t&& o) = default;
+  flat_boolean_domain_t& operator=(flat_boolean_domain_t&& o) = default;
+  
   iterator begin() {
     if (is_bottom())
       CRAB_ERROR("Cannot return iterator from bottom");
@@ -966,40 +970,11 @@ public:
     : m_product(), m_bool_to_lincsts(), m_bool_to_refcsts(), m_bool_to_bools(),
       m_unchanged_vars() {}
 
-  flat_boolean_numerical_domain(const bool_num_domain_t &other)
-      : m_product(other.m_product), m_bool_to_lincsts(other.m_bool_to_lincsts),
-	m_bool_to_refcsts(other.m_bool_to_refcsts),
-	m_bool_to_bools(other.m_bool_to_bools),
-        m_unchanged_vars(other.m_unchanged_vars) {}
+  flat_boolean_numerical_domain(const bool_num_domain_t &other) = default;
+  bool_num_domain_t &operator=(const bool_num_domain_t &other) = default;
 
-  flat_boolean_numerical_domain(const bool_num_domain_t &&other)
-      : m_product(std::move(other.m_product)),
-        m_bool_to_lincsts(std::move(other.m_bool_to_lincsts)),
-        m_bool_to_refcsts(std::move(other.m_bool_to_refcsts)),
-	m_bool_to_bools(std::move(other.m_bool_to_bools)),
-        m_unchanged_vars(std::move(other.m_unchanged_vars)) {}
-
-  bool_num_domain_t &operator=(const bool_num_domain_t &other) {
-    if (this != &other) {
-      m_product = other.m_product;
-      m_bool_to_lincsts = other.m_bool_to_lincsts;
-      m_bool_to_refcsts = other.m_bool_to_refcsts;
-      m_bool_to_bools = other.m_bool_to_bools;
-      m_unchanged_vars = other.m_unchanged_vars;
-    }
-    return *this;
-  }
-
-  bool_num_domain_t &operator=(const bool_num_domain_t &&other) {
-    if (this != &other) {
-      m_product = std::move(other.m_product);
-      m_bool_to_lincsts = std::move(other.m_bool_to_lincsts);
-      m_bool_to_refcsts = std::move(other.m_bool_to_refcsts);
-      m_bool_to_bools = std::move(other.m_bool_to_bools);
-      m_unchanged_vars = std::move(other.m_unchanged_vars);
-    }
-    return *this;
-  }
+  flat_boolean_numerical_domain(bool_num_domain_t &&other) = default;  
+  bool_num_domain_t& operator=(bool_num_domain_t &&other) = default;
 
   bool is_bottom() const override { return m_product.is_bottom(); }
 

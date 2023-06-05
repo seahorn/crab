@@ -810,9 +810,7 @@ public:
         m_ldd(lddPtr(get_ldd_man(), &(*other.m_ldd))) {
     BOXES_DOMAIN_SCOPED_STATS(".copy");
   }
-
-  boxes_domain(boxes_domain_t &&other) : m_ldd(std::move(other.m_ldd)) {}
-
+  
   boxes_domain_t &operator=(const boxes_domain_t &other) {
     BOXES_DOMAIN_SCOPED_STATS(".copy");
     if (this != &other) {
@@ -822,6 +820,12 @@ public:
     return *this;
   }
 
+  boxes_domain(boxes_domain_t &&other) : m_ldd(std::move(other.m_ldd)) {}
+  boxes_domain_t &operator=(boxes_domain_t &&other) {
+    m_ldd = std::move(other.m_ldd);
+    return *this;
+  }
+  
   bool is_bottom() const override {
     return &*m_ldd == Ldd_GetFalse(get_ldd_man());
   }
