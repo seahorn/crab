@@ -937,9 +937,6 @@ public:
     ELINA_DOMAIN_SCOPED_STATS(".copy");
   }
 
-  elina_domain(elina_domain_t &&o)
-      : m_apstate(std::move(o.m_apstate)), m_var_map(std::move(o.m_var_map)) {}
-
   elina_domain_t &operator=(const elina_domain_t &o) {
     ELINA_DOMAIN_SCOPED_STATS(".copy");
     if (this != &o) {
@@ -950,13 +947,8 @@ public:
     return *this;
   }
 
-  elina_domain_t &operator=(elina_domain_t &&o) {
-    if (this != &o) {
-      m_apstate = std::move(o.m_apstate);
-      m_var_map = std::move(o.m_var_map);
-    }
-    return *this;
-  }
+  elina_domain(elina_domain_t &&o) = default;  
+  elina_domain_t &operator=(elina_domain_t &&o) = default;
 
   elina_domain_t make_top() const override {
     elina_domain_t out(false);

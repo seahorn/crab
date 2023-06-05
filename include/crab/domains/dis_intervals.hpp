@@ -1149,6 +1149,9 @@ public:
     return *this;
   }
 
+  dis_interval_domain(dis_interval_domain_t &&o) = default;
+  dis_interval_domain_t &operator=(dis_interval_domain_t &&o) = default;
+    
   bool is_bottom() const override { return this->_env.is_bottom(); }
 
   bool is_top() const override { return this->_env.is_top(); }

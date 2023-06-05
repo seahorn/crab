@@ -337,7 +337,7 @@ offset_map_t::offset_map_t() {}
 
 offset_map_t::offset_map_t(const offset_map_t &o) : m_map(o.m_map) {}
 
-offset_map_t::offset_map_t(const offset_map_t &&o)
+offset_map_t::offset_map_t(offset_map_t &&o)
     : m_map(std::move(o.m_map)) {}
 
 offset_map_t &offset_map_t::operator=(const offset_map_t &o) {
@@ -347,12 +347,7 @@ offset_map_t &offset_map_t::operator=(const offset_map_t &o) {
   return *this;
 }
 
-offset_map_t &offset_map_t::operator=(const offset_map_t &&o) {
-  if (this != &o) {
-    m_map = std::move(o.m_map);
-  }
-  return *this;
-}
+offset_map_t& offset_map_t::operator=(offset_map_t&& o) = default;
 
 bool offset_map_t::empty() const { return m_map.empty(); }
 

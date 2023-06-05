@@ -705,17 +705,12 @@ public:
             apPtr(get_man(), (isBot ? ap_abstract0_bottom(get_man(), 0, 0)
                                     : ap_abstract0_top(get_man(), 0, 0)))) {}
 
-  ~apron_domain() {}
-
   apron_domain(const apron_domain_t &o)
       : m_apstate(
             apPtr(get_man(), ap_abstract0_copy(get_man(), &*(o.m_apstate)))),
         m_var_map(o.m_var_map) {
     APRON_DOMAIN_SCOPED_STATS(".copy");
   }
-
-  apron_domain(apron_domain_t &&o)
-      : m_apstate(std::move(o.m_apstate)), m_var_map(std::move(o.m_var_map)) {}
 
   apron_domain_t &operator=(const apron_domain_t &o) {
     APRON_DOMAIN_SCOPED_STATS(".copy");
@@ -727,13 +722,9 @@ public:
     return *this;
   }
 
-  apron_domain_t &operator=(apron_domain_t &&o) {
-    if (this != &o) {
-      m_apstate = std::move(o.m_apstate);
-      m_var_map = std::move(o.m_var_map);
-    }
-    return *this;
-  }
+  apron_domain(apron_domain_t&& o) = default;
+  apron_domain_t &operator=(apron_domain_t &&o) = default;
+  ~apron_domain() = default;
 
   apron_domain_t make_top() const override {
     apron_domain_t out(false);
