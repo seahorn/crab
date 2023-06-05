@@ -436,6 +436,9 @@ public:
     check_terms(__LINE__);
     return *this;
   }
+
+  herbrand_domain(herbrand_domain_t &&o) = default;
+  herbrand_domain_t &operator=(herbrand_domain_t &&o) = default;
   
   bool is_bottom() const override { return m_is_bottom; }
 

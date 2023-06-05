@@ -306,7 +306,6 @@ public:
     SIGN_DOMAIN_SCOPED_STATS(".copy");
   }
 
-  sign_domain(sign_domain_t &&e) : m_env(std::move(e.m_env)) {}
 
   sign_domain_t &operator=(const sign_domain_t &o) {
     SIGN_DOMAIN_SCOPED_STATS(".copy");
@@ -316,12 +315,8 @@ public:
     return *this;
   }
 
-  sign_domain_t &operator=(sign_domain_t &&o) {
-    if (this != &o) {
-      m_env = std::move(o.m_env);
-    }
-    return *this;
-  }
+  sign_domain(sign_domain_t &&o) = default;
+  sign_domain_t &operator=(sign_domain_t &&o) = default;
 
   bool is_bottom() const override { return m_env.is_bottom(); }
 
