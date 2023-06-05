@@ -130,11 +130,17 @@ public:
 
   wrapped_interval_domain_t &operator=(const wrapped_interval_domain_t &o) {
     WRAPPED_INTERVALS_DOMAIN_SCOPED_STATS(".copy");
-    if (this != &o)
+    if (this != &o) {
       this->_env = o._env;
+    }
     return *this;
   }
 
+  wrapped_interval_domain(wrapped_interval_domain_t &&o) = default;
+
+  wrapped_interval_domain_t &operator=(wrapped_interval_domain_t &&o) = default;
+
+  
   iterator begin() { return this->_env.begin(); }
 
   iterator end() { return this->_env.end(); }
@@ -1030,7 +1036,7 @@ public:
       : _w_int_dom(o._w_int_dom), _limit_env(o._limit_env),
         _init_set(o._init_set) {}
 
-  wrapped_interval_with_history_domain(const this_type &&o)
+  wrapped_interval_with_history_domain(this_type &&o)
       : _w_int_dom(std::move(o._w_int_dom)),
         _limit_env(std::move(o._limit_env)), _init_set(std::move(o._init_set)) {
   }

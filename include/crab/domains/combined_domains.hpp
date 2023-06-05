@@ -353,20 +353,18 @@ public:
   reduced_domain_product2(const reduced_domain_product2_t &other)
     : m_product(other.m_product) {}
 
-  reduced_domain_product2(const reduced_domain_product2_t &&other)
+  reduced_domain_product2(reduced_domain_product2_t &&other) 
       : m_product(std::move(other.m_product)) {}
 
   reduced_domain_product2_t &operator=(const reduced_domain_product2_t &other) {
-    if (this != &other)
+    if (this != &other) {
       m_product = other.m_product;
+    }
     return *this;
   }
 
-  reduced_domain_product2_t &operator=(const reduced_domain_product2_t &&other) {
-    if (this != &other)
-      m_product = std::move(other.m_product);
-    return *this;
-  }
+  reduced_domain_product2_t&
+  operator=(reduced_domain_product2_t&& o) = default;
 
   bool is_bottom() const override { return m_product.is_bottom(); }
 
@@ -1186,10 +1184,8 @@ public:
     : m_product(other.m_product) {}
 
   reduced_numerical_domain_product2(
-      reduced_numerical_domain_product2_t &&other)
-    : m_product(std::move(other.m_product)) {}
+      reduced_numerical_domain_product2_t&& other) = default;
 
-  
   reduced_numerical_domain_product2_t &
   operator=(const reduced_numerical_domain_product2_t &other) {
     if (this != &other) {
@@ -1198,14 +1194,9 @@ public:
     return *this;
   }
 
-  reduced_numerical_domain_product2_t &
-  operator=(reduced_numerical_domain_product2_t &&other) {
-    if (this != &other) {
-      m_product = std::move(other.m_product);
-    }
-    return *this;
-  }
-  
+  reduced_numerical_domain_product2_t&
+  operator=(reduced_numerical_domain_product2_t&& other) = default;
+
   bool is_bottom() const override { return m_product.is_bottom(); }
 
   bool is_top() const override { return m_product.is_top(); }

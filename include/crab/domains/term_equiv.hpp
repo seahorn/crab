@@ -747,6 +747,10 @@ public:
     return *this;
   }
 
+
+  term_domain(term_domain_t &&o) = default;
+  term_domain_t &operator=(term_domain_t &&o) = default;    
+  
   bool is_bottom() const override { return _is_bottom; }
 
   bool is_top() const override { return !_var_map.size() && !is_bottom(); }
