@@ -59,6 +59,7 @@ ScopedCrabStats::~ScopedCrabStats() {}
 /* Real implementation stars here */
 #include <sys/resource.h>
 #include <sys/time.h>
+#include <algorithm>
 
 namespace crab {
 
