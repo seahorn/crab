@@ -963,7 +963,7 @@ public:
 }; // class reduced_domain_product2
 
 #define COMBINED_DOMAIN_SCOPED_STATS(NAME) \
-  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
   
 // This domain is similar to reduced_domain_product2 but it combines two
 // numerical domains and it defines a more precise, customizable

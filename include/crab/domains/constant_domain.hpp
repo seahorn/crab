@@ -20,7 +20,9 @@ public:
 };
 
 #define CONSTANT_DOMAIN_SCOPED_STATS(NAME) \
-  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define CONSTANT_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
 /**
  *  Each variable is mapped to an element in this lattice:
@@ -173,13 +175,13 @@ public:
 
   constant_domain() : m_env(separate_domain_t::top()) {}
 
-  constant_domain(const constant_domain_t &e) : m_env(e.m_env) {
+  constant_domain(const constant_domain_t &o) : m_env(o.m_env) {
     CONSTANT_DOMAIN_SCOPED_STATS(".copy");
   }
 
 
   constant_domain_t &operator=(const constant_domain_t &o) {
-    CONSTANT_DOMAIN_SCOPED_STATS(".copy");
+    CONSTANT_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
     if (this != &o) {
       m_env = o.m_env;
     }

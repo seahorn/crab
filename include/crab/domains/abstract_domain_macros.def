@@ -178,7 +178,7 @@
 #define DEFAULT_SELECT(DOM)						\
   virtual void select(const variable_t &lhs, const linear_constraint_t &cond,  \
 		      const linear_expression_t &e1,  const linear_expression_t &e2) override { \
-  CRAB_DOMAIN_SCOPED_STATS(".select", 0);				\
+  CRAB_DOMAIN_SCOPED_STATS(this, ".select", 0);		                \
   if (!is_bottom()) {							\
   DOM inv1(*this);	                                                \
   inv1 += cond;								\
@@ -204,7 +204,7 @@ virtual void select_ref(const variable_t &lhs_ref, const variable_t &lhs_rgn, co
 			const boost::optional<variable_t> &rgn1,	\
 			const variable_or_constant_t &ref2,		\
 			const boost::optional<variable_t> &rgn2) override { \
-  CRAB_DOMAIN_SCOPED_STATS(".select_ref", 0); 				\
+  CRAB_DOMAIN_SCOPED_STATS(this, ".select_ref", 0); 		        \
   if (!is_bottom()) {							\
     auto eval_true_value = [&lhs_ref, &lhs_rgn, &ref1, &rgn1](DOM &out) {\
 			     if (ref1.is_reference_null()) {		\
@@ -250,7 +250,7 @@ virtual void select_ref(const variable_t &lhs_ref, const variable_t &lhs_rgn, co
 #define DEFAULT_SELECT_BOOL(DOM)                                        \
  virtual void select_bool(const variable_t &lhs, const variable_t &cond,\
 			  const variable_t &b1, const variable_t &b2) override { \
-   CRAB_DOMAIN_SCOPED_STATS(".select_bool", 0);				\
+   CRAB_DOMAIN_SCOPED_STATS(this, ".select_bool", 0);		        \
    if (!is_bottom()) {							\
      const bool negate = true;						\
      DOM inv1(*this);							\
@@ -328,20 +328,25 @@ if (cst.is_equality()) {						\
 /**
  * Some convenient macros
  * 
- *   CRAB_DOMAIN_SCOPED_STATS(suffix, active)
- *     increase **both** timer and counter for domain_name() + suffix if active=1
+ *   CRAB_DOMAIN_SCOPED_STATS(who, suffix, active)
+ *     increase **both** timer and counter for who->domain_name() + suffix if active=1
+ *     This macro avoids string creation if active=0. Moreover, it concats
+ *     efficiently two strings.
+ *
  *   CRAB_DOMAIN_COUNT_STATS(suffix, active)
- *     increase only counter for domain_name() + suffix if active=1
+ *     increase only counter for this->domain_name() + suffix if active=1
+ *     This macro avoids string creation if active=0, but it concatenates
+ *     strings in an expensive way.
 **/
 #include <crab/config.h>
 #ifdef CRAB_STATS
-#define CRAB_DOMAIN_SCOPED_STATS(suffix, active) \
-  CRAB_DOMAIN_SCOPED_STATS_(suffix, active)
-#define CRAB_DOMAIN_SCOPED_STATS_(suffix, active) \
-  CRAB_DOMAIN_SCOPED_STATS_ ## active(suffix)
-#define CRAB_DOMAIN_SCOPED_STATS_0(suffix) 
-#define CRAB_DOMAIN_SCOPED_STATS_1(suffix) \
-  crab::ScopedCrabStats __st__(domain_name(), suffix, true);
+#define CRAB_DOMAIN_SCOPED_STATS(who, suffix, active) \
+  CRAB_DOMAIN_SCOPED_STATS_(who, suffix, active)
+#define CRAB_DOMAIN_SCOPED_STATS_(who, suffix, active) \
+  CRAB_DOMAIN_SCOPED_STATS_ ## active(who, suffix)
+#define CRAB_DOMAIN_SCOPED_STATS_0(who, suffix) 
+#define CRAB_DOMAIN_SCOPED_STATS_1(who, suffix) \
+  crab::ScopedCrabStats __st__((who)->domain_name(), suffix, true);
 
 #define CRAB_DOMAIN_COUNT_STATS(suffix, active) \
   CRAB_DOMAIN_COUNT_STATS_(suffix, active)
@@ -349,9 +354,8 @@ if (cst.is_equality()) {						\
   CRAB_DOMAIN_COUNT_STATS_ ## active(suffix)
 #define CRAB_DOMAIN_COUNT_STATS_0(suffix) 
 #define CRAB_DOMAIN_COUNT_STATS_1(suffix) \
-  crab::CrabStats::count(domain_name() + suffix);
-
+  crab::CrabStats::count(this->domain_name() + suffix);
 #else
-#define CRAB_DOMAIN_SCOPED_STATS(suffix, active)
+#define CRAB_DOMAIN_SCOPED_STATS(who, suffix, active)
 #define CRAB_DOMAIN_COUNT_STATS(suffix, active) 
 #endif

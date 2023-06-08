@@ -21,7 +21,7 @@ public:
 };  
 
 #define COMBINED_CONGRUENCES_DOMAIN_SCOPED_STATS(NAME) \
-  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
   
 // Reduced product of a numerical domain with interval x congruences.
 template <typename NumAbsDom, typename Params = NumCongruenceDefaultParams>
