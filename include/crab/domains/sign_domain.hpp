@@ -27,7 +27,9 @@ public:
 };
 
 #define SIGN_DOMAIN_SCOPED_STATS(NAME) \
-  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define SIGN_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
 template <typename Number, typename VariableName, typename Params = SignDefaultParams>
 class sign_domain final : public crab::domains::abstract_domain_api<
@@ -308,7 +310,7 @@ public:
 
 
   sign_domain_t &operator=(const sign_domain_t &o) {
-    SIGN_DOMAIN_SCOPED_STATS(".copy");
+    SIGN_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
     if (this != &o) {
       m_env = o.m_env;
     }

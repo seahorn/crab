@@ -46,7 +46,10 @@ public:
   enum { implement_inter_transformers = 0 };
 };
 
-#define HERBRAND_DOMAIN_SCOPED_STATS(NAME) CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+#define HERBRAND_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define HERBRAND_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
 template <typename Number, typename VariableName, typename Params = UFDefaultParams>
 class herbrand_domain final
@@ -424,8 +427,7 @@ public:
   }
 
   herbrand_domain_t &operator=(const herbrand_domain_t &o) {
-    HERBRAND_DOMAIN_SCOPED_STATS(".copy");
-
+    HERBRAND_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
     o.check_terms(__LINE__);
     if (this != &o) {
       m_is_bottom = o.m_is_bottom;

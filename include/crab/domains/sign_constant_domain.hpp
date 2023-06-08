@@ -21,7 +21,7 @@ public:
 };
 
 #define SIGN_CONSTANT_DOMAIN_SCOPED_STATS(NAME) \
-  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
   
 template <typename Number, typename VariableName, typename Params = SignConstantDefaultParams>
 class sign_constant_domain final

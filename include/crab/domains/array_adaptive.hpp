@@ -850,7 +850,9 @@ public:
 };
 
 #define ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(NAME) \
-  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
 template <typename NumDomain, typename Params = ArrayAdaptDefaultParams>
 class array_adaptive_domain final
@@ -1700,25 +1702,25 @@ public:
     std::swap(*this, abs);
   }
 
-  array_adaptive_domain(const array_adaptive_domain_t &other)
-      : m_base_dom(other.m_base_dom), m_array_map(other.m_array_map),
-        m_cell_ghost_man(other.m_cell_ghost_man) {
+  array_adaptive_domain(const array_adaptive_domain_t &o)
+      : m_base_dom(o.m_base_dom), m_array_map(o.m_array_map),
+        m_cell_ghost_man(o.m_cell_ghost_man) {
     ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".copy");
   }
 
 
-  array_adaptive_domain_t &operator=(const array_adaptive_domain_t &other) {
-    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".copy");
-    if (this != &other) {
-      m_base_dom = other.m_base_dom;
-      m_array_map = other.m_array_map;
-      m_cell_ghost_man = other.m_cell_ghost_man;
+  array_adaptive_domain_t &operator=(const array_adaptive_domain_t &o) {
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
+    if (this != &o) {
+      m_base_dom = o.m_base_dom;
+      m_array_map = o.m_array_map;
+      m_cell_ghost_man = o.m_cell_ghost_man;
     }
     return *this;
   }
 
-  array_adaptive_domain(array_adaptive_domain_t &&other) = default;
-  array_adaptive_domain_t &operator=(array_adaptive_domain_t &&other) = default;
+  array_adaptive_domain(array_adaptive_domain_t &&o) = default;
+  array_adaptive_domain_t &operator=(array_adaptive_domain_t &&o) = default;
 
   bool is_bottom() const override { return (m_base_dom.is_bottom()); }
 

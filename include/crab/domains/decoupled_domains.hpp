@@ -21,7 +21,7 @@ namespace crab {
 namespace domains {
 
 #define DECOUPLING_DOMAIN_SCOPED_STATS(NAME) \
-  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
 
 // A dummy domain pair for the decoupled abstract domain, to be used
 // for debugging purposes: we use the very same domain for
