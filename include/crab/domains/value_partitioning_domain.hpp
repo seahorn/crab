@@ -42,7 +42,9 @@ public:
 };
 
 #define VALUE_PARTITION_DOMAIN_SCOPED_STATS(NAME) \
-  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+// #define VALUE_PARTITION_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+//   CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
 template <typename NumDomain, typename Params = ValPartitioningDefaultParams>
 class value_partitioning_domain final
@@ -1509,27 +1511,27 @@ public:
     m_absval = std::move(top);
   }
 
-  product_value_partitioning_domain(const this_type &other) = default;
+  product_value_partitioning_domain(const this_type &o) = default;
 
-  // product_value_partitioning_domain(const this_type &other):
-  //   m_absval(other.m_absval),
-  //   m_product(other.m_product) {
+  // product_value_partitioning_domain(const this_type &o):
+  //   m_absval(o.m_absval),
+  //   m_product(o.m_product) {
   //   VALUE_PARTITION_DOMAIN_SCOPED_STATS(".copy");
   // }
 
-  this_type &operator=(const this_type &other) = default;
+  this_type &operator=(const this_type &o) = default;
 
-  // this_type &operator=(const this_type &other) {
-  //   VALUE_PARTITION_DOMAIN_SCOPED_STATS(".copy");
-  //   if (this != &other) {
-  //     m_absval = other.m_absval;
-  //     m_product = other.m_product;
+  // this_type &operator=(const this_type &o) {
+  //   VALUE_PARTITION_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
+  //   if (this != &o) {
+  //     m_absval = o.m_absval;
+  //     m_product = o.m_product;
   //   }
   //   return *this;
   // }
 
-  product_value_partitioning_domain(this_type &&other) = default;
-  this_type &operator=(this_type &&other) = default;
+  product_value_partitioning_domain(this_type &&o) = default;
+  this_type &operator=(this_type &&o) = default;
 
   bool is_bottom() const override {
     if (!has_partitions()) {

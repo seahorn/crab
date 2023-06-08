@@ -30,7 +30,9 @@ public:
 };
 
 #define WRAPPED_INTERVALS_DOMAIN_SCOPED_STATS(NAME) \
-  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define WRAPPED_INTERVALS_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
 template <typename Number, typename VariableName,
 	  typename Params = WrappedIntervalsDefaultParams>
@@ -124,12 +126,12 @@ public:
 
   wrapped_interval_domain() : _env(separate_domain_t::top()) {}
 
-  wrapped_interval_domain(const wrapped_interval_domain_t &e) : _env(e._env) {
+  wrapped_interval_domain(const wrapped_interval_domain_t &o): _env(o._env) {
     WRAPPED_INTERVALS_DOMAIN_SCOPED_STATS(".copy");
   }
 
   wrapped_interval_domain_t &operator=(const wrapped_interval_domain_t &o) {
-    WRAPPED_INTERVALS_DOMAIN_SCOPED_STATS(".copy");
+    WRAPPED_INTERVALS_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
     if (this != &o) {
       this->_env = o._env;
     }
