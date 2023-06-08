@@ -23,7 +23,10 @@ public:
   enum { implement_inter_transformers = 0 };
 };
 
-#define BOOL_DOMAIN_SCOPED_STATS(NAME) CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+#define BOOL_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define BOOL_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
 // A simple flat 3-valued boolean abstract domain
 template <typename Number, typename VariableName, typename Params = FlatBoolDefaultParams>
@@ -82,12 +85,12 @@ public:
 
   flat_boolean_domain() : m_env(separate_domain_t::top()) {}
 
-  flat_boolean_domain(const flat_boolean_domain_t &e) : m_env(e.m_env) {
+  flat_boolean_domain(const flat_boolean_domain_t &o) : m_env(o.m_env) {
     BOOL_DOMAIN_SCOPED_STATS(".copy");
   }
 
   flat_boolean_domain_t &operator=(const flat_boolean_domain_t &o) {
-    BOOL_DOMAIN_SCOPED_STATS(".copy");
+    BOOL_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
     if (this != &o) {
       m_env = o.m_env;
     }
@@ -494,7 +497,8 @@ struct abstract_domain_traits<flat_boolean_domain<Number, VariableName, Params>>
   using varname_t = VariableName;
 };
 
-#define BOOL_AND_NUM_DOMAIN_SCOPED_STATS(NAME) CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+#define BOOL_AND_NUM_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
   
 // Simple reduced product of the flat boolean domain with an arbitrary
 // abstract domain.
@@ -972,7 +976,6 @@ public:
 
   flat_boolean_numerical_domain(const bool_num_domain_t &other) = default;
   bool_num_domain_t &operator=(const bool_num_domain_t &other) = default;
-
   flat_boolean_numerical_domain(bool_num_domain_t &&other) = default;  
   bool_num_domain_t& operator=(bool_num_domain_t &&other) = default;
 

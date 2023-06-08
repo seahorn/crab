@@ -55,7 +55,10 @@ public:
   enum { implement_inter_transformers = 0 };
 };
 
-#define SPLIT_DBM_DOMAIN_SCOPED_STATS(NAME) CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+#define SPLIT_DBM_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define SPLIT_DBM_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)  
   
 template <class Number, class VariableName,
           class DBMParams = DBM_impl::DefaultParams<Number>,
@@ -1329,7 +1332,7 @@ public:
   }
 
   split_dbm_domain &operator=(const split_dbm_domain &o) {
-    SPLIT_DBM_DOMAIN_SCOPED_STATS(".copy");
+    SPLIT_DBM_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
     if (this != &o) {
       if (o._is_bottom) {
         set_to_bottom();
