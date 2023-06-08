@@ -70,7 +70,9 @@ template <typename Number, typename VariableName, typename CongruenceCollection>
 class equality_congruence_solver;
 
 #define CONGRUENCES_DOMAIN_SCOPED_STATS(NAME) \
-  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define CONGRUENCES_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
 template <typename Number, typename VariableName,
 	  typename Params = crab::domains::CongruencesDefaultParams>
@@ -142,17 +144,22 @@ public:
 
   congruence_domain() : _env(separate_domain_t::top()) {}
 
-  congruence_domain(const congruence_domain_t &e) : _env(e._env) {
+  congruence_domain(const congruence_domain_t &o) : _env(o._env) {
     CONGRUENCES_DOMAIN_SCOPED_STATS( ".copy");
   }
 
   congruence_domain_t &operator=(const congruence_domain_t &o) {
-    CONGRUENCES_DOMAIN_SCOPED_STATS( ".copy");
-    if (this != &o)
+    CONGRUENCES_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
+    if (this != &o) {
       this->_env = o._env;
+    }
     return *this;
   }
 
+  congruence_domain(congruence_domain_t &&o) = default;
+  congruence_domain_t &operator=(congruence_domain_t &&o) = default;
+  
+  
   iterator begin() { return this->_env.begin(); }
 
   iterator end() { return this->_env.end(); }

@@ -72,7 +72,10 @@ namespace domains {
 using namespace elina;
 
 #define ELINA_DOMAIN_SCOPED_STATS(NAME) \
-  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+
+#define ELINA_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
 template <typename Number, typename VariableName, elina_domain_id_t ElinaDom,
           class Params = ElinaDefaultParams<Number>>
@@ -938,7 +941,7 @@ public:
   }
 
   elina_domain_t &operator=(const elina_domain_t &o) {
-    ELINA_DOMAIN_SCOPED_STATS(".copy");
+    ELINA_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
     if (this != &o) {
       m_apstate =
           elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*(o.m_apstate)));

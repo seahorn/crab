@@ -90,7 +90,10 @@ public:
 };
 
 
-#define TERMS_DOMAIN_SCOPED_STATS(NAME) CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+#define TERMS_DOMAIN_SCOPED_STATS(NAME)	\
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define TERMS_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME)	\
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
 template <typename Info, typename DomainParams = TermDomainDefaultParams>
 class term_domain final : public abstract_domain_api<term_domain<Info, DomainParams>> {
@@ -730,8 +733,7 @@ public:
   }
 
   term_domain_t &operator=(const term_domain_t &o) {
-    TERMS_DOMAIN_SCOPED_STATS(".copy");
-
+    TERMS_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
     o.check_terms(__LINE__);
     if (this != &o) {
       _is_bottom = o._is_bottom;

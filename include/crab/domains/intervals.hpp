@@ -65,7 +65,9 @@ public:
 namespace ikos {
 
 #define INTERVALS_DOMAIN_SCOPED_STATS(NAME) \
-  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define INTERVALS_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
 template <typename Number, typename VariableName,
 	  typename Params = crab::domains::IntervalsDefaultParams>
@@ -168,7 +170,7 @@ public:
   }
 
   interval_domain_t &operator=(const interval_domain_t &o) {
-    INTERVALS_DOMAIN_SCOPED_STATS(".copy");
+    INTERVALS_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
     if (this != &o) {
       this->_env = o._env;
     }

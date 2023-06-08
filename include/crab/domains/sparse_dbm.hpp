@@ -38,7 +38,10 @@ public:
   enum { implement_inter_transformers = 0 };
 };
 
-#define SPARSE_DBM_DOMAIN_SCOPED_STATS(NAME) CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+#define SPARSE_DBM_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define SPARSE_DBM_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
 template <class Number, class VariableName,
           class DBMParams = DBM_impl::DefaultParams<Number>,
@@ -847,7 +850,7 @@ public:
         unstable(std::move(o.unstable)), _is_bottom(o._is_bottom) {}
 
   sparse_dbm_domain &operator=(const sparse_dbm_domain &o) {
-    SPARSE_DBM_DOMAIN_SCOPED_STATS(".copy");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
 
     if (this != &o) {
       if (o._is_bottom)

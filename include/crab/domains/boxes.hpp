@@ -59,7 +59,9 @@ public:
 };
 
 #define BOXES_DOMAIN_SCOPED_STATS(NAME) \
-  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define BOXES_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
 /*
  * The wrapper has two global datastructures:
@@ -803,24 +805,24 @@ public:
     std::swap(*this, abs);
   }
 
-  boxes_domain(const boxes_domain_t &other)
-      : // m_ldd(other.m_ldd)
-        m_ldd(lddPtr(get_ldd_man(), &(*other.m_ldd))) {
+  boxes_domain(const boxes_domain_t &o)
+      : // m_ldd(o.m_ldd)
+        m_ldd(lddPtr(get_ldd_man(), &(*o.m_ldd))) {
     BOXES_DOMAIN_SCOPED_STATS(".copy");
   }
   
-  boxes_domain_t &operator=(const boxes_domain_t &other) {
-    BOXES_DOMAIN_SCOPED_STATS(".copy");
-    if (this != &other) {
-      // m_ldd = other.m_ldd;
-      m_ldd = lddPtr(get_ldd_man(), &(*other.m_ldd));
+  boxes_domain_t &operator=(const boxes_domain_t &o) {
+    BOXES_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
+    if (this != &o) {
+      // m_ldd = o.m_ldd;
+      m_ldd = lddPtr(get_ldd_man(), &(*o.m_ldd));
     }
     return *this;
   }
 
-  boxes_domain(boxes_domain_t &&other) : m_ldd(std::move(other.m_ldd)) {}
-  boxes_domain_t &operator=(boxes_domain_t &&other) {
-    m_ldd = std::move(other.m_ldd);
+  boxes_domain(boxes_domain_t &&o) : m_ldd(std::move(o.m_ldd)) {}
+  boxes_domain_t &operator=(boxes_domain_t &&o) {
+    m_ldd = std::move(o.m_ldd);
     return *this;
   }
   
@@ -830,70 +832,70 @@ public:
 
   bool is_top() const override { return &*m_ldd == Ldd_GetTrue(get_ldd_man()); }
 
-  bool operator<=(const boxes_domain_t &other) const override {
+  bool operator<=(const boxes_domain_t &o) const override {
     BOXES_DOMAIN_SCOPED_STATS(".leq");
 
-    bool res = Ldd_TermLeq(get_ldd_man(), &(*m_ldd), &(*other.m_ldd));
+    bool res = Ldd_TermLeq(get_ldd_man(), &(*m_ldd), &(*o.m_ldd));
 
-    CRAB_LOG("boxes", boxes_domain_t left(*this); boxes_domain_t right(other);
+    CRAB_LOG("boxes", boxes_domain_t left(*this); boxes_domain_t right(o);
              crab::outs() << "Check if " << left << " <= " << right << " ---> "
                           << res << "\n";);
     return res;
   }
 
-  void operator|=(const boxes_domain_t &other) override {
-    *this = *this | other;
+  void operator|=(const boxes_domain_t &o) override {
+    *this = *this | o;
   }
 
-  boxes_domain_t operator|(const boxes_domain_t &other) const override {
+  boxes_domain_t operator|(const boxes_domain_t &o) const override {
     BOXES_DOMAIN_SCOPED_STATS(".join");
 
-    return boxes_domain_t(join(m_ldd, other.m_ldd));
+    return boxes_domain_t(join(m_ldd, o.m_ldd));
   }
 
-  void operator&=(const boxes_domain_t &other) override {
-    *this = *this & other;
+  void operator&=(const boxes_domain_t &o) override {
+    *this = *this & o;
   }
   
-  boxes_domain_t operator&(const boxes_domain_t &other) const override {
+  boxes_domain_t operator&(const boxes_domain_t &o) const override {
     BOXES_DOMAIN_SCOPED_STATS(".meet");
 
     return boxes_domain_t(
-        lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*m_ldd, &*other.m_ldd)));
+        lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*m_ldd, &*o.m_ldd)));
   }
 
-  boxes_domain_t operator||(const boxes_domain_t &other) const override {
+  boxes_domain_t operator||(const boxes_domain_t &o) const override {
     BOXES_DOMAIN_SCOPED_STATS(".widening");
 
     // It is not necessarily true that the new value is bigger
     // than the old value so we apply
     // widen(old, new) = widen(old,(join(old,new)))
-    LddNodePtr v = join(m_ldd, other.m_ldd);
+    LddNodePtr v = join(m_ldd, o.m_ldd);
     LddNodePtr w =
         lddPtr(get_ldd_man(), Ldd_BoxWiden2(get_ldd_man(), &*m_ldd, &*v));
     boxes_domain_t res(w);
     CRAB_LOG("boxes", crab::outs() << "Performed widening \n"
                                    << "**" << *this << "\n"
-                                   << "** " << other << "\n"
+                                   << "** " << o << "\n"
                                    << "= " << res << "\n";);
     return res;
   }
 
   boxes_domain_t widening_thresholds(
-      const boxes_domain_t &other,
+      const boxes_domain_t &o,
       const thresholds<number_t> & /*ts*/) const override {
     // CRAB_WARN(" boxes widening operator with thresholds not implemented");
-    return (*this || other);
+    return (*this || o);
   }
 
-  boxes_domain_t operator&&(const boxes_domain_t &other) const override {
+  boxes_domain_t operator&&(const boxes_domain_t &o) const override {
     BOXES_DOMAIN_SCOPED_STATS(".narrowing");
 
-    boxes_domain_t res(*this & other);
+    boxes_domain_t res(*this & o);
     // CRAB_WARN(" boxes narrowing operator replaced with meet");
     CRAB_LOG("boxes", crab::outs() << "Performed narrowing \n"
                                    << "**" << *this << "\n"
-                                   << "** " << other << "\n"
+                                   << "** " << o << "\n"
                                    << "= " << res << "\n";);
     return res;
   }

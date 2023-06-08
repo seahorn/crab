@@ -249,7 +249,9 @@ public:
 };
 
 #define SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(NAME) \
-  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
 template <class Number, class VariableName,
           class DBMParams = DBM_impl::DefaultParams<Number>,
@@ -1973,7 +1975,7 @@ public:
         m_unstable(std::move(o.m_unstable)), m_is_bottom(o.m_is_bottom) {}
 
   split_oct_domain &operator=(const split_oct_domain &o) {
-    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".copy");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
 
     if (this != &o) {
       if (o.m_is_bottom) {

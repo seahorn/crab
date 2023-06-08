@@ -66,7 +66,9 @@ public:
 #include <type_traits>
 
 #define APRON_DOMAIN_SCOPED_STATS(NAME) \
-  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define APRON_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME)	\
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
 
 /**
  * If template parameter Number is ikos::q_number then the Elina
@@ -713,7 +715,7 @@ public:
   }
 
   apron_domain_t &operator=(const apron_domain_t &o) {
-    APRON_DOMAIN_SCOPED_STATS(".copy");
+    APRON_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
     if (this != &o) {
       m_apstate =
           apPtr(get_man(), ap_abstract0_copy(get_man(), &*(o.m_apstate)));
