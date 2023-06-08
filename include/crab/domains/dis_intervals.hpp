@@ -1072,7 +1072,9 @@ public:
 };
 
 #define DIS_INTERVALS_DOMAIN_SCOPED_STATS(NAME) \
-  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define DIS_INTERVALS_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
 template <typename Number, typename VariableName,
 	  typename Params = DisIntervalsDefaultParams>
@@ -1143,9 +1145,10 @@ public:
   }
 
   dis_interval_domain_t &operator=(const dis_interval_domain_t &o) {
-    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".copy");
-    if (this != &o)
+    DIS_INTERVALS_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
+    if (this != &o) {
       this->_env = o._env;
+    }
     return *this;
   }
 

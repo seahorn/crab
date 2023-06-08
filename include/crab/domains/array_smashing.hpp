@@ -43,8 +43,10 @@ public:
 };
 
 #define ARRAY_SMASHING_DOMAIN_SCOPED_STATS(NAME) \
-  CRAB_DOMAIN_SCOPED_STATS(NAME, 0)
-  
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define ARRAY_SMASHING_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0) 
+ 
 // All arrays are `smashed` into a single summarized variable.
 template <typename BaseNumDomain, typename Params = ArraySmashingDefaultParams>
 class array_smashing final
@@ -240,24 +242,24 @@ public:
     m_base_dom.set_to_bottom();
   }
 
-  array_smashing(const array_smashing_t &other)
-      : m_last_access_env(other.m_last_access_env),
-        m_base_dom(other.m_base_dom) {
+  array_smashing(const array_smashing_t &o)
+      : m_last_access_env(o.m_last_access_env),
+        m_base_dom(o.m_base_dom) {
     ARRAY_SMASHING_DOMAIN_SCOPED_STATS(".copy");
   }
 
 
-  array_smashing_t &operator=(const array_smashing_t &other) {
-    ARRAY_SMASHING_DOMAIN_SCOPED_STATS(".copy");
-    if (this != &other) {
-      m_last_access_env = other.m_last_access_env;
-      m_base_dom = other.m_base_dom;
+  array_smashing_t &operator=(const array_smashing_t &o) {
+    ARRAY_SMASHING_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
+    if (this != &o) {
+      m_last_access_env = o.m_last_access_env;
+      m_base_dom = o.m_base_dom;
     }
     return *this;
   }
 
-  array_smashing(array_smashing_t &&other) = default;  
-  array_smashing_t &operator=(array_smashing_t &&other) = default;
+  array_smashing(array_smashing_t &&o) = default;  
+  array_smashing_t &operator=(array_smashing_t &&o) = default;
 
   bool is_bottom() const override { return m_base_dom.is_bottom(); }
 

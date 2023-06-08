@@ -96,7 +96,11 @@ namespace domains {
 /// };
 ///
 
-#define REGION_DOMAIN_SCOPED_STATS(NAME) CRAB_DOMAIN_SCOPED_STATS(NAME, 1)
+#define REGION_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 1)
+#define REGION_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 1)
+  
 #define REGION_COUNT_STATS(NAME) CRAB_DOMAIN_COUNT_STATS(NAME, 0)
   
 template <typename Params>
@@ -680,7 +684,7 @@ public:
   }
 
   region_domain_t &operator=(const region_domain_t &o) {
-    REGION_DOMAIN_SCOPED_STATS(".copy");
+    REGION_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
     if (this != &o) {
       m_is_bottom = o.m_is_bottom;
       m_ghost_var_man = o.m_ghost_var_man;
