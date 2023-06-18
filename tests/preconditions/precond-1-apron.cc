@@ -72,10 +72,9 @@ int main(int argc, char **argv) {
     using analysis_t =
         crab::analyzer::necessary_preconditions_fixpoint_iterator<
             z_cfg_ref_t, z_pk_apron_domain_t>;
-    z_pk_apron_domain_t final_states;
-    final_states.set_to_bottom();
-    analysis_t analyzer(*cfg, nullptr, final_states, false /*error states*/);
-    analyzer.run_backward();
+    z_pk_apron_domain_t absval_fac, final_states;
+    analysis_t analyzer(*cfg, absval_fac, false /*error states*/);
+    analyzer.run_backward(absval_fac.make_bottom());
     crab::outs()
         << "Necessary preconditions from error states using Polyhedra:\n";
     // Print preconditions in DFS to enforce a fixed order
@@ -103,10 +102,9 @@ int main(int argc, char **argv) {
     using analysis_t =
         crab::analyzer::necessary_preconditions_fixpoint_iterator<
             z_cfg_ref_t, z_pk_apron_domain_t>;
-    z_pk_apron_domain_t final_states;
-    final_states.set_to_top();
-    analysis_t analyzer(*cfg, nullptr, final_states, true /*good states*/);
-    analyzer.run_backward();
+    z_pk_apron_domain_t absval_fac;
+    analysis_t analyzer(*cfg, absval_fac, true /*good states*/);
+    analyzer.run_backward(absval_fac.make_top());
     crab::outs()
         << "Necessary preconditions from safe states using Polyhedra:\n";
     // Print preconditions in DFS to enforce a fixed order

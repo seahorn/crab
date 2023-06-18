@@ -95,18 +95,16 @@ void run_and_compare(crab::cfg_impl::z_cfg_t* cfg,
   typename analyzer_2_t::assumption_map_t assumptions2;
 
   // Run with Dom1
-  Dom1 inv1;
-  analyzer_1_t a1(*cfg, inv1,
-		  nullptr, nullptr,
+  Dom1 absval_fac1, inv1;
+  analyzer_1_t a1(*cfg, absval_fac1, nullptr,
 		  widening, narrowing, jump_set_size);
-  a1.run(entry, assumptions1);
+  a1.run(entry, inv1, assumptions1);
   
   // Run with Dom2
-  Dom2 inv2;        
-  analyzer_2_t a2(*cfg, inv2,
-		  nullptr, nullptr,
+  Dom2 absval_fac2, inv2;        
+  analyzer_2_t a2(*cfg, absval_fac2, nullptr,
 		  widening, narrowing, jump_set_size);
-  a2.run(entry, assumptions2);
+  a2.run(entry, inv2, assumptions2);
 
   for (auto &bb: *cfg) {
     Dom1 inv1 = a1.get_pre(bb.label());

@@ -14,13 +14,11 @@ struct inter_analyzer_parameters {
   using cfg_t = typename cg_node_t::cfg_t;
   using liveness_t = live_and_dead_analysis<cfg_t>;
   using liveness_map_t = std::unordered_map<cfg_t, const liveness_t *>;
-  using wto_t = ikos::wto<cfg_t>;
-  using wto_map_t = std::unordered_map<cfg_t, const wto_t *>;
 
   inter_analyzer_parameters()
       : only_main_as_entry(false), widening_delay(2),
         descending_iters(2 /*UINT_MAX*/), thresholds_size(20 /*0*/),
-        live_map(nullptr), wto_map(nullptr),
+        live_map(nullptr), 
 	run_checker(true), checker_verbosity(0), keep_cc_invariants(false),
         keep_invariants(true), max_call_contexts(UINT_MAX),
         analyze_recursive_functions(false), exact_summary_reuse(true) {}
@@ -33,8 +31,6 @@ struct inter_analyzer_parameters {
   unsigned int thresholds_size;
   // Use liveness symbols if already available
   const liveness_map_t *live_map;
-  // Use WTOs if already available
-  const wto_map_t *wto_map;
   
   // -- Begin parameters for top-down analysis -- //
   // whether interleave analysis with checking

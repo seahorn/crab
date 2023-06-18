@@ -679,10 +679,9 @@ private:
   using invariant_map_t = crab::cfg::callsite_or_fdecl_map<cfg_t, td_analyzer_ptr>;
 
   CallGraph &m_cg;
-  // These two used to call make_top() and make_bottom() since we
-  // cannot assume that TD_Dom and BU_Dom have default constructors.
-  TD_Dom m_td_top;
-  BU_Dom m_bu_top;
+  // These two used to call make_top() and make_bottom().
+  TD_Dom m_td_absval_fac;
+  BU_Dom m_bu_absval_fac;
   const liveness_map_t *m_live;
   invariant_map_t m_inv_map;
   summ_tbl_t m_summ_tbl;
@@ -701,19 +700,17 @@ private:
     return nullptr;
   }
 
-  inline TD_Dom make_td_bottom() const { return m_td_top.make_bottom(); }
-  inline TD_Dom make_td_top() const { return m_td_top.make_top(); }
-  inline BU_Dom make_bu_bottom() const { return m_bu_top.make_bottom(); }
-  inline BU_Dom make_bu_top() const { return m_bu_top.make_top(); }
+  inline TD_Dom make_td_bottom() const { return m_td_absval_fac.make_bottom(); }
+  inline TD_Dom make_td_top() const { return m_td_absval_fac.make_top(); }
+  inline BU_Dom make_bu_bottom() const { return m_bu_absval_fac.make_bottom(); }
+  inline BU_Dom make_bu_top() const { return m_bu_absval_fac.make_top(); }
 
 public:
   bottom_up_inter_analyzer(CallGraph &cg,
-                           // Top value
-                           TD_Dom td_top,
-                           // Top value
-                           BU_Dom bu_top,
+                           TD_Dom td_absval_fac, BU_Dom bu_absval_fac,
 			   const params_t &params = params_t())
-      : m_cg(cg), m_td_top(td_top), m_bu_top(bu_top), m_live(params.live_map),
+      : m_cg(cg), m_td_absval_fac(td_absval_fac), m_bu_absval_fac(bu_absval_fac),
+	m_live(params.live_map),
         m_call_tbl(make_td_top()), m_widening_delay(params.widening_delay),
         m_descending_iters(params.descending_iters), m_jump_set_size(params.thresholds_size),
         m_abs_tr(new abs_tr_t(make_td_top(), &m_summ_tbl, &m_call_tbl)) {
@@ -782,13 +779,9 @@ public:
         CRAB_LOG("inter", crab::outs() << "++ Analyzing function "
                                        << fdecl.get_func_name() << "\n");
 
-        TD_Dom dom(init);
-        m_abs_tr->set_abs_value(std::move(dom));
-        td_analyzer_ptr a(new td_analyzer(cfg, nullptr, &*m_abs_tr,
-                                          get_live(cfg), m_widening_delay,
-                                          m_descending_iters, m_jump_set_size));
-
-        a->run_forward();
+        td_analyzer_ptr a(new td_analyzer(cfg, &*m_abs_tr, m_td_absval_fac, get_live(cfg), 
+                                          m_widening_delay, m_descending_iters, m_jump_set_size));
+        a->run_forward(init);
         m_inv_map.insert(std::make_pair(callsite_or_fdecl_t(&fdecl), std::move(a)));
       }
       return;
@@ -838,12 +831,11 @@ public:
                       " has no exit block");
           } else {
             // --- run the analysis
-            auto init_inv = make_bu_top();
-            bu_abs_tr abs_tr(std::move(init_inv), &m_summ_tbl);
-            bu_analyzer a(cfg, nullptr, &abs_tr, get_live(cfg),
+            bu_abs_tr abs_tr(std::move(make_bu_top()), &m_summ_tbl);
+            bu_analyzer a(cfg, &abs_tr, m_bu_absval_fac, get_live(cfg),
                           m_widening_delay, m_descending_iters,
                           m_jump_set_size);
-            a.run_forward();
+            a.run_forward(make_bu_top());
 
             // --- project onto formal parameters and return values
             BU_Dom summary = a.get_post(cfg.exit());
@@ -899,12 +891,9 @@ public:
           crab::outs() << "Top-down analysis for " << fdecl.get_func_name()
                        << " started with bottom (i.e., dead function).\n";
         }
-        TD_Dom dom(init_inv);
-        m_abs_tr->set_abs_value(std::move(dom));
-        td_analyzer_ptr a(new td_analyzer(cfg, nullptr, &*m_abs_tr,
-                                          get_live(cfg), m_widening_delay,
-                                          m_descending_iters, m_jump_set_size));
-        a->run_forward();
+        td_analyzer_ptr a(new td_analyzer(cfg, &*m_abs_tr, m_td_absval_fac, get_live(cfg), 
+                                          m_widening_delay, m_descending_iters, m_jump_set_size));
+        a->run_forward(init_inv);
         m_inv_map.insert(std::make_pair(callsite_or_fdecl_t(&fdecl), std::move(a))); 
       }
     }
@@ -947,8 +936,6 @@ public:
     m_summ_tbl.clear();
     m_call_tbl.clear();
     m_abs_tr->get_abs_value().set_to_top();
-    m_td_top.set_to_top();
-    m_bu_top.set_to_top();
   }
 
   summary_t get_summary(const cfg_t &cfg) const override {

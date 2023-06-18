@@ -53,12 +53,6 @@ private:
   const liveness_t *m_live;
   live_set_t m_formals;
 
-  // These two flags are used to return always true once "clear"
-  // method has been called.
-  // XXX: don't remember who is using this.
-  bool m_pre_clear_done;
-  bool m_post_clear_done;
-
   inline abs_dom_t make_top() const {
     auto const &top_dom = m_abs_tr->get_abs_value();
     return top_dom.make_top();
@@ -94,27 +88,6 @@ private:
   void process_pre(const basic_block_label_t &node, abs_dom_t inv) override {}
 
   void process_post(const basic_block_label_t &node, abs_dom_t inv) override {}
-
-  /*
-   * Keep these methods private for now and remove them if nobody
-   * really needs them.
-   */
-  void clear_pre_and_always_top_after() {
-    m_pre_clear_done = true;
-    fixpo_iterator_t::clear_pre();
-  }
-
-  void clear_post_and_always_top_after() {
-    m_post_clear_done = true;
-    fixpo_iterator_t::clear_post();
-  }
-
-  // clear all invariants and return always top if get_pre or get_post
-  // is called.
-  void clear_and_always_top_after() {
-    clear_pre_and_always_top_after();
-    clear_post_and_always_top_after();
-  }
 
   void init_fwd_analyzer() {
     assert(m_abs_tr);
@@ -172,17 +145,18 @@ private:
   }
   
 public:
-  fwd_analyzer(CFG cfg, const wto_t *wto, abs_tr_t *abs_tr,
+  fwd_analyzer(CFG cfg, abs_tr_t *abs_tr,
+	       // to create top and bottom abstract values
+	       abs_dom_t absval_fac,
                // live can be nullptr if no live info is available
                const liveness_t *live_and_dead_symbols,
                // fixpoint parameters
                unsigned int widening_delay, unsigned int descending_iters,
                size_t jump_set_size)
-      : fixpo_iterator_t(cfg, abs_tr->get_abs_value(), wto, widening_delay,
-                         descending_iters, jump_set_size,
-                         false /*disable processor*/),
-        m_abs_tr(abs_tr), m_live(live_and_dead_symbols),
-        m_pre_clear_done(false), m_post_clear_done(false) {
+    : fixpo_iterator_t(cfg, absval_fac,
+		       widening_delay, descending_iters, jump_set_size,
+		       false /*disable processor*/),
+        m_abs_tr(abs_tr), m_live(live_and_dead_symbols) {
     init_fwd_analyzer();
   }
 
@@ -191,11 +165,14 @@ public:
   fwd_analyzer &operator=(const fwd_analyzer &o) = delete;
 
   //! Trigger the fixpoint computation
-  void run_forward() { this->run(m_abs_tr->get_abs_value()); }
+  void run_forward(abs_dom_t init) {
+    this->run(init);
+  }
 
   void run_forward(const basic_block_label_t &entry,
+		   abs_dom_t init,
                    const assumption_map_t &assumptions) {
-    this->run(entry, m_abs_tr->get_abs_value(), assumptions);
+    this->run(entry, init, assumptions);
   }
 
   //! Return the invariants that hold at the entry of b
@@ -205,20 +182,12 @@ public:
 
   //! Return the invariants that hold at the entry of b
   abs_dom_t get_pre(const basic_block_label_t &b) const {
-    if (m_pre_clear_done) {
-      return make_top();
-    } else {
-      return fixpo_iterator_t::get_pre(b);
-    }
+    return fixpo_iterator_t::get_pre(b);
   }
 
   //! Return the invariants that hold at the exit of b
   abs_dom_t get_post(const basic_block_label_t &b) const {
-    if (m_post_clear_done) {
-      return make_top();
-    } else {
-      return fixpo_iterator_t::get_post(b);
-    }
+    return fixpo_iterator_t::get_post(b);
   }
 
   //! Return the WTO of the CFG. The WTO contains also how many
@@ -227,10 +196,8 @@ public:
   const wto_t &get_wto() const { return fixpo_iterator_t::get_wto(); }
 
   void clear() {
-    clear_and_always_top_after();
-    // disable "always top after"
-    m_pre_clear_done = false;
-    m_post_clear_done = false;
+    fixpo_iterator_t::clear_pre();
+    fixpo_iterator_t::clear_post();
   }
 
   CFG get_cfg() const { return this->m_cfg; }
@@ -291,42 +258,36 @@ public:
   using const_iterator = typename fwd_analyzer_t::const_iterator;
 
 private:
-  abs_dom_t m_init;
   std::unique_ptr<abs_tr_t> m_abs_tr;
   fwd_analyzer_t m_analyzer;
 
 public:
-  intra_fwd_analyzer_wrapper(CFG cfg, AbsDomain init,
+  intra_fwd_analyzer_wrapper(CFG cfg,
+			     // create bottom and top instances
+			     AbsDomain absval_fac,
                              // live variables
                              const liveness_t *live = nullptr,
-                             // avoid precompute wto if already available
-                             const wto_t *wto = nullptr,
                              // fixpoint parameters
                              unsigned int widening_delay = 1,
                              unsigned int descending_iters = UINT_MAX,
                              size_t jump_set_size = 0)
-      : m_init(std::move(init)), m_abs_tr(new abs_tr_t(m_init)),
-        m_analyzer(cfg, wto, &*m_abs_tr, live, widening_delay, descending_iters,
-                   jump_set_size) {}
+    : m_abs_tr(new abs_tr_t(absval_fac.make_top())),
+      m_analyzer(cfg, &*m_abs_tr, absval_fac, live, 
+		 widening_delay, descending_iters, jump_set_size) {}
 
   intra_fwd_analyzer_wrapper(const intra_fwd_analyzer_wrapper &o) = delete;
 
   intra_fwd_analyzer_wrapper &
   operator=(const intra_fwd_analyzer_wrapper &o) = delete;
 
-  // If you want to call "run" again with a different invariant from
-  // "init" used in the constructor then call
-  // get_abs_transformer().set_abs_value(...)  and change the return
-  // reference.
-  void run() { m_analyzer.run_forward(); }
+  void run(abs_dom_t init) {
+    m_analyzer.run_forward(init);
+  }
 
-  // If you want to call "run" again with a different invariant from
-  // "init" used in the constructor then call
-  // get_abs_transformer().set_abs_value(...)  and change the return
-  // reference.
   void run(const basic_block_label_t &entry,
+	   abs_dom_t init,
            const assumption_map_t &assumptions) {
-    m_analyzer.run_forward(entry, assumptions);
+    m_analyzer.run_forward(entry, init, assumptions);
   }
 
   iterator pre_begin() { return m_analyzer.pre_begin(); }

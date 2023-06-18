@@ -113,11 +113,11 @@ int main(int argc, char **argv) {
 
   z_cfg_t *p1 = cfg1(vfac);
   crab::outs() << *p1 << "\n";
-  z_rgn_sdbm_t init;
+  z_rgn_sdbm_t absval_fac, init;
   using intra_fwd_analyzer_t =
     crab::analyzer::intra_fwd_analyzer<crab::cfg_impl::z_cfg_ref_t, z_rgn_sdbm_t>;
-  intra_fwd_analyzer_t a(*p1, init, nullptr, nullptr, 2, 2, 20);
-  a.run(p1->entry(), typename intra_fwd_analyzer_t::assumption_map_t());
+  intra_fwd_analyzer_t a(*p1, absval_fac, nullptr, 2, 2, 20);
+  a.run(p1->entry(), init, typename intra_fwd_analyzer_t::assumption_map_t());
   
   /* 
    * Example of how to ask an abstract domain about the allocation

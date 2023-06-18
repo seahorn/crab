@@ -407,9 +407,6 @@ public:
       std::unordered_map<cfg_t, calling_context_collection_t>;
   using liveness_map_t =
       std::unordered_map<cfg_t, const live_and_dead_analysis<cfg_t> *>;
-  using wto_cfg_t = ikos::wto<cfg_t>;
-  // map cfgs to their WTO's
-  using wto_cfg_map_t = std::unordered_map<cfg_t, const wto_cfg_t *>;
   using wto_cg_t = ikos::wto<crab::cg::call_graph_ref<CallGraph>>;
   using wto_cg_nesting_t = typename wto_cg_t::wto_nesting_t;
   // map callgraph entries to their WTO's
@@ -438,8 +435,6 @@ private:
   std::vector<callgraph_node_t> m_call_stack;
   // -- liveness symbols for each function
   const liveness_map_t *m_live_map;
-  // -- wto for each function
-  const wto_cfg_map_t *m_wto_cfg_map; // to avoid recomputing wto of cfgs
   // -- context-insensitive invariants (for external queries)
   //    populated only if keep_invariants is enabled.
   global_invariant_map_t m_pre_invariants;
@@ -563,13 +558,13 @@ private:
 
 public:
   global_context(const liveness_map_t *live_map,
-                 const wto_cfg_map_t *wto_cfg_map, bool enable_checker,
+                 bool enable_checker,
                  unsigned checker_verbosity, bool keep_cc_invariants,
                  bool keep_invariants, unsigned int max_call_contexts,
                  bool analyze_recursive_functions, bool exact_summary_reuse,
                  bool only_main_as_entry, unsigned int widening_delay,
                  unsigned int descending_iters, unsigned int thresholds_size)
-      : m_live_map(live_map), m_wto_cfg_map(wto_cfg_map),
+      : m_live_map(live_map), 
         m_cs_policy(
             new default_context_sensitivity_policy_t(max_call_contexts)),
         m_enable_checker(enable_checker),
@@ -642,8 +637,6 @@ public:
   std::vector<callgraph_node_t> &get_call_stack() { return m_call_stack; }
 
   const liveness_map_t *get_live_map() const { return m_live_map; }
-
-  const wto_cfg_map_t *get_wto_cfg_map() const { return m_wto_cfg_map; }
 
   context_sensitivity_policy_t &get_context_sensitivity_policy() {
     return *m_cs_policy;
@@ -751,6 +744,7 @@ void check_function(CallGraphNode cg_node, IntraCallSemAnalyzer &analyzer,
 template <typename CallGraphNode, typename IntraCallSemAnalyzer>
 IntraCallSemAnalyzer *
 analyze_function(CallGraphNode cg_node,
+		 const typename IntraCallSemAnalyzer::abs_dom_t &absval_fac,
                  typename IntraCallSemAnalyzer::abs_tr_t &abs_tr,
                  unsigned iteration) {
   crab::ScopedCrabStats __st__(TimerInterAnalyzeFunc);
@@ -761,8 +755,8 @@ analyze_function(CallGraphNode cg_node,
   cfg_t cfg = cg_node.get_cfg();
   assert(cfg.has_func_decl());
   auto &func_fixpoint_table = ctx.get_func_fixpoint_table();
-  auto &entry = abs_tr.get_abs_value();
-
+  auto entry = abs_tr.get_abs_value();
+ 
   CRAB_VERBOSE_IF(1, get_msg_stream()
                          << "++ Analyzing function  "
                          << cfg.get_func_decl().get_func_name() << "\n";);
@@ -777,7 +771,7 @@ analyze_function(CallGraphNode cg_node,
     // iteration.
     auto it = func_fixpoint_table.find(cg_node);
     if (it == func_fixpoint_table.end()) {
-      auto exit = abs_tr.get_abs_value().make_bottom();
+      auto exit = absval_fac.make_bottom();
       func_fixpoint_map_entry<typename IntraCallSemAnalyzer::abs_dom_t>
           fixpoint_start(entry, exit);
       func_fixpoint_table.insert({cg_node, fixpoint_start});
@@ -807,28 +801,17 @@ analyze_function(CallGraphNode cg_node,
         live = it->second;
       }
     }
-    // get wto for cfg if available
-    const ikos::wto<cfg_t> *wto = nullptr;
-    if (ctx.get_wto_cfg_map()) {
-      auto it = ctx.get_wto_cfg_map()->find(cfg);
-      if (it != ctx.get_wto_cfg_map()->end()) {
-        wto = it->second;
-      }
-    }
+    
     /// -- 2. Create intra analyzer (with inter-procedural semantics for
     /// call/return)
     std::unique_ptr<IntraCallSemAnalyzer> new_analyzer(new IntraCallSemAnalyzer(
-        cfg, wto, &abs_tr, live, ctx.get_widening_delay(),
+	cfg, &abs_tr, absval_fac, live, ctx.get_widening_delay(),
         ctx.get_descending_iters(), ctx.get_thresholds_size()));
     analyzer = &(abs_tr.add_analyzer(cg_node, std::move(new_analyzer)));
   }
 
-  // entry is a reference that will be modified by the analysis
-  // unused if function not recursive
-  abs_dom_t old_entry(entry);
-
   /// -- 3. Run the analyzer
-  analyzer->run_forward();
+  analyzer->run_forward(entry);
 
   // ### Recursive function ###
   // Re-analyze the function until fixpoint
@@ -836,8 +819,9 @@ analyze_function(CallGraphNode cg_node,
   if (it != func_fixpoint_table.end()) {
     auto &fixpo_val = it->second;
     abs_dom_t new_entry = fixpo_val.get_entry();
+    const abs_dom_t &old_entry = entry;
     abs_dom_t old_exit = fixpo_val.get_exit();
-    abs_dom_t new_exit = old_exit.make_bottom();
+    abs_dom_t new_exit = absval_fac.make_bottom();
     if (cfg.has_exit()) {
       new_exit = analyzer->get_post(cfg.exit());
     }
@@ -900,7 +884,7 @@ analyze_function(CallGraphNode cg_node,
       // continue next fixpoint iteration
       if (auto fixpo_analyzer =
               analyze_function<CallGraphNode, IntraCallSemAnalyzer>(
-                  cg_node, abs_tr, ++iteration)) {
+		  cg_node, absval_fac, abs_tr, ++iteration)) {
         return fixpo_analyzer;
       }
     }
@@ -934,10 +918,10 @@ analyze_function(CallGraphNode cg_node,
 }
 
 /*
-   All the state of the inter-procedural analysis is kept in this
-   transformer. This allows us to use the intra-procedural analysis
-   fully as a black box.
-*/
+ *  All the state of the inter-procedural analysis is kept in this
+ *  transformer. This allows us to use the intra-procedural analysis
+ *  fully as a black box.
+ */
 template <typename CallGraph, typename AbsDom>
 class top_down_inter_transformer final
     : public intra_abs_transformer<
@@ -982,6 +966,8 @@ public:
       typename global_context_t::func_fixpoint_map_entry_t;
 
 private:
+  // -- create top/bottom abstract values
+  abs_dom_t m_absval_fac;
   // -- the callgraph
   CallGraph &m_cg;
   // -- global parameters of the analysis
@@ -1000,16 +986,6 @@ private:
   // we failed in detecting a cycle in the call graph and the analysis
   // will not terminate.
   const unsigned m_max_depth = 500;
-
-  inline abs_dom_t make_top() {
-    auto const &dom = this->get_abs_value();
-    return dom.make_top();
-  }
-
-  inline abs_dom_t make_bottom() {
-    auto const &dom = this->get_abs_value();
-    return dom.make_bottom();
-  }
 
   calling_context_collection_t &get_calling_contexts(cfg_t fun) {
     return m_ctx.get_calling_context_table()[fun];
@@ -1262,13 +1238,13 @@ private:
         (m_ctx.analyze_recursive_functions() &&
          m_ctx.get_widening_set().count(callee_cg_node) > 0);
 
-    AbsDom callee_entry = make_top();
+    AbsDom callee_entry = m_absval_fac.make_top();
     if (m_ctx.analyze_recursive_functions() ||
 	m_ctx.get_widening_set().count(callee_cg_node) <= 0) {
       // If we do not analyze precisely recursive functions then we
       // must start the analysis of a recursive procedure without
       // propagating from caller to callee (i.e., top).
-      callee_entry = get_callee_entry(cs, fdecl, caller_dom, make_top());
+      callee_entry = get_callee_entry(cs, fdecl, caller_dom, m_absval_fac.make_top());
     }
 
     if (::crab::CrabSanityCheckFlag) {
@@ -1280,7 +1256,7 @@ private:
       }
     }
 
-    AbsDom callee_exit = make_top();
+    AbsDom callee_exit = m_absval_fac.make_top();
     std::vector<variable_t> callee_exit_vars;
     get_fdecl_parameters(fdecl, callee_exit_vars);
 
@@ -1404,7 +1380,7 @@ private:
 	  m_ctx.get_call_stack().push_back(callee_cg_node);
 	  callee_analysis = top_down_inter_impl::analyze_function<
 	    typename CallGraph::node_t, intra_analyzer_with_call_semantics_t>(
-		   callee_cg_node, *this, 0);
+		   callee_cg_node, m_absval_fac, *this, 0);
 	  m_ctx.get_call_stack().pop_back();
 
 	  // callee_analysis should be only null if the function is
@@ -1562,8 +1538,11 @@ private:
   }
 
 public:
-  top_down_inter_transformer(CallGraph &cg, global_context_t &ctx, AbsDom init)
-    : intra_abs_transformer_t(init), m_cg(cg), m_ctx(ctx), m_depth(0) {}
+  top_down_inter_transformer(CallGraph &cg, global_context_t &ctx,
+			     const AbsDom &absval_fac)
+    : intra_abs_transformer_t(absval_fac.make_top()),
+      m_absval_fac(absval_fac),
+      m_cg(cg), m_ctx(ctx), m_depth(0) {}
 
   top_down_inter_transformer(const this_type &o) = delete;
 
@@ -1708,40 +1687,38 @@ private:
     }
   };
 
-  inline AbsDom make_bottom() const {
-    auto const &dom = m_abs_tr->get_abs_value();
-    return dom.make_bottom();
-  }
 
   AbsDom get_invariant(const global_invariant_map_t &global_map,
                        const cfg_t &cfg, basic_block_label_t bb) const {
     auto g_it = global_map.find(cfg);
     if (g_it == global_map.end()) {
-      return make_bottom(); // dead function
+      return m_absval_fac.make_bottom(); // dead function
     }
     const invariant_map_t &m = g_it->second;
     auto it = m.find(bb);
     if (it == m.end()) {
-      return make_bottom(); // dead block
+      return m_absval_fac.make_bottom(); // dead block
     }
     return it->second;
   }
 
   CallGraph &m_cg;
   global_context_t m_ctx;
+  abs_dom_t m_absval_fac;
   std::unique_ptr<td_inter_abs_tr_t> m_abs_tr;
 
 public:
-  top_down_inter_analyzer(CallGraph &cg, abs_dom_t init,
+  top_down_inter_analyzer(CallGraph &cg, abs_dom_t absval_fac,
                           const params_t &params = params_t())
       : m_cg(cg),
-        m_ctx(params.live_map, params.wto_map, params.run_checker,
+        m_ctx(params.live_map, params.run_checker,
               params.checker_verbosity, params.keep_cc_invariants,
               params.keep_invariants, params.max_call_contexts,
               params.analyze_recursive_functions, params.exact_summary_reuse,
               params.only_main_as_entry, params.widening_delay,
               params.descending_iters, params.thresholds_size),
-        m_abs_tr(new td_inter_abs_tr_t(m_cg, m_ctx, std::move(init))) {
+	m_absval_fac(absval_fac),
+        m_abs_tr(new td_inter_abs_tr_t(m_cg, m_ctx, m_absval_fac)) {
     crab::CrabStats::start(TimerCallGraphTC);
     crab::CrabStats::start(TimerInter);
     crab::CrabStats::start(TimerInterCheckCache);
@@ -1829,8 +1806,8 @@ public:
         m_ctx.get_call_stack().push_back(cg_node);
         intra_analyzer_with_call_semantics_t *entry_analysis =
             top_down_inter_impl::analyze_function<
-                cg_node_t, intra_analyzer_with_call_semantics_t>(cg_node,
-                                                                 *m_abs_tr, 0);
+                cg_node_t, intra_analyzer_with_call_semantics_t>
+	  (cg_node, m_absval_fac, *m_abs_tr, 0);
         assert(entry_analysis);
         top_down_inter_impl::check_function(cg_node, *entry_analysis, m_ctx);
         m_ctx.get_call_stack().pop_back();

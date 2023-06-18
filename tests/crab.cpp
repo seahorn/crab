@@ -23,12 +23,13 @@ void intra_run_impl(CFG *cfg, crab::cfg_impl::basic_block_label_t entry,
     live.exec();
   }
   // Run fixpoint
-  crab::outs() << "Invariants using " << init.domain_name() << "\n";
-  IntraFwdAnalyzer a(*cfg, init, (run_liveness) ? &live : nullptr, nullptr,
+  auto absval_fac = init.make_top();  
+  crab::outs() << "Invariants using " << absval_fac.domain_name() << "\n";
+  IntraFwdAnalyzer a(*cfg, absval_fac, (run_liveness) ? &live : nullptr, 
                      widening, narrowing, jump_set_size);
 
   assumption_map_t assumptions;
-  a.run(entry, assumptions);
+  a.run(entry, init, assumptions);
 
   CRAB_LOG("crab-tests-print-invariants",
 	   print_invariants = true

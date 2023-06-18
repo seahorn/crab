@@ -140,10 +140,10 @@ int main(int argc, char **argv) {
   z_cfg_ref_t cfg_ref(*(prog(vfac, as_man)));
 
   // Run numerical analysis
-  z_sdbm_domain_t init;
-  num_analyzer_t num_a(cfg_ref, init, nullptr);
-  num_a.run();
-  crab::outs() << "Analysis using " << init.domain_name() << "\n";
+  z_sdbm_domain_t absval_fac;
+  num_analyzer_t num_a(cfg_ref, absval_fac, nullptr);
+  num_a.run(absval_fac.make_top());
+  crab::outs() << "Analysis using " << absval_fac.domain_name() << "\n";
   // print_invariants(cfg_ref, num_a);
 
   // Run the checker

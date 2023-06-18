@@ -110,9 +110,7 @@ private:
 
 protected:
   // We need to keep it so that we can call make_top(), make_bottom()
-  // since we cannot assume that AbstractValue has a default
-  // constructor.
-  AbstractValue m_init_inv;
+  AbstractValue m_absval_fac;
   // number of iterations until triggering widening
   unsigned int m_widening_delay;
   // number of narrowing iterations. If the narrowing operator is
@@ -256,19 +254,18 @@ private:
   void initialize_invariant_tables() {
     for (auto it = m_cfg.label_begin(), et = m_cfg.label_end(); it != et; ++it) {
       auto const &label = *it;
-      m_pre.emplace(label, m_init_inv.make_bottom());
-      m_post.emplace(label, m_init_inv.make_bottom());
+      m_pre.emplace(label, m_absval_fac.make_bottom());
+      m_post.emplace(label, m_absval_fac.make_bottom());
     }
   }
   
 public:
-  interleaved_fwd_fixpoint_iterator(CFG cfg, AbstractValue init,
-                                    const wto_t *wto,
+  interleaved_fwd_fixpoint_iterator(CFG cfg, AbstractValue absval_fac,
                                     unsigned int widening_delay,
                                     unsigned int descending_iterations,
                                     size_t jump_set_size,
                                     bool enable_processor = true)
-      : m_cfg(cfg), m_wto(!wto ? cfg : *wto), m_init_inv(std::move(init)),
+      : m_cfg(cfg), m_wto(cfg), m_absval_fac(absval_fac),
         m_widening_delay(widening_delay),
         m_descending_iterations(descending_iterations),
         m_use_widening_jump_set(jump_set_size > 0),
@@ -309,11 +306,10 @@ public:
   void run(AbstractValue init) {
     crab::ScopedCrabStats __st__("Fixpo");
 
-    m_init_inv = std::move(init);
     CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Started analysis of "
                                               << func_name(m_cfg) << "\n");
-    set_pre(m_cfg.entry(), m_init_inv);
-    wto_iterator_t iterator(this, m_init_inv);
+    set_pre(m_cfg.entry(), init);
+    wto_iterator_t iterator(this, m_absval_fac);
     m_wto.accept(&iterator);
     if (m_enable_processor) {
       wto_processor_t processor(this);
@@ -321,7 +317,6 @@ public:
     }
     CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Finished analysis of "
                                               << func_name(m_cfg) << "\n");
-    // CRAB_VERBOSE_IF(2, crab::outs() << "Wto:\n" << m_wto << "\n");
     CRAB_LOG("fixpo-trace", crab::get_msg_stream()
                                 << "Fixpoint trace " << func_name(m_cfg) << ":\n"
                                 << m_wto << "\n";);
@@ -331,14 +326,13 @@ public:
            const assumption_map_t &assumptions) {
     crab::ScopedCrabStats __st__("Fixpo");
 
-    m_init_inv = std::move(init);
     CRAB_VERBOSE_IF(
         1, crab::get_msg_stream()
                << "== Started fixpoint at block " << func_name(m_cfg) << "::"
                << crab::basic_block_traits<basic_block_t>::to_string(entry)
-               << " with initial value=" << m_init_inv << "\n";);
-    set_pre(entry, m_init_inv);
-    wto_iterator_t iterator(this, entry, m_init_inv, &assumptions);
+               << " with initial value=" << init << "\n";);
+    set_pre(entry, init);
+    wto_iterator_t iterator(this, entry, m_absval_fac, &assumptions);
     m_wto.accept(&iterator);
     if (m_enable_processor) {
       wto_processor_t processor(this);
@@ -346,7 +340,6 @@ public:
     }
     CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Fixpoint reached for "
                                               << func_name(m_cfg) << "\n");
-    // CRAB_VERBOSE_IF(2, crab::outs() << "Wto:\n" << m_wto << "\n");
     CRAB_LOG("fixpo-trace", crab::get_msg_stream()
                                 << "Fixpoint trace " << func_name(m_cfg) << ":\n"
                                 << m_wto << "\n";);
@@ -383,16 +376,15 @@ private:
   interleaved_iterator_t *m_iterator;
   // Initial entry point of the analysis
   basic_block_label_t m_entry;
-  // To be able to call make_top and make_bottom since we don't assume
-  // AbstractValue has a default constructor.
-  AbstractValue m_init_inv;
+  // To be able to create bottom and top abstract values
+  const AbstractValue &m_absval_fac;
   const assumption_map_t *m_assumptions;
   // Used to skip the analysis until m_entry is found
   bool m_skip;
 
-  inline AbstractValue make_top() const { return m_init_inv.make_top(); }
+  inline AbstractValue make_top() const { return m_absval_fac.make_top(); }
 
-  inline AbstractValue make_bottom() const { return m_init_inv.make_bottom(); }
+  inline AbstractValue make_bottom() const { return m_absval_fac.make_bottom(); }
 
   inline AbstractValue strengthen(basic_block_label_t n, AbstractValue inv) {
     crab::CrabStats::count("Fixpo.strengthen");
@@ -462,13 +454,13 @@ private:
   };
 
 public:
-  wto_iterator(interleaved_iterator_t *iterator, AbstractValue init)
+  wto_iterator(interleaved_iterator_t *iterator, const AbstractValue &absval_fac)
       : m_iterator(iterator), m_entry(m_iterator->get_cfg().entry()),
-        m_init_inv(std::move(init)), m_assumptions(nullptr), m_skip(true) {}
+        m_absval_fac(absval_fac), m_assumptions(nullptr), m_skip(true) {}
 
   wto_iterator(interleaved_iterator_t *iterator, basic_block_label_t entry,
-               AbstractValue init, const assumption_map_t *assumptions)
-      : m_iterator(iterator), m_entry(entry), m_init_inv(std::move(init)),
+               const AbstractValue &absval_fac, const assumption_map_t *assumptions)
+      : m_iterator(iterator), m_entry(entry), m_absval_fac(absval_fac),
         m_assumptions(assumptions), m_skip(true) {}
 
   virtual void visit(wto_vertex_t &vertex) override {

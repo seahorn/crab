@@ -347,12 +347,31 @@ private:
                          wto_nesting_t>;
   using nesting_table_ptr = std::shared_ptr<nesting_table_t>;
 
+public:
+  using iterator =
+      boost::indirect_iterator<typename wto_component_list_t::iterator>;
+  using const_iterator =
+      boost::indirect_iterator<typename wto_component_list_t::const_iterator>;
+
+private:  
   wto_component_list_ptr _wto_components;
   dfn_table_ptr _dfn_table;
   dfn_t _num;
   stack_ptr _stack;
   nesting_table_ptr _nesting_table;
 
+  wto(wto_component_list_ptr &&wto_components,
+      dfn_table_ptr &&dfn_table,
+      dfn_t num,
+      stack_ptr &&stack, 
+      nesting_table_ptr &&nesting_table):
+    _wto_components(std::move(wto_components)),
+    _dfn_table(std::move(dfn_table)),
+    _num(num),
+    _stack(std::move(stack)),
+    _nesting_table(std::move(nesting_table)) {}
+  
+  
   class nesting_builder : public wto_component_visitor<G> {
 
   public:
@@ -607,10 +626,6 @@ private:
   }
 
 public:
-  using iterator =
-      boost::indirect_iterator<typename wto_component_list_t::iterator>;
-  using const_iterator =
-      boost::indirect_iterator<typename wto_component_list_t::const_iterator>;
 
   wto(G g)
       : _wto_components(std::make_shared<wto_component_list_t>()),
@@ -638,36 +653,22 @@ public:
     this->build_nesting();
   }
 
+  wto(const wto_t &other) = delete;
+  wto_t &operator=(const wto_t &other) = delete;
+
+  wto(wto_t &&other) = default;  
+  wto_t &operator=(wto_t &&other) = default;
+
   // deep copy
-  wto(const wto_t &other)
-      : _wto_components(
-            std::make_shared<wto_component_list_t>(*other._wto_components)),
-        _dfn_table(other._dfn_table
-                       ? std::make_shared<dfn_table_t>(*other._dfn_table)
-                       : nullptr),
-        _num(other._num),
-        _stack(other._stack ? std::make_shared<stack_t>(*other._stack)
-                            : nullptr),
-        _nesting_table(
-            std::make_shared<nesting_table_t>(*other._nesting_table)) {}
-
-  wto(const wto_t &&other)
-      : _wto_components(std::move(other._wto_components)),
-        _dfn_table(std::move(other._dfn_table)), _num(other._num),
-        _stack(std::move(other._stack)),
-        _nesting_table(std::move(other._nesting_table)) {}
-
-  wto_t &operator=(const wto_t &other) {
-    if (this != &other) {
-      this->_wto_components = other._wto_components;
-      this->_dfn_table = other._dfn_table;
-      this->_num = other._num;
-      this->_stack = other._stack;
-      this->_nesting_table = other._nesting_table;
-    }
-    return *this;
+  wto_t clone() const {    
+    auto wto_components = std::make_shared<wto_component_list_t>(*_wto_components);
+    auto dfn_table = _dfn_table ? std::make_shared<dfn_table_t>(*_dfn_table) : nullptr;
+    auto stack = _stack ? std::make_shared<stack_t>(*_stack) : nullptr;
+    auto nesting_table = std::make_shared<nesting_table_t>(*_nesting_table);
+    return wto_t(std::move(wto_components), std::move(dfn_table),
+		 _num, std::move(stack), std::move(nesting_table));
   }
-
+  
   iterator begin() {
     return boost::make_indirect_iterator(_wto_components->begin());
   }
