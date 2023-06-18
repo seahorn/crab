@@ -1,8 +1,8 @@
 #pragma once
 
-/*
-   Base class for a property checker
- */
+/**
+ *  Base class for a property checker
+ **/
 
 #include <crab/cfg/cfg.hpp>
 #include <crab/support/debug.hpp>
@@ -14,25 +14,32 @@
 namespace crab {
 
 namespace checker {
-typedef enum { _SAFE, _ERR, _WARN, _UNREACH } check_kind_t;
 
-// Toy database to store invariants. We may want to replace it with
-// a permanent external database.
+enum class check_kind {
+  CRAB_SAFE,
+  CRAB_ERR,
+  CRAB_WARN,
+  CRAB_UNREACH
+};
+
+// Toy database to store invariants
 class checks_db {
-  using checks_db_t =
-      std::map<crab::cfg::debug_info, std::vector<check_kind_t>>;
-
-  checks_db_t m_db;
+public:  
+  using checks_map_t =
+      std::map<crab::cfg::debug_info, std::vector<check_kind>>;
+private:
+  
+  checks_map_t m_db;
   unsigned m_total_safe;
   unsigned m_total_err;
   unsigned m_total_unreach;
   unsigned m_total_warn;
 
-  void insert_db(const crab::cfg::debug_info &di, check_kind_t check) {
+  void insert_db(const crab::cfg::debug_info &di, check_kind check) {
     m_db[di].push_back(check);
   }
 
-  void merge_db(const checks_db_t &o) {
+  void merge_db(const checks_map_t &o) {
     for (auto const &kv : o) {
       m_db[kv.first].insert(m_db[kv.first].end(), kv.second.begin(),
                             kv.second.end());
@@ -41,7 +48,10 @@ class checks_db {
 
 public:
   checks_db()
-      : m_total_safe(0), m_total_err(0), m_total_unreach(0), m_total_warn(0) {}
+      : m_total_safe(0),
+	m_total_err(0),
+	m_total_unreach(0),
+	m_total_warn(0) {}
 
   void clear() {
     m_db.clear();
@@ -55,13 +65,21 @@ public:
     return m_db.find(dbg) != m_db.end();
   }
 
-  const std::vector<check_kind_t> &
+  // precondition: has_checks(dbg) returns true
+  const std::vector<check_kind> &
   get_checks(const crab::cfg::debug_info &dbg) const {
-    assert(has_checks(dbg));
     auto it = m_db.find(dbg);
-    return it->second;
+    if (it != m_db.end()) {
+      return it->second;
+    } else {
+      CRAB_ERROR("Cannot find check associated with ", dbg);
+    }
   }
 
+  const checks_map_t& get_all_checks() const {
+    return m_db;
+  }
+  
   unsigned get_total_safe() const { return m_total_safe + m_total_unreach; }
 
   unsigned get_total_warning() const { return m_total_warn; }
@@ -69,15 +87,15 @@ public:
   unsigned get_total_error() const { return m_total_err; }
 
   // add an entry in the database
-  void add(check_kind_t status, crab::cfg::debug_info dbg) {
+  void add(check_kind status, crab::cfg::debug_info dbg) {
     switch (status) {
-    case _SAFE:
+    case check_kind::CRAB_SAFE:
       m_total_safe++;
       break;
-    case _ERR:
+    case check_kind::CRAB_ERR:
       m_total_err++;
       break;
-    case _UNREACH:
+    case check_kind::CRAB_UNREACH:
       m_total_unreach++;
       break;
     default:
@@ -132,16 +150,16 @@ public:
         auto const &checks = kv.second;
         for (unsigned i = 0, num_checks = checks.size(); i < num_checks;) {
           switch (checks[i]) {
-          case _SAFE:
+          case check_kind::CRAB_SAFE:
             o << "safe";
             break;
-          case _ERR:
+          case check_kind::CRAB_ERR:
             o << "error";
             break;
-          case _WARN:
+          case check_kind::CRAB_WARN:
             o << "warning";
             break;
-          case _UNREACH:
+          case check_kind::CRAB_UNREACH:
             o << "unreachable (safe)";
             break;
           }
@@ -261,7 +279,7 @@ protected:
   std::vector<const statement_t *> m_error_checks;
 
   void add_safe(std::string msg, const statement_t *s) {
-    m_db.add(_SAFE, s->get_debug_info());
+    m_db.add(check_kind::CRAB_SAFE, s->get_debug_info());
     m_safe_checks.push_back(s);
 
     if (m_verbose >= 3) {
@@ -275,7 +293,7 @@ protected:
   }
 
   void add_warning(std::string msg, const statement_t *s) {
-    m_db.add(_WARN, s->get_debug_info());
+    m_db.add(check_kind::CRAB_WARN, s->get_debug_info());
     m_warning_checks.push_back(s);
 
     if (m_verbose >= 2) {
@@ -289,7 +307,7 @@ protected:
   }
 
   void add_error(std::string msg, const statement_t *s) {
-    m_db.add(_ERR, s->get_debug_info());
+    m_db.add(check_kind::CRAB_ERR, s->get_debug_info());
     m_error_checks.push_back(s);
 
     if (m_verbose >= 1) {

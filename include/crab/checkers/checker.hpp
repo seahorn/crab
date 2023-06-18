@@ -24,9 +24,6 @@ template <typename Analyzer> class checker {
     once.
    */
 
-  checker(const checker<Analyzer> &other); // non construction copyable
-  checker<Analyzer> &operator=(const checker<Analyzer> &other); // non-copyable
-
 public:
   using prop_checker_ptr = std::shared_ptr<property_checker<Analyzer>>;
   using prop_checker_vector = std::vector<prop_checker_ptr>;
@@ -37,6 +34,9 @@ protected:
 public:
   checker(prop_checker_vector checkers) : m_checkers(checkers) {}
 
+  checker(const checker<Analyzer> &other) = delete; 
+  checker<Analyzer> &operator=(const checker<Analyzer> &other) = delete;
+  
   virtual ~checker() {}
 
   virtual void run() = 0;

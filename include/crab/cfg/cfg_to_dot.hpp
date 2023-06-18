@@ -50,11 +50,11 @@ void cfg_body_to_dot(const CFG &cfg, const checker::checks_db &db,
       unsigned error = 0;
       for (unsigned i = 0, num_checks = checks.size(); i < num_checks; ++i) {
         switch (checks[i]) {
-        case crab::checker::_SAFE:
-        case crab::checker::_UNREACH:
+        case checker::check_kind::CRAB_SAFE:
+        case checker::check_kind::CRAB_UNREACH:
           safe++;
           break;
-        case crab::checker::_ERR:
+        case checker::check_kind::CRAB_ERR:
           error++;
           break;
         default:

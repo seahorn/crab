@@ -103,7 +103,7 @@ public:
       }
 
       if (this->m_abs_tr->get_abs_value().is_bottom()) {
-        this->m_db.add(_UNREACH, s.get_debug_info());
+        this->m_db.add(check_kind::CRAB_UNREACH, s.get_debug_info());
         return;
       }
 
@@ -175,7 +175,7 @@ public:
     } else {
 
       if (this->m_abs_tr->get_abs_value().is_bottom()) {
-        this->m_db.add(_UNREACH, s.get_debug_info());
+        this->m_db.add(check_kind::CRAB_UNREACH, s.get_debug_info());
         return;
       }
 
@@ -216,7 +216,7 @@ public:
     } else {
 
       if (this->m_abs_tr->get_abs_value().is_bottom()) {
-        this->m_db.add(_UNREACH, s.get_debug_info());
+        this->m_db.add(check_kind::CRAB_UNREACH, s.get_debug_info());
         return;
       }
 
