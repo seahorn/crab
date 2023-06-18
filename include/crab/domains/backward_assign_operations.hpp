@@ -163,9 +163,9 @@ public:
     case OP_UREM:
       CRAB_WARN("backwards x = y ", op, " z not implemented");
       dom -= x;
+      dom = dom & inv;
       break;
     }
-    dom = dom & inv;
     CRAB_LOG("backward", crab::outs() << "AFTER " << dom << "\n");
   }
 };
