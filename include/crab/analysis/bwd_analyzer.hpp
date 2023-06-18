@@ -120,26 +120,20 @@ public:
   // states.
   necessary_preconditions_fixpoint_iterator(
       CFG cfg, AbsDom absval_fac,
-      /* fixpoint parameters */
-      unsigned int widening_delay = 1,
-      unsigned int descending_iterations = UINT_MAX, size_t jump_set_size = 0)
-      : fixpoint_iterator_t(crab::cfg::cfg_rev<CFG>(cfg), absval_fac, 
-                            widening_delay, descending_iterations,
-                            jump_set_size),
-        m_cfg(cfg), m_absval_fac(absval_fac), m_good_states(false) {}
+      const fixpoint_parameters &fixpo_params)
+    : fixpoint_iterator_t(crab::cfg::cfg_rev<CFG>(cfg), absval_fac, 
+			  fixpo_params),
+      m_cfg(cfg), m_absval_fac(absval_fac), m_good_states(false) {}
 
   // This constructor computes necessary preconditions from
   // safe/good (error) states if good_states is true (false).
   necessary_preconditions_fixpoint_iterator(
       CFG cfg, AbsDom absval_fac, bool good_states,
-      /* fixpoint parameters */
-      unsigned int widening_delay = 1,
-      unsigned int descending_iterations = UINT_MAX, size_t jump_set_size = 0)
-      : fixpoint_iterator_t(crab::cfg::cfg_rev<CFG>(cfg), absval_fac, 
-                            widening_delay, descending_iterations,
-                            jump_set_size),
-        m_cfg(cfg), m_absval_fac(absval_fac), m_good_states(good_states) {}
-
+      const fixpoint_parameters &fixpo_params)
+    : fixpoint_iterator_t(crab::cfg::cfg_rev<CFG>(cfg), absval_fac, 
+			  fixpo_params),
+      m_cfg(cfg), m_absval_fac(absval_fac), m_good_states(good_states) {}
+  
   
   // postcond: final states that we want to propagate backwards  
   void run_backward(AbsDom postcond) { 
@@ -390,13 +384,11 @@ public:
            // liveness information
            const liveness_t *live,
            // parameters for each forward or backward analysis
-           unsigned int widening_delay = 1,
-           unsigned int descending_iters = UINT_MAX, size_t jump_set_size = 0,
+	   const fixpoint_parameters &fixpo_params,
 	   // parameters of the iterative forward/backward analyses
 	   const unsigned max_refine_iters = 5) {
     run(m_cfg.entry(), init_states, only_forward, assumptions, live,
-        widening_delay, descending_iters, jump_set_size,
-	max_refine_iters);
+        fixpo_params, max_refine_iters);
   }
 
   void run(const basic_block_label_t &entry, // only used for the forward pass.
@@ -408,8 +400,7 @@ public:
            // liveness information
            const liveness_t *live,
            // parameters for each forward or backward analysis
-           unsigned int widening_delay = 1,
-           unsigned int descending_iters = UINT_MAX, size_t jump_set_size = 0,
+	   const fixpoint_parameters &fixpo_params,
 	   // parameters of the iterative forward/backward analysis
 	   const unsigned max_refine_iters = 5) {
 
@@ -507,8 +498,7 @@ public:
     }
     assumption_map_t refined_assumptions(assumptions.begin(), assumptions.end());
 
-    fwd_analyzer_t F(m_cfg, m_absval_fac, live,
-		     widening_delay, descending_iters, jump_set_size);
+    fwd_analyzer_t F(m_cfg, m_absval_fac, live, fixpo_params);
     std::unique_ptr<bwd_analyzer_t> B = nullptr;
     while (true) {
       iters++;
@@ -555,8 +545,7 @@ public:
 	B = std::unique_ptr<bwd_analyzer_t>(new bwd_analyzer_t
 			    (m_cfg, m_absval_fac, 
 			     // negate assertions: preconditions from error states
-			     false,
-			     widening_delay, descending_iters, jump_set_size));
+			     false, fixpo_params));
       }
 
       crab::CrabStats::resume("CombinedForwardBackward.BackwardPass");
@@ -627,7 +616,6 @@ public:
 
       F.clear();
       B->clear();
-      
     } // end while true
 
     CRAB_VERBOSE_IF(1, get_msg_stream()

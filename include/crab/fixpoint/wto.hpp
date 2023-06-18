@@ -373,7 +373,6 @@ private:
   
   
   class nesting_builder : public wto_component_visitor<G> {
-
   public:
     using wto_vertex_t = wto_vertex<G>;
     using wto_cycle_t = wto_cycle<G>;
@@ -381,7 +380,7 @@ private:
   private:
     wto_nesting_t _nesting;
     nesting_table_ptr _nesting_table;
-
+      
   public:
     nesting_builder(nesting_table_ptr nesting_table)
         : _nesting_table(nesting_table) {}
@@ -626,7 +625,7 @@ private:
   }
 
 public:
-
+  
   wto(G g)
       : _wto_components(std::make_shared<wto_component_list_t>()),
         _dfn_table(std::make_shared<dfn_table_t>()), _num(0),
@@ -655,7 +654,6 @@ public:
 
   wto(const wto_t &other) = delete;
   wto_t &operator=(const wto_t &other) = delete;
-
   wto(wto_t &&other) = default;  
   wto_t &operator=(wto_t &&other) = default;
 

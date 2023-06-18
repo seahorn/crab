@@ -1,7 +1,6 @@
 #include "./crab_dom.hpp"
 #include "./crab_lang.hpp"
 #include <crab/analysis/bwd_analyzer.hpp>
-
 #include <crab/checkers/assertion.hpp>
 #include <crab/checkers/checker.hpp>
 
@@ -17,8 +16,13 @@ void backward_run_internal(CFG *cfg, crab::cfg_impl::basic_block_label_t entry,
   crab::outs() << "Invariants using " << initial_states.domain_name() << "\n";
   IntraBwdAnalyzer a(*cfg, initial_states);
   typename IntraBwdAnalyzer::assumption_map_t assumptions;
+  crab::fixpoint_parameters fixpo_params;
+  fixpo_params.get_widening_delay() = widening;
+  fixpo_params.get_descending_iterations() = narrowing;
+  fixpo_params.get_max_thresholds() = jump_set_size;
+  
   a.run(entry, initial_states, false, assumptions, nullptr /*liveness*/,
-        widening, narrowing, jump_set_size);
+        fixpo_params);
 
   // Print preconditions
   // Print invariants in DFS to enforce a fixed order

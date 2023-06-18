@@ -94,16 +94,19 @@ void run_and_compare(crab::cfg_impl::z_cfg_t* cfg,
   typename analyzer_1_t::assumption_map_t assumptions1;
   typename analyzer_2_t::assumption_map_t assumptions2;
 
+  crab::fixpoint_parameters fixpo_params;
+  fixpo_params.get_widening_delay() = widening;
+  fixpo_params.get_descending_iterations() = narrowing;
+  fixpo_params.get_max_thresholds() = jump_set_size;
+  
   // Run with Dom1
   Dom1 absval_fac1, inv1;
-  analyzer_1_t a1(*cfg, absval_fac1, nullptr,
-		  widening, narrowing, jump_set_size);
+  analyzer_1_t a1(*cfg, absval_fac1, nullptr, fixpo_params);
   a1.run(entry, inv1, assumptions1);
   
   // Run with Dom2
   Dom2 absval_fac2, inv2;        
-  analyzer_2_t a2(*cfg, absval_fac2, nullptr,
-		  widening, narrowing, jump_set_size);
+  analyzer_2_t a2(*cfg, absval_fac2, nullptr, fixpo_params);
   a2.run(entry, inv2, assumptions2);
 
   for (auto &bb: *cfg) {

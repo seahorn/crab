@@ -111,7 +111,8 @@ void check(z_cfg_ref_t cfg, variable_factory_t &vfac) {
 
   // Run analyses
   z_sdbm_domain_t absval_fac, init;
-  num_analyzer_t num_a(cfg, absval_fac, nullptr);
+  crab::fixpoint_parameters fixpo_params;    
+  num_analyzer_t num_a(cfg, absval_fac, nullptr, fixpo_params);
   num_a.run(init);
   crab::outs() << "Analysis using " << init.domain_name() << "\n";
   print_invariants(cfg, num_a);

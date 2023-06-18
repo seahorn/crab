@@ -43,9 +43,9 @@
 
 #pragma once
 
-//#include <crab/cfg/basic_block_traits.hpp>
 #include <crab/cfg/cfg_bgl.hpp> // needed by wto
 #include <crab/fixpoint/fixpoint_iterators_api.hpp>
+#include <crab/fixpoint/fixpoint_params.hpp>
 #include <crab/fixpoint/thresholds.hpp>
 #include <crab/fixpoint/wto.hpp>
 #include <crab/support/debug.hpp>
@@ -95,7 +95,8 @@ private:
       interleaved_fwd_fixpoint_iterator_impl::wto_processor<CFG, AbstractValue>;
   using thresholds_t = crab::thresholds<typename CFG::number_t>;
   using wto_thresholds_t = crab::wto_thresholds<CFG>;
-
+  using thresholds_map_t = typename wto_thresholds_t::thresholds_map_t;
+  
 protected:
   using iterator = typename invariant_table_t::iterator;
   using const_iterator = typename invariant_table_t::const_iterator;
@@ -103,30 +104,20 @@ protected:
   CFG m_cfg;
   wto_t m_wto;
 
+  // We need to keep it so that we can call make_top(), make_bottom()
+  AbstractValue m_absval_fac;
+  // user-defined fixpoint parameters
+  const crab::fixpoint_parameters &m_params;
+  // set of thresholds to jump during widening
+  thresholds_map_t m_thresholds_per_cycle;
+  // enable post-processing of the invariants
+  bool m_enable_processor;
+  
 private:
   // We don't want derived classes to access directly to m_pre and
   // m_post in case we make internal changes
   invariant_table_t m_pre, m_post;
 
-protected:
-  // We need to keep it so that we can call make_top(), make_bottom()
-  AbstractValue m_absval_fac;
-  // number of iterations until triggering widening
-  unsigned int m_widening_delay;
-  // number of narrowing iterations. If the narrowing operator is
-  // indeed a narrowing operator this parameter is not
-  // needed. However, there are abstract domains for which an actual
-  // narrowing operation is not available so we must enforce
-  // termination.
-  unsigned int m_descending_iterations;
-  // whether jump set is used for widening
-  bool m_use_widening_jump_set;
-  // set of thresholds to jump during widening
-  typename wto_thresholds_t::thresholds_map_t m_jump_set;
-  // enable post-processing of the invariants
-  bool m_enable_processor;
-
-private:
   inline void set_pre(basic_block_label_t node, const AbstractValue &v) {
     crab::CrabStats::count("Fixpo.invariant_table.update");
     crab::ScopedCrabStats __st__("Fixpo.invariant_table.update");
@@ -174,7 +165,7 @@ private:
                << crab::basic_block_traits<basic_block_t>::to_string(node)
                << "\n";);
 
-    if (iteration <= m_widening_delay) {
+    if (iteration <= m_params.get_widening_delay()) {
       auto widen_res = before | after;
       CRAB_VERBOSE_IF(3, crab::outs() << "Prev   : " << before << "\n"
                                       << "Current: " << after << "\n"
@@ -187,9 +178,9 @@ private:
                       crab::outs() << "Prev   : " << before_copy << "\n"
                                    << "Current: " << after << "\n");
 
-      if (m_use_widening_jump_set) {
-        auto it = m_jump_set.find(node);
-        if (it == m_jump_set.end()) {
+      if (m_params.get_max_thresholds() > 0) {
+        auto it = m_thresholds_per_cycle.find(node);
+        if (it == m_thresholds_per_cycle.end()) {
           CRAB_ERROR("no thresholds found for ",
                      crab::basic_block_traits<basic_block_t>::to_string(node));
         }
@@ -239,12 +230,12 @@ private:
   }
 
   void initialize_thresholds(size_t jump_set_size) {
-    if (m_use_widening_jump_set) {
+    if (m_params.get_max_thresholds() > 0) {
       crab::CrabStats::resume("Fixpo");
       // select statically some widening points to jump to.
       wto_thresholds_t wto_thresholds(m_cfg, jump_set_size);
       m_wto.accept(&wto_thresholds);
-      m_jump_set = wto_thresholds.get_thresholds_map();
+      m_thresholds_per_cycle = wto_thresholds.get_thresholds_map();
       CRAB_VERBOSE_IF(2, crab::outs() << "Thresholds\n"
                                       << wto_thresholds << "\n");
       crab::CrabStats::stop("Fixpo");
@@ -261,17 +252,13 @@ private:
   
 public:
   interleaved_fwd_fixpoint_iterator(CFG cfg, AbstractValue absval_fac,
-                                    unsigned int widening_delay,
-                                    unsigned int descending_iterations,
-                                    size_t jump_set_size,
+				    const crab::fixpoint_parameters &params,
                                     bool enable_processor = true)
       : m_cfg(cfg), m_wto(cfg), m_absval_fac(absval_fac),
-        m_widening_delay(widening_delay),
-        m_descending_iterations(descending_iterations),
-        m_use_widening_jump_set(jump_set_size > 0),
+        m_params(params),
         m_enable_processor(enable_processor) {
 
-    initialize_thresholds(jump_set_size);
+    initialize_thresholds(m_params.get_max_thresholds());
     initialize_invariant_tables();
   }
 
@@ -601,7 +588,7 @@ public:
       }
     }
 
-    if (m_iterator->m_descending_iterations == 0) {
+    if (m_iterator->m_params.get_descending_iterations() == 0) {
       // no narrowing
       return;
     }
@@ -630,7 +617,7 @@ public:
         // No more refinement possible(pre == new_pre)
         break;
       } else {
-        if (iteration > m_iterator->m_descending_iterations)
+        if (iteration > m_iterator->m_params.get_descending_iterations())
           break;
         pre = m_iterator->refine(head, iteration, pre, new_pre);
         m_iterator->set_pre(head, pre);

@@ -25,8 +25,12 @@ void intra_run_impl(CFG *cfg, crab::cfg_impl::basic_block_label_t entry,
   // Run fixpoint
   auto absval_fac = init.make_top();  
   crab::outs() << "Invariants using " << absval_fac.domain_name() << "\n";
+  crab::fixpoint_parameters fixpo_params;
+  fixpo_params.get_widening_delay() = widening;
+  fixpo_params.get_descending_iterations() = narrowing;
+  fixpo_params.get_max_thresholds() = jump_set_size;
   IntraFwdAnalyzer a(*cfg, absval_fac, (run_liveness) ? &live : nullptr, 
-                     widening, narrowing, jump_set_size);
+                     fixpo_params);
 
   assumption_map_t assumptions;
   a.run(entry, init, assumptions);

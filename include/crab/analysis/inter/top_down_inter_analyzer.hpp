@@ -28,6 +28,7 @@
 #include <crab/analysis/inter/inter_params.hpp>
 #include <crab/cg/cg_bgl.hpp> // for wto of callgraphs
 #include <crab/fixpoint/wto.hpp>
+#include <crab/fixpoint/fixpoint_params.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -464,9 +465,7 @@ private:
   // -- start the analysis only from main
   bool m_only_main_as_entry;
   // -- fixpoint parameters
-  unsigned int m_widening_delay;
-  unsigned int m_descending_iters;
-  unsigned int m_thresholds_size;
+  fixpoint_parameters m_fixpo_params;
 
   void join_with(global_invariant_map_t &global_table, cfg_t cfg,
                  invariant_map_t &other) {
@@ -574,9 +573,11 @@ public:
         m_max_call_contexts(max_call_contexts),
         m_analyze_recursive_functions(analyze_recursive_functions),
         m_exact_summary_reuse(exact_summary_reuse),
-        m_only_main_as_entry(only_main_as_entry),
-        m_widening_delay(widening_delay), m_descending_iters(descending_iters),
-        m_thresholds_size(thresholds_size) {}
+        m_only_main_as_entry(only_main_as_entry) {
+    m_fixpo_params.get_widening_delay() = widening_delay;
+    m_fixpo_params.get_descending_iterations() = descending_iters;
+    m_fixpo_params.get_max_thresholds() = thresholds_size;
+  }
 
   global_context(const this_type &o) = delete;
 
@@ -678,11 +679,7 @@ public:
 
   bool only_main_as_entry() const { return m_only_main_as_entry; }
 
-  unsigned int get_widening_delay() const { return m_widening_delay; }
-
-  unsigned int get_descending_iters() const { return m_descending_iters; }
-
-  unsigned int get_thresholds_size() const { return m_thresholds_size; }
+  const fixpoint_parameters& get_fixpo_params() const { return m_fixpo_params;}
 
   // context-insensitive invariants for each function (if
   // m_keep_invariants enabled)
@@ -805,8 +802,7 @@ analyze_function(CallGraphNode cg_node,
     /// -- 2. Create intra analyzer (with inter-procedural semantics for
     /// call/return)
     std::unique_ptr<IntraCallSemAnalyzer> new_analyzer(new IntraCallSemAnalyzer(
-	cfg, &abs_tr, absval_fac, live, ctx.get_widening_delay(),
-        ctx.get_descending_iters(), ctx.get_thresholds_size()));
+	    cfg, &abs_tr, absval_fac, live, ctx.get_fixpo_params()));
     analyzer = &(abs_tr.add_analyzer(cg_node, std::move(new_analyzer)));
   }
 
@@ -847,7 +843,7 @@ analyze_function(CallGraphNode cg_node,
                              << cfg.get_func_decl().get_func_name() << "\n";);
 
       ///// widen entry and exit
-      if (iteration >= ctx.get_widening_delay()) {
+      if (iteration >= ctx.get_fixpo_params().get_widening_delay()) {
         CRAB_LOG("inter", crab::outs()
                               << "[INTER] Initial abstract state for "
                               << cfg.get_func_decl().get_func_name() << ":\n"

@@ -4,6 +4,7 @@
 #include <crab/analysis/dataflow/liveness.hpp>
 #include <crab/cfg/type_checker.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
+#include <crab/fixpoint/fixpoint_params.hpp>
 #include <crab/fixpoint/interleaved_fixpoint_iterator.hpp>
 
 #include <algorithm>
@@ -150,13 +151,10 @@ public:
 	       abs_dom_t absval_fac,
                // live can be nullptr if no live info is available
                const liveness_t *live_and_dead_symbols,
-               // fixpoint parameters
-               unsigned int widening_delay, unsigned int descending_iters,
-               size_t jump_set_size)
-    : fixpo_iterator_t(cfg, absval_fac,
-		       widening_delay, descending_iters, jump_set_size,
+	       const fixpoint_parameters &params)
+    : fixpo_iterator_t(cfg, absval_fac, params,
 		       false /*disable processor*/),
-        m_abs_tr(abs_tr), m_live(live_and_dead_symbols) {
+      m_abs_tr(abs_tr), m_live(live_and_dead_symbols) {
     init_fwd_analyzer();
   }
 
@@ -266,15 +264,11 @@ public:
 			     // create bottom and top instances
 			     AbsDomain absval_fac,
                              // live variables
-                             const liveness_t *live = nullptr,
-                             // fixpoint parameters
-                             unsigned int widening_delay = 1,
-                             unsigned int descending_iters = UINT_MAX,
-                             size_t jump_set_size = 0)
+                             const liveness_t *live,
+			     const fixpoint_parameters &fixpo_params)
     : m_abs_tr(new abs_tr_t(absval_fac.make_top())),
-      m_analyzer(cfg, &*m_abs_tr, absval_fac, live, 
-		 widening_delay, descending_iters, jump_set_size) {}
-
+      m_analyzer(cfg, &*m_abs_tr, absval_fac, live,  fixpo_params) {}
+  
   intra_fwd_analyzer_wrapper(const intra_fwd_analyzer_wrapper &o) = delete;
 
   intra_fwd_analyzer_wrapper &

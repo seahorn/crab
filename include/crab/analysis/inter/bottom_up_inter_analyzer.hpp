@@ -686,9 +686,7 @@ private:
   invariant_map_t m_inv_map;
   summ_tbl_t m_summ_tbl;
   call_tbl_t m_call_tbl;
-  unsigned int m_widening_delay;
-  unsigned int m_descending_iters;
-  size_t m_jump_set_size; // max size of the jump set (=0 if jump set disabled)
+  fixpoint_parameters m_fixpo_params;
   std::unique_ptr<abs_tr_t> m_abs_tr;
 
   const liveness_t *get_live(const cfg_t &c) {
@@ -709,11 +707,15 @@ public:
   bottom_up_inter_analyzer(CallGraph &cg,
                            TD_Dom td_absval_fac, BU_Dom bu_absval_fac,
 			   const params_t &params = params_t())
-      : m_cg(cg), m_td_absval_fac(td_absval_fac), m_bu_absval_fac(bu_absval_fac),
-	m_live(params.live_map),
-        m_call_tbl(make_td_top()), m_widening_delay(params.widening_delay),
-        m_descending_iters(params.descending_iters), m_jump_set_size(params.thresholds_size),
-        m_abs_tr(new abs_tr_t(make_td_top(), &m_summ_tbl, &m_call_tbl)) {
+    : m_cg(cg), m_td_absval_fac(td_absval_fac), m_bu_absval_fac(bu_absval_fac),
+      m_live(params.live_map),
+      m_call_tbl(make_td_top()),
+      m_abs_tr(new abs_tr_t(make_td_top(), &m_summ_tbl, &m_call_tbl)) {
+    
+    m_fixpo_params.get_widening_delay() = params.widening_delay;
+    m_fixpo_params.get_descending_iterations() = params.descending_iters;
+    m_fixpo_params.get_max_thresholds() = params.thresholds_size;
+      
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
     crab::CrabStats::resume("CallGraph type checking");
     cg.type_check();
@@ -779,8 +781,7 @@ public:
         CRAB_LOG("inter", crab::outs() << "++ Analyzing function "
                                        << fdecl.get_func_name() << "\n");
 
-        td_analyzer_ptr a(new td_analyzer(cfg, &*m_abs_tr, m_td_absval_fac, get_live(cfg), 
-                                          m_widening_delay, m_descending_iters, m_jump_set_size));
+        td_analyzer_ptr a(new td_analyzer(cfg, &*m_abs_tr, m_td_absval_fac, get_live(cfg), m_fixpo_params)); 
         a->run_forward(init);
         m_inv_map.insert(std::make_pair(callsite_or_fdecl_t(&fdecl), std::move(a)));
       }
@@ -832,9 +833,7 @@ public:
           } else {
             // --- run the analysis
             bu_abs_tr abs_tr(std::move(make_bu_top()), &m_summ_tbl);
-            bu_analyzer a(cfg, &abs_tr, m_bu_absval_fac, get_live(cfg),
-                          m_widening_delay, m_descending_iters,
-                          m_jump_set_size);
+            bu_analyzer a(cfg, &abs_tr, m_bu_absval_fac, get_live(cfg), m_fixpo_params);
             a.run_forward(make_bu_top());
 
             // --- project onto formal parameters and return values
@@ -892,7 +891,7 @@ public:
                        << " started with bottom (i.e., dead function).\n";
         }
         td_analyzer_ptr a(new td_analyzer(cfg, &*m_abs_tr, m_td_absval_fac, get_live(cfg), 
-                                          m_widening_delay, m_descending_iters, m_jump_set_size));
+                                          m_fixpo_params));
         a->run_forward(init_inv);
         m_inv_map.insert(std::make_pair(callsite_or_fdecl_t(&fdecl), std::move(a))); 
       }

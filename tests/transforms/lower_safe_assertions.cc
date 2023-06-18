@@ -141,7 +141,8 @@ int main(int argc, char **argv) {
 
   // Run numerical analysis
   z_sdbm_domain_t absval_fac;
-  num_analyzer_t num_a(cfg_ref, absval_fac, nullptr);
+  crab::fixpoint_parameters fixpo_params;  
+  num_analyzer_t num_a(cfg_ref, absval_fac, nullptr, fixpo_params);
   num_a.run(absval_fac.make_top());
   crab::outs() << "Analysis using " << absval_fac.domain_name() << "\n";
   // print_invariants(cfg_ref, num_a);

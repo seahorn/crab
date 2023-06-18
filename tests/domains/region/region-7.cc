@@ -114,9 +114,14 @@ int main(int argc, char **argv) {
   z_cfg_t *p1 = cfg1(vfac);
   crab::outs() << *p1 << "\n";
   z_rgn_sdbm_t absval_fac, init;
+  crab::fixpoint_parameters fixpo_params;
+  fixpo_params.get_widening_delay() = 2;
+  fixpo_params.get_descending_iterations() = 2;
+  fixpo_params.get_max_thresholds() = 20;
+  
   using intra_fwd_analyzer_t =
     crab::analyzer::intra_fwd_analyzer<crab::cfg_impl::z_cfg_ref_t, z_rgn_sdbm_t>;
-  intra_fwd_analyzer_t a(*p1, absval_fac, nullptr, 2, 2, 20);
+  intra_fwd_analyzer_t a(*p1, absval_fac, nullptr, fixpo_params);
   a.run(p1->entry(), init, typename intra_fwd_analyzer_t::assumption_map_t());
   
   /* 
