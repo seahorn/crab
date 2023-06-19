@@ -239,7 +239,12 @@ int main(int argc, char **argv) {
     }
     {
       z_decoupled_box_poly_domain_t init;
-      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+      crab::fixpoint_parameters params;
+      params.get_widening_delay() = 1;
+      params.get_descending_iterations() = 2;
+      params.get_max_thresholds() = 20;
+      params.enable_decoupling() = true;
+      run(cfg, cfg->entry(), init, false, params, stats_enabled);
     }
     delete cfg;
   }

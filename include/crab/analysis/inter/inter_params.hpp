@@ -29,6 +29,7 @@ struct inter_analyzer_parameters {
   unsigned int widening_delay;
   unsigned int descending_iters;
   unsigned int thresholds_size;
+  bool enable_decoupling;
   // Use liveness symbols if already available
   const liveness_map_t *live_map;
   

@@ -11,8 +11,7 @@
 // Helper
 template <typename CFG, typename Dom, typename IntraFwdAnalyzer>
 void intra_run_impl(CFG *cfg, crab::cfg_impl::basic_block_label_t entry,
-                    Dom init, bool run_liveness, unsigned widening,
-                    unsigned narrowing, unsigned jump_set_size,
+                    Dom init, bool run_liveness, const crab::fixpoint_parameters &fixpo_params,
                     bool enable_stats, bool enable_checker, bool print_invariants) {
   using cfg_ref_t = crab::cfg::cfg_ref<CFG>;
   using basic_block_t = typename CFG::basic_block_t;
@@ -25,13 +24,7 @@ void intra_run_impl(CFG *cfg, crab::cfg_impl::basic_block_label_t entry,
   // Run fixpoint
   auto absval_fac = init.make_top();  
   crab::outs() << "Invariants using " << absval_fac.domain_name() << "\n";
-  crab::fixpoint_parameters fixpo_params;
-  fixpo_params.get_widening_delay() = widening;
-  fixpo_params.get_descending_iterations() = narrowing;
-  fixpo_params.get_max_thresholds() = jump_set_size;
-  IntraFwdAnalyzer a(*cfg, absval_fac, (run_liveness) ? &live : nullptr, 
-                     fixpo_params);
-
+  IntraFwdAnalyzer a(*cfg, absval_fac, (run_liveness) ? &live : nullptr,  fixpo_params);
   assumption_map_t assumptions;
   a.run(entry, init, assumptions);
 
@@ -94,28 +87,26 @@ void intra_run_impl(CFG *cfg, crab::cfg_impl::basic_block_label_t entry,
 template <typename Dom>
 void z_intra_run(crab::cfg_impl::z_cfg_t *cfg,
                  crab::cfg_impl::basic_block_label_t entry, Dom init,
-                 bool run_liveness, unsigned widening, unsigned narrowing,
-                 unsigned jump_set_size, bool enable_stats,
-                 bool enable_checker, bool print_invariants) {
+                 bool run_liveness, const crab::fixpoint_parameters &fixpo_params,
+		 bool enable_stats, bool enable_checker, bool print_invariants) {
   using namespace crab::analyzer;
   using intra_fwd_analyzer_t =
       intra_fwd_analyzer<crab::cfg_impl::z_cfg_ref_t, Dom>;
   intra_run_impl<crab::cfg_impl::z_cfg_t, Dom, intra_fwd_analyzer_t>(
-      cfg, entry, init, run_liveness, widening, narrowing, jump_set_size,
+      cfg, entry, init, run_liveness, fixpo_params,
       enable_stats, enable_checker, print_invariants);
 }
 
 template <typename Dom>
 void q_intra_run(crab::cfg_impl::q_cfg_t *cfg,
                  crab::cfg_impl::basic_block_label_t entry, Dom init,
-                 bool run_liveness, unsigned widening, unsigned narrowing,
-                 unsigned jump_set_size, bool enable_stats,
-                 bool enable_checker, bool print_invariants) {
+                 bool run_liveness, const crab::fixpoint_parameters &fixpo_params,
+		 bool enable_stats, bool enable_checker, bool print_invariants) {
   using namespace crab::analyzer;
   using intra_fwd_analyzer_t =
       intra_fwd_analyzer<crab::cfg_impl::q_cfg_ref_t, Dom>;
   intra_run_impl<crab::cfg_impl::q_cfg_t, Dom, intra_fwd_analyzer_t>(
-      cfg, entry, init, run_liveness, widening, narrowing, jump_set_size,
+      cfg, entry, init, run_liveness, fixpo_params, 
       enable_stats, enable_checker, print_invariants);
 }
 

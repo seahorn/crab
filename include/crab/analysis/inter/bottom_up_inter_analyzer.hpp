@@ -724,6 +724,7 @@ public:
     m_fixpo_params.get_widening_delay() = params.widening_delay;
     m_fixpo_params.get_descending_iterations() = params.descending_iters;
     m_fixpo_params.get_max_thresholds() = params.thresholds_size;
+    m_fixpo_params.enable_decoupling() = params.enable_decoupling;
       
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
     cg.type_check();

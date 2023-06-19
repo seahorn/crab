@@ -557,7 +557,8 @@ public:
                  bool keep_invariants, unsigned int max_call_contexts,
                  bool analyze_recursive_functions, bool exact_summary_reuse,
                  bool only_main_as_entry, unsigned int widening_delay,
-                 unsigned int descending_iters, unsigned int thresholds_size)
+                 unsigned int descending_iters, unsigned int thresholds_size,
+		 bool enable_decoupling)
       : m_live_map(live_map), 
         m_cs_policy(
             new default_context_sensitivity_policy_t(max_call_contexts)),
@@ -572,6 +573,7 @@ public:
     m_fixpo_params.get_widening_delay() = widening_delay;
     m_fixpo_params.get_descending_iterations() = descending_iters;
     m_fixpo_params.get_max_thresholds() = thresholds_size;
+    m_fixpo_params.enable_decoupling() = enable_decoupling;
   }
 
   global_context(const this_type &o) = delete;
@@ -1527,7 +1529,7 @@ public:
               params.keep_invariants, params.max_call_contexts,
               params.analyze_recursive_functions, params.exact_summary_reuse,
               params.only_main_as_entry, params.widening_delay,
-              params.descending_iters, params.thresholds_size),
+              params.descending_iters, params.thresholds_size, params.enable_decoupling),
 	m_absval_fac(absval_fac),
         m_abs_tr(new td_inter_abs_tr_t(m_cg, m_ctx, m_absval_fac)) {
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
