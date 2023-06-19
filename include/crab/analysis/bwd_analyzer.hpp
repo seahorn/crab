@@ -3,6 +3,7 @@
 #include <crab/analysis/abs_transformer.hpp>
 #include <crab/analysis/dataflow/liveness.hpp>
 #include <crab/analysis/fwd_analyzer.hpp>
+#include <crab/analysis/fwd_bwd_params.hpp>
 #include <crab/analysis/graphs/dominance.hpp>
 #include <crab/fixpoint/interleaved_fixpoint_iterator.hpp>
 
@@ -377,32 +378,25 @@ public:
    * Perform the refining forward-backward loop.
    **/
   void run(AbsDom init_states,
-           // behaves as a standard forward analysis
-           bool only_forward,
            // assumptions
            const assumption_map_t &assumptions,
            // liveness information
            const liveness_t *live,
-           // parameters for each forward or backward analysis
+           // users parameters 
 	   const fixpoint_parameters &fixpo_params,
-	   // parameters of the iterative forward/backward analyses
-	   const unsigned max_refine_iters = 5) {
-    run(m_cfg.entry(), init_states, only_forward, assumptions, live,
-        fixpo_params, max_refine_iters);
+	   const fwd_bwd_parameters &params) {
+    run(m_cfg.entry(), init_states, assumptions, live, fixpo_params, params);
   }
 
   void run(const basic_block_label_t &entry, // only used for the forward pass.
            AbsDom init_states,
-           // behaves as a standard forward analysis
-           bool only_forward,
            // assumptions
            const assumption_map_t &assumptions,
            // liveness information
            const liveness_t *live,
-           // parameters for each forward or backward analysis
+           // user parameters 
 	   const fixpoint_parameters &fixpo_params,
-	   // parameters of the iterative forward/backward analysis
-	   const unsigned max_refine_iters = 5) {
+	   const fwd_bwd_parameters &params) {
 
     CRAB_LOG("backward", crab::outs() << "Running forward+backward analysis ";
 	     if (m_cfg.has_func_decl()) {
@@ -442,6 +436,7 @@ public:
 	  }
         };
 
+    bool only_forward = !params.is_enabled_backward();
     if (!only_forward && !m_cfg.has_exit()) {
       CRAB_WARN("cannot run backward analysis because CFG has no exit block");
       only_forward = true;
@@ -507,11 +502,16 @@ public:
                                           << "Started forward analysis.\n";);
 
       crab::CrabStats::resume("CombinedForwardBackward.ForwardPass");
+
+      F.clear();
+      if(B) {
+	B->clear();
+      }
       
       // run forward analysis refined with preconditions from error
       // states
       F.run(entry, init_states, refined_assumptions);
-      if (iters == 1) {
+      if (!params.get_use_refined_invariants() && iters == 1) {
         store_results(F);
       }
       crab::CrabStats::stop("CombinedForwardBackward.ForwardPass");
@@ -601,7 +601,7 @@ public:
       }
       crab::CrabStats::stop("CombinedForwardBackward.CheckRefinement");
 
-      if (!more_refinement || iters > max_refine_iters) {
+      if (!more_refinement || iters > params.get_max_refine_iterations()) {
         if (more_refinement) {
           CRAB_LOG("backward",
                    crab::outs()
@@ -613,11 +613,14 @@ public:
         discharge_assertions(refined_assumptions, idom_tree);
         break;
       }
-
-      F.clear();
-      B->clear();
     } // end while true
 
+
+    if (params.get_use_refined_invariants()) {
+      // We store the refined (last iteration) forward invariants 
+      store_results(F);
+    }
+    
     CRAB_VERBOSE_IF(1, get_msg_stream()
                            << "Combined forward+backward analysis done after "
                            << iters << " iterations.\n";);

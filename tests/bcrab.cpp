@@ -20,9 +20,12 @@ void backward_run_internal(CFG *cfg, crab::cfg_impl::basic_block_label_t entry,
   fixpo_params.get_widening_delay() = widening;
   fixpo_params.get_descending_iterations() = narrowing;
   fixpo_params.get_max_thresholds() = jump_set_size;
+
+  crab::analyzer::fwd_bwd_parameters params;
+  params.enable_backward() = true;
   
-  a.run(entry, initial_states, false, assumptions, nullptr /*liveness*/,
-        fixpo_params);
+  a.run(entry, initial_states, assumptions, nullptr /*liveness*/,
+        fixpo_params, params);
 
   // Print preconditions
   // Print invariants in DFS to enforce a fixed order
