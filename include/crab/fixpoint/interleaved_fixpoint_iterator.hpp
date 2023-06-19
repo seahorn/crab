@@ -247,6 +247,17 @@ private:
     }
   }
 
+  inline bool is_asc_phase() const {
+    return m_absval_fac.is_asc_phase();
+  }
+  inline void set_phase(bool is_ascending) {
+    m_absval_fac.set_phase(is_ascending);
+    for (auto& p : m_pre)
+      p.second.set_phase(is_ascending);
+    for (auto& p : m_post)
+      p.second.set_phase(is_ascending);
+  }
+  
 public:
   interleaved_fwd_fixpoint_iterator(CFG cfg, AbstractValue absval_fac,
 				    const crab::fixpoint_parameters &params,
@@ -296,7 +307,7 @@ public:
     CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Started analysis of "
                                               << func_name(m_cfg) << "\n");
     set_pre(m_cfg.entry(), init);
-    wto_iterator_t iterator(this, m_absval_fac);
+    wto_iterator_t iterator(this);
     m_wto.accept(&iterator);
     if (m_enable_processor) {
       wto_processor_t processor(this);
@@ -327,7 +338,7 @@ public:
                << crab::basic_block_traits<basic_block_t>::to_string(entry)
                << " with initial value=" << init << "\n";);
     set_pre(entry, init);
-    wto_iterator_t iterator(this, entry, m_absval_fac, &assumptions);
+    wto_iterator_t iterator(this, entry, &assumptions);
     m_wto.accept(&iterator);
     if (m_enable_processor) {
       wto_processor_t processor(this);
@@ -341,17 +352,6 @@ public:
     // Decoupled approach: make sure to end in descending phase
     // (later queries on invariant tables will use the descending domain).
     set_phase(false);
-  }
-
-  inline bool is_asc_phase() const {
-    return m_absval_fac.is_asc_phase();
-  }
-  inline void set_phase(bool is_ascending) {
-    m_absval_fac.set_phase(is_ascending);
-    for (auto& p : m_pre)
-      p.second.set_phase(is_ascending);
-    for (auto& p : m_post)
-      p.second.set_phase(is_ascending);
   }
 
   void clear_pre() { m_pre.clear(); }
@@ -385,25 +385,25 @@ private:
   interleaved_iterator_t *m_iterator;
   // Initial entry point of the analysis
   basic_block_label_t m_entry;
-  // To be able to create bottom and top abstract values
-  AbstractValue &m_absval_fac;
   const assumption_map_t *m_assumptions;
   // Used to skip the analysis until m_entry is found
   bool m_skip;
 
   inline bool is_asc_phase() const {
-    return m_absval_fac.is_asc_phase();
+    return m_iterator->is_asc_phase();
   }
-  // This method ensures that calls to make_top/bottom and
-  // queries to the invariant tables will do the right thing.
+  
   inline void set_phase(bool is_asc) {
-    m_absval_fac.set_phase(is_asc);
     m_iterator->set_phase(is_asc);
   }
 
-  inline AbstractValue make_top() const { return m_absval_fac.make_top(); } 
+  inline AbstractValue make_top() const {
+    return m_iterator->m_absval_fac.make_top();
+  } 
 
-  inline AbstractValue make_bottom() const { return m_absval_fac.make_bottom(); }
+  inline AbstractValue make_bottom() const {
+    return m_iterator->m_absval_fac.make_bottom();
+  }
 
   inline void strengthen(AbstractValue &inv, basic_block_label_t n) {
     FIXPOINT_SCOPED_STATS("Fixpo.strengthen");
@@ -476,13 +476,13 @@ private:
   };
 
 public:
-  wto_iterator(interleaved_iterator_t *iterator, AbstractValue &absval_fac)
+  wto_iterator(interleaved_iterator_t *iterator)
       : m_iterator(iterator), m_entry(m_iterator->get_cfg().entry()),
-        m_absval_fac(absval_fac), m_assumptions(nullptr), m_skip(true) {}
+        m_assumptions(nullptr), m_skip(true) {}
 
   wto_iterator(interleaved_iterator_t *iterator, basic_block_label_t entry,
-	       AbstractValue &absval_fac, const assumption_map_t *assumptions)
-      : m_iterator(iterator), m_entry(entry), m_absval_fac(absval_fac),
+	       const assumption_map_t *assumptions)
+      : m_iterator(iterator), m_entry(entry), 
         m_assumptions(assumptions), m_skip(true) {}
 
   virtual void visit(wto_vertex_t &vertex) override {
