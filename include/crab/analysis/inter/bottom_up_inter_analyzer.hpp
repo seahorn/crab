@@ -1,9 +1,9 @@
 #pragma once
 
-/*
-   A standard two-phase approach for summary-based,
-   _context-insensitive_ inter-procedural analysis.
-*/
+/**
+ *  A standard two-phase approach for summary-based,
+ *  context-insensitive inter-procedural analysis.
+**/
 
 #include <crab/analysis/abs_transformer.hpp>
 #include <crab/analysis/dataflow/liveness.hpp>
@@ -15,6 +15,7 @@
 #include <crab/cfg/cfg.hpp>   // callsite_or_fdecl wrapper
 #include <crab/cg/cg_bgl.hpp> // for sccg.hpp
 #include <crab/domains/generic_abstract_domain.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -370,7 +371,7 @@ public:
       if (!(a == p)) {
         CRAB_LOG("inter", crab::outs() << "\t\tPropagate from caller to callee "
                                        << p << ":=" << a << "\n");
-        inter_transformer_helpers<abs_dom_t>::unify(caller, p, a);
+	crab::domains::inter_transformers_impl::unify(caller, p, a);
       }
       ++i;
       actuals.insert(a);
@@ -400,7 +401,7 @@ public:
       auto const &r = *callee_it;
       CRAB_LOG("inter", crab::outs() << "\t\tPropagate from callee to caller "
                                      << vt << ":=" << r << "\n");
-      inter_transformer_helpers<abs_dom_t>::unify(caller, vt, r);
+      crab::domains::inter_transformers_impl::unify(caller, vt, r);
       actuals.insert(vt);
       formals.insert(r);
     }
@@ -586,7 +587,7 @@ public:
       for (const variable_t &p : inputs) {
         const variable_t &a = cs.get_arg_name(i);
         if (!(a == p)) {
-          inter_transformer_helpers<abs_dom_t>::unify(callee_ctx_inv, p, a);
+	  crab::domains::inter_transformers_impl::unify(callee_ctx_inv, p, a);
         }
         ++i;
       }
