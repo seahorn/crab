@@ -3617,7 +3617,7 @@ private:
     return get_node(*(rng.begin()));
   }
 
-#if 1
+#if 0
   bool has_one_child(BasicBlockLabel b) const {
     auto rng = next_nodes(b);
     return (std::distance(rng.begin(), rng.end()) == 1);
