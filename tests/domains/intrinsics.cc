@@ -18,36 +18,26 @@ z_cfg_t *prog(variable_factory_t &vfac) {
   auto cfg = new z_cfg_t("x0", "ret");
   // adding blocks
   z_basic_block_t &x0 = cfg->insert("x0");
-  z_basic_block_t &x1 = cfg->insert("x1");
-  z_basic_block_t &x2 = cfg->insert("x2");
-  z_basic_block_t &x3 = cfg->insert("x3");
-  z_basic_block_t &entry = cfg->insert("entry");
   z_basic_block_t &bb1 = cfg->insert("bb1");
   z_basic_block_t &bb1_t = cfg->insert("bb1_t");
   z_basic_block_t &bb1_f = cfg->insert("bb1_f");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
   z_basic_block_t &ret = cfg->insert("ret");
   // adding control flow
-  x0 >> x1;
-  x1 >> x2;
-  x2 >> x3;
-  x3 >> entry;
-  entry >> bb1;
+  x0 >> bb1;
   bb1 >> bb1_t;
   bb1 >> bb1_f;
-  bb1_t >> bb2;
-  bb2 >> bb1;
+  bb1_t >> bb1;
   bb1_f >> ret;
   // adding statements
   x0.assign(k, 2147483648);
   x0.intrinsic("foo1", {i}, {i, k});
-  entry.assign(i, 0);
+  x0.assign(i, 0);
   bb1_t.assume(i <= 99);
   bb1_f.assume(i >= 100);
-  bb2.havoc(nd);
-  bb2.select(inc, nd, 1, 2);
-  bb2.add(i, i, inc);
-  bb2.intrinsic("foo2", {i}, {i, k});
+  bb1_t.havoc(nd);
+  bb1_t.select(inc, nd, 1, 2);
+  bb1_t.add(i, i, inc);
+  bb1_t.intrinsic("foo2", {i}, {i, k});
 
   return cfg;
 }
@@ -61,7 +51,6 @@ int main(int argc, char **argv) {
   /* Show that a CFG can have intrinsics */
   variable_factory_t vfac;
   z_cfg_t *cfg = prog(vfac);
-  cfg->simplify();
   crab::outs() << *cfg << "\n";
   delete cfg;
 

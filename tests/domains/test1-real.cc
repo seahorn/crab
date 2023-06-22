@@ -17,20 +17,18 @@ q_cfg_t *prog(variable_factory_t &vfac) {
   q_basic_block_t &bb1 = cfg->insert("bb1");
   q_basic_block_t &bb1_t = cfg->insert("bb1_t");
   q_basic_block_t &bb1_f = cfg->insert("bb1_f");
-  q_basic_block_t &bb2 = cfg->insert("bb2");
   q_basic_block_t &ret = cfg->insert("ret");
   // adding control flow
   entry >> bb1;
   bb1 >> bb1_t;
   bb1 >> bb1_f;
-  bb1_t >> bb2;
-  bb2 >> bb1;
+  bb1_t >> bb1;
   bb1_f >> ret;
   // adding statements
   entry.assign(i, q_number(0.0));
   bb1_t.assume(i <= q_number(9.9));
   bb1_f.assume(i >= q_number(10));
-  bb2.add(i, i, q_number(1));
+  bb1_t.add(i, i, q_number(1));
 
   return cfg;
 }
@@ -43,7 +41,6 @@ int main(int argc, char **argv) {
   }
   variable_factory_t vfac;
   q_cfg_t *cfg = prog(vfac);
-  cfg->simplify(); // this is optional
   crab::outs() << *cfg << "\n";
 
   q_interval_domain_t init;
