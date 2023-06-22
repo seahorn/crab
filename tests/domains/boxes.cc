@@ -20,22 +20,20 @@ z_cfg_t *prog1(variable_factory_t &vfac) {
   z_basic_block_t &bb1 = cfg->insert("bb1");
   z_basic_block_t &bb1_t = cfg->insert("bb1_t");
   z_basic_block_t &bb1_f = cfg->insert("bb1_f");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
   z_basic_block_t &ret = cfg->insert("ret");
   // adding control flow
   entry >> bb1;
   bb1 >> bb1_t;
   bb1 >> bb1_f;
-  bb1_t >> bb2;
-  bb2 >> bb1;
+  bb1_t >> bb1;
   bb1_f >> ret;
   // adding statements
   entry.assign(k, 0);
   entry.assign(i, 0);
   bb1_t.assume(i <= 99);
   bb1_f.assume(i >= 100);
-  bb2.add(i, i, 1);
-  bb2.add(k, k, 1);
+  bb1_t.add(i, i, 1);
+  bb1_t.add(k, k, 1);
   return cfg;
 }
 
@@ -46,26 +44,19 @@ z_cfg_t *prog2(variable_factory_t &vfac) {
   z_basic_block_t &loop1_bb1 = cfg->insert("loop1_bb1");
   z_basic_block_t &loop1_bb1_t = cfg->insert("loop1_bb1_t");
   z_basic_block_t &loop1_bb1_f = cfg->insert("loop1_bb1_f");
-  z_basic_block_t &loop1_bb2 = cfg->insert("loop1_bb2");
-  z_basic_block_t &loop2_entry = cfg->insert("loop2_entry");
   z_basic_block_t &loop2_bb1 = cfg->insert("loop2_bb1");
   z_basic_block_t &loop2_bb1_t = cfg->insert("loop2_bb1_t");
   z_basic_block_t &loop2_bb1_f = cfg->insert("loop2_bb1_f");
-  z_basic_block_t &loop2_bb2 = cfg->insert("loop2_bb2");
   z_basic_block_t &ret = cfg->insert("ret");
 
   loop1_entry >> loop1_bb1;
   loop1_bb1 >> loop1_bb1_t;
   loop1_bb1 >> loop1_bb1_f;
-  loop1_bb1_t >> loop1_bb2;
-  loop1_bb2 >> loop1_bb1;
-  loop1_bb1_f >> loop2_entry;
-
-  loop2_entry >> loop2_bb1;
+  loop1_bb1_t >> loop1_bb1;
+  loop1_bb1_f >> loop2_bb1;
   loop2_bb1 >> loop2_bb1_t;
   loop2_bb1 >> loop2_bb1_f;
-  loop2_bb1_t >> loop2_bb2;
-  loop2_bb2 >> loop2_bb1;
+  loop2_bb1_t >> loop2_bb1;
   loop2_bb1_f >> ret;
 
   z_var i(vfac["i"], crab::INT_TYPE, 32);
@@ -76,12 +67,12 @@ z_cfg_t *prog2(variable_factory_t &vfac) {
   loop1_entry.assign(k, 30);
   loop1_bb1_t.assume(i <= 9);
   loop1_bb1_f.assume(i >= 10);
-  loop1_bb2.add(i, i, 1);
+  loop1_bb1_t.add(i, i, 1);
 
-  loop2_entry.assign(j, 0);
+  loop1_bb1_f.assign(j, 0);
   loop2_bb1_t.assume(j <= 9);
   loop2_bb1_f.assume(j >= 10);
-  loop2_bb2.add(j, j, 1);
+  loop2_bb1_t.add(j, j, 1);
   return cfg;
 }
 
@@ -98,11 +89,9 @@ z_cfg_t *prog3(variable_factory_t &vfac) {
   z_basic_block_t &loop1_body_f = cfg->insert("loop1_body_f");
   z_basic_block_t &loop1_body_x = cfg->insert("loop1_body_x");
 
-  z_basic_block_t &cont = cfg->insert("cont");
   z_basic_block_t &loop2_head = cfg->insert("loop2_head");
   z_basic_block_t &loop2_t = cfg->insert("loop2_t");
   z_basic_block_t &loop2_f = cfg->insert("loop2_f");
-  z_basic_block_t &loop2_body = cfg->insert("loop2_body");
   z_basic_block_t &ret = cfg->insert("ret");
 
   entry >> loop1_head;
@@ -116,12 +105,10 @@ z_cfg_t *prog3(variable_factory_t &vfac) {
   loop1_body_f >> loop1_body_x;
   loop1_body_x >> loop1_head;
 
-  loop1_f >> cont;
-  cont >> loop2_head;
+  loop1_f >> loop2_head;
   loop2_head >> loop2_t;
   loop2_head >> loop2_f;
-  loop2_t >> loop2_body;
-  loop2_body >> loop2_head;
+  loop2_t >> loop2_head;
   loop2_f >> ret;
 
   z_var i(vfac["i"], crab::INT_TYPE, 32);
@@ -137,7 +124,7 @@ z_cfg_t *prog3(variable_factory_t &vfac) {
 
   loop2_t.assume(i <= 100);
   loop2_f.assume(i >= 101);
-  loop2_body.sub(i, i, 1);
+  loop2_t.sub(i, i, 1);
   return cfg;
 }
 
@@ -148,14 +135,12 @@ z_cfg_t *prog4(variable_factory_t &vfac) {
   z_basic_block_t &loop_head = cfg->insert("loop_head");
   z_basic_block_t &loop_t = cfg->insert("loop_t");
   z_basic_block_t &loop_f = cfg->insert("loop_f");
-  z_basic_block_t &loop_body = cfg->insert("loop_body");
   z_basic_block_t &ret = cfg->insert("ret");
 
   entry >> loop_head;
   loop_head >> loop_t;
   loop_head >> loop_f;
-  loop_t >> loop_body;
-  loop_body >> loop_head;
+  loop_t >> loop_head;
   loop_f >> ret;
 
   z_var i(vfac["i"], crab::INT_TYPE, 32);
@@ -166,8 +151,8 @@ z_cfg_t *prog4(variable_factory_t &vfac) {
 
   loop_t.assume(i <= 9);
   loop_f.assume(i >= 10);
-  loop_body.add(i, i, 1);
-  loop_body.add(p, p, 4);
+  loop_t.add(i, i, 1);
+  loop_t.add(p, p, 4);
 
   return cfg;
 }
@@ -255,19 +240,15 @@ int main(int argc, char **argv) {
 
   z_boxes_domain_t init;
 
-  cfg1->simplify(); // this is optional
   crab::outs() << *cfg1 << "\n";
   run(cfg1, cfg1->entry(), init, false, 10, 2, 20, stats_enabled);
 
-  cfg2->simplify(); // this is optional
   crab::outs() << *cfg2 << "\n";
   run(cfg2, cfg2->entry(), init, false, 10, 2, 20, stats_enabled);
 
-  cfg3->simplify(); // this is optional
   crab::outs() << *cfg3 << "\n";
   run(cfg3, cfg3->entry(), init, false, 10, 2, 20, stats_enabled);
 
-  cfg4->simplify(); // this is optional
   crab::outs() << *cfg4 << "\n";
   run(cfg4, cfg4->entry(), init, false, 10, 2, 20, stats_enabled);
 

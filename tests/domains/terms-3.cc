@@ -26,14 +26,12 @@ z_cfg_t *prog(variable_factory_t &vfac) {
   z_basic_block_t &bb1 = cfg->insert("bb1");
   z_basic_block_t &bb1_t = cfg->insert("bb1_t");
   z_basic_block_t &bb1_f = cfg->insert("bb1_f");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
   z_basic_block_t &ret = cfg->insert("ret");
   // adding control flow
   entry >> bb1;
   bb1 >> bb1_t;
   bb1 >> bb1_f;
-  bb1_t >> bb2;
-  bb2 >> bb1;
+  bb1_t >> bb1;
   bb1_f >> ret;
   // adding statements
   entry.assign(i, 0);
@@ -45,15 +43,15 @@ z_cfg_t *prog(variable_factory_t &vfac) {
   entry.assign(t, 0);
   bb1_t.assume(i <= 99);
   bb1_f.assume(i >= 100);
-  bb2.havoc(nd1);
-  bb2.havoc(nd2);
-  bb2.bitwise_and(x, x, nd1);
-  bb2.bitwise_and(y, y, nd1);
-  bb2.bitwise_or(z, z, nd1);
-  bb2.bitwise_or(w, w, nd1);
-  bb2.bitwise_xor(s, nd1, nd2);
-  bb2.bitwise_xor(t, nd1, nd2);
-  bb2.add(i, i, 1);
+  bb1_t.havoc(nd1);
+  bb1_t.havoc(nd2);
+  bb1_t.bitwise_and(x, x, nd1);
+  bb1_t.bitwise_and(y, y, nd1);
+  bb1_t.bitwise_or(z, z, nd1);
+  bb1_t.bitwise_or(w, w, nd1);
+  bb1_t.bitwise_xor(s, nd1, nd2);
+  bb1_t.bitwise_xor(t, nd1, nd2);
+  bb1_t.add(i, i, 1);
 
   return cfg;
 }
@@ -66,7 +64,6 @@ int main(int argc, char **argv) {
   }
   variable_factory_t vfac;
   z_cfg_t *cfg = prog(vfac);
-  cfg->simplify(); // this is optional
   crab::outs() << *cfg << "\n";
 
   {
