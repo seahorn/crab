@@ -957,7 +957,8 @@ public:
           o << m_partitions[i].get_dom();
           ++i;
           if (i < sz) {
-            o << ", ";
+            //o << ", ";
+	    o << "\n";
           }
         }
         o << "}";
@@ -2148,7 +2149,8 @@ public:
           o << m_product[i];
           ++i;
           if (i < sz) {
-            o << ", ";
+            //o << ", ";
+	    o << "\n";
           }
         }
         o << ")";
