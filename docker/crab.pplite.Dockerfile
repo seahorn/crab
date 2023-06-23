@@ -31,7 +31,7 @@ RUN cmake -GNinja \
           ../ && \
     cmake --build . --target apron  && cmake .. && \
     cmake --build . --target pplite  && cmake .. && \
-    cmake --build . --target install
+    cmake --build . --target pplite_domains
 
 # Run tests
 RUN /crab/tests/run_tests.sh /crab/tests/expected_results.pplite.out /crab/build
