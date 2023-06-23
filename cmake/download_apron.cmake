@@ -4,7 +4,7 @@ if (GIT_FOUND)
     GIT_REPOSITORY https://github.com/antoinemine/apron.git    
     INSTALL_DIR ${CMAKE_BINARY_DIR}/run/apron
     CONFIGURE_COMMAND 
-    ./configure -prefix <INSTALL_DIR> -no-cxx -no-java -no-ocaml -no-ppl -gmp-prefix ${GMP_SEARCH_PATH} -mpfr-prefix ${MPFR_SEARCH_PATH}
+    ./configure -prefix <INSTALL_DIR> -no-java -no-ocaml -no-ppl -gmp-prefix ${GMP_SEARCH_PATH} -mpfr-prefix ${MPFR_SEARCH_PATH}
     BUILD_IN_SOURCE 1
     BUILD_COMMAND make    
     INSTALL_COMMAND make install
