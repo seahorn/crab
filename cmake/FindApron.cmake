@@ -26,20 +26,29 @@ if (NOT APRON_FOUND)
   # find_library(Apron_Oct_Lib NAMES octMPQ PATHS ${APRON_ROOT}/lib)
   find_library(Apron_Apron_Lib NAMES apron PATHS ${APRON_ROOT}/lib NO_DEFAULT_PATH)
   find_library(Apron_Box_Lib NAMES boxMPQ PATHS ${APRON_ROOT}/lib NO_DEFAULT_PATH)
-  
-  set(APRON_LIBRARY ${Apron_Box_Lib} 
-    ${Apron_Polka_Lib} ${Apron_Oct_Lib} 
-    ${Apron_Apron_Lib})
-  
-  include (FindPackageHandleStandardArgs)
+
+  if (HAVE_PPLITE)
+    ## PPLite's apron wrapper
+    find_library(Apron_PPLite_Lib
+      NAMES ap_pplite
+      PATHS ${APRON_ROOT}/lib NO_DEFAULT_PATH)
+  endif()
+
+  set(APRON_LIBRARY ${Apron_Box_Lib}
+    ${Apron_Polka_Lib} ${Apron_Oct_Lib}
+    ${Apron_Apron_Lib} ${Apron_PPLite_Lib})
+
+  message(STATUS "${APRON_LIBRARY}")
+  include(FindPackageHandleStandardArgs)
   find_package_handle_standard_args (Apron
     REQUIRED_VARS APRON_INCLUDE_DIR APRON_LIBRARY GMP_FOUND MPFR_FOUND)
   
-  set (APRON_INCLUDE_DIR ${APRON_INCLUDE_DIR} ${MPFR_INC_DIR})
-  set (APRON_LIBRARY ${APRON_LIBRARY} ${MPFR_LIB})
+  set(APRON_INCLUDE_DIR ${APRON_INCLUDE_DIR} ${MPFR_INC_DIR} ${PPLITE_INCLUDE_DIRS})
+  set(APRON_LIBRARY ${APRON_LIBRARY} ${MPFR_LIB} ${PPLITE_LIBRARY})
   
   mark_as_advanced(APRON_LIBRARY APRON_INCLUDE_DIR 
-    Apron_Apron_Lib Apron_Box_Lib Apron_Oct_Lib Apron_Polka_Lib)
+    Apron_Apron_Lib Apron_Box_Lib Apron_Oct_Lib Apron_Polka_Lib
+    Apron_PPLite_Lib)
   
   # restore CMAKE_FIND_LIBRARY_SUFFIXES
   set(CMAKE_FIND_LIBRARY_SUFFIXES ${_APRON_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})

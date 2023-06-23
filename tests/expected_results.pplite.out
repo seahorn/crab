@@ -47,24 +47,24 @@ Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ApronPPLitePSet
 entry={}
-bb1={k = 0; i = 0} or 
-{k = 1; i = 1} or 
-{k = 2; i = 2} or 
-{k = 3; i = 3} or 
-{k = 4; i = 4} or 
+bb1={i = 0; k = 0} or 
+{i = 1; k = 1} or 
+{i = 2; k = 2} or 
+{i = 3; k = 3} or 
+{i = 4; k = 4} or 
 {i-k = 0; i <= 100; -i <= -5}
-bb1_f={k = 0; i = 0} or 
-{k = 1; i = 1} or 
-{k = 2; i = 2} or 
-{k = 3; i = 3} or 
-{k = 4; i = 4} or 
+bb1_f={i = 0; k = 0} or 
+{i = 1; k = 1} or 
+{i = 2; k = 2} or 
+{i = 3; k = 3} or 
+{i = 4; k = 4} or 
 {i-k = 0; i <= 100; -i <= -5}
 ret={k = 100; i = 100}
-bb1_t={k = 0; i = 0} or 
-{k = 1; i = 1} or 
-{k = 2; i = 2} or 
-{k = 3; i = 3} or 
-{k = 4; i = 4} or 
+bb1_t={i = 0; k = 0} or 
+{i = 1; k = 1} or 
+{i = 2; k = 2} or 
+{i = 3; k = 3} or 
+{i = 4; k = 4} or 
 {i-k = 0; i <= 100; -i <= -5}
 bb2={k = 0; i = 0} or 
 {k = 1; i = 1} or 
@@ -151,37 +151,37 @@ Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f lo
 Invariants using ApronPPLitePSet
 loop1_entry={}
 loop1_bb1={k = 30; i = 0} or 
-{k = 30; i = 1} or 
-{k = 30; i = 2} or 
-{k = 30; i = 3} or 
-{k = 30; i = 4} or 
+{i = 1; k = 30} or 
+{i = 2; k = 30} or 
+{i = 3; k = 30} or 
+{i = 4; k = 30} or 
 {k = 30; i <= 10; -i <= -5}
 loop1_bb1_f={k = 30; i = 0} or 
-{k = 30; i = 1} or 
-{k = 30; i = 2} or 
-{k = 30; i = 3} or 
-{k = 30; i = 4} or 
+{i = 1; k = 30} or 
+{i = 2; k = 30} or 
+{i = 3; k = 30} or 
+{i = 4; k = 30} or 
 {k = 30; i <= 10; -i <= -5}
 loop2_entry={k = 30; i = 10}
-loop2_bb1={k = 30; j = 0; i = 10} or 
-{k = 30; j = 1; i = 10} or 
-{k = 30; j = 2; i = 10} or 
-{k = 30; j = 3; i = 10} or 
-{k = 30; j = 4; i = 10} or 
-{k = 30; i = 10; j <= 10; -j <= -5}
-loop2_bb1_f={k = 30; j = 0; i = 10} or 
-{k = 30; j = 1; i = 10} or 
-{k = 30; j = 2; i = 10} or 
-{k = 30; j = 3; i = 10} or 
-{k = 30; j = 4; i = 10} or 
-{k = 30; i = 10; j <= 10; -j <= -5}
+loop2_bb1={j = 0; k = 30; i = 10} or 
+{i = 10; j = 1; k = 30} or 
+{i = 10; j = 2; k = 30} or 
+{i = 10; j = 3; k = 30} or 
+{i = 10; j = 4; k = 30} or 
+{i = 10; k = 30; j <= 10; -j <= -5}
+loop2_bb1_f={j = 0; k = 30; i = 10} or 
+{i = 10; j = 1; k = 30} or 
+{i = 10; j = 2; k = 30} or 
+{i = 10; j = 3; k = 30} or 
+{i = 10; j = 4; k = 30} or 
+{i = 10; k = 30; j <= 10; -j <= -5}
 ret={k = 30; j = 10; i = 10}
-loop2_bb1_t={k = 30; j = 0; i = 10} or 
-{k = 30; j = 1; i = 10} or 
-{k = 30; j = 2; i = 10} or 
-{k = 30; j = 3; i = 10} or 
-{k = 30; j = 4; i = 10} or 
-{k = 30; i = 10; j <= 10; -j <= -5}
+loop2_bb1_t={j = 0; k = 30; i = 10} or 
+{i = 10; j = 1; k = 30} or 
+{i = 10; j = 2; k = 30} or 
+{i = 10; j = 3; k = 30} or 
+{i = 10; j = 4; k = 30} or 
+{i = 10; k = 30; j <= 10; -j <= -5}
 loop2_bb2={k = 30; j = 0; i = 10} or 
 {k = 30; j = 1; i = 10} or 
 {k = 30; j = 2; i = 10} or 
@@ -189,10 +189,10 @@ loop2_bb2={k = 30; j = 0; i = 10} or
 {k = 30; j = 4; i = 10} or 
 {k = 30; i = 10; -j <= -5; j <= 9}
 loop1_bb1_t={k = 30; i = 0} or 
-{k = 30; i = 1} or 
-{k = 30; i = 2} or 
-{k = 30; i = 3} or 
-{k = 30; i = 4} or 
+{i = 1; k = 30} or 
+{i = 2; k = 30} or 
+{i = 3; k = 30} or 
+{i = 4; k = 30} or 
 {k = 30; i <= 10; -i <= -5}
 loop1_bb2={k = 30; i = 0} or 
 {k = 30; i = 1} or 
@@ -329,7 +329,7 @@ loop1_body_f={i = 1} or
 {i = 3} or 
 {i = 4} or 
 {i = 5} or 
-{-i <= -6; i <= 9}
+{i <= 9; -i <= -6}
 loop1_body_x={i = 0} or 
 {i = 1} or 
 {i = 2} or 
@@ -342,7 +342,7 @@ loop1_body_t={i = 1} or
 {i = 3} or 
 {i = 4} or 
 {i = 5} or 
-{-i <= -6; i <= 9}
+{i <= 9; -i <= -6}
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
 entry:
@@ -394,23 +394,23 @@ Abstract trace: entry (loop_head loop_t loop_body)^{3} loop_f ret
 Invariants using ApronPPLitePSet
 entry={}
 loop_head={p = 0; i = 0} or 
-{p = 4; i = 1} or 
-{p = 8; i = 2} or 
-{p = 12; i = 3} or 
-{p = 16; i = 4} or 
+{i = 1; p = 4} or 
+{i = 2; p = 8} or 
+{i = 3; p = 12} or 
+{i = 4; p = 16} or 
 {4*i-p = 0; i <= 10; -i <= -5}
 loop_f={p = 0; i = 0} or 
-{p = 4; i = 1} or 
-{p = 8; i = 2} or 
-{p = 12; i = 3} or 
-{p = 16; i = 4} or 
+{i = 1; p = 4} or 
+{i = 2; p = 8} or 
+{i = 3; p = 12} or 
+{i = 4; p = 16} or 
 {4*i-p = 0; i <= 10; -i <= -5}
 ret={p = 40; i = 10}
 loop_t={p = 0; i = 0} or 
-{p = 4; i = 1} or 
-{p = 8; i = 2} or 
-{p = 12; i = 3} or 
-{p = 16; i = 4} or 
+{i = 1; p = 4} or 
+{i = 2; p = 8} or 
+{i = 3; p = 12} or 
+{i = 4; p = 16} or 
 {4*i-p = 0; i <= 10; -i <= -5}
 loop_body={p = 0; i = 0} or 
 {p = 4; i = 1} or 
@@ -468,24 +468,24 @@ Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ApronPPLitePSet
 entry={}
-bb1={k = 0; i = 0} or 
-{k = 1; i = 1} or 
-{k = 2; i = 2} or 
-{k = 3; i = 3} or 
-{k = 4; i = 4} or 
+bb1={i = 0; k = 0} or 
+{i = 1; k = 1} or 
+{i = 2; k = 2} or 
+{i = 3; k = 3} or 
+{i = 4; k = 4} or 
 {i-k = 0; -i <= -5}
-bb1_f={k = 0; i = 0} or 
-{k = 1; i = 1} or 
-{k = 2; i = 2} or 
-{k = 3; i = 3} or 
-{k = 4; i = 4} or 
+bb1_f={i = 0; k = 0} or 
+{i = 1; k = 1} or 
+{i = 2; k = 2} or 
+{i = 3; k = 3} or 
+{i = 4; k = 4} or 
 {i-k = 0; -i <= -5}
 ret={k = 9; i = 9}
-bb1_t={k = 0; i = 0} or 
-{k = 1; i = 1} or 
-{k = 2; i = 2} or 
-{k = 3; i = 3} or 
-{k = 4; i = 4} or 
+bb1_t={i = 0; k = 0} or 
+{i = 1; k = 1} or 
+{i = 2; k = 2} or 
+{i = 3; k = 3} or 
+{i = 4; k = 4} or 
 {i-k = 0; -i <= -5}
 bb2={k = 0; i = 0} or 
 {k = 1; i = 1} or 

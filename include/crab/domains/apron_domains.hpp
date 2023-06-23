@@ -115,11 +115,11 @@ private:
     auto pplite_manager_alloc
       = [](const char* domain_name) {
           // Polyhedra are topologically closed (strict == false).
-          auto man = ap_pplite_poly_manager_alloc(false);
+          auto man = ap_pplite_manager_alloc(false);
           // Select the specific PPLite domain.
-          ap_pplite_poly_manager_set_kind(man, domain_name);
+          ap_pplite_manager_set_kind(man, domain_name);
           // Widening arguments satisfy the inclusion hypothesis.
-          ap_pplite_poly_manager_set_widen_spec(man, "risky");
+          ap_pplite_manager_set_widen_spec(man, "risky");
           return man;
         };
 #endif // HAVE_PPLITE
@@ -142,7 +142,7 @@ private:
         s_apman = pplite_manager_alloc("F_Poly");
         break;
       case APRON_PPLITE_PSET:
-        s_apman = pplite_manager_alloc("PSet");
+        s_apman = pplite_manager_alloc("P_Set");
         break;
 #endif // HAVE_PPLITE
       default:
@@ -1627,10 +1627,10 @@ public:
         return disjunctive_linear_constraint_system_t(false /*is_false*/);
       } else {
         auto pset = &*m_apstate;
-        auto num_disj = ap_pplite_poly_num_disjuncts(s_apman, pset);
+        auto num_disj = ap_pplite_abstract0_num_disjuncts(s_apman, pset);
         auto res = disjunctive_linear_constraint_system_t(false /*is_false*/);
         for (auto d = 0; d < num_disj; ++d) {
-          auto lc_arr = ap_pplite_poly_disj_to_lincons_array(s_apman, pset, d);
+          auto lc_arr = ap_pplite_abstract0_disj_to_lincons_array(s_apman, pset, d);
           linear_constraint_system_t csts;
           for (unsigned i = 0; i < lc_arr.size; i++)
             csts += tconst2const(lc_arr.p[i]);
