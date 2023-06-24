@@ -243,10 +243,11 @@ private:
   }
 
   void initialize_invariant_tables() {
+    clear();
     for (auto it = m_cfg.label_begin(), et = m_cfg.label_end(); it != et; ++it) {
       auto const &label = *it;
-      m_pre.emplace(label, m_absval_fac.make_bottom());
-      m_post.emplace(label, m_absval_fac.make_bottom());
+      m_pre.emplace(label, std::move(m_absval_fac.make_bottom()));
+      m_post.emplace(label, std::move(m_absval_fac.make_bottom()));
     }
   }
   
@@ -257,9 +258,7 @@ public:
       : m_cfg(cfg), m_wto(cfg), m_absval_fac(absval_fac),
         m_params(params),
         m_enable_processor(enable_processor) {
-
     initialize_thresholds(m_params.get_max_thresholds());
-    initialize_invariant_tables();
   }
 
   virtual ~interleaved_fwd_fixpoint_iterator() {}
@@ -293,6 +292,8 @@ public:
   void run(AbstractValue init) {
     crab::ScopedCrabStats __st__("Fixpo");
 
+    initialize_invariant_tables();
+    
     CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Started analysis of "
                                               << func_name(m_cfg) << "\n");
     set_pre(m_cfg.entry(), init);
@@ -313,6 +314,8 @@ public:
            const assumption_map_t &assumptions) {
     crab::ScopedCrabStats __st__("Fixpo");
 
+    initialize_invariant_tables();
+    
     CRAB_VERBOSE_IF(
         1, crab::get_msg_stream()
                << "== Started fixpoint at block " << func_name(m_cfg) << "::"
