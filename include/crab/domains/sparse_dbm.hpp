@@ -164,7 +164,7 @@ protected:
   }
 
   template <class G, class P>
-  inline bool check_potential(const G &g, const P &p) const {
+  static bool check_potential(const G &g, const P &p) {
 #ifdef CHECK_POTENTIAL
     for (vert_id v : g.verts()) {
       for (vert_id d : g.succs(v)) {
@@ -994,7 +994,7 @@ public:
     } else {
 
 
-      auto join_op = [this](DBM_t &left, const DBM_t &right) {
+      auto join_op = [](DBM_t &left, const DBM_t &right) {
 	assert(check_potential(left.g, left.potential));
 	assert(check_potential(right.g, right.potential));
 	
@@ -1091,9 +1091,8 @@ public:
                                             << "DBM 2\n"
                                             << o << "\n");
 
-      auto join_op = [this](const DBM_t &left, const DBM_t& right) -> DBM_t {
+      auto join_op = [](const DBM_t &left, const DBM_t& right) -> DBM_t {
 	// Both left and right are normalized
-      
 	assert(check_potential(left.g, left.potential));
 	assert(check_potential(right.g, right.potential));
 	
@@ -1273,7 +1272,7 @@ public:
                                             << "DBM 2\n"
                                             << o << "\n";);
 
-      auto meet_op = [this](const DBM_t &left, const DBM_t &right) -> DBM_t {
+      auto meet_op = [](const DBM_t &left, const DBM_t &right) -> DBM_t {
 	// Both left and right are normalized
 	
 	// We map vertices in the left operand onto a contiguous range.
@@ -1384,7 +1383,7 @@ public:
                                             << "DBM 2\n"
                                             << o << "\n";);
 
-      auto meet_op = [this](DBM_t &left, const DBM_t & right) {
+      auto meet_op = [](DBM_t &left, const DBM_t & right) {
 	// Both left and right are normalized
 
 	// Common renaming
@@ -1434,7 +1433,7 @@ public:
 	// We've warm-started pi with the operand potentials
 	if (!GrOps::select_potentials(meet_g, meet_pi)) {
 	  // Potentials cannot be selected -- state is infeasible.
-	  set_to_bottom();
+	  left.set_to_bottom();
 	  return;
 	}
 	
