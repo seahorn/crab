@@ -186,7 +186,7 @@ protected:
   }
 
   template <class G, class P>
-  inline void check_potential(const G &g, const P &p, unsigned line) const {
+  static void check_potential(const G &g, const P &p, unsigned line) {
 #ifdef CHECK_POTENTIAL
     for (vert_id v : g.verts()) {
       for (vert_id d : g.succs(v)) {
@@ -931,8 +931,8 @@ protected:
   }
   
   // Join of gx and gy.
-  graph_t join(GrPerm &gx, GrPerm &gy, unsigned sz, std::vector<Wt> &pot_rx,
-               std::vector<Wt> &pot_ry) const {
+  static graph_t join(GrPerm &gx, GrPerm &gy, unsigned sz, std::vector<Wt> &pot_rx,
+		      std::vector<Wt> &pot_ry) {
 
     // Compute the deferred relations
     graph_t g_ix_ry;
@@ -1042,7 +1042,8 @@ protected:
   }
 
   template <class G1, class G2>
-  graph_t split_widen(G1 &l, G2 &r, std::vector<vert_id> &unstable) const {
+  static graph_t split_widen(G1 &l, G2 &r, std::vector<vert_id> &unstable,
+			     const rev_map_t &revmap) {
     assert(l.size() == r.size());
     size_t sz = l.size();
     graph_t g;
@@ -1079,8 +1080,8 @@ protected:
             ((edge_pred.val + edge_succ.val) <= wx.get())) {
           bool res = update_edge_widen_g(s, d, wx.get());
           if (res) {
-            CRAB_LOG("zones-split-widening", auto vs = rev_map[s];
-                     auto vd = rev_map[d];
+            CRAB_LOG("zones-split-widening", auto vs = revmap[s];
+                     auto vd = revmap[d];
                      crab::outs() << "Widening 1: added " << *vd << "-" << *vs
 		                  << "<=" << wx.get() << "\n";);
           }
@@ -1099,8 +1100,8 @@ protected:
           bool res = update_edge_widen_g(s, d, wx.get());
           if (res) {
             CRAB_LOG(
-                "zones-split-widening", auto vs = rev_map[s];
-                auto vd = rev_map[d]; if (s == 0 && d != 0) {
+                "zones-split-widening", auto vs = revmap[s];
+                auto vd = revmap[d]; if (s == 0 && d != 0) {
                   crab::outs() << "Widening 2: added " << *vd
                                << "<=" << wx.get() << "\n";
                 } else if (s != 0 && d == 0) {
@@ -1123,7 +1124,7 @@ protected:
                      crab::outs() << "Widening 5: added v0"
                                   << " in the normalization queue\n";
                    } else {
-                     auto vs = rev_map[s];
+                     auto vs = revmap[s];
                      crab::outs() << "Widening 5: added " << *vs
                                   << " in the normalization queue\n";
                    });
@@ -1485,7 +1486,7 @@ public:
       // do nothing
     } else {
 
-      auto join_op = [this](DBM_t &left, const DBM_t& right)  {
+      auto join_op = [](DBM_t &left, const DBM_t& right)  {
 	// Both left and right are normalized
 	
 	check_potential(left.g, left.potential, __LINE__);
@@ -1584,7 +1585,7 @@ public:
                                            << "DBM 2\n"
                                            << o << "\n");
 
-      auto join_op = [this](const DBM_t &left, const DBM_t& right) -> DBM_t {
+      auto join_op = [](const DBM_t &left, const DBM_t& right) -> DBM_t {
 	// Both left and right are normalized
 	
 	check_potential(left.g, left.potential, __LINE__);
@@ -1692,7 +1693,7 @@ public:
                             << "DBM 2\n"
                             << o << "\n");
 
-      auto widen_op = [this](const DBM_t &left, const DBM_t &right) -> DBM_t {
+      auto widen_op = [](const DBM_t &left, const DBM_t &right) -> DBM_t {
 	// Only right is normalized
 	
 	// Figure out the common renaming
@@ -1728,7 +1729,7 @@ public:
 	
 	// Now perform the widening
 	std::vector<vert_id> destabilized;
-	graph_t widen_g(split_widen(gx, gy, destabilized));
+	graph_t widen_g(split_widen(gx, gy, destabilized, out_revmap));
 	for (vert_id v : destabilized)
 	  widen_unstable.insert(v);
 	
@@ -1771,7 +1772,7 @@ public:
                                            << "DBM 2\n"
                                            << o << "\n");
 
-      auto meet_op = [this](DBM_t &left, const DBM_t & right) {
+      auto meet_op = [](DBM_t &left, const DBM_t & right) {
 	// Both left and right are normalized
 	
 	check_potential(left.g, left.potential, __LINE__);
@@ -1830,7 +1831,7 @@ public:
 	// We've warm-started pi with the operand potentials
 	if (!GrOps::select_potentials(meet_g, meet_pi)) {
 	  // Potentials cannot be selected -- state is infeasible.
-	  set_to_bottom();
+	  left.set_to_bottom();
 	  return;
 	}
 	
@@ -1907,7 +1908,7 @@ public:
                                            << "DBM 2\n"
                                            << o << "\n");
 
-      auto meet_op = [this](const DBM_t &left, const DBM_t &right) -> DBM_t {
+      auto meet_op = [](const DBM_t &left, const DBM_t &right) -> DBM_t {
 	// Both left and right are normalized 
 	check_potential(left.g, left.potential, __LINE__);
 	check_potential(right.g, right.potential, __LINE__);
