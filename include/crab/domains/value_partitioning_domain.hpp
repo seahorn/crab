@@ -1811,9 +1811,13 @@ public:
 
   bool entails(const linear_constraint_t &cst) const override {
     if (!is_bottom()) {
-      for (auto &elem: m_product) {
-	if (!elem.entails(cst)) {
-	  return false;
+      if (!has_partitions()) {
+	return m_absval.entails(cst);
+      } else {
+	for (auto &elem: m_product) {
+	  if (!elem.entails(cst)) {
+	    return false;
+	  }
 	}
       }
     }
