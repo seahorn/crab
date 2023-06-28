@@ -1,6 +1,7 @@
 #include <crab/config.h>
 #include <crab/numbers/wrapint.hpp>
 
+#include <bitset>
 #include <iostream>
 
 using namespace std;
