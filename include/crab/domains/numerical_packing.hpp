@@ -111,7 +111,7 @@ private:
         base &= *(m_packs.get_equiv_class(v).get_absval());
       }
     }
-    return std::move(base);
+    return base;
   }
 
   // x := f(y)
