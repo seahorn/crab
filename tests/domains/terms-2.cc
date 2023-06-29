@@ -57,7 +57,6 @@ int main(int argc, char **argv) {
   }
   variable_factory_t vfac;
   z_cfg_t *cfg = prog(vfac);
-  cfg->simplify();
   crab::outs() << *cfg << "\n";
 
   {

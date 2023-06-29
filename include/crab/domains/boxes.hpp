@@ -9,6 +9,7 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/intervals.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -19,9 +20,13 @@
 #include <crab/domains/dummy_abstract_domain.hpp>
 namespace crab {
 namespace domains {
-template <typename N, typename V>
+class BoxesDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};  
+template <typename N, typename V, typename P = BoxesDefaultParams>
 class boxes_domain final
-    : public dummy_abstract_domain<boxes_domain<N, V>> {
+    : public dummy_abstract_domain<boxes_domain<N, V, P>> {
 public:
   std::string not_implemented_msg() const override {
     return "No LDD. Run cmake with -DCRAB_USE_LDD=ON";
@@ -45,11 +50,19 @@ public:
 #include <boost/optional.hpp>
 
 namespace crab {
-
 namespace domains {
-
 using namespace crab::domains::ldd;
 
+class BoxesDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+
+#define BOXES_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define BOXES_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
+  
 /*
  * The wrapper has two global datastructures:
  * 1) a ldd manager and
@@ -61,12 +74,12 @@ using namespace crab::domains::ldd;
  *
  * FIXME: Ldd_TermReplace seems to leak memory sometimes.
  */
-template <typename Number, typename VariableName>
+template <typename Number, typename VariableName, typename Params = BoxesDefaultParams>
 class boxes_domain final
-    : public abstract_domain_api<boxes_domain<Number, VariableName>> {
+  : public abstract_domain_api<boxes_domain<Number, VariableName, Params>> {
 
   using interval_domain_t = ikos::interval_domain<Number, VariableName>;
-  using boxes_domain_t = boxes_domain<Number, VariableName>;
+  using boxes_domain_t = boxes_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<boxes_domain_t>;
 
 public:
@@ -157,8 +170,7 @@ private:
   }
 
   LddNodePtr project(variable_t v) const {
-    crab::CrabStats::count(domain_name() + ".count.project");
-    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    BOXES_DOMAIN_SCOPED_STATS(".project");
     
     std::vector<int> qvars;
     // num_of_vars is shared by all ldd's
@@ -211,8 +223,7 @@ private:
     if (!x) {
       // XXX: if we copy the SPECIAL var to v we forget the SPECIAL
       //      var after we copy.
-      crab::CrabStats::count(domain_name() + ".count.forget");
-      crab::ScopedCrabStats __st__(domain_name() + ".forget");
+      BOXES_DOMAIN_SCOPED_STATS(".forget");
       int dim = 0; // SPECIAL variable is dim 0
       m_ldd = lddPtr(get_ldd_man(),
                      Ldd_ExistsAbstract(get_ldd_man(), &*m_ldd, dim));
@@ -560,8 +571,7 @@ private:
   }
 
   interval_domain_t to_intervals(LddNodePtr &ldd) const {
-    crab::CrabStats::count(domain_name() + ".count.to_intervals");
-    crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
+    BOXES_DOMAIN_SCOPED_STATS(".to_intervals");
 
     interval_domain_t res; // top
 
@@ -755,6 +765,12 @@ private:
   }
   
 public:
+  /// Boxes domain implements only standard abstract operations of a
+  /// numerical domain plus boolean operations. It is intended to be
+  /// used as a leaf domain in the hierarchy of domains.
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(boxes_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(boxes_domain_t)
+  
   static void clear_global_state() { s_var_map.clear(); }
 
   boxes_domain() : m_ldd(lddPtr(get_ldd_man(), Ldd_GetTrue(get_ldd_man()))) {}
@@ -791,107 +807,103 @@ public:
     std::swap(*this, abs);
   }
 
-  boxes_domain(const boxes_domain_t &other)
-      : // m_ldd(other.m_ldd)
-        m_ldd(lddPtr(get_ldd_man(), &(*other.m_ldd))) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+  boxes_domain(const boxes_domain_t &o)
+      : // m_ldd(o.m_ldd)
+        m_ldd(lddPtr(get_ldd_man(), &(*o.m_ldd))) {
+    BOXES_DOMAIN_SCOPED_STATS(".copy");
   }
-
-  boxes_domain(boxes_domain_t &&other) : m_ldd(std::move(other.m_ldd)) {}
-
-  boxes_domain_t &operator=(const boxes_domain_t &other) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
-    if (this != &other) {
-      // m_ldd = other.m_ldd;
-      m_ldd = lddPtr(get_ldd_man(), &(*other.m_ldd));
+  
+  boxes_domain_t &operator=(const boxes_domain_t &o) {
+    BOXES_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
+    if (this != &o) {
+      // m_ldd = o.m_ldd;
+      m_ldd = lddPtr(get_ldd_man(), &(*o.m_ldd));
     }
     return *this;
   }
 
+  boxes_domain(boxes_domain_t &&o) : m_ldd(std::move(o.m_ldd)) {}
+  boxes_domain_t &operator=(boxes_domain_t &&o) {
+    m_ldd = std::move(o.m_ldd);
+    return *this;
+  }
+  
   bool is_bottom() const override {
     return &*m_ldd == Ldd_GetFalse(get_ldd_man());
   }
 
   bool is_top() const override { return &*m_ldd == Ldd_GetTrue(get_ldd_man()); }
 
-  bool operator<=(const boxes_domain_t &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.leq");
-    crab::ScopedCrabStats __st__(domain_name() + ".leq");
+  bool operator<=(const boxes_domain_t &o) const override {
+    BOXES_DOMAIN_SCOPED_STATS(".leq");
 
-    bool res = Ldd_TermLeq(get_ldd_man(), &(*m_ldd), &(*other.m_ldd));
+    bool res = Ldd_TermLeq(get_ldd_man(), &(*m_ldd), &(*o.m_ldd));
 
-    CRAB_LOG("boxes", boxes_domain_t left(*this); boxes_domain_t right(other);
+    CRAB_LOG("boxes", boxes_domain_t left(*this); boxes_domain_t right(o);
              crab::outs() << "Check if " << left << " <= " << right << " ---> "
                           << res << "\n";);
     return res;
   }
 
-  void operator|=(const boxes_domain_t &other) override {
-    *this = *this | other;
+  void operator|=(const boxes_domain_t &o) override {
+    *this = *this | o;
   }
 
-  boxes_domain_t operator|(const boxes_domain_t &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+  boxes_domain_t operator|(const boxes_domain_t &o) const override {
+    BOXES_DOMAIN_SCOPED_STATS(".join");
 
-    return boxes_domain_t(join(m_ldd, other.m_ldd));
+    return boxes_domain_t(join(m_ldd, o.m_ldd));
   }
 
-  void operator&=(const boxes_domain_t &other) override {
-    *this = *this & other;
+  void operator&=(const boxes_domain_t &o) override {
+    *this = *this & o;
   }
   
-  boxes_domain_t operator&(const boxes_domain_t &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+  boxes_domain_t operator&(const boxes_domain_t &o) const override {
+    BOXES_DOMAIN_SCOPED_STATS(".meet");
 
     return boxes_domain_t(
-        lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*m_ldd, &*other.m_ldd)));
+        lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*m_ldd, &*o.m_ldd)));
   }
 
-  boxes_domain_t operator||(const boxes_domain_t &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+  boxes_domain_t operator||(const boxes_domain_t &o) const override {
+    BOXES_DOMAIN_SCOPED_STATS(".widening");
 
     // It is not necessarily true that the new value is bigger
     // than the old value so we apply
     // widen(old, new) = widen(old,(join(old,new)))
-    LddNodePtr v = join(m_ldd, other.m_ldd);
+    LddNodePtr v = join(m_ldd, o.m_ldd);
     LddNodePtr w =
         lddPtr(get_ldd_man(), Ldd_BoxWiden2(get_ldd_man(), &*m_ldd, &*v));
     boxes_domain_t res(w);
     CRAB_LOG("boxes", crab::outs() << "Performed widening \n"
                                    << "**" << *this << "\n"
-                                   << "** " << other << "\n"
+                                   << "** " << o << "\n"
                                    << "= " << res << "\n";);
     return res;
   }
 
   boxes_domain_t widening_thresholds(
-      const boxes_domain_t &other,
+      const boxes_domain_t &o,
       const thresholds<number_t> & /*ts*/) const override {
     // CRAB_WARN(" boxes widening operator with thresholds not implemented");
-    return (*this || other);
+    return (*this || o);
   }
 
-  boxes_domain_t operator&&(const boxes_domain_t &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
+  boxes_domain_t operator&&(const boxes_domain_t &o) const override {
+    BOXES_DOMAIN_SCOPED_STATS(".narrowing");
 
-    boxes_domain_t res(*this & other);
+    boxes_domain_t res(*this & o);
     // CRAB_WARN(" boxes narrowing operator replaced with meet");
     CRAB_LOG("boxes", crab::outs() << "Performed narrowing \n"
                                    << "**" << *this << "\n"
-                                   << "** " << other << "\n"
+                                   << "** " << o << "\n"
                                    << "= " << res << "\n";);
     return res;
   }
 
   boxes_domain_t complement() const {
-    crab::CrabStats::count(domain_name() + ".count.complement");
-    crab::ScopedCrabStats __st__(domain_name() + ".complement");
+    BOXES_DOMAIN_SCOPED_STATS(".complement");
     LddNodePtr w = lddPtr(get_ldd_man(), Ldd_Not(&*m_ldd));
     boxes_domain_t res(w);
     CRAB_LOG("boxes", boxes_domain_t tmp(*this); crab::outs()
@@ -903,8 +915,7 @@ public:
   }
 
   void operator-=(const variable_t &var) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    BOXES_DOMAIN_SCOPED_STATS(".forget");
 
     if (is_bottom() || is_top())
       return;
@@ -915,8 +926,7 @@ public:
   }
 
   void forget(const variable_vector_t &variables) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    BOXES_DOMAIN_SCOPED_STATS(".forget");
 
     if (is_bottom() || is_top())
       return;
@@ -932,8 +942,7 @@ public:
   }
 
   void project(const variable_vector_t &variables) override {
-    crab::CrabStats::count(domain_name() + ".count.project");
-    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    BOXES_DOMAIN_SCOPED_STATS(".project");
 
     if (is_bottom() || is_top())
       return;
@@ -954,8 +963,7 @@ public:
   }
 
   void expand(const variable_t &v, const variable_t &new_v) override {
-    crab::CrabStats::count(domain_name() + ".count.expand");
-    crab::ScopedCrabStats __st__(domain_name() + ".expand");
+    BOXES_DOMAIN_SCOPED_STATS(".expand");
 
     if (is_top() || is_bottom())
       return;
@@ -973,8 +981,7 @@ public:
   }
 
   void operator+=(const linear_constraint_t &cst) {
-    crab::CrabStats::count(domain_name() + ".count.add_constraints");
-    crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
+    BOXES_DOMAIN_SCOPED_STATS(".add_cst");
 
     CRAB_LOG("boxes", crab::outs() << "--- assume(" << cst << ") --> ";);
 
@@ -1047,21 +1054,20 @@ public:
   void intrinsic(std::string name,
 		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented");
   }
 
   void backward_intrinsic(std::string name,
 			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const boxes_domain_t &invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented");
   }
   /* end intrinsics operations */
 
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
-    crab::CrabStats::count(domain_name() + ".count.rename");
-    crab::ScopedCrabStats __st__(domain_name() + ".rename");
+    BOXES_DOMAIN_SCOPED_STATS(".rename");
 
     assert(from.size() == to.size());
 
@@ -1080,8 +1086,7 @@ public:
   }
 
   void set(const variable_t &v, interval_t ival) {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    BOXES_DOMAIN_SCOPED_STATS(".assign");
 
     if (!is_bottom()) {
       m_ldd = apply_interval(v, ival);
@@ -1093,8 +1098,7 @@ public:
   }
 
   virtual interval_t at(const variable_t &v) const override {
-    crab::CrabStats::count(domain_name() + ".count.to_intervals");
-    crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
+    BOXES_DOMAIN_SCOPED_STATS(".to_intervals");
 
     if (is_bottom()) {
       return interval_t::bottom();
@@ -1114,8 +1118,7 @@ public:
   
   // x := e
   void assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    BOXES_DOMAIN_SCOPED_STATS(".assign");
 
     if (is_bottom()) {
       return;
@@ -1134,7 +1137,7 @@ public:
       auto it = e.begin();
       apply_ldd(x, it->second, it->first, e.constant());
     } else {
-      crab::ScopedCrabStats __st__(domain_name() + ".assign.converting_to_intervals");
+      BOXES_DOMAIN_SCOPED_STATS(".assign.converting_to_intervals");
       // Lose precision in the general case
       // XXX: we can probably do a bit better here
       m_ldd = apply_interval(x, eval_interval(e));
@@ -1147,8 +1150,7 @@ public:
   // x := y op k
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    BOXES_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom()) {
       return;
@@ -1204,8 +1206,7 @@ public:
   // x := y op z
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    BOXES_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom()) {
       return;
@@ -1299,8 +1300,7 @@ public:
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const boxes_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign");
+    BOXES_DOMAIN_SCOPED_STATS(".backward_assign");
 
     CRAB_LOG("boxes", crab::outs() << "Backward " << x << ":=" << e
                                    << "\n\tPOST=" << *this << "\n");
@@ -1311,8 +1311,7 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, number_t z,
                       const boxes_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    BOXES_DOMAIN_SCOPED_STATS(".backward_apply");
 
     CRAB_LOG("boxes", crab::outs() << "Backward " << x << ":=" << y << op << z
                                    << "\n\tPOST=" << *this << "\n");
@@ -1323,8 +1322,7 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const boxes_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    BOXES_DOMAIN_SCOPED_STATS(".backward_apply");
 
     CRAB_LOG("boxes", crab::outs() << "Backward " << x << ":=" << y << op << z
                                    << "\n\tPOST=" << *this << "\n");
@@ -1341,8 +1339,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    BOXES_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom())
       return;
@@ -1376,8 +1373,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    BOXES_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom())
       return;
@@ -1414,13 +1410,12 @@ public:
   ////////
   void assign_bool_cst(const variable_t &lhs,
                        const linear_constraint_t &cst) override {
+    BOXES_DOMAIN_SCOPED_STATS(".assign_bool_cst");
+    
     if (!m_bool_reasoning) {
       return;
     }
     
-    crab::CrabStats::count(domain_name() + ".count.assign_bool_cst");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst");
-
     auto is_interval_cst = [](const linear_constraint_t &c) {
     	   return (c.expression().size() == 1 &&
     		   (c.expression().begin()->first == number_t(1) ||
@@ -1440,8 +1435,7 @@ public:
     } else {
 
       if (is_interval_cst(cst)) {
-	crab::CrabStats::count(domain_name() + ".count.assign_bool_cst.interval");
-	crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst.interval");
+	BOXES_DOMAIN_SCOPED_STATS(".assign_bool_cst.interval");
       	/// Interval constraint
       	linear_expression_t exp = cst.expression();
         number_t cx = exp.begin()->first;
@@ -1454,8 +1448,7 @@ public:
       	m_ldd = lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*m_ldd, &*ldd_rhs));
       } else {
       	/// Non-interval constraint
-	crab::CrabStats::count(domain_name() + ".count.assign_bool_cst.non-interval");
-	crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_cst.non-interval");
+	BOXES_DOMAIN_SCOPED_STATS(".assign_bool_cst.non-interval");
 	// Note that we could project away irrelevant variables before
 	// performing the join but this would lose precision.
         boxes_domain_t tt(*this);
@@ -1491,12 +1484,12 @@ public:
 
   void assign_bool_var(const variable_t &x, const variable_t &y,
                        bool is_not_y) override {
-    if (!m_bool_reasoning)
-      return;
+    BOXES_DOMAIN_SCOPED_STATS(".assign_bool_var");
     
-    crab::CrabStats::count(domain_name() + ".count.assign_bool_var");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign_bool_var");
-
+    if (!m_bool_reasoning) {
+      return;
+    }
+    
     if (is_bottom()) {
       return;
     }
@@ -1532,12 +1525,12 @@ public:
 
   void apply_binary_bool(bool_operation_t op, const variable_t &x,
                          const variable_t &y, const variable_t &z) override {
+    BOXES_DOMAIN_SCOPED_STATS(".apply_bin_bool");
 
-    if (!m_bool_reasoning)
+    if (!m_bool_reasoning) {
       return;
+    }
 
-    crab::CrabStats::count(domain_name() + ".count.apply_bin_bool");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply_bin_bool");
 
     if (is_bottom()) {
       return;
@@ -1584,11 +1577,12 @@ public:
   }
 
   void assume_bool(const variable_t &x, bool is_negated) override {
-    if (!m_bool_reasoning)
-      return;
+    BOXES_DOMAIN_SCOPED_STATS(".assume_bool");
 
-    crab::CrabStats::count(domain_name() + ".count.assume_bool");
-    crab::ScopedCrabStats __st__(domain_name() + ".assume_bool");
+    if (!m_bool_reasoning) {
+      return;
+    }
+
 
     if (is_bottom()) {
       return;
@@ -1656,22 +1650,28 @@ public:
     CRAB_WARN("boxes backward boolean apply not implemented");
   }
 
-  /// Boxes domain implements only standard abstract operations of a
-  /// numerical domain plus boolean operations. It is intended to be
-  /// used as a leaf domain in the hierarchy of domains.
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(boxes_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(boxes_domain_t)
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const boxes_domain_t &caller) override {
+    BOXES_DOMAIN_SCOPED_STATS(".callee_entry");    
+    inter_abstract_operations<boxes_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
 
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const boxes_domain_t &callee) override {
+    BOXES_DOMAIN_SCOPED_STATS(".caller_cont");
+    inter_abstract_operations<boxes_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   DEFAULT_SELECT(boxes_domain_t)
   DEFAULT_SELECT_BOOL(boxes_domain_t)
   DEFAULT_WEAK_ASSIGN(boxes_domain_t)
   DEFAULT_WEAK_BOOL_ASSIGN(boxes_domain_t)
   
   linear_constraint_system_t to_linear_constraint_system() const override {
-    crab::CrabStats::count(domain_name() +
-                           ".count.to_linear_constraint_system");
-    crab::ScopedCrabStats __st__(domain_name() +
-                                 ".to_linear_constraint_system");
+    BOXES_DOMAIN_SCOPED_STATS(".to_linear_constraint_system");
 
     linear_constraint_system_t csts;
 
@@ -1724,9 +1724,6 @@ public:
   }
 
   void write(crab_os &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.write");
-    crab::ScopedCrabStats __st__(domain_name() + ".write");
-
     if (is_top()) {
       o << "{}";
     } else if (is_bottom()) {
@@ -1744,83 +1741,19 @@ public:
   std::string domain_name() const override { return "Boxes"; }
 };
 
-template <typename N, typename V>
-LddManager *boxes_domain<N, V>::s_ldd_man = nullptr;
+template <typename N, typename V, typename P>
+LddManager *boxes_domain<N, V, P>::s_ldd_man = nullptr;
 
-template <typename N, typename V>
-typename boxes_domain<N, V>::var_map_t boxes_domain<N, V>::s_var_map;
+template <typename N, typename V, typename P>
+typename boxes_domain<N, V, P>::var_map_t boxes_domain<N, V, P>::s_var_map;
 
-template <typename Number, typename VariableName>
-class special_domain_traits<boxes_domain<Number, VariableName>> {
+template <typename Number, typename VariableName, typename Params>
+class special_domain_traits<boxes_domain<Number, VariableName, Params>> {
 public:
   static void clear_global_state(void) {
-    boxes_domain<Number, VariableName>::clear_global_state();
+    boxes_domain<Number, VariableName, Params>::clear_global_state();
   }
 };
-
-// template <typename Number, typename VariableName>
-// class checker_domain_traits<boxes_domain<Number, VariableName>> {
-// public:
-//   using this_type = boxes_domain<Number, VariableName>;
-//   using linear_constraint_t = typename this_type::linear_constraint_t;
-//   using disjunctive_linear_constraint_system_t =
-//       typename this_type::disjunctive_linear_constraint_system_t;
-//   static bool entail(this_type &lhs,
-//                      const disjunctive_linear_constraint_system_t &rhs) {
-//     // -- trivial cases first
-//     if (rhs.is_false()) {
-//       return false;
-//     } else if (rhs.is_true()) {
-//       return true;
-//     } else if (lhs.is_bottom()) {
-//       return true;
-//     } else if (lhs.is_top()) {
-//       return false;
-//     }
-//     this_type inv;
-//     inv.set_to_bottom();
-//     for (auto const &csts : rhs) {
-//       this_type conj;
-//       conj += csts;
-//       inv |= conj;
-//     }
-//     return (lhs & inv.complement()).is_bottom();
-//   }
-//   static bool entail(const disjunctive_linear_constraint_system_t &lhs,
-//                      this_type &rhs) {
-//     // -- trivial cases first
-//     if (rhs.is_bottom()) {
-//       return false;
-//     } else if (rhs.is_top()) {
-//       return true;
-//     } else if (lhs.is_false()) {
-//       return true;
-//     } else if (lhs.is_true()) {
-//       return false;
-//     }
-//     this_type inv;
-//     inv.set_to_bottom();
-//     for (auto const &csts : lhs) {
-//       this_type conj;
-//       conj += csts;
-//       inv |= conj;
-//     }
-//     return (inv & rhs.complement()).is_bottom();
-//   }
-//   static bool intersect(this_type &inv, const linear_constraint_t &cst) {
-//     // default code
-
-//     // -- trivial cases first
-//     if (inv.is_bottom() || cst.is_contradiction())
-//       return false;
-//     if (inv.is_top() || cst.is_tautology())
-//       return true;
-
-//     this_type cst_inv;
-//     cst_inv += cst;
-//     return (!(cst_inv & inv).is_bottom());
-//   }
-// };
   
 } // namespace domains
 } // namespace crab
@@ -1828,8 +1761,8 @@ public:
 
 namespace crab {
 namespace domains {
-template <typename Number, typename VariableName>
-struct abstract_domain_traits<boxes_domain<Number, VariableName>> {
+template <typename Number, typename VariableName, typename Params>
+struct abstract_domain_traits<boxes_domain<Number, VariableName, Params>> {
   using number_t = Number;
   using varname_t = VariableName;
 };

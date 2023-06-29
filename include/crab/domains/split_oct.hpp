@@ -45,6 +45,7 @@
 #include <crab/domains/graphs/graph_ops.hpp>
 #include <crab/domains/graphs/graph_views.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -242,12 +243,23 @@ public:
 };
 } // end namespace split_octagons_impl
 
+class SplitOctDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+
+#define SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
+  
 template <class Number, class VariableName,
-          class Params = DBM_impl::DefaultParams<Number>>
+          class DBMParams = DBM_impl::DefaultParams<Number>,
+	  class DomainParams = SplitOctDefaultParams>
 class split_oct_domain final
     : public abstract_domain_api<
-          split_oct_domain<Number, VariableName, Params>> {
-  using split_oct_domain_t = split_oct_domain<Number, VariableName, Params>;
+      split_oct_domain<Number, VariableName, DBMParams, DomainParams>> {
+  using split_oct_domain_t = split_oct_domain<Number, VariableName, DBMParams, DomainParams>;
   using abstract_domain_t = abstract_domain_api<split_oct_domain_t>;
 
 public:
@@ -267,8 +279,8 @@ public:
 
 private:
   using bound_t = ikos::bound<number_t>;
-  using Wt = typename Params::Wt;
-  using graph_t = typename Params::graph_t;
+  using Wt = typename DBMParams::Wt;
+  using graph_t = typename DBMParams::graph_t;
   using wt_ref_t = typename graph_t::wt_ref_t;  
   using ntow = DBM_impl::NtoW<number_t, Wt>;
   using vert_id = typename graph_t::vert_id;
@@ -369,7 +381,7 @@ private:
   template <class G, class P>
   inline bool check_potential(G &g, P &p, unsigned line) const {
 #ifdef CHECK_POTENTIAL
-    crab::ScopedCrabStats __st__(domain_name() + ".check_potential");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".check_potential");
     for (vert_id v : g.verts()) {
       for (vert_id d : g.succs(v)) {
         if (p[v] + g.edge_val(v, d) - p[d] < Wt(0)) {
@@ -477,7 +489,7 @@ private:
                              x + v >= k (if not extract_upper_bounds) */
                           std::vector<std::pair<variable_t, Wt>> &oct_csts) {
 
-    crab::ScopedCrabStats __st__(domain_name() + ".oct_csts_of_assign");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".oct_csts_of_assign");
     boost::optional<variable_t> unbounded_pos_var, unbounded_neg_var;
     std::vector<std::pair<variable_t, Wt>> diff_terms, oct_terms;
     bool overflow;
@@ -598,7 +610,7 @@ private:
                            std::vector<std::pair<variable_t, Wt>> &lbs,
                            std::vector<std::pair<variable_t, Wt>> &ubs) {
 
-    crab::ScopedCrabStats __st__(domain_name() + ".oct_csts_of_lin_leq");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".oct_csts_of_leq");
 
     /*
       consider x + y - z <= k and assume lb(x),lb(y) and ub(z) are finite bounds
@@ -1143,8 +1155,7 @@ private:
   }
 
   bool add_linear_leq(const linear_expression_t &exp) {
-    crab::ScopedCrabStats __st__(domain_name() +
-                                 ".add_constraints.add_linear_leq");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".add_cst.leq");
     normalize();
     CRAB_LOG("octagon-add", linear_expression_t exp_tmp(exp);
              crab::outs() << "Begin adding: " << exp_tmp << "<= 0"
@@ -1176,8 +1187,7 @@ private:
     Wt_min min_op;
     wt_ref_t w;
     for (auto p : lbs) {
-      crab::ScopedCrabStats __st__(domain_name() +
-                                   ".add_constraints.add_lb_csts");
+      SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".add_cst.lb");
       CRAB_LOG("octagon-add",
                crab::outs() << "\t" << p.first << " >= " << p.second << "\n";);
 
@@ -1206,8 +1216,7 @@ private:
     }
 
     for (auto p : ubs) {
-      crab::ScopedCrabStats __st__(domain_name() +
-                                   ".add_constraints.add_ub_csts");
+      SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".add_cst.ub");
       CRAB_LOG("octagon-add",
                crab::outs() << "\t" << p.first << "<=" << p.second << "\n");
       variable_t x(p.first);
@@ -1233,8 +1242,7 @@ private:
     }
 
     for (auto diff : csts) {
-      crab::ScopedCrabStats __st__(domain_name() +
-                                   ".add_constraints.add_diff_csts");
+      SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".add_cst.diff");
       CRAB_LOG("octagon-add", crab::outs() << "\t" << diff.first.first << "-"
                                            << diff.first.second
                                            << "<=" << diff.second << "\n");
@@ -1283,8 +1291,7 @@ private:
     }
 
     for (auto diff : pos_csts) {
-      crab::ScopedCrabStats __st__(domain_name() +
-                                   ".add_constraints.add_pos_csts");
+      SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".add_cst.pos");
       CRAB_LOG("octagon-add", crab::outs() << "\t" << diff.first.first << "+"
                                            << diff.first.second
                                            << "<=" << diff.second << "\n");
@@ -1337,8 +1344,7 @@ private:
     }
 
     for (auto diff : neg_csts) {
-      crab::ScopedCrabStats __st__(domain_name() +
-                                   ".add_constraints.add_neg_csts");
+      SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".add_cst.neg");
       CRAB_LOG("octagon-add", crab::outs() << "\t-" << diff.first.first << "-"
                                            << diff.first.second
                                            << "<=" << diff.second << "\n");
@@ -1474,8 +1480,7 @@ private:
   }
 
   void add_disequation(const linear_expression_t &e) {
-    crab::ScopedCrabStats __st__(domain_name() +
-                                 ".add_constraints.add_disequation");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".add_cst.dis");
     for (auto kv : e) {
       variable_t pivot = kv.second;
       interval_t i = compute_residual(e, pivot) / interval_t(kv.first);
@@ -1654,8 +1659,7 @@ private:
 
   // helper for the join operation.
   template <typename Gr> graph_t split_rels(Gr &gx, Gr &gy, unsigned sz) const {
-    crab::CrabStats::count(domain_name() + ".count.join.split_rels");
-    crab::ScopedCrabStats __st__(domain_name() + ".join.split_rels");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".join.split_rels");
 
     // Compute the deferred relations for gx
     graph_t g_ix_ry;
@@ -1944,14 +1948,20 @@ private:
   }
 
 public:
+  /// split_oct_domain_t implements only standard abstract operations
+  /// of a numerical domain so it is intended to be used as a leaf
+  /// domain in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(split_oct_domain_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(split_oct_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(split_oct_domain_t)
+  
   split_oct_domain(bool is_bottom = false) : m_is_bottom(is_bottom) {}
 
   split_oct_domain(const split_oct_domain_t &o)
       : m_vert_map(o.m_vert_map), m_rev_vert_map(o.m_rev_vert_map),
         m_graph(o.m_graph), m_potential(o.m_potential),
         m_unstable(o.m_unstable), m_is_bottom(false) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".copy");
     if (o.m_is_bottom)
       set_to_bottom();
     if (!m_is_bottom)
@@ -1965,8 +1975,7 @@ public:
         m_unstable(std::move(o.m_unstable)), m_is_bottom(o.m_is_bottom) {}
 
   split_oct_domain &operator=(const split_oct_domain &o) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
 
     if (this != &o) {
       if (o.m_is_bottom) {
@@ -2025,8 +2034,7 @@ public:
   bool is_top() const override { return (!is_bottom() && m_graph.is_empty()); }
 
   bool operator<=(const split_oct_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.leq");
-    crab::ScopedCrabStats __st__(domain_name() + ".leq");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".leq");
 
     if (is_bottom())
       return true;
@@ -2145,8 +2153,7 @@ public:
   void operator|=(const split_oct_domain_t &o) override { *this = *this | o; }
 
   split_oct_domain_t operator|(const split_oct_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".join");
 
     if (is_bottom() || o.is_top())
       return o;
@@ -2464,8 +2471,7 @@ public:
 
   // widening
   split_oct_domain_t operator||(const split_oct_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".widening");
 
     if (is_bottom())
       return o;
@@ -2559,8 +2565,7 @@ public:
 
   // meet
   split_oct_domain_t operator&(const split_oct_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".meet");
 
     if (is_bottom() || o.is_top())
       return *this;
@@ -2715,8 +2720,7 @@ public:
   }
 
   void operator&=(const split_oct_domain_t &o) override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".meet");
 
     if (is_bottom() || o.is_top()) {
       // do nothing
@@ -2835,8 +2839,7 @@ public:
   }
 
   split_oct_domain_t operator&&(const split_oct_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".narrowing");
 
     if (is_bottom() || o.is_bottom())
       return *this;
@@ -2872,8 +2875,7 @@ public:
   void minimize() override {}
 
   void operator-=(const variable_t &v) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".forget");
 
     if (is_bottom()) {
       return;
@@ -2891,8 +2893,7 @@ public:
   }
 
   void operator+=(const linear_constraint_t &cst) {
-    crab::CrabStats::count(domain_name() + ".count.add_constraints");
-    crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".add_cst");
 
     if (cst.is_tautology()) {
       return;
@@ -2962,8 +2963,7 @@ public:
   DEFAULT_ENTAILS(split_oct_domain_t)
   
   interval_t operator[](const variable_t &x) override {
-    crab::CrabStats::count(domain_name() + ".count.to_intervals");
-    crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".to_intervals");
     // Needed for accuracy
     normalize();
 
@@ -2975,16 +2975,14 @@ public:
   }
 
   interval_t at(const variable_t &x) const override {
-    crab::CrabStats::count(domain_name() + ".count.to_intervals");
-    crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".to_intervals");
     
     return (is_bottom() ? interval_t::bottom() :
 	    get_interval(m_vert_map, m_graph, x));
   }
   
   void normalize(void) override {
-    crab::CrabStats::count(domain_name() + ".count.normalize");
-    crab::ScopedCrabStats __st__(domain_name() + ".normalize");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".normalize");
 
     /// The DBM is always in split normal form except after widening
 
@@ -3041,8 +3039,7 @@ public:
 
   // set a variable to an interval
   void set(const variable_t &x, interval_t intv) {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".assign");
     if (is_bottom()) {
       return;
     }
@@ -3082,8 +3079,7 @@ public:
 
   // assign an exact expression to a variable
   void assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".assign");
 
     if (is_bottom())
       return;
@@ -3273,8 +3269,7 @@ public:
   }
 
   void project(const variable_vector_t &vars) override {
-    crab::CrabStats::count(domain_name() + ".count.project");
-    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".project");
     if (is_bottom() || is_top())
       return;
 
@@ -3295,8 +3290,7 @@ public:
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom())
       return;
@@ -3336,8 +3330,7 @@ public:
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom())
       return;
@@ -3380,8 +3373,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom())
       return;
@@ -3422,8 +3414,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".apply");
 
     // Convert to intervals and perform the operation
     if (is_bottom())
@@ -3464,8 +3455,7 @@ public:
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const split_oct_domain_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".backward_assign");
     if (is_bottom())
       return;
     normalize();
@@ -3476,8 +3466,7 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, number_t z,
                       const split_oct_domain_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".backward_apply");
     if (is_bottom())
       return;
     normalize();
@@ -3488,8 +3477,7 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const split_oct_domain_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".backward_apply");
     if (is_bottom())
       return;
     normalize();
@@ -3497,9 +3485,23 @@ public:
                                                                 z, inv);
   }
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const split_oct_domain_t &caller) override {
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".callee_entry");    
+    inter_abstract_operations<split_oct_domain_t, DomainParams::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const split_oct_domain_t &callee) override {
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".caller_cont");        
+    inter_abstract_operations<split_oct_domain_t, DomainParams::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   void expand(const variable_t &x, const variable_t &y) override {
-    crab::CrabStats::count(domain_name() + ".count.expand");
-    crab::ScopedCrabStats __st__(domain_name() + ".expand");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".expand");
 
     if (is_bottom() || is_top())
       return;
@@ -3564,8 +3566,7 @@ public:
 
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
-    crab::CrabStats::count(domain_name() + ".count.rename");
-    crab::ScopedCrabStats __st__(domain_name() + ".rename");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".rename");
 
     if (is_top() || is_bottom())
       return;
@@ -3596,13 +3597,7 @@ public:
     std::swap(m_vert_map, new_vert_map);
     CRAB_LOG("octagon", crab::outs() << "RESULT=" << *this << "\n");
   }
-
-  /// split_oct_domain_t implements only standard abstract operations
-  /// of a numerical domain so it is intended to be used as a leaf
-  /// domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(split_oct_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(split_oct_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(split_oct_domain_t)
+  
   DEFAULT_SELECT(split_oct_domain_t)
   DEFAULT_WEAK_ASSIGN(split_oct_domain_t)  
 
@@ -3610,21 +3605,18 @@ public:
   void intrinsic(std::string name,
 		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
   void backward_intrinsic(std::string name,
 			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const split_oct_domain_t &invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
   /* end intrinsics operations */
 
   void write(crab_os &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.write");
-    crab::ScopedCrabStats __st__(domain_name() + ".write");
-
 #if 1
     /// The normalization that happens in linear_constraint_t
     /// removes redundant constraints (see below).
@@ -3698,10 +3690,7 @@ public:
   }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
-    crab::CrabStats::count(domain_name() +
-                           ".count.to_linear_constraint_system");
-    crab::ScopedCrabStats __st__(domain_name() +
-                                 ".to_linear_constraint_system");
+    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".to_linear_constraint_system");
 
     linear_constraint_system_t csts;
     if (is_bottom()) {
@@ -3766,12 +3755,12 @@ public:
     }
   }
 
-  std::string domain_name() const override { return "SplitOctagons"; }
+  std::string domain_name() const override { return "SplitOct"; }
 
 }; // end class split_oct_domain
 
-template <typename Number, typename VariableName, typename Params>
-struct abstract_domain_traits<split_oct_domain<Number, VariableName, Params>> {
+template <typename Number, typename VariableName, typename DBMParams, typename DomainParams>
+struct abstract_domain_traits<split_oct_domain<Number, VariableName, DBMParams, DomainParams>> {
   using number_t = Number;
   using varname_t = VariableName;
 };

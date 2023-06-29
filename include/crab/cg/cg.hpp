@@ -231,7 +231,7 @@ private:
   }
 
   template <typename CFGIt> void build_call_graph(CFGIt I, CFGIt E) {
-    crab::ScopedCrabStats __st__("call_graph");
+    //crab::ScopedCrabStats __st__("call_graph", false);
 
     // --- add vertices in the call graph
     for (auto cfg : boost::make_iterator_range(I, E)) {

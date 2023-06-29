@@ -1,6 +1,6 @@
 #include "../program_options.hpp"
 #include "../common.hpp"
-#include <crab/domains/uf_domain.hpp>
+#include <crab/domains/herbrand_domain.hpp>
 
 using namespace std;
 using namespace crab::analyzer;
@@ -9,7 +9,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 namespace {
-  using z_uf_domain_t = uf_domain<z_number, varname_t>;
+  using z_herbrand_domain_t = herbrand_domain<z_number, varname_t>;
 }
 
 int main(int argc, char** argv) {
@@ -26,21 +26,21 @@ int main(int argc, char** argv) {
 
   crab::outs() << "=== Join === \n";  
   {
-    z_uf_domain_t left;
-    z_uf_domain_t right;
+    z_herbrand_domain_t left;
+    z_herbrand_domain_t right;
     left.assign(y, z_number(8));
     left.apply(OP_MULTIPLICATION, x, y, z_number(5));
     right.apply(OP_MULTIPLICATION, x, y, z_number(5));
-    z_uf_domain_t l_join_r = left | right;
+    z_herbrand_domain_t l_join_r = left | right;
     crab::outs() << left << " | " << right << " = " << l_join_r << "\n";
   }
   
   {
-    z_uf_domain_t left;
+    z_herbrand_domain_t left;
     left.assign(x, z_number(1));
-    z_uf_domain_t right = left;
+    z_herbrand_domain_t right = left;
     right.apply(OP_ADDITION, x, x, z_number(1));
-    z_uf_domain_t l_join_r = left | right;
+    z_herbrand_domain_t l_join_r = left | right;
     crab::outs() << left << " | " << right << " = " << l_join_r << "\n";
   }
 
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
     z_var x2(vfac["x2"], crab::INT_TYPE, 32);
     z_var x3(vfac["x3"], crab::INT_TYPE, 32);
 
-    z_uf_domain_t dom;
+    z_herbrand_domain_t dom;
     dom.apply(OP_MULTIPLICATION, x1, y, z_number(5));
     dom.apply(OP_MULTIPLICATION, x2, y, z_number(5));
     dom.apply(OP_MULTIPLICATION, x3, y, z_number(8));
@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
 
   crab::outs() << "=== Project === \n";
   {
-    z_uf_domain_t inv;
+    z_herbrand_domain_t inv;
     inv.assign(x, 5);
     inv.assign(y, 5);
     inv.assign(z, 9);
@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
 
   crab::outs() << "==== Meet ====\n";
   {
-    z_uf_domain_t left, right;
+    z_herbrand_domain_t left, right;
 
     // {w = 5, x = 5, y = '+'(5,3), z = 3}
     left.assign(x, 5);
@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
   }
 
   {
-    z_uf_domain_t left, right;
+    z_herbrand_domain_t left, right;
 
     // {w = 5, x = 5, y = '+' (5,10), z = 10} --> w=x and y=+(x,z) and z=10
     left.assign(x, 5);
@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
   #if 0
   crab::outs() << "=== Arrays ==== \n";
   {
-    z_uf_domain_t dom;
+    z_herbrand_domain_t dom;
     z_var a(vfac["A"], crab::ARR_INT_TYPE, 32);    
     z_var x(vfac["x"], crab::INT_TYPE, 32);
     z_var y(vfac["y"], crab::INT_TYPE, 32);
@@ -161,7 +161,7 @@ int main(int argc, char** argv) {
     z_var b6(vfac["b6"], crab::BOOL_TYPE, 1);
     z_var b7(vfac["b7"], crab::BOOL_TYPE, 1);            
 
-    z_uf_domain_t dom;
+    z_herbrand_domain_t dom;
     dom.assign_bool_var(b4, b5, false);
     dom.apply_binary_bool(OP_BAND, b2, b1, b4);
     dom.apply_binary_bool(OP_BAND, b3, b1, b5);

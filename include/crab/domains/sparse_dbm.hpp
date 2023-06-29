@@ -16,6 +16,7 @@
 #include <crab/domains/graphs/graph_config.hpp>
 #include <crab/domains/graphs/graph_ops.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -30,15 +31,25 @@
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
 namespace crab {
-
 namespace domains {
 
+class SparseDBMDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+
+#define SPARSE_DBM_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define SPARSE_DBM_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
+  
 template <class Number, class VariableName,
-          class Params = DBM_impl::DefaultParams<Number>>
+          class DBMParams = DBM_impl::DefaultParams<Number>,
+	  class DomainParams = SparseDBMDefaultParams>
 class sparse_dbm_domain final
     : public abstract_domain_api<
-          sparse_dbm_domain<Number, VariableName, Params>> {
-  using DBM_t = sparse_dbm_domain<Number, VariableName, Params>;
+      sparse_dbm_domain<Number, VariableName, DBMParams, DomainParams>> {
+  using DBM_t = sparse_dbm_domain<Number, VariableName, DBMParams, DomainParams>;
   using abstract_domain_t = abstract_domain_api<DBM_t>;
 
 public:
@@ -58,8 +69,8 @@ public:
 
 private:
   using bound_t = ikos::bound<number_t>;
-  using Wt = typename Params::Wt;
-  using graph_t = typename Params::graph_t;
+  using Wt = typename DBMParams::Wt;
+  using graph_t = typename DBMParams::graph_t;
   using ntow = DBM_impl::NtoW<number_t, Wt>;
   using vert_id = typename graph_t::vert_id;
   using vert_map_t = boost::container::flat_map<variable_t, vert_id>;
@@ -153,7 +164,7 @@ protected:
   }
 
   template <class G, class P>
-  inline bool check_potential(const G &g, const P &p) const {
+  static bool check_potential(const G &g, const P &p) {
 #ifdef CHECK_POTENTIAL
     for (vert_id v : g.verts()) {
       for (vert_id d : g.succs(v)) {
@@ -807,6 +818,13 @@ protected:
   }
 
 public:
+  /// sparse_dbm_domain implements only standard abstract operations
+  /// of a numerical domain so it is intended to be used as a leaf
+  /// domain in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
+  
   sparse_dbm_domain(bool is_bottom = false) : _is_bottom(is_bottom) {
     g.growTo(1); // Allocate the zero vector
     potential.push_back(Wt(0));
@@ -817,9 +835,7 @@ public:
   sparse_dbm_domain(const DBM_t &o)
       : vert_map(o.vert_map), rev_map(o.rev_map), g(o.g),
         potential(o.potential), unstable(o.unstable), _is_bottom(false) {
-
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".copy");
 
     if (o._is_bottom)
       set_to_bottom();
@@ -834,8 +850,7 @@ public:
         unstable(std::move(o.unstable)), _is_bottom(o._is_bottom) {}
 
   sparse_dbm_domain &operator=(const sparse_dbm_domain &o) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
 
     if (this != &o) {
       if (o._is_bottom)
@@ -898,8 +913,7 @@ public:
   }
 
   bool operator<=(const DBM_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.leq");
-    crab::ScopedCrabStats __st__(domain_name() + ".leq");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".leq");
 
     // cover all trivial cases to avoid allocating a dbm matrix
     if (is_bottom())
@@ -963,8 +977,7 @@ public:
   }
 
   void operator|=(const DBM_t &o) override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".join");
 
     CRAB_LOG("zones-sparse", crab::outs() << "Before join:\n"
                                           << "DBM 1\n"
@@ -981,7 +994,7 @@ public:
     } else {
 
 
-      auto join_op = [this](DBM_t &left, const DBM_t &right) {
+      auto join_op = [](DBM_t &left, const DBM_t &right) {
 	assert(check_potential(left.g, left.potential));
 	assert(check_potential(right.g, right.potential));
 	
@@ -1062,8 +1075,7 @@ public:
   }
 
   DBM_t operator|(const DBM_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".join");
 
     if (is_bottom()) {
       return o;
@@ -1079,9 +1091,8 @@ public:
                                             << "DBM 2\n"
                                             << o << "\n");
 
-      auto join_op = [this](const DBM_t &left, const DBM_t& right) -> DBM_t {
+      auto join_op = [](const DBM_t &left, const DBM_t& right) -> DBM_t {
 	// Both left and right are normalized
-      
 	assert(check_potential(left.g, left.potential));
 	assert(check_potential(right.g, right.potential));
 	
@@ -1168,8 +1179,7 @@ public:
   }
 
   DBM_t operator||(const DBM_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".widening");
 
     if (is_bottom())
       return o;
@@ -1249,8 +1259,7 @@ public:
   }
 
   DBM_t operator&(const DBM_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".meet");
 
     if (is_bottom() || o.is_top())
       return *this;
@@ -1263,7 +1272,7 @@ public:
                                             << "DBM 2\n"
                                             << o << "\n";);
 
-      auto meet_op = [this](const DBM_t &left, const DBM_t &right) -> DBM_t {
+      auto meet_op = [](const DBM_t &left, const DBM_t &right) -> DBM_t {
 	// Both left and right are normalized
 	
 	// We map vertices in the left operand onto a contiguous range.
@@ -1361,8 +1370,7 @@ public:
   }
 
   void operator&=(const DBM_t &o) override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".meet");
 
     if (is_bottom() || o.is_top()) {
       // do nothing
@@ -1375,7 +1383,7 @@ public:
                                             << "DBM 2\n"
                                             << o << "\n";);
 
-      auto meet_op = [this](DBM_t &left, const DBM_t & right) {
+      auto meet_op = [](DBM_t &left, const DBM_t & right) {
 	// Both left and right are normalized
 
 	// Common renaming
@@ -1425,7 +1433,7 @@ public:
 	// We've warm-started pi with the operand potentials
 	if (!GrOps::select_potentials(meet_g, meet_pi)) {
 	  // Potentials cannot be selected -- state is infeasible.
-	  set_to_bottom();
+	  left.set_to_bottom();
 	  return;
 	}
 	
@@ -1467,8 +1475,7 @@ public:
   }
   
   DBM_t operator&&(const DBM_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".narrowing");
 
     if (is_bottom() || o.is_top())
       return *this;
@@ -1524,8 +1531,7 @@ public:
   void minimize() override {}
 
   void operator-=(const variable_t &v) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".forget");
 
     if (is_bottom())
       return;
@@ -1545,8 +1551,7 @@ public:
 
   // Assumption: state is currently feasible.
   void assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".assign");
 
     if (is_bottom()) {
       return;
@@ -1695,8 +1700,7 @@ public:
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom()) {
       return;
@@ -1737,8 +1741,7 @@ public:
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom()) {
       return;
@@ -1779,8 +1782,7 @@ public:
   }
 
   void operator+=(const linear_constraint_t &cst) {
-    crab::CrabStats::count(domain_name() + ".count.add_constraints");
-    crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".add_cst");
 
     if (cst.is_tautology()) {
       return;
@@ -1853,8 +1855,7 @@ public:
   DEFAULT_ENTAILS(DBM_t)
 
   interval_t operator[](const variable_t &x) override {
-    crab::CrabStats::count(domain_name() + ".count.to_intervals");
-    crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".to_intervals");
 
     // Needed for accuracy
     normalize();
@@ -1867,16 +1868,14 @@ public:
   }
 
   interval_t at(const variable_t &x) const override {
-    crab::CrabStats::count(domain_name() + ".count.to_intervals");
-    crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".to_intervals");
 
     return (is_bottom() ? interval_t::bottom() :
 	    get_interval(vert_map, g, x));
   }
 
   void set(const variable_t &x, interval_t intv) {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".assign");
 
     if (is_bottom()) {
       return;
@@ -1918,8 +1917,7 @@ public:
   // backward arithmetic operators
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const DBM_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".backward_assign");
 
     crab::domains::BackwardAssignOps<DBM_t>::assign(*this, x, e, inv);
   }
@@ -1927,8 +1925,7 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, number_t z,
                       const DBM_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".backward_apply");
 
     crab::domains::BackwardAssignOps<DBM_t>::apply(*this, op, x, y, z, inv);
   }
@@ -1936,8 +1933,7 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const DBM_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".backward_apply");
 
     crab::domains::BackwardAssignOps<DBM_t>::apply(*this, op, x, y, z, inv);
   }
@@ -1953,8 +1949,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom())
       return;
@@ -1997,8 +1992,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".apply");
 
     if (is_bottom())
       return;
@@ -2040,19 +2034,27 @@ public:
     set(x, xi);
   }
 
-  /// sparse_dbm_domain implements only standard abstract operations
-  /// of a numerical domain so it is intended to be used as a leaf
-  /// domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
   DEFAULT_SELECT(DBM_t)
   DEFAULT_WEAK_ASSIGN(DBM_t)  
+
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const DBM_t &caller) override {
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".callee_entry");        
+    inter_abstract_operations<DBM_t, DomainParams::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const DBM_t &callee) override {
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".caller_cont");    
+    inter_abstract_operations<DBM_t, DomainParams::implement_inter_transformers>::
+      caller_continuation(callsite, callee, *this);
+  }
   
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
-    crab::CrabStats::count(domain_name() + ".count.rename");
-    crab::ScopedCrabStats __st__(domain_name() + ".rename");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".rename");
 
     if (is_top() || is_bottom())
       return;
@@ -2102,8 +2104,7 @@ public:
   }
 
   void forget(const variable_vector_t &variables) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".forget");
 
     if (is_bottom() || is_top())
       return;
@@ -2117,8 +2118,7 @@ public:
   }
 
   void project(const variable_vector_t &variables) override {
-    crab::CrabStats::count(domain_name() + ".count.project");
-    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".project");
 
     if (is_bottom() || is_top()) {
       return;
@@ -2147,8 +2147,7 @@ public:
   }
 
   void expand(const variable_t &x, const variable_t &y) override {
-    crab::CrabStats::count(domain_name() + ".count.expand");
-    crab::ScopedCrabStats __st__(domain_name() + ".expand");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".expand");
 
     if (is_bottom() || is_top()) {
       return;
@@ -2183,8 +2182,7 @@ public:
 
   void extract(const variable_t &x, linear_constraint_system_t &csts,
                bool only_equalities) {
-    crab::CrabStats::count(domain_name() + ".count.extract");
-    crab::ScopedCrabStats __st__(domain_name() + ".extract");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".extract");
 
     normalize();
     if (is_bottom()) {
@@ -2229,22 +2227,19 @@ public:
   void intrinsic(std::string name,
 		 const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
   void backward_intrinsic(std::string name,
 			  const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const DBM_t &invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
   /* end intrinsics operations */
 
   // Output function
   void write(crab_os &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.write");
-    crab::ScopedCrabStats __st__(domain_name() + ".write");
-
     // linear_constraint_system_t inv = to_linear_constraint_system();
     // o << inv;
 
@@ -2258,10 +2253,7 @@ public:
   }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
-    crab::CrabStats::count(domain_name() +
-                           ".count.to_linear_constraint_system");
-    crab::ScopedCrabStats __st__(domain_name() +
-                                 ".to_linear_constraint_system");
+    SPARSE_DBM_DOMAIN_SCOPED_STATS(".to_linear_constraint_system");
 
     if (need_normalization()) {
       DBM_t tmp(*this);
@@ -2293,16 +2285,16 @@ public:
 
 }; // class sparse_dbm_domain
 
-template <typename Number, typename VariableName, typename Params>
-struct abstract_domain_traits<sparse_dbm_domain<Number, VariableName, Params>> {
+template <typename Number, typename VariableName, typename DBMParams, typename DomainParams>
+struct abstract_domain_traits<sparse_dbm_domain<Number, VariableName, DBMParams, DomainParams>> {
   using number_t = Number;
   using varname_t = VariableName;
 };
 
-template <typename Number, typename VariableName, typename Params>
-class reduced_domain_traits<sparse_dbm_domain<Number, VariableName, Params>> {
+template <typename Number, typename VariableName, typename DBMParams, typename DomainParams>
+class reduced_domain_traits<sparse_dbm_domain<Number, VariableName, DBMParams, DomainParams>> {
 public:
-  using sdbm_domain_t = sparse_dbm_domain<Number, VariableName, Params>;
+  using sdbm_domain_t = sparse_dbm_domain<Number, VariableName, DBMParams, DomainParams>;
   using variable_t = typename sdbm_domain_t::variable_t;
   using linear_constraint_system_t =
       typename sdbm_domain_t::linear_constraint_system_t;

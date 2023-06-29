@@ -1,9 +1,9 @@
 #pragma once
 
-/*
-   A standard two-phase approach for summary-based,
-   _context-insensitive_ inter-procedural analysis.
-*/
+/**
+ *  A standard two-phase approach for summary-based,
+ *  context-insensitive inter-procedural analysis.
+**/
 
 #include <crab/analysis/abs_transformer.hpp>
 #include <crab/analysis/dataflow/liveness.hpp>
@@ -15,6 +15,7 @@
 #include <crab/cfg/cfg.hpp>   // callsite_or_fdecl wrapper
 #include <crab/cg/cg_bgl.hpp> // for sccg.hpp
 #include <crab/domains/generic_abstract_domain.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -26,6 +27,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#define BU_INTER_TIMER_STATS(NAME) CRAB_SCOPED_TIMER_STATS(NAME, 0)
 
 namespace crab {
 namespace analyzer {
@@ -151,17 +154,24 @@ public:
     m_internal_inputs.reserve(m_inputs.size());
     m_internal_outputs.reserve(m_outputs.size());
 
-    std::string prefix = "$";
     unsigned i = 0;
     for (auto v : m_inputs) {
       auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
-      variable_t fresh_v(vfac.get(prefix + std::to_string(i)), v.get_type());
+      std::string arg_name;
+      arg_name.reserve(5+2); // expect 99999 arguments as max + 1 ($) + 1
+      arg_name.append("$");      
+      arg_name.append(std::to_string(i));
+      variable_t fresh_v(vfac.make_varname(std::move(arg_name)), v.get_type());
       m_internal_inputs.push_back(fresh_v);
       i++;
     }
     for (auto v : m_outputs) {
       auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
-      variable_t fresh_v(vfac.get(prefix + std::to_string(i)), v.get_type());
+      std::string arg_name;
+      arg_name.reserve(5+2); // expect 99999 arguments as max + 1 ($) + 1
+      arg_name.append("$");      
+      arg_name.append(std::to_string(i));
+      variable_t fresh_v(vfac.make_varname(std::move(arg_name)), v.get_type());
       m_internal_outputs.push_back(fresh_v);
       i++;
     }
@@ -361,7 +371,7 @@ public:
       if (!(a == p)) {
         CRAB_LOG("inter", crab::outs() << "\t\tPropagate from caller to callee "
                                        << p << ":=" << a << "\n");
-        inter_transformer_helpers<abs_dom_t>::unify(caller, p, a);
+	crab::domains::inter_transformers_impl::unify(caller, p, a);
       }
       ++i;
       actuals.insert(a);
@@ -391,7 +401,7 @@ public:
       auto const &r = *callee_it;
       CRAB_LOG("inter", crab::outs() << "\t\tPropagate from callee to caller "
                                      << vt << ":=" << r << "\n");
-      inter_transformer_helpers<abs_dom_t>::unify(caller, vt, r);
+      crab::domains::inter_transformers_impl::unify(caller, vt, r);
       actuals.insert(vt);
       formals.insert(r);
     }
@@ -577,7 +587,7 @@ public:
       for (const variable_t &p : inputs) {
         const variable_t &a = cs.get_arg_name(i);
         if (!(a == p)) {
-          inter_transformer_helpers<abs_dom_t>::unify(callee_ctx_inv, p, a);
+	  crab::domains::inter_transformers_impl::unify(callee_ctx_inv, p, a);
         }
         ++i;
       }
@@ -717,9 +727,7 @@ public:
     m_fixpo_params.get_max_thresholds() = params.thresholds_size;
       
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
-    crab::CrabStats::resume("CallGraph type checking");
     cg.type_check();
-    crab::CrabStats::stop("CallGraph type checking");
     CRAB_VERBOSE_IF(1, get_msg_stream() << "OK\n";);
   }
 
@@ -750,7 +758,7 @@ public:
                            << "Started inter-procedural analysis\n";);
     CRAB_LOG("inter", m_cg.write(crab::outs()); crab::outs() << "\n");
 
-    crab::ScopedCrabStats __st__("Inter");
+    CRAB_SCOPED_TIMER_STATS("Inter", 1)
 
     bool has_noedges = true;
     for (auto const &n : boost::make_iterator_range(m_cg.nodes())) {
@@ -769,7 +777,7 @@ public:
       CRAB_LOG("inter", m_cg.write(crab::outs()); crab::outs() << "\n";);
 
       for (auto &v : boost::make_iterator_range(m_cg.nodes())) {
-        crab::ScopedCrabStats __st__("Inter.TopDown");
+	BU_INTER_TIMER_STATS("Inter.TopDown");	
 
         auto cfg = v.get_cfg();
         assert(cfg.has_func_decl());
@@ -795,7 +803,7 @@ public:
 
     CRAB_VERBOSE_IF(1, get_msg_stream() << "== Bottom-up phase ...\n";);
     for (auto const &n : rev_order) {
-      crab::ScopedCrabStats __st__("Inter.BottomUp");
+      BU_INTER_TIMER_STATS("Inter.BottomUp");
       std::vector<cg_node_t> &scc_mems = Scc_g.get_component_members(n);
       for (auto m : scc_mems) {
 
@@ -838,8 +846,6 @@ public:
 
             // --- project onto formal parameters and return values
             BU_Dom summary = a.get_post(cfg.exit());
-            // crab::CrabStats::count(BU_Dom::getDomainName() +
-            // ".count.project");
             summary.project(formals);
             m_summ_tbl.insert(fdecl, summary, inputs, outputs);
           }
@@ -851,7 +857,7 @@ public:
     bool is_root = true;
     for (auto n :
          boost::make_iterator_range(rev_order.rbegin(), rev_order.rend())) {
-      crab::ScopedCrabStats __st__("Inter.TopDown");
+      BU_INTER_TIMER_STATS("Inter.TopDown");
       std::vector<cg_node_t> &scc_mems = Scc_g.get_component_members(n);
 
       // The SCC is recursive if it has more than one element or

@@ -30,17 +30,14 @@
  *   variable. This is managed by cell_ghost_man.
  *
  * - Ghost variables are created by the same variable factory used to
- *   generate the CrabIR. We don't reuse ghost variables so there is a
- *   small risk of running out of ghost variables. If that happens, a
- *   runtime error will be reported.
+ *   generate the CrabIR. 
  *
- * - POSSIBLE BREAK OF MODULARITY of the base domain: A more important
- *   issue is that currently we pass ghost scalar variables to the
- *   base domain that can change during the analysis. If the base
- *   domain uses these ghost variables to create new ghost variables
- *   we will get into trouble. Currently, these ghost scalars are
- *   passed directly to boolean/numerical abstract domains so we
- *   should be fine with current Crab domains because they don't
+ * - POSSIBLE BREAK OF MODULARITY of the base domain: the adaptive
+ *   array domain passes ghost scalar variables to the base domain. If
+ *   the base domain uses these ghost variables to create new ghost
+ *   variables we will get into trouble. Currently, these ghost
+ *   scalars are passed directly to boolean/numerical abstract domains
+ *   so we should be fine with current Crab domains because they don't
  *   create ghost variables but this needs to be revisited anytime a
  *   new domain is plugin.
  ******************************************************************************/
@@ -52,6 +49,7 @@
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/array_smashing.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/patricia_trees.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -67,9 +65,9 @@
 
 namespace crab {
 namespace domains {
-
+  
 // forward declaration
-template <typename Domain> class array_adaptive_domain;
+template <typename Domain, typename Params> class array_adaptive_domain;
 
 namespace array_adaptive_impl {
 
@@ -268,7 +266,7 @@ inline Set set_difference(Set &s1, const typename Set::key_type &e) {
  */
 class offset_map_t {
 private:
-  template <typename Dom> friend class crab::domains::array_adaptive_domain;
+  template <typename Dom, typename Params> friend class crab::domains::array_adaptive_domain;
 
   using cell_set_t = std::set<cell_t>;
 
@@ -360,11 +358,11 @@ public:
 
   offset_map_t(const offset_map_t &o);
 
-  offset_map_t(const offset_map_t &&o);
+  offset_map_t(offset_map_t &&o);
 
   offset_map_t &operator=(const offset_map_t &o);
 
-  offset_map_t &operator=(const offset_map_t &&o);
+  offset_map_t &operator=(offset_map_t &&o);
 
   bool empty() const;
 
@@ -625,7 +623,7 @@ template <typename Domain> class cell_ghost_man {
     std::string vname = mk_scalar_name(a.name(), c.get_offset(), c.get_size());
     variable_type_kind vtype_kind = get_array_element_type(a.get_type());
     variable_t scalar_var(
-        vfac.get(vname), vtype_kind,
+	vfac.make_varname(std::move(vname)), vtype_kind,
         (vtype_kind == BOOL_TYPE
              ? 1
              : (vtype_kind == INT_TYPE ? 8 * c.get_size() : 0)));
@@ -679,7 +677,8 @@ public:
           if (v1 != *v2) {
             assert(v1.name().str() == (*v2).name().str());
             assert(v1.get_type() == (*v2).get_type());
-            variable_t outv(vfac.get(v1.name().str()), v1.get_type());
+	    std::string name = v1.name().str();
+            variable_t outv(vfac.make_varname(std::move(name)), v1.get_type());
             old_ghost_vars_left.push_back(v1);
             old_ghost_vars_right.push_back(*v2);
             new_ghost_vars.push_back(outv);
@@ -726,7 +725,8 @@ public:
             // same key but different ghost -> create a fresh common ghost
             assert(v1.name().str() == (*v2).name().str());
             assert(v1.get_type() == (*v2).get_type());
-            variable_t outv(vfac.get(v1.name().str()), v1.get_type());
+	    std::string name = v1.name().str();	    
+            variable_t outv(vfac.make_varname(std::move(name)), v1.get_type());
             old_ghost_vars_left.push_back(v1);
             old_ghost_vars_right.push_back(*v2);
             new_ghost_vars.push_back(outv);
@@ -844,16 +844,26 @@ public:
 
 } // end namespace array_adaptive_impl
 
-template <typename NumDomain>
+class ArrayAdaptDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+
+#define ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
+  
+template <typename NumDomain, typename Params = ArrayAdaptDefaultParams>
 class array_adaptive_domain final
-    : public abstract_domain_api<array_adaptive_domain<NumDomain>> {
+  : public abstract_domain_api<array_adaptive_domain<NumDomain, Params>> {
 
 public:
   using number_t = typename NumDomain::number_t;
   using varname_t = typename NumDomain::varname_t;
 
 private:
-  using array_adaptive_domain_t = array_adaptive_domain<NumDomain>;
+  using array_adaptive_domain_t = array_adaptive_domain<NumDomain, Params>;
   using abstract_domain_t = abstract_domain_api<array_adaptive_domain_t>;
 
 public:
@@ -1004,13 +1014,6 @@ private:
       do_sanity_checks();
     }
 
-    array_state(const array_state &&o)
-        : m_is_smashed(std::move(o.m_is_smashed)),
-          m_element_sz(std::move(o.m_element_sz)),
-          m_offset_map(std::move(o.m_offset_map)) {
-      do_sanity_checks();
-    }
-
     array_state &operator=(const array_state &o) {
       if (this != &o) {
         m_is_smashed = o.m_is_smashed;
@@ -1021,15 +1024,8 @@ private:
       return *this;
     }
 
-    array_state &operator=(const array_state &&o) {
-      if (this != &o) {
-        m_is_smashed = std::move(o.m_is_smashed);
-        m_element_sz = std::move(o.m_element_sz);
-        m_offset_map = std::move(o.m_offset_map);
-      }
-      do_sanity_checks();
-      return *this;
-    }
+    array_state(array_state &&o) = default;
+    array_state &operator=(array_state &&o) = default;
 
     /*** begin mergeable_map API ***/
     array_state join(const variable_t &v, const array_state &o,
@@ -1247,9 +1243,6 @@ private:
 
     array_state_map_t(const array_state_map_t &o) : m_tree(o.m_tree) {}
 
-    array_state_map_t(const array_state_map_t &&o)
-        : m_tree(std::move(o.m_tree)) {}
-
     array_state_map_t &operator=(const array_state_map_t &o) {
       if (this != &o) {
         m_tree = o.m_tree;
@@ -1257,12 +1250,8 @@ private:
       return *this;
     }
 
-    array_state_map_t &operator=(const array_state_map_t &&o) {
-      if (this != &o) {
-        m_tree = std::move(o.m_tree);
-      }
-      return *this;
-    }
+    array_state_map_t(array_state_map_t&& o) = default;
+    array_state_map_t& operator=(array_state_map_t&& o) = default;
 
     iterator begin() const { return m_tree.begin(); }
 
@@ -1674,12 +1663,23 @@ private:
         m_cell_ghost_man(std::move(cgman)) {}
 
 public:
+  /// array_adaptive is a functor domain that implements all
+  /// standard operations except region/reference operations.
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(array_adaptive_domain_t)
+  
   array_adaptive_domain(bool is_bottom = false) {
     if (is_bottom) {
       m_base_dom.set_to_bottom();
     } else {
       m_base_dom.set_to_top();
     }
+  }
+
+  bool is_asc_phase() const override {
+    return m_base_dom.is_asc_phase();
+  }
+  void set_phase(bool is_ascending) override {
+    m_base_dom.set_phase(is_ascending);
   }
 
   array_adaptive_domain make_top() const override {
@@ -1702,50 +1702,32 @@ public:
     std::swap(*this, abs);
   }
 
-  array_adaptive_domain(const array_adaptive_domain_t &other)
-      : m_base_dom(other.m_base_dom), m_array_map(other.m_array_map),
-        m_cell_ghost_man(other.m_cell_ghost_man) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+  array_adaptive_domain(const array_adaptive_domain_t &o)
+      : m_base_dom(o.m_base_dom), m_array_map(o.m_array_map),
+        m_cell_ghost_man(o.m_cell_ghost_man) {
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".copy");
   }
 
-  array_adaptive_domain(const array_adaptive_domain_t &&other)
-      : m_base_dom(std::move(other.m_base_dom)),
-        m_array_map(std::move(other.m_array_map)),
-        m_cell_ghost_man(std::move(other.m_cell_ghost_man)) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
-  }
 
-  array_adaptive_domain_t &operator=(const array_adaptive_domain_t &other) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
-    if (this != &other) {
-      m_base_dom = other.m_base_dom;
-      m_array_map = other.m_array_map;
-      m_cell_ghost_man = other.m_cell_ghost_man;
+  array_adaptive_domain_t &operator=(const array_adaptive_domain_t &o) {
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
+    if (this != &o) {
+      m_base_dom = o.m_base_dom;
+      m_array_map = o.m_array_map;
+      m_cell_ghost_man = o.m_cell_ghost_man;
     }
     return *this;
   }
 
-  array_adaptive_domain_t &operator=(const array_adaptive_domain_t &&other) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
-    if (this != &other) {
-      m_base_dom = std::move(other.m_base_dom);
-      m_array_map = std::move(other.m_array_map);
-      m_cell_ghost_man = std::move(other.m_cell_ghost_man);
-    }
-    return *this;
-  }
+  array_adaptive_domain(array_adaptive_domain_t &&o) = default;
+  array_adaptive_domain_t &operator=(array_adaptive_domain_t &&o) = default;
 
   bool is_bottom() const override { return (m_base_dom.is_bottom()); }
 
   bool is_top() const override { return (m_base_dom.is_top()); }
 
   bool operator<=(const array_adaptive_domain_t &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.leq");
-    crab::ScopedCrabStats __st__(domain_name() + ".leq");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".leq");
 
     if (is_bottom()) {
       return true;
@@ -1770,13 +1752,12 @@ public:
     }
   }
 
-  bool operator==(array_adaptive_domain_t other) {
+  bool operator==(const array_adaptive_domain_t &other) {
     return (m_base_dom <= other.m_base_dom && other.m_base_dom <= m_base_dom);
   }
 
   void operator|=(const array_adaptive_domain_t &other) override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".join");
 
     CRAB_LOG("array-adaptive",
              crab::outs() << "Join " << *this << " and " << other << "\n";);
@@ -1808,8 +1789,7 @@ public:
 
   array_adaptive_domain_t
   operator|(const array_adaptive_domain_t &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".join");
     if (other.is_bottom() || is_top()) {
       return *this;
     } else if (is_bottom() || other.is_top()) {
@@ -1843,8 +1823,7 @@ public:
 
   array_adaptive_domain_t
   operator&(const array_adaptive_domain_t &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".meet");
     if (is_bottom() || other.is_top()) {
       return *this;
     } else if (is_top() || other.is_bottom()) {
@@ -1862,8 +1841,7 @@ public:
   }
 
   void operator&=(const array_adaptive_domain_t &other) override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".meet");
     if (is_bottom() || other.is_top()) {
       // do nothing
     } else if (is_top() || other.is_bottom()) {
@@ -1897,8 +1875,7 @@ public:
   
   array_adaptive_domain_t
   operator||(const array_adaptive_domain_t &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".widening");
     if (other.is_bottom()) {
       return *this;
     } else if (is_bottom()) {
@@ -1932,8 +1909,7 @@ public:
   array_adaptive_domain_t
   widening_thresholds(const array_adaptive_domain_t &other,
                       const thresholds<number_t> &ts) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".widening");
     if (other.is_bottom()) {
       return *this;
     } else if (is_bottom()) {
@@ -1966,8 +1942,7 @@ public:
 
   array_adaptive_domain_t
   operator&&(const array_adaptive_domain_t &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".narrowing");
     if (is_bottom()) {
       return *this;
     } else if (other.is_bottom()) {
@@ -2000,8 +1975,7 @@ public:
   }
 
   void forget(const variable_vector_t &variables) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".forget");
 
     if (is_bottom() || is_top()) {
       return;
@@ -2024,8 +1998,7 @@ public:
   }
 
   void project(const variable_vector_t &variables) override {
-    crab::CrabStats::count(domain_name() + ".count.project");
-    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".project");
 
     if (is_bottom() || is_top()) {
       return;
@@ -2113,7 +2086,7 @@ public:
         }))) {
       m_base_dom.intrinsic(name, inputs, outputs);
     } else {
-      CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+      //CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
     }
   }
 
@@ -2121,13 +2094,12 @@ public:
                           const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const array_adaptive_domain_t &invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented");
   }
   /* end intrinsics operations */
 
   void operator+=(const linear_constraint_system_t &csts) override {
-    crab::CrabStats::count(domain_name() + ".count.add_constraints");
-    crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".add_cst");
 
     m_base_dom += csts;
 
@@ -2140,8 +2112,7 @@ public:
   }
   
   void operator-=(const variable_t &var) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".forget");
 
     if (is_bottom()) {
       return;
@@ -2155,8 +2126,7 @@ public:
   }
 
   void assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".assign");
 
     m_base_dom.assign(x, e);
 
@@ -2165,8 +2135,7 @@ public:
   }
 
   void weak_assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".assign");
 
     m_base_dom.weak_assign(x, e);
 
@@ -2176,8 +2145,7 @@ public:
     
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".apply");
 
     m_base_dom.apply(op, x, y, z);
 
@@ -2188,8 +2156,7 @@ public:
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".apply");
 
     m_base_dom.apply(op, x, y, z);
 
@@ -2233,21 +2200,19 @@ public:
     m_array_map = std::move(s.array_map);
     m_cell_ghost_man = std::move(s.cell_ghost_man);
     
-    m_base_dom.backward_apply(op, x, y, z, s.right_dom);    
+    m_base_dom.backward_apply(op, x, y, z, s.right_dom);   
   }
 
   void apply(int_conv_operation_t op, const variable_t &dst,
              const variable_t &src) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".apply");
 
     m_base_dom.apply(op, dst, src);
   }
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".apply");
 
     m_base_dom.apply(op, x, y, z);
 
@@ -2258,8 +2223,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".apply");
 
     m_base_dom.apply(op, x, y, k);
 
@@ -2358,11 +2322,7 @@ public:
     
     m_base_dom.backward_apply_binary_bool(op, x, y, z, s.right_dom);
   }
-
-  /// array_adaptive is a functor domain that implements all
-  /// operations except region/reference operations.
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(array_adaptive_domain_t)
-
+  
   // array_operators_api
 
   // array_init returns a fresh array where all elements between
@@ -2373,8 +2333,7 @@ public:
                           const linear_expression_t &lb_idx,
                           const linear_expression_t &ub_idx,
                           const linear_expression_t &val) override {
-    crab::CrabStats::count(domain_name() + ".count.array_init");
-    crab::ScopedCrabStats __st__(domain_name() + ".array_init");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".array_init");
 
     if (is_bottom())
       return;
@@ -2397,8 +2356,7 @@ public:
   virtual void array_load(const variable_t &lhs, const variable_t &a,
                           const linear_expression_t &elem_size,
                           const linear_expression_t &i) override {
-    crab::CrabStats::count(domain_name() + ".count.array_load");
-    crab::ScopedCrabStats __st__(domain_name() + ".array_load");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".array_load");
 
     if (is_bottom())
       return;
@@ -2465,7 +2423,7 @@ public:
             // (summarized) variable
             auto &vfac =
                 const_cast<varname_t *>(&(a.name()))->get_var_factory();
-            variable_t tmp_var(vfac.get(), a.get_type());
+            variable_t tmp_var(vfac.make_temporary_varname(), a.get_type());
             bool found_cell_without_scalar = false;
             for (unsigned k = 0, num_cells = cells.size(); k < num_cells; ++k) {
               const cell_t &c = cells[k];
@@ -2520,8 +2478,7 @@ public:
                            const linear_expression_t &i,
                            const linear_expression_t &val,
                            bool is_strong_update) override {
-    crab::CrabStats::count(domain_name() + ".count.array_store");
-    crab::ScopedCrabStats __st__(domain_name() + ".array_store");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".array_store");
 
     if (is_bottom())
       return;
@@ -2684,8 +2641,7 @@ public:
                                  const linear_expression_t &lb_idx,
                                  const linear_expression_t &ub_idx,
                                  const linear_expression_t &val) override {
-    crab::CrabStats::count(domain_name() + ".count.array_store_range");
-    crab::ScopedCrabStats __st__(domain_name() + ".array_store_range");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".array_store_range");
 
     if (is_bottom())
       return;
@@ -2793,8 +2749,7 @@ public:
                       const linear_expression_t &ub_idx,
                       const linear_expression_t &val,
                       const array_adaptive_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_array_init");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_array_init");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".backward_array_init");
 
     if (is_bottom()) {
       return;
@@ -2824,8 +2779,7 @@ public:
                       const linear_expression_t &elem_size,
                       const linear_expression_t &i,
                       const array_adaptive_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_array_load");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_array_load");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".backward_array_load");
 
     if (is_bottom()) {
       return;
@@ -2835,7 +2789,7 @@ public:
     m_base_dom = std::move(s.left_dom);
     m_array_map = std::move(s.array_map);
     m_cell_ghost_man = std::move(s.cell_ghost_man);
-       
+
     const array_state &as = lookup_array_state(a);
     if (as.is_smashed()) {
       CRAB_WARN("array_adaptive::backward_array_load not implemented if array "
@@ -2880,8 +2834,7 @@ public:
       const linear_expression_t &i, const linear_expression_t &val,
       bool /*is_strong_update*/,
       const array_adaptive_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_array_store");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_array_store");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".backward_array_store");
 
     if (is_bottom()) {
       return;
@@ -2891,7 +2844,7 @@ public:
     m_base_dom = std::move(s.left_dom);
     m_array_map = std::move(s.array_map);
     m_cell_ghost_man = std::move(s.cell_ghost_man);
-    
+
     uint64_t e_sz = check_and_get_elem_size(elem_size);
     const array_state &as = lookup_array_state(a);
     if (as.is_smashed()) {
@@ -2958,9 +2911,7 @@ public:
       const linear_expression_t &lb_idx, const linear_expression_t &ub_idx,
       const linear_expression_t &val,
       const array_adaptive_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_array_store_range");
-    crab::ScopedCrabStats __st__(domain_name() +
-                                 ".count.backward_array_store_range");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".backward_array_store_range");
 
     if (is_bottom())
       return;
@@ -3008,11 +2959,24 @@ public:
     CRAB_WARN("backward_array_assign in array_adaptive domain not implemented");
   }
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const array_adaptive_domain_t &caller) override {
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".callee_entry");
+    inter_abstract_operations<array_adaptive_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const array_adaptive_domain_t &callee) override {
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".caller_cont");
+    inter_abstract_operations<array_adaptive_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+
+  
   linear_constraint_system_t to_linear_constraint_system() const override {
-    crab::CrabStats::count(domain_name() +
-                           ".count.to_linear_constraint_system");
-    crab::ScopedCrabStats __st__(domain_name() +
-                                 ".to_linear_constraint_system");
+    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".to_linear_constraint_system");
 
     return filter_nonscalar_vars(
         std::move(m_base_dom.to_linear_constraint_system()));
@@ -3054,8 +3018,12 @@ public:
   }
 
   std::string domain_name() const override {
+    #if 1
+    return "ArrayAdapt";
+    #else     
     std::string name("ArrayAdaptive(" + m_base_dom.domain_name() + ")");
     return name;
+    #endif 
   }
 
   void expand(const variable_t &v, const variable_t &new_v) override {
@@ -3143,35 +3111,11 @@ public:
 
 }; // end array_adaptive_domain
 
-template <typename Dom>
-struct abstract_domain_traits<array_adaptive_domain<Dom>> {
+template <typename Dom, typename Params>
+struct abstract_domain_traits<array_adaptive_domain<Dom, Params>> {
   using number_t = typename Dom::number_t;
   using varname_t = typename Dom::varname_t;
 };
-
-// template <typename Dom>
-// class checker_domain_traits<array_adaptive_domain<Dom>> {
-// public:
-//   using this_type = array_adaptive_domain<Dom>;
-//   using base_domain_t = typename this_type::base_domain_t;
-//   using linear_constraint_t = typename this_type::linear_constraint_t;
-//   using disjunctive_linear_constraint_system_t =
-//       typename this_type::disjunctive_linear_constraint_system_t;
-//   static bool entail(this_type &lhs,
-//                      const disjunctive_linear_constraint_system_t &rhs) {
-//     base_domain_t &lhs_dom = lhs.get_content_domain();
-//     return checker_domain_traits<base_domain_t>::entail(lhs_dom, rhs);
-//   }
-//   static bool entail(const disjunctive_linear_constraint_system_t &lhs,
-//                      this_type &rhs) {
-//     base_domain_t &rhs_dom = rhs.get_content_domain();
-//     return checker_domain_traits<base_domain_t>::entail(lhs, rhs_dom);
-//   }
-//   static bool intersect(this_type &inv, const linear_constraint_t &cst) {
-//     base_domain_t &dom = inv.get_content_domain();
-//     return checker_domain_traits<base_domain_t>::intersect(dom, cst);
-//   }
-// };
 
 } // namespace domains
 } // namespace crab

@@ -47,15 +47,37 @@ private:
   variable_factory_t *m_vfac;
 
   indexed_varname() = delete;
-  // first constructor
-  indexed_varname(ikos::index_t id, variable_factory_t *vfac,
-                  std::string name = "")
-      : m_s(boost::none), m_id(id),
-        m_name(name == "" ? nullptr : std::make_shared<std::string>(name)),
+  
+  // first constructor: non-T varname
+  indexed_varname(ikos::index_t id, variable_factory_t *vfac, std::string &&name)
+      : m_s(boost::none),
+	m_id(id),
+        m_name(std::make_shared<std::string>(std::move(name))),
         m_vfac(vfac) {}
-  // second constructor
+  // second constructor: non-T varname
+  indexed_varname(ikos::index_t id, variable_factory_t *vfac)
+      : m_s(boost::none),
+	m_id(id),
+        m_name(nullptr),
+        m_vfac(vfac) {}
+  // third constructor: non-T varname
+  indexed_varname(ikos::index_t id, variable_factory_t *vfac,
+		  const indexed_varname &other, const std::string &suffix)
+    : m_s(boost::none),
+      m_id(id),
+      m_name(std::make_shared<std::string>()),
+      m_vfac(vfac) {
+    std::string other_name(other.str());
+    m_name->reserve(other_name.size() + suffix.size() + 1);
+    m_name->append(other_name);
+    m_name->append(suffix);
+  }
+  // fourth constructor: T varname
   indexed_varname(T s, ikos::index_t id, variable_factory_t *vfac)
-      : m_s(s), m_id(id), m_name(nullptr), m_vfac(vfac) {}
+      : m_s(s),
+	m_id(id),
+	m_name(nullptr),
+	m_vfac(vfac) {}
 
   std::string rename(const std::string &s) const {
     auto it = m_vfac->get_renaming_map().find(s);
@@ -77,12 +99,19 @@ public:
 
   std::string str() const {
     if (m_s) {
-      return rename(crab::variable_name_traits<T>::to_string(*m_s));
-    } else if (m_name && (*m_name != "")) {
+      std::string name(crab::variable_name_traits<T>::to_string(*m_s));
+      return rename(name);
+    } else if (m_name) {
+      assert(*m_name != "");
       return rename(*m_name);
     } else {
-      // unlikely prefix
-      return rename("@V_" + std::to_string(m_id));
+      // unlikely prefix @V_
+      std::string str_id(std::to_string(m_id));
+      std::string name;
+      name.reserve(str_id.size() + 4);
+      name.append("@V_");
+      name.append(str_id);
+      return rename(name);
     }
   }
 
@@ -127,14 +156,26 @@ template <typename T> struct hash<crab::var_factory_impl::indexed_varname<T>> {
 namespace crab {
 namespace var_factory_impl {
 
-// This variable factory (it's actually a factory of
-// indexed_varname's) creates a new indexed_variable associated to an
-// element of type T if provided. It can also create indexed_varname's
-// that are not associated to an element of type T. We call them
-// shadow variables.
-//
-// The factory uses a counter of type index_t to generate variable
-// id's that always increases.
+/**
+*  This variable factory, which is actually a factory of
+*  indexed_varname's (varname), creates a new varname associated to an
+*  element of type T if provided (we call it T-varname). It can also
+*  create a varname that is not associated to an element of type T (we
+*  call them shadow variable or non-T varname).
+*
+*  A T-varname is useful to keep the correspondence between, for
+*  instance, LLVM values to CrabIR variables. This is neat when
+*  translating from CrabIR to LLVM bitcode because we don't need a
+*  inverse map to map back CrabIR variables to LLVM Value's.
+* 
+*  A non-T varname is useful in at least two cases: (1) the frontend
+*  needs to create fresh variables that do not have a correspondence
+*  with a T element, and (2) an abstract domain needs to generate at
+*  analysis time ghost variables.
+*
+*  The factory uses a counter of type index_t to generate variable
+*  id's that always increases.
+**/
 template <class T> class variable_factory {
   using variable_factory_t = variable_factory<T>;
   using t_map_t = std::unordered_map<T, indexed_varname<T>>;
@@ -143,12 +184,18 @@ template <class T> class variable_factory {
                          std::map<std::string, indexed_varname<T>>>;
   // global counter to generate indexes
   ikos::index_t m_next_id;
-  // (cached) indexed_varname's associated with a T-instance.
+  // (cached) T-varname
   t_map_t m_map;
-  // (non-cached) fresh indexed_varname's.
-  std::vector<indexed_varname<T>> m_shadow_vars;
-  // (cached) indexed_varname's associated with another indexed_varname.
+  // (cached) non-T varname
   shadow_map_t m_shadow_map;
+  // (non-cached) non-T varname.
+  // REVISIT(PERFORMANCE): this was kept originally to tell Clam which
+  // variables should be hidden when pretty printing invariants
+  // However, since then, more and more abstract domains create
+  // uncached ghost variables so the size of m_shadow_vars might be a
+  // concern.
+  std::vector<indexed_varname<T>> m_shadow_vars;
+  
   mutable std::unordered_map<std::string, std::string> m_renaming_map;
 
   ikos::index_t get_and_increment_id(void) {
@@ -168,7 +215,8 @@ public:
 
   virtual ~variable_factory() = default;
 
-  variable_factory(ikos::index_t start_id) : m_next_id(start_id) {}
+  variable_factory(ikos::index_t start_id)
+    : m_next_id(start_id) {}
 
   variable_factory(const variable_factory_t &o) = delete;
 
@@ -185,45 +233,64 @@ public:
     }
   }
 
-  // Generate a fresh indexed_varname's without being associated with
-  // a particular instance of T.
-  //
-  // If you are an abstract domain then do not use it unless strictly
-  // necessary because it can produce an unbounded number of
-  // indexed_varname objects.
-  virtual varname_t get(std::string name = "") {
-    varname_t iv(get_and_increment_id(), this, name);
+  /**
+   * The next five methods generate fresh indexed_varname's without
+   * being associated with a particular instance of T. These are
+   * useful for creating front-end variables, abstract domain ghost
+   * variables, etc.
+   **/
+
+
+  // The returned varname is not cached
+  virtual varname_t make_varname(std::string &&name) {
+    varname_t iv(get_and_increment_id(), this, move(name));
     m_shadow_vars.push_back(iv);
     return iv;
   }
 
-  // API for abstract domains
-  //
+  // The returned varname is not cached
+  virtual varname_t make_varname() {
+    varname_t iv(get_and_increment_id(), this);
+    m_shadow_vars.push_back(iv);
+    return iv;
+  }
+
+  // DEPRECATED: needed for backward compatibility with clam
+  virtual varname_t get() { return make_varname(); }
+  
+  // The returned varname is not cached.
+  virtual varname_t make_temporary_varname() {
+    return varname_t(get_and_increment_id(), this);
+  }
+
+ 
   // Create a fresh indexed_varname associated to var.
-  // Given the same var and name it always return the same indexed_varname.
-  // The returned indexed_varname's name is var's name concatenated with name.
-  virtual varname_t get(const varname_t &var, std::string name) {
+  // Given the same var and suffix it always return the same indexed_varname.
+  // The returned indexed_varname's name is var's name concatenated with suffix.
+  virtual varname_t get_or_insert_varname(const varname_t &var, const std::string &suffix) {
     auto it = m_shadow_map.find(var);
     if (it == m_shadow_map.end()) {
-      varname_t iv(get_and_increment_id(), this, var.str() + name);
+      varname_t iv(get_and_increment_id(), this, var,  suffix);
       std::map<std::string, varname_t> named_shadows;
-      named_shadows.insert({name, iv});
-      m_shadow_map.insert({var, named_shadows});
+      named_shadows.insert({suffix, iv});
+      m_shadow_map.insert({var, std::move(named_shadows)});
       return iv;
-    } else {
+    } else {    
       std::map<std::string, varname_t> &named_shadows = it->second;
-      auto nit = named_shadows.find(name);
+      auto nit = named_shadows.find(suffix);
       if (nit != named_shadows.end()) {
         return nit->second;
       } else {
-        varname_t iv(get_and_increment_id(), this, var.str() + name);
-        named_shadows.insert({name, iv});
+	varname_t iv(get_and_increment_id(), this, var,  suffix);
+        named_shadows.insert({suffix, iv});
         return iv;
       }
     }
   }
 
-  // Allow temporary renaming for pretty printing
+  
+
+  // Allow temporary renaming for pretty-printing
   void add_renaming_map(
       const std::unordered_map<std::string, std::string> &smap) const {
     clear_renaming_map();
@@ -236,7 +303,8 @@ public:
     return m_renaming_map;
   }
 
-  // return all the non-T variables created by the factory.  
+  // Return all the non-T variables created by the factory
+  // It should be only used for pretty-printing purposes.
   virtual std::vector<varname_t> get_shadow_vars() const {
     std::vector<varname_t> out(m_shadow_vars.begin(), m_shadow_vars.end());
     for (auto &kv_ : m_shadow_map) {

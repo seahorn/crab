@@ -131,15 +131,15 @@ int main (int argc, char** argv) {
     dom.array_load(z, a, 4, y);
 
     crab::outs() << dom << "\n";    
-    z_lin_cst_t c1 (z_lin_exp_t(z) == 42);
+    z_lin_cst_t c1 (z_lin_exp_t(z) == 5);
     crab::outs() << "Added " << c1 << "\n";
     dom += c1;
-    crab::outs() << "Result=" << dom << "\n";
+    crab::outs() << "Result=" << dom << " EXPECTED=bottom\n";
     
-    z_lin_cst_t c2 (z_lin_exp_t(z) == 5);
-    crab::outs() << "Added " << c2 << "\n";
-    dom += c2;
-    crab::outs() << "Result=" << dom << "\n";    
+    // z_lin_cst_t c2 (z_lin_exp_t(z) == 5);
+    //crab::outs() << "Added " << c2 << "\n";
+    //dom += c2;
+    //crab::outs() << "Result=" << dom << "\n";    
   }
   
   return 0;

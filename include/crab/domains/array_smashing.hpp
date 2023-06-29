@@ -28,6 +28,7 @@
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/constant.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -36,17 +37,27 @@ namespace crab {
 
 namespace domains {
 
+class ArraySmashingDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+
+#define ARRAY_SMASHING_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define ARRAY_SMASHING_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0) 
+ 
 // All arrays are `smashed` into a single summarized variable.
-template <typename BaseNumDomain>
+template <typename BaseNumDomain, typename Params = ArraySmashingDefaultParams>
 class array_smashing final
-    : public abstract_domain_api<array_smashing<BaseNumDomain>> {
+  : public abstract_domain_api<array_smashing<BaseNumDomain, Params>> {
 
 public:
   using number_t = typename BaseNumDomain::number_t;
   using varname_t = typename BaseNumDomain::varname_t;
 
 private:
-  using array_smashing_t = array_smashing<BaseNumDomain>;
+  using array_smashing_t = array_smashing<BaseNumDomain, Params>;
   using abstract_domain_t = abstract_domain_api<array_smashing_t>;
 
 public:
@@ -107,7 +118,8 @@ private:
     // variable for the same array variable.
     auto &vfac =
         const_cast<varname_t *>(&(array_var.name()))->get_var_factory();
-    return variable_t(vfac.get(array_var.name(), ".smashed"), ghost_ty);
+    std::string suffix(".smashed");
+    return variable_t(vfac.get_or_insert_varname(array_var.name(), suffix), ghost_ty);
   }
 
   // Convert elem_size to an uint64_t
@@ -198,7 +210,19 @@ private:
         m_base_dom(std::move(base_dom)) {}
 
 public:
+  /// array_smashing is a functor domain that implements all
+  /// standard operations except region/reference operations.
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(array_smashing_t)
+
   array_smashing() {}
+
+  bool is_asc_phase() const override {
+    return m_base_dom.is_asc_phase();
+  }
+
+  void set_phase(bool is_ascending) override {
+    m_base_dom.set_phase(is_ascending);
+  }
 
   array_smashing make_top() const override { return array_smashing(); }
 
@@ -218,26 +242,24 @@ public:
     m_base_dom.set_to_bottom();
   }
 
-  array_smashing(const array_smashing_t &other)
-      : m_last_access_env(other.m_last_access_env),
-        m_base_dom(other.m_base_dom) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+  array_smashing(const array_smashing_t &o)
+      : m_last_access_env(o.m_last_access_env),
+        m_base_dom(o.m_base_dom) {
+    ARRAY_SMASHING_DOMAIN_SCOPED_STATS(".copy");
   }
 
-  array_smashing(array_smashing_t &&other) = default;
 
-  array_smashing_t &operator=(const array_smashing_t &other) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
-    if (this != &other) {
-      m_last_access_env = other.m_last_access_env;
-      m_base_dom = other.m_base_dom;
+  array_smashing_t &operator=(const array_smashing_t &o) {
+    ARRAY_SMASHING_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
+    if (this != &o) {
+      m_last_access_env = o.m_last_access_env;
+      m_base_dom = o.m_base_dom;
     }
     return *this;
   }
 
-  array_smashing_t &operator=(array_smashing_t &&other) = default;
+  array_smashing(array_smashing_t &&o) = default;  
+  array_smashing_t &operator=(array_smashing_t &&o) = default;
 
   bool is_bottom() const override { return m_base_dom.is_bottom(); }
 
@@ -554,8 +576,7 @@ public:
   virtual void array_load(const variable_t &lhs, const variable_t &a,
                           const linear_expression_t &elem_size /*bytes*/,
                           const linear_expression_t &i) override {
-    crab::CrabStats::count(domain_name() + ".count.load");
-    crab::ScopedCrabStats __st__(domain_name() + ".load");
+    ARRAY_SMASHING_DOMAIN_SCOPED_STATS(".array_load");
 
     uint64_t size = check_and_get_elem_size(elem_size);
     if (equal_size(a, size)) {
@@ -565,8 +586,7 @@ public:
       // into a non-summarized variable lhs. Simply m_base_dom.assign(lhs,a)
       // is not sound.
       auto &vfac = const_cast<varname_t *>(&(a.name()))->get_var_factory();
-      variable_t copy_scalar_var(vfac.get(scalar_var.name(), ".copy"),
-                                 scalar_var.get_type());
+      variable_t copy_scalar_var(vfac.make_temporary_varname(), scalar_var.get_type());
       m_base_dom.expand(scalar_var, copy_scalar_var);
       auto ty = scalar_var.get_type();
       if (ty.is_bool()) {
@@ -589,8 +609,7 @@ public:
                            const linear_expression_t &i,
                            const linear_expression_t &val,
                            bool is_strong_update) override {
-    crab::CrabStats::count(domain_name() + ".count.store");
-    crab::ScopedCrabStats __st__(domain_name() + ".store");
+    ARRAY_SMASHING_DOMAIN_SCOPED_STATS(".array_store");
 
     uint64_t size = check_and_get_elem_size(elem_size);
     if (is_strong_update) {
@@ -615,8 +634,7 @@ public:
                                  const linear_expression_t &i,
                                  const linear_expression_t &j,
                                  const linear_expression_t &val) override {
-    crab::CrabStats::count(domain_name() + ".count.store");
-    crab::ScopedCrabStats __st__(domain_name() + ".store");
+    ARRAY_SMASHING_DOMAIN_SCOPED_STATS(".array_store_range");
 
     uint64_t size = check_and_get_elem_size(elem_size);
     if (equal_size(a, size)) {
@@ -683,9 +701,18 @@ public:
     CRAB_WARN("backward_array_assign in array smashing domain not implemented");
   }
 
-  /// array_smashing is a functor domain that implements all
-  /// operations except region/reference operations.
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(array_smashing_t)
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const array_smashing_t &caller) override {
+    inter_abstract_operations<array_smashing_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const array_smashing_t &callee) override {
+    inter_abstract_operations<array_smashing_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
     return filter_ghost_vars(
@@ -759,40 +786,21 @@ public:
   void write(crab_os &o) const override { o << m_base_dom; }
 
   std::string domain_name() const override {
+    #if 1
+    return "ArraySmash";
+    #else
     std::string name("ArraySmashing(" + m_base_dom.domain_name() + ")");
     return name;
+    #endif 
   }
 
 }; // end array_smashing
 
-template <typename BaseDomain>
-struct abstract_domain_traits<array_smashing<BaseDomain>> {
+template <typename BaseDomain, typename Params>
+struct abstract_domain_traits<array_smashing<BaseDomain, Params>> {
   using number_t = typename BaseDomain::number_t;
   using varname_t = typename BaseDomain::varname_t;
 };
-
-// template <typename BaseDom>
-// class checker_domain_traits<array_smashing<BaseDom>> {
-// public:
-//   using this_type = array_smashing<BaseDom>;
-//   using linear_constraint_t = typename this_type::linear_constraint_t;
-//   using disjunctive_linear_constraint_system_t =
-//       typename this_type::disjunctive_linear_constraint_system_t;
-//   static bool entail(this_type &lhs,
-//                      const disjunctive_linear_constraint_system_t &rhs) {
-//     BaseDom &lhs_dom = lhs.get_content_domain();
-//     return checker_domain_traits<BaseDom>::entail(lhs_dom, rhs);
-//   }
-//   static bool entail(const disjunctive_linear_constraint_system_t &lhs,
-//                      this_type &rhs) {
-//     BaseDom &rhs_dom = rhs.get_content_domain();
-//     return checker_domain_traits<BaseDom>::entail(lhs, rhs_dom);
-//   }
-//   static bool intersect(this_type &inv, const linear_constraint_t &cst) {
-//     BaseDom &dom = inv.get_content_domain();
-//     return checker_domain_traits<BaseDom>::intersect(dom, cst);
-//   }
-// };
 
 } // namespace domains
 } // namespace crab

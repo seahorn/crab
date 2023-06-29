@@ -9,17 +9,26 @@
 #include <crab/domains/combined_domains.hpp>
 #include <crab/domains/congruences.hpp>
 #include <crab/domains/interval_congruence.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/stats.hpp>
 
 namespace crab {
 namespace domains {
 
-// Reduced product of a numerical domain with interval x congruences.
-template <typename NumAbsDom>
-class numerical_congruence_domain final
-    : public abstract_domain_api<numerical_congruence_domain<NumAbsDom>> {
+class NumCongruenceDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};  
 
-  using rnc_domain_t = numerical_congruence_domain<NumAbsDom>;
+#define COMBINED_CONGRUENCES_DOMAIN_SCOPED_STATS(NAME) \
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+  
+// Reduced product of a numerical domain with interval x congruences.
+template <typename NumAbsDom, typename Params = NumCongruenceDefaultParams>
+class numerical_congruence_domain final
+  : public abstract_domain_api<numerical_congruence_domain<NumAbsDom, Params>> {
+
+  using rnc_domain_t = numerical_congruence_domain<NumAbsDom, Params>;
   using abstract_domain_t = abstract_domain_api<rnc_domain_t>;
 
 public:
@@ -49,8 +58,7 @@ private:
       : m_product(product) {}
 
   void reduce_variable(const variable_t &v) {
-    crab::CrabStats::count(domain_name() + ".count.reduce");
-    crab::ScopedCrabStats __st__(domain_name() + ".reduce");
+    COMBINED_CONGRUENCES_DOMAIN_SCOPED_STATS(".reduce");
 
     if (is_bottom()) {
       return;
@@ -78,6 +86,23 @@ private:
   }
 
 public:
+  /// numerical_congruence_domain implements only standard abstract
+  /// operations of a numerical domain so it is intended to be used as
+  /// a leaf domain in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(rnc_domain_t)
+  ARRAY_OPERATIONS_NOT_IMPLEMENTED(rnc_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(rnc_domain_t)
+  
+  bool is_asc_phase() const override {
+    return m_product.first().is_asc_phase()
+      || m_product.second().is_asc_phase();
+  }
+
+  void set_phase(bool is_ascending) override {
+    m_product.first().set_phase(is_ascending);
+    m_product.second().set_phase(is_ascending);
+  }
+
   rnc_domain_t make_top() const override {
     reduced_domain_product2_t dom_prod;
     return rnc_domain_t(dom_prod.make_top());
@@ -106,12 +131,15 @@ public:
       : m_product(other.m_product) {}
 
   rnc_domain_t &operator=(const rnc_domain_t &other) {
-    if (this != &other)
+    if (this != &other) {
       m_product = other.m_product;
-
+    }
     return *this;
   }
 
+  numerical_congruence_domain(rnc_domain_t &&other) = default;
+  rnc_domain_t &operator=(rnc_domain_t &&other) = default;
+  
   bool is_bottom() const override { return m_product.is_bottom(); }
 
   bool is_top() const override { return m_product.is_top(); }
@@ -265,13 +293,19 @@ public:
     reduce_variable(lhs);
   }
 
-  /// numerical_congruence_domain implements only standard abstract
-  /// operations of a numerical domain so it is intended to be used as
-  /// a leaf domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(rnc_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(rnc_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(rnc_domain_t)
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const rnc_domain_t &caller) override {
+    inter_abstract_operations<rnc_domain_t, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
 
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const rnc_domain_t &callee) override {
+    inter_abstract_operations<rnc_domain_t, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   void forget(const variable_vector_t &variables) override {
     m_product.forget(variables);
   }
@@ -323,8 +357,8 @@ public:
 
 }; // class numerical_congruence_domain
 
-template <typename NumAbsDom>
-struct abstract_domain_traits<numerical_congruence_domain<NumAbsDom>> {
+template <typename NumAbsDom, typename Params>
+struct abstract_domain_traits<numerical_congruence_domain<NumAbsDom, Params>> {
   using number_t = typename NumAbsDom::number_t;
   using varname_t = typename NumAbsDom::varname_t;
 };

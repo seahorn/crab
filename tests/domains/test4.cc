@@ -54,14 +54,12 @@ z_cfg_t *prog(variable_factory_t &vfac) {
   z_basic_block_t &loop_head = cfg->insert("loop_head");
   z_basic_block_t &loop_t = cfg->insert("loop_t");
   z_basic_block_t &loop_f = cfg->insert("loop_f");
-  z_basic_block_t &loop_body = cfg->insert("loop_body");
   z_basic_block_t &ret = cfg->insert("ret");
 
   entry >> loop_head;
   loop_head >> loop_t;
   loop_head >> loop_f;
-  loop_t >> loop_body;
-  loop_body >> loop_head;
+  loop_t >> loop_head;
   loop_f >> ret;
 
   z_var i(vfac["i"], crab::INT_TYPE, 32);
@@ -72,8 +70,8 @@ z_cfg_t *prog(variable_factory_t &vfac) {
 
   loop_t.assume(i <= 9);
   loop_f.assume(i >= 10);
-  loop_body.add(i, i, 1);
-  loop_body.add(p, p, 4);
+  loop_t.add(i, i, 1);
+  loop_t.add(p, p, 4);
 
   return cfg;
 }
@@ -85,7 +83,6 @@ int main(int argc, char **argv) {
   }
   variable_factory_t vfac;
   z_cfg_t *cfg = prog(vfac);
-  cfg->simplify();
   crab::outs() << *cfg << "\n";
 
   {

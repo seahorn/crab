@@ -39,6 +39,7 @@
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/intervals.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/term/inverse.hpp>
 #include <crab/domains/term/simplify.hpp>
 #include <crab/domains/term/term_expr.hpp>
@@ -81,11 +82,22 @@ public:
 };
 } // namespace term
 
-template <class Info, class Abs> class TermNormalizer;
+template <class Info, class Abs, class DomainParams> class TermNormalizer;
 
-template <typename Info>
-class term_domain final : public abstract_domain_api<term_domain<Info>> {
-  friend class TermNormalizer<Info, typename Info::domain_t>;
+class TermDomainDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+
+
+#define TERMS_DOMAIN_SCOPED_STATS(NAME)	\
+  CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
+#define TERMS_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME)	\
+  CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
+  
+template <typename Info, typename DomainParams = TermDomainDefaultParams>
+class term_domain final : public abstract_domain_api<term_domain<Info, DomainParams>> {
+  friend class TermNormalizer<Info, typename Info::domain_t, DomainParams>;
 
   // Number and VariableName can be different from
   // dom_t::number_t and dom_t::varname_t although currently
@@ -99,7 +111,7 @@ class term_domain final : public abstract_domain_api<term_domain<Info>> {
   using domvar_set_t = ikos::patricia_tree_set<dom_var_t>;
   using bound_t = ikos::bound<Number>;
 
-  using term_domain_t = term_domain<Info>;
+  using term_domain_t = term_domain<Info, DomainParams>;
   using abstract_domain_t = abstract_domain_api<term_domain_t>;
 
 public:
@@ -690,6 +702,12 @@ private:
   }
 
 public:
+  /// term_domain implements standard abstract operations of a
+  /// numerical domain and some array operations. It is intended to be
+  /// used as a leaf domain in the hierarchy of domains.
+  BOOL_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
+  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
+  
   term_domain_t make_top() const override { return term_domain_t(true); }
 
   term_domain_t make_bottom() const override { return term_domain_t(false); }
@@ -710,15 +728,12 @@ public:
       : _is_bottom(o._is_bottom), _ttbl(o._ttbl), _impl(o._impl),
         _alloc(o._alloc), _var_map(o._var_map), _rev_var_map(o._rev_var_map),
         _term_map(o._term_map), changed_terms(o.changed_terms) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
+    TERMS_DOMAIN_SCOPED_STATS(".copy");
     check_terms(__LINE__);
   }
 
   term_domain_t &operator=(const term_domain_t &o) {
-    crab::CrabStats::count(domain_name() + ".count.copy");
-    crab::ScopedCrabStats __st__(domain_name() + ".copy");
-
+    TERMS_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(".copy");
     o.check_terms(__LINE__);
     if (this != &o) {
       _is_bottom = o._is_bottom;
@@ -734,6 +749,10 @@ public:
     return *this;
   }
 
+
+  term_domain(term_domain_t &&o) = default;
+  term_domain_t &operator=(term_domain_t &&o) = default;    
+  
   bool is_bottom() const override { return _is_bottom; }
 
   bool is_top() const override { return !_var_map.size() && !is_bottom(); }
@@ -745,8 +764,7 @@ public:
 
   // Lattice operations
   bool operator<=(const term_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.leq");
-    crab::ScopedCrabStats __st__(domain_name() + ".leq");
+    TERMS_DOMAIN_SCOPED_STATS(".leq");
 
     // Require normalization of the first argument
     term_domain_t left(*this);
@@ -796,8 +814,7 @@ public:
   }
 
   void operator|=(const term_domain_t &o) override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    TERMS_DOMAIN_SCOPED_STATS(".join");
 
     // Requires normalization of both operands
     term_domain_t right(o);
@@ -870,8 +887,7 @@ public:
   }
 
   term_domain_t operator|(const term_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.join");
-    crab::ScopedCrabStats __st__(domain_name() + ".join");
+    TERMS_DOMAIN_SCOPED_STATS(".join");
 
     term_domain_t left(*this);
     term_domain_t right(o);
@@ -957,8 +973,7 @@ public:
   }
 
   term_domain_t operator||(const term_domain_t &other) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    TERMS_DOMAIN_SCOPED_STATS(".widening");
     WidenOp op;
     return widening(other, op);
   }
@@ -966,16 +981,14 @@ public:
   term_domain_t widening_thresholds(
       const term_domain_t &other,
       const thresholds<number_t> &ts) const override {
-    crab::CrabStats::count(domain_name() + ".count.widening");
-    crab::ScopedCrabStats __st__(domain_name() + ".widening");
+    TERMS_DOMAIN_SCOPED_STATS(".widening");
     WidenWithThresholdsOp<thresholds<number_t>> op(ts);
     return widening(other, op);
   }
 
   // Meet
   term_domain_t operator&(const term_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    TERMS_DOMAIN_SCOPED_STATS(".meet");
 
     // Does not require normalization of any of the two operands
     if (is_bottom() || o.is_top()) {
@@ -1084,8 +1097,7 @@ public:
   }
 
   void operator&=(const term_domain_t &o) override {
-    crab::CrabStats::count(domain_name() + ".count.meet");
-    crab::ScopedCrabStats __st__(domain_name() + ".meet");
+    TERMS_DOMAIN_SCOPED_STATS(".meet");
 
     // TODO: improve by avoiding the copy of the left operand
     *this = *this & o;
@@ -1093,8 +1105,7 @@ public:
   
   // Narrowing
   term_domain_t operator&&(const term_domain_t &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
+    TERMS_DOMAIN_SCOPED_STATS(".narrowing");
 
     CRAB_WARN("Term narrowing operator replaced with meet");
     return *this & o;
@@ -1102,8 +1113,7 @@ public:
 
   // Remove a variable from the scope
   void operator-=(const variable_t &v) override {
-    crab::CrabStats::count(domain_name() + ".count.forget");
-    crab::ScopedCrabStats __st__(domain_name() + ".forget");
+    TERMS_DOMAIN_SCOPED_STATS(".forget");
 
     auto it(_var_map.find(v));
     if (it != _var_map.end()) {
@@ -1117,8 +1127,7 @@ public:
   }
 
   void assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    TERMS_DOMAIN_SCOPED_STATS(".assign");
 
     if (this->is_bottom()) {
       return;
@@ -1140,8 +1149,7 @@ public:
   // x = y op z
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    TERMS_DOMAIN_SCOPED_STATS(".apply");
     check_terms(__LINE__);
     if (this->is_bottom()) {
       return;
@@ -1157,8 +1165,7 @@ public:
   // x = y op k
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    TERMS_DOMAIN_SCOPED_STATS(".apply");
 
     if (this->is_bottom()) {
       return;
@@ -1174,8 +1181,7 @@ public:
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const term_domain_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign");
+    TERMS_DOMAIN_SCOPED_STATS(".backward_assign");
 
     crab::domains::BackwardAssignOps<term_domain_t>::assign(*this, x, e, inv);
   }
@@ -1183,8 +1189,7 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, number_t z,
                       const term_domain_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    TERMS_DOMAIN_SCOPED_STATS(".backward_apply");
 
     crab::domains::BackwardAssignOps<term_domain_t>::apply(*this, op, x, y, z,
                                                            inv);
@@ -1193,16 +1198,14 @@ public:
   void backward_apply(arith_operation_t op, const variable_t &x,
                       const variable_t &y, const variable_t &z,
                       const term_domain_t &inv) override {
-    crab::CrabStats::count(domain_name() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
+    TERMS_DOMAIN_SCOPED_STATS(".backward_apply");
 
     crab::domains::BackwardAssignOps<term_domain_t>::apply(*this, op, x, y, z,
                                                            inv);
   }
 
   void operator+=(const linear_constraint_t &cst) {
-    crab::CrabStats::count(domain_name() + ".count.add_constraints");
-    crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
+    TERMS_DOMAIN_SCOPED_STATS(".add_cst");
 
     CRAB_LOG("term", crab::outs() << "*** Before assume " << cst << ":" << *this
                                   << "\n");
@@ -1302,8 +1305,7 @@ public:
   */
 
   interval_t operator[](const variable_t &x) override {
-    crab::CrabStats::count(domain_name() + ".count.to_intervals");
-    crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
+    TERMS_DOMAIN_SCOPED_STATS(".to_intervals");
 
     // Needed for accuracy
     normalize();
@@ -1322,8 +1324,7 @@ public:
   }
 
   interval_t at(const variable_t &x) const override {
-    crab::CrabStats::count(domain_name() + ".count.to_intervals");
-    crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
+    TERMS_DOMAIN_SCOPED_STATS(".to_intervals");
 
     if (is_bottom()) {
       return interval_t::bottom();
@@ -1342,8 +1343,7 @@ public:
   }  
 
   void set(const variable_t &x, interval_t intv) {
-    crab::CrabStats::count(domain_name() + ".count.assign");
-    crab::ScopedCrabStats __st__(domain_name() + ".assign");
+    TERMS_DOMAIN_SCOPED_STATS(".assign");
 
     rebind_var(x, term_of_itv(intv.lb(), intv.ub()));
   }
@@ -1355,8 +1355,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    TERMS_DOMAIN_SCOPED_STATS(".apply");
 
     if (this->is_bottom()) {
       return;
@@ -1371,8 +1370,7 @@ public:
 
   void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
              number_t k) override {
-    crab::CrabStats::count(domain_name() + ".count.apply");
-    crab::ScopedCrabStats __st__(domain_name() + ".apply");
+    TERMS_DOMAIN_SCOPED_STATS(".apply");
 
     if (this->is_bottom()) {
       return;
@@ -1401,8 +1399,7 @@ public:
   virtual void array_load(const variable_t &lhs, const variable_t &a,
                           const linear_expression_t & /*elem_size*/,
                           const linear_expression_t &i) override {
-    crab::CrabStats::count(domain_name() + ".count.array_read");
-    crab::ScopedCrabStats __st__(domain_name() + ".array_read");
+    TERMS_DOMAIN_SCOPED_STATS(".array_read");
 
     if (this->is_bottom()) {
       return;
@@ -1424,8 +1421,7 @@ public:
                            const linear_expression_t &i,
                            const linear_expression_t &val,
                            bool /*is_strong_update*/) override {
-    crab::CrabStats::count(domain_name() + ".count.array_store");
-    crab::ScopedCrabStats __st__(domain_name() + ".array_store");
+    TERMS_DOMAIN_SCOPED_STATS(".array_store");
 
     if (this->is_bottom()) {
       return;
@@ -1438,20 +1434,25 @@ public:
        /// -- tmp := f(a,i)
       term_id_t t_uf(build_function(term_of_var(a), build_linexpr(i)));
       // FIXME:
-      // 1. we are creating a fresh varname each time we are called.
-      // 2. we are creating an untyped variable. This is ok if the
+      // 1. We are creating a fresh varname each time we are called.
+      // We intentionally tell the variable factory not to remember
+      // the varname by calling make_temporary_varname() instead of
+      // make_varname(). As a result, the varname won't show up when
+      // the method get_shadow_vars() is called.
+      //  
+      // 2. We are creating an untyped variable. This is ok if the
       // underlying domain is, for instance, intervals but it will
       // fail if we use a more type-dependent numerical domain such as
       // wrapped intervals.
-      variable_t tmp(vfac.get());
+      variable_t tmp(vfac.make_temporary_varname());
       // forget tmp
-      this->operator-=(tmp);
+      this->operator-=(tmp);      
       // forget the old value for t_uf, otherwise we can get
       // incorrectly bottom when we add the constraint val == tmp.
       _impl -= domvar_of_term(t_uf);
       rebind_var(tmp, t_uf);
       /// -- assume(tmp == val)
-      this->operator+=(val == tmp);
+      this->operator+=(val == tmp);      
     }
     check_terms(__LINE__);
     CRAB_LOG("term", crab::outs() << a << "[" << i << "]:=" << val << " -- "
@@ -1498,18 +1499,36 @@ public:
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
                              const term_domain_t &invariant) override {}
 
-  /// term_domain implements standard abstract operations of a
-  /// numerical domain and some array operations. It is intended to be
-  /// used as a leaf domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const term_domain_t &caller) override {
+    // The transformer for a call is not delegated to the subdomain.
+    // Instead, if DomainParams::implement_inter_transformers is
+    // enabled then the transformer is implemented by reducing to
+    // calls to project, meet, forget, etc.
+    TERMS_DOMAIN_SCOPED_STATS(".callee_entry");    
+    inter_abstract_operations<term_domain_t, DomainParams::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const term_domain_t &callee) override {
+    // The transformer for a call is not delegated to the subdomain.
+    // Instead, if DomainParams::implement_inter_transformers is
+    // enabled then the transformer is implemented by reducing to
+    // calls to project, meet, forget, etc.
+    TERMS_DOMAIN_SCOPED_STATS(".caller_cont");
+    inter_abstract_operations<term_domain_t, DomainParams::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
+  
   DEFAULT_SELECT(term_domain_t)
   DEFAULT_WEAK_ASSIGN(term_domain_t)
 
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
-    crab::CrabStats::count(domain_name() + ".count.rename");
-    crab::ScopedCrabStats __st__(domain_name() + ".rename");
+    TERMS_DOMAIN_SCOPED_STATS(".rename");
 
     if (is_top() || is_bottom())
       return;
@@ -1553,8 +1572,7 @@ public:
   // extract operation is used during reduction with other domains.
   void extract(const variable_t &x, linear_constraint_system_t &csts,
                bool only_equalities /*unused*/) {
-    crab::CrabStats::count(domain_name() + ".count.extract");
-    crab::ScopedCrabStats __st__(domain_name() + ".extract");
+    TERMS_DOMAIN_SCOPED_STATS(".extract");
 
     if (!is_normalized())
       normalize();
@@ -1607,8 +1625,7 @@ public:
   }
 
   void project(const variable_vector_t &variables) override {
-    crab::CrabStats::count(domain_name() + ".count.project");
-    crab::ScopedCrabStats __st__(domain_name() + ".project");
+    TERMS_DOMAIN_SCOPED_STATS(".project");
 
     if (is_bottom() || is_top())
       return;
@@ -1629,8 +1646,7 @@ public:
   }
 
   void expand(const variable_t &x, const variable_t &y) override {
-    crab::CrabStats::count(domain_name() + ".count.expand");
-    crab::ScopedCrabStats __st__(domain_name() + ".expand");
+    TERMS_DOMAIN_SCOPED_STATS(".expand");
 
     if (is_bottom() || is_top()) {
       return;
@@ -1646,23 +1662,22 @@ public:
   /* begin intrinsics operations */
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
   void backward_intrinsic(std::string name,
                           const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const term_domain_t &invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
+    //CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
   /* end intrinsics operations */
 
   // Propagate information from tightened terms to
   // parents/children.
   void normalize() override {
-    crab::CrabStats::count(domain_name() + ".count.normalize");
-    crab::ScopedCrabStats __st__(domain_name() + ".normalize");
-    TermNormalizer<Info, typename Info::domain_t>::normalize(*this);
+    TERMS_DOMAIN_SCOPED_STATS(".normalize");
+    TermNormalizer<Info, typename Info::domain_t, DomainParams>::normalize(*this);
   }
 
   void minimize() override {}
@@ -1670,8 +1685,7 @@ public:
   /// Simplify the term associated with x by given the standard
   /// arithmetic meaning to the functors
   bool simplify(const variable_t &x) {
-    crab::CrabStats::count(domain_name() + ".count.simplify");
-    crab::ScopedCrabStats __st__(domain_name() + ".simplify");
+    TERMS_DOMAIN_SCOPED_STATS(".simplify");
 
     auto it = _var_map.find(x);
     if (it != _var_map.end()) {
@@ -1688,9 +1702,6 @@ public:
 
   // Output function
   void write(crab_os &o) const override {
-    crab::CrabStats::count(domain_name() + ".count.write");
-    crab::ScopedCrabStats __st__(domain_name() + ".write");
-
     // XXX: we can avoid the copy as we do in
     // to_linear_constraint_system but we don't bother for
     // pretty-printing.
@@ -1730,10 +1741,7 @@ public:
   }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
-    crab::CrabStats::count(domain_name() +
-                           ".count.to_linear_constraint_system");
-    crab::ScopedCrabStats __st__(domain_name() +
-                                 ".to_linear_constraint_system");
+    TERMS_DOMAIN_SCOPED_STATS(".to_linear_constraint_system");
 
     // Collect the visible terms
     rev_map_t rev_map;
@@ -1797,7 +1805,14 @@ public:
   }
 
   std::string domain_name() const override {
-    std::string name("Term(" + _impl.domain_name() + ")");
+    std::string base_name = _impl.domain_name();
+    const char* prefix = "Term"; 
+    std::string name;
+    name.reserve(base_name.size() + 7);
+    name.append(prefix);
+    name.append("(");
+    name.append(base_name);
+    name.append(")");
     return name;
   }
 
@@ -1805,9 +1820,9 @@ public:
 
 // Propagate information from tightened terms to
 // parents/children.
-template <class Info, class Abs> class TermNormalizer {
+template <class Info, class Abs, class DomainParams> class TermNormalizer {
 public:
-  using term_domain_t = typename term_domain<Info>::term_domain_t;
+  using term_domain_t = typename term_domain<Info, DomainParams>::term_domain_t;
   using term_id_t = typename term_domain_t::term_id_t;
   using dom_t = Abs;
   using ttbl_t = typename term_domain_t::ttbl_t;
@@ -1949,10 +1964,10 @@ public:
 // Specialized implementation for interval domain.
 // GKG: Should modify to work with any independent attribute domain.
 #ifdef USE_TERM_INTERVAL_NORMALIZER
-template <class Info, class Num, class Var>
-class TermNormalizer<Info, ikos::interval_domain<Num, Var>> {
+template <class Info, class Num, class Var, class DomainParams>
+class TermNormalizer<Info, ikos::interval_domain<Num, Var>, DomainParams> {
 public:
-  using term_domain_t = typename term_domain<Info>::term_domain_t;
+  using term_domain_t = typename term_domain<Info, DomainParams>::term_domain_t;
   using term_id_t = typename term_domain_t::term_id_t;
   using dom_t = ikos::interval_domain<Num, Var>;
   using var_t = typename term_domain_t::dom_var_t;
@@ -2065,14 +2080,16 @@ public:
 };
 #endif
 
-template <typename Info> struct abstract_domain_traits<term_domain<Info>> {
+template <typename Info, typename DomainParams>
+struct abstract_domain_traits<term_domain<Info, DomainParams>> {
   using number_t = typename Info::Number;
   using varname_t = typename Info::VariableName;
 }; // end term_domain
 
-template <typename Info> class reduced_domain_traits<term_domain<Info>> {
+template <typename Info, typename DomainParams>
+class reduced_domain_traits<term_domain<Info, DomainParams>> {
 public:
-  using term_domain_t = term_domain<Info>;
+  using term_domain_t = term_domain<Info, DomainParams>;
   using variable_t = typename term_domain_t::variable_t;
   using linear_constraint_system_t =
       typename term_domain_t::linear_constraint_system_t;

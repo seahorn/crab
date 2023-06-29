@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/union_find_domain.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/os.hpp>
@@ -9,6 +10,11 @@
 namespace crab {
 namespace domains {
 
+class NumPackingDefaultParams {
+public:
+  enum { implement_inter_transformers = 0 };
+};
+  
 /*
  * Variable packing domain for numerical domains.
  *
@@ -23,11 +29,11 @@ namespace domains {
  * union-find because the concretization of the variable packing
  * domain is the intersection of the concretization of each pack.
  */
-template <class NumDom>
+template <class NumDom, class Params = NumPackingDefaultParams>
 class numerical_packing_domain
-    : public abstract_domain_api<numerical_packing_domain<NumDom>> {
+    : public abstract_domain_api<numerical_packing_domain<NumDom, Params>> {
 public:
-  using this_type = numerical_packing_domain<NumDom>;
+  using this_type = numerical_packing_domain<NumDom, Params>;
   using abstract_domain_api_t = abstract_domain_api<this_type>;
   using typename abstract_domain_api_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_api_t::interval_t;
@@ -480,10 +486,23 @@ public:
     CRAB_WARN(domain_name(), "::backward_apply not implemented");
   }
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const this_type &caller) override {
+    inter_abstract_operations<this_type, Params::implement_inter_transformers>::
+      callee_entry(callsite, caller, *this);
+      
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const this_type &callee) override {
+    inter_abstract_operations<this_type, Params::implement_inter_transformers>::    
+      caller_continuation(callsite, callee, *this);
+  }
+  
   BOOL_OPERATIONS_NOT_IMPLEMENTED(this_type)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(this_type)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(this_type)
-
+  
   linear_constraint_system_t to_linear_constraint_system() const override {
 
     if (is_bottom()) {
@@ -594,7 +613,7 @@ public:
                           const variable_or_constant_vector_t &inputs,
                           const variable_vector_t &outputs,
                           const this_type &invariant) override {
-    CRAB_WARN(domain_name(), "::backward_intrinsic not implemented");
+    //CRAB_WARN(domain_name(), "::backward_intrinsic not implemented");
   }
 
   void write(crab_os &o) const override {
@@ -650,12 +669,20 @@ public:
 
   std::string domain_name() const override {
     base_domain_t absval;
-    return "NumPackDomain(" + absval.domain_name() + ")";
+    std::string base_name = absval.domain_name();
+    const char* prefix = "NumPack"; 
+    std::string name;
+    name.reserve(base_name.size() + 10);
+    name.append(prefix);
+    name.append("(");
+    name.append(base_name);
+    name.append(")");
+    return name;
   }
 };
 
-template <typename Domain>
-struct abstract_domain_traits<numerical_packing_domain<Domain>> {
+template <typename Domain, typename Params>
+struct abstract_domain_traits<numerical_packing_domain<Domain, Params>> {
   using number_t = typename Domain::number_t;
   using varname_t = typename Domain::varname_t;
 };

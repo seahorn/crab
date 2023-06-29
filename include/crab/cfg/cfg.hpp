@@ -3134,10 +3134,6 @@ public:
       : m_func_name(o.m_func_name), m_inputs(o.m_inputs),
         m_outputs(o.m_outputs) {}
 
-  function_decl(const this_type &&o)
-      : m_func_name(std::move(o.m_func_name)), m_inputs(std::move(o.m_inputs)),
-        m_outputs(std::move(o.m_outputs)) {}
-
   this_type &operator=(const this_type &o) {
     if (this != &o) {
       m_func_name = o.m_func_name;
@@ -3147,13 +3143,9 @@ public:
     return *this;
   }
 
-  this_type &operator=(const this_type &&o) {
-    m_func_name = std::move(o.m_func_name);
-    m_inputs = std::move(o.m_inputs);
-    m_outputs = std::move(o.m_outputs);
-    return *this;
-  }
-  
+  function_decl(this_type &&o) = default;
+  this_type &operator=(this_type &&o) = default;
+
   bool operator==(const this_type &o) const {
     if (m_func_name != o.m_func_name) {
       return false;
@@ -3612,7 +3604,7 @@ private:
     return get_node(*(rng.begin()));
   }
 
-#if 1
+#if 0
   bool has_one_child(BasicBlockLabel b) const {
     auto rng = next_nodes(b);
     return (std::distance(rng.begin(), rng.end()) == 1);

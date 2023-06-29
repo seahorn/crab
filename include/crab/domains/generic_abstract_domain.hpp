@@ -54,6 +54,8 @@ private:
     operator=(const abstract_domain_concept &) = delete;
     abstract_domain_concept &operator=(abstract_domain_concept &&) = delete;
     virtual std::unique_ptr<abstract_domain_concept> clone() const = 0;
+    virtual bool is_asc_phase() const = 0;
+    virtual void set_phase(bool) = 0;
     virtual std::unique_ptr<abstract_domain_concept> make_top() const = 0;
     virtual std::unique_ptr<abstract_domain_concept> make_bottom() const = 0;
     virtual void set_to_top() = 0;
@@ -205,6 +207,13 @@ private:
     virtual void
     backward_array_assign(const variable_t &a, const variable_t &b,
                           const abstract_domain_concept &invariant) = 0;
+
+    virtual void callee_entry(const callsite_info<variable_t> &callsite,
+			      const abstract_domain_concept &caller) = 0;
+			      
+    virtual void caller_continuation(const callsite_info<variable_t> &callsite,
+				     const abstract_domain_concept &callee) = 0;
+				         
     virtual void operator-=(const variable_t &v) = 0;
     virtual interval_t operator[](const variable_t &v) = 0;
     virtual interval_t at(const variable_t &v) const = 0;    
@@ -244,6 +253,9 @@ private:
           new abstract_domain_model(m_inv));
       return std::move(res);
     }
+
+    bool is_asc_phase() const override { return m_inv.is_asc_phase(); }
+    void set_phase(bool is_asc) override { m_inv.set_phase(is_asc); }
 
     std::unique_ptr<abstract_domain_concept> make_top() const override {
       std::unique_ptr<abstract_domain_concept> res(
@@ -594,6 +606,22 @@ private:
       m_inv.backward_array_assign(
           a, b, static_cast<const abstract_domain_model *>(&invariant)->m_inv);
     }
+
+    
+    void callee_entry(const callsite_info<variable_t> &callsite,
+		      const abstract_domain_concept &caller) override {
+		      
+      m_inv.callee_entry(callsite,
+			 static_cast<const abstract_domain_model *>(&caller)->m_inv);
+    }
+
+    void caller_continuation(const callsite_info<variable_t> &callsite,
+			     const abstract_domain_concept &callee) override {
+			     
+      m_inv.caller_continuation(callsite,
+				static_cast<const abstract_domain_model *>(&callee)->m_inv);
+    }
+    
     void operator-=(const variable_t &v) override { m_inv.operator-=(v); }
     interval_t operator[](const variable_t &v) override {
       return m_inv.operator[](v);
@@ -670,6 +698,9 @@ public:
   abstract_domain(abstract_domain &&o) = default;
 
   abstract_domain &operator=(abstract_domain &&o) = default;
+
+  bool is_asc_phase() const override { return m_concept->is_asc_phase(); }
+  void set_phase(bool is_asc) override { m_concept->set_phase(is_asc); }
 
   abstract_domain make_top() const override {
     return abstract_domain(std::move(m_concept->make_top()));
@@ -938,6 +969,18 @@ public:
                              const abstract_domain &invariant) override {
     m_concept->backward_array_assign(a, b, *invariant.m_concept);
   }
+
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const abstract_domain &caller) override {
+    m_concept->callee_entry(callsite, *caller.m_concept);
+  }
+  
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const abstract_domain &callee) override {
+    m_concept->caller_continuation(callsite, *callee.m_concept);
+  }
+
+  
   void operator-=(const variable_t &v) override { m_concept->operator-=(v); }
   interval_t operator[](const variable_t &v) override {
     return m_concept->operator[](v);
@@ -1065,6 +1108,14 @@ public:
   abstract_domain_ref(abstract_domain_ref &&o) = default;
 
   abstract_domain_ref &operator=(abstract_domain_ref &&o) = default;
+
+  bool is_asc_phase() const override {
+    return norm().is_asc_phase();
+  }
+  void set_phase(bool is_asc) override {
+    detach();
+    norm().set_phase(is_asc);
+  }
 
   abstract_domain_ref make_top() const override {
     return create(norm().make_top());
@@ -1441,6 +1492,20 @@ public:
     norm().backward_array_assign(a, b, invariant.norm());
   }
 
+  void callee_entry(const callsite_info<variable_t> &callsite,
+		    const abstract_domain_ref &caller) override {
+		    
+    detach();
+    norm().callee_entry(callsite, caller.norm()); 
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+			   const abstract_domain_ref &callee) override {
+    detach();
+    norm().caller_continuation(callsite, callee.norm()); 
+  }
+  
+  
   void operator-=(const variable_t &v) override {
     detach();
     norm().operator-=(v);
