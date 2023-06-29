@@ -143,7 +143,7 @@ else()
 endif()
 
 #---------- MPFR ---------#
-if (CRAB_USE_APRON OR CRAB_USE_ELINA)
+if (CRAB_USE_APRON OR CRAB_USE_ELINA OR CRAB_USE_PPLITE)
   get_filename_component (GMP_SEARCH_PATH ${GMP_INCLUDE_DIR} PATH)
   find_package(MPFR REQUIRED)
   if (MPFR_FOUND)
@@ -290,10 +290,10 @@ endif()
 #------- Create CRAB_LIBS and CRAB_INCLUDE_DIRS for Crab clients -------#
 set (CRAB_DEPS_LIBS
   ${LDD_LIBRARY} 
-  ${PPLITE_LIBRARY}
   ${APRON_LIBRARY}
-  ${FLINT_LIBRARY}
   ${ELINA_LIBRARY}
+  ${PPLITE_LIBRARY}
+  ${FLINT_LIBRARY}
   ${MPFR_LIBRARIES} 
   ${GMP_LIB})
 
