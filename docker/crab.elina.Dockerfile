@@ -1,5 +1,5 @@
 #
-# Dockerfile for Crab image with elina and boxes libraries.
+# Dockerfile for Crab image with elina library.
 #
 # produces package in /crab/build
 # Arguments:
@@ -26,11 +26,9 @@ RUN cmake -GNinja \
           -DCMAKE_INSTALL_PREFIX=run \
           -DCMAKE_CXX_COMPILER=g++-6 \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-          -DCRAB_USE_LDD=ON \
           -DCRAB_USE_ELINA=ON \
 	  -DCRAB_ENABLE_TESTS=ON \
           ../ && \
-    cmake --build . --target ldd  && cmake .. && \
     cmake --build . --target elina  && cmake .. && \
     cmake --build . --target install
 
@@ -39,7 +37,6 @@ ENV LD_LIBRARY_PATH "/crab/build/run/elina/lib:$LD_LIBRARY_PATH"
 
 # Run tests
 RUN /crab/tests/run_tests.sh /crab/tests/expected_results.elina.out /crab/build
-RUN /crab/tests/run_tests.sh /crab/tests/expected_results.boxes.out /crab/build
 
 WORKDIR /crab
 

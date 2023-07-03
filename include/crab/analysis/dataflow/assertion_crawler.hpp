@@ -1143,7 +1143,7 @@ public:
 		       it->second = std::move(summary);
 		     }
 		     
-		     return std::move(intra_analysis);	   
+		     return intra_analysis;	   
 		   };
 
     auto hasStabilized = [](assertion_crawler_t &old, assertion_crawler_t &current, cfg_t cfg) {

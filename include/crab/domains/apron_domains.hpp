@@ -130,11 +130,11 @@ private:
     auto pplite_manager_alloc
       = [](const char* domain_name) {
           // Polyhedra are topologically closed (strict == false).
-          auto man = ap_pplite_poly_manager_alloc(false);
+          auto man = ap_pplite_manager_alloc(false);
           // Select the specific PPLite domain.
-          ap_pplite_poly_manager_set_kind(man, domain_name);
+          ap_pplite_manager_set_kind(man, domain_name);
           // Widening arguments satisfy the inclusion hypothesis.
-          ap_pplite_poly_manager_set_widen_spec(man, "risky");
+          ap_pplite_manager_set_widen_spec(man, "risky");
           return man;
         };
 #endif // HAVE_PPLITE
@@ -1627,10 +1627,10 @@ public:
         return disjunctive_linear_constraint_system_t(false /*is_false*/);
       } else {
         auto pset = &*m_apstate;
-        auto num_disj = ap_pplite_poly_num_disjuncts(s_apman, pset);
+        auto num_disj = ap_pplite_abstract0_num_disjuncts(s_apman, pset);
         auto res = disjunctive_linear_constraint_system_t(false /*is_false*/);
         for (auto d = 0; d < num_disj; ++d) {
-          auto lc_arr = ap_pplite_poly_disj_to_lincons_array(s_apman, pset, d);
+          auto lc_arr = ap_pplite_abstract0_disj_to_lincons_array(s_apman, pset, d);
           linear_constraint_system_t csts;
           for (unsigned i = 0; i < lc_arr.size; i++)
             csts += tconst2const(lc_arr.p[i]);
@@ -1864,10 +1864,10 @@ public:
 #ifdef HAVE_PPLITE
       assert(is_disjunctive(src_id));
       // src is a PolySet, dst is a (set of) polyhedron
-      auto num_disj = ap_pplite_poly_num_disjuncts(src_man, src_val);
+      auto num_disj = ap_pplite_abstract0_num_disjuncts(src_man, src_val);
       assert(num_disj > 0);
       for (auto d = 0; d < num_disj; ++d) {
-        auto lca = ap_pplite_poly_disj_to_lincons_array(src_man, src_val, d);
+        auto lca = ap_pplite_abstract0_disj_to_lincons_array(src_man, src_val, d);
         auto poly = ap_abstract0_of_lincons_array(dst_man, idim, rdim, &lca);
         ap_lincons0_array_clear(&lca);
         // First disjunct is assigned to dst_val, others are joined.
