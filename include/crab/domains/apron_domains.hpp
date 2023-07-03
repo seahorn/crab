@@ -1864,10 +1864,10 @@ public:
 #ifdef HAVE_PPLITE
       assert(is_disjunctive(src_id));
       // src is a PolySet, dst is a (set of) polyhedron
-      auto num_disj = ap_pplite_poly_num_disjuncts(src_man, src_val);
+      auto num_disj = ap_pplite_abstract0_num_disjuncts(src_man, src_val);
       assert(num_disj > 0);
       for (auto d = 0; d < num_disj; ++d) {
-        auto lca = ap_pplite_poly_disj_to_lincons_array(src_man, src_val, d);
+        auto lca = ap_pplite_abstract0_disj_to_lincons_array(src_man, src_val, d);
         auto poly = ap_abstract0_of_lincons_array(dst_man, idim, rdim, &lca);
         ap_lincons0_array_clear(&lca);
         // First disjunct is assigned to dst_val, others are joined.

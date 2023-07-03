@@ -251,7 +251,7 @@ private:
       // it would be nice to have std::make_unique
       std::unique_ptr<abstract_domain_concept> res(
           new abstract_domain_model(m_inv));
-      return std::move(res);
+      return res;
     }
 
     bool is_asc_phase() const override { return m_inv.is_asc_phase(); }
@@ -260,13 +260,13 @@ private:
     std::unique_ptr<abstract_domain_concept> make_top() const override {
       std::unique_ptr<abstract_domain_concept> res(
           new abstract_domain_model(m_inv.make_top()));
-      return std::move(res);
+      return res;
     }
 
     std::unique_ptr<abstract_domain_concept> make_bottom() const override {
       std::unique_ptr<abstract_domain_concept> res(
           new abstract_domain_model(m_inv.make_bottom()));
-      return std::move(res);
+      return res;
     }
 
     void set_to_top() override { m_inv.set_to_top(); }
@@ -291,7 +291,7 @@ private:
       std::unique_ptr<abstract_domain_concept> res(
           new abstract_domain_model(m_inv.operator|(
               static_cast<const abstract_domain_model *>(&abs)->m_inv)));
-      return std::move(res);
+      return res;
     }
 
     // unsafe: if the underlying domain in abs is not Domain then it will crash
@@ -305,7 +305,7 @@ private:
       std::unique_ptr<abstract_domain_concept> res(
           new abstract_domain_model(m_inv.operator&(
               static_cast<const abstract_domain_model *>(&abs)->m_inv)));
-      return std::move(res);
+      return res;
     }
 
     // unsafe: if the underlying domain in abs is not Domain then it will crash
@@ -314,7 +314,7 @@ private:
       std::unique_ptr<abstract_domain_concept> res(
           new abstract_domain_model(m_inv.operator||(
               static_cast<const abstract_domain_model *>(&abs)->m_inv)));
-      return std::move(res);
+      return res;
     }
 
     // unsafe: if the underlying domain in abs is not Domain then it will crash
@@ -323,7 +323,7 @@ private:
       std::unique_ptr<abstract_domain_concept> res(
           new abstract_domain_model(m_inv.operator&&(
               static_cast<const abstract_domain_model *>(&abs)->m_inv)));
-      return std::move(res);
+      return res;
     }
 
     // unsafe: if the underlying domain in abs is not Domain then it will crash
@@ -333,7 +333,7 @@ private:
       std::unique_ptr<abstract_domain_concept> res(
           new abstract_domain_model(m_inv.widening_thresholds(
               static_cast<const abstract_domain_model *>(&abs)->m_inv, ts)));
-      return std::move(res);
+      return res;
     }
     void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
                const variable_t &z) override {

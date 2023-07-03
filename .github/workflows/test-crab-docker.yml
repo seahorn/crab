@@ -34,8 +34,8 @@ jobs:
         run: docker build --build-arg BRANCH=master --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab_apron_boxes:bionic -f docker/crab.apron.Dockerfile .
       - name: Build crab+elina and run tests 
         run: docker build --build-arg BRANCH=master --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab_elina:bionic -f docker/crab.elina.Dockerfile .
-      - name: Build crab+pplite and run tests 
-        run: docker build --build-arg BRANCH=master --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab_pplite:bionic -f docker/crab.pplite.Dockerfile .      	      
+      #- name: Build crab+pplite and run tests 
+      #  run: docker build --build-arg BRANCH=master --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab_pplite:bionic -f docker/crab.pplite.Dockerfile .      	      
       - name: Login to DockerHub Registry
         if: ${{ github.event_name == 'schedule' }}  # only push if nightly run
         run: echo ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
@@ -45,4 +45,4 @@ jobs:
           docker push seahorn/crab:bionic	
           docker push seahorn/crab_apron_boxes:bionic
           docker push seahorn/crab_elina:bionic
-          docker push seahorn/crab_pplite:bionic 
+          #docker push seahorn/crab_pplite:bionic 
