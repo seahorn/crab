@@ -334,79 +334,77 @@ private:
     }
   }
 
+  LddNodePtr make_unit_constraint(number_t coef, variable_t var, kind_t kind, number_t k) {
+    assert(coef == 1 || coef == -1);    
+    linterm_t term = term_from_var(var, (coef == 1 ? false : true));
+    return make_unit_constraint(term, kind, k);
+  }
+
+  LddNodePtr make_unit_constraint(number_t coef, kind_t kind, number_t k) {
+    assert(coef == 1 || coef == -1);    
+    linterm_t term = term_from_special_var((coef == 1 ? false : true));
+    return make_unit_constraint(term, kind, k);
+  }
+  
   // Create a new ldd representing the constraint e
   // where e can be one of
-  //    c*x <= k | c*x == k | c*x != k
-  //    and c is 1 or -1 and k is an integer constant
-  LddNodePtr make_unit_constraint(number_t coef, linterm_t term, kind_t kind,
-                                  number_t k) {
-
-    assert(coef == 1 || coef == -1);
-
-    if (kind == kind_t::EQUALITY) { // x == k <-> x<=k and !(x<k)
-      // x<=k
-      constant_t c1 = mk_cst(k);
-      // XXX: make copy of term so that we can free memory using
-      // destroy_lincons without having double free
-      linterm_t copy_term = get_theory()->dup_term(term);
-      lincons_t cons1 =
-          get_theory()->create_cons(copy_term, 0 /*non-strict*/, c1);
-      LddNodePtr n1 =
-          lddPtr(get_ldd_man(), get_theory()->to_ldd(get_ldd_man(), cons1));
-      // !(x<k)
-      constant_t c2 = mk_cst(k);
-      lincons_t cons2 = get_theory()->create_cons(term, 1 /*strict*/, c2);
-      LddNodePtr n2 = lddPtr(
-          get_ldd_man(), Ldd_Not(get_theory()->to_ldd(get_ldd_man(), cons2)));
+  //    term <= k | term < k | term == k | term != k
+  //    where term can be a variable either with positive or negative sign
+  //          k is an integer constant
+  LddNodePtr make_unit_constraint(linterm_t term, kind_t kind, number_t k) {
+    switch(kind) {
+    case kind_t::EQUALITY: {
+      constant_t c = mk_cst(k);
+      // x>=k            
+      lincons_t cons1 = get_theory()->create_cons(term, 0 /*non-strict*/, c);
+      // x<=k      
+      lincons_t cons2 = get_theory()->create_cons(get_theory()->negate_term(term), 0, get_theory()->negate_cst(c));
+      LddNodePtr n1 = lddPtr(get_ldd_man(), get_theory()->to_ldd(get_ldd_man(), cons1));
+      LddNodePtr n2 = lddPtr(get_ldd_man(), get_theory()->to_ldd(get_ldd_man(), cons2));
+      LddNodePtr n = lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*n1, &*n2));
       get_theory()->destroy_lincons(cons1);
-      get_theory()->destroy_lincons(cons2);
-      return lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*n1, &*n2));
-    } else if (kind == kind_t::INEQUALITY) {
+      get_theory()->destroy_lincons(cons2);                  
+      return n;
+    }
+    case kind_t::INEQUALITY: {
       // x <= k
       constant_t c = mk_cst(k);
       lincons_t cons = get_theory()->create_cons(term, 0 /*non-strict*/, c);
-      LddNodePtr n =
-          lddPtr(get_ldd_man(), get_theory()->to_ldd(get_ldd_man(), cons));
+      LddNodePtr n = lddPtr(get_ldd_man(), get_theory()->to_ldd(get_ldd_man(), cons));
       get_theory()->destroy_lincons(cons);
       return n;
-    } else if (kind == kind_t::STRICT_INEQUALITY) {
+    }
+    case kind_t::STRICT_INEQUALITY: {
       // x < k
       constant_t c = mk_cst(k);
       lincons_t cons = get_theory()->create_cons(term, 1 /*strict*/, c);
       LddNodePtr n =
-          lddPtr(get_ldd_man(), get_theory()->to_ldd(get_ldd_man(), cons));
+	lddPtr(get_ldd_man(), get_theory()->to_ldd(get_ldd_man(), cons));
       get_theory()->destroy_lincons(cons);
       return n;
-    } else {
+    }
+    default: {
       assert(kind == kind_t::DISEQUATION);
-      return lddPtr(get_ldd_man(), Ldd_Not(&*make_unit_constraint(
-                                       coef, term, kind_t::EQUALITY, k)));
+      // x >= k+1
+      auto cons2 = make_unit_constraint(get_theory()->negate_term(term), kind_t::INEQUALITY, -(k+1));
+      // x <= k-1
+      auto cons1 = make_unit_constraint(term, kind_t::INEQUALITY, k-1);
+      return lddPtr(get_ldd_man(), Ldd_Or(get_ldd_man(), &*cons1, &*cons2));
+    }
     }
   }
 
-  LddNodePtr make_unit_constraint(number_t coef, variable_t var, kind_t kind,
-                                  number_t k) {
-    linterm_t term = term_from_var(var, (coef == 1 ? false : true));
-    return make_unit_constraint(coef, term, kind, k);
-  }
-
-  LddNodePtr make_unit_constraint(number_t coef, kind_t kind, number_t k) {
-    linterm_t term = term_from_special_var((coef == 1 ? false : true));
-    return make_unit_constraint(coef, term, kind, k);
-  }
-
-  void apply_unit_constraint(number_t coef, variable_t x, kind_t kind,
-                             number_t k) {
+  void apply_unit_constraint(number_t coef, variable_t x, kind_t kind, number_t k) {
     LddNodePtr n = make_unit_constraint(coef, x, kind, k);
     m_ldd = lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*m_ldd, &*n));
   }
 
   // Extract interval constraints from linear expression exp. This
-  // operation uses operator[] which loses precision. It should be
+  // operation uses "at" which loses precision. It should be
   // only used with non-unit expressions.
   void unitcsts_of_exp(const linear_expression_t &exp,
                        std::vector<std::pair<variable_t, number_t>> &lbs,
-                       std::vector<std::pair<variable_t, number_t>> &ubs) {
+                       std::vector<std::pair<variable_t, number_t>> &ubs) const {
 
     number_t unbounded_lbcoeff;
     number_t unbounded_ubcoeff;
@@ -420,7 +418,7 @@ private:
       if (coeff > number_t(0)) {
         variable_t y(p.second);
         // evaluate the variable in the domain
-        auto y_lb = this->operator[](y).lb();
+        auto y_lb = at(y).lb();
         if (y_lb.is_infinite()) {
           if (unbounded_lbvar)
             return;
@@ -434,7 +432,7 @@ private:
       } else {
         variable_t y(p.second);
         // evaluate the variable in the domain
-        auto y_ub = this->operator[](y).ub();
+        auto y_ub = at(y).ub();
         if (y_ub.is_infinite()) {
           if (unbounded_ubvar)
             return;
@@ -469,23 +467,23 @@ private:
     }
   }
 
-  interval_t eval_interval(const linear_expression_t &e) {
+  interval_t eval_interval(const linear_expression_t &e) const {
     interval_t r = e.constant();
     for (auto p : e)
-      r += p.first * operator[](p.second);
+      r += p.first * at(p.second);
     return r;
   }
 
   // Given a constraint a1*x1 + ... + an*xn <= k and pivot xi,
   // it computes the interval:
   //  k - intv (a1*x1 + ... + ai-1*xi-1 + ai+1*xi+1 + ... an*xn)
-  interval_t compute_residual(const linear_expression_t &e, variable_t pivot) {
+  interval_t compute_residual(const linear_expression_t &e, variable_t pivot) const {
     interval_t residual(-e.constant());
     for (typename linear_expression_t::const_iterator it = e.begin();
          it != e.end(); ++it) {
       variable_t v = it->second;
       if (!(v == pivot)) {
-        residual = residual - (interval_t(it->first) * this->operator[](v));
+        residual = residual - (interval_t(it->first) * at(v));
       }
     }
     return residual;
@@ -886,19 +884,6 @@ public:
                                    << "**" << *this << "\n"
                                    << "** " << other << "\n"
                                    << "= " << res << "\n";);
-    return res;
-  }
-
-  boxes_domain_t complement() const {
-    crab::CrabStats::count(domain_name() + ".count.complement");
-    crab::ScopedCrabStats __st__(domain_name() + ".complement");
-    LddNodePtr w = lddPtr(get_ldd_man(), Ldd_Not(&*m_ldd));
-    boxes_domain_t res(w);
-    CRAB_LOG("boxes", boxes_domain_t tmp(*this); crab::outs()
-                                                 << "Performed complement \n"
-                                                 << "**" << tmp << "\n"
-                                                 << "= " << res << "\n";);
-
     return res;
   }
 
