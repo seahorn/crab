@@ -8,7 +8,8 @@ if (CRAB_USE_APRON)
     endif()
 
     ExternalProject_Add(apron
-      GIT_REPOSITORY https://github.com/antoinemine/apron.git    
+      GIT_REPOSITORY https://github.com/antoinemine/apron.git
+      GIT_TAG e03832465bdca1888c56ecbe14dcdac0a243dce2
       INSTALL_DIR ${CMAKE_BINARY_DIR}/run/apron
       CONFIGURE_COMMAND 
       ./configure -prefix <INSTALL_DIR> -no-java -no-ocaml -no-ppl ${AP_PPLITE_OPTS} -gmp-prefix ${GMP_SEARCH_PATH} -mpfr-prefix ${MPFR_SEARCH_PATH}
