@@ -154,16 +154,18 @@ public:
       dom.weak_assign(m_offset, rhs.m_offset + offset);
       dom.weak_assign(m_size, rhs.m_size);
     }
-    
+
+    // return true iff dom |= offset + byte_sz < size
     bool is_deref(ghost_domain_t &dom,
+		  // number of dereferenceable bytes
                   const ghost_variable_or_constant_t &byte_sz) const {
       // TODO: we don't check that m_offset >= 0
       ghost_domain_t tmp(dom);
       if (byte_sz.is_constant()) {
-        tmp += ghost_linear_constraint_t(m_offset + byte_sz.get_constant() >
+        tmp += ghost_linear_constraint_t(m_offset + byte_sz.get_constant() >=
                                          m_size);
       } else {
-        tmp += ghost_linear_constraint_t(m_offset + byte_sz.get_variable() >
+        tmp += ghost_linear_constraint_t(m_offset + byte_sz.get_variable() >=
                                          m_size);
       }
       return tmp.is_bottom();
