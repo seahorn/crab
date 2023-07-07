@@ -198,6 +198,66 @@ private:
     }
   }
 
+  bool contains(const linear_constraint_t &cst, const variable_t &v) const {
+    auto sorted_variables = cst.variables();
+    auto lower = std::lower_bound(sorted_variables.begin(),
+				  sorted_variables.end(), v);
+    return (!(lower == sorted_variables.end() || v < *lower));
+  }
+  
+  bool contains(const linear_constraint_system_t &csts, const variable_t &v) const {
+    return std::any_of(csts.begin(), csts.end(),
+		       [this,&v](const linear_constraint_t &cst) {
+			 return contains(cst, v);
+		       });
+  }
+
+  void add_constraints(const linear_constraint_system_t &csts) {
+    assert(!is_bottom());
+    assert(!csts.is_true());
+    assert(!csts.is_false());
+    
+    CRAB_LOG("partition", crab::outs() << "Adding " << csts << "\n";);
+    partition_vector vec;
+    vec.reserve(m_partitions.size());
+    for (auto &partition : m_partitions) {
+      partition.get_dom() += csts;
+      // remove bottom partitions
+      if (partition.get_dom().is_bottom()) {
+        continue;
+      }
+      vec.emplace_back(partition);
+    }
+    std::swap(m_partitions, vec);
+
+    // update partitions
+    if (m_variable) {
+      
+      if (contains(csts, *m_variable)) {
+        update_partitions();
+      }
+    }
+    CRAB_LOG("partition", crab::outs() << "Res=" << *this << "\n";);
+  }
+
+  void split_relevant_disequalities(const linear_constraint_system_t &csts,
+				    const variable_t &v,
+				    linear_constraint_system_t &diseqs,
+				    linear_constraint_system_t &non_diseqs) {
+    for (auto it=csts.begin(), et=csts.end();it!=et;++it) {
+      const linear_constraint_t &cst = *it;
+      if (!cst.is_disequation()) {
+	non_diseqs += cst;
+      } else {
+	if (contains(cst, v)) {
+	  diseqs += cst;
+	} else {
+	  non_diseqs += cst;
+	}
+      }
+    }
+  }
+  
 public:
   value_partitioning_domain() : m_variable(boost::none) {
     m_partitions.reserve(1);
@@ -642,6 +702,7 @@ public:
     }
   }
 
+  
   void operator+=(const linear_constraint_system_t &csts) override {
     if (is_bottom() || csts.is_true()) {
       return;
@@ -651,37 +712,27 @@ public:
       return;
     }
 
-    CRAB_LOG("partition", crab::outs() << "Adding " << csts << "\n";);
-    partition_vector vec;
-    vec.reserve(m_partitions.size());
-    for (auto &partition : m_partitions) {
-      partition.get_dom() += csts;
-      // remove bottom partitions
-      if (partition.get_dom().is_bottom()) {
-        continue;
-      }
-      vec.emplace_back(partition);
-    }
-    std::swap(m_partitions, vec);
-
-    // update partitions
     if (m_variable) {
-      bool is_partition_var_affected = false;
-      for (auto &cst : csts) {
-        auto sorted_variables = cst.variables();
-        auto lower = std::lower_bound(sorted_variables.begin(),
-                                      sorted_variables.end(), *m_variable);
-        if (!(lower == sorted_variables.end() ||
-              *m_variable < *lower)) { // found
-          is_partition_var_affected = true;
-          break;
-        }
+      linear_constraint_system_t diseqs, non_diseqs;
+      split_relevant_disequalities(csts, *m_variable, diseqs, non_diseqs);
+
+      add_constraints(non_diseqs);
+      // Disequalities that use the partition variable will add new
+      // partitions
+      for (auto it=diseqs.begin(), et=diseqs.end();it!=et;++it) {
+	auto &cst = *it;
+	linear_constraint_t ltC(cst.expression(),
+				linear_constraint_t::STRICT_INEQUALITY);
+	linear_constraint_t gtC(-cst.expression(),
+			      linear_constraint_t::STRICT_INEQUALITY);
+	value_partitioning_domain_t copy(*this);
+	add_constraints(ltC);
+	copy.add_constraints(gtC);
+	operator|=(copy);
       }
-      if (is_partition_var_affected) {
-        update_partitions();
-      }
+    } else {
+      add_constraints(csts);
     }
-    CRAB_LOG("partition", crab::outs() << "Res=" << *this << "\n";);
   }
 
   bool entails(const linear_constraint_t &cst) const override {
