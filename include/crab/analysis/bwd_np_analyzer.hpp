@@ -39,7 +39,7 @@ class necessary_preconditions_fixpoint_iterator
   // to create bottom/top abstract values
   AbsDom m_absval_fac;
   // necessary preconditions
-  bb_abstract_map_t m_preconditions;
+  mutable bb_abstract_map_t m_preconditions;
   // forward invariants
   bb_abstract_map_t m_invariants;
   // preconditions from good states, otherwise from bad states
@@ -149,12 +149,12 @@ public:
   const_iterator end() const { return m_preconditions.end(); }
 
   // return the preconditions at basic block node
-  AbsDom operator[](const bb_label_t &node) const {
+  const AbsDom& get_pre(const bb_label_t &node) const {
     auto it = m_preconditions.find(node);
-    if (it != m_preconditions.end())
-      return it->second;
-    else
-      return m_absval_fac.make_top();
+    if (it == m_preconditions.end()) {
+      it->second = m_absval_fac.make_top();
+    }
+    return it->second;
   }
 
   // clear preconditions and forward invariants (if any)

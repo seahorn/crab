@@ -173,17 +173,17 @@ public:
   }
 
   //! Return the invariants that hold at the entry of b
-  inline abs_dom_t operator[](const basic_block_label_t &b) const {
+  inline const abs_dom_t& operator[](const basic_block_label_t &b) const {
     return get_pre(b);
   }
 
   //! Return the invariants that hold at the entry of b
-  abs_dom_t get_pre(const basic_block_label_t &b) const {
+  const abs_dom_t& get_pre(const basic_block_label_t &b) const {
     return fixpo_iterator_t::get_pre(b);
   }
 
   //! Return the invariants that hold at the exit of b
-  abs_dom_t get_post(const basic_block_label_t &b) const {
+  const abs_dom_t& get_post(const basic_block_label_t &b) const {
     return fixpo_iterator_t::get_post(b);
   }
 
@@ -204,8 +204,8 @@ public:
   void get_safe_assertions(std::set<const stmt_t *> &out) const {}
 
   void write(crab::crab_os &o) {
-    for (auto &kv : this->get_pre_invariants()) {
-      auto &pre = kv.second;
+    for (auto const &kv : this->get_pre_invariants()) {
+      auto const& pre = kv.second;
       auto &b = get_cfg().get_node(kv.first);
       o << basic_block_traits<basic_block_t>::to_string(kv.first) << ":\n";
       if (b.size() == 0) {
@@ -213,7 +213,7 @@ public:
           << "* " << pre << "\n"
           << "**/\n";
       } else {
-        auto post = get_post(kv.first);
+        auto const& post = get_post(kv.first);
         o << "**\n"
           << "* PRE: " << pre << "\n"
           << "**/\n";
@@ -301,15 +301,15 @@ public:
     return m_analyzer.get_post_invariants();
   }
 
-  abs_dom_t operator[](const basic_block_label_t &b) const {
+  const abs_dom_t& operator[](const basic_block_label_t &b) const {
     return m_analyzer.get_pre(b);
   }
 
-  abs_dom_t get_pre(const basic_block_label_t &b) const {
+  const abs_dom_t& get_pre(const basic_block_label_t &b) const {
     return m_analyzer.get_pre(b);
   }
 
-  abs_dom_t get_post(const basic_block_label_t &b) const {
+  const abs_dom_t& get_post(const basic_block_label_t &b) const {
     return m_analyzer.get_post(b);
   }
 

@@ -114,16 +114,15 @@ private:
   // invariants that hold at the exit of each function's block
   invariant_map_t m_post_invariants;
 
+  abs_dom_t m_bot_fac;
+  abs_dom_t m_top_fac;  
+  
   // if true then the calling context has not been joined yet with
   // other contexts.
   bool m_exact;
   // whether to keep all the invariants. Useful for printing
   // context-sensitive invariants but very expensive.
   bool m_keep_invariants;
-
-  inline abs_dom_t make_bottom() const {
-    return m_pre_summary.make_bottom();
-  }
 
   static invariant_map_t join(invariant_map_t &m1, invariant_map_t &m2) {
     invariant_map_t out;
@@ -146,7 +145,10 @@ private:
                   invariant_map_t &&post_invariants)
       : m_fdecl(fdecl), m_pre_summary(pre_summary), m_post_summary(post_summary),
         m_pre_invariants(std::move(pre_invariants)),
-        m_post_invariants(std::move(post_invariants)), m_exact(false),
+        m_post_invariants(std::move(post_invariants)),
+	m_bot_fac(m_pre_summary.make_bottom()),
+	m_top_fac(m_pre_summary.make_top()),
+	m_exact(false),
         m_keep_invariants(true) {}
 
   // Private constructor used to join calling contexts but without
@@ -154,7 +156,10 @@ private:
   calling_context(const fdecl_t &fdecl, abs_dom_t pre_summary,
 		  abs_dom_t post_summary)
       : m_fdecl(fdecl), m_pre_summary(pre_summary),
-	m_post_summary(post_summary), m_exact(false),
+	m_post_summary(post_summary),
+	m_bot_fac(m_pre_summary.make_bottom()),
+	m_top_fac(m_pre_summary.make_top()), 
+	m_exact(false),
         m_keep_invariants(false) {}
 
 public:
@@ -163,7 +168,10 @@ public:
                   invariant_map_t &&post_invariants)
       : m_fdecl(fdecl), m_pre_summary(pre_summary), m_post_summary(post_summary),
         m_pre_invariants(std::move(pre_invariants)),
-        m_post_invariants(std::move(post_invariants)), m_exact(true),
+        m_post_invariants(std::move(post_invariants)),
+	m_bot_fac(m_pre_summary.make_bottom()),
+	m_top_fac(m_pre_summary.make_top()),    
+	m_exact(true),
         m_keep_invariants(keep_invariants) {
 
     if (!m_keep_invariants) {
@@ -214,14 +222,13 @@ public:
   }
 
   // invariants that hold at the entry of basic block bb
-  abs_dom_t get_pre(const basic_block_label_t &bb) const {
+  const abs_dom_t& get_pre(const basic_block_label_t &bb) const {
     if (!m_keep_invariants) {
-      abs_dom_t top;
-      return top;
+      return m_top_fac;
     } else {
       auto it = m_pre_invariants.find(bb);
       if (it == m_pre_invariants.end()) {
-        return make_bottom(); // dead block under particular context
+        return m_bot_fac; // dead block under particular context
       } else {
         return it->second;
       }
@@ -229,14 +236,13 @@ public:
   }
 
   // invariants that hold at the exit of basic block bb
-  abs_dom_t get_post(const basic_block_label_t &bb) const {
+  const abs_dom_t& get_post(const basic_block_label_t &bb) const {
     if (!m_keep_invariants) {
-      abs_dom_t top;
-      return top;
+      return m_top_fac;
     } else {
       auto it = m_post_invariants.find(bb);
       if (it == m_post_invariants.end()) {
-        return make_bottom(); // dead block under particular context
+        return m_bot_fac; // dead block under particular context
       } else {
         return it->second;
       }
@@ -1465,7 +1471,8 @@ private:
       analyzer_internal_impl::fwd_analyzer<cfg_t, td_inter_abs_tr_t>;
   using invariant_map_t =
       typename intra_analyzer_with_call_semantics_t::invariant_map_t;
-
+  using summary_map_t = crab::cfg::callsite_or_fdecl_map<cfg_t, summary_t>;
+  
   // global context stuff
   using global_context_t =
       top_down_inter_impl::global_context<CallGraph, abs_dom_t,
@@ -1499,23 +1506,26 @@ private:
   };
 
 
-  AbsDom get_invariant(const global_invariant_map_t &global_map,
+  const AbsDom& get_invariant(const global_invariant_map_t &global_map,
                        const cfg_t &cfg, basic_block_label_t bb) const {
     auto g_it = global_map.find(cfg);
     if (g_it == global_map.end()) {
-      return m_absval_fac.make_bottom(); // dead function
+      return m_bot_fac; // dead function
     }
     const invariant_map_t &m = g_it->second;
     auto it = m.find(bb);
     if (it == m.end()) {
-      return m_absval_fac.make_bottom(); // dead block
+      return m_bot_fac; // dead block
     }
     return it->second;
   }
 
   CallGraph &m_cg;
   global_context_t m_ctx;
+  // For external queries
+  mutable summary_map_t m_summary_map;
   abs_dom_t m_absval_fac;
+  abs_dom_t m_bot_fac;
   std::unique_ptr<td_inter_abs_tr_t> m_abs_tr;
 
 public:
@@ -1529,6 +1539,7 @@ public:
               params.only_main_as_entry, params.widening_delay,
               params.descending_iters, params.thresholds_size),
 	m_absval_fac(absval_fac),
+	m_bot_fac(m_absval_fac.make_bottom()),
         m_abs_tr(new td_inter_abs_tr_t(m_cg, m_ctx, m_absval_fac)) {
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
     cg.type_check();
@@ -1628,13 +1639,13 @@ public:
 
   // Return the *context-insensitive* invariants that hold at the entry of b in
   // cfg.
-  AbsDom get_pre(const cfg_t &cfg, const basic_block_label_t &bb) const override {
+  const AbsDom& get_pre(const cfg_t &cfg, const basic_block_label_t &bb) const override {
     return get_invariant(m_ctx.get_global_pre_invariants(), cfg, bb);
   }
 
   // Return the *context-insensitive* invariants that hold at the exit of b in
   // cfg.
-  AbsDom get_post(const cfg_t &cfg, const basic_block_label_t &bb) const override {
+  const AbsDom& get_post(const cfg_t &cfg, const basic_block_label_t &bb) const override {
     return get_invariant(m_ctx.get_global_post_invariants(), cfg, bb);
   }
 
@@ -1643,17 +1654,24 @@ public:
         "clear operation of the inter-procedural analysis not implemented yet");
   }
 
-  // TODO: caching
-  summary_t get_summary(const cfg_t &cfg) const override {
-    summary_t summary(cfg.get_func_decl());
-    auto it = m_ctx.get_calling_context_table().find(cfg);
-    if (it != m_ctx.get_calling_context_table().end()) {
-      auto &ccs = it->second;
-      for (auto &cc:  ccs) {
-	summary.add(cc->get_pre_summary(), cc->get_post_summary());
+  const summary_t& get_summary(const cfg_t &cfg) const override {
+    auto const& fdecl = cfg.get_func_decl();
+    auto it = m_summary_map.find(&fdecl);
+    if (it == m_summary_map.end()) {
+      summary_t summary(fdecl);
+      auto it = m_ctx.get_calling_context_table().find(cfg);
+      if (it != m_ctx.get_calling_context_table().end()) {
+	auto &ccs = it->second;
+	for (auto &cc:  ccs) {
+	  summary.add(cc->get_pre_summary(), cc->get_post_summary());
+	}
       }
+      // I cannot do: it->second = summary because summary is not copyable
+      auto res = m_summary_map.insert({&fdecl, std::move(summary)});
+      return res.first->second;
+    } else {
+      return it->second;
     }
-    return summary;
   }
   
   const checks_db_t get_all_checks() const { return m_ctx.get_checks_db(); }
