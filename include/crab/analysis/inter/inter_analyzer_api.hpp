@@ -27,11 +27,11 @@ public:
   virtual ~inter_analyzer_api() {}
   virtual void run(invariant_abs_dom_t init) = 0;
   virtual cg_t& get_call_graph() = 0;
-  virtual invariant_abs_dom_t
+  virtual const invariant_abs_dom_t&
   get_pre(const cfg_t &cfg, const basic_block_label_t &bb) const = 0;
-  virtual invariant_abs_dom_t
+  virtual const invariant_abs_dom_t&
   get_post(const cfg_t &cfg, const basic_block_label_t &bb) const = 0;
-  virtual summary_t get_summary(const cfg_t &cfg) const = 0;
+  virtual const summary_t& get_summary(const cfg_t &cfg) const = 0;
   virtual void clear() = 0;
 };
 

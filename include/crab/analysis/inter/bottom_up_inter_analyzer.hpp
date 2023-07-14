@@ -877,8 +877,8 @@ public:
   CallGraph &get_call_graph() override { return m_cg; }
 
   //! Return the invariants that hold at the entry of b in cfg
-  TD_Dom get_pre(const cfg_t &cfg,
-                 const typename cfg_t::basic_block_label_t &b) const override {
+  const TD_Dom& get_pre(const cfg_t &cfg,
+			const typename cfg_t::basic_block_label_t &b) const override {
     assert(cfg.has_func_decl());
     auto const &fdecl = cfg.get_func_decl();
     auto const it = m_inv_map.find(&fdecl);
@@ -890,8 +890,8 @@ public:
   }
 
   //! Return the invariants that hold at the exit of b in cfg
-  TD_Dom get_post(const cfg_t &cfg,
-                  const typename cfg_t::basic_block_label_t &b) const override {
+  const TD_Dom& get_post(const cfg_t &cfg,
+			 const typename cfg_t::basic_block_label_t &b) const override {
     assert(cfg.has_func_decl());
     auto const &fdecl = cfg.get_func_decl();
     auto const it = m_inv_map.find(&fdecl);
@@ -910,7 +910,7 @@ public:
     m_abs_tr->get_abs_value().set_to_top();
   }
 
-  summary_t get_summary(const cfg_t &cfg) const override {
+  const summary_t& get_summary(const cfg_t &cfg) const override {
     auto const& fdecl = cfg.get_func_decl();
     auto it = m_summary_map.find(&fdecl);
     if (it == m_summary_map.end()) {
@@ -923,8 +923,9 @@ public:
 	// precondition is top.
 	summary.add(internal_summary.make_top(), internal_summary.get_sum());
       }
-      m_summary_map.insert({&fdecl, summary});
-      return summary;
+      // I cannot do: it->second = summary because summary is not copyable
+      auto res = m_summary_map.insert({&fdecl, std::move(summary)});
+      return res.first->second;
     } else {
       return it->second;
     }
