@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
     while (!worklist.empty()) {
       auto cur_label = worklist.back();
       worklist.pop_back();
-      auto inv = analyzer[cur_label];
+      auto const& inv = analyzer.get_pre(cur_label);
       crab::outs() << crab::basic_block_traits<z_basic_block_t>::to_string(cur_label)
 		   << "=" << inv << "\n";
                    
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
     while (!worklist.empty()) {
       auto cur_label = worklist.back();
       worklist.pop_back();
-      auto inv = analyzer[cur_label];
+      auto const& inv = analyzer.get_pre(cur_label);
       crab::outs() << crab::basic_block_traits<z_basic_block_t>::to_string(cur_label)
 		   << "=" << inv << "\n";
       auto const &cur_node = cfg->get_node(cur_label);

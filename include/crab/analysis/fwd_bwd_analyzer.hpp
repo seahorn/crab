@@ -89,8 +89,8 @@ private:
   // keep track of which assertions have been proven
   std::set<statement_t *> m_proved_assertions;
   // keep the results of the first forward iteration.
-  invariant_map_t m_pre_invariants;
-  invariant_map_t m_post_invariants;
+  mutable invariant_map_t m_pre_invariants;
+  mutable invariant_map_t m_post_invariants;
   // The forward wto is kept to be exposed to outside clients.
   std::unique_ptr<wto_t> m_wto;
   // to be used by checker
@@ -259,11 +259,12 @@ public:
 	     }
 	     crab::outs() << "with initial states=" << init_states << "\n");
 
-    // return true if fixpo[node] is strictly more precise than old fixpo[node]
+    // return true if fixpo.get_pre(node) is strictly more precise than
+    // old fixpo.get_pre(node)
     auto refine =
         [](const basic_block_label_t &node, const assumption_map_t &old_table,
            const bwd_analyzer_t &fixpo, assumption_map_t &new_table) {
-          AbsDom new_val = fixpo[node];
+          AbsDom new_val = fixpo.get_pre(node);
           auto it = old_table.find(node);
           if (it == old_table.end()) {
 	    CRAB_LOG("backward-refinement",
@@ -477,24 +478,24 @@ public:
   }
 
   // Return the invariants that hold at the entry of b
-  AbsDom operator[](const basic_block_label_t &b) const { return get_pre(b); }
+  const AbsDom& operator[](const basic_block_label_t &b) const { return get_pre(b); }
 
   // Return the invariants that hold at the entry of b
-  AbsDom get_pre(const basic_block_label_t &b) const {
+  const AbsDom& get_pre(const basic_block_label_t &b) const {
     auto it = m_pre_invariants.find(b);
-    if (it == m_pre_invariants.end())
-      return m_absval_fac.make_top();
-    else
-      return it->second;
+    if (it == m_pre_invariants.end()) {
+      it->second = m_absval_fac.make_top();
+    }
+    return it->second;
   }
 
   // Return the invariants that hold at the exit of b
-  AbsDom get_post(const basic_block_label_t &b) const {
+  const AbsDom& get_post(const basic_block_label_t &b) const {
     auto it = m_post_invariants.find(b);
-    if (it == m_post_invariants.end())
-      return m_absval_fac.make_top();
-    else
-      return it->second;
+    if (it == m_post_invariants.end()) {
+      it->second = m_absval_fac.make_top();
+    }
+    return it->second;
   }
 
   // Return the wto of the cfg
