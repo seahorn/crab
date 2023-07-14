@@ -93,7 +93,7 @@ public:
 private:
   wto_nesting(node_list_ptr l) : _nodes(std::make_shared<node_list_t>(*l)) {}
 
-  int compare(wto_nesting_t &other) const {
+  int compare(const wto_nesting_t &other) const {
     const_iterator this_it = this->begin(), other_it = other.begin();
     while (this_it != this->end()) {
       if (other_it == other.end()) {
@@ -135,7 +135,7 @@ public:
 
   const_iterator end() const { return _nodes->end(); }
 
-  wto_nesting_t operator^(wto_nesting_t other) const {
+  wto_nesting_t operator^(const wto_nesting_t &other) const {
     wto_nesting_t res;
     for (const_iterator this_it = this->begin(), other_it = other.begin();
          this_it != this->end() && other_it != other.end();
@@ -149,19 +149,19 @@ public:
     return res;
   }
 
-  bool operator<=(wto_nesting_t other) const {
+  bool operator<=(const wto_nesting_t &other) const {
     return this->compare(other) <= 0;
   }
 
-  bool operator==(wto_nesting_t other) const {
+  bool operator==(const wto_nesting_t &other) const {
     return this->compare(other) == 0;
   }
 
-  bool operator>=(wto_nesting_t other) const {
-    return this->operator<=(other, *this);
+  bool operator>=(const wto_nesting_t &other) const {
+    return other.operator<=(*this);
   }
 
-  bool operator>(wto_nesting_t other) const {
+  bool operator>(const wto_nesting_t &other) const {
     return this->compare(other) == 1;
   }
 
