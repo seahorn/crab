@@ -2354,8 +2354,8 @@ private:
     return new basic_block_t(bb_id);
   }
 
-  void update_uses_and_defs(const statement_t *s) {
-    auto const &ls = s->get_live();
+  void update_uses_and_defs(const statement_t &s) {
+    auto const &ls = s.get_live();
     for (auto &v : boost::make_iterator_range(ls.uses_begin(), ls.uses_end())) {
       m_live += v;
     }
@@ -2371,7 +2371,7 @@ private:
     } else {
       m_stmts.push_back(stmt);
     }
-    update_uses_and_defs(stmt);
+    update_uses_and_defs(*stmt);
     return stmt;
   }
 
@@ -2437,6 +2437,14 @@ public:
     return boost::make_indirect_iterator(m_stmts.rend());
   }
 
+  // Return a mutable reference to allow modifying the CFG
+  statement_t& operator[](unsigned int i) {
+    if (i >= size()) {
+      CRAB_ERROR("Out-of-bound access in basic_block::operator[]");
+    }
+    return *m_stmts[i];
+  }
+  
   size_t size() const { return m_stmts.size(); }
 
   live_domain_t &live() { return m_live; }
@@ -2446,7 +2454,7 @@ public:
   // Collect the set of uses and definitions of the basic block
   void update_uses_and_defs() {
     for (const statement_t *s : m_stmts) {
-      update_uses_and_defs(s);
+      update_uses_and_defs(*s);
     }
   }
 
@@ -2470,7 +2478,18 @@ public:
     return std::make_pair(m_prev.begin(), m_prev.end());
   }
 
-  void operator>>(basic_block_t &b) { add_succ(b); }
+  size_t in_degree() const {
+    return m_prev.size();
+  }
+
+  size_t out_degree() const {
+    return m_next.size();
+  }
+
+  // Add a cfg edge from *this to b  
+  void operator>>(basic_block_t &b) {
+    add_succ(b);
+  }
 
   // Add a cfg edge from *this to b
   void add_succ(basic_block_t &b) {
@@ -2493,7 +2512,6 @@ public:
                    [this](const statement_t *s) { return s->clone(this); });
 
     m_stmts.insert(m_stmts.begin(), cloned_stmts.begin(), cloned_stmts.end());
-
     m_live = m_live | other.m_live;
   }
 
@@ -2506,7 +2524,6 @@ public:
                    [this](const statement_t *s) { return s->clone(this); });
 
     m_stmts.insert(m_stmts.end(), cloned_stmts.begin(), cloned_stmts.end());
-
     m_live = m_live | other.m_live;
   }
 
@@ -2516,10 +2533,6 @@ public:
     std::move(other.m_stmts.begin(), other.m_stmts.end(),
               std::back_inserter(m_stmts));
   }
-
-  size_t in_degree() const { return m_prev.size(); }
-
-  size_t out_degree() const { return m_next.size(); }
 
   // Remove s (and free) from this
   void remove(const statement_t *s, bool must_update_uses_and_defs = true) {
