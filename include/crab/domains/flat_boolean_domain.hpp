@@ -672,29 +672,6 @@ private:
       }
     }
   }
-
-  template<class BoolToCstEnv>
-  void propagate_select_bool(BoolToCstEnv &env,
-			     const boolean_value &b1_val, const boolean_value &b2_val,   
-			     const variable_t &lhs, const variable_t &cond,
-			     const variable_t &b1, const variable_t &b2) {
-    // lhs := true false true
-    if (b2_val.is_false()) {
-      // if lhs becomes true later then cond and b1 must be true
-      env.set(lhs, env.at(cond) & env.at(b1));
-    } else if (b1_val.is_false()) {
-      // if lhs becomes true later then !cond and b2 must be true
-      auto cond_csts = env.at(cond);
-      if (cond_csts.size() == 1) {
-	auto cst = *(cond_csts.begin());
-	env.set(lhs, typename BoolToCstEnv::mapped_type(cst.negate()) & env.at(b2));
-      } else {
-	// we lost the condition because we cannot negate without
-	// introducing disjunctions.
-	env.set(lhs, env.at(b2));
-      }
-    }
-  }
   
   // return true if cst's variables haven't been modified. As
   // side-effect, it adds cst into the non-boolean domain if the
@@ -722,10 +699,20 @@ private:
     }
     return unchanged;
   }
+
+  // Return true if cond evaluates definitely to false
+  bool eval_false(const variable_t &cond) const{
+    return (m_product.first().get_bool(cond) == boolean_value::get_false());
+  }
+
+  // Return true if cond evaluates definitely to true
+  bool eval_true(const variable_t &cond) const {
+    return (m_product.first().get_bool(cond) == boolean_value::get_true());    
+  }
   
   template<class BoolToCstEnv>
   void bwd_reduction_assume_bool(BoolToCstEnv &env,
-			     const variable_t &x, bool is_negated) {
+				 const variable_t &x, bool is_negated) {
 
     if (env.at(x).is_top() || env.at(x).is_bottom()) {
       return;
@@ -753,38 +740,29 @@ private:
         auto cst = *(csts.begin());
         if (add_if_unchanged(cst.negate())) {
           CRAB_LOG("flat-boolean",
-		   crab::outs() << "\t" << "Applied " << cst << "\n";);
+		   crab::outs() << "\t" << "Applied " << cst.negate() << "\n";);
         } else {
           CRAB_LOG("flat-boolean",
-		   crab::outs() << "\t" << "Cannot apply " << cst << "\n";);
+		   crab::outs() << "\t" << "Cannot apply " << cst.negate() << "\n";);
         }
       }
     }
   }
 
-  // Return true if cond evaluates definitely to false
-  bool eval_false(const variable_t &cond) const{
-    bool_domain_t inv(m_product.first());
-    inv.assume_bool(cond, false /*not negated*/);
-    return inv.is_bottom();
-  }
-
-  // Return true if cond evaluates definitely to true
-  bool eval_true(const variable_t &cond) const {
-    bool_domain_t inv(m_product.first());
-    inv.assume_bool(cond, true /*negated*/);
-    return inv.is_bottom();
-  }
-  
+  /**
+   * Given lhs:= select(cond, b1, b2) 
+   * if cond is true then
+   *     lhs := b1
+   * if cond is false then
+   *     lhs := b2
+   **/
   void fwd_reduction_select_bool(const variable_t &lhs, const variable_t &cond,
 				 const variable_t &b1, const variable_t &b2) {
-    if (eval_true(cond)) {
-      // lhs:= select(cond, b1, b2) --> lhs := b1
+    if (eval_true(cond)) {     
       m_bool_to_lincsts.set(lhs, m_bool_to_lincsts.at(b1));
       m_bool_to_refcsts.set(lhs, m_bool_to_refcsts.at(b1));
       m_bool_to_bools.set(lhs, m_bool_to_bools.at(b1) & bool_set_t(b1));
     } else if (eval_false(cond)) {
-      // lhs:= select(cond, b1, b2) --> lhs := b2
       m_bool_to_lincsts.set(lhs, m_bool_to_lincsts.at(b2));
       m_bool_to_refcsts.set(lhs, m_bool_to_refcsts.at(b2));
       m_bool_to_bools.set(lhs, m_bool_to_bools.at(b2) & bool_set_t(b2));
@@ -794,6 +772,39 @@ private:
       m_bool_to_bools -= lhs;
     } 
   }
+
+
+  /**
+   * Given lhs := ite(cond, b1, b2)
+   *
+   * if b1 is false then
+   *    if lhs becomes true then not(cond) and b2 must be true
+   *
+   * if b2 is false then
+   *    if lhs becomes true then cond and b1 must be true
+   **/
+  template<class BoolToCstEnv>
+  void propagate_select_bool(BoolToCstEnv &env,
+			     const boolean_value &b1_val, const boolean_value &b2_val,   
+			     const variable_t &lhs, const variable_t &cond,
+			     const variable_t &b1, const variable_t &b2) {
+    // lhs := true false true
+    if (b2_val.is_false()) {
+      // if lhs becomes true later then cond and b1 must be true
+      env.set(lhs, env.at(cond) & env.at(b1));
+    } else if (b1_val.is_false()) {
+      // if lhs becomes true later then !cond and b2 must be true
+      auto cond_csts = env.at(cond);
+      if (cond_csts.size() == 1) {
+	auto cst = *(cond_csts.begin());
+	env.set(lhs, typename BoolToCstEnv::mapped_type(cst.negate()) & env.at(b2));
+      } else {
+	// we lost the condition because we cannot negate without
+	// introducing disjunctions.
+	env.set(lhs, env.at(b2));
+      }
+    }
+  }
   
   /** End helpers to update subdomains **/
 
@@ -801,32 +812,38 @@ private:
    * Reduce from the boolean domain to the non-boolean domain.
    **/
   void reduce_bool_to_csts(const variable_t &x, bool is_negated) {
-    // backward reduction for m_bool_to_bools
-    // if x is true then all Boolean variables in bool_vars must be true.
-    auto bool_vars = m_bool_to_bools.at(x);
     if (!is_negated) {
-      // x is true
+      // We know that x is definitely true
+
+      // backward reduction for m_bool_to_bools
+      // if x is true then all Boolean variables in bool_vars must be true.
+      auto bool_vars = m_bool_to_bools.at(x);
       for (auto const& v:  bool_vars) {
 	m_product.first().assume_bool(v, is_negated);
 	m_bool_to_lincsts.set(x, m_bool_to_lincsts.at(x) & m_bool_to_lincsts.at(v));
 	m_bool_to_refcsts.set(x, m_bool_to_refcsts.at(x) & m_bool_to_refcsts.at(v));	
       }
-    } else {
-      // x is false
-      if (bool_vars.size() == 1) {
-	auto v = *(bool_vars.begin());
-	m_product.first().assume_bool(v, is_negated);
-	m_bool_to_lincsts.set(x, m_bool_to_lincsts.at(x) & m_bool_to_lincsts.at(v));
-	m_bool_to_refcsts.set(x, m_bool_to_refcsts.at(x) & m_bool_to_refcsts.at(v));	
-      } else {
-	// the falsity of x depends on the falsity of any of the
-	// variables in bool_vars.
-      }
-    }
 
-    bwd_reduction_assume_bool(m_bool_to_lincsts, x, is_negated);
-    bwd_reduction_assume_bool(m_bool_to_refcsts, x, is_negated);
-    
+      bwd_reduction_assume_bool(m_bool_to_lincsts, x, is_negated);
+      bwd_reduction_assume_bool(m_bool_to_refcsts, x, is_negated);
+      
+    } else {
+      /**
+       * The kind of facts that we keep track in m_bool_to_lincsts
+       * (resp m_bool_to_bools) is of the form "if b becomes true then
+       * constraint C (resp. boolean b') MUST be true"
+       *
+       * Thus, if b is false then nothing can really be said
+       * about C (resp b') because if b is false then it does not imply
+       * that C or b' are false.
+       *
+       * TODO: Missing propagation.
+       * 
+       * However, if we know that b' is false and we have inferred the
+       * fact "if b is true then b' is true" then we can conclude that
+       * b must be false.
+       **/
+    }
   }
   
 
@@ -1009,15 +1026,32 @@ public:
     m_bool_to_lincsts = m_bool_to_lincsts | other.m_bool_to_lincsts;
     m_bool_to_refcsts = m_bool_to_refcsts | other.m_bool_to_refcsts;
     m_bool_to_bools = m_bool_to_bools | other.m_bool_to_bools;
+    
     m_unchanged_vars = m_unchanged_vars | other.m_unchanged_vars;
+    CRAB_LOG("flat-boolean",
+             crab::outs() << "*** After join ***\n"
+                          << "\tINV=" << m_product << "\n"
+                          << "\tunchanged vars=" << m_unchanged_vars << "\n"
+	                  << "\tlinear constraints for reduction=" << m_bool_to_lincsts << "\n"
+	                  << "\tref constraints for reduction=" << m_bool_to_refcsts << "\n"
+	                  << "\tBooleans for reduction=" << m_bool_to_bools << "\n";);
+    
   }
 
   bool_num_domain_t operator|(const bool_num_domain_t &other) const override {
-    return bool_num_domain_t(m_product | other.m_product,
-                             m_bool_to_lincsts | other.m_bool_to_lincsts,
-                             m_bool_to_refcsts | other.m_bool_to_refcsts,
+    bool_num_domain_t res(m_product | other.m_product,
+			     m_bool_to_lincsts | other.m_bool_to_lincsts,
+			     m_bool_to_refcsts | other.m_bool_to_refcsts,
 			     m_bool_to_bools | other.m_bool_to_bools,
-                             m_unchanged_vars | other.m_unchanged_vars);
+			     m_unchanged_vars | other.m_unchanged_vars);
+    CRAB_LOG("flat-boolean",
+             crab::outs() << "*** After join ***\n"
+                          << "\tINV=" << res.m_product << "\n"
+                          << "\tunchanged vars=" << res.m_unchanged_vars << "\n"
+	                  << "\tlinear constraints for reduction=" << res.m_bool_to_lincsts << "\n"
+	                  << "\tref constraints for reduction=" << res.m_bool_to_refcsts << "\n"
+	                  << "\tBooleans for reduction=" << res.m_bool_to_bools << "\n";);
+    return res;
   }
 
   bool_num_domain_t operator&(const bool_num_domain_t &other) const override {
@@ -1310,7 +1344,7 @@ public:
     CRAB_LOG("flat-boolean",
              crab::outs() << "\tunchanged vars=" << m_unchanged_vars << "\n"
 	                  << "\tlinear constraints for reduction=" << m_bool_to_lincsts << "\n"
-                          << "\treference constraints for reduction=" << m_bool_to_refcsts
+	                  << "\treference constraints for reduction=" << m_bool_to_refcsts << "\n"
 	                  << "\tbooleans for reduction=" << m_bool_to_bools
                           << "\n";);
   }
@@ -1378,13 +1412,12 @@ public:
                           << "\tunchanged vars=" << m_unchanged_vars << "\n"
 	                  << "\tlinear constraints for reduction=" << m_bool_to_lincsts << "\n"
 	                  << "\tref constraints for reduction=" << m_bool_to_refcsts << "\n"
-	                  << "\tBooleans for reduction=" << m_bool_to_bools	     
-                          << "\n";);
-
+	                  << "\tBooleans for reduction=" << m_bool_to_bools << "\n";);
+    
     if (is_bottom()) {
       return; 
     }
-    
+
     reduce_bool_to_csts(x, is_negated);
     
     CRAB_LOG("flat-boolean",
@@ -1393,31 +1426,35 @@ public:
 
   void select_bool(const variable_t &lhs, const variable_t &cond,
 		   const variable_t &b1, const variable_t &b2) override {
-
-
-    
     if (!is_bottom()) {
       if (b1 == b2) {
 	assign_bool_var(lhs, b1, false);
       } else {
 	m_product.select_bool(lhs, cond, b1, b2);
-
 	fwd_reduction_select_bool(lhs, cond, b1, b2);
-	auto b1_val = m_product.first().get_bool(b1);
-	auto b2_val = m_product.first().get_bool(b2);
-	propagate_select_bool(m_bool_to_lincsts, b1_val, b2_val, lhs, cond, b1, b2);
-	propagate_select_bool(m_bool_to_refcsts, b1_val, b2_val, lhs, cond, b1, b2);
-	if (b2_val.is_false()) {
+	auto val1 = m_product.first().get_bool(b1);
+	auto val2 = m_product.first().get_bool(b2);
+	propagate_select_bool(m_bool_to_lincsts, val1, val2, lhs, cond, b1, b2);
+	propagate_select_bool(m_bool_to_refcsts, val1, val2, lhs, cond, b1, b2);
+	if (val2.is_false()) {
 	  m_bool_to_bools.set(lhs,
 			      m_bool_to_bools.at(b1) & m_bool_to_bools.at(cond) &
 			      bool_set_t(b1) & bool_set_t(cond));
-	} else if (b1_val.is_false()) {
+	} else if (val1.is_false()) {
 	  m_bool_to_bools.set(lhs, m_bool_to_bools.at(b2) & bool_set_t(b2));
 	  // TODO: we don't handle negative booleans in
-	  // m_bool_to_bools so we don't add not(cond).
+	  // m_bool_to_bools so we don't add not(cond)
 	}
       }
     }
+
+    CRAB_LOG("flat-boolean",
+         crab::outs() << lhs << ":= select(" << cond << "," << b1 << "," << b2 << ")\n"
+                          << "\tINV=" << m_product << "\n"
+                          << "\tunchanged vars=" << m_unchanged_vars << "\n"
+	                  << "\tlinear constraints for reduction=" << m_bool_to_lincsts << "\n"
+	                  << "\tref constraints for reduction=" << m_bool_to_refcsts << "\n"
+	                  << "\tBooleans for reduction=" << m_bool_to_bools << "\n";);	      
   }
 
   void backward_assign_bool_cst(const variable_t &lhs,

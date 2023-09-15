@@ -1564,6 +1564,16 @@ user-defined assertion checker
 0  Number of total unreachable checks
 
 === End ./test-bin/flat_bool_domain7 ===
+=== Begin ./test-bin/flat_bool_domain8 ===
+Invariants using Product(Boolean,SparseDBM)
+Abstract trace: entry bb2 bb1 exit
+user-defined assertion checker
+0  Number of total safe checks
+0  Number of total error checks
+1  Number of total warning checks
+0  Number of total unreachable checks
+
+=== End ./test-bin/flat_bool_domain8 ===
 === Begin ./test-bin/gen_abs_dom ===
 Join({z -> [10, +oo], y-x<=0},{z -> [5, +oo], y-x<=0})={z -> [5, +oo], y-x<=0}
 Meet({z -> [10, +oo], y-x<=0},{z -> [5, +oo], y-x<=0})={z -> [10, +oo], y-x<=0}
