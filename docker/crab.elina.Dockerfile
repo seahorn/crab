@@ -13,11 +13,10 @@ ARG UBUNTU
 # Pull base image.
 FROM seahorn/buildpack-deps-crab:$UBUNTU
 
-ARG BRANCH=master
-RUN cd / && rm -rf /crab && \
-    git clone -b $BRANCH https://github.com/seahorn/crab crab --depth=10 ; \
-    mkdir -p /crab/build
-WORKDIR /crab/build
+# Assume that docker-build is ran in the top-level Crab directory
+COPY . /crab
+# Re-create the build directory that might have been present in the source tree
+RUN rm -rf /crab/build /crab/debug /crab/release && mkdir /crab/build
 
 ARG BUILD_TYPE
 # Build configuration.

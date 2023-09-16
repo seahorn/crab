@@ -1,14 +1,14 @@
-# Workflow to build and test crab master branch 
+# Workflow to build and test crab dev branch 
 
-name: CI
+name: CI-dev
 
 # Controls when the action will run. 
 on:
-  # Triggers the workflow on push or pull request events but only for the master branch
+  # Triggers the workflow on push or pull request events but only for the dev branch
   push:
-    branches: master
+    branches: dev
   pull_request:
-    branches: master
+    branches: dev
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -23,7 +23,7 @@ jobs:
       - name: Check out Repo 
         uses: actions/checkout@v2
         with:
-          ref: master 
+          ref: dev 
       - name: Build crab without external libraries + run tests 
         run: docker build --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab:bionic -f docker/crab.Dockerfile .
       - name: Build crab+apron+ldd-boxes and run tests 
