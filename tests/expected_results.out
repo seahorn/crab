@@ -1561,7 +1561,7 @@ user-defined assertion checker
 
 === End ./test-bin/flat_bool_domain7 ===
 === Begin ./test-bin/flat_bool_domain8 ===
-Invariants using Product(Boolean,SparseDBM)
+Invariants using Bool+SparseDBM
 Abstract trace: entry bb2 bb1 exit
 user-defined assertion checker
 0  Number of total safe checks
