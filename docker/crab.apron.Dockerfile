@@ -16,6 +16,7 @@ FROM seahorn/buildpack-deps-crab:$UBUNTU
 COPY . /crab
 # Re-create the build directory that might have been present in the source tree
 RUN rm -rf /crab/build /crab/debug /crab/release && mkdir /crab/build
+WORKDIR /crab/build
 
 ARG BUILD_TYPE
 # Build configuration.
