@@ -39,9 +39,13 @@ Z_RUNNER(crab::domain_impl::z_pk_apron_domain_t)
 Z_RUNNER(crab::domain_impl::z_poly_pplite_domain_t)
 Z_RUNNER(crab::domain_impl::z_fpoly_pplite_domain_t)
 Z_RUNNER(crab::domain_impl::z_pset_pplite_domain_t)
+#ifdef HAVE_APRON
 Z_RUNNER(crab::domain_impl::z_dummy_decoupled_box_domain_t)
+#endif
+#ifdef HAVE_PPLITE
 Z_RUNNER(crab::domain_impl::z_decoupled_box_poly_domain_t)
 Z_RUNNER(crab::domain_impl::z_decoupled_box_pset_domain_t)
+#endif 
 Z_RUNNER(crab::domain_impl::z_zones_elina_domain_t)
 Z_RUNNER(crab::domain_impl::z_oct_elina_domain_t)
 Z_RUNNER(crab::domain_impl::z_pk_elina_domain_t)
