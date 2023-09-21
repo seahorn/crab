@@ -170,9 +170,7 @@ class assertion_crawler_domain {
 
 // Helper that applies a function to each pair of discrete_pair_domain.
 template<typename Key, typename Value>
-struct transform_discrete_pair_domain
-  : public std::unary_function<discrete_pair_domain<Key,Value>,
-			       discrete_pair_domain<Key,Value>> {
+struct transform_discrete_pair_domain {
   using discrete_pair_domain_t = discrete_pair_domain<Key, Value>;
   
   template<typename Op>
@@ -332,9 +330,7 @@ public:
     using variable_t = typename CFG::variable_t;
 
     /** Add data-dependencies **/
-    class add_data_deps:
-      public std::unary_function<var_dom_t,  std::pair<var_dom_t, bool>> {
-						    
+    class add_data_deps {
       var_dom_t m_uses;
       var_dom_t m_defs;
     public:
@@ -432,9 +428,7 @@ public:
     };
 
     /** Remove data-dependencies **/
-    class remove_deps
-      : public std::unary_function<var_dom_t, std::pair<var_dom_t, bool>> {
-      
+    class remove_deps {
       var_dom_t vars;
     public:
       remove_deps(const variable_t &v) : vars(var_dom_t::bottom()) {

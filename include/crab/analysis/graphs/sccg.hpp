@@ -86,8 +86,7 @@ public:
   using edge_t = Edge<node_t>;
 
 private:
-  struct MkNode : public std::unary_function<vertex_descriptor_t, node_t> {
-
+  struct MkNode {
     scc_graph_t *_g;
 
     MkNode() : _g(nullptr) {}
@@ -97,8 +96,7 @@ private:
     }
   };
 
-  struct MkEdge : public std::unary_function<edge_descriptor_t, Edge<node_t>> {
-
+  struct MkEdge {
     scc_graph_t *_g;
 
     MkEdge() : _g(nullptr) {}

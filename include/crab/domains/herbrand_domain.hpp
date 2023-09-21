@@ -85,9 +85,7 @@ private:
 
   using var_map_t = boost::container::flat_map<variable_t, term_id_t>;
 
-  struct get_term_transform :
-    public std::unary_function<typename var_map_t::value_type,
-			       std::pair<variable_t, const term_t*>> {
+  struct get_term_transform {
     const ttbl_t &m_ttbl;
     get_term_transform(const ttbl_t& ttbl): m_ttbl(ttbl) {}
     std::pair<variable_t, const term_t*>

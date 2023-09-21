@@ -3294,12 +3294,12 @@ private:
   using binding_t = typename basic_block_map_t::value_type;
   using live_domain_t = typename basic_block_t::live_domain_t;
 
-  struct get_ref : public std::unary_function<binding_t, basic_block_t> {
+  struct get_ref {
     get_ref() {}
     basic_block_t &operator()(const binding_t &p) const { return *(p.second); }
   };
 
-  struct get_label : public std::unary_function<binding_t, BasicBlockLabel> {
+  struct get_label {
     get_label() {}
     BasicBlockLabel operator()(const binding_t &p) const {
       return p.second->label();
@@ -3956,8 +3956,7 @@ public:
   using cfg_rev_t = cfg_rev<CFGRef>;
 
 private:
-  struct getRev : public std::unary_function<typename CFGRef::basic_block_t,
-                                             basic_block_t> {
+  struct getRev {
     const std::unordered_map<basic_block_label_t, basic_block_t> &_rev_bbs;
 
     getRev(

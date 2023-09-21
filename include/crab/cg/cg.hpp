@@ -173,8 +173,7 @@ template <typename CFG> class call_graph {
     }
   };
 
-  struct mk_node
-      : public std::unary_function<vertex_descriptor_t, cg_node<CFG>> {
+  struct mk_node {
     cg_t *_cg;
     mk_node() : _cg(nullptr) {}
     mk_node(cg_t *cg) : _cg(cg) {}
@@ -184,8 +183,7 @@ template <typename CFG> class call_graph {
     }
   };
 
-  struct mk_edge
-      : public std::unary_function<edge_descriptor_t, cg_edge<cg_node<CFG>>> {
+  struct mk_edge {
     cg_t *_cg;
     mk_edge() : _cg(nullptr) {}
     mk_edge(cg_t *cg) : _cg(cg) {}

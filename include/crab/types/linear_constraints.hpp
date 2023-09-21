@@ -100,16 +100,14 @@ private:
     }
   }
 
-  struct tr_value_ty
-      : public std::unary_function<typename map_t::value_type, component_t> {
+  struct tr_value_ty {
     tr_value_ty() {}
     component_t operator()(const typename map_t::value_type &kv) const {
       return {kv.second, kv.first};
     }
   };
 
-  struct get_var
-      : public std::unary_function<typename map_t::value_type, variable_t> {
+  struct get_var {
     get_var() {}
     variable_t operator()(const typename map_t::value_type &kv) const {
       return kv.first;

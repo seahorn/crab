@@ -366,8 +366,7 @@ private:
     }
   }
 
-  struct get_absval_from_ec:
-    public std::unary_function<typename classes_map_t::value_type, Domain> {
+  struct get_absval_from_ec {
 
     std::shared_ptr<const Domain> operator()(const typename classes_map_t::value_type &kv) const {
       return kv.second.get_absval();
