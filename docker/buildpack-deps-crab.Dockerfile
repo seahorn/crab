@@ -1,5 +1,5 @@
 #
-# Dockerfile for building Crab dependencies.
+# Dockerfile for building Crab dependencies for Ubuntu xenial and bionic.
 #
 # Arguments:
 #  - UBUNTU:     xenial, bionic

@@ -25,8 +25,8 @@ jobs:
         with:
           ref: dev 
       - name: Build crab without external libraries + run tests 
-        run: docker build --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab:bionic -f docker/crab.Dockerfile .
+        run: docker build --build-arg BUILD_TYPE=Release -t seahorn/crab -f docker/crab.dev.Dockerfile .
       - name: Build crab+apron+ldd-boxes and run tests 
-        run: docker build --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab_apron_boxes:bionic -f docker/crab.apron.Dockerfile .
+        run: docker build --build-arg BUILD_TYPE=Release -t seahorn/crab_apron_boxes -f docker/crab.dev.apron.Dockerfile .
       - name: Build crab+elina and run tests 
-        run: docker build --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab_elina:bionic -f docker/crab.elina.Dockerfile .
+        run: docker build --build-arg BUILD_TYPE=Release -t seahorn/crab_elina -f docker/crab.dev.elina.Dockerfile .

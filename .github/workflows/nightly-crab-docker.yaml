@@ -30,25 +30,22 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: master
-      - name: Build crab without external libraries + run tests 
-        run: docker build  --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab:bionic -f docker/crab.Dockerfile .
-      #- name: Build crab without external libraries + run tests 
-      #  run: docker build  --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Coverage -t seahorn/crab:bionic -f docker/crab.Dockerfile .
+      #- name: Build crab without external libraries for coverage
+      #  run: docker build  --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Coverage -t seahorn/crab:nightly -f docker/crab.Dockerfile .
       #- name: Generate coverage report and upload to codecov
-      #	run: docker run -v $(pwd):/host -it seahorn/crab:bionic /bin/sh -c "bash /crab/tests/run_coverage.sh /crab/build /crab && mv /crab/build/all.info /host" && bash <(curl -s https://codecov.io/bash) -Z -f all.info -t ${{ secrets.CODECOV_TOKEN }}
+      #	run: docker run -v $(pwd):/host -it seahorn/crab:nightly /bin/sh -c "bash /crab/tests/run_coverage.sh /crab/build /crab && mv /crab/build/all.info /host" && bash <(curl -s https://codecov.io/bash) -Z -f all.info -t ${{ secrets.CODECOV_TOKEN }}
+      - name: Build crab without external libraries + run tests 
+        run: docker build  --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab:nightly -f docker/crab.Dockerfile .
       - name: Build crab+apron+ldd-boxes and run tests 
-        run: docker build  --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab_apron_boxes:bionic -f docker/crab.apron.Dockerfile .
+        run: docker build  --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab_apron_boxes:nightly -f docker/crab.apron.Dockerfile .
       - name: Build crab+elina and run tests 
-        run: docker build  --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab_elina:bionic -f docker/crab.elina.Dockerfile .
-      #- name: Build crab+pplite and run tests 
-      #  run: docker build  --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab_pplite:bionic -f docker/crab.pplite.Dockerfile .
+        run: docker build  --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab_elina:nightly -f docker/crab.elina.Dockerfile .
       - name: Login to DockerHub Registry
         if: ${{ github.event_name == 'schedule' }}  # only push if nightly run
         run: echo ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
       - name: Tag and push crab (nightly) to DockerHub
         if: ${{ github.event_name == 'schedule' }}  # only push if nightly run
         run: |
-          docker push seahorn/crab:bionic	
-          docker push seahorn/crab_apron_boxes:bionic
-          docker push seahorn/crab_elina:bionic
-          #docker push seahorn/crab_pplite:bionic 
+          docker push seahorn/crab:nightly	
+          docker push seahorn/crab_apron_boxes:nightly
+          docker push seahorn/crab_elina:nightly
