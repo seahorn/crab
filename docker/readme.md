@@ -8,7 +8,7 @@ $ docker push seahorn/buildpack-deps-crab:bionic
 or 
 
 ```shell
-$ docker build -t seahorn/buildpack-deps-crab:bionic -f docker/buildpack-deps-crab.jammy.Dockerfile .
+$ docker build -t seahorn/buildpack-deps-crab:jammy -f docker/buildpack-deps-crab.jammy.Dockerfile .
 $ docker push seahorn/buildpack-deps-crab:jammy
 ```
 

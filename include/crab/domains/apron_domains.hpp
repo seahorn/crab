@@ -14,8 +14,7 @@
 
 namespace crab {
 namespace domains {
-using apron_domain_id_t
-= enum { APRON_INT, APRON_OCT, APRON_PK,
+enum apron_domain_id_t { APRON_INT, APRON_OCT, APRON_PK,
          APRON_PPLITE_POLY, APRON_PPLITE_FPOLY,
          APRON_PPLITE_PSET, APRON_PPLITE_FPSET
 };
