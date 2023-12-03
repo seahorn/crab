@@ -5,7 +5,6 @@ using namespace std;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-/* Example of how to build a CFG */
 z_cfg_t *prog1(variable_factory_t &vfac) {
 
   // Definining program variables
@@ -174,7 +173,6 @@ z_cfg_t *prog4(variable_factory_t &vfac) {
   return cfg;
 }
 
-/* Example of how to build a CFG */
 z_cfg_t *prog5(variable_factory_t &vfac) {
 
   // Definining program variables
@@ -210,7 +208,7 @@ z_cfg_t *prog5(variable_factory_t &vfac) {
 /* Example of how to infer invariants from the above CFG */
 int main(int argc, char **argv) {
 
-#ifdef HAVE_PPLITE
+#ifdef HAVE_PPLITE_NATIVE
 
   bool stats_enabled = false;
   if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
@@ -222,27 +220,17 @@ int main(int argc, char **argv) {
     z_cfg_t *cfg = prog1(vfac);
     crab::outs() << *cfg << "\n";
     {
-      z_pk_apron_domain_t init;
+      z_poly_pplite_native_domain_t init;
       run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     }
     {
-      z_poly_pplite_domain_t init;
+      z_fpoly_pplite_native_domain_t init;
       run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     }
     {
-      z_fpoly_pplite_domain_t init;
+      z_pset_pplite_native_domain_t init;
       run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     }
-    {
-      z_pset_pplite_domain_t init;
-      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-    }
-#ifdef HAVE_APRON
-    {
-      z_decoupled_box_poly_domain_t init;
-      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-    }
-#endif     
     delete cfg;
   }
 
@@ -251,19 +239,15 @@ int main(int argc, char **argv) {
     z_cfg_t *cfg = prog2(vfac);
     crab::outs() << *cfg << "\n";
     {
-      z_pk_apron_domain_t init;
+      z_poly_pplite_native_domain_t init;
       run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     }
     {
-      z_poly_pplite_domain_t init;
+      z_fpoly_pplite_native_domain_t init;
       run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     }
     {
-      z_fpoly_pplite_domain_t init;
-      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-    }
-    {
-      z_pset_pplite_domain_t init;
+      z_pset_pplite_native_domain_t init;
       run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     }
     delete cfg;
@@ -274,19 +258,15 @@ int main(int argc, char **argv) {
     z_cfg_t *cfg = prog3(vfac);
     crab::outs() << *cfg << "\n";
     {
-      z_pk_apron_domain_t init;
+      z_poly_pplite_native_domain_t init;
       run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     }
     {
-      z_poly_pplite_domain_t init;
+      z_fpoly_pplite_native_domain_t init;
       run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     }
     {
-      z_fpoly_pplite_domain_t init;
-      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-    }
-    {
-      z_pset_pplite_domain_t init;
+      z_pset_pplite_native_domain_t init;
       run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     }
     delete cfg;
@@ -297,19 +277,15 @@ int main(int argc, char **argv) {
     z_cfg_t *cfg = prog4(vfac);
     crab::outs() << *cfg << "\n";
     {
-      z_pk_apron_domain_t init;
+      z_poly_pplite_native_domain_t init;
       run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     }
     {
-      z_poly_pplite_domain_t init;
+      z_fpoly_pplite_native_domain_t init;
       run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     }
     {
-      z_fpoly_pplite_domain_t init;
-      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-    }
-    {
-      z_pset_pplite_domain_t init;
+      z_pset_pplite_native_domain_t init;
       run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     }
     delete cfg;
@@ -320,70 +296,22 @@ int main(int argc, char **argv) {
     z_cfg_t *cfg = prog5(vfac);
     crab::outs() << *cfg << "\n";
     {
-      z_poly_pplite_domain_t init;
+      z_poly_pplite_native_domain_t init;
       run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     }
     {
-      z_poly_pplite_domain_t init;
+      z_fpoly_pplite_native_domain_t init;
       run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     }
     {
-      z_fpoly_pplite_domain_t init;
-      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-    }
-    {
-      z_pset_pplite_domain_t init;
+      z_pset_pplite_native_domain_t init;
       run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
     }
     delete cfg;
   }
 
-  /////
-  // testing operations
-  /////
 
-  auto make_var
-    = [](variable_factory_t& vfac, const char* vname) {
-        z_var res(vfac[vname], crab::INT_TYPE, 32);
-        return res;
-      };
-
-  {
-    variable_factory_t vfac;
-    z_poly_pplite_domain_t inv1;
-    auto x = make_var(vfac, "x");
-    auto y = make_var(vfac, "y");
-    inv1.assign(x, 5);
-    z_lin_cst_sys_t csts;
-    csts += (z_lin_exp_t(x) == z_lin_exp_t(y));
-    inv1 += csts;
-    z_poly_pplite_domain_t inv2(inv1);
-    crab::outs() << "Before expand x into z:" << inv1 << "\n";
-    auto z = make_var(vfac, "z");
-    inv1.expand(x, z);
-    crab::outs() << "After expand x into z: " << inv1 << "\n";
-    crab::outs() << "Copy before: " << inv2 << "\n";
-
-    z_poly_pplite_domain_t inv3 = inv1 | inv2;
-    crab::outs() << "Join: " << inv3 << "\n";
-  }
-
-  {
-    variable_factory_t vfac;
-    z_poly_pplite_domain_t inv1;
-    auto x = make_var(vfac, "x");
-    inv1.assign(x, 5);
-
-    z_poly_pplite_domain_t inv2(inv1);
-    inv2.apply(OP_ADDITION, x, x, 1);
-
-    z_poly_pplite_domain_t inv3 = inv1;
-    crab::outs() << inv1 << "\n";
-    crab::outs() << inv2 << "\n";
-    crab::outs() << inv3 << "\n";
-  }
-
-#endif // HAVE_PPLITE
+#endif // HAVE_PPLITE_NATIVE
 
   return 0;
 }

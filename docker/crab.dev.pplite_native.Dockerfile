@@ -1,5 +1,5 @@
 #
-# Dockerfile for Crab image with pplite library using Apron interface.
+# Dockerfile for Crab image with pplite library using native interface.
 #
 
 # Pull base image.
@@ -18,15 +18,15 @@ RUN cmake -GNinja \
           -DCMAKE_INSTALL_PREFIX=run \
           -DCMAKE_CXX_COMPILER=g++-12 \	  	  
           -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-          -DCRAB_USE_APRON=ON -DCRAB_USE_PPLITE=ON \
+          -DCRAB_USE_PPLITE_NATIVE=ON \
 	  -DCRAB_ENABLE_TESTS=ON \
           ../ && \
     cmake --build . --target pplite  && cmake .. && \
-    cmake --build . --target apron   && cmake .. && \
+    cmake --build . --target pplite-native && cmake .. && \
     cmake --build . --target install
 
 # Run tests
-RUN /crab/tests/run_tests.sh /crab/tests/expected_results.pplite.out /crab/build
+RUN /crab/tests/run_tests.sh /crab/tests/expected_results.pplite_native.out /crab/build
 
 WORKDIR /crab
 

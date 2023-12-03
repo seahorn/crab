@@ -26,6 +26,7 @@
 #include <crab/domains/split_oct.hpp>
 #include <crab/domains/term_equiv.hpp>
 #include <crab/domains/wrapped_interval_domain.hpp>
+#include <crab/domains/pplite_domains.hpp>
 
 namespace crab {
 
@@ -70,7 +71,13 @@ public:
   enum { use_integers = 1 };    
   enum { implement_inter_transformers = 1 };
 };
-  
+class PPLiteParams {
+public:
+  // use integers with truncation rounding
+  enum { use_integers = 1 };    
+  enum { implement_inter_transformers = 1 };
+};
+
 using z_dbm_domain_t = sparse_dbm_domain<z_number, varname_t, z_dbm_graph_t, SparseDBMParams>;
 using z_sdbm_domain_t = split_dbm_domain<z_number, varname_t, z_dbm_graph_t, SplitDBMParams>;
 using z_soct_domain_t = split_oct_domain<z_number, varname_t, z_dbm_graph_t, SplitOctParams>;  
@@ -82,6 +89,9 @@ using z_pk_apron_domain_t = apron_domain<z_number, varname_t, APRON_PK>;
 using z_poly_pplite_domain_t = apron_domain<z_number, varname_t, APRON_PPLITE_POLY>;
 using z_fpoly_pplite_domain_t = apron_domain<z_number, varname_t, APRON_PPLITE_FPOLY>;
 using z_pset_pplite_domain_t = apron_domain<z_number, varname_t, APRON_PPLITE_PSET>;
+using z_poly_pplite_native_domain_t = pplite_domain<z_number, varname_t, pplite_domains::POLY, PPLiteParams>;
+using z_fpoly_pplite_native_domain_t = pplite_domain<z_number, varname_t, pplite_domains::F_POLY, PPLiteParams>;
+using z_pset_pplite_native_domain_t = pplite_domain<z_number, varname_t, pplite_domains::P_SET, PPLiteParams>;
 using z_zones_elina_domain_t = elina_domain<z_number, varname_t, ELINA_ZONES>;
 using z_oct_elina_domain_t = elina_domain<z_number, varname_t, ELINA_OCT, ElinaParams>;
 using z_pk_elina_domain_t = elina_domain<z_number, varname_t, ELINA_PK>;

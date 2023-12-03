@@ -94,8 +94,8 @@ requirements are:
 - C++11 compiler 
 - Boost >= 1.65
 - GMP 
-- MPFR (if `-DCRAB_USE_APRON=ON` or `-DCRAB_USE_ELINA=ON`)
-- FLINT (only if `-DCRAB_USE_PPLITE=ON`) 
+- MPFR (if `-DCRAB_USE_APRON=ON` or `-DCRAB_USE_ELINA=ON` or `-DCRAB_USE_PPLITE_NATIVE=ON`)
+- FLINT (only if `-DCRAB_USE_PPLITE=ON` or `-DCRAB_USE_PPLITE_NATIVE=ON`) 
 
 In linux, you can install requirements typing the commands:
 
@@ -135,7 +135,10 @@ installation of the libraries is optional.
   `-DCRAB_USE_ELINA=ON` option.
 
 - If you want to use the PPLite library domains then add
-  `-DCRAB_USE_PPLITE=ON` option.
+  `-DCRAB_USE_PPLITE=ON` or `-DCRAB_USE_PPLITE_NATIVE=ON` option. The
+  former calls PPLite using the Apron interface while the latter calls
+  PPLite natively. The native interface is faster and it will
+  eventually replace the Apron interface.
 
 
 **Important:** Apron and Elina are currently not compatible so you

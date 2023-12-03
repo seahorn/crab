@@ -7,8 +7,21 @@
 /** Define whether apron library is available */
 #cmakedefine HAVE_APRON ${HAVE_APRON}
 
-/** Define whether pplite library is available */
+/**
+* Define whether pplite library is available.
+* If HAVE_PPLITE_NATIVE is not enabled then pplite domains are used
+* using the apron interface.
+**/
 #cmakedefine HAVE_PPLITE ${HAVE_PPLITE}
+
+/** 
+ * Define whether pplite native interface is available. There are two ways of
+ * using pplite domains: via apron interface (both HAVE_APRON and
+ * HAVE_PPLITE must be enabled) or using a native interface. If
+ * HAVE_PPLITE and HAVE_PPLITE_NATIVE are enabled then the latter kind of
+ * interface is also enabled.
+ **/
+#cmakedefine HAVE_PPLITE_NATIVE ${HAVE_PPLITE_NATIVE} 
 
 /** Define whether elina library is available */
 #cmakedefine HAVE_ELINA ${HAVE_ELINA}

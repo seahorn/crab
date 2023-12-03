@@ -32,8 +32,8 @@ lib=$(basename -- "$OLDLOG")
 lib="${lib##expected_results.}"
 lib="${lib%.out}"
 
-if [[ $lib != "apron" ]] && [[ $lib != "pplite" ]] && [[ $lib != "boxes" ]] && [[ $lib != "elina" ]] && [[ $lib != "out" ]]; then
-    echo "First parameter should be expected_results.[apron|pplite|elina|boxes].out but it is $OLDLOG"
+if [[ $lib != "apron" ]] && [[ $lib != "pplite" ]] && [[ $lib != "pplite_native" ]] && [[ $lib != "boxes" ]] && [[ $lib != "elina" ]] && [[ $lib != "out" ]]; then
+    echo "First parameter should be expected_results.[apron|pplite|pplite_native|elina|boxes].out but it is $OLDLOG"
     exit 1
 fi    
 
@@ -43,7 +43,6 @@ DIFF=diff
 
 timestamp=$(date +"%m_%d_%y.%H_%M")  
 NEWLOG=results_${timestamp}.out
-
 
 ## Run all the tests
 for test in $DIR/test-bin/*
@@ -57,7 +56,12 @@ do
       fi
   else
       # lib should be apron, pplite, boxes, or elina
-      if [[ $test == *"$lib"* ]]; then    
+      if [[ $test == *"$lib"* ]]; then
+	  if [[ $lib == "pplite" ]]; then
+	      if [[ $test == *"pplite_native"* ]]; then
+		  continue
+	      fi		  
+	  fi
 	  echo "Running $test"
 	  echo "=== Begin $test ===" >> $NEWLOG
 	  $test >> $NEWLOG 2>/dev/null
