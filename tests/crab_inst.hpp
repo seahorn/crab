@@ -44,11 +44,12 @@ Z_RUNNER(crab::domain_impl::z_fpoly_pplite_native_domain_t)
 Z_RUNNER(crab::domain_impl::z_pset_pplite_native_domain_t)
 #ifdef HAVE_APRON
 Z_RUNNER(crab::domain_impl::z_dummy_decoupled_box_domain_t)
-#endif
 #ifdef HAVE_PPLITE
+// These domains require HAVE_APRON and HAVE_PPLITE
 Z_RUNNER(crab::domain_impl::z_decoupled_box_poly_domain_t)
 Z_RUNNER(crab::domain_impl::z_decoupled_box_pset_domain_t)
-#endif 
+#endif
+#endif
 Z_RUNNER(crab::domain_impl::z_zones_elina_domain_t)
 Z_RUNNER(crab::domain_impl::z_oct_elina_domain_t)
 Z_RUNNER(crab::domain_impl::z_pk_elina_domain_t)
