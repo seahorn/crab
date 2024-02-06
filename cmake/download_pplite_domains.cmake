@@ -1,4 +1,4 @@
-if (CRAB_USE_PPLITE_DOMAINS)
+if (CRAB_USE_PPLITE_NATIVE)
   set (PPLITE_DOMAINS_REPO "https://github.com/seahorn/crab-pplite.git"
     CACHE STRING "source of wrapper for pplite domains using native interface")
   set (PPLITE_SOURCE_DIR "${CMAKE_SOURCE_DIR}/include/crab/domains/pplite")        
