@@ -1570,6 +1570,43 @@ user-defined assertion checker
 0  Number of total unreachable checks
 
 === End ./test-bin/flat_bool_domain8 ===
+=== Begin ./test-bin/flat_bool_domain9 ===
+entry:
+  x = 2;
+  b1 = true;
+  b2 = false;
+  havoc(b3);
+  sext b1:1 to x1:32;
+  sext b2:1 to x2:32;
+  sext b3:1 to x3:32;
+  zext b1:1 to x4:32;
+  zext b2:1 to x5:32;
+  zext b3:1 to x6:32;
+  y1 = x+x1;
+  y2 = x+x2;
+  y3 = x+x3;
+  y4 = x+x4;
+  y5 = x+x5;
+  y6 = x+x6;
+  assert(y1 = 1);
+  assert(y2 = 2);
+  assert(y3 = 2);
+  assert(y4 = 3);
+  assert(y5 = 2);
+  assert(y6 = 2);
+  goto exit;
+exit:
+
+
+Invariants using Bool+Int
+Abstract trace: entry exit
+user-defined assertion checker
+4  Number of total safe checks
+0  Number of total error checks
+2  Number of total warning checks
+0  Number of total unreachable checks
+
+=== End ./test-bin/flat_bool_domain9 ===
 === Begin ./test-bin/gen_abs_dom ===
 Join({z -> [10, +oo], y-x<=0},{z -> [5, +oo], y-x<=0})={z -> [5, +oo], y-x<=0}
 Meet({z -> [10, +oo], y-x<=0},{z -> [5, +oo], y-x<=0})={z -> [10, +oo], y-x<=0}

@@ -1515,9 +1515,7 @@ public:
       // if OP_ZEXT then true is 1 and false is zero
       boolean_value b_src = m_product.first().get_bool(src);
       if (b_src.is_true()) {
-        // m_product.second().assign(dst, linear_expression_t(op == OP_SEXT ? -1
-        // : 1));
-        m_product.second().assign(dst, number_t(1));
+        m_product.second().assign(dst, linear_expression_t(op == OP_SEXT ? -1 : 1));
       } else if (b_src.is_false()) {
         m_product.second().assign(dst, number_t(0));
       } else {
