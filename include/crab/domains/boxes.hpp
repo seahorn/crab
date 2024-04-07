@@ -751,6 +751,9 @@ private:
 
     }
     }
+#if defined(__GNUC__) || defined(__GNUG__)
+    __builtin_unreachable(); // to make happy gcc
+#endif     
   }
   
   variable_t getVarName(int v) const {

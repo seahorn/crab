@@ -368,8 +368,12 @@ protected:
                            std::vector<std::pair<variable_t, Wt>> &lbs,
                            std::vector<std::pair<variable_t, Wt>> &ubs) {
     // Process upper bounds.
-    Wt unbounded_lbcoeff;
-    Wt unbounded_ubcoeff;
+    // 
+    // if unbounded_lvar (unbounded_ubvar) is not none then
+    // unbounded_lbcoeff (unbounded_ubcoeff) is updated. Otherwise, it
+    // is not read.
+    Wt unbounded_lbcoeff = Wt(0);
+    Wt unbounded_ubcoeff = Wt(0);
     boost::optional<variable_t> unbounded_lbvar;
     boost::optional<variable_t> unbounded_ubvar;
     bool underflow, overflow;
@@ -1567,7 +1571,8 @@ public:
     } else {
       interval_t x_int = eval_interval(e);
 
-      boost::optional<Wt> lb_w, ub_w;
+      boost::optional<Wt> lb_w = boost::none;
+      boost::optional<Wt> ub_w = boost::none;
       bool overflow;
       if (x_int.lb().is_finite()) {
         lb_w = ntow::convert(-(*(x_int.lb().number())), overflow);

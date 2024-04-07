@@ -46,6 +46,9 @@ small_range small_range::join_zero_with(const small_range &other) const {
     return zeroOrMore();
   UNREACHABLE_BOTTOM    
   }
+#if defined(__GNUC__) || defined(__GNUG__)
+    __builtin_unreachable(); // to make gcc happy
+#endif       
 }
 
 /*
@@ -81,6 +84,9 @@ small_range small_range::join_one_with(const small_range &other) const {
     return other;
   UNREACHABLE_BOTTOM    
   }
+#if defined(__GNUC__) || defined(__GNUG__)
+    __builtin_unreachable(); // to make gcc happy
+#endif       
 }
 
 /*
@@ -112,6 +118,9 @@ small_range small_range::join_zero_or_one_with(const small_range &other) const {
     return zeroOrMore();
   UNREACHABLE_BOTTOM  
   }
+#if defined(__GNUC__) || defined(__GNUG__)
+    __builtin_unreachable(); // to make gcc happy
+#endif       
 }
 
 /*
@@ -138,6 +147,9 @@ small_range small_range::join_one_or_more_with(const small_range &other) const {
     return zeroOrMore();
   UNREACHABLE_BOTTOM      
   }
+#if defined(__GNUC__) || defined(__GNUG__)
+    __builtin_unreachable(); // to make gcc happy
+#endif       
 }
 
 /*
@@ -164,6 +176,9 @@ small_range small_range::meet_zero_with(const small_range &other) const {
     return *this;
   UNREACHABLE_BOTTOM      
   }
+#if defined(__GNUC__) || defined(__GNUG__)
+    __builtin_unreachable(); // to make gcc happy
+#endif       
 }
 
 /*
@@ -196,6 +211,9 @@ small_range small_range::meet_one_with(const small_range &other) const {
     return *this;
   UNREACHABLE_BOTTOM      
   }
+#if defined(__GNUC__) || defined(__GNUG__)
+    __builtin_unreachable(); // to make gcc happy
+#endif       
 }
 
 /*
@@ -232,6 +250,9 @@ small_range small_range::meet_zero_or_one_with(const small_range &other) const {
     return *this;
   UNREACHABLE_BOTTOM      
   }
+#if defined(__GNUC__) || defined(__GNUG__)
+    __builtin_unreachable(); // to make gcc happy
+#endif       
 }
 
 /*
@@ -257,7 +278,10 @@ small_range small_range::meet_one_or_more_with(const small_range &other) const {
   case OneOrMore:    
     return *this;
   UNREACHABLE_BOTTOM      
-  } 
+  }
+#if defined(__GNUC__) || defined(__GNUG__)
+    __builtin_unreachable(); // to make gcc happy
+#endif         
 }
 
 
@@ -329,6 +353,9 @@ bool small_range::operator<=(const small_range &other) const {
       return true;
     UNREACHABLE_BOTTOM        
     }
+#if defined(__GNUC__) || defined(__GNUG__)
+    __builtin_unreachable(); // to make gcc happy
+#endif               
   }
   case ZeroOrOne:
     BOOST_FALLTHROUGH;    
@@ -339,7 +366,10 @@ bool small_range::operator<=(const small_range &other) const {
     return false;
   UNREACHABLE_BOTTOM      
   }
-  
+#if defined(__GNUC__) || defined(__GNUG__)
+    __builtin_unreachable(); // to make gcc happy
+#endif           
+ 
 }
 
 bool small_range::operator==(const small_range &other) const {

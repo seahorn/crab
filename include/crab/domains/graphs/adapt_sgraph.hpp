@@ -245,19 +245,21 @@ public:
   bool elem(vert_id s, vert_id d) const { return _succs[s].elem(d); }
 
   Wt &edge_val(vert_id s, vert_id d) {
-    size_t idx;
-    _succs[s].lookup(d, &idx);
+    size_t idx = 0;
+    bool found =_succs[s].lookup(d, &idx);
+    if (!found) { CRAB_ERROR("adapt_sgraph call elem before calling edge_val");}
     return _ws[idx];
   }
 
   const Wt &edge_val(vert_id s, vert_id d) const {
-    size_t idx;
-    _succs[s].lookup(d, &idx);
+    size_t idx = 0;
+    bool found = _succs[s].lookup(d, &idx);
+    if (!found) { CRAB_ERROR("adapt_sgraph call elem before calling edge_val");}    
     return _ws[idx];
   }
 
   bool lookup(vert_id s, vert_id d, wt_ref_t &w) const {
-    size_t idx;
+    size_t idx = 0;
     if (_succs[s].lookup(d, &idx)) {
       w = wt_ref_t(_ws[idx]);
       return true;
@@ -267,7 +269,7 @@ public:
 
   void add_edge(vert_id s, Wt w, vert_id d) {
     assert(!elem(s, d));
-    size_t idx;
+    size_t idx = 0;
     if (free_widx.size() > 0) {
       idx = free_widx.last();
       free_widx.pop();
@@ -283,7 +285,7 @@ public:
   }
 
   template <class Op> void update_edge(vert_id s, Wt w, vert_id d, Op &op) {
-    size_t idx;
+    size_t idx = 0;
     if (_succs[s].lookup(d, &idx)) {
       _ws[idx] = op.apply(_ws[idx], w);
     } else {
@@ -293,7 +295,7 @@ public:
   }
 
   void set_edge(vert_id s, Wt w, vert_id d) {
-    size_t idx;
+    size_t idx = 0;
     if (_succs[s].lookup(d, &idx)) {
       _ws[idx] = w;
     } else {
@@ -302,7 +304,7 @@ public:
   }
 
   void set_edge_if_less_than(vert_id s, Wt w, vert_id d) {
-    size_t idx;
+    size_t idx = 0;
     if (_succs[s].lookup(d, &idx)) {
       if (w < _ws[idx]) {
         _ws[idx] = w;

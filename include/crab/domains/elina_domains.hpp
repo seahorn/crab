@@ -472,7 +472,7 @@ private:
     unsigned i = 0;
     for (auto it = e.begin(), et = e.end(); it != et; ++it, ++i) {
       number_t crab_coeff = it->first;
-      const variable_t &crab_var = it->second;
+      variable_t crab_var(it->second);
       elina_linterm_t *linterm = &linexpr->p.linterm[i];
       linterm->dim = get_var_dim_insert(crab_var);
       ikos::q_number qcoef(crab_coeff);
@@ -1207,6 +1207,9 @@ public:
                      elina_abstract0_meet(get_man(), false, &*x, &*y)),
             std::move(m));
       }
+#if defined(__GNUC__) || defined(__GNUG__)
+    __builtin_unreachable(); // to make happy gcc
+#endif           
     }
   }
 

@@ -3094,7 +3094,8 @@ public:
     } else {
       interval_t x_int = eval_interval(e);
 
-      boost::optional<Wt> lb_w, ub_w;
+      boost::optional<Wt> lb_w = boost::none;
+      boost::optional<Wt> ub_w = boost::none;
       bool overflow;
       if (x_int.lb().is_finite()) {
         lb_w = ntow::convert(-number_t(2) * (*(x_int.lb().number())), overflow);

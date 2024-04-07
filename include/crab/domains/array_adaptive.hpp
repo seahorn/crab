@@ -75,13 +75,13 @@ namespace array_adaptive_impl {
 class offset_map;
 
 /*
- * Wrapper for using ikos::index_t as patricia_tree keys
+ * Wrapper for using int64_t as patricia_tree keys
  */
 class offset_t : public indexable {
-  ikos::index_t m_val;
+  int64_t m_val;
 
 public:
-  explicit offset_t(ikos::index_t v);
+  explicit offset_t(int64_t v);
 
   virtual ikos::index_t index() const override;
 

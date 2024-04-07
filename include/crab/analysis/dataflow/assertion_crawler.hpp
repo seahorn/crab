@@ -366,8 +366,7 @@ public:
     };
 
     /** Add control-dependencies **/
-    class add_control_deps :
-      public std::binary_function<assert_wrapper_t, var_dom_t, std::pair<var_dom_t, bool>> {
+    class add_control_deps {
 				  
       const cdg_t &cdg;
       const std::vector<basic_block_label_t> &roots;

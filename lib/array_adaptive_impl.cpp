@@ -150,9 +150,12 @@ void constant_value::write(crab_os &o) const {
   }
 }
 
-offset_t::offset_t(ikos::index_t v) : m_val(v) {}
+offset_t::offset_t(int64_t v) : m_val(v) {}
 
-ikos::index_t offset_t::index() const { return m_val; }
+ikos::index_t offset_t::index() const {
+  // conversion from int64_t to uint64_t is well defined.
+  return (ikos::index_t) m_val;
+}
 
 size_t offset_t::hash() const {
   // casting to size_t may overflow but it shouldn't affect correctness
