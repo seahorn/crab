@@ -741,9 +741,9 @@ protected:
     edge_vector delta;
     for (auto edge : g_excl.e_preds(ii)) {
       vert_id se = edge.vert;
-      Wt wt_sij = edge.val + c;
       assert(g_excl.succs(se).begin() != g_excl.succs(se).end());
       if (se != jj) {
+	Wt wt_sij = edge.val + c;
         if (g_excl.lookup(se, jj, w)) {
           if (w.get() <= wt_sij) {
             continue;
@@ -767,8 +767,8 @@ protected:
     std::vector<std::pair<vert_id, Wt>> dest_dec;
     for (auto edge : g_excl.e_succs(jj)) {
       vert_id de = edge.vert;
-      Wt wt_ijd = edge.val + c;
       if (de != ii) {
+	Wt wt_ijd = edge.val + c;
         if (g_excl.lookup(ii, de, w)) {
           if (w.get() <= wt_ijd) {
             continue;
@@ -794,22 +794,24 @@ protected:
       Wt wt_sij = c + s_p.second;
       for (auto d_p : dest_dec) {
         vert_id de = d_p.first;
-        Wt wt_sijd = wt_sij + d_p.second;
-        if (g.lookup(se, de, w)) {
-          if (w.get() <= wt_sijd) {
-            continue;
+	if (se != de) {
+	  Wt wt_sijd = wt_sij + d_p.second;
+	  if (g.lookup(se, de, w)) {
+	    if (w.get() <= wt_sijd) {
+	      continue;
+	    }
+	    // REVISIT(PERFORMANCE): extra call to lookup
+	    g.set_edge(se, wt_sijd, de);
+	  } else {
+	    g.add_edge(se, wt_sijd, de);
 	  }
-	  // REVISIT(PERFORMANCE): extra call to lookup
-	  g.set_edge(se, wt_sijd, de);
-        } else {
-          g.add_edge(se, wt_sijd, de);
-        }
-        if (crab_domain_params_man::get().zones_close_bounds_inline()) {
-          if (g.lookup(0, se, w))
-            g.update_edge(0, w.get() + wt_sijd, de, min_op);
-          if (g.lookup(de, 0, w))
-            g.update_edge(se, w.get() + wt_sijd, 0, min_op);
-        }
+	  if (crab_domain_params_man::get().zones_close_bounds_inline()) {
+	    if (g.lookup(0, se, w))
+	      g.update_edge(0, w.get() + wt_sijd, de, min_op);
+	    if (g.lookup(de, 0, w))
+	      g.update_edge(se, w.get() + wt_sijd, 0, min_op);
+	  }
+	}
       }
     }
 
