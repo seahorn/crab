@@ -255,15 +255,15 @@ ret:
 Invariants using ElinaZones
 loop1_entry={}
 loop1_bb1={-k <= -30; k <= 30; -i <= 0; i <= 10}
-loop1_bb1_f={-k <= -30; k <= 30; -i <= 0; i <= 10}
-loop2_entry={-k <= -30; k <= 30; -i <= -10; i <= 10}
+loop1_bb1_f={-i <= 0; i <= 10; -k <= -30; k <= 30}
+loop2_entry={-i <= -10; i <= 10; -k <= -30; k <= 30}
 loop2_bb1={-k <= -30; k <= 30; -j <= 0; j <= 10; -i <= -10; i <= 10}
-loop2_bb1_f={-k <= -30; k <= 30; -j <= 0; j <= 10; -i <= -10; i <= 10}
-ret={-i <= -10; i <= 10; -k <= -30; k <= 30; -j <= -10; j <= 10}
-loop2_bb1_t={-k <= -30; k <= 30; -j <= 0; j <= 10; -i <= -10; i <= 10}
-loop2_bb2={-i <= -10; i <= 10; -k <= -30; k <= 30; -j <= 0; j <= 9}
-loop1_bb1_t={-k <= -30; k <= 30; -i <= 0; i <= 10}
-loop1_bb2={-k <= -30; k <= 30; -i <= 0; i <= 9}
+loop2_bb1_f={-i <= -10; i <= 10; -j <= 0; j <= 10; -k <= -30; k <= 30}
+ret={-j <= -10; j <= 10; -k <= -30; k <= 30; -i <= -10; i <= 10}
+loop2_bb1_t={-i <= -10; i <= 10; -j <= 0; j <= 10; -k <= -30; k <= 30}
+loop2_bb2={-j <= 0; j <= 9; -k <= -30; k <= 30; -i <= -10; i <= 10}
+loop1_bb1_t={-i <= 0; i <= 10; -k <= -30; k <= 30}
+loop1_bb2={-i <= 0; i <= 9; -k <= -30; k <= 30}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 
 Invariants using ElinaOct
@@ -283,15 +283,15 @@ Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f lo
 Invariants using ElinaPk
 loop1_entry={}
 loop1_bb1={-i <= 0; i <= 10; -k = -30}
-loop1_bb1_f={-i <= 0; i <= 10; -k = -30}
-loop2_entry={-i = -10; -k = -30}
+loop1_bb1_f={-k = -30; -i <= 0; i <= 10}
+loop2_entry={-k = -30; -i = -10}
 loop2_bb1={-j <= 0; j <= 10; -i = -10; -k = -30}
-loop2_bb1_f={-j <= 0; j <= 10; -i = -10; -k = -30}
-ret={-i = -10; -j = -10; -k = -30}
-loop2_bb1_t={-j <= 0; j <= 10; -i = -10; -k = -30}
-loop2_bb2={-i = -10; -j <= 0; j <= 9; -k = -30}
-loop1_bb1_t={-i <= 0; i <= 10; -k = -30}
-loop1_bb2={-i <= 0; i <= 9; -k = -30}
+loop2_bb1_f={-k = -30; -i = -10; -j <= 0; j <= 10}
+ret={-k = -30; -j = -10; -i = -10}
+loop2_bb1_t={-k = -30; -i = -10; -j <= 0; j <= 10}
+loop2_bb2={-k = -30; -j <= 0; j <= 9; -i = -10}
+loop1_bb1_t={-k = -30; -i <= 0; i <= 10}
+loop1_bb2={-k = -30; -i <= 0; i <= 9}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 
 entry:
