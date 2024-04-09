@@ -30,3 +30,7 @@ jobs:
         run: docker build --build-arg BUILD_TYPE=Release -t seahorn/crab_apron_boxes -f docker/crab.dev.apron.Dockerfile .
       - name: Build crab+elina and run tests 
         run: docker build --build-arg BUILD_TYPE=Release -t seahorn/crab_elina -f docker/crab.dev.elina.Dockerfile .
+      - name: Build crab+pplite (apron interface) and run tests 
+        run: docker build --build-arg BUILD_TYPE=Release -t seahorn/crab_pplite -f docker/crab.dev.pplite.Dockerfile .
+      - name: Build crab+pplite (native interface) and run tests 
+        run: docker build --build-arg BUILD_TYPE=Release -t seahorn/crab_pplite_native -f docker/crab.dev.pplite_native.Dockerfile .
