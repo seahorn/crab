@@ -45,6 +45,7 @@
 #include <crab/domains/graphs/graph_ops.hpp>
 #include <crab/domains/graphs/graph_views.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/numbers/bignums.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -252,6 +253,9 @@ public:
   CRAB_DOMAIN_SCOPED_STATS(this, NAME, 0)
 #define SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
   CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
+
+// forward declaration
+template<typename DBMParams, typename Wt> class integer_tightening;
   
 template <class Number, class VariableName,
           class DBMParams = DBM_impl::DefaultParams<Number>,
@@ -261,6 +265,8 @@ class split_oct_domain final
       split_oct_domain<Number, VariableName, DBMParams, DomainParams>> {
   using split_oct_domain_t = split_oct_domain<Number, VariableName, DBMParams, DomainParams>;
   using abstract_domain_t = abstract_domain_api<split_oct_domain_t>;
+  friend class integer_tightening<DBMParams, typename DBMParams::Wt>;
+  using integer_tightening_t = integer_tightening<DBMParams, typename DBMParams::Wt>;
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -1395,7 +1401,7 @@ private:
       /* end preserve coherence */
     }
 
-    integer_tightening();
+    integer_tightening_t::compute(m_graph); 
 
     check_potential(m_graph, m_potential, __LINE__);
     CRAB_LOG("octagon-add", crab::outs() << "End adding: " << *this << "\n"
@@ -1464,7 +1470,7 @@ private:
       }
     }
 
-    integer_tightening();
+    integer_tightening_t::compute(m_graph); 
     return true;
   }
 
@@ -1512,35 +1518,6 @@ private:
     return x_out;
   }
 
-  // FIXME HACK: big assumption that Wt can be casted to float. This
-  // is true if Wt is long but not if, for instance, we use bignums.
-  void integer_tightening() {
-#ifdef INTEGER_TIGHTENING
-    for (vert_id v : m_graph.verts()) {
-      wt_ref_t w;
-      if (v % 2 == 0 && (m_graph.lookup(v, v + 1, w)) && (w.get() & 1)) {
-        // weight is odd so we need to tighten it
-        CRAB_LOG("octagon-integer", crab::outs() << "Tightening edge " << v
-                                                 << " --> " << v + 1 << " from "
-                                                 << w.get() << " to ";);
-	// REVISIT(PERFORMANCE): extra call to lookup
-	Wt tightened_w = 2 * (Wt)std::floor((float)w.get() / 2);
-	m_graph.set_edge(v, tightened_w, v + 1);
-        CRAB_LOG("octagon-integer", crab::outs() << tightened_w << "\n";);
-      }
-      if (v % 2 != 0 && (m_graph.lookup(v, v - 1, w)) && (w.get() & 1)) {
-        // weight is odd so we need to tighten it
-        CRAB_LOG("octagon-integer", crab::outs() << "Tightening edge " << v
-                                                 << " --> " << v + 1 << " from "
-                                                 << w.get() << " to ";);
-	// REVISIT(PERFORMANCE): extra call to lookup
-	Wt tightened_w = 2 * (Wt)std::floor((float)w.get() / 2);
-	m_graph.set_edge(v, tightened_w, v - 1);
-        CRAB_LOG("octagon-integer", crab::outs() << tightened_w << "\n";);
-      }
-    }
-#endif
-  }
 
   void close_over_edge(vert_id ii, vert_id jj) {
     assert(ii / 2 != jj / 2);
@@ -3251,7 +3228,7 @@ public:
     }
 
     check_potential(m_graph, m_potential, __LINE__);
-    integer_tightening();
+    integer_tightening_t::compute(m_graph);
     check_potential(m_graph, m_potential, __LINE__);
     CRAB_LOG("octagon", crab::outs() << "---" << x << ":=" << e << "\n"
                                      << *this << "\n";);
@@ -3760,6 +3737,58 @@ public:
 
 }; // end class split_oct_domain
 
+template<typename DBMParams, typename Wt>
+class integer_tightening {
+  using graph_t = typename DBMParams::graph_t;
+  static_assert(std::is_same<typename DBMParams::Wt, Wt>::value, 
+		"template parameter Wt and DBMParams::Wt should be identical");
+public:
+  // FIXME: this code assumes that Wt can be casted to float. This is
+  // true if Wt is long/int64_t/etc but it not might be true for other
+  // more complex types such as bignums. For safeint, it's okay because
+  // safeint can be implicitly casted to int64_t.
+  static void compute(graph_t &g) {
+    using wt_ref_t = typename graph_t::wt_ref_t;
+#ifdef INTEGER_TIGHTENING
+    for (auto v : g.verts()) {
+      wt_ref_t w;
+      if (v % 2 == 0 && (g.lookup(v, v + 1, w)) && (w.get() & 1)) {
+        // weight is odd so we need to tighten it
+        CRAB_LOG("octagon-integer", crab::outs() << "Tightening edge " << v
+                                                 << " --> " << v + 1 << " from "
+                                                 << w.get() << " to ";);
+	// REVISIT(PERFORMANCE): extra call to lookup
+	Wt tightened_w = 2 * (Wt)std::floor((float)w.get() / 2);
+	g.set_edge(v, tightened_w, v + 1);
+        CRAB_LOG("octagon-integer", crab::outs() << tightened_w << "\n";);
+      }
+      if (v % 2 != 0 && (g.lookup(v, v - 1, w)) && (w.get() & 1)) {
+        // weight is odd so we need to tighten it
+        CRAB_LOG("octagon-integer", crab::outs() << "Tightening edge " << v
+                                                 << " --> " << v + 1 << " from "
+                                                 << w.get() << " to ";);
+	// REVISIT(PERFORMANCE): extra call to lookup
+	Wt tightened_w = 2 * (Wt)std::floor((float)w.get() / 2);
+	g.set_edge(v, tightened_w, v - 1);
+        CRAB_LOG("octagon-integer", crab::outs() << tightened_w << "\n";);
+      }
+    }
+#endif
+  }    
+};
+
+// Specialization for Wt = z_number 
+template<typename DBMParams>
+class integer_tightening<DBMParams, ikos::z_number> {
+  using graph_t = typename DBMParams::graph_t;
+  static_assert(std::is_same<typename DBMParams::Wt, ikos::z_number>::value, 
+		"template parameter Wt and DBMParams::Wt should be identical");
+public:
+  static void compute(graph_t &g) {
+    CRAB_WARN("split_oct: integer tightening is not currently supported for bignums");
+  }
+};
+  
 template <typename Number, typename VariableName, typename DBMParams, typename DomainParams>
 struct abstract_domain_traits<split_oct_domain<Number, VariableName, DBMParams, DomainParams>> {
   using number_t = Number;
