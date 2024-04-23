@@ -411,7 +411,7 @@ public:
         res += linear_constraint_t(v == number_t(0));
       } else {
         res += linear_constraint_t(v >= number_t(0));
-        res += linear_constraint_t(v >= number_t(1));
+        res += linear_constraint_t(v <= number_t(1));
       }
     }
     return res;
