@@ -13,6 +13,7 @@
 
 // Analysis
 #include <crab/analysis/fwd_analyzer.hpp>
+#include <crab/fixpoint/fixpoint_params.hpp>
 
 using namespace crab;
 using namespace ikos;
@@ -106,22 +107,31 @@ int main(int argc, char**argv) {
 			     outs () << bb_name << ":" << inv << "\n";
 			   }
 			 };
-  interval_domain_t top_intv;
-  abs_domain_t init(top_intv);
-  unsigned widening_delay = 1;
-  unsigned narrowing_iterations = 1;
-  fwd_analyzer_t analyzer(prog, init, nullptr, nullptr,
-			  widening_delay, narrowing_iterations, 0);
-  analyzer.run();
-  outs () << "Invariants using intervals\n";
-  print_invariants(analyzer);
 
-  analyzer.clear(); 
-  zones_domain_t top_zones;
-  analyzer.get_abs_transformer().set_abs_value(top_zones);
-  analyzer.run();
-  outs () << "Invariants using zones\n";
-  print_invariants(analyzer);
+ 
+  fixpoint_parameters fixpo_params;
+  fixpo_params.get_widening_delay() = 1;
+  fixpo_params.get_descending_iterations() = 1;
+  fixpo_params.get_max_thresholds() = 0;
+
+  {
+    interval_domain_t top_intv;
+    abs_domain_t init(top_intv);
+    fwd_analyzer_t analyzer(prog, init, nullptr, fixpo_params);
+    analyzer.run(init);
+    outs () << "Invariants using intervals\n";
+    print_invariants(analyzer);
+  }
+
+  {
+    zones_domain_t top_zones;    
+    abs_domain_t init(top_zones);
+    fwd_analyzer_t analyzer(prog, init, nullptr, fixpo_params);
+    analyzer.run(init);
+    outs () << "Invariants using zones\n";
+    print_invariants(analyzer);
+  }
+  
   
   return 0;
 }
