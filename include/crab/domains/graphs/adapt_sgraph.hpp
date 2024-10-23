@@ -199,6 +199,8 @@ public:
   }
 
   void growTo(vert_id v) {
+    _succs.reserve(v);
+    _preds.reserve(v);    
     while (size() < v)
       new_vertex();
   }
