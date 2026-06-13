@@ -182,6 +182,7 @@ boost::optional<bool_operation_t> conv2bool(term::term_operator_t op) {
   }
 }
 
+uint32_t term_op_val_generator_t::m_next_val = 0;
 } // namespace term
 } // end namespace domains
 } // end namespace crab
