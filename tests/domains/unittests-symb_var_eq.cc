@@ -11,11 +11,10 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 using namespace ikos;
 
-using z_interval_domain_t = interval_domain<z_number, varname_t>;
 // Instantiate with checks enabled so the unit test always validates the
 // domain's internal representation in addition to its observable results.
 using test_domain_t = crab::domains::symbolic_variable_equality_domain<
-    z_interval_domain_t, crab::domains::SVEQCheckedParams>;
+    z_number, varname_t, crab::domains::SVEQCheckedParams>;
 using value_domain_t = symbolic_variable_equality_domain_impl::symbolic_var;
 
 // The *meaning* of an EqDom state is a partition of variables into equivalence
@@ -449,6 +448,28 @@ int main(int argc, char **argv) {
                true);
     check_partition("case11: normalized state has no equalities", dom, {v1, v2},
                     {});
+  }
+
+  { // to_linear_constraint_system concretizes class equalities
+    crab::outs() << "==== case12 (to_linear_constraint_system) ====\n";
+    test_domain_t top;
+    check_bool("case12: top yields a true constraint system",
+               top.to_linear_constraint_system().is_true(), true);
+
+    test_domain_t dom;
+    dom.add(v1, v2);
+    dom.add(v2, v3); // one class {v1,v2,v3}: 3 members, 1 rep -> 2 equalities
+    auto csts = dom.to_linear_constraint_system();
+    unsigned n_eq = 0;
+    for (auto &c : csts) {
+      if (c.is_equality()) {
+        n_eq++;
+      }
+    }
+    check_bool("case12: {v1,v2,v3} yields 2 constraints", csts.size() == 2,
+               true);
+    check_bool("case12: all emitted constraints are equalities",
+               n_eq == csts.size(), true);
   }
 
   crab::outs() << "\n[SUMMARY] " << (g_checks - g_failures) << "/" << g_checks

@@ -5,10 +5,14 @@
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/constant.hpp>
 #include <crab/domains/term/term_operators.hpp>
-#include <crab/domains/union_find_domain.hpp>
 #include <crab/support/stats.hpp>
 
 #include <boost/optional.hpp>
+
+#include <algorithm>
+#include <memory>
+#include <unordered_map>
+#include <vector>
 
 namespace crab {
 namespace domains {
@@ -20,19 +24,21 @@ class symbolic_var {
 public:
   using var_id_t = uint32_t;
 
-  var_id_t var;
+private:
+  var_id_t m_var;
 
-  symbolic_var(var_id_t _var) : var(_var) {}
+public:
+  explicit symbolic_var(var_id_t var) : m_var(var) {}
   symbolic_var(const this_domain_t &o) = default;
   symbolic_var(this_domain_t &&o) = default;
   this_domain_t &operator=(const this_domain_t &o) = default;
   this_domain_t &operator=(this_domain_t &&o) = default;
 
-  void write(crab_os &o) const { o << "#var" << var; }
+  var_id_t value() const { return m_var; }
 
-  bool operator==(this_domain_t o) const { return var == o.var; }
+  void write(crab_os &o) const { o << "#var" << m_var; }
 
-  operator var_id_t() const { return var; }
+  bool operator==(const this_domain_t &o) const { return m_var == o.m_var; }
 
   friend class crab::crab_os &operator<<(crab::crab_os &o,
                                          const this_domain_t &dom) {
@@ -40,27 +46,6 @@ public:
     return o;
   }
 };
-
-struct symb_var_hash {
-  std::size_t operator()(const symbolic_var &k) const {
-    return std::hash<uint32_t>()(k.var);
-  }
-};
-
-template <class InputIt1, class InputIt2>
-bool set_is_absolute_complement(InputIt1 first1, InputIt1 last1,
-                                InputIt2 first2, InputIt2 last2) {
-  while (first1 != last1 && first2 != last2) {
-    if (*first1 < *first2)
-      ++first1;
-    else {
-      if (!(*first2 < *first1))
-        return false; // *first1 and *first2 are equivalent.
-      ++first2;
-    }
-  }
-  return true;
-}
 
 template <class SYMBVAR> SYMBVAR make_fresh_var_symbol() {
   return SYMBVAR(term::term_op_val_generator_t::get_next_val());
@@ -92,9 +77,7 @@ public:
 
   void set_absval(std::shared_ptr<Domain> val) { m_val = val; }
 
-  bool operator==(this_class_t &o) const { return m_val == o.m_val; }
-
-  bool value_equals(this_class_t &o) const {
+  bool value_equals(const this_class_t &o) const {
     return m_val && o.m_val && *m_val == *(o.m_val);
   }
 }; // end class equivalence_class
@@ -157,16 +140,17 @@ public:
 /// elements are known to hold equal values in the concrete semantics if
 /// the domain captures that the elements are assigned the same symbolic
 /// variable.
-/// @tparam BaseDomain the type of the domain value that represents the base
-/// domain in the object domain
-/// @tparam DomainParams domain parameter for inter-procedural analysis
-template <class BaseDomain, class DomainParams = SVEQDefaultParams>
+/// @tparam Number numeric type of the program variables
+/// @tparam VariableName name type of the program variables
+/// @tparam DomainParams domain parameters (normalize, checks, inter-procedural)
+template <typename Number, typename VariableName,
+          typename DomainParams = SVEQDefaultParams>
 class symbolic_variable_equality_domain final
-    : public abstract_domain_api<
-          symbolic_variable_equality_domain<BaseDomain, DomainParams>> {
+    : public abstract_domain_api<symbolic_variable_equality_domain<
+          Number, VariableName, DomainParams>> {
 public:
   using symb_eq_domain_t =
-      symbolic_variable_equality_domain<BaseDomain, DomainParams>;
+      symbolic_variable_equality_domain<Number, VariableName, DomainParams>;
   using abstract_domain_t = abstract_domain_api<symb_eq_domain_t>;
 
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -179,7 +163,8 @@ public:
   using typename abstract_domain_t::variable_or_constant_vector_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  using number_t = typename BaseDomain::number_t;
+  using number_t = Number;
+  using varname_t = VariableName;
 
   // typedefs for equality domain
   using element_t = variable_t;
@@ -258,22 +243,6 @@ private:
 
   /// @brief Build a map from representative to an ordered set with all the
   /// elements in the equivalence class.
-  /// @return a map computed as brief described.
-  equivalence_class_elems_t equiv_classes_elems() {
-    SVEQ_DOMAIN_SCOPED_STATS(".classes");
-
-    equivalence_class_elems_t res;
-    for (auto &kv : m_parents) {
-      element_t &rep = kv.second; // already path compressed
-      element_set_t &s = res[rep];
-      auto it = std::upper_bound(s.begin(), s.end(), kv.first);
-      s.insert(it, kv.first);
-    }
-    return res;
-  }
-
-  /// @brief Build a map from representative to an ordered set with all the
-  /// elements in the equivalence class **without path-compression**
   /// @return a map computed as brief described.
   equivalence_class_elems_t equiv_classes_elems() const {
     SVEQ_DOMAIN_SCOPED_STATS(".classes");
@@ -644,8 +613,11 @@ public:
   /// @brief set a domain value to x's class
   /// @param x an element
   /// @param absval a domain value
-  /// @note  if x does not exist, create a class with element x and absval
-  ///        if x \in some cls, update current domain value by absval
+  /// @note  if x is new and no class already holds \p absval, create a class
+  ///        {x} with \p absval;
+  ///        if x is new but some class already holds \p absval, x is added to
+  ///        that class -- i.e. sharing a symbolic value asserts an equality;
+  ///        if x already exists, update its class's domain value to \p absval.
   void set(const element_t &x, domain_t absval) {
     if (is_bottom()) {
       return;
@@ -1199,13 +1171,40 @@ public:
 
   std::string domain_name() const override { return "EqDomain"; }
 
+  // Concretize the state as a conjunction of variable equalities: for each
+  // equivalence class, every non-representative member m yields m == rep.
   linear_constraint_system_t to_linear_constraint_system() const override {
-    CRAB_ERROR(domain_name(), "::", __func__, " not implemented");
+    linear_constraint_system_t csts;
+    if (is_bottom()) {
+      csts += linear_constraint_t::get_false();
+      return csts;
+    }
+    if (is_top()) {
+      return csts; // empty conjunction == true
+    }
+    for (auto &kv : m_parents) {
+      const element_t &member = kv.first;
+      const element_t &rep = kv.second;
+      if (member == rep) {
+        continue; // representative / singleton carries no equality
+      }
+      csts += linear_constraint_t(linear_expression_t(member) -
+                                      linear_expression_t(rep),
+                                  linear_constraint_t::EQUALITY);
+    }
+    return csts;
   }
 
   disjunctive_linear_constraint_system_t
   to_disjunctive_linear_constraint_system() const override {
-    CRAB_ERROR(domain_name(), "::", __func__, " not implemented");
+    auto lin_csts = to_linear_constraint_system();
+    if (lin_csts.is_false()) {
+      return disjunctive_linear_constraint_system_t(true /*is_false*/);
+    } else if (lin_csts.is_true()) {
+      return disjunctive_linear_constraint_system_t(false /*is_false*/);
+    } else {
+      return disjunctive_linear_constraint_system_t(lin_csts);
+    }
   }
 
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
@@ -1253,11 +1252,11 @@ public:
   }
 };
 
-template <typename BaseDomain, typename DomainParams>
+template <typename Number, typename VariableName, typename DomainParams>
 struct abstract_domain_traits<
-    symbolic_variable_equality_domain<BaseDomain, DomainParams>> {
-  using number_t = typename BaseDomain::number_t;
-  using varname_t = typename BaseDomain::varname_t;
+    symbolic_variable_equality_domain<Number, VariableName, DomainParams>> {
+  using number_t = Number;
+  using varname_t = VariableName;
 };
 } // end namespace domains
 } // end namespace crab
