@@ -122,6 +122,17 @@ void print_unordered_map(crab::crab_os &o,
 class SVEQDefaultParams {
 public:
   enum { implement_inter_transformers = 0 };
+  // when non-zero, domain operations validate their internal representation
+  // (see check_lattice_val). Off by default so normal analyses pay nothing.
+  enum { check_lattice_val = 0 };
+};
+
+// Like SVEQDefaultParams but with internal consistency checks enabled. Use for
+// unit testing, or pass it when debugging a specific analysis.
+class SVEQCheckedParams {
+public:
+  enum { implement_inter_transformers = 0 };
+  enum { check_lattice_val = 1 };
 };
 
 #define SVEQ_DOMAIN_SCOPED_STATS(NAME) CRAB_DOMAIN_SCOPED_STATS(this, NAME, 1)
@@ -342,6 +353,7 @@ private:
       }
     }
     res.normalize();
+    res.check_lattice_val();
     CRAB_LOG("symb-var-eq-join", res.dump(); crab::outs() << "\n");
     return res;
   }
@@ -424,6 +436,7 @@ private:
       }
     }
     res.normalize();
+    res.check_lattice_val();
     CRAB_LOG("symb-var-eq-meet", res.dump(); crab::outs() << "\n");
     return res;
   }
@@ -445,6 +458,63 @@ private:
 
     m_parents.insert({v, v});
     m_classes.insert({v, equivalence_class_t(val)});
+  }
+
+  // Consistency check of the internal representation. Enabled via
+  // DomainParams::check_lattice_val (e.g. SVEQCheckedParams); compiles to a
+  // no-op otherwise. Validates the invariants linking m_val, m_parents and
+  // m_classes.
+  void check_lattice_val() const {
+    if (!DomainParams::check_lattice_val) {
+      return;
+    }
+    switch (m_val) {
+    case lattice_val::bottom:
+      if (!m_parents.empty() || !m_classes.empty()) {
+        CRAB_ERROR(domain_name(),
+                   "::check_lattice_val: bottom must have empty maps");
+      }
+      break;
+    case lattice_val::top:
+      if (!m_parents.empty() || !m_classes.empty()) {
+        CRAB_ERROR(domain_name(),
+                   "::check_lattice_val: top must have empty maps");
+      }
+      break;
+    case lattice_val::neither_top_nor_bot:
+      if (m_parents.empty() && m_classes.empty()) {
+        CRAB_ERROR(domain_name(), "::check_lattice_val: neither-top-nor-bottom "
+                                  "must not be empty (it should be top)");
+      }
+      if (!m_parents.empty() && m_classes.empty()) {
+        CRAB_ERROR(domain_name(), "::check_lattice_val: m_parents is non-empty "
+                                  "but there are no equivalence classes");
+      }
+      // every element points to a representative that owns an equivalence class
+      // and every representative is self-parented
+      for (auto &kv : m_parents) {
+        const element_t &rep = kv.second;
+        auto pit = m_parents.find(rep);
+        if (pit == m_parents.end() || !(pit->second == rep)) {
+          CRAB_ERROR(domain_name(), "::check_lattice_val: representative ", rep,
+                     " of ", kv.first, " is not self-parented in m_parents");
+        }
+        if (m_classes.find(rep) == m_classes.end()) {
+          CRAB_ERROR(domain_name(), "::check_lattice_val: representative ", rep,
+                     " has no equivalence class in m_classes");
+        }
+      }
+      // every equivalence class is keyed by a self-parented representative
+      for (auto &kv : m_classes) {
+        const element_t &rep = kv.first;
+        auto pit = m_parents.find(rep);
+        if (pit == m_parents.end() || !(pit->second == rep)) {
+          CRAB_ERROR(domain_name(), "::check_lattice_val: class key ", rep,
+                     " is not a representative in m_parents");
+        }
+      }
+      break;
+    }
   }
 
   void print_elems_vector(crab::crab_os &o,
@@ -563,6 +633,7 @@ public:
       equivalence_class_t &ec_x = m_classes.at(rep_x);
       ec_x.set_absval(absval_ptr);
     }
+    check_lattice_val();
   }
 
   /// @brief get the domain value stored in current equivalent class
@@ -644,10 +715,11 @@ public:
   /// @brief Add y into the equivalence class of x
   /// @param x an element that may exist
   /// @param y an element that may exist
-  /// @note  if x does not exist, nothing changes.
+  /// @note  if x does not exist, a fresh class {x} is created first.
   ///        if y \in some cls, forget it from cls, add y into x's class
+  ///        adding an equality to top creates a class (top is not absorbing).
   void add(const element_t &x, const element_t &y) {
-    if (is_bottom() || is_top() || x == y) {
+    if (is_bottom() || x == y) {
       return;
     }
     if (!contains(x)) {
@@ -658,13 +730,15 @@ public:
     }
     element_t rep_x = find(x);
     m_parents.insert({y, rep_x});
+    check_lattice_val();
   }
   /**------------------ End union find APIs ------------------**/
 
   /**------------------ Begin domain APIs ------------------**/
-  // empty union-find
-  symbolic_variable_equality_domain(
-      lattice_val val = lattice_val::neither_top_nor_bot)
+  // A default-constructed domain is top (the empty union-find: no equalities
+  // known). It transitions to neither_top_nor_bot once an equality is recorded
+  // (via make_set, reached from set/add).
+  symbolic_variable_equality_domain(lattice_val val = lattice_val::top)
       : m_val(val) {}
   symbolic_variable_equality_domain(const this_domain_t &o) = default;
 
@@ -700,6 +774,8 @@ public:
 
   bool operator<=(const this_domain_t &e) const override {
     SVEQ_DOMAIN_SCOPED_STATS(".leq");
+    check_lattice_val();
+    e.check_lattice_val();
     if (is_bottom() || e.is_top()) {
       // _|_ <= e || this <= top
       return true;
@@ -862,7 +938,12 @@ public:
       }
       m_parents.erase(v);
     }
+    if (m_parents.empty()) {
+      // no equalities left: collapse back to top
+      set_to_top();
+    }
     normalize();
+    check_lattice_val();
     CRAB_LOG("symb-var-eq", crab::outs() << "After forget "; dump(););
   }
 
@@ -923,8 +1004,13 @@ public:
       equivalence_class_t ec = m_classes.at(rep);
       res.m_classes.insert({new_rep, ec});
     }
+    if (!res.m_parents.empty()) {
+      // res was default-constructed as top; mark it as a real state
+      res.set_neither_top_or_bottom();
+    }
     std::swap(res, *this);
     normalize();
+    check_lattice_val();
     CRAB_LOG("symb-var-eq", crab::outs() << "After projection "; dump(););
   }
 
@@ -988,6 +1074,7 @@ public:
     }
     std::swap(m_classes, new_classes);
 
+    check_lattice_val();
     CRAB_LOG("symb-var-eq", crab::outs() << "After renaming "; dump(););
   }
 

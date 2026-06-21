@@ -12,8 +12,10 @@ using namespace crab::domain_impl;
 using namespace ikos;
 
 using z_interval_domain_t = interval_domain<z_number, varname_t>;
-using test_domain_t =
-    crab::domains::symbolic_variable_equality_domain<z_interval_domain_t>;
+// Instantiate with checks enabled so the unit test always validates the
+// domain's internal representation in addition to its observable results.
+using test_domain_t = crab::domains::symbolic_variable_equality_domain<
+    z_interval_domain_t, crab::domains::SVEQCheckedParams>;
 using value_domain_t = symbolic_variable_equality_domain_impl::symbolic_var;
 
 // The *meaning* of an EqDom state is a partition of variables into equivalence
@@ -423,6 +425,17 @@ int main(int argc, char **argv) {
                      /*p1*/ {}, /*p2*/ {},
                      /*leq12*/ true, /*leq21*/ true,
                      /*join*/ {}, /*meet*/ {});
+  }
+
+  { // adding an equality to top must create a class (top is not absorbing)
+    crab::outs() << "==== case10 (add on top) ====\n";
+    test_domain_t dom; // default-constructed == top
+    check_bool("case10: fresh domain is top", dom.is_top(), true);
+    check_partition("case10: fresh domain has no equalities", dom, {v1, v2},
+                    {});
+    dom.add(v1, v2);
+    check_bool("case10: no longer top after add", dom.is_top(), false);
+    check_partition("case10: top.add(v1,v2)", dom, {v1, v2}, {{v1, v2}});
   }
 
   crab::outs() << "\n[SUMMARY] " << (g_checks - g_failures) << "/" << g_checks
