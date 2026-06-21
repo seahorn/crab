@@ -4,6 +4,8 @@
 #include <crab/domains/symbolic_variable_eq_domain.hpp>
 #include <crab/domains/intervals.hpp>
 
+#include <vector>
+
 using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
@@ -14,30 +16,165 @@ using test_domain_t =
     crab::domains::symbolic_variable_equality_domain<z_interval_domain_t>;
 using value_domain_t = symbolic_variable_equality_domain_impl::symbolic_var;
 
-int i = 0;
+// The *meaning* of an EqDom state is a partition of variables into equivalence
+// classes (variables sharing a class are known equal). We describe expected
+// results as partitions; variables not listed in any class are singletons
+// (equal to nothing).
+//
+// This test is self-contained: it never asks the domain "are x and y equal?"
+// (that query, equals(), is itself part of the code under test). Instead it
+// builds ground-truth reference domains from partitions and checks the computed
+// results using only the public lattice interface (<=, |, &). The whole
+// partition check reduces to entailment of single equalities:
+//   "dom entails a == b"  <=>  dom <= make_dom({{a, b}})
+// and <= is in turn pinned down by the asymmetric leq expectations in each case,
+// so a degenerate <= (always-true / always-false) cannot pass silently.
+using partition_t = std::vector<std::vector<z_var>>;
 
-void perfrom_domain_operations(const test_domain_t& dom1, const test_domain_t &dom2) {
-  crab::outs() << "---- case "<<i<<"---- \n";
-  crab::outs() << "Dom1=" << dom1 << "\n";
-  crab::outs() << "Dom2=" << dom2 << "\n";
-  bool r1 = dom1 <= dom2;
-  crab::outs() << "Dom1 <= Dom2 = " << (r1 ? "true" : "false") << "\n";
-  bool r2 = dom2 <= dom1;
-  crab::outs() << "Dom2 <= Dom1 = " << (r2 ? "true" : "false") << "\n";
-  test_domain_t dom3 = dom1 | dom2;
-  crab::outs() << "Dom3 = Dom1 | Dom2 = " << dom3 << "\n";
-  bool r3 = dom1 <= dom3;
-  bool r4 = dom2 <= dom3;
-  crab::outs() << "Dom1 <= Dom3 = " << (r3 ? "true" : "false") << "\n";
-  crab::outs() << "Dom2 <= Dom3 = " << (r4 ? "true" : "false") << "\n";
-  test_domain_t dom4 = dom1 & dom2;
-  crab::outs() << "Dom4 = Dom1 & Dom2 = " << dom4 << "\n";
-  bool r5 = dom4 <= dom1;
-  bool r6 = dom4 <= dom2;
-  crab::outs() << "Dom4 <= Dom1 = " << (r5 ? "true" : "false") << "\n";
-  crab::outs() << "Dom4 <= Dom2 = " << (r6 ? "true" : "false") << "\n";
-  i ++;
+namespace {
+unsigned g_checks = 0;
+unsigned g_failures = 0;
+
+// Trusted (pure test-side) oracle: are a and b in the same class of `parts`?
+bool expected_equal(const partition_t &parts, const z_var &a, const z_var &b) {
+  if (a == b) {
+    return true;
+  }
+  for (const auto &cls : parts) {
+    bool has_a = false, has_b = false;
+    for (const auto &v : cls) {
+      has_a = has_a || (v == a);
+      has_b = has_b || (v == b);
+    }
+    if (has_a && has_b) {
+      return true;
+    }
+  }
+  return false;
 }
+
+// Build a reference domain denoting exactly `parts`. A distinct symbolic value
+// per class avoids set()'s merge-on-equal-symbol behaviour.
+test_domain_t make_dom(const partition_t &parts) {
+  test_domain_t d;
+  uint32_t sym = 1000;
+  for (const auto &cls : parts) {
+    if (cls.size() < 2) {
+      continue; // singletons carry no equality
+    }
+    d.set(cls[0], value_domain_t(sym++));
+    for (unsigned i = 1; i < cls.size(); ++i) {
+      d.add(cls[0], cls[i]);
+    }
+  }
+  return d;
+}
+
+void print_partition(crab::crab_os &o, const partition_t &parts) {
+  o << "{";
+  bool first = true;
+  for (const auto &cls : parts) {
+    if (cls.size() < 2) {
+      continue;
+    }
+    if (!first) {
+      o << ", ";
+    }
+    first = false;
+    o << "[";
+    for (unsigned i = 0; i < cls.size(); ++i) {
+      if (i) {
+        o << ",";
+      }
+      o << cls[i];
+    }
+    o << "]";
+  }
+  o << "}";
+}
+
+// Verify that `dom` entails exactly the equalities in `expected` over
+// `universe`, using only <= against minimal reference domains. On any
+// disagreement, report the computed state, the expected partition, and each
+// offending pair with the reason.
+void check_partition(const std::string &what, const test_domain_t &dom,
+                     const std::vector<z_var> &universe,
+                     const partition_t &expected) {
+  ++g_checks;
+  struct mismatch_t {
+    z_var a, b;
+    bool expected_eq, actual_eq;
+  };
+  std::vector<mismatch_t> mismatches;
+  for (unsigned i = 0; i < universe.size(); ++i) {
+    for (unsigned j = i + 1; j < universe.size(); ++j) {
+      const z_var &a = universe[i];
+      const z_var &b = universe[j];
+      bool exp = expected_equal(expected, a, b);
+      bool act = dom <= make_dom({{a, b}}); // does dom entail a == b ?
+      if (exp != act) {
+        mismatches.push_back({a, b, exp, act});
+      }
+    }
+  }
+  if (mismatches.empty()) {
+    crab::outs() << "[PASS] " << what << "\n";
+    return;
+  }
+  ++g_failures;
+  crab::outs() << "[FAIL] " << what << "\n";
+  crab::outs() << "       computed : " << dom << "\n";
+  crab::outs() << "       expected : ";
+  print_partition(crab::outs(), expected);
+  crab::outs() << "\n       reason   :\n";
+  for (const auto &m : mismatches) {
+    crab::outs() << "         - expected " << m.a
+                 << (m.expected_eq ? " == " : " != ") << m.b
+                 << " but domain " << (m.actual_eq ? "entails " : "does not entail ")
+                 << m.a << " == " << m.b << "\n";
+  }
+}
+
+void check_bool(const std::string &what, bool actual, bool expected) {
+  ++g_checks;
+  if (actual == expected) {
+    crab::outs() << "[PASS] " << what << "\n";
+    return;
+  }
+  ++g_failures;
+  crab::outs() << "[FAIL] " << what << "\n";
+  crab::outs() << "       computed : " << (actual ? "true" : "false") << "\n";
+  crab::outs() << "       expected : " << (expected ? "true" : "false") << "\n";
+}
+
+// Exercise and verify <=, join and meet for a pair of domains:
+//  - the inputs are built as intended (catches accidental set()-merges),
+//  - leq holds in the expected directions,
+//  - join/meet produce the expected partitions,
+//  - the universal lattice laws hold (join is an upper bound, meet a lower one).
+void check_latticeops(const std::string &name, const test_domain_t &dom1,
+                      const test_domain_t &dom2,
+                      const std::vector<z_var> &universe, const partition_t &p1,
+                      const partition_t &p2, bool exp_leq_12, bool exp_leq_21,
+                      const partition_t &exp_join, const partition_t &exp_meet) {
+  crab::outs() << "==== " << name << " ====\n";
+  check_partition(name + ": dom1 built as intended", dom1, universe, p1);
+  check_partition(name + ": dom2 built as intended", dom2, universe, p2);
+
+  check_bool(name + ": dom1 <= dom2", dom1 <= dom2, exp_leq_12);
+  check_bool(name + ": dom2 <= dom1", dom2 <= dom1, exp_leq_21);
+
+  test_domain_t join = dom1 | dom2;
+  check_partition(name + ": join (dom1 | dom2)", join, universe, exp_join);
+  check_bool(name + ": dom1 <= join (upper bound)", dom1 <= join, true);
+  check_bool(name + ": dom2 <= join (upper bound)", dom2 <= join, true);
+
+  test_domain_t meet = dom1 & dom2;
+  check_partition(name + ": meet (dom1 & dom2)", meet, universe, exp_meet);
+  check_bool(name + ": meet <= dom1 (lower bound)", meet <= dom1, true);
+  check_bool(name + ": meet <= dom2 (lower bound)", meet <= dom2, true);
+}
+} // namespace
 
 int main(int argc, char **argv) {
   bool stats_enabled = false;
@@ -60,287 +197,240 @@ int main(int argc, char **argv) {
   z_var v11(vfac["v11"], crab::INT_TYPE, 32);
   z_var v12(vfac["v12"], crab::INT_TYPE, 32);
 
-  {
-    value_domain_t idom1(1),idom2(2),idom3(3); // some abstract domain values
+  // NOTE on set(): set(x, sym) merges x into any existing class that already
+  // stores the same symbolic value. So reusing an idom value across two set()
+  // calls in the same domain merges those classes -- this is intended (it is
+  // how object_domain establishes equalities), and a few cases below rely on it.
+  value_domain_t idom1(1), idom2(2), idom3(3); // distinct symbolic values
+
+  { // disjoint inputs: no shared equalities
     test_domain_t dom1, dom2;
-    // dom1 : {v1,v2}=>#var1
-    // dom2 : {v4,v5}=>#var2
     dom1.set(v1, idom1);
-    dom1.add(v1, v2);
-
+    dom1.add(v1, v2); // dom1 : {v1,v2}
     dom2.set(v4, idom2);
-    dom2.add(v4, v5);
-    /*
-    join: {}
-    no relation between dom1 and dom2
-    meet: {[v1,v2]=>#var0,[v4,v5]=>#var1}
-    */
-    perfrom_domain_operations(dom1, dom2);
-
-    test_domain_t dom4, dom5;
-    // dom4 : {v1,v2}=>#var1
-    // dom5 : {v4,v2}=>#var2
-    dom4.set(v1, idom1);
-    dom4.add(v1, v2);
-
-    dom5.set(v4, idom2);
-    dom5.add(v4, v2);
-    /*
-    join: {}
-    no relation between dom4 and dom5
-    meet: {[v1,v2,v4]=>#var0}
-    */
-    perfrom_domain_operations(dom4, dom5);
-
-    test_domain_t dom7, dom8;
-    // dom7 : {v2,v3}=>#var1, {v1,v5}=>#var3
-    // dom8 : {v1,v2}=>#var1
-
-    dom7.set(v2, idom1);
-    dom7.add(v2, v3);
-    dom7.set(v5, idom1);
-    dom7.add(v5, v1);
-
-    dom8.set(v1, idom2);
-    dom8.add(v1, v2);
-    /*
-    join: {}
-    no relation between dom7 and dom8
-    meet: {[v1,v2,v3,v5]=>#var0}
-    */
-    perfrom_domain_operations(dom7, dom8);
-
-    test_domain_t dom9, dom10;
-    // dom9 : {v1,v2}=>#var1, {v3,v4}=>#var3
-    // dom10 : {v1,v2}=>#var3
-    dom9.set(v1, idom1);
-    dom9.add(v1, v2);
-    dom9.set(v3, idom3);
-    dom9.add(v3, v4);
-
-    dom10.set(v1, idom3);
-    dom10.add(v1, v2);
-    /*
-    join: {[v1,v2]=>#var0}
-    dom9 <= dom10
-    meet: {[v1,v2]=>#var0,[v3,v4]=>#var1}
-    */
-    perfrom_domain_operations(dom9, dom10);
+    dom2.add(v4, v5); // dom2 : {v4,v5}
+    check_latticeops("case0 (disjoint)", dom1, dom2, {v1, v2, v4, v5},
+                     /*p1*/ {{v1, v2}}, /*p2*/ {{v4, v5}},
+                     /*leq12*/ false, /*leq21*/ false,
+                     /*join*/ {}, /*meet*/ {{v1, v2}, {v4, v5}});
   }
 
-  { // test all operations - level simple
-    value_domain_t idom1(1),idom2(2); // some abstract domain values
+  { // inputs share variable v2 but in different classes
     test_domain_t dom1, dom2;
-    // dom1 : {v1,v2,v3,v4}=>#var1
-    // dom2 : {v1,v2,v3}=>#var2
+    dom1.set(v1, idom1);
+    dom1.add(v1, v2); // dom1 : {v1,v2}
+    dom2.set(v4, idom2);
+    dom2.add(v4, v2); // dom2 : {v2,v4}
+    check_latticeops("case1 (share v2)", dom1, dom2, {v1, v2, v4},
+                     {{v1, v2}}, {{v2, v4}}, false, false,
+                     /*join*/ {}, /*meet*/ {{v1, v2, v4}});
+  }
 
+  { // set()-merge: reusing idom1 for v2 and v5 merges them into one class
+    test_domain_t dom1, dom2;
+    dom1.set(v2, idom1);
+    dom1.add(v2, v3);
+    dom1.set(v5, idom1); // merges v5 into {v2,v3} (same symbolic value)
+    dom1.add(v5, v1);    // dom1 : {v1,v2,v3,v5}
+    dom2.set(v1, idom2);
+    dom2.add(v1, v2);    // dom2 : {v1,v2}
+    check_latticeops("case2 (set-merge in dom1)", dom1, dom2, {v1, v2, v3, v5},
+                     {{v1, v2, v3, v5}}, {{v1, v2}},
+                     /*leq12*/ true, /*leq21*/ false,
+                     /*join*/ {{v1, v2}}, /*meet*/ {{v1, v2, v3, v5}});
+  }
+
+  { // refinement: dom1 has all of dom2's equalities and more
+    test_domain_t dom1, dom2;
+    dom1.set(v1, idom1);
+    dom1.add(v1, v2);
+    dom1.set(v3, idom3);
+    dom1.add(v3, v4); // dom1 : {v1,v2},{v3,v4}
+    dom2.set(v1, idom3);
+    dom2.add(v1, v2); // dom2 : {v1,v2}
+    check_latticeops("case3 (refinement)", dom1, dom2, {v1, v2, v3, v4},
+                     {{v1, v2}, {v3, v4}}, {{v1, v2}},
+                     /*leq12*/ true, /*leq21*/ false,
+                     /*join*/ {{v1, v2}}, /*meet*/ {{v1, v2}, {v3, v4}});
+  }
+
+  { // single class on each side + forget/rename/project
+    test_domain_t dom1, dom2;
     dom1.set(v1, idom1);
     dom1.add(v1, v2);
     dom1.add(v2, v3);
-    dom1.add(v3, v4);
-
+    dom1.add(v3, v4); // dom1 : {v1,v2,v3,v4}
     dom2.set(v2, idom2);
     dom2.add(v2, v1);
-    dom2.add(v1, v3);
-    /*
-    join: {v1,v2,v3}=>#var0
-    dom1 <= dom2
-    meet: {[v1,v2,v3,v4]=>#var0}
-    */
-    perfrom_domain_operations(dom1, dom2);
+    dom2.add(v1, v3); // dom2 : {v1,v2,v3}
+    check_latticeops("case4 (chain)", dom1, dom2, {v1, v2, v3, v4},
+                     {{v1, v2, v3, v4}}, {{v1, v2, v3}},
+                     /*leq12*/ true, /*leq21*/ false,
+                     /*join*/ {{v1, v2, v3}}, /*meet*/ {{v1, v2, v3, v4}});
 
-    test_domain_t dom5(dom1);
-    // dom 5: {[v1,v3,v4]=>#var1}
-    dom5 -= v2;
-    crab::outs() << "After forgetting " << v2 << " in Dom 1:" << dom5 << "\n";
+    test_domain_t forgotten(dom1);
+    forgotten -= v2; // drop v2 from {v1,v2,v3,v4}
+    check_partition("case4: forget v2", forgotten, {v1, v2, v3, v4},
+                    {{v1, v3, v4}});
 
-    test_domain_t dom6(dom1);
-    dom6.rename({v1,v2,v3,v4}, {v5,v6,v7,v8});
-    crab::outs() << "After renaming {v1,v2,v3,v4} with {v5,v6,v7,v8} in Dom1:" << dom6 << "\n";
+    test_domain_t renamed(dom1);
+    renamed.rename({v1, v2, v3, v4}, {v5, v6, v7, v8});
+    check_partition("case4: rename {v1..v4} -> {v5..v8}", renamed,
+                    {v1, v2, v3, v4, v5, v6, v7, v8}, {{v5, v6, v7, v8}});
 
-    test_domain_t dom7(dom1);
-    // dom 7: {[v1,v3]=>#var1}
-    dom7.project({v1,v3});
-    crab::outs() << "After projecting on v1 and v3 in Dom1:" << dom7 << "\n";
+    test_domain_t projected(dom1);
+    projected.project({v1, v3});
+    check_partition("case4: project on {v1,v3}", projected, {v1, v2, v3, v4},
+                    {{v1, v3}});
   }
 
-  { // test all operations - level moderate
-    value_domain_t idom1(1),idom2(2), idom3(3); // some abstract domain values
-    test_domain_t dom1, dom2, dom3;
-    // dom1 : {v1,v2}=>#var2, {v3,v4}=>#var3
-    // dom2 : {v2,v3}=>#var3, {v1,v4}=>#var1
-
+  { // two classes on each side, fully crossing + forget/rename/project
+    test_domain_t dom1, dom2;
     dom1.set(v1, idom2);
     dom1.add(v1, v2);
-
     dom1.set(v3, idom3);
-    dom1.add(v3, v4);
-
+    dom1.add(v3, v4); // dom1 : {v1,v2},{v3,v4}
     dom2.set(v2, idom3);
     dom2.add(v2, v3);
     dom2.set(v1, idom1);
-    dom2.add(v1, v4);
-    /*
-    join: {}
-    no relation between dom1 and dom2
-    meet: {[v1,v2,v3,v4]=>#var0}
-    */
-    perfrom_domain_operations(dom1, dom2);
-    test_domain_t dom5(dom1);
-    // dom 5: {[v3,v4]=>#var3} if normalization
-    // {[v1]=>#var2,[v3,v4]=>#var3} if not
-    dom5 -= v2;
-    crab::outs() << "After forgetting " << v2 << " in Dom 1:" << dom5 << "\n";
+    dom2.add(v1, v4); // dom2 : {v2,v3},{v1,v4}
+    check_latticeops("case5 (crossing)", dom1, dom2, {v1, v2, v3, v4},
+                     {{v1, v2}, {v3, v4}}, {{v2, v3}, {v1, v4}}, false, false,
+                     /*join*/ {}, /*meet*/ {{v1, v2, v3, v4}});
 
-    test_domain_t dom6(dom1);
-    dom6.rename({v1,v2,v3,v4}, {v5,v6,v7,v8});
-    crab::outs() << "After renaming {v1,v2,v3,v4} with {v5,v6,v7,v8} in Dom1:" << dom6 << "\n";
+    test_domain_t forgotten(dom1);
+    forgotten -= v2; // {v1,v2} loses v2 -> v1 becomes a singleton
+    check_partition("case5: forget v2", forgotten, {v1, v2, v3, v4},
+                    {{v3, v4}});
 
-    test_domain_t dom7(dom1);
-    // dom 7: {} if normalization
-    // {[v3]=>#var3,[v1]=>#var2}
-    dom7.project({v1,v3});
-    crab::outs() << "After projecting on v1 and v3 in Dom1:" << dom7 << "\n";
+    test_domain_t renamed(dom1);
+    renamed.rename({v1, v2, v3, v4}, {v5, v6, v7, v8});
+    check_partition("case5: rename {v1..v4} -> {v5..v8}", renamed,
+                    {v1, v2, v3, v4, v5, v6, v7, v8}, {{v5, v6}, {v7, v8}});
+
+    test_domain_t projected(dom1);
+    projected.project({v1, v3}); // v1,v3 are in different classes -> no equality
+    check_partition("case5: project on {v1,v3}", projected, {v1, v2, v3, v4},
+                    {});
   }
 
-  { // test all operations - level hard
-    value_domain_t idom1(1),idom2(2), idom3(3); // some abstract domain values
+  { // three classes on each side, heavily crossing
     test_domain_t dom1, dom2;
-    // dom1 : {v1,v2,v6,v8,v11}=>#var2, {v3,v7,v12}=>#var3, {v4,v5,v9,v10}=>#var1
-    // dom2 : {v2,v4,v5,v10,v12}=>#var3, {v6,v7,v8,v9}=>#var1, {v1,v3,v11}=>#var2
-
     dom1.set(v6, idom2);
     dom1.add(v6, v1);
     dom1.add(v1, v2);
     dom1.add(v6, v8);
     dom1.add(v8, v11);
-
     dom1.set(v3, idom3);
     dom1.add(v3, v7);
     dom1.add(v7, v12);
-
     dom1.set(v4, idom1);
     dom1.add(v4, v9);
     dom1.add(v4, v10);
     dom1.add(v4, v5);
-
+    // dom1 : {v1,v2,v6,v8,v11},{v3,v7,v12},{v4,v5,v9,v10}
     dom2.set(v5, idom3);
     dom2.add(v5, v12);
     dom2.add(v5, v4);
     dom2.add(v4, v10);
     dom2.add(v12, v2);
-
     dom2.set(v6, idom1);
     dom2.add(v6, v8);
     dom2.add(v6, v7);
     dom2.add(v7, v9);
-
     dom2.set(v3, idom2);
     dom2.add(v3, v11);
     dom2.add(v11, v1);
-    /*
-    join: {[v6,v8]=>#var0,[v1,v11]=>#var1,[v4,v5,v10]=>#var2}
-    no relation between dom1 and dom2
-    meet: {[v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12]=>#var0}
-    */
-    perfrom_domain_operations(dom1, dom2);
-    test_domain_t dom5(dom1);
-    // dom 5: {[v1,v6,v8,v11]=>#var2,[v3,v7,v12]=>#var3,[v4,v5,v9,v10]=>#var1}
-    dom5 -= v2;
-    crab::outs() << "After forgetting " << v2 << " in Dom 1: " << dom5 << "\n";
+    // dom2 : {v2,v4,v5,v10,v12},{v6,v7,v8,v9},{v1,v3,v11}
+    std::vector<z_var> all = {v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12};
+    check_latticeops(
+        "case6 (heavy crossing)", dom1, dom2, all,
+        {{v1, v2, v6, v8, v11}, {v3, v7, v12}, {v4, v5, v9, v10}},
+        {{v2, v4, v5, v10, v12}, {v6, v7, v8, v9}, {v1, v3, v11}}, false, false,
+        /*join*/ {{v6, v8}, {v1, v11}, {v4, v5, v10}},
+        /*meet*/
+        {{v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12}});
 
-    test_domain_t dom6(dom1);
-    // dom6: {} if normalization
-    // {[v3]=>#var3,[v1]=>#var2} if not
-    dom6.project({v1,v3});
-    crab::outs() << "After projecting on v1 and v3 in Dom1: " << dom6 << "\n";
+    test_domain_t forgotten(dom1);
+    forgotten -= v2;
+    check_partition("case6: forget v2", forgotten, all,
+                    {{v1, v6, v8, v11}, {v3, v7, v12}, {v4, v5, v9, v10}});
 
-    test_domain_t dom7(dom2);
-    // dom7: {[v1,v3]=>#var2}
-    dom7.project({v1,v3});
-    crab::outs() << "After projecting on v1 and v3 in Dom2: " << dom7 << "\n";
+    test_domain_t proj1(dom1);
+    proj1.project({v1, v3}); // different classes in dom1
+    check_partition("case6: project dom1 on {v1,v3}", proj1, all, {});
+
+    test_domain_t proj2(dom2);
+    proj2.project({v1, v3}); // same class {v1,v3,v11} in dom2
+    check_partition("case6: project dom2 on {v1,v3}", proj2, all, {{v1, v3}});
   }
 
-  {// test for all operations - level hard
-    value_domain_t idom1(1),idom2(2), idom3(3); // some abstract domain values
+  { // set()-merge: reusing idom3 for v10 and v11 collapses dom2 into one class
     test_domain_t dom1, dom2;
-    // dom1 : {v1,v2,v3,v4,v12}=>#var2, {v10,v11}=>#var3
-    // dom2 : {v2,v3,v10}=>#var3, {v4,v12,v11}=>#var1
     dom1.set(v12, idom2);
     dom1.add(v12, v1);
     dom1.add(v12, v2);
     dom1.add(v12, v3);
     dom1.add(v12, v4);
-
     dom1.set(v11, idom3);
-    dom1.add(v11, v10);
-
+    dom1.add(v11, v10); // dom1 : {v1,v2,v3,v4,v12},{v10,v11}
     dom2.set(v10, idom3);
     dom2.add(v10, v2);
     dom2.add(v10, v3);
-
-    dom2.set(v11, idom3);
+    dom2.set(v11, idom3); // merges v11 into {v2,v3,v10} (same symbolic value)
     dom2.add(v11, v4);
-    dom2.add(v4, v12);
+    dom2.add(v4, v12); // dom2 : {v2,v3,v4,v10,v11,v12}
+    std::vector<z_var> univ = {v1, v2, v3, v4, v10, v11, v12};
+    check_latticeops("case7 (set-merge in dom2)", dom1, dom2, univ,
+                     {{v1, v2, v3, v4, v12}, {v10, v11}},
+                     {{v2, v3, v4, v10, v11, v12}}, false, false,
+                     /*join*/ {{v2, v3, v4, v12}, {v10, v11}},
+                     /*meet*/ {{v1, v2, v3, v4, v10, v11, v12}});
 
-    /*
-    join: {[v2,v3]=>#var0}
-    no relation between dom1 and dom2
-    meet: {[v1,v2,v3,v4,v10,v11,v12]=>#var0}
-    */
-    perfrom_domain_operations(dom1, dom2);
-    test_domain_t dom5(dom1);
-    dom5 -= v10;
-    crab::outs() << "After forgetting " << v10 << " in Dom 1: " << dom5 << "\n";
-    // dom5 = dom1.project(v10) := { {v1,v2,v3,v4,v12}=>#var2} } if normalization
-    // dom5 := { {v1,v2,v3,v4,v12}=>#var2, {v11}=>#var3 }
+    test_domain_t forgotten(dom1);
+    forgotten -= v10; // {v10,v11} loses v10 -> v11 becomes a singleton
+    check_partition("case7: forget v10", forgotten, univ,
+                    {{v1, v2, v3, v4, v12}});
 
-    test_domain_t dom6(dom1);
-    // dom6: {[v3,v1]=>#var0}
-    dom6.project({v1,v3});
-    crab::outs() << "After projecting on v1 and v3 in Dom1: " << dom6 << "\n";
+    test_domain_t proj1(dom1);
+    proj1.project({v1, v3}); // same class in dom1
+    check_partition("case7: project dom1 on {v1,v3}", proj1, univ, {{v1, v3}});
 
-    test_domain_t dom7(dom2);
-    // dom7: {[v1,v3]=>#var2}
-    // dom7: {} if normalization
-    // {v3}=>#var3 if not
-    dom7.project({v1,v3});
-    crab::outs() << "After projecting on v1 and v3 in Dom2: " << dom7 << "\n";
+    test_domain_t proj2(dom2);
+    proj2.project({v1, v3}); // v1 not in dom2 -> no equality
+    check_partition("case7: project dom2 on {v1,v3}", proj2, univ, {});
   }
 
-  {// test operation for object domain
-    value_domain_t idom1(1),idom2(2), idom3(3); // some abstract domain values
+  { // object-domain-like: dom2 refines into dom1's first class only
     test_domain_t dom1, dom2;
-    // dom1 : {v1,v2}=>#var1, {v3,v4}=>#var3
-    // dom2 : {v1,v2}=>#var3, {v3}=>#var2
     dom1.set(v1, idom1);
     dom1.add(v1, v2);
     dom1.set(v3, idom3);
-    dom1.add(v3, v4);
-
+    dom1.add(v3, v4); // dom1 : {v1,v2},{v3,v4}
     dom2.set(v1, idom3);
-    dom2.add(v1, v2);
-    /*
-    join: {[v1,v2]=>#var0}
-    dom1 <= dom2
-    meet: {[v1,v2]=>#var0,[v3,v4]=>#var1}
-    */
-    perfrom_domain_operations(dom1, dom2);
+    dom2.add(v1, v2); // dom2 : {v1,v2}
+    check_latticeops("case8 (object-like)", dom1, dom2, {v1, v2, v3, v4},
+                     {{v1, v2}, {v3, v4}}, {{v1, v2}},
+                     /*leq12*/ true, /*leq21*/ false,
+                     /*join*/ {{v1, v2}}, /*meet*/ {{v1, v2}, {v3, v4}});
   }
 
-  {
-    value_domain_t idom1(1), idom2(2), idom3(3); // some abstract domain values
+  { // singletons only: both states carry no equalities (equiv. to top)
     test_domain_t dom1, dom2;
-    // dom1 : {v4}=>#var3
-    // dom2 : {v3}=>#var2
-    dom1.set(v4, idom3);
-
-    dom2.set(v3, idom2);
-    /*
-    join: {}
-    dom1 <= dom2, dom2 <= dom1
-    meet: {[v4]=>#var3,[v3]=>#var2}
-    */
-    perfrom_domain_operations(dom1, dom2);
+    dom1.set(v4, idom3); // dom1 : {v4} (singleton)
+    dom2.set(v3, idom2); // dom2 : {v3} (singleton)
+    check_latticeops("case9 (singletons)", dom1, dom2, {v3, v4},
+                     /*p1*/ {}, /*p2*/ {},
+                     /*leq12*/ true, /*leq21*/ true,
+                     /*join*/ {}, /*meet*/ {});
   }
+
+  crab::outs() << "\n[SUMMARY] " << (g_checks - g_failures) << "/" << g_checks
+               << " checks passed\n";
+  if (g_failures > 0) {
+    crab::outs() << "[SUMMARY] " << g_failures << " check(s) FAILED\n";
+    return 1;
+  }
+  crab::outs() << "[SUMMARY] all checks passed\n";
+  return 0;
 }
