@@ -944,6 +944,10 @@ public:
              crab::outs() << " to ";
              print_elems_vector(crab::outs(), new_elements);
              crab::outs() << "\n"; dump(););
+
+    // Build the substitution old_v |-> new_v for the elements that actually
+    // exist. rename() assumes each new element is fresh (does not exist yet).
+    parents_map_t subst;
     for (unsigned i = 0, size = old_elements.size(); i < size; ++i) {
       const element_t &old_v = old_elements[i];
       const element_t &new_v = new_elements[i];
@@ -954,33 +958,36 @@ public:
         CRAB_ERROR(domain_name(), "::rename assumes that ", new_v,
                    " does not exist");
       }
-      boost::optional<element_t> parent_old_v;
-      for (auto it = m_parents.begin(), et = m_parents.end(); it != et;) {
-        if ((*it).first == old_v) {
-          // find it as key, remove it
-          parent_old_v = (*it).second;
-          it = m_parents.erase(it);
-        } else if ((*it).second == old_v) {
-          // find it as representative
-          (*it).second = new_v;
-          ++it;
-        } else {
-          ++it;
-        }
-        if (parent_old_v) {
-          // insert a key-value pair for new_v
-          m_parents.insert(
-              {new_v, (*parent_old_v == old_v ? new_v : *parent_old_v)});
-          auto it = m_classes.find(old_v);
-          if (it != m_classes.end()) {
-            // update m_classes
-            equivalence_class_t ec = it->second;
-            m_classes.erase(it);
-            m_classes.insert({new_v, std::move(ec)});
-          }
-        }
-      }
+      subst.insert({old_v, new_v});
     }
+    if (subst.empty()) {
+      return;
+    }
+
+    // Apply the substitution to a single element.
+    auto rename_elem = [&subst](const element_t &e) -> element_t {
+      auto it = subst.find(e);
+      return it == subst.end() ? e : it->second;
+    };
+
+    // An element appears in m_parents both as a key (every element) and, when
+    // it is a representative, as a value (its members point to it). Both sides
+    // may be renamed, so rewrite the whole map in one pass.
+    parents_map_t new_parents;
+    new_parents.reserve(m_parents.size());
+    for (auto &kv : m_parents) {
+      new_parents.insert({rename_elem(kv.first), rename_elem(kv.second)});
+    }
+    std::swap(m_parents, new_parents);
+
+    // m_classes is keyed by representative, so only the key may be renamed.
+    classes_map_t new_classes;
+    new_classes.reserve(m_classes.size());
+    for (auto &kv : m_classes) {
+      new_classes.insert({rename_elem(kv.first), std::move(kv.second)});
+    }
+    std::swap(m_classes, new_classes);
+
     CRAB_LOG("symb-var-eq", crab::outs() << "After renaming "; dump(););
   }
 
