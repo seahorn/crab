@@ -810,7 +810,7 @@ public:
   widening_thresholds(const this_domain_t &abs,
                       const thresholds<number_t> &ts) const override {
     SVEQ_DOMAIN_SCOPED_STATS(".widening");
-    return *this;
+    return this->operator|(abs);
   }
 
   /// @brief expand what x is equal to into y. This is equivalent to \c add(x,y)
@@ -1084,11 +1084,9 @@ public:
   void caller_continuation(const callsite_info<variable_t> &callsite,
                            const this_domain_t &callee) override {
     SVEQ_DOMAIN_SCOPED_STATS(".caller_cont");
-    inter_abstract_operations<
-        this_domain_t,
-        DomainParams::implement_inter_transformers>::callee_entry(callsite,
-                                                                  callee,
-                                                                  *this);
+    inter_abstract_operations<this_domain_t,
+                              DomainParams::implement_inter_transformers>::
+        caller_continuation(callsite, callee, *this);
   }
   /**------------------ End domain APIs ------------------**/
   // WARN: a special function to check equivalence classes over two domain
