@@ -2,7 +2,6 @@
 #include "../program_options.hpp"
 
 #include <crab/domains/symbolic_variable_eq_domain.hpp>
-#include <crab/domains/intervals.hpp>
 
 #include <vector>
 

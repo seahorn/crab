@@ -1035,7 +1035,7 @@ public:
       CRAB_ERROR(domain_name(),
                  "::rename with input vectors of different sizes");
     }
-    CRAB_LOG("symb-var-eq", crab::outs() << "Renamimg ";
+    CRAB_LOG("symb-var-eq", crab::outs() << "Renaming ";
              print_elems_vector(crab::outs(), old_elements);
              crab::outs() << " to ";
              print_elems_vector(crab::outs(), new_elements);
