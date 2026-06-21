@@ -241,6 +241,29 @@ private:
         symbolic_variable_equality_domain_impl::symbolic_var>();
   }
 
+  // True iff some class in this state already stores symbol `sym`.
+  bool symb_val_in_use(const domain_t &sym) const {
+    for (const auto &kv : m_classes) {
+      auto absval = kv.second.get_absval();
+      if (absval && *absval == sym) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Allocate a fresh symbol guaranteed distinct from every class currently in
+  // this state, so each equivalence class keeps a unique symbol id. The global
+  // counter is monotonic, so this only loops if an explicitly-assigned symbol
+  // happens to fall in the counter's range.
+  domain_t get_fresh_unused_symb_var() const {
+    domain_t fresh = __get_fresh_symb_var();
+    while (symb_val_in_use(fresh)) {
+      fresh = __get_fresh_symb_var();
+    }
+    return fresh;
+  }
+
   /// @brief Build a map from representative to an ordered set with all the
   /// elements in the equivalence class.
   /// @return a map computed as brief described.
@@ -437,6 +460,11 @@ private:
     if (contains(v)) {
       CRAB_ERROR(domain_name(), "::", __func__, " the new element ", v,
                  " is already consisted in ", *this);
+    }
+    if (DomainParams::check_lattice_val && val && symb_val_in_use(*val)) {
+      // each equivalence class must carry a distinct symbol
+      CRAB_ERROR(domain_name(), "::", __func__, " symbol #var", val->value(),
+                 " is already used by another class in ", *this);
     }
 
     m_parents.insert({v, v});
@@ -728,7 +756,11 @@ public:
       return;
     }
     if (!contains(x)) {
-      set(x, this_domain_t::__get_fresh_symb_var());
+      // Create an isolated fresh class for x with a symbol distinct from every
+      // existing class. Going through set() with a plain fresh id could instead
+      // fold x into an unrelated class if that id collides with an explicitly-
+      // assigned symbol already in the state.
+      try_make_set_by_raw_val(x, get_fresh_unused_symb_var());
     }
     if (contains(y)) {
       *this -= y;

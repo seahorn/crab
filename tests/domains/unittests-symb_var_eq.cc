@@ -471,6 +471,20 @@ int main(int argc, char **argv) {
                n_eq == csts.size(), true);
   }
 
+  { // add() must not merge into an unrelated class when its fresh symbol id
+    // collides with an explicitly-assigned symbol already in the state
+    crab::outs() << "==== case13 (fresh-symbol collision) ====\n";
+    value_domain_t probe =
+        symbolic_variable_equality_domain_impl::make_fresh_var_symbol<
+            value_domain_t>();
+    test_domain_t dom;
+    // tag {v9} with the id the next add()-fresh would otherwise pick
+    dom.set(v9, value_domain_t(probe.value() + 1));
+    dom.add(v10, v11); // intends {v10,v11}; must leave v9 in its own class
+    check_partition("case13: add does not pull in the colliding class", dom,
+                    {v9, v10, v11}, {{v10, v11}});
+  }
+
   crab::outs() << "\n[SUMMARY] " << (g_checks - g_failures) << "/" << g_checks
                << " checks passed\n";
   if (g_failures > 0) {
