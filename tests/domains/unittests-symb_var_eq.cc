@@ -438,6 +438,19 @@ int main(int argc, char **argv) {
     check_partition("case10: top.add(v1,v2)", dom, {v1, v2}, {{v1, v2}});
   }
 
+  { // normalize drops singleton classes (no equality), collapsing to top
+    crab::outs() << "==== case11 (normalize) ====\n";
+    test_domain_t dom;
+    dom.set(v1, idom1); // a lone class {v1} carries no equality
+    check_bool("case11: singleton present before normalize", dom.is_top(),
+               false);
+    dom.normalize();
+    check_bool("case11: singleton dropped by normalize (now top)", dom.is_top(),
+               true);
+    check_partition("case11: normalized state has no equalities", dom, {v1, v2},
+                    {});
+  }
+
   crab::outs() << "\n[SUMMARY] " << (g_checks - g_failures) << "/" << g_checks
                << " checks passed\n";
   if (g_failures > 0) {

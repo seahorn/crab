@@ -125,6 +125,9 @@ public:
   // when non-zero, domain operations validate their internal representation
   // (see check_lattice_val). Off by default so normal analyses pay nothing.
   enum { check_lattice_val = 0 };
+  // when non-zero, operations drop singleton classes (which carry no equality)
+  // so a singleton-only state collapses to top. On by default.
+  enum { normalize = 1 };
 };
 
 // Like SVEQDefaultParams but with internal consistency checks enabled. Use for
@@ -133,6 +136,17 @@ class SVEQCheckedParams {
 public:
   enum { implement_inter_transformers = 0 };
   enum { check_lattice_val = 1 };
+  enum { normalize = 1 };
+};
+
+// Like SVEQDefaultParams but keeps singleton classes (disables normalize). Use
+// where a lone element's class must be retained, e.g. object_domain's field /
+// register equalities.
+class SVEQNoNormalizeParams {
+public:
+  enum { implement_inter_transformers = 0 };
+  enum { check_lattice_val = 0 };
+  enum { normalize = 0 };
 };
 
 #define SVEQ_DOMAIN_SCOPED_STATS(NAME) CRAB_DOMAIN_SCOPED_STATS(this, NAME, 1)
@@ -517,6 +531,25 @@ private:
     }
   }
 
+  // True iff this state encodes no equalities, i.e. it is semantically top:
+  // either flagged top, or every class is a singleton (each element is its own
+  // representative). Lets leq treat a not-yet-normalized singleton-only state
+  // the same as top.
+  bool has_no_equalities() const {
+    if (is_top()) {
+      return true;
+    }
+    if (is_bottom()) {
+      return false;
+    }
+    for (auto &kv : m_parents) {
+      if (!(kv.first == kv.second)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   void print_elems_vector(crab::crab_os &o,
                           const std::vector<element_t> &elems) const {
     o << "[";
@@ -779,9 +812,14 @@ public:
     if (is_bottom() || e.is_top()) {
       // _|_ <= e || this <= top
       return true;
-    } else if (is_top() || e.is_bottom()) {
-      // top >= e || this >= _|_
+    } else if (e.is_bottom()) {
+      // this (non-_|_) is not <= _|_
       return false;
+    } else if (is_top()) {
+      // top has no equalities, so top <= e iff e has none either (e may be
+      // top-like without being flagged top, e.g. a not-yet-normalized
+      // singleton)
+      return e.has_no_equalities();
     }
     CRAB_LOG("symb-var-eq-leq", crab::outs() << "Inclusion test: "; dump();
              crab::outs() << " and "; e.dump(););
@@ -1084,14 +1122,38 @@ public:
   }
 
   /// @brief A normalization function to produce a standard form
-  /// @note  Although our equality domain should perform normalization to
-  /// eliminate any class such as:
-  ///          {v3}=>#var5
-  /// this is not what we expect, since the equality domain is also used for
-  /// keeping equality between fields and registers. In that case, we split
-  /// equalities into two subdomains, so this should not affect that
-  /// implementation
-  void normalize() override { SVEQ_DOMAIN_SCOPED_STATS(".normalize"); }
+  /// @note  Drops singleton classes such as {v3}=>#var5: a class with a single
+  /// element conveys no equality, so removing it brings the state closer to top
+  /// (and a singleton-only state becomes top). Enabled by
+  /// DomainParams::normalize, which is on by default. It can be turned off (see
+  /// SVEQNoNormalizeParams) when the domain keeps equalities between fields and
+  /// registers and singleton classes must be retained.
+  void normalize() override {
+    SVEQ_DOMAIN_SCOPED_STATS(".normalize");
+    if (!DomainParams::normalize) {
+      return;
+    }
+    if (is_top() || is_bottom()) {
+      return;
+    }
+    // Count members per representative.
+    std::unordered_map<element_t, unsigned> class_size;
+    for (auto &kv : m_parents) {
+      class_size[kv.second]++;
+    }
+    // Drop singletons (a representative whose only member is itself).
+    for (auto it = m_parents.begin(); it != m_parents.end();) {
+      if (class_size[it->second] == 1) {
+        m_classes.erase(it->second);
+        it = m_parents.erase(it);
+      } else {
+        ++it;
+      }
+    }
+    if (m_parents.empty()) {
+      set_to_top();
+    }
+  }
 
   void write(crab_os &o) const override {
     if (is_top()) {
