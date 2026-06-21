@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
     dom9 <= dom10
     meet: {[v1,v2]=>#var0,[v3,v4]=>#var1}
     */
-    perfrom_domain_operations(dom1, dom2);
+    perfrom_domain_operations(dom9, dom10);
   }
 
   { // test all operations - level simple
@@ -291,7 +291,7 @@ int main(int argc, char **argv) {
     perfrom_domain_operations(dom1, dom2);
     test_domain_t dom5(dom1);
     dom5 -= v10;
-    crab::outs() << "After forgetting " << v2 << " in Dom 1: " << dom5 << "\n";
+    crab::outs() << "After forgetting " << v10 << " in Dom 1: " << dom5 << "\n";
     // dom5 = dom1.project(v10) := { {v1,v2,v3,v4,v12}=>#var2} } if normalization
     // dom5 := { {v1,v2,v3,v4,v12}=>#var2, {v11}=>#var3 }
 
