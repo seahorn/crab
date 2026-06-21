@@ -4,7 +4,6 @@
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/constant.hpp>
-#include <crab/domains/symbolic_variable_eq_domain.hpp>
 #include <crab/domains/term/term_operators.hpp>
 #include <crab/domains/union_find_domain.hpp>
 #include <crab/support/stats.hpp>
@@ -14,7 +13,7 @@
 namespace crab {
 namespace domains {
 
-namespace symbolic_variable_equiality_domain_impl {
+namespace symbolic_variable_equality_domain_impl {
 class symbolic_var {
   using this_domain_t = symbolic_var;
 
@@ -118,7 +117,7 @@ void print_unordered_map(crab::crab_os &o,
   }
   o << "}";
 }
-} // namespace symbolic_variable_equiality_domain_impl
+} // namespace symbolic_variable_equality_domain_impl
 
 class SVEQDefaultParams {
 public:
@@ -137,12 +136,12 @@ public:
 /// domain in the object domain
 /// @tparam DomainParams domain parameter for inter-procedural analysis
 template <class BaseDomain, class DomainParams = SVEQDefaultParams>
-class symbolic_variable_equiality_domain final
+class symbolic_variable_equality_domain final
     : public abstract_domain_api<
-          symbolic_variable_equiality_domain<BaseDomain, DomainParams>> {
+          symbolic_variable_equality_domain<BaseDomain, DomainParams>> {
 public:
   using symb_eq_domain_t =
-      symbolic_variable_equiality_domain<BaseDomain, DomainParams>;
+      symbolic_variable_equality_domain<BaseDomain, DomainParams>;
   using abstract_domain_t = abstract_domain_api<symb_eq_domain_t>;
 
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
@@ -160,11 +159,11 @@ public:
   // typedefs for equality domain
   using element_t = variable_t;
   using element_set_t = std::vector<element_t>;
-  using domain_t = class symbolic_variable_equiality_domain_impl::symbolic_var;
+  using domain_t = class symbolic_variable_equality_domain_impl::symbolic_var;
   using var_id_t = typename domain_t::var_id_t;
   using parents_map_t = std::unordered_map<element_t, element_t>;
   using equivalence_class_t =
-      symbolic_variable_equiality_domain_impl::equivalence_class<domain_t>;
+      symbolic_variable_equality_domain_impl::equivalence_class<domain_t>;
   using equivalence_class_elems_t =
       std::unordered_map<element_t, element_set_t>;
 
@@ -182,7 +181,7 @@ private:
 
   lattice_val m_val;
   // For example,
-  // The disjoint set for a state of symbolic_variable_equiality_domain<int>:
+  // The disjoint set for a state of symbolic_variable_equality_domain<int>:
   // { 1, 2, 5 } |-> #var1
   // { 4, 3 } |-> #var2
   // { 6 } |-> #var3
@@ -228,8 +227,8 @@ private:
   }
 
   static domain_t __get_fresh_symb_var() {
-    return symbolic_variable_equiality_domain_impl::make_fresh_var_symbol<
-        symbolic_variable_equiality_domain_impl::symbolic_var>();
+    return symbolic_variable_equality_domain_impl::make_fresh_var_symbol<
+        symbolic_variable_equality_domain_impl::symbolic_var>();
   }
 
   /// @brief Build a map from representative to an ordered set with all the
@@ -664,12 +663,12 @@ public:
 
   /**------------------ Begin domain APIs ------------------**/
   // empty union-find
-  symbolic_variable_equiality_domain(
+  symbolic_variable_equality_domain(
       lattice_val val = lattice_val::neither_top_nor_bot)
       : m_val(val) {}
-  symbolic_variable_equiality_domain(const this_domain_t &o) = default;
+  symbolic_variable_equality_domain(const this_domain_t &o) = default;
 
-  symbolic_variable_equiality_domain(this_domain_t &&o) = default;
+  symbolic_variable_equality_domain(this_domain_t &&o) = default;
   this_domain_t &operator=(const this_domain_t &o) = default;
   this_domain_t &operator=(this_domain_t &&o) = default;
 
@@ -1035,7 +1034,7 @@ public:
       print_classes_vals(crab::outs());
       crab::outs() << ")";
       crab::outs() << "HashTable=";
-      symbolic_variable_equiality_domain_impl::print_unordered_map<element_t,
+      symbolic_variable_equality_domain_impl::print_unordered_map<element_t,
                                                                    element_t>(
           crab::outs(), m_parents);
     }
@@ -1102,7 +1101,7 @@ public:
 
 template <typename BaseDomain, typename DomainParams>
 struct abstract_domain_traits<
-    symbolic_variable_equiality_domain<BaseDomain, DomainParams>> {
+    symbolic_variable_equality_domain<BaseDomain, DomainParams>> {
   using number_t = typename BaseDomain::number_t;
   using varname_t = typename BaseDomain::varname_t;
 };

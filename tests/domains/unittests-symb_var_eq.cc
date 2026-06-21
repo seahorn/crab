@@ -11,8 +11,8 @@ using namespace ikos;
 
 using z_interval_domain_t = interval_domain<z_number, varname_t>;
 using test_domain_t =
-    crab::domains::symbolic_variable_equiality_domain<z_interval_domain_t>;
-using value_domain_t = symbolic_variable_equiality_domain_impl::symbolic_var;
+    crab::domains::symbolic_variable_equality_domain<z_interval_domain_t>;
+using value_domain_t = symbolic_variable_equality_domain_impl::symbolic_var;
 
 int i = 0;
 
