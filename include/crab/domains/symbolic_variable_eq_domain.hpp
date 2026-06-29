@@ -4,7 +4,6 @@
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/constant.hpp>
-#include <crab/domains/term/term_operators.hpp>
 #include <crab/support/stats.hpp>
 
 #include <boost/optional.hpp>
@@ -18,87 +17,18 @@ namespace crab {
 namespace domains {
 
 namespace symbolic_variable_equality_domain_impl {
-class symbolic_var {
-  using this_domain_t = symbolic_var;
+// Identifier of an equivalence class. Two variables are known equal when their
+// classes carry the same id. Ids only need to be distinct within a single
+// state. We tag classes with ids (rather than a representative variable) so the
+// same value identity can be referenced across domains (e.g. object_domain's
+// field/register equalities).
+using class_id_t = uint32_t;
 
-public:
-  using var_id_t = uint32_t;
-
-private:
-  var_id_t m_var;
-
-public:
-  explicit symbolic_var(var_id_t var) : m_var(var) {}
-  symbolic_var(const this_domain_t &o) = default;
-  symbolic_var(this_domain_t &&o) = default;
-  this_domain_t &operator=(const this_domain_t &o) = default;
-  this_domain_t &operator=(this_domain_t &&o) = default;
-
-  var_id_t value() const { return m_var; }
-
-  void write(crab_os &o) const { o << "#var" << m_var; }
-
-  bool operator==(const this_domain_t &o) const { return m_var == o.m_var; }
-
-  friend class crab::crab_os &operator<<(crab::crab_os &o,
-                                         const this_domain_t &dom) {
-    dom.write(o);
-    return o;
-  }
-};
-
-template <class SYMBVAR> SYMBVAR make_fresh_var_symbol() {
-  return SYMBVAR(term::term_op_val_generator_t::get_next_val());
-}
-
-/// @brief a copy-on-write wrapper for the domain value
-/// @tparam Domain the type of equality domain
-template <class Domain> class equivalence_class {
-private:
-  using this_class_t = equivalence_class<Domain>;
-  std::shared_ptr<Domain> m_val;
-
-  // Copy-on-write: always call this function before get_absval() if
-  // m_val might be modified.
-  void detach_absval() { m_val.reset(new Domain(*m_val)); }
-
-public:
-  explicit equivalence_class(std::shared_ptr<Domain> val)
-      : m_val(val) {} // avoid copy initialization
-
-  std::shared_ptr<Domain> detach_and_get_absval() {
-    if (m_val.use_count() > 1) {
-      detach_absval();
-    }
-    return m_val;
-  }
-
-  std::shared_ptr<const Domain> get_absval() const { return m_val; }
-
-  void set_absval(std::shared_ptr<Domain> val) { m_val = val; }
-
-  bool value_equals(const this_class_t &o) const {
-    return m_val && o.m_val && *m_val == *(o.m_val);
-  }
-}; // end class equivalence_class
-
-/// @brief helper function for logging and debugging map
-/// @tparam Key the type of value for keys
-/// @tparam Value the type of value for values
-/// @param o crab os stream
-/// @param m unordered map object
-template <typename Key, typename Value>
-void print_unordered_map(crab::crab_os &o,
-                         std::unordered_map<Key, Value> const &m) {
-  o << "{";
-  for (auto it = m.begin(), et = m.end(); it != et;) {
-    o << it->first << " => " << it->second;
-    ++it;
-    if (it != et) {
-      o << ", ";
-    }
-  }
-  o << "}";
+// Allocate a globally-fresh class id from a self-contained monotonic counter
+// shared across all domain instances. Assumes single-threaded use.
+inline class_id_t fresh_class_id() {
+  static class_id_t counter = 0;
+  return counter++;
 }
 } // namespace symbolic_variable_equality_domain_impl
 
@@ -169,17 +99,14 @@ public:
   // typedefs for equality domain
   using element_t = variable_t;
   using element_set_t = std::vector<element_t>;
-  using domain_t = class symbolic_variable_equality_domain_impl::symbolic_var;
-  using var_id_t = typename domain_t::var_id_t;
+  using class_id_t = symbolic_variable_equality_domain_impl::class_id_t;
   using parents_map_t = std::unordered_map<element_t, element_t>;
-  using equivalence_class_t =
-      symbolic_variable_equality_domain_impl::equivalence_class<domain_t>;
   using equivalence_class_elems_t =
       std::unordered_map<element_t, element_set_t>;
 
 private:
   using this_domain_t = symb_eq_domain_t;
-  using classes_map_t = std::unordered_map<element_t, equivalence_class_t>;
+  using classes_map_t = std::unordered_map<element_t, class_id_t>;
   enum class lattice_val { bottom, top, neither_top_nor_bot };
 
   // a map that stores a variable to its immediate representative
@@ -217,51 +144,38 @@ private:
     m_classes.clear();
   }
 
-  void try_make_set_by_raw_val(const element_t &v, domain_t absval) {
+  void try_make_set_by_raw_val(const element_t &v, class_id_t id) {
     if (!contains(v)) {
-      std::shared_ptr<domain_t> absval_ptr =
-          std::make_shared<domain_t>(std::move(absval));
-      make_set(v, absval_ptr);
+      make_set(v, id);
     }
   }
 
-  boost::optional<const element_t>
-  check_symb_val_exists(const std::shared_ptr<domain_t> absval_ptr) const {
-    equivalence_class_t absval_cls = equivalence_class_t(absval_ptr);
+  // Return the representative of the class currently tagged with `id`, if any.
+  // Backs the "same id => same class" rule: set()/add() merge into the existing
+  // class instead of duplicating the id.
+  boost::optional<element_t> rep_with_class_id(class_id_t id) const {
     for (const auto &kv : m_classes) {
-      if (kv.second.value_equals(absval_cls)) {
+      if (kv.second == id) {
         return kv.first;
       }
     }
     return boost::none;
   }
 
-  static domain_t __get_fresh_symb_var() {
-    return symbolic_variable_equality_domain_impl::make_fresh_var_symbol<
-        symbolic_variable_equality_domain_impl::symbolic_var>();
+  static class_id_t fresh_class_id() {
+    return symbolic_variable_equality_domain_impl::fresh_class_id();
   }
 
-  // True iff some class in this state already stores symbol `sym`.
-  bool symb_val_in_use(const domain_t &sym) const {
-    for (const auto &kv : m_classes) {
-      auto absval = kv.second.get_absval();
-      if (absval && *absval == sym) {
-        return true;
-      }
+  // Allocate a fresh id guaranteed distinct from every class currently in this
+  // state, so each equivalence class keeps a unique id. The counter is
+  // monotonic, so this only loops if an explicitly-assigned id happens to fall
+  // in the counter's range.
+  class_id_t get_fresh_unused_class_id() const {
+    class_id_t id = fresh_class_id();
+    while (rep_with_class_id(id)) {
+      id = fresh_class_id();
     }
-    return false;
-  }
-
-  // Allocate a fresh symbol guaranteed distinct from every class currently in
-  // this state, so each equivalence class keeps a unique symbol id. The global
-  // counter is monotonic, so this only loops if an explicitly-assigned symbol
-  // happens to fall in the counter's range.
-  domain_t get_fresh_unused_symb_var() const {
-    domain_t fresh = __get_fresh_symb_var();
-    while (symb_val_in_use(fresh)) {
-      fresh = __get_fresh_symb_var();
-    }
-    return fresh;
+    return id;
   }
 
   /// @brief Build a map from representative to an ordered set with all the
@@ -280,15 +194,6 @@ private:
     return res;
   }
 
-  element_set_t get_all_members() const {
-    element_set_t out;
-    out.reserve(m_parents.size());
-    for (auto &kv : m_parents) {
-      out.push_back(kv.first);
-    }
-    return out;
-  }
-
   element_set_t get_all_members_from_an_equiv_class(const element_t &e) const {
     element_t e_rep = find(e);
     element_set_t out;
@@ -300,31 +205,24 @@ private:
         out.insert(it, kv.first);
       }
     }
-    return out; // no need std::move since Return Value Optimization (RVO) is
-                // enabled
+    return out;
   }
 
-  /// @brief a helper method for domain operation join
-  /// @param left one abstract state
-  /// @param right one abstract state
-  /// @return a new abstract state holding the joined result
-  /// @details Computes the intersection of two equivalence classes
-  /// to find the least common elements. It only computes a set of
-  /// equivalence classes where each class is a subset of two classes from
-  /// the given two abstract states. That is, the result of the join only
-  /// retains equalities that appear in both the left and right states.
-  /// Formally, forall cls_x \in left. forall cls_y \in right ::
-  ///           cls_x ^ cls_y
-  ///
-  /// This operation runs in quadratic time -- O(n^2).
-  /// The computation follows the structure of unordered_map.
-  /// The operation requires constructing a new unordered_map.
+  /// @brief join helper: keep only the equalities present in BOTH operands.
+  /// @param left,right the operands.
+  /// @pre left and right are both neither top nor bottom; operator| handles
+  ///      those cases before reaching this helper.
+  /// @return a new state in which x == y holds iff it holds in left AND right.
+  /// @details For every pair (x,y) that is an equality in `left`
+  ///          (left.find(x) == left.find(y)), keep it iff it is also an
+  ///          equality in `right`. A pair equal in both is necessarily equal in
+  ///          left, so iterating left's equalities and filtering by right is
+  ///          sufficient. Quadratic in the number of variables.
   this_domain_t join(const this_domain_t &left,
                      const this_domain_t &right) const {
     this_domain_t res;
     CRAB_LOG("symb-var-eq-join", crab::outs() << "Join "; left.dump();
              crab::outs() << " and "; right.dump(););
-    // res.dump();
     for (auto it = left.m_parents.begin(); it != left.m_parents.end(); it++) {
       // for each equality k == v
       const element_t &k = it->first;
@@ -337,7 +235,7 @@ private:
       // check if k == v exists in another map
       if (it_k != right.m_parents.end() && it_v != right.m_parents.end() &&
           it_k->second == it_v->second) {
-        res.try_make_set_by_raw_val(k, this_domain_t::__get_fresh_symb_var());
+        res.try_make_set_by_raw_val(k, fresh_class_id());
         res.m_parents.insert({v, k}); // insert new pair <v, k>
       }
       for (auto it2 = std::next(it); it2 != left.m_parents.end(); it2++) {
@@ -353,7 +251,7 @@ private:
         auto it_k2 = right.m_parents.find(k2);
         if (it_k != right.m_parents.end() && it_k2 != right.m_parents.end() &&
             it_k2->second == it_k->second) {
-          res.try_make_set_by_raw_val(k, this_domain_t::__get_fresh_symb_var());
+          res.try_make_set_by_raw_val(k, fresh_class_id());
           res.m_parents.insert({k2, k}); // insert new pair <k2, k>
         }
       }
@@ -364,81 +262,26 @@ private:
     return res;
   }
 
-  /// @brief a helper method for domain operation meet
-  /// @param left one abstract state
-  /// @param right one abstract state
-  /// @return a new abstract state saved the meet result
-  /// The solution merges two equivalence classes if they share common
-  /// elements. As a result, it computes a set of equivalence classes where
-  /// each class is a superset of two or more classes from the given two
-  /// abstract states. That is, the result of the meet will keep equalities
-  /// that appear either in the left or in the right state.
-  /// By definition, our meet is an over-approximation meet of concrete.
-  /// E.g. there is no bottom state after meet.
-  /// Formally, forall cls_x \in left. forall cls_y \in right ::
-  ///           cls_x ^ cls_y != \empty => cls_x union cls_y
+  /// @brief meet helper: keep every equality from EITHER operand (their union).
+  /// @param left,right the operands.
+  /// @pre left and right are both neither top nor bottom; operator& handles
+  ///      those cases before reaching this helper.
+  /// @return a new state in which x == y holds iff it holds in left OR right
+  ///         (the union of both equivalence relations; never bottom).
+  /// @details Start from a copy of left, then for each equality k == v in right
+  ///          (i.e. k != v in right.m_parents) union the classes of k and v.
+  ///          Symbols of the result are not significant, so merged classes keep
+  ///          left's representative/symbol.
   this_domain_t meet(const this_domain_t &left,
                      const this_domain_t &right) const {
-    this_domain_t res;
+    this_domain_t res = left;
     CRAB_LOG("symb-var-eq-meet", crab::outs() << "Meet "; left.dump();
              crab::outs() << " and "; right.dump(););
-    for (auto it = left.m_parents.begin(); it != left.m_parents.end(); it++) {
-      // for each equality k == v
-      const element_t &k = it->first;
-      const element_t &v = it->second;
-      // k.dump(crab::outs());
-      // res.dump();
-      // skip if k already in some class on the res state
-      // why? k is already merged from the right state, so skip it.
-      if (res.m_parents.find(k) != res.m_parents.end()) {
-        continue;
-      }
-      bool is_k_added = false;
-      // if some of k's equivalence member k_p from the left state exists on
-      // the res state, this means we also need to add equality k == k_p on
-      // the res
-      element_set_t k_cls = left.get_all_members_from_an_equiv_class(k);
-      for (auto &k_p : k_cls) {
-        if (res.m_parents.find(k_p) != res.m_parents.end()) {
-          res.add(k_p, k);
-          is_k_added = true;
-          break;
-        }
-      }
-      if (!is_k_added) {
-        res.try_make_set_by_raw_val(v, this_domain_t::__get_fresh_symb_var());
-        // insert k and v into res map since k == v will keep
-        res.m_parents.insert({k, v});
-      }
-
-      // check if k is not in some class on the right state, in which case
-      // we do not need to merge any classes on the right state
-      auto it2 = right.m_parents.find(k);
-      if (it2 == right.m_parents.end()) {
-        continue;
-      }
-      const element_t &v2 = it2->second;
-      for (auto it3 = right.m_parents.begin(); it3 != right.m_parents.end();
-           it3++) {
-        // for each k3 == v3
-        const element_t &k3 = it3->first;
-        const element_t &v3 = it3->second;
-        if (v2 == v3 && k3 != k) {
-          // inside right's equivalence class including k, any variables
-          // equal to k will be kept
-          res.m_parents.insert({k3, res.m_parents.find(k)->second});
-        }
-      }
-    }
-
-    // Insert equalities remained on the right only
-    for (auto it = right.m_parents.begin(); it != right.m_parents.end(); it++) {
-      // for each equality k == v
-      const element_t &k = it->first;
-      const element_t &v = it->second;
-      if (res.m_parents.find(k) == res.m_parents.end()) {
-        res.try_make_set_by_raw_val(v, this_domain_t::__get_fresh_symb_var());
-        res.m_parents.insert({k, v});
+    for (auto &kv : right.m_parents) {
+      const element_t &k = kv.first;
+      const element_t &v = kv.second;
+      if (k != v) { // k == v is an equality in right (v is k's representative)
+        res.add(k, v);
       }
     }
     res.normalize();
@@ -447,10 +290,10 @@ private:
     return res;
   }
 
-  /// @brief create an equivalent class
+  /// @brief create a new equivalence class {v} tagged with class id `id`
   /// @param v the representative element for the new class
-  /// @param val the domain value
-  void make_set(const element_t &v, std::shared_ptr<domain_t> val) {
+  /// @param id the class id
+  void make_set(const element_t &v, class_id_t id) {
     if (is_bottom()) {
       CRAB_ERROR(domain_name(), "::", __func__, " make on bottom");
     }
@@ -461,14 +304,14 @@ private:
       CRAB_ERROR(domain_name(), "::", __func__, " the new element ", v,
                  " is already consisted in ", *this);
     }
-    if (DomainParams::check_lattice_val && val && symb_val_in_use(*val)) {
-      // each equivalence class must carry a distinct symbol
-      CRAB_ERROR(domain_name(), "::", __func__, " symbol #var", val->value(),
+    if (DomainParams::check_lattice_val && rep_with_class_id(id)) {
+      // each equivalence class must carry a distinct id
+      CRAB_ERROR(domain_name(), "::", __func__, " class id #id", id,
                  " is already used by another class in ", *this);
     }
 
     m_parents.insert({v, v});
-    m_classes.insert({v, equivalence_class_t(val)});
+    m_classes.insert({v, id});
   }
 
   // Consistency check of the internal representation. Enabled via
@@ -547,46 +390,50 @@ private:
     return true;
   }
 
+  // Print each element of `r` via `fn`, wrapped in open/close and joined by
+  // sep.
+  template <typename Range, typename PrintFn>
+  void print_separated(crab_os &o, const Range &r, PrintFn fn, char open,
+                       char close, const char *sep = ",") const {
+    o << open;
+    bool first = true;
+    for (const auto &elem : r) {
+      if (!first) {
+        o << sep;
+      }
+      first = false;
+      fn(elem);
+    }
+    o << close;
+  }
+
   void print_elems_vector(crab::crab_os &o,
                           const std::vector<element_t> &elems) const {
-    o << "[";
-    for (auto it = elems.begin(), et = elems.end(); it != et;) {
-      o << *it;
-      ++it;
-      if (it != et) {
-        o << ",";
-      }
-    }
-    o << "]";
+    print_separated(
+        o, elems, [&](const element_t &e) { o << e; }, '[', ']');
   }
 
   void print_equiv_classes(crab_os &o,
                            const equivalence_class_elems_t &equiv_classes,
                            bool verbose = false) const {
-    o << "{";
-    for (auto it = equiv_classes.begin(), et = equiv_classes.end(); it != et;) {
-      print_elems_vector(o, it->second);
-      if (!verbose) {
-        o << "=>" << *(m_classes.at(it->first).get_absval());
-      }
-      ++it;
-      if (it != et) {
-        o << ",";
-      }
-    }
-    o << "}";
+    print_separated(
+        o, equiv_classes,
+        [&](const std::pair<const element_t, element_set_t> &kv) {
+          print_elems_vector(o, kv.second);
+          if (!verbose) {
+            o << "=>#id" << m_classes.at(kv.first);
+          }
+        },
+        '{', '}');
   }
 
   void print_classes_vals(crab_os &o) const {
-    o << "{";
-    for (auto it = m_classes.begin(), et = m_classes.end(); it != et;) {
-      o << it->first << "=>" << *(it->second.get_absval());
-      ++it;
-      if (it != et) {
-        o << ",";
-      }
-    }
-    o << "}";
+    print_separated(
+        o, m_classes,
+        [&](const std::pair<const element_t, class_id_t> &kv) {
+          o << kv.first << "=>#id" << kv.second;
+        },
+        '{', '}');
   }
 
 public:
@@ -618,14 +465,11 @@ public:
   /// error is reported
   /// @return returns the representative of the set that contains the element v
   element_t find(const element_t &v) const {
-    SVEQ_DOMAIN_SCOPED_STATS(".find");
-
-    auto it = m_parents.find(v);
-    if (it == m_parents.end()) {
-      CRAB_ERROR(domain_name(), "::", __func__, " on a non-existing elem ", v,
-                 " in ", *this);
+    if (auto rep = find_opt(v)) {
+      return *rep;
     }
-    return it->second;
+    CRAB_ERROR(domain_name(), "::", __func__, " on a non-existing elem ", v,
+               " in ", *this);
   }
 
   boost::optional<element_t> find_opt(const element_t &v) const {
@@ -638,51 +482,40 @@ public:
     return it->second;
   }
 
-  /// @brief set a domain value to x's class
+  /// @brief tag x's class with class id \p id
   /// @param x an element
-  /// @param absval a domain value
-  /// @note  if x is new and no class already holds \p absval, create a class
-  ///        {x} with \p absval;
-  ///        if x is new but some class already holds \p absval, x is added to
-  ///        that class -- i.e. sharing a symbolic value asserts an equality;
-  ///        if x already exists, update its class's domain value to \p absval.
-  void set(const element_t &x, domain_t absval) {
+  /// @param id a class id
+  /// @note  if x is new and no class already holds \p id, create a class {x}
+  ///        with \p id;
+  ///        if some class already holds \p id, x's class is merged into it --
+  ///        i.e. sharing an id asserts an equality;
+  ///        otherwise relabel x's class to \p id.
+  void set(const element_t &x, class_id_t id) {
     if (is_bottom()) {
       return;
     }
 
-    std::shared_ptr<domain_t> absval_ptr =
-        std::make_shared<domain_t>(std::move(absval));
-
     if (!contains(x)) {
-      if (auto y_opt = check_symb_val_exists(absval_ptr)) {
-        add(*y_opt, x);
+      if (auto holder = rep_with_class_id(id)) {
+        add(*holder, x); // id already in use: x joins that class
       } else {
-        make_set(x, absval_ptr);
+        make_set(x, id);
       }
     } else {
-      // Modify the abstract state of the whole equivalence class
       element_t rep_x = find(x);
-      equivalence_class_t &ec_x = m_classes.at(rep_x);
-      ec_x.set_absval(absval_ptr);
+      if (auto holder = rep_with_class_id(id)) {
+        if (!(*holder == rep_x)) {
+          // another class already owns this id: relabeling x's class to it
+          // asserts the two are equal, so union them instead of duplicating
+          add(*holder, x);
+        }
+        // else: x's class already holds this id -> nothing to do
+      } else {
+        // id unused: relabel x's whole class
+        m_classes.at(rep_x) = id;
+      }
     }
     check_lattice_val();
-  }
-
-  /// @brief get the domain value stored in current equivalent class
-  /// @param v an element in some set
-  /// @return null if !contains(x), otherwise, returns a shared pointer to value
-  std::shared_ptr<domain_t> get(const element_t &x) {
-    if (is_bottom()) {
-      CRAB_ERROR("called ", domain_name(), "::", __func__, " on bottom");
-    }
-    if (is_top() || !contains(x)) {
-      return nullptr;
-    }
-
-    element_t rep_x = find(x);
-    equivalence_class_t &ec_x = m_classes.at(rep_x);
-    return ec_x.detach_and_get_absval();
   }
 
   /// @brief get the equivalent class by giving an element
@@ -698,23 +531,18 @@ public:
     return get_all_members_from_an_equiv_class(x);
   }
 
-  /// @brief get the equivalent class by giving a domain value
-  /// @param dom a domain value such as #var1
-  /// @return if the value exists, return corresponding element class
-  boost::optional<element_set_t> get_variables(const domain_t &dom) const {
+  /// @brief get the members of the class tagged with class id \p id
+  /// @param id a class id such as #id1
+  /// @return if a class has that id, return its members
+  boost::optional<element_set_t> get_variables(class_id_t id) const {
     if (is_bottom()) {
       CRAB_ERROR("called ", domain_name(), "::", __func__, " on bottom");
     }
     if (is_top()) {
       return boost::none;
     }
-    for (auto &kv : m_classes) {
-      const element_t &key = kv.first;
-      const equivalence_class_t &ec = kv.second;
-      auto dom_ptr = ec.get_absval();
-      if (dom_ptr && dom == *dom_ptr) {
-        return get_all_members_from_an_equiv_class(key);
-      }
+    if (auto rep = rep_with_class_id(id)) {
+      return get_all_members_from_an_equiv_class(*rep);
     }
     return boost::none;
   }
@@ -726,31 +554,33 @@ public:
     if (is_top()) {
       return boost::none;
     }
-    return get_all_members();
+    element_set_t out;
+    out.reserve(m_parents.size());
+    for (auto &kv : m_parents) {
+      out.push_back(kv.first);
+    }
+    return out;
   }
 
-  /// @brief get the domain value stored in current equivalent class
-  /// @param v an element in some set
-  /// @return null if !contains(x), otherwise, returns a shared pointer to value
-  std::shared_ptr<const domain_t> get(const element_t &x) const {
+  /// @brief get the class id of x's equivalence class
+  /// @param x an element in some set
+  /// @return none if x is not in a class, otherwise its class id
+  boost::optional<class_id_t> get_class_id(const element_t &x) const {
     if (is_bottom()) {
       CRAB_ERROR("called ", domain_name(), "::", __func__, " on bottom");
     }
     if (is_top() || !contains(x)) {
-      return nullptr;
+      return boost::none;
     }
-
-    element_t rep_x = find(x);
-    const equivalence_class_t &ec_x = m_classes.at(rep_x);
-    return ec_x.get_absval();
+    return m_classes.at(find(x));
   }
 
-  /// @brief Add y into the equivalence class of x
-  /// @param x an element that may exist
-  /// @param y an element that may exist
-  /// @note  if x does not exist, a fresh class {x} is created first.
-  ///        if y \in some cls, forget it from cls, add y into x's class
-  ///        adding an equality to top creates a class (top is not absorbing).
+  /// @brief Assert x == y by unioning their equivalence classes.
+  /// @param x,y elements; either may be new (a fresh class is created first).
+  /// @note  If y already belongs to a class, that whole class is merged in, so
+  ///        y's existing equalities are preserved (this is a union, not a
+  ///        move). The merged class keeps x's representative and symbol. Adding
+  ///        an equality to top creates a class (top is not absorbing).
   void add(const element_t &x, const element_t &y) {
     if (is_bottom() || x == y) {
       return;
@@ -760,13 +590,24 @@ public:
       // existing class. Going through set() with a plain fresh id could instead
       // fold x into an unrelated class if that id collides with an explicitly-
       // assigned symbol already in the state.
-      try_make_set_by_raw_val(x, get_fresh_unused_symb_var());
-    }
-    if (contains(y)) {
-      *this -= y;
+      try_make_set_by_raw_val(x, get_fresh_unused_class_id());
     }
     element_t rep_x = find(x);
-    m_parents.insert({y, rep_x});
+    if (!contains(y)) {
+      m_parents.insert({y, rep_x}); // y is new: place it in x's class
+    } else {
+      element_t rep_y = find(y);
+      if (rep_x != rep_y) {
+        // union: repoint every member of y's class to x's representative,
+        // then drop y's now-empty class entry
+        for (auto &kv : m_parents) {
+          if (kv.second == rep_y) {
+            kv.second = rep_x;
+          }
+        }
+        m_classes.erase(rep_y);
+      }
+    }
     check_lattice_val();
   }
   /**------------------ End union find APIs ------------------**/
@@ -1043,8 +884,7 @@ public:
       for (auto &e : s) {
         res.m_parents.insert({e, new_rep});
       }
-      equivalence_class_t ec = m_classes.at(rep);
-      res.m_classes.insert({new_rep, ec});
+      res.m_classes.insert({new_rep, m_classes.at(rep)});
     }
     if (!res.m_parents.empty()) {
       // res was default-constructed as top; mark it as a real state
@@ -1194,9 +1034,12 @@ public:
       print_classes_vals(crab::outs());
       crab::outs() << ")";
       crab::outs() << "HashTable=";
-      symbolic_variable_equality_domain_impl::print_unordered_map<element_t,
-                                                                   element_t>(
-          crab::outs(), m_parents);
+      print_separated(
+          crab::outs(), m_parents,
+          [&](const std::pair<const element_t, element_t> &kv) {
+            crab::outs() << kv.first << " => " << kv.second;
+          },
+          '{', '}', ", ");
     }
     crab::outs() << "\n";
   }

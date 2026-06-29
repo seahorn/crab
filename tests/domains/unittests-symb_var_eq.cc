@@ -14,7 +14,7 @@ using namespace ikos;
 // domain's internal representation in addition to its observable results.
 using test_domain_t = crab::domains::symbolic_variable_equality_domain<
     z_number, varname_t, crab::domains::SVEQCheckedParams>;
-using value_domain_t = symbolic_variable_equality_domain_impl::symbolic_var;
+using value_domain_t = symbolic_variable_equality_domain_impl::class_id_t;
 
 // The *meaning* of an EqDom state is a partition of variables into equivalence
 // classes (variables sharing a class are known equal). We describe expected
@@ -475,14 +475,26 @@ int main(int argc, char **argv) {
     // collides with an explicitly-assigned symbol already in the state
     crab::outs() << "==== case13 (fresh-symbol collision) ====\n";
     value_domain_t probe =
-        symbolic_variable_equality_domain_impl::make_fresh_var_symbol<
-            value_domain_t>();
+        symbolic_variable_equality_domain_impl::fresh_class_id();
     test_domain_t dom;
     // tag {v9} with the id the next add()-fresh would otherwise pick
-    dom.set(v9, value_domain_t(probe.value() + 1));
+    dom.set(v9, probe + 1);
     dom.add(v10, v11); // intends {v10,v11}; must leave v9 in its own class
     check_partition("case13: add does not pull in the colliding class", dom,
                     {v9, v10, v11}, {{v10, v11}});
+  }
+
+  { // set() on an existing var to a symbol already owned by another class must
+    // MERGE the two classes, not leave two classes sharing one symbol
+    crab::outs() << "==== case14 (set merges on symbol collision) ====\n";
+    test_domain_t dom;
+    dom.set(v1, value_domain_t(2000));
+    dom.add(v1, v2); // {v1,v2} tagged #var2000
+    dom.set(v3, value_domain_t(2001));
+    dom.add(v3, v4);                   // {v3,v4} tagged #var2001
+    dom.set(v3, value_domain_t(2000)); // relabel v3's class to an in-use symbol
+    check_partition("case14: set to an in-use symbol merges the classes", dom,
+                    {v1, v2, v3, v4}, {{v1, v2, v3, v4}});
   }
 
   crab::outs() << "\n[SUMMARY] " << (g_checks - g_failures) << "/" << g_checks
