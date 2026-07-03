@@ -2876,6 +2876,33 @@ public:
     return {g.size(), g.num_edges()};
   }
 
+  // Tightest known bound on b - a (the DBM edge weight a -> b) from the
+  // v0-excluded subgraph; boost::none if no explicit edge exists.
+  boost::optional<number_t> difference_bound(const variable_t &a,
+                                             const variable_t &b) const {
+    if (a == b) {
+      return number_t(0);
+    }
+    boost::optional<vert_id> ai = get_vert(a);
+    boost::optional<vert_id> bi = get_vert(b);
+    if (!ai || !bi) { // not found
+      return boost::optional<number_t>();
+    }
+    SubGraph<graph_t> g_excl(g, 0);
+    if (g_excl.elem(*ai, *bi) && g_excl.elem(*bi, *ai) &&
+        g_excl.edge_val(*ai, *bi) == Wt(0) &&
+        g_excl.edge_val(*bi, *ai) == Wt(0)) {
+      return number_t(0);
+    } else if (g_excl.elem(*ai, *bi)) {
+      return number_t(g_excl.edge_val(*ai, *bi));
+    } else if (g_excl.elem(*bi, *ai)) {
+      // this is for b - a case not a - b case.
+      return boost::optional<number_t>();
+    } else {
+      return boost::optional<number_t>();
+    }
+  }
+
   std::string domain_name() const override { return "SplitDBM"; }
 }; // class split_dbm_domain
 
