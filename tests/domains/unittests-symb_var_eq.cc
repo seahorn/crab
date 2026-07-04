@@ -53,16 +53,15 @@ bool expected_equal(const partition_t &parts, const z_var &a, const z_var &b) {
   return false;
 }
 
-// Build a reference domain denoting exactly `parts`. A distinct symbolic value
-// per class avoids set()'s merge-on-equal-symbol behaviour.
+// Build a reference domain denoting exactly `parts`. A fresh class id per
+// class avoids set()'s merge-on-equal-id behaviour.
 test_domain_t make_dom(const partition_t &parts) {
   test_domain_t d;
-  uint32_t sym = 1000;
   for (const auto &cls : parts) {
     if (cls.size() < 2) {
       continue; // singletons carry no equality
     }
-    d.set(cls[0], value_domain_t(sym++));
+    d.set(cls[0], test_domain_t::fresh_class_id());
     for (unsigned i = 1; i < cls.size(); ++i) {
       d.add(cls[0], cls[i]);
     }
@@ -197,11 +196,14 @@ int main(int argc, char **argv) {
   z_var v11(vfac["v11"], crab::INT_TYPE, 32);
   z_var v12(vfac["v12"], crab::INT_TYPE, 32);
 
-  // NOTE on set(): set(x, sym) merges x into any existing class that already
-  // stores the same symbolic value. So reusing an idom value across two set()
-  // calls in the same domain merges those classes -- this is intended (it is
-  // how object_domain establishes equalities), and a few cases below rely on it.
-  value_domain_t idom1(1), idom2(2), idom3(3); // distinct symbolic values
+  // NOTE on set(): set(x, id) merges x into any existing class that already
+  // holds the same id. So reusing an idom value across two set() calls in the
+  // same domain merges those classes -- this is intended (it is how
+  // object_domain establishes equalities), and a few cases below rely on it.
+  // Ids must come from fresh_class_id(); invented ids are rejected by set().
+  value_domain_t idom1 = test_domain_t::fresh_class_id();
+  value_domain_t idom2 = test_domain_t::fresh_class_id();
+  value_domain_t idom3 = test_domain_t::fresh_class_id();
 
   { // disjoint inputs: no shared equalities
     test_domain_t dom1, dom2;
@@ -471,29 +473,32 @@ int main(int argc, char **argv) {
                n_eq == csts.size(), true);
   }
 
-  { // add() must not merge into an unrelated class when its fresh symbol id
-    // collides with an explicitly-assigned symbol already in the state
-    crab::outs() << "==== case13 (fresh-symbol collision) ====\n";
-    value_domain_t probe =
-        symbolic_variable_equality_domain_impl::fresh_class_id();
-    test_domain_t dom;
-    // tag {v9} with the id the next add()-fresh would otherwise pick
-    dom.set(v9, probe + 1);
-    dom.add(v10, v11); // intends {v10,v11}; must leave v9 in its own class
-    check_partition("case13: add does not pull in the colliding class", dom,
+  { // an id read from one domain value can be shared into another value to
+    // record a cross-value equality; fresh ids never land on it by accident
+    crab::outs() << "==== case13 (share an id across domain values) ====\n";
+    test_domain_t regs, flds;
+    regs.add(v1, v2); // {v1,v2} with a factory-produced id
+    value_domain_t id = *regs.get_class_id(v1);
+    flds.set(v9, id);   // deliberately share the id into another value
+    flds.add(v10, v11); // fresh ids in flds cannot collide with `id`
+    check_partition("case13: sharing links only the intended class", flds,
                     {v9, v10, v11}, {{v10, v11}});
+    check_bool("case13: shared id matches across the two values",
+               *flds.get_class_id(v9) == id, true);
   }
 
-  { // set() on an existing var to a symbol already owned by another class must
-    // MERGE the two classes, not leave two classes sharing one symbol
-    crab::outs() << "==== case14 (set merges on symbol collision) ====\n";
+  { // set() on an existing var to an id already owned by another class must
+    // MERGE the two classes, not leave two classes sharing one id
+    crab::outs() << "==== case14 (set merges on an in-use id) ====\n";
+    value_domain_t l1 = test_domain_t::fresh_class_id();
+    value_domain_t l2 = test_domain_t::fresh_class_id();
     test_domain_t dom;
-    dom.set(v1, value_domain_t(2000));
-    dom.add(v1, v2); // {v1,v2} tagged #var2000
-    dom.set(v3, value_domain_t(2001));
-    dom.add(v3, v4);                   // {v3,v4} tagged #var2001
-    dom.set(v3, value_domain_t(2000)); // relabel v3's class to an in-use symbol
-    check_partition("case14: set to an in-use symbol merges the classes", dom,
+    dom.set(v1, l1);
+    dom.add(v1, v2); // {v1,v2} tagged l1
+    dom.set(v3, l2);
+    dom.add(v3, v4); // {v3,v4} tagged l2
+    dom.set(v3, l1); // relabel v3's class to an in-use id
+    check_partition("case14: set to an in-use id merges the classes", dom,
                     {v1, v2, v3, v4}, {{v1, v2, v3, v4}});
   }
 

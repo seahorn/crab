@@ -9,6 +9,7 @@
 #include <boost/optional.hpp>
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -18,18 +19,35 @@ namespace domains {
 
 namespace symbolic_variable_equality_domain_impl {
 // Identifier of an equivalence class. Two variables are known equal when their
-// classes carry the same id. Ids only need to be distinct within a single
-// state. We tag classes with ids (rather than a representative variable) so the
-// same value identity can be referenced across domains (e.g. object_domain's
-// field/register equalities).
+// classes carry the same id. Tagging classes with ids (rather than a
+// representative variable) is a design choice: it allows an equality relation
+// to be split across several domain values, where setting the same id in two
+// values records an equality between their elements. Because ids may travel
+// between values, they must be globally unique -- an id may appear in two
+// places only because it was deliberately copied there. A per-value allocator
+// cannot provide this (two values can allocate the same id independently),
+// hence the single shared counter below.
 using class_id_t = uint32_t;
 
-// Allocate a globally-fresh class id from a self-contained monotonic counter
-// shared across all domain instances. Assumes single-threaded use.
-inline class_id_t fresh_class_id() {
+// The single, monotonically-increasing source of class ids, shared by all
+// domain instances. Assumes single-threaded use.
+inline class_id_t &class_id_counter() {
   static class_id_t counter = 0;
+  return counter;
+}
+
+// Produce a fresh class id, strictly greater than every id produced before
+// and therefore different from every id in use anywhere.
+inline class_id_t fresh_class_id() {
+  class_id_t &counter = class_id_counter();
+  if (counter == std::numeric_limits<class_id_t>::max()) {
+    CRAB_ERROR("symbolic_variable_equality_domain: class id counter overflow");
+  }
   return counter++;
 }
+
+// True iff `id` was produced by fresh_class_id() at some point.
+inline bool is_valid_class_id(class_id_t id) { return id < class_id_counter(); }
 } // namespace symbolic_variable_equality_domain_impl
 
 class SVEQDefaultParams {
@@ -160,22 +178,6 @@ private:
       }
     }
     return boost::none;
-  }
-
-  static class_id_t fresh_class_id() {
-    return symbolic_variable_equality_domain_impl::fresh_class_id();
-  }
-
-  // Allocate a fresh id guaranteed distinct from every class currently in this
-  // state, so each equivalence class keeps a unique id. The counter is
-  // monotonic, so this only loops if an explicitly-assigned id happens to fall
-  // in the counter's range.
-  class_id_t get_fresh_unused_class_id() const {
-    class_id_t id = fresh_class_id();
-    while (rep_with_class_id(id)) {
-      id = fresh_class_id();
-    }
-    return id;
   }
 
   /// @brief Build a map from representative to an ordered set with all the
@@ -358,13 +360,19 @@ private:
                      " has no equivalence class in m_classes");
         }
       }
-      // every equivalence class is keyed by a self-parented representative
+      // every equivalence class is keyed by a self-parented representative and
+      // carries an id that the factory actually produced
       for (auto &kv : m_classes) {
         const element_t &rep = kv.first;
         auto pit = m_parents.find(rep);
         if (pit == m_parents.end() || !(pit->second == rep)) {
           CRAB_ERROR(domain_name(), "::check_lattice_val: class key ", rep,
                      " is not a representative in m_parents");
+        }
+        if (!symbolic_variable_equality_domain_impl::is_valid_class_id(
+                kv.second)) {
+          CRAB_ERROR(domain_name(), "::check_lattice_val: class id #id",
+                     kv.second, " was never produced by fresh_class_id()");
         }
       }
       break;
@@ -482,9 +490,16 @@ public:
     return it->second;
   }
 
+  /// @brief Produce a fresh class id, different from every id ever produced.
+  /// @note  Ids passed to set() must originate from here (either directly or
+  ///        read back from a class via get_class_id()).
+  static class_id_t fresh_class_id() {
+    return symbolic_variable_equality_domain_impl::fresh_class_id();
+  }
+
   /// @brief tag x's class with class id \p id
   /// @param x an element
-  /// @param id a class id
+  /// @param id a class id previously produced by fresh_class_id()
   /// @note  if x is new and no class already holds \p id, create a class {x}
   ///        with \p id;
   ///        if some class already holds \p id, x's class is merged into it --
@@ -493,6 +508,12 @@ public:
   void set(const element_t &x, class_id_t id) {
     if (is_bottom()) {
       return;
+    }
+    if (!symbolic_variable_equality_domain_impl::is_valid_class_id(id)) {
+      // an id the factory never produced could later be handed out by
+      // fresh_class_id(), silently merging unrelated classes
+      CRAB_ERROR(domain_name(), "::set: class id #id", id,
+                 " was never produced by fresh_class_id()");
     }
 
     if (!contains(x)) {
@@ -586,11 +607,10 @@ public:
       return;
     }
     if (!contains(x)) {
-      // Create an isolated fresh class for x with a symbol distinct from every
-      // existing class. Going through set() with a plain fresh id could instead
-      // fold x into an unrelated class if that id collides with an explicitly-
-      // assigned symbol already in the state.
-      try_make_set_by_raw_val(x, get_fresh_unused_class_id());
+      // Create an isolated fresh class for x. The factory is monotonic and
+      // set() only accepts ids the factory produced, so a fresh id is greater
+      // than every id in use and cannot land on an existing class.
+      try_make_set_by_raw_val(x, fresh_class_id());
     }
     element_t rep_x = find(x);
     if (!contains(y)) {
