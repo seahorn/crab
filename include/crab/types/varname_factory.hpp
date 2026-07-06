@@ -243,7 +243,7 @@ public:
 
   // The returned varname is not cached
   virtual varname_t make_varname(std::string &&name) {
-    varname_t iv(get_and_increment_id(), this, move(name));
+    varname_t iv(get_and_increment_id(), this, std::move(name));
     m_shadow_vars.push_back(iv);
     return iv;
   }
