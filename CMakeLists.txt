@@ -210,6 +210,23 @@ else ()
   set (CRAB_EP_CC_COMPAT "")
 endif ()
 
+#------- macOS: silence the new linker's duplicate-library warning -------#
+# apron/pplite/flint/gmp static archives are listed more than once on the link
+# line (APRON_LIBRARY folds in PPLITE_LIBRARY/MPFR, which CRAB_DEPS_LIBS also
+# lists separately). The repeats are harmless -- the linker discards them -- but
+# Apple's new linker (ld-prime, Xcode 15+) warns about each one. We intentionally
+# do NOT dedup the list: on GNU ld the repeated block can act like --start-group
+# and helps resolve circular refs among these archives. Just suppress the
+# cosmetic warning, gated on linker support so it is a no-op elsewhere.
+if (APPLE)
+  include(CheckLinkerFlag)
+  check_linker_flag(CXX "-Wl,-no_warn_duplicate_libraries"
+                    CRAB_LD_HAS_NO_WARN_DUP_LIBS)
+  if (CRAB_LD_HAS_NO_WARN_DUP_LIBS)
+    add_link_options("-Wl,-no_warn_duplicate_libraries")
+  endif ()
+endif ()
+
 include(download_apron)
 include(download_elina)
 include(download_boxes_ldd)
