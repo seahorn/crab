@@ -179,6 +179,37 @@ endif ()
 include(ExternalProject)
 set_property(DIRECTORY PROPERTY EP_STEP_TARGETS configure build test)
 find_package (Git)
+
+#------- macOS SDK sysroot for external autoconf/make sub-builds -------#
+# Recent macOS ships no headers in /usr/include; they live only inside the
+# active SDK. Autotools projects (apron, elina, ...) invoke the compiler
+# without -isysroot and fail with "'stdlib.h' file not found". Exporting
+# SDKROOT (honored by clang and ld) for their ExternalProject steps fixes it.
+# CRAB_EP_ENV is an empty list off Apple, so it expands to nothing there.
+if (APPLE)
+  if (CMAKE_OSX_SYSROOT)
+    set (_CRAB_SDKROOT "${CMAKE_OSX_SYSROOT}")
+  else ()
+    execute_process (COMMAND xcrun --show-sdk-path
+                     OUTPUT_VARIABLE _CRAB_SDKROOT
+                     OUTPUT_STRIP_TRAILING_WHITESPACE)
+  endif ()
+  set (CRAB_EP_ENV ${CMAKE_COMMAND} -E env "SDKROOT=${_CRAB_SDKROOT}")
+  message (STATUS "Crab: external sub-builds will use SDKROOT=${_CRAB_SDKROOT}")
+  # Recent clang (16+/Xcode 15+) promotes these C diagnostics to hard errors by
+  # default. The bundled apron/elina sources predate that, so downgrade them for
+  # the sub-builds. Injected via CC so they take effect regardless of each
+  # project's own CFLAGS. Empty off Apple.
+  set (CRAB_EP_CC_COMPAT
+       "-Wno-error=incompatible-function-pointer-types"
+       "-Wno-error=implicit-function-declaration"
+       "-Wno-error=int-conversion")
+  string (JOIN " " CRAB_EP_CC_COMPAT ${CRAB_EP_CC_COMPAT})
+else ()
+  set (CRAB_EP_ENV "")
+  set (CRAB_EP_CC_COMPAT "")
+endif ()
+
 include(download_apron)
 include(download_elina)
 include(download_boxes_ldd)
