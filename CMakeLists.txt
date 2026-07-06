@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 4.0)
 
 project(crab)
 
@@ -18,6 +18,14 @@ endif()
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING
     "Choose the type of build, options are: Debug Release RelWithDebInfo Coverage." FORCE)
+endif()
+
+# Keep debug info (-g) in Release (-O3) builds so optimized crashes stay
+# debuggable in lldb without dropping to -O2 (RelWithDebInfo). Guarded so
+# reconfiguring does not append -g repeatedly.
+if (NOT CMAKE_CXX_FLAGS_RELEASE MATCHES "(^| )-g( |$)")
+  string(APPEND CMAKE_CXX_FLAGS_RELEASE " -g")
+  string(APPEND CMAKE_C_FLAGS_RELEASE " -g")
 endif()
 
 # Add path for custom modules
