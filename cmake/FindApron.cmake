@@ -15,7 +15,7 @@ if (NOT APRON_FOUND)
   
   set (APRON_ROOT "" CACHE PATH "Root of Apron install.")
   
-  find_package (Gmp QUIET)
+  find_package (GMP QUIET)
   find_package (MPFR QUIET)
   
   find_path(APRON_INCLUDE_DIR NAMES ap_abstract0.h PATHS ${APRON_ROOT}/include)
@@ -38,13 +38,12 @@ if (NOT APRON_FOUND)
     ${Apron_Polka_Lib} ${Apron_Oct_Lib}
     ${Apron_Apron_Lib} ${Apron_PPLite_Lib})
 
-  message(STATUS "${APRON_LIBRARY}")
   include(FindPackageHandleStandardArgs)
   find_package_handle_standard_args (Apron
     REQUIRED_VARS APRON_INCLUDE_DIR APRON_LIBRARY GMP_FOUND MPFR_FOUND)
   
-  set(APRON_INCLUDE_DIR ${APRON_INCLUDE_DIR} ${MPFR_INC_DIR} ${PPLITE_INCLUDE_DIRS})
-  set(APRON_LIBRARY ${APRON_LIBRARY} ${MPFR_LIB} ${PPLITE_LIBRARY})
+  set(APRON_INCLUDE_DIR ${APRON_INCLUDE_DIR} ${MPFR_INCLUDES} ${PPLITE_INCLUDE_DIRS})
+  set(APRON_LIBRARY ${APRON_LIBRARY} ${MPFR_LIBRARIES} ${PPLITE_LIBRARY})
   
   mark_as_advanced(APRON_LIBRARY APRON_INCLUDE_DIR 
     Apron_Apron_Lib Apron_Box_Lib Apron_Oct_Lib Apron_Polka_Lib

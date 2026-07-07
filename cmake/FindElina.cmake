@@ -15,7 +15,7 @@ if (NOT ELINA_FOUND)
   
   set (ELINA_ROOT "" CACHE PATH "Root of Elina install.")
   
-  find_package (Gmp QUIET)
+  find_package (GMP QUIET)
   find_package (MPFR QUIET)
   
   find_path(ELINA_INCLUDE_DIR NAMES elina_abstract0.h PATHS ${ELINA_ROOT}/include)
@@ -35,8 +35,8 @@ if (NOT ELINA_FOUND)
   find_package_handle_standard_args (Elina
     REQUIRED_VARS ELINA_INCLUDE_DIR ELINA_LIBRARY GMP_FOUND MPFR_FOUND)
   
-  set (ELINA_INCLUDE_DIR ${ELINA_INCLUDE_DIR} ${MPFR_INC_DIR})
-  set (ELINA_LIBRARY ${ELINA_LIBRARY} ${MPFR_LIB})
+  set (ELINA_INCLUDE_DIR ${ELINA_INCLUDE_DIR} ${MPFR_INCLUDES})
+  set (ELINA_LIBRARY ${ELINA_LIBRARY} ${MPFR_LIBRARIES})
   
   mark_as_advanced(ELINA_LIBRARY ELINA_INCLUDE_DIR)
   
