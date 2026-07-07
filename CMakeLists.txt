@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 4.0)
+# Range form: min is 3.3, but declare policies are current up to 4.0 so this
+# still configures under CMake 4.x (which rejects a bare min < 3.5).
+cmake_minimum_required(VERSION 3.3...4.0)
 
 project(crab)
 
@@ -21,9 +23,10 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Keep debug info (-g) in Release (-O3) builds so optimized crashes stay
-# debuggable in lldb without dropping to -O2 (RelWithDebInfo). Guarded so
-# reconfiguring does not append -g repeatedly.
-if (NOT CMAKE_CXX_FLAGS_RELEASE MATCHES "(^| )-g( |$)")
+# debuggable in lldb without dropping to -O2 (RelWithDebInfo). Only when we are
+# the top-level project, so we don't impose fat binaries on parents embedding
+# Crab. Guarded so reconfiguring does not append -g repeatedly.
+if (TopLevel AND NOT CMAKE_CXX_FLAGS_RELEASE MATCHES "(^| )-g( |$)")
   string(APPEND CMAKE_CXX_FLAGS_RELEASE " -g")
   string(APPEND CMAKE_C_FLAGS_RELEASE " -g")
 endif()
@@ -126,12 +129,15 @@ if (CUSTOM_BOOST_ROOT)
   set (Boost_NO_SYSTEM_PATHS "ON")
 endif()
 
+# Boost_USE_STATIC_LIBS must be set BEFORE find_package(Boost) to have effect.
+if (CRAB_BUILD_LIBS_SHARED)
+  set(Boost_USE_STATIC_LIBS OFF)
+else ()
+  set(Boost_USE_STATIC_LIBS ON)
+endif ()
+
 if (CRAB_ENABLE_TESTS)
   find_package (Boost 1.65.0 COMPONENTS program_options REQUIRED)
-  set(Boost_USE_STATIC_LIBS ON)
-  if (CRAB_BUILD_LIBS_SHARED)
-    set(Boost_USE_STATIC_LIBS OFF)
-  endif ()
   if (CRAB_USE_GENERIC_WRAPPER)
     set(USE_GENERIC_WRAPPER TRUE)
   endif ()
@@ -306,7 +312,7 @@ if (CRAB_USE_ELINA)
     set (ELINA_LIBS ${ELINA_LIBRARY})
     set (HAVE_ELINA TRUE)
     if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")    
-      set(CMAKE_EXE_LINKER_FLAGS "-Wl,--disable-new-dtags")
+      string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--disable-new-dtags")
     endif()
   else()
     ExternalProject_Get_Property (elina INSTALL_DIR)
