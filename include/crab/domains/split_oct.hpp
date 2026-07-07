@@ -377,13 +377,6 @@ private:
     return vert_pos;
   }
 
-  class vert_set_wrap_t {
-  public:
-    const vert_set_t &vs;
-    vert_set_wrap_t(const vert_set_t &_vs) : vs(_vs) {}
-    bool operator[](vert_id v) const { return vs.find(v) != vs.end(); }
-  };
-
   template <class G, class P>
   inline bool check_potential(G &g, P &p, unsigned line) const {
 #ifdef CHECK_POTENTIAL
@@ -2980,8 +2973,11 @@ public:
     edge_vector delta;
     split_octagons_impl::SplitOctGraph<graph_t> g_oct(m_graph);
     if (crab_domain_params_man::get().oct_widen_restabilize()) {
-      GrOps::close_after_widen(g_oct, m_potential, vert_set_wrap_t(m_unstable),
-                               delta);
+      // is_stable(v) is true iff v is NOT in the unstable set.
+      auto is_stable = [this](vert_id v) {
+        return m_unstable.find(v) == m_unstable.end();
+      };
+      GrOps::close_after_widen(g_oct, m_potential, is_stable, delta);
       m_unstable.clear();
     } else {
       GrOps::close_johnson(g_oct, m_potential, delta);

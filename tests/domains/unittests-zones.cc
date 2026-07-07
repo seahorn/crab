@@ -178,6 +178,74 @@ int main(int argc, char **argv) {
     
   }
 
-  
+  { // Issue #65: close_after_widen must recover transitive edges from the
+    // *unstable* vertices after widening.
+    //
+    // We build two split-DBM states L and R, widen them, and then normalize
+    // the *same* widened graph twice:
+    //   (a) with zones.widen_restabilize=true  -> close_after_widen (incremental)
+    //   (b) with zones.widen_restabilize=false -> close_johnson (full closure)
+    // Incremental closure after widening is designed to yield exactly the same
+    // normal form as a full re-closure, so (a) and (b) MUST be equal.
+    //
+    // With the inverted is_stable predicate (bug), close_after_widen runs the
+    // Dijkstra recovery from the stable vertices instead of the unstable ones,
+    // so it fails to re-add the transitive edge c-a<=10 and produces a strictly
+    // weaker (imprecise) result than the full closure.
+    using split_dbm_domain_t = split_dbm_domain<
+        ikos::z_number, varname_t,
+        DBM_impl::DefaultParams<ikos::z_number, DBM_impl::GraphRep::ss>>;
+
+    z_var a(vfac["a"], crab::INT_TYPE, 32);
+    z_var b(vfac["b"], crab::INT_TYPE, 32);
+    z_var c(vfac["c"], crab::INT_TYPE, 32);
+
+    // L (previous iterate): b-a<=5, c-b<=5 and a *tight* direct bound c-a<=3.
+    split_dbm_domain_t L;
+    L += z_lin_cst_t(b - a <= z_number(5));
+    L += z_lin_cst_t(c - b <= z_number(5));
+    L += z_lin_cst_t(c - a <= z_number(3));
+
+    // R (new iterate): same relational edges but the direct bound relaxed to
+    // c-a<=8 (> L's 3), so widening drops the a->c edge and makes 'a' unstable
+    // while a->b and b->c survive.
+    split_dbm_domain_t R;
+    R += z_lin_cst_t(b - a <= z_number(5));
+    R += z_lin_cst_t(c - b <= z_number(5));
+    R += z_lin_cst_t(c - a <= z_number(8));
+
+    // Widen (result carries the unstable set, not yet normalized).
+    split_dbm_domain_t W = L || R;
+
+    // Normalize a copy via incremental close_after_widen.
+    auto &params = crab::domains::crab_domain_params_man::get();
+    params.set_param("zones.widen_restabilize", "true");
+    split_dbm_domain_t W_incremental(W);
+    W_incremental.normalize();
+
+    // Normalize a copy via full close_johnson (reference, always precise).
+    params.set_param("zones.widen_restabilize", "false");
+    split_dbm_domain_t W_full(W);
+    W_full.normalize();
+
+    // Restore default.
+    params.set_param("zones.widen_restabilize", "true");
+
+    crab::outs() << "Issue #65 test:\n";
+    crab::outs() << "  incremental (close_after_widen) = "
+                 << W_incremental.to_linear_constraint_system() << "\n";
+    crab::outs() << "  full closure (close_johnson)    = "
+                 << W_full.to_linear_constraint_system() << "\n";
+
+    bool incremental_le_full = (W_incremental <= W_full);
+    bool full_le_incremental = (W_full <= W_incremental);
+    if (incremental_le_full && full_le_incremental) {
+      crab::outs() << "  RESULT: OK (incremental closure matches full closure)\n";
+    } else {
+      crab::outs() << "  RESULT: BUG -- incremental closure is imprecise; "
+                   << "it lost the transitive edge recovered by full closure\n";
+    }
+  }
+
   return 0;
 }

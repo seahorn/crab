@@ -4176,6 +4176,10 @@ Join of {x -> [5, 5], y -> [5, 5]} and {x -> [10, 10], y -> [10, 10]}={x -> [5, 
 Meet of {x -> [5, 5], y -> [5, 5]} and {x -> [10, 10], y -> [10, 10]}=_|_
 Join of {x -> [5, 5], y -> [5, 5]} and {x -> [10, 10], y -> [10, 10]}={x -> [5, 10], y -> [5, 10], y-x<=0, x-y<=0}
 Meet of {x -> [5, 5], y -> [5, 5]} and {x -> [10, 10], y -> [10, 10]}=_|_
+Issue #65 test:
+  incremental (close_after_widen) = {-a+b <= 5; -a+c <= 10; -b+c <= 5}
+  full closure (close_johnson)    = {-a+b <= 5; -a+c <= 10; -b+c <= 5}
+  RESULT: OK (incremental closure matches full closure)
 === End ./test-bin/unittests-zones ===
 === Begin ./test-bin/wrapint ===
 Bitwidth=3

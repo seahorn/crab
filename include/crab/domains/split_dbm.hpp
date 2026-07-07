@@ -200,14 +200,6 @@ protected:
 #endif
   }
 
-  class vert_set_wrap_t {
-  public:
-    vert_set_wrap_t(const vert_set_t &_vs) : vs(_vs) {}
-
-    bool operator[](vert_id v) const { return vs.find(v) != vs.end(); }
-    const vert_set_t &vs;
-  };
-
   // Evaluate the potential value of a variable.
   Wt pot_value(const variable_t &v) {
     auto it = vert_map.find(v);
@@ -2075,13 +2067,15 @@ public:
     }
 
     edge_vector delta;
-    // GrOps::close_after_widen(g, potential, vert_set_wrap_t(unstable), delta);
     // GKG: Check
     SubGraph<graph_t> g_excl(g, 0);
-    if (crab_domain_params_man::get().zones_widen_restabilize())
-      GrOps::close_after_widen(g_excl, potential, vert_set_wrap_t(unstable),
-                               delta);
-    else
+    if (crab_domain_params_man::get().zones_widen_restabilize()) {
+      // is_stable(v) is true iff v is NOT in the unstable set.
+      auto is_stable = [this](vert_id v) {
+        return unstable.find(v) == unstable.end();
+      };
+      GrOps::close_after_widen(g_excl, potential, is_stable, delta);
+    } else
       GrOps::close_johnson(g_excl, potential, delta);
     // Retrive variable bounds
     GrOps::close_after_assign(g, potential, 0, delta);

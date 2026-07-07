@@ -5,6 +5,7 @@
 
 #include <algorithm> // std::sort
 #include <boost/optional.hpp>
+#include <functional>
 #include <vector>
 
 /**
@@ -617,18 +618,21 @@ public:
     return true;
   }
 
-  template <class G, class P, class V>
-  static void close_after_widen(const G &g, P &p, const V &is_stable,
+  // is_stable(v) must return true iff vertex v is stable, i.e., its shortest
+  // paths are already correct and need not be recovered by the Dijkstra pass.
+  template <class G, class P>
+  static void close_after_widen(const G &g, P &p,
+                                const std::function<bool(vert_id)> &is_stable,
                                 edge_vector &delta) {
     unsigned int sz = g.size();
     grow_scratch(sz);
-    //      assert(orig.size() == sz);
+    // assert(orig.size() == sz);
 
     for (vert_id v : g.verts()) {
       // We're abusing edge_marks to store _vertex_ flags.
       // Should really just switch this to allocating regions of a fixed-size
       // buffer.
-      edge_marks[v] = is_stable[v] ? V_STABLE : V_UNSTABLE;
+      edge_marks[v] = is_stable(v) ? V_STABLE : V_UNSTABLE;
     }
 
     std::vector<std::pair<vert_id, Wt>> aux;
