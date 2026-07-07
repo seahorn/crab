@@ -66,12 +66,12 @@ available documentation can be found in our
 
 <table>
   <tr>
-    <th>Windows</th><th>Ubuntu</th><th>OS X</th><th>Coverage</th>
+    <th>Windows</th><th>Ubuntu</th><th>OS X</th>
   </tr>
+  <tr>
     <td>TBD</td>
-    <td> <a href="https://github.com/seahorn/crab/actions"><img src="https://github.com/seahorn/crab/workflows/CI/badge.svg?branch=master" title="Ubuntu 18.04 LTS 64bit, g++-6.0"/></a> </td>
+    <td> <a href="https://github.com/seahorn/crab/actions"><img src="https://github.com/seahorn/crab/workflows/CI/badge.svg?branch=master" title="CI: builds Crab via docker/crab.*.Dockerfile"/></a> </td>
     <td>TBD</td>
-    <td><a href="https://codecov.io/gh/seahorn/crab"><img src="https://codecov.io/gh/seahorn/crab/branch/master/graph/badge.svg" /></a></td>
   </tr>
 </table>
 
