@@ -67,7 +67,7 @@ private:
     const_edge_iter(const smap_t::elt_iter_t &_it, const vec<Wt> &_ws)
         : it(_it), ws(&_ws) {}
     const_edge_iter(const edge_iter &o) : it(o.it), ws(o.ws) {}
-    const_edge_iter(void) : ws(nullptr) {}
+    const_edge_iter(void) : it(nullptr), ws(nullptr) {}
 
     static const_edge_iter empty_iterator() {
       static std::unique_ptr<const_edge_iter> it = nullptr;
@@ -142,7 +142,7 @@ public:
     g.growTo(o.size());
 
     for (vert_id s : o.verts()) {
-      for (auto e : const_cast<G &>(o).e_succs(s)) {
+      for (auto e : o.e_succs(s)) {
         g.add_edge(s, e.val, e.vert);
       }
     }
