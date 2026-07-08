@@ -44,7 +44,7 @@ private:
     static edge_iter empty_iterator() {
       static std::unique_ptr<edge_iter> it = nullptr;
       if (!it)
-        it = std::unique_ptr<edge_iter>(new edge_iter());
+        it = std::make_unique<edge_iter>();
       return *it;
     }
 
@@ -72,7 +72,7 @@ private:
     static const_edge_iter empty_iterator() {
       static std::unique_ptr<const_edge_iter> it = nullptr;
       if (!it)
-        it = std::unique_ptr<const_edge_iter>(new const_edge_iter());
+        it = std::make_unique<const_edge_iter>();
       return *it;
     }
 

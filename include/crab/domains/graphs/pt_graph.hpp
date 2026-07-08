@@ -90,7 +90,7 @@ private:
     static iter_t empty_iterator() {
       static std::unique_ptr<iter_t> it = nullptr;
       if (!it)
-        it = std::unique_ptr<iter_t>(new iter_t());
+        it = std::make_unique<iter_t>();
       return *it;
     }
     bool operator!=(const iter_t &o) { return it != o.it; }

@@ -76,10 +76,10 @@ public:
   asc_dsc_state(const asc_dsc_state_t& other)
     : m_asc_phase(other.m_asc_phase) {
     if (other.m_asc_ptr != nullptr) {
-      m_asc_ptr.reset(new asc_domain_t(other.asc()));
+      m_asc_ptr = std::make_unique<asc_domain_t>(other.asc());
     }
     if (other.m_dsc_ptr != nullptr) {
-      m_dsc_ptr.reset(new dsc_domain_t(other.dsc()));
+      m_dsc_ptr = std::make_unique<dsc_domain_t>(other.dsc());
     }
   }
 
@@ -108,7 +108,7 @@ public:
       assert(m_dsc_ptr != nullptr);
       auto& ptr = const_cast<asc_dsc_state_t*>(this)->m_asc_ptr;
       DECOUPLING_DOMAIN_SCOPED_STATS(".alpha");
-      ptr.reset(new asc_domain_t);
+      ptr = std::make_unique<asc_domain_t>();
       *ptr = AscDscPair::alpha(*m_dsc_ptr);
     }
   }
@@ -119,7 +119,7 @@ public:
       assert(m_asc_ptr != nullptr);
       auto& ptr = const_cast<asc_dsc_state_t*>(this)->m_dsc_ptr;
       DECOUPLING_DOMAIN_SCOPED_STATS(".gamma");
-      ptr.reset(new dsc_domain_t);
+      ptr = std::make_unique<dsc_domain_t>();
       *ptr = AscDscPair::gamma(*m_asc_ptr);
     }
   }

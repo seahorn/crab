@@ -16,13 +16,13 @@ std::unique_ptr<crab_os> crab_os::m_cerr = nullptr;
 
 crab_os &crab_os::cout() {
   if (!m_cout)
-    m_cout = std::unique_ptr<crab_os>(new crab_os(&std::cout));
+    m_cout = std::make_unique<crab_os>(&std::cout);
   return *m_cout;
 }
 
 crab_os &crab_os::cerr() {
   if (!m_cerr)
-    m_cerr = std::unique_ptr<crab_os>(new crab_os(&std::cerr));
+    m_cerr = std::make_unique<crab_os>(&std::cerr);
   return *m_cerr;
 }
 

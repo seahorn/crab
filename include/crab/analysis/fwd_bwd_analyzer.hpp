@@ -105,7 +105,7 @@ private:
     for (auto &kv : f.get_post_invariants()) {
       m_post_invariants.insert({kv.first, kv.second});
     }
-    m_wto = std::unique_ptr<wto_t>(new wto_t(f.get_wto().clone()));
+    m_wto = std::make_unique<wto_t>(f.get_wto().clone());
   }
 
   void gather_assertions() {
@@ -394,10 +394,10 @@ public:
 
       CRAB_VERBOSE_IF(1, get_msg_stream() << "Started backward analysis.\n";);
       if (B == nullptr) {
-	B = std::unique_ptr<bwd_analyzer_t>(new bwd_analyzer_t
-			    (m_cfg, m_absval_fac, 
+	B = std::make_unique<bwd_analyzer_t>
+			    (m_cfg, m_absval_fac,
 			     // negate assertions: preconditions from error states
-			     false, fixpo_params));
+			     false, fixpo_params);
       }
 
       // run backward analysis computing necessary preconditions

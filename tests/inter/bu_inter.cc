@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
   using callgraph_t = call_graph<z_cfg_ref_t>;
   using inter_params_t = inter_analyzer_parameters<callgraph_t>;
   
-  std::unique_ptr<callgraph_t> cg(new callgraph_t(cfgs));
+  auto cg = std::make_unique<callgraph_t>(cfgs);
   inter_params_t params;
   params.widening_delay = 2;
   params.descending_iters = 2;

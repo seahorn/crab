@@ -30,7 +30,7 @@ std::unique_ptr<z_cfg_t> main_cfg(variable_factory_t &vfac) {
   
   // entry and exit block
   function_decl<z_number, varname_t> decl("main", {}, {});  
-  std::unique_ptr<z_cfg_t> cfg(new z_cfg_t("exit", "exit", decl));
+  auto cfg = std::make_unique<z_cfg_t>("exit", "exit", decl);
   // adding blocks
   //z_basic_block_t &entry = cfg->insert("entry");
   z_basic_block_t &exit = cfg->insert("exit");

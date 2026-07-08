@@ -17,14 +17,14 @@
 #include "opt_zones.h"
 #pragma GCC diagnostic pop
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 namespace crab {
 namespace domains {
 namespace elina {
 
 using elina_state = elina_abstract0_t *;
-using elina_state_ptr = boost::shared_ptr<elina_abstract0_t>;
+using elina_state_ptr = std::shared_ptr<elina_abstract0_t>;
 
 /** Custom deleter for elina_state_ptr */
 class elina_state_deleter {

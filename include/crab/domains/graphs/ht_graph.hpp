@@ -59,7 +59,7 @@ private:
     static type empty_iterator() {
       static std::unique_ptr<type> it = nullptr;
       if (!it)
-        it = std::unique_ptr<type>(new type());
+        it = std::make_unique<type>();
       return *it;
     }
     bool operator!=(const type &o) const { return it != o.it; }

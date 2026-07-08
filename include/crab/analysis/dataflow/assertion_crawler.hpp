@@ -10,6 +10,7 @@
 #include <crab/types/indexable.hpp>
 
 #include <boost/range/iterator_range.hpp>
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -502,20 +503,20 @@ public:
 	  var_dom_t uses = var_dom_t::bottom();
 	  defs += make_ref->lhs();
 	  uses += make_ref->region();
-	  op.reset(new add_data_deps(uses, defs));
+	  op = std::make_unique<add_data_deps>(uses, defs);
 	} else if (s.is_ref_remove()) {
 	  auto remove_ref = static_cast<remove_ref_t*>(&s);
 	  var_dom_t defs = var_dom_t::bottom();
 	  var_dom_t uses = var_dom_t::bottom();
 	  uses += remove_ref->region();
-	  op.reset(new add_data_deps(uses, defs));
+	  op = std::make_unique<add_data_deps>(uses, defs);
 	} else if (s.is_ref_load()) { 
 	  auto load_ref = static_cast<load_from_ref_t*>(&s);
 	  var_dom_t defs = var_dom_t::bottom();
 	  var_dom_t uses = var_dom_t::bottom();
 	  defs += load_ref->lhs();
 	  uses += load_ref->region();
-	  op.reset(new add_data_deps(uses, defs));
+	  op = std::make_unique<add_data_deps>(uses, defs);
 	} else if (s.is_ref_store()) {
 	  auto store_ref = static_cast<store_to_ref_t*>(&s);
 	  var_dom_t defs = var_dom_t::bottom();
@@ -525,7 +526,7 @@ public:
 	  if (store_ref->val().is_variable()) {
 	    uses += store_ref->val().get_variable();
 	  }
-	  op.reset(new add_data_deps(uses, defs));
+	  op = std::make_unique<add_data_deps>(uses, defs);
 	} else if (s.is_ref_gep()) {
 	  auto gep_ref = static_cast<gep_ref_t*>(&s);
 	  if (gep_ref->lhs() != gep_ref->rhs()) {
@@ -533,10 +534,10 @@ public:
 	    var_dom_t uses = var_dom_t::bottom();
 	    defs += gep_ref->lhs();
 	    uses += gep_ref->rhs();
-	    op.reset(new add_data_deps(uses, defs));	  
+	    op = std::make_unique<add_data_deps>(uses, defs);	  
 	  }
 	} else {
-	  op.reset(new add_data_deps(s.get_live()));	  	
+	  op = std::make_unique<add_data_deps>(s.get_live());	  	
 	}
 	if (op) {
 	  transform_sol_t f1; 

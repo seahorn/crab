@@ -49,8 +49,8 @@
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
-#include <boost/container/slist.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
+#include <forward_list>
 #include <memory>
 #include <set>
 #include <unordered_map>
@@ -238,7 +238,7 @@ public:
 
 private:
   using wto_component_ptr = std::shared_ptr<wto_component_t>;
-  using wto_component_list_t = boost::container::slist<wto_component_ptr>;
+  using wto_component_list_t = std::forward_list<wto_component_ptr>;
   using wto_component_list_ptr = std::shared_ptr<wto_component_list_t>;
 
   typename boost::graph_traits<G>::vertex_descriptor _head;
@@ -332,7 +332,7 @@ private:
   using wto_component_ptr = std::shared_ptr<wto_component_t>;
   using wto_vertex_ptr = std::shared_ptr<wto_vertex_t>;
   using wto_cycle_ptr = std::shared_ptr<wto_cycle_t>;
-  using wto_component_list_t = boost::container::slist<wto_component_ptr>;
+  using wto_component_list_t = std::forward_list<wto_component_ptr>;
   using wto_component_list_ptr = std::shared_ptr<wto_component_list_t>;
   using dfn_t = bound<z_number>;
   using dfn_table_t =

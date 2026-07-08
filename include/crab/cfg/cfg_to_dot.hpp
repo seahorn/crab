@@ -4,7 +4,6 @@
 #include <crab/checkers/base_property.hpp>
 #include <crab/support/os.hpp>
 
-#include <boost/algorithm/string/replace.hpp>
 #include <boost/range/iterator_range.hpp>
 
 #include <fstream>
@@ -19,6 +18,18 @@ namespace crab {
 namespace cfg {
 
 namespace dot_impl {
+// Replace in-place all occurrences of "from" with "to" in "str".
+inline void replace_all(std::string &str, const std::string &from,
+                        const std::string &to) {
+  if (from.empty()) {
+    return;
+  }
+  for (size_t pos = str.find(from); pos != std::string::npos;
+       pos = str.find(from, pos + to.size())) {
+    str.replace(pos, from.size(), to);
+  }
+}
+
 template <typename CFG>
 void cfg_body_to_dot(const CFG &cfg, const checker::checks_db &db,
                      crab_string_os &os) {
@@ -28,7 +39,7 @@ void cfg_body_to_dot(const CFG &cfg, const checker::checks_db &db,
                     const std::map<std::pair<unsigned, std::string>,
                                    std::string> &rewrite_map) {
     for (auto &kv : rewrite_map) {
-      boost::replace_all(str, kv.first.second, kv.second);
+      replace_all(str, kv.first.second, kv.second);
     }
   };
 

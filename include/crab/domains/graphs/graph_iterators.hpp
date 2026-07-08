@@ -164,7 +164,7 @@ public:
   static type empty_iterator() {
     static std::unique_ptr<type> it = nullptr;
     if (!it)
-      it = std::unique_ptr<type>(new type());
+      it = std::make_unique<type>();
     return *it;
   }
   edge_wrapper operator*(void) const {
@@ -193,7 +193,7 @@ public:
   static type empty_iterator() {
     static std::unique_ptr<type> it = nullptr;
     if (!it)
-      it = std::unique_ptr<type>(new type());
+      it = std::make_unique<type>();
     return *it;
   }
   edge_wrapper operator*(void) const {
@@ -222,7 +222,7 @@ public:
   static type empty_iterator() {
     static std::unique_ptr<type> it = nullptr;
     if (!it)
-      it = std::unique_ptr<type>(new type());
+      it = std::make_unique<type>();
     return *it;
   }
 
@@ -253,7 +253,7 @@ public:
   static type empty_iterator() {
     static std::unique_ptr<type> it = nullptr;
     if (!it)
-      it = std::unique_ptr<type>(new type());
+      it = std::make_unique<type>();
     return *it;
   }
 

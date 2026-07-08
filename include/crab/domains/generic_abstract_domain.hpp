@@ -248,10 +248,7 @@ private:
     explicit abstract_domain_model(Domain inv) : m_inv(std::move(inv)) {}
 
     std::unique_ptr<abstract_domain_concept> clone() const override {
-      // it would be nice to have std::make_unique
-      std::unique_ptr<abstract_domain_concept> res(
-          new abstract_domain_model(m_inv));
-      return res;
+      return std::make_unique<abstract_domain_model>(m_inv);
     }
 
     bool is_asc_phase() const override { return m_inv.is_asc_phase(); }

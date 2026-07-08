@@ -208,11 +208,13 @@ public:
     }
 
     if (!m_keep_invariants) {
+      // Note: cannot use std::make_unique because the constructor is private.
       return std::unique_ptr<calling_context_t>(new calling_context_t(
           m_fdecl, m_pre_summary | other.get_pre_summary(),
 	  m_post_summary | other.get_post_summary()));
 
     } else {
+      // Note: cannot use std::make_unique because the constructor is private.
       return std::unique_ptr<calling_context_t>(new calling_context_t(
           m_fdecl, m_pre_summary | other.get_pre_summary(),
 	  m_post_summary | other.get_post_summary(),
@@ -803,8 +805,8 @@ analyze_function(CallGraphNode cg_node,
     
     /// -- 2. Create intra analyzer (with inter-procedural semantics for
     /// call/return)
-    std::unique_ptr<IntraCallSemAnalyzer> new_analyzer(new IntraCallSemAnalyzer(
-	    cfg, &abs_tr, absval_fac, live, ctx.get_fixpo_params()));
+    auto new_analyzer = std::make_unique<IntraCallSemAnalyzer>(
+	    cfg, &abs_tr, absval_fac, live, ctx.get_fixpo_params());
     analyzer = &(abs_tr.add_analyzer(cg_node, std::move(new_analyzer)));
   }
 
@@ -1574,7 +1576,7 @@ public:
 
     auto &wto_cg_map = m_ctx.get_wto_cg_map();
     for (auto entry : entries) {
-      std::unique_ptr<wto_cg_t> wto_cg(new wto_cg_t(m_cg, entry));
+      auto wto_cg = std::make_unique<wto_cg_t>(m_cg, entry);
       widening_set_builder widen_builder(widening_set);
       wto_cg->accept(&widen_builder);
       CRAB_VERBOSE_IF(1, get_msg_stream() << "Call graph WTO for entry "

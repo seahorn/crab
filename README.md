@@ -91,7 +91,7 @@ docker run -v `pwd`:/host -it seahorn/crab:bionic
 Crab is written in C++ and relies on the Boost library. The main
 requirements are:
 
-- C++11 compiler 
+- C++14 compiler 
 - Boost >= 1.65
 - GMP 
 - MPFR (if `-DCRAB_USE_APRON=ON` or `-DCRAB_USE_ELINA=ON` or `-DCRAB_USE_PPLITE_NATIVE=ON`)

@@ -29,7 +29,7 @@ private:
     static adj_iterator empty_iterator() {
       static std::unique_ptr<adj_iterator> it = nullptr;
       if (!it)
-        it = std::unique_ptr<adj_iterator>(new adj_iterator());
+        it = std::make_unique<adj_iterator>();
       return *it;
     }
     vert_id operator*(void) const { return (vert_id)*ptr; }

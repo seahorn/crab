@@ -157,7 +157,7 @@ public:
     static key_iter_t empty_iterator() {
       static std::unique_ptr<key_iter_t> it = nullptr;
       if (!it)
-        it = std::unique_ptr<key_iter_t>(new key_iter_t());
+        it = std::make_unique<key_iter_t>();
       return *it;
     }
 
