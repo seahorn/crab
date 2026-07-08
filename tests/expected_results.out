@@ -4048,6 +4048,151 @@ Before renaming {x -> t0[_x0], y -> t1[_x1]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 After rename x with w and y with z={z -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 After rename x with w={y -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 === End ./test-bin/unittests-rename ===
+=== Begin ./test-bin/unittests-symb_var_eq ===
+==== case0 (disjoint) ====
+[PASS] case0 (disjoint): dom1 built as intended
+[PASS] case0 (disjoint): dom2 built as intended
+[PASS] case0 (disjoint): dom1 <= dom2
+[PASS] case0 (disjoint): dom2 <= dom1
+[PASS] case0 (disjoint): join (dom1 | dom2)
+[PASS] case0 (disjoint): dom1 <= join (upper bound)
+[PASS] case0 (disjoint): dom2 <= join (upper bound)
+[PASS] case0 (disjoint): meet (dom1 & dom2)
+[PASS] case0 (disjoint): meet <= dom1 (lower bound)
+[PASS] case0 (disjoint): meet <= dom2 (lower bound)
+==== case1 (share v2) ====
+[PASS] case1 (share v2): dom1 built as intended
+[PASS] case1 (share v2): dom2 built as intended
+[PASS] case1 (share v2): dom1 <= dom2
+[PASS] case1 (share v2): dom2 <= dom1
+[PASS] case1 (share v2): join (dom1 | dom2)
+[PASS] case1 (share v2): dom1 <= join (upper bound)
+[PASS] case1 (share v2): dom2 <= join (upper bound)
+[PASS] case1 (share v2): meet (dom1 & dom2)
+[PASS] case1 (share v2): meet <= dom1 (lower bound)
+[PASS] case1 (share v2): meet <= dom2 (lower bound)
+==== case2 (set-merge in dom1) ====
+[PASS] case2 (set-merge in dom1): dom1 built as intended
+[PASS] case2 (set-merge in dom1): dom2 built as intended
+[PASS] case2 (set-merge in dom1): dom1 <= dom2
+[PASS] case2 (set-merge in dom1): dom2 <= dom1
+[PASS] case2 (set-merge in dom1): join (dom1 | dom2)
+[PASS] case2 (set-merge in dom1): dom1 <= join (upper bound)
+[PASS] case2 (set-merge in dom1): dom2 <= join (upper bound)
+[PASS] case2 (set-merge in dom1): meet (dom1 & dom2)
+[PASS] case2 (set-merge in dom1): meet <= dom1 (lower bound)
+[PASS] case2 (set-merge in dom1): meet <= dom2 (lower bound)
+==== case3 (refinement) ====
+[PASS] case3 (refinement): dom1 built as intended
+[PASS] case3 (refinement): dom2 built as intended
+[PASS] case3 (refinement): dom1 <= dom2
+[PASS] case3 (refinement): dom2 <= dom1
+[PASS] case3 (refinement): join (dom1 | dom2)
+[PASS] case3 (refinement): dom1 <= join (upper bound)
+[PASS] case3 (refinement): dom2 <= join (upper bound)
+[PASS] case3 (refinement): meet (dom1 & dom2)
+[PASS] case3 (refinement): meet <= dom1 (lower bound)
+[PASS] case3 (refinement): meet <= dom2 (lower bound)
+==== case4 (chain) ====
+[PASS] case4 (chain): dom1 built as intended
+[PASS] case4 (chain): dom2 built as intended
+[PASS] case4 (chain): dom1 <= dom2
+[PASS] case4 (chain): dom2 <= dom1
+[PASS] case4 (chain): join (dom1 | dom2)
+[PASS] case4 (chain): dom1 <= join (upper bound)
+[PASS] case4 (chain): dom2 <= join (upper bound)
+[PASS] case4 (chain): meet (dom1 & dom2)
+[PASS] case4 (chain): meet <= dom1 (lower bound)
+[PASS] case4 (chain): meet <= dom2 (lower bound)
+[PASS] case4: forget v2
+[PASS] case4: rename {v1..v4} -> {v5..v8}
+[PASS] case4: project on {v1,v3}
+==== case5 (crossing) ====
+[PASS] case5 (crossing): dom1 built as intended
+[PASS] case5 (crossing): dom2 built as intended
+[PASS] case5 (crossing): dom1 <= dom2
+[PASS] case5 (crossing): dom2 <= dom1
+[PASS] case5 (crossing): join (dom1 | dom2)
+[PASS] case5 (crossing): dom1 <= join (upper bound)
+[PASS] case5 (crossing): dom2 <= join (upper bound)
+[PASS] case5 (crossing): meet (dom1 & dom2)
+[PASS] case5 (crossing): meet <= dom1 (lower bound)
+[PASS] case5 (crossing): meet <= dom2 (lower bound)
+[PASS] case5: forget v2
+[PASS] case5: rename {v1..v4} -> {v5..v8}
+[PASS] case5: project on {v1,v3}
+==== case6 (heavy crossing) ====
+[PASS] case6 (heavy crossing): dom1 built as intended
+[PASS] case6 (heavy crossing): dom2 built as intended
+[PASS] case6 (heavy crossing): dom1 <= dom2
+[PASS] case6 (heavy crossing): dom2 <= dom1
+[PASS] case6 (heavy crossing): join (dom1 | dom2)
+[PASS] case6 (heavy crossing): dom1 <= join (upper bound)
+[PASS] case6 (heavy crossing): dom2 <= join (upper bound)
+[PASS] case6 (heavy crossing): meet (dom1 & dom2)
+[PASS] case6 (heavy crossing): meet <= dom1 (lower bound)
+[PASS] case6 (heavy crossing): meet <= dom2 (lower bound)
+[PASS] case6: forget v2
+[PASS] case6: project dom1 on {v1,v3}
+[PASS] case6: project dom2 on {v1,v3}
+==== case7 (set-merge in dom2) ====
+[PASS] case7 (set-merge in dom2): dom1 built as intended
+[PASS] case7 (set-merge in dom2): dom2 built as intended
+[PASS] case7 (set-merge in dom2): dom1 <= dom2
+[PASS] case7 (set-merge in dom2): dom2 <= dom1
+[PASS] case7 (set-merge in dom2): join (dom1 | dom2)
+[PASS] case7 (set-merge in dom2): dom1 <= join (upper bound)
+[PASS] case7 (set-merge in dom2): dom2 <= join (upper bound)
+[PASS] case7 (set-merge in dom2): meet (dom1 & dom2)
+[PASS] case7 (set-merge in dom2): meet <= dom1 (lower bound)
+[PASS] case7 (set-merge in dom2): meet <= dom2 (lower bound)
+[PASS] case7: forget v10
+[PASS] case7: project dom1 on {v1,v3}
+[PASS] case7: project dom2 on {v1,v3}
+==== case8 (object-like) ====
+[PASS] case8 (object-like): dom1 built as intended
+[PASS] case8 (object-like): dom2 built as intended
+[PASS] case8 (object-like): dom1 <= dom2
+[PASS] case8 (object-like): dom2 <= dom1
+[PASS] case8 (object-like): join (dom1 | dom2)
+[PASS] case8 (object-like): dom1 <= join (upper bound)
+[PASS] case8 (object-like): dom2 <= join (upper bound)
+[PASS] case8 (object-like): meet (dom1 & dom2)
+[PASS] case8 (object-like): meet <= dom1 (lower bound)
+[PASS] case8 (object-like): meet <= dom2 (lower bound)
+==== case9 (singletons) ====
+[PASS] case9 (singletons): dom1 built as intended
+[PASS] case9 (singletons): dom2 built as intended
+[PASS] case9 (singletons): dom1 <= dom2
+[PASS] case9 (singletons): dom2 <= dom1
+[PASS] case9 (singletons): join (dom1 | dom2)
+[PASS] case9 (singletons): dom1 <= join (upper bound)
+[PASS] case9 (singletons): dom2 <= join (upper bound)
+[PASS] case9 (singletons): meet (dom1 & dom2)
+[PASS] case9 (singletons): meet <= dom1 (lower bound)
+[PASS] case9 (singletons): meet <= dom2 (lower bound)
+==== case10 (add on top) ====
+[PASS] case10: fresh domain is top
+[PASS] case10: fresh domain has no equalities
+[PASS] case10: no longer top after add
+[PASS] case10: top.add(v1,v2)
+==== case11 (normalize) ====
+[PASS] case11: singleton present before normalize
+[PASS] case11: singleton dropped by normalize (now top)
+[PASS] case11: normalized state has no equalities
+==== case12 (to_linear_constraint_system) ====
+[PASS] case12: top yields a true constraint system
+[PASS] case12: {v1,v2,v3} yields 2 constraints
+[PASS] case12: all emitted constraints are equalities
+==== case13 (share an id across domain values) ====
+[PASS] case13: sharing links only the intended class
+[PASS] case13: shared id matches across the two values
+==== case14 (set merges on an in-use id) ====
+[PASS] case14: set to an in-use id merges the classes
+
+[SUMMARY] 125/125 checks passed
+[SUMMARY] all checks passed
+=== End ./test-bin/unittests-symb_var_eq ===
 === Begin ./test-bin/unittests-union-find ===
 Dom1={{v1}=>{x -> [5, 5]; y -> [10, 10]},{v2}=>{x -> [5, 5]; y -> [10, 10]},{v3}=>{x -> [5, 5]; y -> [10, 10]},{v4}=>{x -> [5, 5]; y -> [10, 10]}}
 After join v1 and v2={{v1,v2}=>{x -> [5, 5]; y -> [10, 10]},{v3}=>{x -> [5, 5]; y -> [10, 10]},{v4}=>{x -> [5, 5]; y -> [10, 10]}}
