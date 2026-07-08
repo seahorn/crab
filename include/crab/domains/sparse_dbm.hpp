@@ -1567,6 +1567,13 @@ public:
     } else {
       interval_t x_int = eval_interval(e);
 
+      // GCC-12 emits a spurious -Wmaybe-uninitialized for boost::optional here:
+      // lb_w/ub_w are only dereferenced under an `if (lb_w)`/`if (ub_w)` guard,
+      // but GCC cannot prove the engaged optional's storage was written.
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
       boost::optional<Wt> lb_w = boost::none;
       boost::optional<Wt> ub_w = boost::none;
       bool overflow;
@@ -1691,6 +1698,9 @@ public:
       // CRAB_WARN("DBM only supports a cst or var on the rhs of assignment");
       // this->operator-=(x);
     }
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
     // g.check_adjs();
 
