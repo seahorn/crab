@@ -17,20 +17,34 @@ jobs:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
+    # Each configuration runs on its own fresh runner so the five builds do not
+    # share (and exhaust) a single runner's disk.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: crab without external libraries
+            dockerfile: docker/crab.dev.Dockerfile
+            tag: seahorn/crab
+          - name: crab+apron+ldd-boxes
+            dockerfile: docker/crab.dev.apron.Dockerfile
+            tag: seahorn/crab_apron_boxes
+          - name: crab+elina
+            dockerfile: docker/crab.dev.elina.Dockerfile
+            tag: seahorn/crab_elina
+          - name: crab+pplite (apron interface)
+            dockerfile: docker/crab.dev.pplite.Dockerfile
+            tag: seahorn/crab_pplite
+          - name: crab+pplite (native interface)
+            dockerfile: docker/crab.dev.pplite_native.Dockerfile
+            tag: seahorn/crab_pplite_native
+
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - name: Check out Repo 
+      - name: Check out Repo
         uses: actions/checkout@v2
         with:
-          ref: dev 
-      - name: Build crab without external libraries + run tests 
-        run: docker build --build-arg BUILD_TYPE=Release -t seahorn/crab -f docker/crab.dev.Dockerfile .
-      - name: Build crab+apron+ldd-boxes and run tests 
-        run: docker build --build-arg BUILD_TYPE=Release -t seahorn/crab_apron_boxes -f docker/crab.dev.apron.Dockerfile .
-      - name: Build crab+elina and run tests 
-        run: docker build --build-arg BUILD_TYPE=Release -t seahorn/crab_elina -f docker/crab.dev.elina.Dockerfile .
-      - name: Build crab+pplite (apron interface) and run tests 
-        run: docker build --build-arg BUILD_TYPE=Release -t seahorn/crab_pplite -f docker/crab.dev.pplite.Dockerfile .
-      - name: Build crab+pplite (native interface) and run tests 
-        run: docker build --build-arg BUILD_TYPE=Release -t seahorn/crab_pplite_native -f docker/crab.dev.pplite_native.Dockerfile .
+          ref: dev
+      - name: Build ${{ matrix.name }} and run tests
+        run: docker build --build-arg BUILD_TYPE=Release -t ${{ matrix.tag }} -f ${{ matrix.dockerfile }} .
