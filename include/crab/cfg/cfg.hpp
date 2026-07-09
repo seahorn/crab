@@ -109,6 +109,7 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/variant.hpp>
 #include <boost/optional.hpp>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -225,29 +226,13 @@ public:
     : m_file(""), m_line(-1), m_col(-1), m_id(num_id) {}
   
   bool operator<(const debug_info &other) const {
-    if (m_id < other.m_id) {
-      return true;
-    } else if (m_id > other.m_id) {
-      return false;
-    }
-    if (m_file < other.m_file) {
-      return true;
-    } else if (m_file > other.m_file) {
-      return false;
-    }
-    if (m_line < other.m_line) {
-      return true;
-    } else if (m_line > other.m_line) {
-      return false;
-    }
-    return (m_col < other.m_col);
+    return std::tie(m_id, m_file, m_line, m_col) <
+           std::tie(other.m_id, other.m_file, other.m_line, other.m_col);
   }
 
   bool operator==(const debug_info &other) const {
-    return (m_id == other.m_id &&
-	    m_file == other.m_file &&
-	    m_line == other.m_line &&
-            m_col == other.m_col);
+    return std::tie(m_id, m_file, m_line, m_col) ==
+           std::tie(other.m_id, other.m_file, other.m_line, other.m_col);
   }
 
   bool has_debug() const {
@@ -3143,19 +3128,8 @@ public:
     }
   }
 
-  function_decl(const this_type &o)
-      : m_func_name(o.m_func_name), m_inputs(o.m_inputs),
-        m_outputs(o.m_outputs) {}
-
-  this_type &operator=(const this_type &o) {
-    if (this != &o) {
-      m_func_name = o.m_func_name;
-      m_inputs = o.m_inputs;
-      m_outputs = o.m_outputs;
-    }
-    return *this;
-  }
-
+  function_decl(const this_type &o) = default;
+  this_type &operator=(const this_type &o) = default;
   function_decl(this_type &&o) = default;
   this_type &operator=(this_type &&o) = default;
 
@@ -3519,8 +3493,7 @@ public:
     live_domain_t ls = live_domain_t::bottom();
     for (auto const &b : boost::make_iterator_range(begin(), end()))
       ls = ls | b.live();
-    // std::vector<varname_t> vars(ls.size());
-    // vars.insert(vars.end(), ls.begin(), ls.end());
+
     std::vector<varname_t> vars;
     for (auto v : ls)
       vars.push_back(v);
@@ -3594,7 +3567,6 @@ public:
     // after removing useless blocks there can be opportunities to
     // merge more blocks.
     merge_blocks();
-    // merge_blocks();
   }
 
 private:
@@ -3617,54 +3589,6 @@ private:
     return get_node(*(rng.begin()));
   }
 
-#if 0
-  bool has_one_child(BasicBlockLabel b) const {
-    auto rng = next_nodes(b);
-    return (std::distance(rng.begin(), rng.end()) == 1);
-  }
-
-  bool has_one_parent(BasicBlockLabel b) const {
-    auto rng = prev_nodes(b);
-    return (std::distance(rng.begin(), rng.end()) == 1);
-  }
-
-  void merge_blocks_rec(BasicBlockLabel curId, visited_t &visited) {
-    if (!visited.insert(curId).second)
-      return;
-
-    basic_block_t &cur = get_node(curId);
-
-    if (has_one_child(curId) && has_one_parent(curId)) {
-      basic_block_t &parent = get_parent(curId);
-      basic_block_t &child = get_child(curId);
-
-      // Merge with its parent if it's its only child.
-      if (has_one_child(parent.label())) {
-        // fold cur into parent
-        parent.copy_back(cur);
-        visited.erase(curId);
-	if (has_exit() && exit() == curId) {
-	  set_exit(parent.label());
-	}
-        remove(curId);
-        parent >> child;
-        merge_blocks_rec(child.label(), visited);
-        return;
-      }
-    }
-
-    for (auto n : boost::make_iterator_range(cur.next_blocks())) {
-      merge_blocks_rec(n, visited);
-    }
-  }
-
-  // Merges a basic block into its predecessor if there is only one
-  // and the predecessor only has one successor.
-  void merge_blocks() {
-    visited_t visited;
-    merge_blocks_rec(entry(), visited);
-  }
-#else
   // Non-recursive version thanks to Prevail
   void merge_blocks() {
     std::set<basic_block_label_t> worklist(this->label_begin(),
@@ -3709,7 +3633,6 @@ private:
       }
     }
   }
-#endif
 
   // mark reachable blocks from entry
   template <class AnyCfg>
@@ -4203,10 +4126,10 @@ private:
   static size_t compute_hash(const callsite_t &cs) {
     size_t res = boost::hash_value(cs.get_func_name());
     for (unsigned i=0, args=cs.get_num_args(); i < args; ++i) {
-      combine(res, cs.get_arg_type(i).hash());
+      res = combine(res, cs.get_arg_type(i).hash());
     }
     for (unsigned i=0, args=cs.get_num_lhs(); i < args; ++i) {
-      combine(res, cs.get_lhs_type(i).hash());
+      res = combine(res, cs.get_lhs_type(i).hash());
     }
     return res;
   }
@@ -4214,10 +4137,10 @@ private:
   static size_t compute_hash(const fdecl_t &d) {
     size_t res = boost::hash_value(d.get_func_name());
     for (unsigned i=0, args=d.get_num_inputs(); i < args; ++i) {
-      combine(res, d.get_input_type(i).hash());
+      res = combine(res, d.get_input_type(i).hash());
     }
     for (unsigned i=0, args=d.get_num_outputs(); i < args; ++i) {
-      combine(res, d.get_output_type(i).hash());
+      res = combine(res, d.get_output_type(i).hash());
     }
     return res;
   }
@@ -4340,7 +4263,7 @@ template <class B, class V, class N> struct hash<crab::cfg::cfg<B, V, N>> {
     if (!_cfg.has_func_decl()) {
       CRAB_ERROR("cannot hash a cfg because function declaration is missing");
     }
-    crab::cfg::callsite_or_fdecl<cfg_t> sig(_cfg.get_func_decl());
+    crab::cfg::callsite_or_fdecl<cfg_t> sig(&(_cfg.get_func_decl()));
     return sig.hash();
   }
 };
