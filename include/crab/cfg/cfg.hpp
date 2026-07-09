@@ -1669,9 +1669,8 @@ public:
 
   callsite_stmt(std::string func_name, const std::vector<variable_t> &args,
                 basic_block_t *parent)
-      : statement_t(CALLSITE, parent), m_func_name(func_name) {
+      : statement_t(CALLSITE, parent), m_func_name(func_name), m_args(args) {
 
-    std::copy(args.begin(), args.end(), std::back_inserter(m_args));
     for (auto arg : m_args) {
       this->m_live.add_use(arg);
     }
@@ -1679,14 +1678,12 @@ public:
 
   callsite_stmt(std::string func_name, const std::vector<variable_t> &lhs,
                 const std::vector<variable_t> &args, basic_block_t *parent)
-      : statement_t(CALLSITE, parent), m_func_name(func_name) {
+      : statement_t(CALLSITE, parent), m_func_name(func_name), m_lhs(lhs),
+        m_args(args) {
 
-    std::copy(args.begin(), args.end(), std::back_inserter(m_args));
     for (auto arg : m_args) {
       this->m_live.add_use(arg);
     }
-
-    std::copy(lhs.begin(), lhs.end(), std::back_inserter(m_lhs));
     for (auto arg : m_lhs) {
       this->m_live.add_def(arg);
     }
@@ -1788,9 +1785,9 @@ public:
                  const std::vector<variable_or_constant_t> &args,
 		 basic_block_t *parent,
 		 debug_info dbg_info = debug_info())
-    : statement_t(CRAB_INTRINSIC, parent, dbg_info), m_intrinsic_name(intrinsic_name) {
+    : statement_t(CRAB_INTRINSIC, parent, dbg_info),
+      m_intrinsic_name(intrinsic_name), m_args(args) {
 
-    std::copy(args.begin(), args.end(), std::back_inserter(m_args));
     for (auto arg : m_args) {
       if (arg.is_variable()) {
 	this->m_live.add_use(arg.get_variable());
@@ -1803,16 +1800,14 @@ public:
                  const std::vector<variable_or_constant_t> &args,
 		 basic_block_t *parent,
 		 debug_info dbg_info = debug_info())
-    : statement_t(CRAB_INTRINSIC, parent, dbg_info), m_intrinsic_name(intrinsic_name) {
+    : statement_t(CRAB_INTRINSIC, parent, dbg_info),
+      m_intrinsic_name(intrinsic_name), m_lhs(lhs), m_args(args) {
 
-    std::copy(args.begin(), args.end(), std::back_inserter(m_args));
     for (auto arg : m_args) {
       if (arg.is_variable()) {
 	this->m_live.add_use(arg.get_variable());
       }
     }
-
-    std::copy(lhs.begin(), lhs.end(), std::back_inserter(m_lhs));
     for (auto arg : m_lhs) {
       this->m_live.add_def(arg);
     }
@@ -2326,9 +2321,17 @@ private:
   }
 
   void remove_adjacent(bb_id_set_t &c, BasicBlockLabel e) {
-    if (std::find(c.begin(), c.end(), e) != c.end()) {
-      c.erase(std::remove(c.begin(), c.end(), e), c.end());
-    }
+    c.erase(std::remove(c.begin(), c.end(), e), c.end());
+  }
+
+  // Deep-copy other's statements, re-parenting the clones to this block.
+  std::vector<statement_t *> clone_stmts_of(const basic_block_t &other) {
+    std::vector<statement_t *> cloned_stmts;
+    cloned_stmts.reserve(other.size());
+    std::transform(other.m_stmts.begin(), other.m_stmts.end(),
+                   std::back_inserter(cloned_stmts),
+                   [this](const statement_t *s) { return s->clone(this); });
+    return cloned_stmts;
   }
 
   basic_block(BasicBlockLabel bb_id)
@@ -2490,42 +2493,23 @@ public:
 
   // insert all statements of other at the front
   void copy_front(const basic_block_t &other) {
-    std::vector<statement_t *> cloned_stmts;
-    cloned_stmts.reserve(other.size());
-    std::transform(other.m_stmts.begin(), other.m_stmts.end(),
-                   std::back_inserter(cloned_stmts),
-                   [this](const statement_t *s) { return s->clone(this); });
-
+    auto cloned_stmts = clone_stmts_of(other);
     m_stmts.insert(m_stmts.begin(), cloned_stmts.begin(), cloned_stmts.end());
     m_live = m_live | other.m_live;
   }
 
   // insert all statements of other at the back
   void copy_back(const basic_block_t &other) {
-    std::vector<statement_t *> cloned_stmts;
-    cloned_stmts.reserve(other.size());
-    std::transform(other.m_stmts.begin(), other.m_stmts.end(),
-                   std::back_inserter(cloned_stmts),
-                   [this](const statement_t *s) { return s->clone(this); });
-
+    auto cloned_stmts = clone_stmts_of(other);
     m_stmts.insert(m_stmts.end(), cloned_stmts.begin(), cloned_stmts.end());
     m_live = m_live | other.m_live;
-  }
-
-  // insert all statements of other at the back
-  void move_back(basic_block_t &other) {
-    m_stmts.reserve(m_stmts.size() + other.m_stmts.size());
-    std::move(other.m_stmts.begin(), other.m_stmts.end(),
-              std::back_inserter(m_stmts));
   }
 
   // Remove s (and free) from this
   void remove(const statement_t *s, bool must_update_uses_and_defs = true) {
     // remove statement using the remove-erase idiom
-    m_stmts.erase(
-        std::remove_if(m_stmts.begin(), m_stmts.end(),
-                       [s](const statement_t *o) { return (o == s); }),
-        m_stmts.end());
+    m_stmts.erase(std::remove(m_stmts.begin(), m_stmts.end(), s),
+                  m_stmts.end());
 
     if (must_update_uses_and_defs) {
       update_uses_and_defs();
