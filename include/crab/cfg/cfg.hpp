@@ -106,9 +106,9 @@
 
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/iterator/transform_iterator.hpp>
+#include <boost/optional.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/variant.hpp>
-#include <boost/optional.hpp>
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
@@ -356,7 +356,8 @@ public:
 // CRTP base that supplies the visitor double-dispatch shared by every
 // concrete statement. Subclasses derive from statement_base<..., Self>
 // instead of statement<...> and no longer need to repeat accept().
-template <class BasicBlockLabel, class Number, class VariableName, class Derived>
+template <class BasicBlockLabel, class Number, class VariableName,
+          class Derived>
 class statement_base : public statement<BasicBlockLabel, Number, VariableName> {
 protected:
   using base_statement_t = statement<BasicBlockLabel, Number, VariableName>;
@@ -375,8 +376,9 @@ public:
  */
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class binary_op : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    binary_op<BasicBlockLabel, Number, VariableName>> {
+class binary_op
+    : public statement_base<BasicBlockLabel, Number, VariableName,
+                            binary_op<BasicBlockLabel, Number, VariableName>> {
   using this_type = binary_op<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -388,8 +390,9 @@ public:
   binary_op(variable_t lhs, binary_operation_t op, linear_expression_t op1,
             linear_expression_t op2, basic_block_t *parent,
             debug_info dbg_info = debug_info())
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(BIN_OP, parent, dbg_info), m_lhs(lhs), m_op(op), m_op1(op1),
-        m_op2(op2) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            BIN_OP, parent, dbg_info),
+        m_lhs(lhs), m_op(op), m_op1(op1), m_op2(op2) {
     this->m_live.add_def(m_lhs);
     for (auto const &v : m_op1.variables()) {
       this->m_live.add_use(v);
@@ -423,8 +426,9 @@ private:
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class assignment : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    assignment<BasicBlockLabel, Number, VariableName>> {
+class assignment
+    : public statement_base<BasicBlockLabel, Number, VariableName,
+                            assignment<BasicBlockLabel, Number, VariableName>> {
   using this_type = assignment<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -434,7 +438,9 @@ public:
   using linear_expression_t = ikos::linear_expression<Number, VariableName>;
 
   assignment(variable_t lhs, linear_expression_t rhs, basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(ASSIGN, parent), m_lhs(lhs), m_rhs(rhs) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            ASSIGN, parent),
+        m_lhs(lhs), m_rhs(rhs) {
     this->m_live.add_def(m_lhs);
     for (auto const &v : m_rhs.variables())
       this->m_live.add_use(v);
@@ -458,8 +464,9 @@ private:
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class assume_stmt : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    assume_stmt<BasicBlockLabel, Number, VariableName>> {
+class assume_stmt : public statement_base<
+                        BasicBlockLabel, Number, VariableName,
+                        assume_stmt<BasicBlockLabel, Number, VariableName>> {
 
   using this_type = assume_stmt<BasicBlockLabel, Number, VariableName>;
 
@@ -470,7 +477,9 @@ public:
   using linear_constraint_t = ikos::linear_constraint<Number, VariableName>;
 
   assume_stmt(linear_constraint_t cst, basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(ASSUME, parent), m_cst(cst) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            ASSUME, parent),
+        m_cst(cst) {
     for (auto const &v : cst.variables())
       this->m_live.add_use(v);
   }
@@ -491,15 +500,18 @@ private:
 
 template <class BasicBlockLabel, class Number, class VariableName>
 class unreachable_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    unreachable_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          unreachable_stmt<BasicBlockLabel, Number, VariableName>> {
   using this_type = unreachable_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
   using statement_t = statement<BasicBlockLabel, Number, VariableName>;
   using basic_block_t = typename statement_t::basic_block_t;
 
-  unreachable_stmt(basic_block_t *parent) : statement_base<BasicBlockLabel, Number, VariableName, this_type>(UNREACH, parent) {}
+  unreachable_stmt(basic_block_t *parent)
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            UNREACH, parent) {}
 
   virtual statement_t *clone(basic_block_t *parent) const override {
     return new this_type(parent);
@@ -511,8 +523,9 @@ public:
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class havoc_stmt : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    havoc_stmt<BasicBlockLabel, Number, VariableName>> {
+class havoc_stmt
+    : public statement_base<BasicBlockLabel, Number, VariableName,
+                            havoc_stmt<BasicBlockLabel, Number, VariableName>> {
   using this_type = havoc_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -521,7 +534,9 @@ public:
   using variable_t = variable<Number, VariableName>;
 
   havoc_stmt(variable_t lhs, std::string comment, basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(HAVOC, parent), m_lhs(lhs), m_comment(comment) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            HAVOC, parent),
+        m_lhs(lhs), m_comment(comment) {
     this->m_live.add_def(m_lhs);
   }
 
@@ -551,8 +566,9 @@ private:
 // generate many select instructions so we prefer to support
 // natively to avoid a blow up in the size of the CFG.
 template <class BasicBlockLabel, class Number, class VariableName>
-class select_stmt : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    select_stmt<BasicBlockLabel, Number, VariableName>> {
+class select_stmt : public statement_base<
+                        BasicBlockLabel, Number, VariableName,
+                        select_stmt<BasicBlockLabel, Number, VariableName>> {
   using this_type = select_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -564,8 +580,9 @@ public:
 
   select_stmt(variable_t lhs, linear_constraint_t cond, linear_expression_t e1,
               linear_expression_t e2, basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(SELECT, parent), m_lhs(lhs), m_cond(cond), m_e1(e1),
-        m_e2(e2) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            SELECT, parent),
+        m_lhs(lhs), m_cond(cond), m_e1(e1), m_e2(e2) {
     this->m_live.add_def(m_lhs);
     for (auto const &v : m_cond.variables())
       this->m_live.add_use(v);
@@ -600,8 +617,9 @@ private:
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class assert_stmt : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    assert_stmt<BasicBlockLabel, Number, VariableName>> {
+class assert_stmt : public statement_base<
+                        BasicBlockLabel, Number, VariableName,
+                        assert_stmt<BasicBlockLabel, Number, VariableName>> {
   using this_type = assert_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -612,7 +630,9 @@ public:
 
   assert_stmt(linear_constraint_t cst, basic_block_t *parent,
               debug_info dbg_info = debug_info())
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(ASSERT, parent, dbg_info), m_cst(cst) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            ASSERT, parent, dbg_info),
+        m_cst(cst) {
     for (auto const &v : cst.variables())
       this->m_live.add_use(v);
   }
@@ -635,8 +655,10 @@ private:
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class int_cast_stmt : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    int_cast_stmt<BasicBlockLabel, Number, VariableName>> {
+class int_cast_stmt
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          int_cast_stmt<BasicBlockLabel, Number, VariableName>> {
   using this_type = int_cast_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -647,8 +669,9 @@ public:
 
   int_cast_stmt(cast_operation_t op, variable_t src, variable_t dst,
                 basic_block_t *parent, debug_info dbg_info = debug_info())
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(INT_CAST, parent, dbg_info), m_op(op), m_src(src),
-        m_dst(dst) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            INT_CAST, parent, dbg_info),
+        m_op(op), m_src(src), m_dst(dst) {
     this->m_live.add_use(m_src);
     this->m_live.add_def(m_dst);
   }
@@ -707,8 +730,9 @@ private:
 //  The semantics is similar to constant arrays in SMT.
 template <class BasicBlockLabel, class Number, class VariableName>
 class array_init_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    array_init_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          array_init_stmt<BasicBlockLabel, Number, VariableName>> {
   using this_type = array_init_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -721,8 +745,9 @@ public:
   array_init_stmt(variable_t arr, linear_expression_t elem_size,
                   linear_expression_t lb, linear_expression_t ub,
                   linear_expression_t val, basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(ARR_INIT, parent), m_arr(arr), m_elem_size(elem_size),
-        m_lb(lb), m_ub(ub), m_val(val) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            ARR_INIT, parent),
+        m_arr(arr), m_elem_size(elem_size), m_lb(lb), m_ub(ub), m_val(val) {
 
     this->m_live.add_def(m_arr);
     for (auto const &v : m_elem_size.variables()) {
@@ -771,8 +796,9 @@ private:
 
 template <class BasicBlockLabel, class Number, class VariableName>
 class array_store_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    array_store_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          array_store_stmt<BasicBlockLabel, Number, VariableName>> {
   using this_type = array_store_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -789,8 +815,9 @@ public:
                    linear_expression_t lb, linear_expression_t ub,
                    linear_expression_t value, bool is_strong_update,
                    basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(ARR_STORE, parent), m_arr(arr), m_elem_size(elem_size),
-        m_lb(lb), m_ub(ub), m_value(value),
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            ARR_STORE, parent),
+        m_arr(arr), m_elem_size(elem_size), m_lb(lb), m_ub(ub), m_value(value),
         m_is_strong_update(is_strong_update) {
 
     this->m_live.add_def(m_arr);
@@ -859,8 +886,9 @@ private:
 
 template <class BasicBlockLabel, class Number, class VariableName>
 class array_load_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    array_load_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          array_load_stmt<BasicBlockLabel, Number, VariableName>> {
   using this_type = array_load_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -872,8 +900,9 @@ public:
 
   array_load_stmt(variable_t lhs, variable_t arr, linear_expression_t elem_size,
                   linear_expression_t index, basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(ARR_LOAD, parent), m_lhs(lhs), m_array(arr),
-        m_elem_size(elem_size), m_index(index) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            ARR_LOAD, parent),
+        m_lhs(lhs), m_array(arr), m_elem_size(elem_size), m_index(index) {
 
     this->m_live.add_def(lhs);
     this->m_live.add_use(m_array);
@@ -914,8 +943,9 @@ private:
 
 template <class BasicBlockLabel, class Number, class VariableName>
 class array_assign_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    array_assign_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          array_assign_stmt<BasicBlockLabel, Number, VariableName>> {
   //! a = b
   using this_type = array_assign_stmt<BasicBlockLabel, Number, VariableName>;
 
@@ -926,7 +956,9 @@ public:
   using type_t = typename variable_t::type_t;
 
   array_assign_stmt(variable_t lhs, variable_t rhs, basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(ARR_ASSIGN, parent), m_lhs(lhs), m_rhs(rhs) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            ARR_ASSIGN, parent),
+        m_lhs(lhs), m_rhs(rhs) {
     this->m_live.add_def(lhs);
     this->m_live.add_use(rhs);
   }
@@ -953,11 +985,12 @@ private:
 /*
  * References and Regions
  */
-  
+
 template <class BasicBlockLabel, class Number, class VariableName>
 class region_init_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    region_init_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          region_init_stmt<BasicBlockLabel, Number, VariableName>> {
   // region_init(region);
   using this_type = region_init_stmt<BasicBlockLabel, Number, VariableName>;
 
@@ -968,7 +1001,9 @@ public:
 
   region_init_stmt(variable_t region, basic_block_t *parent,
                    debug_info dbg_info = debug_info())
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(REGION_INIT, parent, dbg_info), m_region(region) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            REGION_INIT, parent, dbg_info),
+        m_region(region) {
     this->m_live.add_def(m_region);
   }
 
@@ -988,8 +1023,9 @@ private:
 
 template <class BasicBlockLabel, class Number, class VariableName>
 class region_copy_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    region_copy_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          region_copy_stmt<BasicBlockLabel, Number, VariableName>> {
   //! a = b
   using this_type = region_copy_stmt<BasicBlockLabel, Number, VariableName>;
 
@@ -1001,8 +1037,9 @@ public:
 
   region_copy_stmt(variable_t lhs_region, variable_t rhs_region,
                    basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(REGION_COPY, parent), m_lhs_region(lhs_region),
-        m_rhs_region(rhs_region) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            REGION_COPY, parent),
+        m_lhs_region(lhs_region), m_rhs_region(rhs_region) {
     this->m_live.add_def(m_lhs_region);
     this->m_live.add_use(m_rhs_region);
   }
@@ -1027,11 +1064,11 @@ private:
   variable_t m_rhs_region;
 };
 
-
 template <class BasicBlockLabel, class Number, class VariableName>
 class region_cast_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    region_cast_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          region_cast_stmt<BasicBlockLabel, Number, VariableName>> {
   using this_type = region_cast_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -1042,9 +1079,9 @@ public:
 
   region_cast_stmt(variable_t src_region, variable_t dst_region,
                    basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(REGION_CAST, parent),
-	m_src_region(src_region),
-        m_dst_region(dst_region) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            REGION_CAST, parent),
+        m_src_region(src_region), m_dst_region(dst_region) {
     this->m_live.add_use(m_src_region);    
     this->m_live.add_def(m_dst_region);
   }
@@ -1070,10 +1107,12 @@ private:
   variable_t m_src_region;
   variable_t m_dst_region;
 };
-  
+
 template <class BasicBlockLabel, class Number, class VariableName>
-class make_ref_stmt : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    make_ref_stmt<BasicBlockLabel, Number, VariableName>> {
+class make_ref_stmt
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          make_ref_stmt<BasicBlockLabel, Number, VariableName>> {
   // lhs := make_ref(region, as)
   using this_type = make_ref_stmt<BasicBlockLabel, Number, VariableName>;
 
@@ -1082,13 +1121,13 @@ public:
   using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
   using variable_or_constant_t = variable_or_constant<Number, VariableName>;
-  
-  make_ref_stmt(variable_t lhs, variable_t region,
-		variable_or_constant_t size,
-		crab::tag as, basic_block_t *parent,
+
+  make_ref_stmt(variable_t lhs, variable_t region, variable_or_constant_t size,
+                crab::tag as, basic_block_t *parent,
                 debug_info dbg_info = debug_info())
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(REF_MAKE, parent, dbg_info),
-	m_lhs(lhs), m_region(region), m_size(size), m_alloc_site(as) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            REF_MAKE, parent, dbg_info),
+        m_lhs(lhs), m_region(region), m_size(size), m_alloc_site(as) {
     this->m_live.add_def(m_lhs);
     this->m_live.add_use(m_region);
   }
@@ -1119,10 +1158,11 @@ private:
   crab::tag m_alloc_site;
 };
 
-
 template <class BasicBlockLabel, class Number, class VariableName>
-class remove_ref_stmt : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    remove_ref_stmt<BasicBlockLabel, Number, VariableName>> {
+class remove_ref_stmt
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          remove_ref_stmt<BasicBlockLabel, Number, VariableName>> {
   // remove_ref(region, ref)
   using this_type = remove_ref_stmt<BasicBlockLabel, Number, VariableName>;
 
@@ -1131,11 +1171,11 @@ public:
   using basic_block_t = typename statement_t::basic_block_t;
   using variable_t = variable<Number, VariableName>;
 
-  remove_ref_stmt(variable_t region, variable_t ref,
-		  basic_block_t *parent,
-		  debug_info dbg_info = debug_info())
-    : statement_base<BasicBlockLabel, Number, VariableName, this_type>(REF_REMOVE, parent, dbg_info),
-      m_region(region), m_ref(ref) {
+  remove_ref_stmt(variable_t region, variable_t ref, basic_block_t *parent,
+                  debug_info dbg_info = debug_info())
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            REF_REMOVE, parent, dbg_info),
+        m_region(region), m_ref(ref) {
     this->m_live.add_use(m_region);    
     this->m_live.add_use(m_ref);
   }
@@ -1157,11 +1197,12 @@ private:
   variable_t m_region;  
   variable_t m_ref;
 };
-  
+
 template <class BasicBlockLabel, class Number, class VariableName>
 class load_from_ref_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    load_from_ref_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          load_from_ref_stmt<BasicBlockLabel, Number, VariableName>> {
   // lhs := load_from_ref(ref, region);
   using this_type = load_from_ref_stmt<BasicBlockLabel, Number, VariableName>;
 
@@ -1172,8 +1213,9 @@ public:
 
   load_from_ref_stmt(variable_t lhs, variable_t ref, variable_t region,
                      basic_block_t *parent, debug_info dbg_info = debug_info())
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(REF_LOAD, parent, dbg_info), m_lhs(lhs), m_ref(ref),
-        m_region(region) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            REF_LOAD, parent, dbg_info),
+        m_lhs(lhs), m_ref(ref), m_region(region) {
     this->m_live.add_def(m_lhs);
     this->m_live.add_use(m_region);
     this->m_live.add_use(m_ref);
@@ -1203,8 +1245,9 @@ private:
 
 template <class BasicBlockLabel, class Number, class VariableName>
 class store_to_ref_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    store_to_ref_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          store_to_ref_stmt<BasicBlockLabel, Number, VariableName>> {
   // store_to_ref(ref, region, val);
   using this_type = store_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
 
@@ -1217,8 +1260,9 @@ public:
   store_to_ref_stmt(variable_t ref, variable_t region,
                     variable_or_constant_t val, basic_block_t *parent,
                     debug_info dbg_info = debug_info())
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(REF_STORE, parent, dbg_info), m_ref(ref), m_region(region),
-        m_val(val) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            REF_STORE, parent, dbg_info),
+        m_ref(ref), m_region(region), m_val(val) {
     this->m_live.add_def(m_region);    
     this->m_live.add_use(m_region);
     this->m_live.add_use(m_ref);
@@ -1250,8 +1294,9 @@ private:
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class gep_ref_stmt : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    gep_ref_stmt<BasicBlockLabel, Number, VariableName>> {
+class gep_ref_stmt : public statement_base<
+                         BasicBlockLabel, Number, VariableName,
+                         gep_ref_stmt<BasicBlockLabel, Number, VariableName>> {
   // (lhs, lhs_region) := gep_ref(rhs, rhs_region, offset)
   using this_type = gep_ref_stmt<BasicBlockLabel, Number, VariableName>;
 
@@ -1263,9 +1308,10 @@ public:
   gep_ref_stmt(variable_t lhs, variable_t lhs_region, variable_t rhs,
                variable_t rhs_region, linear_expression_t offset,
                basic_block_t *parent, debug_info dbg_info = debug_info())
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(REF_GEP, parent, dbg_info), m_lhs(lhs),
-        m_lhs_region(lhs_region), m_rhs(rhs), m_rhs_region(rhs_region),
-        m_offset(offset) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            REF_GEP, parent, dbg_info),
+        m_lhs(lhs), m_lhs_region(lhs_region), m_rhs(rhs),
+        m_rhs_region(rhs_region), m_offset(offset) {
     // JN: not sure whether lhs_region should be a definition or an
     // use.
     // 
@@ -1320,8 +1366,9 @@ private:
 
 template <class BasicBlockLabel, class Number, class VariableName>
 class assume_ref_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    assume_ref_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          assume_ref_stmt<BasicBlockLabel, Number, VariableName>> {
   using this_type = assume_ref_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -1331,7 +1378,9 @@ public:
   using reference_constraint_t = reference_constraint<Number, VariableName>;
 
   assume_ref_stmt(reference_constraint_t cst, basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(REF_ASSUME, parent), m_cst(cst) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            REF_ASSUME, parent),
+        m_cst(cst) {
     if (!m_cst.is_tautology() && !m_cst.is_contradiction()) {
       if (m_cst.is_unary()) {
         this->m_live.add_use(m_cst.lhs());
@@ -1358,8 +1407,9 @@ private:
 
 template <class BasicBlockLabel, class Number, class VariableName>
 class assert_ref_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    assert_ref_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          assert_ref_stmt<BasicBlockLabel, Number, VariableName>> {
   using this_type = assert_ref_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -1370,7 +1420,9 @@ public:
 
   assert_ref_stmt(reference_constraint_t cst, basic_block_t *parent,
                   debug_info dbg_info = debug_info())
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(REF_ASSERT, parent, dbg_info), m_cst(cst) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            REF_ASSERT, parent, dbg_info),
+        m_cst(cst) {
     if (!m_cst.is_tautology() && !m_cst.is_contradiction()) {
       if (m_cst.is_unary()) {
         this->m_live.add_use(m_cst.lhs());
@@ -1402,8 +1454,9 @@ private:
 //    if b then lhs=op1 else lhs=op2
 template <class BasicBlockLabel, class Number, class VariableName>
 class ref_select_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    ref_select_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          ref_select_stmt<BasicBlockLabel, Number, VariableName>> {
   using this_type = ref_select_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -1418,9 +1471,11 @@ public:
                   boost::optional<variable_t> op1_rgn,
                   variable_or_constant_t op2_ref,
                   boost::optional<variable_t> op2_rgn, basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(REF_SELECT, parent), m_lhs_ref(lhs_ref), m_lhs_rgn(lhs_rgn),
-        m_cond(cond), m_op1_ref(op1_ref), m_op1_rgn(op1_rgn),
-        m_op2_ref(op2_ref), m_op2_rgn(op2_rgn) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            REF_SELECT, parent),
+        m_lhs_ref(lhs_ref), m_lhs_rgn(lhs_rgn), m_cond(cond),
+        m_op1_ref(op1_ref), m_op1_rgn(op1_rgn), m_op2_ref(op2_ref),
+        m_op2_rgn(op2_rgn) {
 
     this->m_live.add_def(m_lhs_ref);
     this->m_live.add_def(m_lhs_rgn);
@@ -1486,8 +1541,9 @@ private:
 
 template <class BasicBlockLabel, class Number, class VariableName>
 class ref_to_int_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    ref_to_int_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          ref_to_int_stmt<BasicBlockLabel, Number, VariableName>> {
   // inv_var := ref_to_int(region, ref_var)
   using this_type = ref_to_int_stmt<BasicBlockLabel, Number, VariableName>;
 
@@ -1498,8 +1554,9 @@ public:
 
   ref_to_int_stmt(variable_t region, variable_t ref_var, variable_t int_var,
                   basic_block_t *parent, debug_info dbg_info = debug_info())
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(REF_TO_INT, parent, dbg_info), m_region(region),
-        m_ref_var(ref_var), m_int_var(int_var) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            REF_TO_INT, parent, dbg_info),
+        m_region(region), m_ref_var(ref_var), m_int_var(int_var) {
     this->m_live.add_use(m_ref_var);
     this->m_live.add_def(m_int_var);
   }
@@ -1529,8 +1586,9 @@ private:
 
 template <class BasicBlockLabel, class Number, class VariableName>
 class int_to_ref_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    int_to_ref_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          int_to_ref_stmt<BasicBlockLabel, Number, VariableName>> {
   // ref_var := int_to_ref(int_var, region)
   using this_type = int_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
 
@@ -1541,8 +1599,9 @@ public:
 
   int_to_ref_stmt(variable_t int_var, variable_t region, variable_t ref_var,
                   basic_block_t *parent, debug_info dbg_info = debug_info())
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(INT_TO_REF, parent, dbg_info), m_int_var(int_var),
-        m_region(region), m_ref_var(ref_var) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            INT_TO_REF, parent, dbg_info),
+        m_int_var(int_var), m_region(region), m_ref_var(ref_var) {
     this->m_live.add_use(m_int_var);
     this->m_live.add_def(m_ref_var);
   }
@@ -1575,8 +1634,10 @@ private:
 */
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class callsite_stmt : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    callsite_stmt<BasicBlockLabel, Number, VariableName>> {
+class callsite_stmt
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          callsite_stmt<BasicBlockLabel, Number, VariableName>> {
   using this_type = callsite_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -1587,7 +1648,9 @@ public:
 
   callsite_stmt(std::string func_name, const std::vector<variable_t> &args,
                 basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(CALLSITE, parent), m_func_name(func_name), m_args(args) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            CALLSITE, parent),
+        m_func_name(func_name), m_args(args) {
 
     for (auto arg : m_args) {
       this->m_live.add_use(arg);
@@ -1596,8 +1659,9 @@ public:
 
   callsite_stmt(std::string func_name, const std::vector<variable_t> &lhs,
                 const std::vector<variable_t> &args, basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(CALLSITE, parent), m_func_name(func_name), m_lhs(lhs),
-        m_args(args) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            CALLSITE, parent),
+        m_func_name(func_name), m_lhs(lhs), m_args(args) {
 
     for (auto arg : m_args) {
       this->m_live.add_use(arg);
@@ -1680,12 +1744,13 @@ private:
   std::vector<variable_t> m_args;
 };
 
-
 /* An intrinsic function is an "internal" function with semantics
    defined by the Crab domains */
 template <class BasicBlockLabel, class Number, class VariableName>
-class intrinsic_stmt : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    intrinsic_stmt<BasicBlockLabel, Number, VariableName>> {
+class intrinsic_stmt
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          intrinsic_stmt<BasicBlockLabel, Number, VariableName>> {
   using this_type = intrinsic_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -1697,10 +1762,10 @@ public:
 
   intrinsic_stmt(std::string intrinsic_name,
                  const std::vector<variable_or_constant_t> &args,
-		 basic_block_t *parent,
-		 debug_info dbg_info = debug_info())
-    : statement_base<BasicBlockLabel, Number, VariableName, this_type>(CRAB_INTRINSIC, parent, dbg_info),
-      m_intrinsic_name(intrinsic_name), m_args(args) {
+                 basic_block_t *parent, debug_info dbg_info = debug_info())
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            CRAB_INTRINSIC, parent, dbg_info),
+        m_intrinsic_name(intrinsic_name), m_args(args) {
 
     for (auto arg : m_args) {
       if (arg.is_variable()) {
@@ -1709,13 +1774,12 @@ public:
     }
   }
 
-  intrinsic_stmt(std::string intrinsic_name,
-		 const std::vector<variable_t> &lhs,
+  intrinsic_stmt(std::string intrinsic_name, const std::vector<variable_t> &lhs,
                  const std::vector<variable_or_constant_t> &args,
-		 basic_block_t *parent,
-		 debug_info dbg_info = debug_info())
-    : statement_base<BasicBlockLabel, Number, VariableName, this_type>(CRAB_INTRINSIC, parent, dbg_info),
-      m_intrinsic_name(intrinsic_name), m_lhs(lhs), m_args(args) {
+                 basic_block_t *parent, debug_info dbg_info = debug_info())
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            CRAB_INTRINSIC, parent, dbg_info),
+        m_intrinsic_name(intrinsic_name), m_lhs(lhs), m_args(args) {
 
     for (auto arg : m_args) {
       if (arg.is_variable()) {
@@ -1726,7 +1790,7 @@ public:
       this->m_live.add_def(arg);
     }
   }
-  
+
   const std::vector<variable_t> &get_lhs() const { return m_lhs; }
 
   const std::string &get_intrinsic_name() const { return m_intrinsic_name; }
@@ -1796,8 +1860,9 @@ private:
 
 template <class BasicBlockLabel, class Number, class VariableName>
 class bool_assign_cst
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    bool_assign_cst<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          bool_assign_cst<BasicBlockLabel, Number, VariableName>> {
   using this_type = bool_assign_cst<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -1811,8 +1876,9 @@ public:
 
   bool_assign_cst(variable_t lhs, linear_constraint_t rhs,
                   basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(BOOL_ASSIGN_CST, parent), m_is_rhs_linear_constraint(true),
-        m_lhs(lhs), m_rhs(rhs) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            BOOL_ASSIGN_CST, parent),
+        m_is_rhs_linear_constraint(true), m_lhs(lhs), m_rhs(rhs) {
     this->m_live.add_def(m_lhs);
     for (auto const &v : rhs_as_linear_constraint().variables())
       this->m_live.add_use(v);
@@ -1820,8 +1886,9 @@ public:
 
   bool_assign_cst(variable_t lhs, reference_constraint_t rhs,
                   basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(BOOL_ASSIGN_CST, parent), m_is_rhs_linear_constraint(false),
-        m_lhs(lhs), m_rhs(rhs) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            BOOL_ASSIGN_CST, parent),
+        m_is_rhs_linear_constraint(false), m_lhs(lhs), m_rhs(rhs) {
     this->m_live.add_def(m_lhs);
     for (auto const &v : rhs_as_reference_constraint().variables())
       this->m_live.add_use(v);
@@ -1886,8 +1953,9 @@ private:
 
 template <class BasicBlockLabel, class Number, class VariableName>
 class bool_assign_var
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    bool_assign_var<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          bool_assign_var<BasicBlockLabel, Number, VariableName>> {
   // Note that this can be simulated with bool_binary_op (e.g.,
   // b1 := b2 ----> b1 := b2 or false). However, we create a
   // special statement to assign a variable to another because it
@@ -1902,8 +1970,9 @@ public:
 
   bool_assign_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
                   basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(BOOL_ASSIGN_VAR, parent), m_lhs(lhs), m_rhs(rhs),
-        m_is_rhs_negated(is_not_rhs) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            BOOL_ASSIGN_VAR, parent),
+        m_lhs(lhs), m_rhs(rhs), m_is_rhs_negated(is_not_rhs) {
     this->m_live.add_def(m_lhs);
     this->m_live.add_use(m_rhs);
   }
@@ -1936,8 +2005,10 @@ private:
 };
 
 template <class BasicBlockLabel, class Number, class VariableName>
-class bool_binary_op : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    bool_binary_op<BasicBlockLabel, Number, VariableName>> {
+class bool_binary_op
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          bool_binary_op<BasicBlockLabel, Number, VariableName>> {
   // b1:= b2 and b3
   // b1:= b2 or b3
   // b1:= b2 xor b3
@@ -1951,8 +2022,9 @@ public:
   bool_binary_op(variable_t lhs, bool_binary_operation_t op, variable_t op1,
                  variable_t op2, basic_block_t *parent,
                  debug_info dbg_info = debug_info())
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(BOOL_BIN_OP, parent, dbg_info), m_lhs(lhs), m_op(op),
-        m_op1(op1), m_op2(op2) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            BOOL_BIN_OP, parent, dbg_info),
+        m_lhs(lhs), m_op(op), m_op1(op1), m_op2(op2) {
     this->m_live.add_def(m_lhs);
     this->m_live.add_use(m_op1);
     this->m_live.add_use(m_op2);
@@ -1983,8 +2055,9 @@ private:
 
 template <class BasicBlockLabel, class Number, class VariableName>
 class bool_assume_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    bool_assume_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          bool_assume_stmt<BasicBlockLabel, Number, VariableName>> {
   using this_type = bool_assume_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -1993,7 +2066,9 @@ public:
   using variable_t = variable<Number, VariableName>;
 
   bool_assume_stmt(variable_t v, bool is_negated, basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(BOOL_ASSUME, parent), m_var(v), m_is_negated(is_negated) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            BOOL_ASSUME, parent),
+        m_var(v), m_is_negated(is_negated) {
     this->m_live.add_use(v);
   }
 
@@ -2022,8 +2097,9 @@ private:
 //    if b2 then b1=b3 else b1=b4
 template <class BasicBlockLabel, class Number, class VariableName>
 class bool_select_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    bool_select_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          bool_select_stmt<BasicBlockLabel, Number, VariableName>> {
   using this_type = bool_select_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -2033,8 +2109,9 @@ public:
 
   bool_select_stmt(variable_t lhs, variable_t cond, variable_t b1,
                    variable_t b2, basic_block_t *parent)
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(BOOL_SELECT, parent), m_lhs(lhs), m_cond(cond), m_b1(b1),
-        m_b2(b2) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            BOOL_SELECT, parent),
+        m_lhs(lhs), m_cond(cond), m_b1(b1), m_b2(b2) {
     this->m_live.add_def(m_lhs);
     this->m_live.add_use(m_cond);
     this->m_live.add_use(m_b1);
@@ -2067,8 +2144,9 @@ private:
 
 template <class BasicBlockLabel, class Number, class VariableName>
 class bool_assert_stmt
-    : public statement_base<BasicBlockLabel, Number, VariableName,
-                                    bool_assert_stmt<BasicBlockLabel, Number, VariableName>> {
+    : public statement_base<
+          BasicBlockLabel, Number, VariableName,
+          bool_assert_stmt<BasicBlockLabel, Number, VariableName>> {
   using this_type = bool_assert_stmt<BasicBlockLabel, Number, VariableName>;
 
 public:
@@ -2078,7 +2156,9 @@ public:
 
   bool_assert_stmt(variable_t v, basic_block_t *parent,
                    debug_info dbg_info = debug_info())
-      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(BOOL_ASSERT, parent, dbg_info), m_var(v) {
+      : statement_base<BasicBlockLabel, Number, VariableName, this_type>(
+            BOOL_ASSERT, parent, dbg_info),
+        m_var(v) {
     this->m_live.add_use(v);
   }
 
