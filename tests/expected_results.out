@@ -544,6 +544,36 @@ exit={x2 -> [3, 3]; y2 -> [6, 6]; z2 -> [8, 8]; w2 -> [11, 11]}
 entry={x2 -> [3, 3]; y2 -> [6, 6]}
 =================================
 === End ./test-bin/bu_inter ===
+=== Begin ./test-bin/bu_inter_mutate_input ===
+o:int32 declare g(p:int32)
+entry:
+  p = p+1;
+  goto exit;
+exit:
+  o = p;
+
+
+res:int32 declare main()
+entry:
+  a = 10;
+  r:int32 = call g(a:int32);
+  goto exit;
+exit:
+  assert(r = 11);
+  assert(a = 10);
+  res = r;
+
+
+Running summary domain=SparseDBM and forward domain=Int
+o:int32 declare g(p:int32)
+exit={p -> [11, 11]; o -> [11, 11]}
+entry={p -> [11, 11]}
+=================================
+res:int32 declare main()
+exit={a -> [10, 10]; r -> [11, 11]; res -> [11, 11]}
+entry={a -> [10, 10]; r -> [11, 11]}
+=================================
+=== End ./test-bin/bu_inter_mutate_input ===
 === Begin ./test-bin/cfg ===
 CFG
 x0:
@@ -2755,10 +2785,10 @@ exit:
 
 
 (x_out:int32,y_out:int32) declare loop(x_in:int32,y_in:int32)
-entry={}
-base_case={}
-exit={}
-rec_case={}
+entry={x_in-x_in.in<=0, x_in.in-x_in<=0, y_in-y_in.in<=0, y_in.in-y_in<=0}
+base_case={x_in-x_in.in<=0, x_in.in-x_in<=0, y_in-y_in.in<=0, y_in.in-y_in<=0}
+exit={x_in.in-x_in<=0, y_in.in-y_in<=0, x_in-x_in.in<=0, y_in-y_in.in<=0}
+rec_case={x_in-x_in.in<=0, x_in.in-x_in<=0, y_in-y_in.in<=0, y_in.in-y_in<=0}
 =================================
 (x_res:int32,y_res:int32) declare main()
 entry={}
@@ -2877,10 +2907,10 @@ Running top-down inter-procedural analysis with SplitDBM
 0  Number of total warning checks
 0  Number of total unreachable checks
 res:int32 declare foo(n:int32)
-entry={}
-rec={}
-exit={res-n<=0, n-res<=0}
-base={}
+entry={n-n.in<=0, n.in-n<=0}
+rec={n-n.in<=0, n.in-n<=0}
+exit={n.in-n<=0, res-n<=0, n-res<=0, n.in-res<=0, n-n.in<=0, res-n.in<=0}
+base={n-n.in<=0, n.in-n<=0}
 =================================
 === End ./test-bin/td_inter_6 ===
 === Begin ./test-bin/td_inter_7 ===
@@ -2918,10 +2948,10 @@ Running top-down inter-procedural analysis with SplitDBM
 0  Number of total warning checks
 0  Number of total unreachable checks
 res:int32 declare foo(n:int32)
-entry={n -> [-oo, 10]}
-rec={n -> [-oo, 10]}
-exit={n -> [-oo, 10], res -> [-oo, 10], res-n<=0, n-res<=0}
-base={n -> [-oo, 10]}
+entry={n -> [-oo, 10], n.in -> [-oo, 10], n.in-n<=0, n-n.in<=0}
+rec={n -> [-oo, 10], n.in -> [-oo, 10], n.in-n<=0, n-n.in<=0}
+exit={n -> [-oo, 10], res -> [-oo, 10], n.in -> [-oo, 10], n.in-n<=0, res-n<=0, n-res<=0, n.in-res<=0, n-n.in<=0, res-n.in<=0}
+base={n -> [-oo, 10], n.in -> [-oo, 10], n.in-n<=0, n-n.in<=0}
 =================================
 void declare main()
 entry={}
@@ -2965,16 +2995,42 @@ Running top-down inter-procedural analysis with SplitDBM
 0  Number of total warning checks
 0  Number of total unreachable checks
 res:int32 declare foo(n:int32)
-entry={n -> [-oo, 10]}
-rec={n -> [-oo, 10]}
-exit={n -> [-oo, 10], res -> [-oo, 10], res-n<=0, n-res<=0}
-base={n -> [-oo, 10]}
+entry={n -> [-oo, 10], n.in -> [-oo, 10], n.in-n<=0, n-n.in<=0}
+rec={n -> [-oo, 10], n.in -> [-oo, 10], n.in-n<=0, n-n.in<=0}
+exit={n -> [-oo, 10], res -> [-oo, 10], n.in -> [-oo, 10], n.in-n<=0, res-n<=0, n-res<=0, n.in-res<=0, n-n.in<=0, res-n.in<=0}
+base={n -> [-oo, 10], n.in -> [-oo, 10], n.in-n<=0, n-n.in<=0}
 =================================
 void declare main()
 entry={}
 exit={n -> [10, 10], res1 -> [10, 10], res2 -> [10, 10], res1-n<=0, res2-n<=0, n-res1<=0, res2-res1<=0, n-res2<=0, res1-res2<=0}
 =================================
 === End ./test-bin/td_inter_8 ===
+=== Begin ./test-bin/td_inter_mutate_input ===
+o:int32 declare g(p:int32)
+entry:
+  p = p+1;
+  goto exit;
+exit:
+  o = p;
+
+
+res:int32 declare main()
+entry:
+  a = 10;
+  r:int32 = call g(a:int32);
+  goto exit;
+exit:
+  assert(r = 11);
+  assert(a = 10);
+  res = r;
+
+
+Running top-down inter-procedural analysis with SparseDBM
+2  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+=== End ./test-bin/td_inter_mutate_input ===
 === Begin ./test-bin/terms-1 ===
 x0:
   k = 50;

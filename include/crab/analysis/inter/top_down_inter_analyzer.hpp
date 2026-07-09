@@ -8,17 +8,16 @@
  * change. However, it might run out of stack on very deep call graphs
  * so special care must be taken.
  *
- * **Important**: the analysis assumes that the Crab CFG ensures that
- * an input parameter has only one use and that use is the right-side
- * operand of an assignment locate at the entry block of the
- * function. That is, that the following transformation took place
- * before the analysis starts:
- * 
- * foo(...,i1,...) {      foo(...,i1',...) {
- *                          // where := can be assign/expand/copy_region
- *                          i1 := i1';  
- *   BODY          ==>      BODY
- * }                      }
+ * Input parameters can be freely read and re-assigned by the function
+ * body. The analysis does not require the Crab CFG to keep input
+ * parameters immutable: before running the body of a function it
+ * snapshots the entry value of each input parameter into a shadow
+ * variable, and when it builds the function summary it expresses the
+ * input parameters in terms of those snapshots. This way the summary
+ * always relates the *entry* values of the inputs with the outputs,
+ * even if the body clobbers the input parameters. See
+ * crab::domains::inter_transformers_impl::snapshot_inputs and
+ * crab::domains::inter_transformers_impl::restore_input_snapshots.
  */
 
 #include <crab/analysis/abs_transformer.hpp>
@@ -29,6 +28,7 @@
 #include <crab/cg/cg_bgl.hpp> // for wto of callgraphs
 #include <crab/fixpoint/wto.hpp>
 #include <crab/fixpoint/fixpoint_params.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/inter_abstract_operations_callsite_info.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -811,7 +811,16 @@ analyze_function(CallGraphNode cg_node,
   }
 
   /// -- 3. Run the analyzer
-  analyzer->run_forward(entry);
+  //
+  // Snapshot the entry value of each input parameter before running the
+  // body so that the summary can relate input entry-values with outputs
+  // even if the body re-assigns its input parameters. The snapshots are
+  // injected into a copy so that `entry` remains free of shadow
+  // variables for the recursive fixpoint bookkeeping below.
+  abs_dom_t entry_with_snapshots(entry);
+  domains::inter_transformers_impl::snapshot_inputs(cfg.get_func_decl(),
+                                                    entry_with_snapshots);
+  analyzer->run_forward(entry_with_snapshots);
 
   // ### Recursive function ###
   // Re-analyze the function until fixpoint
@@ -1009,14 +1018,6 @@ private:
     }
   }
 
-  static void get_fdecl_parameters(const fdecl_t &fdecl,
-                                   std::vector<variable_t> &out) {
-    out.reserve(fdecl.get_num_inputs() + fdecl.get_num_outputs());
-    out.insert(out.end(), fdecl.get_inputs().begin(), fdecl.get_inputs().end());
-    out.insert(out.end(), fdecl.get_outputs().begin(),
-               fdecl.get_outputs().end());
-  }
-
   // Return true if the same function has been analyzed with with an
   // abstract state more general than callee_at_exit.
   bool check_cache(const callsite_t &cs,
@@ -1114,8 +1115,6 @@ private:
     }
 
     AbsDom callee_at_exit = m_absval_fac.make_top();
-    std::vector<variable_t> callee_at_exit_vars;
-    get_fdecl_parameters(fdecl, callee_at_exit_vars);
 
     const bool inside_recursive_call =
         (m_ctx.analyze_recursive_functions() &&
@@ -1221,6 +1220,9 @@ private:
 	    // update "callee_at_entry" by taking the invariant at the
 	    // entry of the function after the fixpoint converged.
 	    callee_at_entry = callee_analysis->get_pre(callee_cfg.entry());
+	    // Strip the input snapshots so the summary precondition is
+	    // expressed only over the input parameters.
+	    callee_at_entry.project(fdecl.get_inputs());
 	  }
 	  
 	  CRAB_LOG("inter2", if (callee_analysis) {
@@ -1230,7 +1232,10 @@ private:
 	}
       }  // end analysis of callee
       
-      callee_at_exit.project(callee_at_exit_vars);
+      // Rebuild the postcondition over the declared input/output
+      // parameters, mapping each input back to its entry-value snapshot.
+      domains::inter_transformers_impl::restore_input_snapshots(fdecl,
+                                                                callee_at_exit);
 
 
       // Check if the fixpoint of node has been stabilized.

@@ -56,6 +56,60 @@ inline void unify(Domain &inv, const typename Domain::variable_t &lhs,
   }
 }
 
+// Return the shadow variable that snapshots the entry value of the
+// input parameter `in`. The shadow is created deterministically from
+// `in` (same input always maps to the same shadow) so that summaries of
+// recursive functions converge.
+template <class Variable>
+inline Variable get_input_shadow(const Variable &in) {
+  using varname_t = typename Variable::varname_t;
+  auto &vfac = const_cast<varname_t *>(&(in.name()))->get_var_factory();
+  return Variable(vfac.get_or_insert_varname(in.name(), ".in"), in.get_type());
+}
+
+// Snapshot the entry value of each input parameter of `fdecl` into its
+// shadow variable in `dom` (shadow := input). Meant to be applied to the
+// abstract state that starts the analysis of the function body, so that
+// the entry value survives even if the body re-assigns the input
+// parameter. The typed copy handles all parameter types
+// (bool/int/real/reference/region/array).
+template <class Domain, class FunctionDecl>
+inline void snapshot_inputs(const FunctionDecl &fdecl, Domain &dom) {
+  using variable_t = typename Domain::variable_t;
+  for (const variable_t &in : fdecl.get_inputs()) {
+    unify(dom, get_input_shadow(in), in);
+  }
+}
+
+// Rebuild `dom` so that the summary is expressed over the declared
+// formal parameters of `fdecl`: each input parameter holds its ENTRY
+// value (taken from its shadow snapshot rather than whatever the body
+// left in it) and each output parameter holds its final value. On return
+// `dom` is projected onto the inputs and outputs of `fdecl`.
+template <class Domain, class FunctionDecl>
+inline void restore_input_snapshots(const FunctionDecl &fdecl, Domain &dom) {
+  using variable_t = typename Domain::variable_t;
+  const std::vector<variable_t> &inputs = fdecl.get_inputs();
+  const std::vector<variable_t> &outputs = fdecl.get_outputs();
+  std::vector<variable_t> shadows;
+  std::vector<variable_t> summary_vars; // shadows + outputs
+  shadows.reserve(inputs.size());
+  summary_vars.reserve(inputs.size() + outputs.size());
+  for (const variable_t &in : inputs) {
+    variable_t shadow = get_input_shadow(in);
+    shadows.push_back(shadow);
+    summary_vars.push_back(shadow);
+  }
+  summary_vars.insert(summary_vars.end(), outputs.begin(), outputs.end());
+  // Drop the (possibly clobbered) input parameters, keeping the
+  // entry-valued shadows and the final outputs, and then rename the
+  // shadows back onto the declared input parameters. Projecting before
+  // renaming guarantees the rename targets (the inputs) are absent, as
+  // rename requires.
+  dom.project(summary_vars);
+  dom.rename(shadows, inputs);
+}
+
 template <class V>
 inline std::vector<V> set_difference(std::vector<V> v1, std::vector<V> v2) {
   std::vector<V> out;

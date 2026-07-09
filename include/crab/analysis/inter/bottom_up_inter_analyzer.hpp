@@ -799,21 +799,19 @@ public:
             // --- run the analysis
             bu_abs_tr_t abs_tr(m_bu_top_fac, m_summ_tbl);
             bu_analyzer_t a(cfg, &abs_tr, m_bu_top_fac, get_live(cfg), m_fixpo_params);
-            a.run_forward(m_bu_top_fac);
+	    // Snapshot the entry value of each input parameter so the
+	    // summary keeps relating input entry-values with outputs
+	    // even if the body re-assigns its input parameters.
+	    BU_Dom bu_entry(m_bu_top_fac);
+	    crab::domains::inter_transformers_impl::snapshot_inputs(fdecl, bu_entry);
+            a.run_forward(bu_entry);
 
-	    // Compute and store the summary
-            // Project onto formal parameters and return values
+	    // Compute and store the summary.
+	    // Rebuild it over the formal parameters and return values,
+	    // mapping each input back to its entry-value snapshot.
             BU_Dom summary = a.get_post(cfg.exit());
-	    std::vector<variable_t> formals;
-	    formals.reserve(fdecl.get_num_inputs() + fdecl.get_num_outputs());
-	    for (unsigned i = 0; i < fdecl.get_num_inputs(); i++) {
-	      formals.push_back(fdecl.get_input_name(i));
-	    }
-	    for (unsigned i = 0; i < fdecl.get_num_outputs(); i++) {
-	      formals.push_back(fdecl.get_output_name(i));
-	    }	    
-            summary.project(formals);
-            m_summ_tbl.add(fdecl, std::move(summary)); 
+	    crab::domains::inter_transformers_impl::restore_input_snapshots(fdecl, summary);
+            m_summ_tbl.add(fdecl, std::move(summary));
           }
         }
       }
