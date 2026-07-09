@@ -13,9 +13,12 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/optional.hpp>
 
+#include <cassert>
 #include <functional> // for wrapper_reference and hash
 #include <memory>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace crab {
 namespace cg {
@@ -25,7 +28,7 @@ template <typename CFG> class cg_node {
   using fdecl_t = typename CFG::fdecl_t;
 
   CFG m_cfg;
-  int m_id;
+  int m_id = -1;
 
 public:
   using cfg_t = CFG;
@@ -103,12 +106,12 @@ template <typename CFG> class call_graph {
       boost::vecS, boost::bidirectionalS,
       boost::property<boost::vertex_color_t, boost::default_color_type,
                       vertex_t>>;
-  typedef
-      typename boost::graph_traits<cg_t>::vertex_descriptor vertex_descriptor_t;
+  using vertex_descriptor_t =
+      typename boost::graph_traits<cg_t>::vertex_descriptor;
   using edge_descriptor_t = typename boost::graph_traits<cg_t>::edge_descriptor;
   using vertex_iterator = typename boost::graph_traits<cg_t>::vertex_iterator;
-  typedef
-      typename boost::graph_traits<cg_t>::out_edge_iterator out_edge_iterator;
+  using out_edge_iterator =
+      typename boost::graph_traits<cg_t>::out_edge_iterator;
   using in_edge_iterator = typename boost::graph_traits<cg_t>::in_edge_iterator;
   /// --- end internal representation of the call graph
 
@@ -212,11 +215,11 @@ private:
   // map from callsite to callee's CFG
   callee_map_t m_callee_map;
 
-  //// INTERNAL STATE USED DURING CG CONSTRUCTION
-
-  // map hashed values to internal BGL vertex descriptor
+  // map hashed values to internal BGL vertex descriptor.
+  // Only used during CG construction; cleared afterwards.
   vertex_map_t m_vertex_map;
-  // map cg_node to internal BGL vertex descriptor
+  // map cg_node to internal BGL vertex descriptor.
+  // Used at runtime by get_vertex (succs/preds/num_succs/num_preds).
   node_vertex_id_map_t m_node_vertex_id_map;
   // counter to generate unique ids
   int m_id;
@@ -260,10 +263,14 @@ private:
         }
       }
     }
+
+    // m_vertex_map is only needed while building the graph; the runtime
+    // vertex lookups go through m_node_vertex_id_map instead.
+    m_vertex_map.clear();
   }
 
 public:
-  call_graph(std::vector<CFG> &cfgs) : m_cg(new cg_t()), m_id(0) {
+  call_graph(const std::vector<CFG> &cfgs) : m_cg(new cg_t()), m_id(0) {
     build_call_graph(cfgs.begin(), cfgs.end());
   }
 
@@ -345,45 +352,34 @@ public:
   }
 
   node_t entry() const {
-    // Any node without incoming edges should be considered an entry
-    // point. In addition, if all nodes have some incoming edges then
-    // it can be the case that the analysis should start from some SCC
-    // with multiple nodes. In that case, all SCC's components should
-    // be considered as entry point.
-
     // FIXME: for now, we assume that the call graph has exactly one
     // node without incoming edges. For libraries, we can transform
     // the program in such way that we create a node that calls all
     // library's entry points.
 
-    std::vector<node_t> entries;
-    for (node_iterator it = nodes().first, et = nodes().second; it != et;
-         ++it) {
-      if (num_preds(*it) == 0) {
-        entries.push_back(*it);
-      }
-    }
-    size_t num_entries = entries.size();
+    std::vector<node_t> es = entries();
+    size_t num_entries = es.size();
     if (num_entries == 0) {
       CRAB_ERROR("cannot find entry point of the call graph");
-    } else if (num_entries > 1) {
-      for (unsigned i = 0, e = entries.size(); i < e; i++) {
-        if (entries[i].name() == "main") {
-          return entries[i];
+    } else if (num_entries == 1) {
+      return es[0];
+    } else {
+      for (unsigned i = 0, e = es.size(); i < e; i++) {
+        if (es[i].name() == "main") {
+          return es[i];
         }
       }
       CRAB_ERROR("do not support call graphs with multiple entry points");
-    } else {
-      return entries[0];
     }
   }
 
   std::vector<node_t> entries() const {
-    // TODO: any node without incoming edges should be considered an
-    // entry point. In addition, if all nodes have some incoming edges
-    // then it can be the case that the analysis should start from
-    // some SCC with multiple nodes. In that case, all SCC's
-    // components should be considered as entry point.
+    // Any node without incoming edges is considered an entry point.
+    //
+    // TODO: if all nodes have some incoming edges then it can be the
+    // case that the analysis should start from some SCC with multiple
+    // nodes. In that case, all SCC's components should be considered as
+    // entry point.
 
     std::vector<node_t> out;
     for (node_iterator it = nodes().first, et = nodes().second; it != et;
@@ -401,7 +397,9 @@ public:
 
   node_t get_callee(const callsite_t &cs) const {
     auto it = m_callee_map.find(&cs);
-    assert(it != m_callee_map.end());
+    if (it == m_callee_map.end()) {
+      CRAB_ERROR("Call graph could not find callee for callsite");
+    }
     return it->second;
   }
 
@@ -439,10 +437,8 @@ public:
 
   void write(crab_os &o) const {
     for (auto f : boost::make_iterator_range(nodes())) {
-      if (num_succs(f) > 0) {
-        for (auto e : boost::make_iterator_range(succs(f))) {
-          o << e.src() << "--> " << e.dest() << "\n";
-        }
+      for (auto e : boost::make_iterator_range(succs(f))) {
+        o << e.src() << "--> " << e.dest() << "\n";
       }
     }
   }
