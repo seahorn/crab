@@ -8,7 +8,6 @@
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
-#include <boost/optional.hpp>
 #include <boost/range/iterator_range.hpp>
 
 #include <cassert>
@@ -424,80 +423,53 @@ public:
   using callsite_t = typename CG::callsite_t;
 
 private:
-  boost::optional<std::reference_wrapper<CG>> _ref;
+  // The reference is always valid: the constructor requires a CG&.
+  std::reference_wrapper<CG> _ref;
 
 public:
-  call_graph_ref(CG &cg) : _ref(std::reference_wrapper<CG>(cg)) {}
+  call_graph_ref(CG &cg) : _ref(cg) {}
 
-  const CG &get() const {
-    assert(_ref);
-    return *_ref;
-  }
+  const CG &get() const { return _ref.get(); }
 
-  CG &get() {
-    assert(_ref);
-    return *_ref;
-  }
+  CG &get() { return _ref.get(); }
 
-  void type_check() const {
-    assert(_ref);
-    return (*_ref).get().type_check();
-  }
+  void type_check() const { return _ref.get().type_check(); }
 
-  node_t entry() const {
-    assert(_ref);
-    return (*_ref).get().entry();
-  }
+  node_t entry() const { return _ref.get().entry(); }
 
-  std::vector<node_t> entries() const {
-    assert(_ref);
-    return (*_ref).get().entries();
-  }
+  std::vector<node_t> entries() const { return _ref.get().entries(); }
 
   bool has_callee(const callsite_t &cs) const {
-    assert(_ref);
-    return (*_ref).get().has_callee(cs);
+    return _ref.get().has_callee(cs);
   }
 
   node_t get_callee(const callsite_t &cs) const {
-    assert(_ref);
-    return (*_ref).get().get_callee(cs);
+    return _ref.get().get_callee(cs);
   }
 
   std::pair<node_iterator, node_iterator> nodes() const {
-    assert(_ref);
-    return (*_ref).get().nodes();
+    return _ref.get().nodes();
   }
 
   std::pair<succ_iterator, succ_iterator> succs(const node_t &n) const {
-    assert(_ref);
-    return (*_ref).get().succs(n);
+    return _ref.get().succs(n);
   }
 
   std::pair<pred_iterator, pred_iterator> preds(const node_t &n) const {
-    assert(_ref);
-    return (*_ref).get().preds(n);
+    return _ref.get().preds(n);
   }
 
-  std::size_t num_nodes() const {
-    assert(_ref);
-    return (*_ref).get().num_nodes();
-  }
+  std::size_t num_nodes() const { return _ref.get().num_nodes(); }
 
   std::size_t num_succs(const node_t &n) const {
-    assert(_ref);
-    return (*_ref).get().num_succs(n);
+    return _ref.get().num_succs(n);
   }
 
   std::size_t num_preds(const node_t &n) const {
-    assert(_ref);
-    return (*_ref).get().num_preds(n);
+    return _ref.get().num_preds(n);
   }
 
-  void write(crab_os &o) const {
-    assert(_ref);
-    (*_ref).get().write(o);
-  }
+  void write(crab_os &o) const { _ref.get().write(o); }
 };
 
 template <typename CG>
