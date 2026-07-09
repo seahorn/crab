@@ -48,6 +48,9 @@ int safe_i64::checked_mul(int64_t a, int64_t b, int64_t *rp) {
 }
 
 int safe_i64::checked_div(int64_t a, int64_t b, int64_t *rp) {
+  if (b == 0) {
+    CRAB_ERROR("Division by zero");
+  }
   wideint_t lr = (wideint_t)a / (wideint_t)b;
   *rp = lr;
   return lr > get_max() || lr < get_min();
@@ -57,7 +60,12 @@ safe_i64::safe_i64() : m_num(0) {}
 
 safe_i64::safe_i64(int64_t num) : m_num(num) {}
 
-safe_i64::safe_i64(ikos::z_number n) : m_num(static_cast<int64_t>(n)) {}
+safe_i64::safe_i64(ikos::z_number n) {
+  if (!n.fits_int64()) {
+    CRAB_ERROR("Cannot convert ", n, " to safe_i64: does not fit in int64_t");
+  }
+  m_num = static_cast<int64_t>(n);
+}
 
 safe_i64::operator int64_t() const { return m_num; }
 
@@ -96,7 +104,7 @@ safe_i64 safe_i64::operator/(safe_i64 x) const {
   int64_t z;
   int err = checked_div(m_num, x.m_num, &z);
   if (err) {
-    CRAB_ERROR("Integer overflow during multiplication");
+    CRAB_ERROR("Integer overflow during division");
   }
   return safe_i64(z);
 }

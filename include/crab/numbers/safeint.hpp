@@ -8,7 +8,7 @@
 #include <limits>
 #include <cstdint>
 
-#ifndef __GNUC__
+#ifndef __SIZEOF_INT128__
 #include <boost/multiprecision/cpp_int.hpp>
 #endif
 
@@ -19,13 +19,15 @@ class safe_i64 {
   // Current implementation is based on
   // https://blog.regehr.org/archives/1139 using wider integers.
 
-#ifdef __GNUC__  
-  // TODO/FIXME: the current code compiles assuming the type __int128
-  // exists. Both clang and gcc supports __int128 if the targeted
-  // architecture is x86/64, but it wont' work with 32 bits.
+#ifdef __SIZEOF_INT128__
+  // Use the compiler-provided 128-bit integer when available. Both gcc
+  // and clang define __SIZEOF_INT128__ only on targets that actually
+  // support __int128 (e.g. x86-64), so this is a more reliable check
+  // than testing for __GNUC__, which is also true on 32-bit targets
+  // where __int128 does not exist.
   using wideint_t = __int128;
 #else
-    using wideint_t = boost::multiprecision::int128_t;
+  using wideint_t = boost::multiprecision::int128_t;
 #endif
 
   static int64_t get_max();
