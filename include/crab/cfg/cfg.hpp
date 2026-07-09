@@ -1799,7 +1799,10 @@ public:
 
   unsigned get_num_args() const { return m_args.size(); }
 
-  const variable_t &get_arg_name(unsigned idx) const {
+  // Note: an intrinsic argument can be a variable or a constant, hence
+  // the return type is variable_or_constant_t (unlike callsite_stmt,
+  // whose arguments are always variables).
+  const variable_or_constant_t &get_arg(unsigned idx) const {
     if (idx >= m_args.size())
       CRAB_ERROR("Out-of-bound access to intrinsic parameter");
 
