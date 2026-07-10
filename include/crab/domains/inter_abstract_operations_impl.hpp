@@ -33,7 +33,7 @@ public:
 namespace inter_transformers_impl {
 
 template <class Domain>
-inline void unify(Domain &inv, const typename Domain::variable_t &lhs,
+inline void typed_assign(Domain &inv, const typename Domain::variable_t &lhs,
                   const typename Domain::variable_t &rhs) {
   using reference_constraint_t = typename Domain::reference_constraint_t;
   using number_t = typename Domain::number_t;
@@ -52,7 +52,7 @@ inline void unify(Domain &inv, const typename Domain::variable_t &lhs,
   } else if (ty.is_array()) {
     inv.array_assign(lhs, rhs);
   } else {
-    CRAB_ERROR("abs_transformer::unify unsupported type");
+    CRAB_ERROR("abs_transformer::typed_assign unsupported type");
   }
 }
 
@@ -77,7 +77,7 @@ template <class Domain, class FunctionDecl>
 inline void snapshot_inputs(const FunctionDecl &fdecl, Domain &dom) {
   using variable_t = typename Domain::variable_t;
   for (const variable_t &in : fdecl.get_inputs()) {
-    unify(dom, get_input_shadow(in), in);
+    typed_assign(dom, get_input_shadow(in), in);
   }
 }
 
@@ -169,7 +169,7 @@ void inter_abstract_operations<Domain, true>::callee_entry(
       CRAB_LOG("inter-restrict",
                errs() << "\t" << formal << ":" << formal.get_type() << " and "
                       << actual << ":" << actual.get_type() << "\n";);
-      inter_transformers_impl::unify(caller, formal, actual);
+      inter_transformers_impl::typed_assign(caller, formal, actual);
       if (::crab::CrabSanityCheckFlag) {
         if (caller.is_bottom()) {
           CRAB_ERROR("Obtained bottom after unification");
@@ -229,7 +229,7 @@ void inter_abstract_operations<Domain, true>::caller_continuation(
     if (!(out_formal == out_actual)) {
       CRAB_LOG("inter-extend", crab::outs() << "Unifying output " << out_actual
                                             << ":= " << out_formal << "\n";);
-      inter_transformers_impl::unify(callee_at_exit, out_actual, out_formal);
+      inter_transformers_impl::typed_assign(callee_at_exit, out_actual, out_formal);
     }
   }
 
@@ -276,7 +276,7 @@ void inter_abstract_operations<Domain, true>::caller_continuation(
         //
         CRAB_LOG("inter-extend", crab::outs() << "Unifying input " << in_actual
                                               << ":=" << in_formal << "\n";);
-        inter_transformers_impl::unify(callee_at_exit, in_actual, in_formal);
+        inter_transformers_impl::typed_assign(callee_at_exit, in_actual, in_formal);
       }
     }
   }

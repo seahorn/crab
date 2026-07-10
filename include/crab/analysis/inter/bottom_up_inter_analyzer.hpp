@@ -554,7 +554,7 @@ public:
       for (const variable_t &p : summ.get_inputs()) {
         const variable_t &a = cs.get_arg_name(i);
         if (!(a == p)) {
-	  crab::domains::inter_transformers_impl::unify(callee_ctx_inv, p, a);
+	  crab::domains::inter_transformers_impl::typed_assign(callee_ctx_inv, p, a);
         }
         ++i;
       }
