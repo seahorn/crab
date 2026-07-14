@@ -755,6 +755,9 @@ barz--> bar
 
 Weak topological ordering=main (bar foo barz)
 === End ./test-bin/cg ===
+=== Begin ./test-bin/cg_ref_bitwidth ===
+OK: callee resolved despite reference bitwidth mismatch
+=== End ./test-bin/cg_ref_bitwidth ===
 === Begin ./test-bin/checker ===
 
 Assertion Crawler Analysis 
