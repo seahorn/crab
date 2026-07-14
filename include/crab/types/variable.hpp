@@ -108,8 +108,14 @@ public:
 
   size_t hash() const {
     size_t res = std::hash<size_t>{}(static_cast<size_t>(m_kind));
-    boost::hash_combine(res,
-                        std::hash<size_t>{}(static_cast<size_t>(m_bitwidth)));
+    // Only integers and integer regions distinguish types by bitwidth in
+    // operator==; folding m_bitwidth in for other kinds would break the
+    // invariant a==b => hash(a)==hash(b) (e.g. a REF_TYPE created with
+    // bitwidth 32 vs 0 are equal but would hash differently).
+    if (m_kind == INT_TYPE || m_kind == REG_INT_TYPE) {
+      boost::hash_combine(res,
+                          std::hash<size_t>{}(static_cast<size_t>(m_bitwidth)));
+    }
     return res;
   }
 
