@@ -6,7 +6,7 @@ using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-z_cfg_t *prog(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog(variable_factory_t &vfac) {
   ////
   // Building the CFG
   ////
@@ -18,13 +18,13 @@ z_cfg_t *prog(variable_factory_t &vfac) {
   z_var z0(vfac["z0"], crab::INT_TYPE, 32);
   z_var y0(vfac["y0"], crab::INT_TYPE, 32);
   // entry and exit block
-  z_cfg_t *cfg = new z_cfg_t("p0", "ret");
+  auto cfg = std::make_unique<z_cfg_t>("p0", "ret");
   // adding blocks
-  z_basic_block_t &p0 = cfg->insert("p0");
-  z_basic_block_t &p_neg = cfg->insert("p_neg");
-  z_basic_block_t &p_pos = cfg->insert("p_pos");
-  z_basic_block_t &exit = cfg->insert("exit");
-  z_basic_block_t &ret = cfg->insert("ret");
+  BB(cfg, p0);
+  BB(cfg, p_neg);
+  BB(cfg, p_pos);
+  BB(cfg, exit);
+  BB(cfg, ret);
   // adding control flow
   p0 >> p_pos;
   p0 >> p_neg;
@@ -51,22 +51,20 @@ z_cfg_t *prog(variable_factory_t &vfac) {
 }
 
 int main(int argc, char **argv) {
-  bool stats_enabled = false;
-  if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
+  return crab_tests::test_main(argc, argv, [](bool stats_enabled) -> int {
+    variable_factory_t vfac;
+    auto cfg = prog(vfac);
+    crab::outs() << *cfg << "\n";
+
+    {
+      z_interval_domain_t init;
+      run(cfg, init, stats_enabled, run_config().with_liveness());
+    }
+    {
+      z_term_domain_t init;
+      run(cfg, init, stats_enabled, run_config().with_liveness());
+    }
+
     return 0;
-  }
-  variable_factory_t vfac;
-  z_cfg_t *cfg = prog(vfac);
-  crab::outs() << *cfg << "\n";
-
-  {
-    z_interval_domain_t init;
-    run(cfg, cfg->entry(), init, true, 1, 2, 20, stats_enabled);
-  }
-  {
-    z_term_domain_t init;
-    run(cfg, cfg->entry(), init, true, 1, 2, 20, stats_enabled);
-  }
-
-  return 0;
+  });
 }

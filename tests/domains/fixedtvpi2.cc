@@ -8,7 +8,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 using namespace ikos;
 
-z_cfg_t *prog1(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog1(variable_factory_t &vfac) {
 
   /*
     int x = nd_int();
@@ -26,11 +26,11 @@ z_cfg_t *prog1(variable_factory_t &vfac) {
   z_var z(vfac["z"], crab::INT_TYPE, 32);
   z_var z2(vfac["z2"], crab::INT_TYPE, 32);
   // entry and exit block
-  auto cfg = new z_cfg_t("entry", "exit");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit");
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &header_1 = cfg->insert("header_1");
-  z_basic_block_t &exit = cfg->insert("exit");
+  BB(cfg, entry);
+  BB(cfg, header_1);
+  BB(cfg, exit);
   // adding control flow
   entry >> header_1;
   header_1 >> exit;
@@ -47,7 +47,7 @@ z_cfg_t *prog1(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *prog2(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog2(variable_factory_t &vfac) {
 
   /*
     int x = nd_int();
@@ -75,13 +75,13 @@ z_cfg_t *prog2(variable_factory_t &vfac) {
   z_var j(vfac["j"], crab::INT_TYPE, 32);
   z_var k(vfac["k"], crab::INT_TYPE, 32);
   // entry and exit block
-  auto cfg = new z_cfg_t("entry", "exit");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit");
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &bb_1 = cfg->insert("bb_1");
-  z_basic_block_t &bb_2 = cfg->insert("bb_2");
-  z_basic_block_t &bb_3 = cfg->insert("bb_3");
-  z_basic_block_t &exit = cfg->insert("exit");
+  BB(cfg, entry);
+  BB(cfg, bb_1);
+  BB(cfg, bb_2);
+  BB(cfg, bb_3);
+  BB(cfg, exit);
   // adding control flow
   entry >> bb_1;
   bb_1 >> bb_2;
@@ -107,7 +107,7 @@ z_cfg_t *prog2(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *prog3(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog3(variable_factory_t &vfac) {
 
   /*
     int n = nd_int();
@@ -133,11 +133,11 @@ z_cfg_t *prog3(variable_factory_t &vfac) {
   z_var m(vfac["m"], crab::INT_TYPE, 32);
   z_var n(vfac["n"], crab::INT_TYPE, 32);
   // entry and exit block
-  auto cfg = new z_cfg_t("entry", "exit");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit");
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &header_1 = cfg->insert("header_1");
-  z_basic_block_t &exit = cfg->insert("exit");
+  BB(cfg, entry);
+  BB(cfg, header_1);
+  BB(cfg, exit);
   // adding control flow
   entry >> header_1;
   header_1 >> exit;
@@ -156,46 +156,40 @@ z_cfg_t *prog3(variable_factory_t &vfac) {
   return cfg;
 }
 
-int main (int argc, char** argv) {
-  bool stats_enabled = false;  
-  if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
-      return 0;
-  }
+int main(int argc, char **argv) {
+  return crab_tests::test_main(argc, argv, [](bool stats_enabled) -> int {
+    {
+      crab_domain_params_man::get().coefficients().push_back(2);
+      crab_domain_params_man::get().coefficients().push_back(3); 
+      variable_factory_t vfac;
+      auto cfg = prog1(vfac);
+      z_fixed_tvpi_domain_t init;
+      run(cfg, init, stats_enabled, run_config().with_widening(2).with_narrowing(1));
+      run_and_check(cfg, init, stats_enabled, run_config().with_widening(2).with_narrowing(1));
+      crab_domain_params_man::get().coefficients().clear();
+    }
 
-  {
-    crab_domain_params_man::get().coefficients().push_back(2);
-    crab_domain_params_man::get().coefficients().push_back(3); 
-    variable_factory_t vfac;
-    z_cfg_t *cfg = prog1(vfac);
-    z_fixed_tvpi_domain_t init;
-    run(cfg, cfg->entry(), init, false, 2, 1, 20, stats_enabled);
-    run_and_check(cfg, cfg->entry(), init, false, 2, 1, 20, stats_enabled);
-    crab_domain_params_man::get().coefficients().clear();
-    delete cfg;
-  }
+    {
+      crab_domain_params_man::get().coefficients().push_back(2);
+      crab_domain_params_man::get().coefficients().push_back(3); 
+      variable_factory_t vfac;
+      auto cfg = prog2(vfac);
+      z_fixed_tvpi_domain_t init;
+      run(cfg, init, stats_enabled, run_config().with_widening(2).with_narrowing(1));
+      run_and_check(cfg, init, stats_enabled, run_config().with_widening(2).with_narrowing(1));
+      crab_domain_params_man::get().coefficients().clear();
+    }
 
-  {
-    crab_domain_params_man::get().coefficients().push_back(2);
-    crab_domain_params_man::get().coefficients().push_back(3); 
-    variable_factory_t vfac;
-    z_cfg_t *cfg = prog2(vfac);
-    z_fixed_tvpi_domain_t init;
-    run(cfg, cfg->entry(), init, false, 2, 1, 20, stats_enabled);
-    run_and_check(cfg, cfg->entry(), init, false, 2, 1, 20, stats_enabled);
-    crab_domain_params_man::get().coefficients().clear();
-    delete cfg;
-  }
+    {
+      crab_domain_params_man::get().coefficients().push_back(2);
+      variable_factory_t vfac;
+      auto cfg = prog3(vfac);
+      z_fixed_tvpi_domain_t init;
+      run(cfg, init, stats_enabled, run_config().with_widening(2).with_narrowing(1));
+      run_and_check(cfg, init, stats_enabled, run_config().with_widening(2).with_narrowing(1));
+      crab_domain_params_man::get().coefficients().clear();
+    }
 
-  {
-    crab_domain_params_man::get().coefficients().push_back(2);
-    variable_factory_t vfac;
-    z_cfg_t *cfg = prog3(vfac);
-    z_fixed_tvpi_domain_t init;
-    run(cfg, cfg->entry(), init, false, 2, 1, 20, stats_enabled);
-    run_and_check(cfg, cfg->entry(), init, false, 2, 1, 20, stats_enabled);
-    crab_domain_params_man::get().coefficients().clear();
-    delete cfg;
-  }
-
-  return 0;
+    return 0;
+  });
 }

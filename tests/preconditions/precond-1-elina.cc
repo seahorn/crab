@@ -1,6 +1,7 @@
 #include "../common.hpp"
 #include "../program_options.hpp"
 #include <crab/analysis/bwd_analyzer.hpp>
+#include <memory>
 
 using namespace std;
 using namespace crab::analyzer;
@@ -9,14 +10,14 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 /* CheckedC example: args.c */
-z_cfg_t *prog(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog(variable_factory_t &vfac) {
 
   // Defining program variables
   z_var argc(vfac["argc"], crab::INT_TYPE, 32);
   z_var len(vfac["len"], crab::INT_TYPE, 32);
 
   // entry and exit block
-  auto cfg = new z_cfg_t("bb0", "bb6");
+  auto cfg = std::make_unique<z_cfg_t>("bb0", "bb6");
   /*
     if (argc > 2)
        NumNodes = atoi(argv[2]);
@@ -30,13 +31,13 @@ z_cfg_t *prog(variable_factory_t &vfac) {
   */
 
   // adding blocks
-  z_basic_block_t &bb0 = cfg->insert("bb0");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &bb3 = cfg->insert("bb3");
-  z_basic_block_t &bb4 = cfg->insert("bb4");
-  z_basic_block_t &bb5 = cfg->insert("bb5");
-  z_basic_block_t &bb6 = cfg->insert("bb6");
+  BB(cfg, bb0);
+  BB(cfg, bb1);
+  BB(cfg, bb2);
+  BB(cfg, bb3);
+  BB(cfg, bb4);
+  BB(cfg, bb5);
+  BB(cfg, bb6);
 
   bb0 >> bb1;
   bb0 >> bb2;
@@ -66,7 +67,7 @@ int main(int argc, char **argv) {
   }
 
   variable_factory_t vfac;
-  z_cfg_t *cfg = prog(vfac);
+  auto cfg = prog(vfac);
   crab::outs() << *cfg << "\n";
 
   {
@@ -130,8 +131,6 @@ int main(int argc, char **argv) {
       }
     }
   }
-  // free the CFG
-  delete cfg;
 #endif
   return 0;
 }

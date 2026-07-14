@@ -76,4 +76,30 @@ int parse_user_options(int argc, char **argv, bool &stats_enabled) {
   return 1;
 }
 
+// (#4) Wraps the boilerplate every test's main() repeats: parse options, honor
+// the --help early-exit, then run `body` with the resolved `stats_enabled`
+// flag and forward its exit code.
+//
+//   int main(int argc, char **argv) {
+//     return crab_tests::test_main(argc, argv, [](bool stats) -> int {
+//       ...
+//       return 0;
+//     });
+//   }
+//
+// `body` returns int so the original main body's return statements (including
+// early returns and #ifdef-guarded ones) carry over unchanged.
+//
+// Note: options are parsed before `body` runs, so tests that must set abstract
+// domain parameters *before* parsing (to let --domain-param override them)
+// should keep an explicit main().
+template <typename Body>
+int test_main(int argc, char **argv, Body &&body) {
+  bool stats_enabled = false;
+  if (!parse_user_options(argc, argv, stats_enabled)) {
+    return 0;
+  }
+  return body(stats_enabled);
+}
+
 } // namespace crab_tests

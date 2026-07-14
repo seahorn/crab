@@ -9,7 +9,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 /* Example of how to build a CFG */
-z_cfg_t *prog(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog(variable_factory_t &vfac) {
 
   // Defining program variables
   z_var a(vfac["M"], crab::ARR_INT_TYPE);
@@ -17,12 +17,12 @@ z_cfg_t *prog(variable_factory_t &vfac) {
   z_var y(vfac["y"], crab::INT_TYPE, 32);
   z_var tmp(vfac["tmp"], crab::INT_TYPE, 32);
   // entry and exit block
-  auto cfg = new z_cfg_t("entry", "bb3");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "bb3");
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &bb3 = cfg->insert("bb3");
+  BB(cfg, entry);
+  BB(cfg, bb1);
+  BB(cfg, bb2);
+  BB(cfg, bb3);
   // adding control flow
   entry >> bb1;
   entry >> bb2;
@@ -75,21 +75,18 @@ bb3:
 }
 
 int main(int argc, char **argv) {
-  bool stats_enabled = false;
-  if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
+  return crab_tests::test_main(argc, argv, [](bool stats_enabled) -> int {
+    variable_factory_t vfac;
+    auto cfg = prog(vfac);
+    crab::outs() << *cfg << "\n";
+
+    // A forward+backward analysis should prove the assertion holds.
+    z_aa_int_t initial_states;
+    backward_run<z_aa_int_t>(cfg, cfg->entry(), initial_states, 1, 2, 20,
+  			   stats_enabled);
+
+    // free the CFG
+
     return 0;
-  }
-  variable_factory_t vfac;
-  z_cfg_t *cfg = prog(vfac);
-  crab::outs() << *cfg << "\n";
-
-  // A forward+backward analysis should prove the assertion holds.
-  z_aa_int_t initial_states;
-  backward_run<z_aa_int_t>(cfg, cfg->entry(), initial_states, 1, 2, 20,
-			   stats_enabled);
-
-  // free the CFG
-  delete cfg;
-
-  return 0;
+  });
 }

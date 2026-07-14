@@ -11,7 +11,7 @@ using namespace crab::domain_impl;
 // from TOPLAS paper Fig 1.b: version 1 
 // (computing expression y:= 200-2*x in two instructions:
 //  tmp:= 2*x; y:= 200-tmp;)
-z_cfg_t* prog6(variable_factory_t &vfac)  {
+std::unique_ptr<z_cfg_t> prog6(variable_factory_t &vfac)  {
   // Definining program variables
   z_var k(vfac ["k"], crab::INT_TYPE, 32);
   z_var n(vfac ["n"], crab::INT_TYPE, 32);
@@ -19,15 +19,15 @@ z_cfg_t* prog6(variable_factory_t &vfac)  {
   z_var y(vfac ["y"], crab::INT_TYPE, 32);
   z_var t(vfac ["t"], crab::INT_TYPE, 32);
   // entry and exit block
-  z_cfg_t* cfg = new z_cfg_t("entry","ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry","ret");
   // adding blocks
-  z_basic_block_t& entry = cfg->insert("entry");
-  z_basic_block_t& loop = cfg->insert("loop");
-  z_basic_block_t& loop_body_1 = cfg->insert("loop_body_1");
-  z_basic_block_t& loop_body_2 = cfg->insert("loop_body_2");
-  z_basic_block_t& loop_body_3 = cfg->insert("loop_body_3");
-  z_basic_block_t& loop_body_4 = cfg->insert("loop_body_4");  
-  z_basic_block_t& ret = cfg->insert("ret");
+  BB(cfg, entry);
+  BB(cfg, loop);
+  BB(cfg, loop_body_1);
+  BB(cfg, loop_body_2);
+  BB(cfg, loop_body_3);
+  BB(cfg, loop_body_4);  
+  BB(cfg, ret);
   // adding control flow
   entry >> loop;
   loop >> loop_body_1;
@@ -54,7 +54,7 @@ z_cfg_t* prog6(variable_factory_t &vfac)  {
 
 // from TOPLAS paper Fig 1.b: version 2
 // (computing expression y:= 200-2*x in one instruction)
-z_cfg_t* prog7(variable_factory_t &vfac)  {
+std::unique_ptr<z_cfg_t> prog7(variable_factory_t &vfac)  {
   // Definining program variables
   z_var k(vfac ["k"], crab::INT_TYPE, 32);
   z_var n(vfac ["n"], crab::INT_TYPE, 32);
@@ -62,15 +62,15 @@ z_cfg_t* prog7(variable_factory_t &vfac)  {
   z_var y(vfac ["y"], crab::INT_TYPE, 32);
   z_var t(vfac ["t"], crab::INT_TYPE, 32);
   // entry and exit block
-  z_cfg_t* cfg = new z_cfg_t("entry","ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry","ret");
   // adding blocks
-  z_basic_block_t& entry = cfg->insert("entry");
-  z_basic_block_t& loop = cfg->insert("loop");
-  z_basic_block_t& loop_body_1 = cfg->insert("loop_body_1");
-  z_basic_block_t& loop_body_2 = cfg->insert("loop_body_2");
-  z_basic_block_t& loop_body_3 = cfg->insert("loop_body_3");
-  z_basic_block_t& loop_body_4 = cfg->insert("loop_body_4");
-  z_basic_block_t& ret = cfg->insert("ret");
+  BB(cfg, entry);
+  BB(cfg, loop);
+  BB(cfg, loop_body_1);
+  BB(cfg, loop_body_2);
+  BB(cfg, loop_body_3);
+  BB(cfg, loop_body_4);
+  BB(cfg, ret);
   // adding control flow
   entry >> loop;
   loop >> loop_body_1;
@@ -94,7 +94,7 @@ z_cfg_t* prog7(variable_factory_t &vfac)  {
 
 // from TOPLAS paper Fig 1.b: version 3
 // similar to prog7 but simulating SSA
-z_cfg_t* prog8(variable_factory_t &vfac)  {
+std::unique_ptr<z_cfg_t> prog8(variable_factory_t &vfac)  {
   // Definining program variables
   z_var k(vfac ["k"], crab::INT_TYPE, 32);
   z_var n(vfac ["n"], crab::INT_TYPE, 32);
@@ -105,15 +105,15 @@ z_cfg_t* prog8(variable_factory_t &vfac)  {
   
   z_var t(vfac ["t"], crab::INT_TYPE, 32);
   // entry and exit block
-  z_cfg_t* cfg = new z_cfg_t("entry","ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry","ret");
   // adding blocks
-  z_basic_block_t& entry = cfg->insert("entry");
-  z_basic_block_t& loop = cfg->insert("loop");
-  z_basic_block_t& loop_body_1 = cfg->insert("loop_body_1");
-  z_basic_block_t& loop_body_2 = cfg->insert("loop_body_2");
-  z_basic_block_t& loop_body_3 = cfg->insert("loop_body_3");
-  z_basic_block_t& loop_body_4 = cfg->insert("loop_body_4");  
-  z_basic_block_t& ret = cfg->insert("ret");
+  BB(cfg, entry);
+  BB(cfg, loop);
+  BB(cfg, loop_body_1);
+  BB(cfg, loop_body_2);
+  BB(cfg, loop_body_3);
+  BB(cfg, loop_body_4);  
+  BB(cfg, ret);
   // adding control flow
   entry >> loop;
   loop >> loop_body_1;
@@ -146,7 +146,7 @@ z_cfg_t* prog8(variable_factory_t &vfac)  {
 // from TOPLAS paper Fig 1.a: 
 // (computing expression y:= 200+2*x in two instructions:
 //  tmp:= 2*x; y:= 200+tmp;)
-z_cfg_t* prog9(variable_factory_t &vfac)  {
+std::unique_ptr<z_cfg_t> prog9(variable_factory_t &vfac)  {
   // Definining program variables
   z_var k(vfac ["k"], crab::INT_TYPE, 32);
   z_var n(vfac ["n"], crab::INT_TYPE, 32);
@@ -154,15 +154,15 @@ z_cfg_t* prog9(variable_factory_t &vfac)  {
   z_var y(vfac ["y"], crab::INT_TYPE, 32);
   z_var t(vfac ["t"], crab::INT_TYPE, 32);
   // entry and exit block
-  z_cfg_t* cfg = new z_cfg_t("entry","ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry","ret");
   // adding blocks
-  z_basic_block_t& entry = cfg->insert("entry");
-  z_basic_block_t& loop = cfg->insert("loop");
-  z_basic_block_t& loop_body_1 = cfg->insert("loop_body_1");
-  z_basic_block_t& loop_body_2 = cfg->insert("loop_body_2");
-  z_basic_block_t& loop_body_3 = cfg->insert("loop_body_3");
-  z_basic_block_t& loop_body_4 = cfg->insert("loop_body_4");  
-  z_basic_block_t& ret = cfg->insert("ret");
+  BB(cfg, entry);
+  BB(cfg, loop);
+  BB(cfg, loop_body_1);
+  BB(cfg, loop_body_2);
+  BB(cfg, loop_body_3);
+  BB(cfg, loop_body_4);  
+  BB(cfg, ret);
   // adding control flow
   entry >> loop;
   loop >> loop_body_1;
@@ -187,7 +187,7 @@ z_cfg_t* prog9(variable_factory_t &vfac)  {
 }
 
 // from TOPLAS paper Fig 1.b as translated by crab-llvm.
-z_cfg_t* prog10(variable_factory_t &vfac)  {
+std::unique_ptr<z_cfg_t> prog10(variable_factory_t &vfac)  {
   // Definining program variables
   z_var k(vfac ["k"], crab::INT_TYPE, 32);
   z_var n(vfac ["n"], crab::INT_TYPE, 32);
@@ -198,12 +198,12 @@ z_cfg_t* prog10(variable_factory_t &vfac)  {
   z_var t(vfac ["t"], crab::INT_TYPE, 32);
   
   // entry and exit block
-  z_cfg_t* cfg = new z_cfg_t("entry","ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry","ret");
   // adding blocks
-  z_basic_block_t& entry = cfg->insert("entry");
-  z_basic_block_t& loop = cfg->insert("loop");
-  z_basic_block_t& loop_body = cfg->insert("loop_body");
-  z_basic_block_t& ret = cfg->insert("ret");
+  BB(cfg, entry);
+  BB(cfg, loop);
+  BB(cfg, loop_body);
+  BB(cfg, ret);
   // adding control flow
   entry >> loop;
   loop >> loop_body;
@@ -233,51 +233,46 @@ int main(int argc, char** argv) {
   /*** TOPLAS example: several variants ***/
   {
     variable_factory_t vfac;
-    z_cfg_t* cfg = prog6(vfac);
+    auto cfg = prog6(vfac);
     crab::outs() << *cfg << "\n";
     // EXPECTED: SAFE
     z_oct_apron_domain_t inv;
-    run_and_check<z_oct_apron_domain_t>(cfg, cfg->entry(), inv, false, 1, 2, 20, stats_enabled);
-    delete cfg;
+    run_and_check<z_oct_apron_domain_t>(cfg, inv, stats_enabled);
   }
   {
     variable_factory_t vfac;
-    z_cfg_t* cfg = prog7(vfac);
+    auto cfg = prog7(vfac);
     crab::outs() << *cfg << "\n";
     // EXPECTED: SAFE
     z_oct_apron_domain_t inv;
-    run_and_check<z_oct_apron_domain_t>(cfg, cfg->entry(), inv, false, 1, 2, 20, stats_enabled);
-    delete cfg;
+    run_and_check<z_oct_apron_domain_t>(cfg, inv, stats_enabled);
   }
   // crab::outs() << "##============================================##\n";
   {
     variable_factory_t vfac;
-    z_cfg_t* cfg = prog8(vfac);
+    auto cfg = prog8(vfac);
     crab::outs() << *cfg << "\n";
     // EXPECTED: SAFE
     z_oct_apron_domain_t inv;
-    run_and_check<z_oct_apron_domain_t>(cfg, cfg->entry(), inv, false, 1, 2, 20, stats_enabled);
-    delete cfg;
+    run_and_check<z_oct_apron_domain_t>(cfg, inv, stats_enabled);
   }
   // crab::outs() << "##============================================##\n";
   {
     variable_factory_t vfac;
-    z_cfg_t* cfg = prog9(vfac);
+    auto cfg = prog9(vfac);
     crab::outs() << *cfg << "\n";
     // EXPECTED: SAFE
     z_oct_apron_domain_t inv;
-    run_and_check<z_oct_apron_domain_t>(cfg, cfg->entry(), inv, false, 1, 2, 20, stats_enabled);
-    delete cfg;
+    run_and_check<z_oct_apron_domain_t>(cfg, inv, stats_enabled);
   }
   // crab::outs() << "##============================================##\n";
   { 
     variable_factory_t vfac;
-    z_cfg_t* cfg = prog10(vfac);
+    auto cfg = prog10(vfac);
     crab::outs() << *cfg << "\n";
     // EXPECTED: SAFE
     z_oct_apron_domain_t inv;
-    run_and_check<z_oct_apron_domain_t>(cfg, cfg->entry(), inv, false, 1, 2, 20, stats_enabled);
-    delete cfg;
+    run_and_check<z_oct_apron_domain_t>(cfg, inv, stats_enabled);
   }
 #endif
   return 0;

@@ -6,7 +6,7 @@ using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-z_cfg_t *cfg1(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> cfg1(variable_factory_t &vfac) {
 
   /*
    i := 0;
@@ -30,15 +30,15 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
   z_var z(vfac["z"], crab::INT_TYPE, 32);
   z_var w(vfac["w"], crab::INT_TYPE, 32);
   // === Create empty CFG
-  z_cfg_t *cfg = new z_cfg_t("entry", "ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "ret");
   // === Adding CFG blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb1_t = cfg->insert("bb1_t");
-  z_basic_block_t &bb1_f = cfg->insert("bb1_f");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &bb3 = cfg->insert("bb3");
-  z_basic_block_t &ret = cfg->insert("ret");
+  BB(cfg, entry);
+  BB(cfg, bb1);
+  BB(cfg, bb1_t);
+  BB(cfg, bb1_f);
+  BB(cfg, bb2);
+  BB(cfg, bb3);
+  BB(cfg, ret);
   // === Adding CFG edges
   entry.add_succ(bb1);
   bb1.add_succ(bb1_t);
@@ -63,19 +63,14 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
 }
 
 int main(int argc, char **argv) {
+  return crab_tests::test_main(argc, argv, [](bool stats_enabled) -> int {
+    variable_factory_t vfac;
 
-  bool stats_enabled = false;
-  if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
+    auto p1 = cfg1(vfac);
+    crab::outs() << *p1 << "\n";
+    z_sdbm_domain_t init;
+    run_and_check(p1, init, stats_enabled, run_config().with_widening(2));
+
     return 0;
-  }
-
-  variable_factory_t vfac;
-
-  z_cfg_t *p1 = cfg1(vfac);
-  crab::outs() << *p1 << "\n";
-  z_sdbm_domain_t init;
-  run_and_check(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
-  delete p1;
-
-  return 0;
+  });
 }

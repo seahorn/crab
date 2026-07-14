@@ -3,6 +3,7 @@
 #include <crab/analysis/dataflow/assertion_crawler.hpp>
 
 #include <boost/range/iterator_range.hpp>
+#include <memory>
 
 using namespace std;
 using namespace crab::cfg;
@@ -10,7 +11,7 @@ using namespace crab::cg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-z_cfg_t *prog(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog(variable_factory_t &vfac) {
   /*
      i := 0;
      x := 1;
@@ -37,15 +38,15 @@ z_cfg_t *prog(variable_factory_t &vfac) {
   z_var nd2(vfac["nd2"], crab::INT_TYPE, 32);
   // entry and exit block
   function_decl<z_number, varname_t> decl("main", {}, {});  
-  z_cfg_t *cfg = new z_cfg_t("entry", "ret", decl);
+  auto cfg = std::make_unique<z_cfg_t>("entry", "ret", decl);
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb1_t = cfg->insert("bb1_t");
-  z_basic_block_t &bb1_f = cfg->insert("bb1_f");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &exit = cfg->insert("exit");
-  z_basic_block_t &ret = cfg->insert("ret");
+  BB(cfg, entry);
+  BB(cfg, bb1);
+  BB(cfg, bb1_t);
+  BB(cfg, bb1_f);
+  BB(cfg, bb2);
+  BB(cfg, exit);
+  BB(cfg, ret);
   // adding control flow
   entry >> bb1;
   bb1 >> bb1_t;
@@ -71,7 +72,7 @@ z_cfg_t *prog(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *foo_cfg(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> foo_cfg(variable_factory_t &vfac) {
   // Definining program variables
   z_var i1(vfac["i1"], crab::INT_TYPE, 32);
   z_var i2(vfac["i2"], crab::INT_TYPE, 32);
@@ -84,11 +85,10 @@ z_cfg_t *foo_cfg(variable_factory_t &vfac) {
   z_var tmp2(vfac["tmp2"], crab::INT_TYPE, 32);  
   
   // entry and exit block
-   z_cfg_t *cfg = new z_cfg_t("entry", "exit",
-			      function_decl<z_number, varname_t>("foo", {i1,i2,i3,i4}, {o1,o2}));
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit", function_decl<z_number, varname_t>("foo", {i1,i2,i3,i4}, {o1,o2}));
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &exit = cfg->insert("exit");  
+  BB(cfg, entry);
+  BB(cfg, exit);  
 
   entry >> exit;
   entry.add(tmp1, i1,i2);
@@ -100,7 +100,7 @@ z_cfg_t *foo_cfg(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *bar_cfg(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> bar_cfg(variable_factory_t &vfac) {
 #if 0   
   // Definining program variables
   z_var a1(vfac["a1"], crab::INT_TYPE, 32);
@@ -111,11 +111,10 @@ z_cfg_t *bar_cfg(variable_factory_t &vfac) {
   z_var b2(vfac["b2"], crab::INT_TYPE, 32);  
 
   // entry and exit block
-   z_cfg_t *cfg = new z_cfg_t("entry", "exit",
-			      function_decl<z_number, varname_t>("bar", {a1,a2,a3,a4}, {b1,b2}));
+   auto cfg = std::make_unique<z_cfg_t>("entry", "exit", function_decl<z_number, varname_t>("bar", {a1,a2,a3,a4}, {b1,b2}));
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &exit = cfg->insert("exit");
+  BB(cfg, entry);
+  BB(cfg, exit);
   entry >> exit;
   entry.callsite("foo", {b1,b2}, {a1,a2,a3,a4});
   exit.assertion(b1 >= 0);
@@ -130,11 +129,10 @@ z_cfg_t *bar_cfg(variable_factory_t &vfac) {
   z_var o2(vfac["o2"], crab::INT_TYPE, 32);  
 
   // entry and exit block
-   z_cfg_t *cfg = new z_cfg_t("entry", "exit",
-  			      function_decl<z_number, varname_t>("bar", {i1,i2,i3,i4}, {o1,o2}));
+   auto cfg = std::make_unique<z_cfg_t>("entry", "exit", function_decl<z_number, varname_t>("bar", {i1,i2,i3,i4}, {o1,o2}));
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &exit = cfg->insert("exit");
+  BB(cfg, entry);
+  BB(cfg, exit);
   entry >> exit;
   entry.callsite("foo", {o1,o2}, {i1,i2,i3,i4});
   exit.assertion(o1 >= 0);
@@ -145,61 +143,53 @@ z_cfg_t *bar_cfg(variable_factory_t &vfac) {
 }
 
 int main(int argc, char **argv) {
-  bool stats_enabled = false;
-  if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
+  return crab_tests::test_main(argc, argv, [](bool stats_enabled) -> int {
+    using callgraph_t = call_graph<z_cfg_ref_t>;
+    variable_factory_t vfac;
+
+    auto p1 = prog(vfac);
+    auto p2 = foo_cfg(vfac);
+    auto p3 = bar_cfg(vfac);
+    
+    crab::outs() << *p1 << "\n" << *p2 << "\n" << *p3 << "\n";
+  
+    vector<z_cfg_ref_t> cfgs({*p1, *p2, *p3});
+    callgraph_t cg(cfgs);
+  
+    using crawler_t = crab::analyzer::inter_assertion_crawler<callgraph_t>;
+    crawler_t crawler(cg);
+    crawler.run();
+
+    auto print_results = [&crawler](z_cfg_t &cfg) {
+      // Print results in DFS to enforce a fixed order
+      std::set<crab::cfg_impl::basic_block_label_t> visited;
+      std::vector<crab::cfg_impl::basic_block_label_t> worklist;
+      worklist.push_back(cfg.entry());
+      visited.insert(cfg.entry());
+      while (!worklist.empty()) {
+        auto cur_label = worklist.back();
+        worklist.pop_back();
+        auto results = crawler.get_results(cfg, cur_label);
+        crab::outs() << crab::basic_block_traits<crab::cfg_impl::z_basic_block_t>::to_string(cur_label)
+  		   << "=" << results << "\n";
+        auto const &cur_node = cfg.get_node(cur_label);
+        for (auto const& kid_label :
+           boost::make_iterator_range(cur_node.next_blocks())) {
+  	if (visited.insert(kid_label).second) {
+  	  worklist.push_back(kid_label);
+  	}
+        }
+      }};
+
+    crab::outs() << "Assertion Crawler Analysis for main\n";
+    print_results(*p1);
+    crab::outs() << "Assertion Crawler Analysis for bar\n";  
+    print_results(*p3);
+    crab::outs() << "Assertion Crawler Analysis for foo\n";    
+    print_results(*p2);
+  
+    //crawler.write(crab::outs());
+
     return 0;
-  }
-  using callgraph_t = call_graph<z_cfg_ref_t>;
-  variable_factory_t vfac;
-
-  z_cfg_t *p1 = prog(vfac);
-  crab::outs() << *p1 << "\n";
-
-  z_cfg_t *p2 = foo_cfg(vfac);
-  crab::outs() << *p2 << "\n";
-
-  z_cfg_t *p3 = bar_cfg(vfac);
-  crab::outs() << *p3 << "\n";
-  
-  vector<z_cfg_ref_t> cfgs({*p1, *p2, *p3});
-  callgraph_t cg(cfgs);
-  
-  using crawler_t = crab::analyzer::inter_assertion_crawler<callgraph_t>;
-  crawler_t crawler(cg);
-  crawler.run();
-
-  auto print_results = [&crawler](z_cfg_t &cfg) {
-    // Print results in DFS to enforce a fixed order
-    std::set<crab::cfg_impl::basic_block_label_t> visited;
-    std::vector<crab::cfg_impl::basic_block_label_t> worklist;
-    worklist.push_back(cfg.entry());
-    visited.insert(cfg.entry());
-    while (!worklist.empty()) {
-      auto cur_label = worklist.back();
-      worklist.pop_back();
-      auto results = crawler.get_results(cfg, cur_label);
-      crab::outs() << crab::basic_block_traits<crab::cfg_impl::z_basic_block_t>::to_string(cur_label)
-		   << "=" << results << "\n";
-      auto const &cur_node = cfg.get_node(cur_label);
-      for (auto const& kid_label :
-         boost::make_iterator_range(cur_node.next_blocks())) {
-	if (visited.insert(kid_label).second) {
-	  worklist.push_back(kid_label);
-	}
-      }
-    }};
-
-  crab::outs() << "Assertion Crawler Analysis for main\n";
-  print_results(*p1);
-  crab::outs() << "Assertion Crawler Analysis for bar\n";  
-  print_results(*p3);
-  crab::outs() << "Assertion Crawler Analysis for foo\n";    
-  print_results(*p2);
-  
-  //crawler.write(crab::outs());
-
-  delete p1;
-  delete p2;
-  delete p3;
-  return 0;
+  });
 }

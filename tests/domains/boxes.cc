@@ -7,20 +7,20 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 /* Example of how to build a CFG */
-z_cfg_t *prog1(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog1(variable_factory_t &vfac) {
 
   // Definining program variables
   z_var i(vfac["i"], crab::INT_TYPE, 32);
   z_var k(vfac["k"], crab::INT_TYPE, 32);
   z_var nd(vfac["nd"], crab::INT_TYPE, 32);
   // entry and exit block
-  z_cfg_t *cfg = new z_cfg_t("entry", "ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "ret");
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb1_t = cfg->insert("bb1_t");
-  z_basic_block_t &bb1_f = cfg->insert("bb1_f");
-  z_basic_block_t &ret = cfg->insert("ret");
+  BB(cfg, entry);
+  BB(cfg, bb1);
+  BB(cfg, bb1_t);
+  BB(cfg, bb1_f);
+  BB(cfg, ret);
   // adding control flow
   entry >> bb1;
   bb1 >> bb1_t;
@@ -37,17 +37,17 @@ z_cfg_t *prog1(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *prog2(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog2(variable_factory_t &vfac) {
 
-  z_cfg_t *cfg = new z_cfg_t("loop1_entry", "ret");
-  z_basic_block_t &loop1_entry = cfg->insert("loop1_entry");
-  z_basic_block_t &loop1_bb1 = cfg->insert("loop1_bb1");
-  z_basic_block_t &loop1_bb1_t = cfg->insert("loop1_bb1_t");
-  z_basic_block_t &loop1_bb1_f = cfg->insert("loop1_bb1_f");
-  z_basic_block_t &loop2_bb1 = cfg->insert("loop2_bb1");
-  z_basic_block_t &loop2_bb1_t = cfg->insert("loop2_bb1_t");
-  z_basic_block_t &loop2_bb1_f = cfg->insert("loop2_bb1_f");
-  z_basic_block_t &ret = cfg->insert("ret");
+  auto cfg = std::make_unique<z_cfg_t>("loop1_entry", "ret");
+  BB(cfg, loop1_entry);
+  BB(cfg, loop1_bb1);
+  BB(cfg, loop1_bb1_t);
+  BB(cfg, loop1_bb1_f);
+  BB(cfg, loop2_bb1);
+  BB(cfg, loop2_bb1_t);
+  BB(cfg, loop2_bb1_f);
+  BB(cfg, ret);
 
   loop1_entry >> loop1_bb1;
   loop1_bb1 >> loop1_bb1_t;
@@ -76,23 +76,23 @@ z_cfg_t *prog2(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *prog3(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog3(variable_factory_t &vfac) {
 
-  z_cfg_t *cfg = new z_cfg_t("entry", "ret");
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &loop1_head = cfg->insert("loop1_head");
-  z_basic_block_t &loop1_t = cfg->insert("loop1_t");
-  z_basic_block_t &loop1_f = cfg->insert("loop1_f");
-  z_basic_block_t &loop1_body = cfg->insert("loop1_body");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "ret");
+  BB(cfg, entry);
+  BB(cfg, loop1_head);
+  BB(cfg, loop1_t);
+  BB(cfg, loop1_f);
+  BB(cfg, loop1_body);
 
-  z_basic_block_t &loop1_body_t = cfg->insert("loop1_body_t");
-  z_basic_block_t &loop1_body_f = cfg->insert("loop1_body_f");
-  z_basic_block_t &loop1_body_x = cfg->insert("loop1_body_x");
+  BB(cfg, loop1_body_t);
+  BB(cfg, loop1_body_f);
+  BB(cfg, loop1_body_x);
 
-  z_basic_block_t &loop2_head = cfg->insert("loop2_head");
-  z_basic_block_t &loop2_t = cfg->insert("loop2_t");
-  z_basic_block_t &loop2_f = cfg->insert("loop2_f");
-  z_basic_block_t &ret = cfg->insert("ret");
+  BB(cfg, loop2_head);
+  BB(cfg, loop2_t);
+  BB(cfg, loop2_f);
+  BB(cfg, ret);
 
   entry >> loop1_head;
   loop1_head >> loop1_t;
@@ -128,14 +128,14 @@ z_cfg_t *prog3(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *prog4(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog4(variable_factory_t &vfac) {
 
-  z_cfg_t *cfg = new z_cfg_t("entry", "ret");
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &loop_head = cfg->insert("loop_head");
-  z_basic_block_t &loop_t = cfg->insert("loop_t");
-  z_basic_block_t &loop_f = cfg->insert("loop_f");
-  z_basic_block_t &ret = cfg->insert("ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "ret");
+  BB(cfg, entry);
+  BB(cfg, loop_head);
+  BB(cfg, loop_t);
+  BB(cfg, loop_f);
+  BB(cfg, ret);
 
   entry >> loop_head;
   loop_head >> loop_t;
@@ -158,21 +158,21 @@ z_cfg_t *prog4(variable_factory_t &vfac) {
 }
 
 /* Example of how to build a CFG */
-z_cfg_t *prog5(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog5(variable_factory_t &vfac) {
 
   // Definining program variables
   z_var i(vfac["i"], crab::INT_TYPE, 32);
   z_var k(vfac["k"], crab::INT_TYPE, 32);
   z_var nd(vfac["nd"], crab::INT_TYPE, 32);
   // entry and exit block
-  z_cfg_t *cfg = new z_cfg_t("entry", "ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "ret");
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb1_t = cfg->insert("bb1_t");
-  z_basic_block_t &bb1_f = cfg->insert("bb1_f");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &ret = cfg->insert("ret");
+  BB(cfg, entry);
+  BB(cfg, bb1);
+  BB(cfg, bb1_t);
+  BB(cfg, bb1_f);
+  BB(cfg, bb2);
+  BB(cfg, ret);
   // adding control flow
   entry >> bb1;
   bb1 >> bb1_t;
@@ -190,18 +190,18 @@ z_cfg_t *prog5(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *prog6(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog6(variable_factory_t &vfac) {
 
   // Definining program variables
   z_var x(vfac["x"], crab::INT_TYPE, 32);
   z_var y(vfac["y"], crab::INT_TYPE, 32);
   // entry and exit block
-  z_cfg_t *cfg = new z_cfg_t("entry", "exit");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit");
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &header = cfg->insert("header");
-  z_basic_block_t &body = cfg->insert("body");
-  z_basic_block_t &exit = cfg->insert("exit");
+  BB(cfg, entry);
+  BB(cfg, header);
+  BB(cfg, body);
+  BB(cfg, exit);
 
   // adding control flow
   entry >> header;
@@ -231,39 +231,33 @@ int main(int argc, char **argv) {
 
   variable_factory_t vfac;
 
-  z_cfg_t *cfg1 = prog1(vfac);
-  z_cfg_t *cfg2 = prog2(vfac);
-  z_cfg_t *cfg3 = prog3(vfac);
-  z_cfg_t *cfg4 = prog4(vfac);
-  z_cfg_t *cfg5 = prog5(vfac);
-  z_cfg_t *cfg6 = prog6(vfac);
+  auto cfg1 = prog1(vfac);
+  auto cfg2 = prog2(vfac);
+  auto cfg3 = prog3(vfac);
+  auto cfg4 = prog4(vfac);
+  auto cfg5 = prog5(vfac);
+  auto cfg6 = prog6(vfac);
 
   z_boxes_domain_t init;
 
   crab::outs() << *cfg1 << "\n";
-  run(cfg1, cfg1->entry(), init, false, 10, 2, 20, stats_enabled);
+  run(cfg1, init, stats_enabled, run_config().with_widening(10));
 
   crab::outs() << *cfg2 << "\n";
-  run(cfg2, cfg2->entry(), init, false, 10, 2, 20, stats_enabled);
+  run(cfg2, init, stats_enabled, run_config().with_widening(10));
 
   crab::outs() << *cfg3 << "\n";
-  run(cfg3, cfg3->entry(), init, false, 10, 2, 20, stats_enabled);
+  run(cfg3, init, stats_enabled, run_config().with_widening(10));
 
   crab::outs() << *cfg4 << "\n";
-  run(cfg4, cfg4->entry(), init, false, 10, 2, 20, stats_enabled);
+  run(cfg4, init, stats_enabled, run_config().with_widening(10));
 
   crab::outs() << *cfg5 << "\n";
-  run(cfg5, cfg5->entry(), init, false, 10, 2, 20, stats_enabled);
+  run(cfg5, init, stats_enabled, run_config().with_widening(10));
 
   crab::outs() << *cfg6 << "\n";
-  run(cfg6, cfg6->entry(), init, false, 1, 2, 20, stats_enabled);
+  run(cfg6, init, stats_enabled);
 
-  delete cfg1;
-  delete cfg2;
-  delete cfg3;
-  delete cfg4;
-  delete cfg5;
-  delete cfg6;
 
   if (true) {
     crab::outs() << "Testing some boxes operations ...\n";

@@ -7,7 +7,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 /* Example of how to build a CFG */
-z_cfg_t *prog(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog(variable_factory_t &vfac) {
 
   /*
     x := 0; 
@@ -26,17 +26,17 @@ z_cfg_t *prog(variable_factory_t &vfac) {
   z_var x(vfac["x"], crab::INT_TYPE, 32);
   z_var y(vfac["y"], crab::INT_TYPE, 32);
   // entry and exit block
-  auto cfg = new z_cfg_t("entry", "exit");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit");
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &bb3 = cfg->insert("bb3");
-  z_basic_block_t &bb4 = cfg->insert("bb4");
-  z_basic_block_t &bb5 = cfg->insert("bb5");
-  z_basic_block_t &bb6 = cfg->insert("bb6");
-  z_basic_block_t &bb7 = cfg->insert("bb7");    
-  z_basic_block_t &exit = cfg->insert("exit");
+  BB(cfg, entry);
+  BB(cfg, bb1);
+  BB(cfg, bb2);
+  BB(cfg, bb3);
+  BB(cfg, bb4);
+  BB(cfg, bb5);
+  BB(cfg, bb6);
+  BB(cfg, bb7);    
+  BB(cfg, exit);
   // adding control flow
   entry >> bb1;
   bb1 >> bb2;
@@ -65,27 +65,23 @@ z_cfg_t *prog(variable_factory_t &vfac) {
 
 /* Example of how to infer invariants from the above CFG */
 int main(int argc, char **argv) {
-  bool stats_enabled = false;
-  if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
-    return 0;
-  }
+  return crab_tests::test_main(argc, argv, [](bool stats_enabled) -> int {
+    variable_factory_t vfac;
+    auto cfg = prog(vfac);
+    crab::outs() << *cfg << "\n";
 
-  variable_factory_t vfac;
-  z_cfg_t *cfg = prog(vfac);
-  crab::outs() << *cfg << "\n";
+    {
+      z_soct_domain_t init;
+      run(cfg, init, stats_enabled, run_config().with_widening(2).with_narrowing(1).with_jump_set_size(0));
+    }
 
-  {
-    z_soct_domain_t init;
-    run(cfg, cfg->entry(), init, false, 2, 1, 0, stats_enabled);
-  }
-
-  {
-    z_soct_domain_lw_t init;
-    run(cfg, cfg->entry(), init, false, 2, 1, 0, stats_enabled);
-  }
+    {
+      z_soct_domain_lw_t init;
+      run(cfg, init, stats_enabled, run_config().with_widening(2).with_narrowing(1).with_jump_set_size(0));
+    }
   
-  // free the CFG
-  delete cfg;
+    // free the CFG
 
-  return 0;
+    return 0;
+  });
 }

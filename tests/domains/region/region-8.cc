@@ -8,7 +8,7 @@ using namespace crab::domain_impl;
 
 /* Test for taint analysis */
 
-z_cfg_t *cfg1(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> cfg1(variable_factory_t &vfac) {
 
   /*
    int v1,v2,v3;
@@ -53,15 +53,15 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
   // === Create allocation sites
   crab::tag_manager as_man;
   // === Create empty CFG
-  z_cfg_t *cfg = new z_cfg_t("entry", "ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "ret");
   // === Adding CFG blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb1_t = cfg->insert("bb1_t");
-  z_basic_block_t &bb1_f = cfg->insert("bb1_f");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &bb3 = cfg->insert("bb3");
-  z_basic_block_t &ret = cfg->insert("ret");
+  BB(cfg, entry);
+  BB(cfg, bb1);
+  BB(cfg, bb1_t);
+  BB(cfg, bb1_f);
+  BB(cfg, bb2);
+  BB(cfg, bb3);
+  BB(cfg, ret);
   // === Adding CFG edges
   entry.add_succ(bb1);
   bb1.add_succ(bb1_t);
@@ -152,11 +152,10 @@ int main(int argc, char **argv) {
 
   variable_factory_t vfac;
 
-  z_cfg_t *p1 = cfg1(vfac);
+  auto p1 = cfg1(vfac);
   crab::outs() << *p1 << "\n";
   z_rgn_bool_int_t init;
-  run_and_check(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
-  delete p1;
+  run_and_check(p1, init, stats_enabled, run_config().with_widening(2));
 
   return 0;
 }

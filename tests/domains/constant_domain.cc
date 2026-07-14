@@ -7,7 +7,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 /* Example of how to build a CFG */
-z_cfg_t *prog1(variable_factory_t &vfac, crab::tag_manager &as_man) {
+std::unique_ptr<z_cfg_t> prog1(variable_factory_t &vfac, crab::tag_manager &as_man) {
 
   /*
     i := 0;
@@ -23,16 +23,16 @@ z_cfg_t *prog1(variable_factory_t &vfac, crab::tag_manager &as_man) {
   z_var nd(vfac["nd"], crab::INT_TYPE, 32);
   z_var inc(vfac["inc"], crab::INT_TYPE, 32);
   // entry and exit block
-  auto cfg = new z_cfg_t("entry", "ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "ret");
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb1_t = cfg->insert("bb1_t");
-  z_basic_block_t &bb1_f = cfg->insert("bb1_f");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &bb3 = cfg->insert("bb3");
-  z_basic_block_t &bb4 = cfg->insert("bb4");  
-  z_basic_block_t &ret = cfg->insert("ret");
+  BB(cfg, entry);
+  BB(cfg, bb1);
+  BB(cfg, bb1_t);
+  BB(cfg, bb1_f);
+  BB(cfg, bb2);
+  BB(cfg, bb3);
+  BB(cfg, bb4);  
+  BB(cfg, ret);
   // adding control flow
   entry >> bb1;
   bb1 >> bb1_t;
@@ -55,7 +55,7 @@ z_cfg_t *prog1(variable_factory_t &vfac, crab::tag_manager &as_man) {
   return cfg;
 }
 
-z_cfg_t *prog2(variable_factory_t &vfac, crab::tag_manager &as_man) {
+std::unique_ptr<z_cfg_t> prog2(variable_factory_t &vfac, crab::tag_manager &as_man) {
 
   /*
    *i := 0;
@@ -77,16 +77,16 @@ z_cfg_t *prog2(variable_factory_t &vfac, crab::tag_manager &as_man) {
   z_var_or_cst_t size4(z_number(4), crab::variable_type(crab::INT_TYPE, 32));  
 
   // entry and exit block
-  auto cfg = new z_cfg_t("entry", "ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "ret");
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb1_t = cfg->insert("bb1_t");
-  z_basic_block_t &bb1_f = cfg->insert("bb1_f");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &bb3 = cfg->insert("bb3");
-  z_basic_block_t &bb4 = cfg->insert("bb4");  
-  z_basic_block_t &ret = cfg->insert("ret");
+  BB(cfg, entry);
+  BB(cfg, bb1);
+  BB(cfg, bb1_t);
+  BB(cfg, bb1_f);
+  BB(cfg, bb2);
+  BB(cfg, bb3);
+  BB(cfg, bb4);  
+  BB(cfg, ret);
   // adding control flow
   entry >> bb1;
   bb1 >> bb1_t;
@@ -134,22 +134,20 @@ int main(int argc, char **argv) {
   {
     variable_factory_t vfac;
     crab::tag_manager as_man;
-    z_cfg_t *cfg = prog1(vfac, as_man);
+    auto cfg = prog1(vfac, as_man);
     crab::outs() << *cfg << "\n";
   
     z_constant_domain_t init;
-    run_and_check(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-    delete cfg;
+    run_and_check(cfg, init, stats_enabled);
   }
 
   {
     variable_factory_t vfac;
     crab::tag_manager as_man;    
-    z_cfg_t *cfg = prog2(vfac, as_man);
+    auto cfg = prog2(vfac, as_man);
     crab::outs() << *cfg << "\n";
     z_rgn_constant_t init;  
-    run_and_check(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-    delete cfg;
+    run_and_check(cfg, init, stats_enabled);
   }
 
 #if 0  

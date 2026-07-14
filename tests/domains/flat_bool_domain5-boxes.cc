@@ -9,7 +9,7 @@ using namespace crab::domain_impl;
 /* test boolean-to-non-boolean propagation through select */
 
 // test propagation through select
-z_cfg_t *prog2(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog2(variable_factory_t &vfac) {
 
   /*
     havoc(x) 
@@ -38,10 +38,10 @@ z_cfg_t *prog2(variable_factory_t &vfac) {
   z_var x(vfac["x"], crab::INT_TYPE, 64);
 
   // entry and exit block
-  auto cfg = new z_cfg_t("entry", "exit");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit");
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &exit = cfg->insert("exit");
+  BB(cfg, entry);
+  BB(cfg, exit);
   entry.add_succ(exit);
   // adding statements
   entry.havoc(x);
@@ -56,7 +56,7 @@ z_cfg_t *prog2(variable_factory_t &vfac) {
 }
 
 // test propagation through select
-z_cfg_t *prog3(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog3(variable_factory_t &vfac) {
 
   /*
     havoc(x) 
@@ -84,10 +84,10 @@ z_cfg_t *prog3(variable_factory_t &vfac) {
   z_var x(vfac["x"], crab::INT_TYPE, 64);
 
   // entry and exit block
-  auto cfg = new z_cfg_t("entry", "exit");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit");
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &exit = cfg->insert("exit");
+  BB(cfg, entry);
+  BB(cfg, exit);
   entry.add_succ(exit);
   // adding statements
   entry.havoc(x);
@@ -110,20 +110,18 @@ int main(int argc, char **argv) {
   variable_factory_t vfac;
 
   {
-    z_cfg_t *cfg = prog2(vfac);
+    auto cfg = prog2(vfac);
     crab::outs() << *cfg << "\n";
     // Boxes can prove this program while bool_interval_domain cannot
     z_boxes_domain_t boxes_init;
-    run_and_check(cfg, cfg->entry(), boxes_init, false, 1, 2, 20, stats_enabled);
-    delete cfg;
+    run_and_check(cfg, boxes_init, stats_enabled);
   }
 
   {
-    z_cfg_t *cfg = prog3(vfac);
+    auto cfg = prog3(vfac);
     crab::outs() << *cfg << "\n";
     z_boxes_domain_t boxes_init;
-    run_and_check(cfg, cfg->entry(), boxes_init, false, 1, 2, 20, stats_enabled);
-    delete cfg;
+    run_and_check(cfg, boxes_init, stats_enabled);
   }
 #endif     
   return 0;

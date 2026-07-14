@@ -6,7 +6,7 @@ using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-z_cfg_t *prog1(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog1(variable_factory_t &vfac) {
 
   /*
     x = 0;
@@ -33,19 +33,19 @@ z_cfg_t *prog1(variable_factory_t &vfac) {
   z_var nd3(vfac["nd3"], crab::INT_TYPE, 32);
 
   // entry and exit block
-  auto cfg = new z_cfg_t("entry", "exit");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit");
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &b1 = cfg->insert("b1");
-  z_basic_block_t &b1_tt = cfg->insert("b1_tt");
-  z_basic_block_t &b1_ff = cfg->insert("b1_ff");
-  z_basic_block_t &b2 = cfg->insert("b2");
-  z_basic_block_t &b2_tt = cfg->insert("b2_tt");
-  z_basic_block_t &b2_ff = cfg->insert("b2_ff");
-  z_basic_block_t &b3 = cfg->insert("b3");
-  z_basic_block_t &b3_tt = cfg->insert("b3_tt");
-  z_basic_block_t &b3_ff = cfg->insert("b3_ff");
-  z_basic_block_t &exit = cfg->insert("exit");
+  BB(cfg, entry);
+  BB(cfg, b1);
+  BB(cfg, b1_tt);
+  BB(cfg, b1_ff);
+  BB(cfg, b2);
+  BB(cfg, b2_tt);
+  BB(cfg, b2_ff);
+  BB(cfg, b3);
+  BB(cfg, b3_tt);
+  BB(cfg, b3_ff);
+  BB(cfg, exit);
 
   // adding control flow
   entry >> b1;
@@ -101,20 +101,12 @@ int main(int argc, char **argv) {
   }
 
   variable_factory_t vfac;
-  z_cfg_t *cfg = prog1(vfac);
+  auto cfg = prog1(vfac);
   crab::outs() << *cfg << "\n";
 
-  {
-    z_pow_aa_int_t init;
-    run_and_check(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-  }
-  {
-    z_interval_domain_t init;
-    run_and_check(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-  }
+  check_all<z_pow_aa_int_t, z_interval_domain_t>(cfg, stats_enabled);
 
   // free the CFG
-  delete cfg;
 
   return 0;
 }

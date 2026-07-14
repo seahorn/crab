@@ -8,7 +8,7 @@ using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-z_cfg_t *cfg1(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> cfg1(variable_factory_t &vfac) {
   /*
     void (*fun_ptr)(int) = fun3;
 
@@ -43,16 +43,16 @@ z_cfg_t *cfg1(variable_factory_t &vfac) {
   // === Create allocation sites
   crab::tag_manager as_man;  
   // Create empty CFG
-  z_cfg_t *cfg = new z_cfg_t("entry", "ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "ret");
   // Adding CFG blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &bb3 = cfg->insert("bb3");
-  z_basic_block_t &bb4 = cfg->insert("bb4");
-  z_basic_block_t &bb5 = cfg->insert("bb5");
-  z_basic_block_t &bb6 = cfg->insert("bb6");    
-  z_basic_block_t &ret = cfg->insert("ret");
+  BB(cfg, entry);
+  BB(cfg, bb1);
+  BB(cfg, bb2);
+  BB(cfg, bb3);
+  BB(cfg, bb4);
+  BB(cfg, bb5);
+  BB(cfg, bb6);    
+  BB(cfg, ret);
   // Adding CFG edges
   entry.add_succ(bb1);
   bb1.add_succ(bb2);
@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
 
   variable_factory_t vfac;
 
-  z_cfg_t *p1 = cfg1(vfac);
+  auto p1 = cfg1(vfac);
   crab::outs() << *p1 << "\n";
   z_rgn_sdbm_t absval_fac, init;
   crab::fixpoint_parameters fixpo_params;
@@ -159,6 +159,5 @@ int main(int argc, char **argv) {
   exit_inv.ref_load(f_ptr, m, deref_f_ptr);  
   print_alloc_sites(deref_f_ptr, exit_inv);
   print_alloc_sites(orphan_ptr, exit_inv);
-  delete p1;
   return 0;
 }

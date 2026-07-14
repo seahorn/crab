@@ -39,7 +39,7 @@ void write(z_cfg_ref_t g) {
   }
 }
 
-z_cfg_t *prog(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog(variable_factory_t &vfac) {
 
   /*
      i:=0;
@@ -49,12 +49,12 @@ z_cfg_t *prog(variable_factory_t &vfac) {
         p := p + 4;
      }
    */
-  z_cfg_t *cfg = new z_cfg_t("entry", "ret");
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &loop_head = cfg->insert("loop_head");
-  z_basic_block_t &loop_t = cfg->insert("loop_t");
-  z_basic_block_t &loop_f = cfg->insert("loop_f");
-  z_basic_block_t &ret = cfg->insert("ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "ret");
+  BB(cfg, entry);
+  BB(cfg, loop_head);
+  BB(cfg, loop_t);
+  BB(cfg, loop_f);
+  BB(cfg, ret);
 
   entry >> loop_head;
   loop_head >> loop_t;
@@ -77,39 +77,36 @@ z_cfg_t *prog(variable_factory_t &vfac) {
 }
 
 int main(int argc, char **argv) {
-  bool stats_enabled = false;
-  if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
+  return crab_tests::test_main(argc, argv, [](bool stats_enabled) -> int {
+    variable_factory_t vfac;
+    auto cfg = prog(vfac);
+    crab::outs() << *cfg << "\n";
+
+    {
+      z_interval_domain_t init;
+      run(cfg, init, stats_enabled, run_config().with_liveness());
+    }
+    {
+      z_dbm_domain_t init;
+      run(cfg, init, stats_enabled, run_config().with_liveness());
+    }
+    {
+      z_sdbm_domain_t init;
+      run(cfg, init, stats_enabled, run_config().with_liveness());
+    }
+    {
+      z_ric_domain_t init;
+      run(cfg, init, stats_enabled, run_config().with_liveness());
+    }
+    {
+      z_term_domain_t init;
+      run(cfg, init, stats_enabled, run_config().with_liveness());
+    }
+    {
+      z_dis_interval_domain_t init;
+      run(cfg, init, stats_enabled, run_config().with_liveness());
+    }
+
     return 0;
-  }
-  variable_factory_t vfac;
-  z_cfg_t *cfg = prog(vfac);
-  crab::outs() << *cfg << "\n";
-
-  {
-    z_interval_domain_t init;
-    run(cfg, cfg->entry(), init, true, 1, 2, 20, stats_enabled);
-  }
-  {
-    z_dbm_domain_t init;
-    run(cfg, cfg->entry(), init, true, 1, 2, 20, stats_enabled);
-  }
-  {
-    z_sdbm_domain_t init;
-    run(cfg, cfg->entry(), init, true, 1, 2, 20, stats_enabled);
-  }
-  {
-    z_ric_domain_t init;
-    run(cfg, cfg->entry(), init, true, 1, 2, 20, stats_enabled);
-  }
-  {
-    z_term_domain_t init;
-    run(cfg, cfg->entry(), init, true, 1, 2, 20, stats_enabled);
-  }
-  {
-    z_dis_interval_domain_t init;
-    run(cfg, cfg->entry(), init, true, 1, 2, 20, stats_enabled);
-  }
-
-  delete cfg;
-  return 0;
+  });
 }

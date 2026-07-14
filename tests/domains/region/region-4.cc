@@ -6,7 +6,7 @@ using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-z_cfg_t *cfg1(variable_factory_t &vfac, bool add_free) {
+std::unique_ptr<z_cfg_t> cfg1(variable_factory_t &vfac, bool add_free) {
 
 /*
 ==== C program ====
@@ -68,19 +68,19 @@ int main() {
   crab::tag_manager as_man;
   
   // Create empty CFG
-  z_cfg_t *cfg = new z_cfg_t("entry", "exit");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit");
   // Adding CFG blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &bb2_loop = cfg->insert("bb2_loop");
-  z_basic_block_t &bb3 = cfg->insert("bb3");
-  z_basic_block_t &bb4 = cfg->insert("bb4");
-  z_basic_block_t &bb5 = cfg->insert("bb5");
-  z_basic_block_t &bb6_loop = cfg->insert("bb6_loop");
-  z_basic_block_t &bb7 = cfg->insert("bb7");
-  z_basic_block_t &bb8 = cfg->insert("bb8");
-  z_basic_block_t &bb9 = cfg->insert("bb9");
-  z_basic_block_t &bb9_assert = cfg->insert("bb9_assert");        
-  z_basic_block_t &exit = cfg->insert("exit");
+  BB(cfg, entry);
+  BB(cfg, bb2_loop);
+  BB(cfg, bb3);
+  BB(cfg, bb4);
+  BB(cfg, bb5);
+  BB(cfg, bb6_loop);
+  BB(cfg, bb7);
+  BB(cfg, bb8);
+  BB(cfg, bb9);
+  BB(cfg, bb9_assert);        
+  BB(cfg, exit);
   // Adding CFG edges
   entry.add_succ(bb2_loop);
   bb2_loop.add_succ(bb3);
@@ -164,23 +164,21 @@ int main(int argc, char **argv) {
   }
   variable_factory_t vfac;
   {
-    z_cfg_t *p1 = cfg1(vfac, false);
+    auto p1 = cfg1(vfac, false);
     crab::outs() << *p1 << "\n";
     z_rgn_bool_int_t init;
-    run_and_check(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
-    //run(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
+    run_and_check(p1, init, stats_enabled, run_config().with_widening(2));
+    //run(p1, init, stats_enabled, run_config().with_widening(2));
     // EXPECTED TO PROVE ASSERTION 
-    delete p1;
   }
 
   {
-    z_cfg_t *p1 = cfg1(vfac, true);
+    auto p1 = cfg1(vfac, true);
     crab::outs() << *p1 << "\n";
     z_rgn_bool_int_t init;
-    run_and_check(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
-    //run(p1, p1->entry(), init, false, 2, 2, 20, stats_enabled);
+    run_and_check(p1, init, stats_enabled, run_config().with_widening(2));
+    //run(p1, init, stats_enabled, run_config().with_widening(2));
     // NOT EXPECTED TO PROVE ASSERTION
-    delete p1;
   }
   
 

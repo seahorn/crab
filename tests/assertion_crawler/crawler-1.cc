@@ -1,6 +1,7 @@
 #include "../common.hpp"
 #include "../program_options.hpp"
 #include <crab/analysis/dataflow/assertion_crawler.hpp>
+#include <memory>
 
 using namespace std;
 using namespace crab::cfg;
@@ -32,8 +33,8 @@ std::unique_ptr<z_cfg_t> main_cfg(variable_factory_t &vfac) {
   function_decl<z_number, varname_t> decl("main", {}, {});  
   auto cfg = std::make_unique<z_cfg_t>("exit", "exit", decl);
   // adding blocks
-  //z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &exit = cfg->insert("exit");
+  //BB(cfg, entry);
+  BB(cfg, exit);
   // adding control flow
   //entry >> exit;
   // adding statements
@@ -47,7 +48,7 @@ std::unique_ptr<z_cfg_t> main_cfg(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *foo_cfg(variable_factory_t &vfac, summary_map_t &summaries) {
+std::unique_ptr<z_cfg_t> foo_cfg(variable_factory_t &vfac, summary_map_t &summaries) {
   // Definining program variables
   z_var i1(vfac["i1"], crab::INT_TYPE, 32);
   z_var i2(vfac["i2"], crab::INT_TYPE, 32);
@@ -55,10 +56,10 @@ z_cfg_t *foo_cfg(variable_factory_t &vfac, summary_map_t &summaries) {
   z_var i4(vfac["i4"], crab::INT_TYPE, 32);
   z_var o1(vfac["o1"], crab::INT_TYPE, 32);
   z_var o2(vfac["o2"], crab::INT_TYPE, 32);  
-  
+
   // entry and exit block
-   z_cfg_t *cfg = new z_cfg_t("entry", "entry",
-			      function_decl<z_number, varname_t>("foo", {i1,i2,i3,i4}, {o1,o2}));
+  auto cfg = std::make_unique<z_cfg_t>("entry", "entry", function_decl<z_number, varname_t>("foo", {i1,i2,i3,i4}, {o1,o2}));
+				       
   // adding blocks
   /* z_basic_block_t &entry =*/cfg->insert("entry");
 
@@ -80,34 +81,30 @@ z_cfg_t *foo_cfg(variable_factory_t &vfac, summary_map_t &summaries) {
 }
 
 int main(int argc, char **argv) {
-  bool stats_enabled = false;
-  if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
-    return 0;
-  }
+  return crab_tests::test_main(argc, argv, [](bool stats_enabled) -> int {
+    summary_map_t summaries;  
+    assert_map_t assert_map;
+    variable_factory_t vfac;
 
-  summary_map_t summaries;  
-  assert_map_t assert_map;
-  variable_factory_t vfac;
-
-  std::unique_ptr<z_cfg_t> p1 = main_cfg(vfac);
-  crab::outs() << *p1 << "\n";
-  z_cfg_t *p2 = foo_cfg(vfac, summaries);
-  crab::outs() << *p2;
-  crab::outs() << "Summary table:\n";
-  for (auto &kv: summaries) {
-    crab::outs() << "\t";
-    kv.first.write(crab::outs());
-    crab::outs() << " -> ";
-    kv.second.write(crab::outs());
-    crab::outs() << "\n";
-  }
+    auto p1 = main_cfg(vfac);
+    auto p2 = foo_cfg(vfac, summaries);
+    
+    crab::outs() << *p1 << "\n" << *p2;
+    crab::outs() << "Summary table:\n";
+    for (auto &kv: summaries) {
+      crab::outs() << "\t";
+      kv.first.write(crab::outs());
+      crab::outs() << " -> ";
+      kv.second.write(crab::outs());
+      crab::outs() << "\n";
+    }
   
-  assertion_crawler_t assert_crawler(*p1, assert_map, summaries);
-  assert_crawler.exec();
-  crab::outs() << "\n";
-  assert_crawler.write(crab::outs());
-  crab::outs() << "\n";
+    assertion_crawler_t assert_crawler(*p1, assert_map, summaries);
+    assert_crawler.exec();
+    crab::outs() << "\n";
+    assert_crawler.write(crab::outs());
+    crab::outs() << "\n";
 
-  delete p2;
-  return 0;
+    return 0;
+  });
 }

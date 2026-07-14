@@ -7,15 +7,15 @@ using namespace crab::domain_impl;
 using namespace ikos;
 
 // to test array_expansion domain
-z_cfg_t *prog1(variable_factory_t &vfac) { // no overlapping, no joins
+std::unique_ptr<z_cfg_t> prog1(variable_factory_t &vfac) { // no overlapping, no joins
   crab::outs() << "===================================\n";
   crab::outs() << " Test 1 for array adaptive domain \n";
   crab::outs() << "===================================\n";
-  z_cfg_t *cfg = new z_cfg_t("bb0", "bb3");
-  z_basic_block_t &bb0 = cfg->insert("bb0");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &bb3 = cfg->insert("bb3");
+  auto cfg = std::make_unique<z_cfg_t>("bb0", "bb3");
+  BB(cfg, bb0);
+  BB(cfg, bb1);
+  BB(cfg, bb2);
+  BB(cfg, bb3);
 
   bb0 >> bb1;
   bb0 >> bb2;
@@ -48,15 +48,15 @@ z_cfg_t *prog1(variable_factory_t &vfac) { // no overlapping, no joins
   return cfg;
 }
 
-z_cfg_t *prog2(variable_factory_t &vfac) { // overlapping, no joins
+std::unique_ptr<z_cfg_t> prog2(variable_factory_t &vfac) { // overlapping, no joins
   crab::outs() << "===================================\n";
   crab::outs() << " Test 2 for array adaptive domain \n";
   crab::outs() << "===================================\n";
-  z_cfg_t *cfg = new z_cfg_t("bb0", "bb3");
-  z_basic_block_t &bb0 = cfg->insert("bb0");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &bb3 = cfg->insert("bb3");
+  auto cfg = std::make_unique<z_cfg_t>("bb0", "bb3");
+  BB(cfg, bb0);
+  BB(cfg, bb1);
+  BB(cfg, bb2);
+  BB(cfg, bb3);
 
   bb0 >> bb1;
   bb0 >> bb2;
@@ -92,15 +92,15 @@ z_cfg_t *prog2(variable_factory_t &vfac) { // overlapping, no joins
   return cfg;
 }
 
-z_cfg_t *prog3(variable_factory_t &vfac) { // overlapping, no joins
+std::unique_ptr<z_cfg_t> prog3(variable_factory_t &vfac) { // overlapping, no joins
   crab::outs() << "===================================\n";
   crab::outs() << " Test 3 for array adaptive domain \n";
   crab::outs() << "===================================\n";
-  z_cfg_t *cfg = new z_cfg_t("bb0", "bb3");
-  z_basic_block_t &bb0 = cfg->insert("bb0");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &bb3 = cfg->insert("bb3");
+  auto cfg = std::make_unique<z_cfg_t>("bb0", "bb3");
+  BB(cfg, bb0);
+  BB(cfg, bb1);
+  BB(cfg, bb2);
+  BB(cfg, bb3);
 
   bb0 >> bb1;
   bb0 >> bb2;
@@ -144,23 +144,23 @@ z_cfg_t *prog3(variable_factory_t &vfac) { // overlapping, no joins
   return cfg;
 }
 
-z_cfg_t *prog4(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog4(variable_factory_t &vfac) {
   // i  and j are stored in an array rather than being scalar variables.
   crab::outs() << "===================================\n";
   crab::outs() << " Test 4 for array adaptive domain \n";
   crab::outs() << "===================================\n";
-  z_cfg_t *cfg = new z_cfg_t("loop1_entry", "ret");
-  z_basic_block_t &loop1_entry = cfg->insert("loop1_entry");
-  z_basic_block_t &loop1_bb1 = cfg->insert("loop1_bb1");
-  z_basic_block_t &loop1_bb1_t = cfg->insert("loop1_bb1_t");
-  z_basic_block_t &loop1_bb1_f = cfg->insert("loop1_bb1_f");
-  z_basic_block_t &loop1_bb2 = cfg->insert("loop1_bb2");
-  z_basic_block_t &loop2_entry = cfg->insert("loop2_entry");
-  z_basic_block_t &loop2_bb1 = cfg->insert("loop2_bb1");
-  z_basic_block_t &loop2_bb1_t = cfg->insert("loop2_bb1_t");
-  z_basic_block_t &loop2_bb1_f = cfg->insert("loop2_bb1_f");
-  z_basic_block_t &loop2_bb2 = cfg->insert("loop2_bb2");
-  z_basic_block_t &ret = cfg->insert("ret");
+  auto cfg = std::make_unique<z_cfg_t>("loop1_entry", "ret");
+  BB(cfg, loop1_entry);
+  BB(cfg, loop1_bb1);
+  BB(cfg, loop1_bb1_t);
+  BB(cfg, loop1_bb1_f);
+  BB(cfg, loop1_bb2);
+  BB(cfg, loop2_entry);
+  BB(cfg, loop2_bb1);
+  BB(cfg, loop2_bb1_t);
+  BB(cfg, loop2_bb1_f);
+  BB(cfg, loop2_bb2);
+  BB(cfg, ret);
 
   loop1_entry >> loop1_bb1;
   loop1_bb1 >> loop1_bb1_t;
@@ -221,23 +221,23 @@ z_cfg_t *prog4(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *prog5(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog5(variable_factory_t &vfac) {
   // similar to prog4 but with an extra level of indirection for i and j
   crab::outs() << "===================================\n";
   crab::outs() << " Test 5 for array adaptive domain \n";
   crab::outs() << "===================================\n";
-  z_cfg_t *cfg = new z_cfg_t("loop1_entry", "ret");
-  z_basic_block_t &loop1_entry = cfg->insert("loop1_entry");
-  z_basic_block_t &loop1_bb1 = cfg->insert("loop1_bb1");
-  z_basic_block_t &loop1_bb1_t = cfg->insert("loop1_bb1_t");
-  z_basic_block_t &loop1_bb1_f = cfg->insert("loop1_bb1_f");
-  z_basic_block_t &loop1_bb2 = cfg->insert("loop1_bb2");
-  z_basic_block_t &loop2_entry = cfg->insert("loop2_entry");
-  z_basic_block_t &loop2_bb1 = cfg->insert("loop2_bb1");
-  z_basic_block_t &loop2_bb1_t = cfg->insert("loop2_bb1_t");
-  z_basic_block_t &loop2_bb1_f = cfg->insert("loop2_bb1_f");
-  z_basic_block_t &loop2_bb2 = cfg->insert("loop2_bb2");
-  z_basic_block_t &ret = cfg->insert("ret");
+  auto cfg = std::make_unique<z_cfg_t>("loop1_entry", "ret");
+  BB(cfg, loop1_entry);
+  BB(cfg, loop1_bb1);
+  BB(cfg, loop1_bb1_t);
+  BB(cfg, loop1_bb1_f);
+  BB(cfg, loop1_bb2);
+  BB(cfg, loop2_entry);
+  BB(cfg, loop2_bb1);
+  BB(cfg, loop2_bb1_t);
+  BB(cfg, loop2_bb1_f);
+  BB(cfg, loop2_bb2);
+  BB(cfg, ret);
 
   loop1_entry >> loop1_bb1;
   loop1_bb1 >> loop1_bb1_t;
@@ -318,23 +318,23 @@ z_cfg_t *prog5(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *prog6(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog6(variable_factory_t &vfac) {
   // similar to prog5 but all array offsets are negative
   crab::outs() << "===================================\n";
   crab::outs() << " Test 6 for array adaptive domain \n";
   crab::outs() << "===================================\n";
-  z_cfg_t *cfg = new z_cfg_t("loop1_entry", "ret");
-  z_basic_block_t &loop1_entry = cfg->insert("loop1_entry");
-  z_basic_block_t &loop1_bb1 = cfg->insert("loop1_bb1");
-  z_basic_block_t &loop1_bb1_t = cfg->insert("loop1_bb1_t");
-  z_basic_block_t &loop1_bb1_f = cfg->insert("loop1_bb1_f");
-  z_basic_block_t &loop1_bb2 = cfg->insert("loop1_bb2");
-  z_basic_block_t &loop2_entry = cfg->insert("loop2_entry");
-  z_basic_block_t &loop2_bb1 = cfg->insert("loop2_bb1");
-  z_basic_block_t &loop2_bb1_t = cfg->insert("loop2_bb1_t");
-  z_basic_block_t &loop2_bb1_f = cfg->insert("loop2_bb1_f");
-  z_basic_block_t &loop2_bb2 = cfg->insert("loop2_bb2");
-  z_basic_block_t &ret = cfg->insert("ret");
+  auto cfg = std::make_unique<z_cfg_t>("loop1_entry", "ret");
+  BB(cfg, loop1_entry);
+  BB(cfg, loop1_bb1);
+  BB(cfg, loop1_bb1_t);
+  BB(cfg, loop1_bb1_f);
+  BB(cfg, loop1_bb2);
+  BB(cfg, loop2_entry);
+  BB(cfg, loop2_bb1);
+  BB(cfg, loop2_bb1_t);
+  BB(cfg, loop2_bb1_f);
+  BB(cfg, loop2_bb2);
+  BB(cfg, ret);
 
   loop1_entry >> loop1_bb1;
   loop1_bb1 >> loop1_bb1_t;
@@ -415,14 +415,14 @@ z_cfg_t *prog6(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *prog7(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog7(variable_factory_t &vfac) {
   // same sequence of bytes in different arrays
   crab::outs() << "===================================\n";
   crab::outs() << " Test 7 for array adaptive domain \n";
   crab::outs() << "===================================\n";
-  z_cfg_t *cfg = new z_cfg_t("entry", "ret");
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &ret = cfg->insert("ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "ret");
+  BB(cfg, entry);
+  BB(cfg, ret);
   z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
   z_var m2(vfac["Mem2"], crab::ARR_INT_TYPE);
   z_var m3(vfac["Mem3"], crab::ARR_INT_TYPE);
@@ -456,14 +456,14 @@ z_cfg_t *prog7(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *prog8(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog8(variable_factory_t &vfac) {
   // same sequence of bytes in different arrays
   crab::outs() << "===================================\n";
   crab::outs() << " Test 8 for array adaptive domain \n";
   crab::outs() << "===================================\n";
-  z_cfg_t *cfg = new z_cfg_t("entry", "ret");
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &ret = cfg->insert("ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "ret");
+  BB(cfg, entry);
+  BB(cfg, ret);
   z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
   z_var m2(vfac["Mem2"], crab::ARR_INT_TYPE);
   z_var m3(vfac["Mem3"], crab::ARR_INT_TYPE);
@@ -497,14 +497,14 @@ z_cfg_t *prog8(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *prog9(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog9(variable_factory_t &vfac) {
   // array initialization
   crab::outs() << "===================================\n";
   crab::outs() << " Test 9 for array adaptive domain \n";
   crab::outs() << "===================================\n";
-  z_cfg_t *cfg = new z_cfg_t("entry", "ret");
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &ret = cfg->insert("ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "ret");
+  BB(cfg, entry);
+  BB(cfg, ret);
   z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
   z_var m1_lb(vfac["m1_lb"], crab::INT_TYPE, 32);
   z_var m1_ub(vfac["m1_ub"], crab::INT_TYPE, 32);
@@ -529,17 +529,17 @@ z_cfg_t *prog9(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *prog10(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog10(variable_factory_t &vfac) {
   // array write with a non-constant offset
   crab::outs() << "===================================\n";
   crab::outs() << " Test 10 for array adaptive domain \n";
   crab::outs() << "===================================\n";
-  z_cfg_t *cfg = new z_cfg_t("bb0", "bb4");
-  z_basic_block_t &bb0 = cfg->insert("bb0");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &bb3 = cfg->insert("bb3");
-  z_basic_block_t &bb4 = cfg->insert("bb4");
+  auto cfg = std::make_unique<z_cfg_t>("bb0", "bb4");
+  BB(cfg, bb0);
+  BB(cfg, bb1);
+  BB(cfg, bb2);
+  BB(cfg, bb3);
+  BB(cfg, bb4);
 
   z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
   z_var i(vfac["i"], crab::INT_TYPE, 32);
@@ -561,17 +561,17 @@ z_cfg_t *prog10(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *prog11(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog11(variable_factory_t &vfac) {
   // array write with a non-constant offset
   crab::outs() << "===================================\n";
   crab::outs() << " Test 11 for array adaptive domain \n";
   crab::outs() << "===================================\n";
-  z_cfg_t *cfg = new z_cfg_t("bb0", "bb4");
-  z_basic_block_t &bb0 = cfg->insert("bb0");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &bb3 = cfg->insert("bb3");
-  z_basic_block_t &bb4 = cfg->insert("bb4");
+  auto cfg = std::make_unique<z_cfg_t>("bb0", "bb4");
+  BB(cfg, bb0);
+  BB(cfg, bb1);
+  BB(cfg, bb2);
+  BB(cfg, bb3);
+  BB(cfg, bb4);
 
   z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
   z_var m2(vfac["Mem2"], crab::ARR_INT_TYPE);
@@ -600,13 +600,13 @@ z_cfg_t *prog11(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *prog12(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog12(variable_factory_t &vfac) {
   // ignore array init
   crab::outs() << "===================================\n";
   crab::outs() << " Test 12 for array adaptive domain \n";
   crab::outs() << "===================================\n";
-  z_cfg_t *cfg = new z_cfg_t("bb0", "bb0");
-  z_basic_block_t &bb0 = cfg->insert("bb0");
+  auto cfg = std::make_unique<z_cfg_t>("bb0", "bb0");
+  BB(cfg, bb0);
 
   z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
   z_var i(vfac["i"], crab::INT_TYPE, 32);
@@ -642,13 +642,13 @@ z_cfg_t *prog12(variable_factory_t &vfac) {
   return cfg;
 }
 
-z_cfg_t *prog13(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog13(variable_factory_t &vfac) {
   // ignore array init
   crab::outs() << "===================================\n";
   crab::outs() << " Test 13 for array adaptive domain \n";
   crab::outs() << "===================================\n";
-  z_cfg_t *cfg = new z_cfg_t("bb0", "bb0");
-  z_basic_block_t &bb0 = cfg->insert("bb0");
+  auto cfg = std::make_unique<z_cfg_t>("bb0", "bb0");
+  BB(cfg, bb0);
 
   z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
   z_var i(vfac["i"], crab::INT_TYPE, 32);
@@ -683,7 +683,7 @@ z_cfg_t *prog13(variable_factory_t &vfac) {
 
 void test_array_adaptive(int test, bool stats_enabled) {
   variable_factory_t vfac;
-  z_cfg_t *cfg = nullptr;
+  std::unique_ptr<z_cfg_t> cfg = nullptr;
   switch (test) {
   case 1:
     cfg = prog1(vfac);
@@ -730,8 +730,7 @@ void test_array_adaptive(int test, bool stats_enabled) {
 
   if (cfg) {
     z_aa_term_int_t init;
-    run_and_check<>(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-    delete cfg;
+    run_and_check<>(cfg, init, stats_enabled);
   }
 }
 

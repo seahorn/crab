@@ -1,13 +1,14 @@
 #include "../common.hpp"
 #include "../program_options.hpp"
 #include <crab/transforms/dce.hpp>
+#include <memory>
 
 using namespace std;
 using namespace crab::analyzer;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-z_cfg_t *prog1(variable_factory_t &vfac, crab::tag_manager &as_man) {
+std::unique_ptr<z_cfg_t> prog1(variable_factory_t &vfac, crab::tag_manager &as_man) {
   /*
     k := 2147483648
     o := 4;
@@ -34,18 +35,18 @@ z_cfg_t *prog1(variable_factory_t &vfac, crab::tag_manager &as_man) {
   z_var_or_cst_t size400(z_number(400), crab::variable_type(crab::INT_TYPE, 32));
   
   // entry and exit block
-  auto cfg = new z_cfg_t("x0", "ret");
+  auto cfg = std::make_unique<z_cfg_t>("x0", "ret");
   // adding blocks
-  z_basic_block_t &x0 = cfg->insert("x0");
-  z_basic_block_t &x1 = cfg->insert("x1");
-  z_basic_block_t &x2 = cfg->insert("x2");
-  z_basic_block_t &x3 = cfg->insert("x3");
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb1_t = cfg->insert("bb1_t");
-  z_basic_block_t &bb1_f = cfg->insert("bb1_f");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &ret = cfg->insert("ret");
+  BB(cfg, x0);
+  BB(cfg, x1);
+  BB(cfg, x2);
+  BB(cfg, x3);
+  BB(cfg, entry);
+  BB(cfg, bb1);
+  BB(cfg, bb1_t);
+  BB(cfg, bb1_f);
+  BB(cfg, bb2);
+  BB(cfg, ret);
   // adding control flow
   x0 >> x1;
   x1 >> x2;
@@ -73,7 +74,7 @@ z_cfg_t *prog1(variable_factory_t &vfac, crab::tag_manager &as_man) {
   return cfg;
 }
 
-z_cfg_t *prog2(variable_factory_t &vfac, crab::tag_manager &as_man) {
+std::unique_ptr<z_cfg_t> prog2(variable_factory_t &vfac, crab::tag_manager &as_man) {
   /*
     k := 2147483648
     o := 4;
@@ -103,18 +104,18 @@ z_cfg_t *prog2(variable_factory_t &vfac, crab::tag_manager &as_man) {
   z_var_or_cst_t size400(z_number(400), crab::variable_type(crab::INT_TYPE, 32));  
   // entry and exit block
   typename z_cfg_t::fdecl_t fdecl("main", {}, {k});  
-  auto cfg = new z_cfg_t("x0", "ret", fdecl);
+  auto cfg = std::make_unique<z_cfg_t>("x0", "ret", fdecl);
   // adding blocks
-  z_basic_block_t &x0 = cfg->insert("x0");
-  z_basic_block_t &x1 = cfg->insert("x1");
-  z_basic_block_t &x2 = cfg->insert("x2");
-  z_basic_block_t &x3 = cfg->insert("x3");
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb1_t = cfg->insert("bb1_t");
-  z_basic_block_t &bb1_f = cfg->insert("bb1_f");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &ret = cfg->insert("ret");
+  BB(cfg, x0);
+  BB(cfg, x1);
+  BB(cfg, x2);
+  BB(cfg, x3);
+  BB(cfg, entry);
+  BB(cfg, bb1);
+  BB(cfg, bb1_t);
+  BB(cfg, bb1_f);
+  BB(cfg, bb2);
+  BB(cfg, ret);
   // adding control flow
   x0 >> x1;
   x1 >> x2;
@@ -146,42 +147,36 @@ z_cfg_t *prog2(variable_factory_t &vfac, crab::tag_manager &as_man) {
 }
 
 int main(int argc, char **argv) {
+  return crab_tests::test_main(argc, argv, [](bool stats_enabled) -> int {
+    variable_factory_t vfac;
+    crab::tag_manager as_man;
+    using z_cfg_ref_t = crab::cfg::cfg_ref<z_cfg_t>;
+    using dce_t = crab::transforms::dead_code_elimination<z_cfg_ref_t>;
 
-  bool stats_enabled = false;
-  if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
+    {
+      auto cfg = prog1(vfac, as_man);
+      crab::outs() << "CFG\n" << *cfg << "\n";
+      z_cfg_t *cloned_cfg = cfg->clone();
+      dce_t dce;
+      z_cfg_ref_t cfg_ref(*cfg);
+      dce.run(cfg_ref);
+      crab::outs() << "After " << dce.get_name() << "\n" << *cfg << "\n";
+      crab::outs() << "Cloned CFG\n" << *cloned_cfg << "\n";
+      delete cloned_cfg;
+    }
+
+    {
+      auto cfg = prog2(vfac, as_man);
+      crab::outs() << "CFG\n" << *cfg << "\n";
+      z_cfg_t *cloned_cfg = cfg->clone();
+      dce_t dce;
+      z_cfg_ref_t cfg_ref(*cfg);
+      dce.run(cfg_ref);
+      crab::outs() << "After " << dce.get_name() << "\n" << *cfg << "\n";
+      crab::outs() << "Cloned CFG\n" << *cloned_cfg << "\n";
+      delete cloned_cfg;
+    }
+
     return 0;
-  }
-
-  variable_factory_t vfac;
-  crab::tag_manager as_man;
-  using z_cfg_ref_t = crab::cfg::cfg_ref<z_cfg_t>;
-  using dce_t = crab::transforms::dead_code_elimination<z_cfg_ref_t>;
-
-  {
-    z_cfg_t *cfg = prog1(vfac, as_man);
-    crab::outs() << "CFG\n" << *cfg << "\n";
-    z_cfg_t *cloned_cfg = cfg->clone();
-    dce_t dce;
-    z_cfg_ref_t cfg_ref(*cfg);
-    dce.run(cfg_ref);
-    crab::outs() << "After " << dce.get_name() << "\n" << *cfg << "\n";
-    crab::outs() << "Cloned CFG\n" << *cloned_cfg << "\n";
-    delete cfg;
-    delete cloned_cfg;
-  }
-
-  {
-    z_cfg_t *cfg = prog2(vfac, as_man);
-    crab::outs() << "CFG\n" << *cfg << "\n";
-    z_cfg_t *cloned_cfg = cfg->clone();
-    dce_t dce;
-    z_cfg_ref_t cfg_ref(*cfg);
-    dce.run(cfg_ref);
-    crab::outs() << "After " << dce.get_name() << "\n" << *cfg << "\n";
-    crab::outs() << "Cloned CFG\n" << *cloned_cfg << "\n";
-    delete cfg;
-    delete cloned_cfg;
-  }
-
-  return 0;
+  });
 }

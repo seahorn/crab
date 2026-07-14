@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
       exit.assert_ref(z_ref_cst_t::mk_not_null(ref1));
       crab::outs() << "Unit test 1 for select_ref\n";
       crab::outs() << cfg;
-      run_and_check(&cfg, cfg.entry(), init, false, 2, 2, 20, stats_enabled);
+      run_and_check(cfg, init, stats_enabled, run_config().with_widening(2));
     }
     { // both select values are possible: the only expected warning
       z_cfg_t cfg("entry","exit");
@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
       exit.assert_ref(z_ref_cst_t::mk_not_null(ref1));
       crab::outs() << "Unit test 2 for select_ref\n";            
       crab::outs() << cfg;
-      run_and_check(&cfg, cfg.entry(), init, false, 2, 2, 20, stats_enabled);
+      run_and_check(cfg, init, stats_enabled, run_config().with_widening(2));
     }
     
     { // both select values are possible and one operand is null
@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
       exit.assert_ref(z_ref_cst_t::mk_null(ref1));
       crab::outs() << "Unit test 3 for select_ref\n";      
       crab::outs() << cfg;
-      run_and_check(&cfg, cfg.entry(), init, false, 2, 2, 20, stats_enabled);
+      run_and_check(cfg, init, stats_enabled, run_config().with_widening(2));
     }
     { // only select true value
       z_cfg_t cfg("entry","exit");
@@ -169,7 +169,7 @@ int main(int argc, char **argv) {
       exit.assert_ref(z_ref_cst_t::mk_not_null(ref1));
       crab::outs() << "Unit test 4 for select_ref\n";
       crab::outs() << cfg;
-      run_and_check(&cfg, cfg.entry(), init, false, 2, 2, 20, stats_enabled);
+      run_and_check(cfg, init, stats_enabled, run_config().with_widening(2));
     }
     { // only select false value
       z_cfg_t cfg("entry","exit");
@@ -190,7 +190,7 @@ int main(int argc, char **argv) {
       exit.assert_ref(z_ref_cst_t::mk_not_null(ref1));
       crab::outs() << "Unit test 5 for select_ref\n";      
       crab::outs() << cfg;
-      run_and_check(&cfg, cfg.entry(), init, false, 2, 2, 20, stats_enabled);
+      run_and_check(cfg, init, stats_enabled, run_config().with_widening(2));
     }
 
     {

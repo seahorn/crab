@@ -6,6 +6,7 @@
 #include <crab/checkers/base_property.hpp>
 #include <crab/checkers/checker.hpp>
 #include <crab/checkers/div_zero.hpp>
+#include <memory>
 
 using namespace std;
 using namespace crab::analyzer;
@@ -14,7 +15,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 using namespace crab::checker;
 
-z_cfg_t *get_cfg(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> get_cfg(variable_factory_t &vfac) {
   /*
     i := 0;
     x := 1;
@@ -35,14 +36,14 @@ z_cfg_t *get_cfg(variable_factory_t &vfac) {
   z_var x(vfac["x"], crab::INT_TYPE, 32);
   z_var y(vfac["y"], crab::INT_TYPE, 32);
   // entry and exit block
-  z_cfg_t *cfg = new z_cfg_t("entry", "ret");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "ret");
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb1_t = cfg->insert("bb1_t");
-  z_basic_block_t &bb1_f = cfg->insert("bb1_f");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &ret = cfg->insert("ret");
+  BB(cfg, entry);
+  BB(cfg, bb1);
+  BB(cfg, bb1_t);
+  BB(cfg, bb1_f);
+  BB(cfg, bb2);
+  BB(cfg, ret);
   // adding control flow
   entry >> bb1;
   bb1 >> bb1_t;
@@ -142,39 +143,36 @@ void check(z_cfg_ref_t cfg, variable_factory_t &vfac) {
 }
 
 int main(int argc, char **argv) {
-  bool stats_enabled = false;
-  if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
-    return 0;
-  }
-  variable_factory_t vfac;
+  return crab_tests::test_main(argc, argv, [](bool stats_enabled) -> int {
+    variable_factory_t vfac;
 
-  z_cfg_t *p = get_cfg(vfac);
+    auto p = get_cfg(vfac);
 
-  // To test the assertion crawler analysis
-  using assertion_crawler_t = crab::analyzer::assertion_crawler<z_cfg_ref_t>;
-  typename assertion_crawler_t::assert_map_t assert_map;
-  typename assertion_crawler_t::summary_map_t summaries;
+    // To test the assertion crawler analysis
+    using assertion_crawler_t = crab::analyzer::assertion_crawler<z_cfg_ref_t>;
+    typename assertion_crawler_t::assert_map_t assert_map;
+    typename assertion_crawler_t::summary_map_t summaries;
   
-  assertion_crawler_t assert_crawler(*p, assert_map, summaries);
-  assert_crawler.exec();
-  crab::outs() << "\n";
-  assert_crawler.write(crab::outs());
-  crab::outs() << "\n";
+    assertion_crawler_t assert_crawler(*p, assert_map, summaries);
+    assert_crawler.exec();
+    crab::outs() << "\n";
+    assert_crawler.write(crab::outs());
+    crab::outs() << "\n";
 
-  // To test the assumption analyses
-  crab::analyzer::assumption_naive_analysis<z_cfg_ref_t>
-      assumption_naive_analyzer(*p);
-  assumption_naive_analyzer.exec();
-  crab::outs() << "\n" << assumption_naive_analyzer << "\n";
+    // To test the assumption analyses
+    crab::analyzer::assumption_naive_analysis<z_cfg_ref_t>
+        assumption_naive_analyzer(*p);
+    assumption_naive_analyzer.exec();
+    crab::outs() << "\n" << assumption_naive_analyzer << "\n";
 
-  crab::analyzer::assumption_dataflow_analysis<z_cfg_ref_t>
-      assumption_dataflow_analyzer(*p);
-  assumption_dataflow_analyzer.exec();
-  crab::outs() << "\n" << assumption_dataflow_analyzer << "\n";
+    crab::analyzer::assumption_dataflow_analysis<z_cfg_ref_t>
+        assumption_dataflow_analyzer(*p);
+    assumption_dataflow_analyzer.exec();
+    crab::outs() << "\n" << assumption_dataflow_analyzer << "\n";
 
-  check(*p, vfac);
+    check(*p, vfac);
 
-  delete p;
 
-  return 0;
+    return 0;
+  });
 }

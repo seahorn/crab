@@ -1,9 +1,8 @@
 #include "../common.hpp"
 #include "../program_options.hpp"
 
-#include <crab/analysis/graphs/sccg_bgl.hpp>
 #include <crab/analysis/inter/inter_params.hpp>
-#include <crab/cg/cg_bgl.hpp>
+#include <memory>
 
 /*
   Inter-procedural analysis with region domain.
@@ -35,11 +34,11 @@ using namespace crab::domain_impl;
 using namespace crab::cg;
 using namespace crab::cg_impl;
 
-z_cfg_t *foo(z_var x, z_var z, variable_factory_t &vfac, crab::tag_manager &as_man) {
+std::unique_ptr<z_cfg_t> foo(z_var x, z_var z, variable_factory_t &vfac, crab::tag_manager &as_man) {
   function_decl<z_number, varname_t> decl("foo", {x}, {z});
-  z_cfg_t *cfg = new z_cfg_t("entry", "exit", decl);
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &exit = cfg->insert("exit");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit", decl);  
+  BB(cfg, entry);
+  BB(cfg, exit);
   entry >> exit;
   z_var ref(vfac["ref"], crab::REF_TYPE, 32);
   z_var tmp(vfac["tmp"], crab::INT_TYPE, 32);    
@@ -52,11 +51,11 @@ z_cfg_t *foo(z_var x, z_var z, variable_factory_t &vfac, crab::tag_manager &as_m
   return cfg;
 }
 
-z_cfg_t *m(z_var x, z_var z, variable_factory_t &vfac, crab::tag_manager &as_man) {
+std::unique_ptr<z_cfg_t> m(z_var x, z_var z, variable_factory_t &vfac, crab::tag_manager &as_man) {
   function_decl<z_number, varname_t> decl("main", {}, {});
-  z_cfg_t *cfg = new z_cfg_t("entry", "exit", decl);
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &exit = cfg->insert("exit");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit", decl); 
+  BB(cfg, entry);
+  BB(cfg, exit);
   entry >> exit;
   entry.havoc(x);
   entry.assume(x > 0);
@@ -90,8 +89,8 @@ int main(int argc, char **argv) {
   z_var x(vfac["x"], crab::INT_TYPE, 32);
   z_var z(vfac["z"], crab::REG_INT_TYPE, 32);
   
-  z_cfg_t *t1 = foo(x, z, vfac, as_man);
-  z_cfg_t *t2 = m(x, z, vfac, as_man);
+  auto t1 = foo(x, z, vfac, as_man);
+  auto t2 = m(x, z, vfac, as_man);
 
   crab::outs() << *t1 << "\n" << *t2 << "\n";
 
@@ -102,9 +101,6 @@ int main(int argc, char **argv) {
   z_cg_t cg(cfgs);
   inter_params_t params;
   td_inter_run(cg, init, params, true, false/*print invariants*/, false);
-
-  delete t1;
-  delete t2;
 
   return 0;
 }

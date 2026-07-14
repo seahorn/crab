@@ -95,3 +95,13 @@ public:
 /* ===== END TO BE DEFINED BY CRAB CLIENT ===== */
   
 } // namespace crab
+
+// (#3) Declare a basic-block reference whose C++ variable name matches its CFG
+// label, so the label string is written once instead of twice:
+//
+//   z_basic_block_t &bb1 = cfg->insert("bb1");   // before
+//   BB(cfg, bb1);                                 // after
+//
+// Requires the label to be a valid C++ identifier (most test labels are; the
+// few with '.'/spaces keep the explicit insert()).
+#define BB(CFG, NAME) auto &NAME = (CFG)->insert(#NAME)

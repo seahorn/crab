@@ -6,7 +6,7 @@ using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-z_cfg_t *prog1(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog1(variable_factory_t &vfac) {
 /*
 entry:
   havoc(x)
@@ -28,12 +28,12 @@ exit:
 */
 
   // entry and exit block
-  auto cfg = new z_cfg_t("entry", "exit");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit");
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &exit = cfg->insert("exit");
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
+  BB(cfg, entry);
+  BB(cfg, exit);
+  BB(cfg, bb1);
+  BB(cfg, bb2);
   // adding control flow
   entry >> bb1;
   entry >> bb2;
@@ -69,20 +69,16 @@ exit:
 
 
 int main(int argc, char **argv) {
-  bool stats_enabled = false;
-  if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
+  return crab_tests::test_main(argc, argv, [](bool stats_enabled) -> int {
+    variable_factory_t vfac;
+    {
+      auto cfg = prog1(vfac);
+      //crab::outs() << *cfg << "\n";
+      z_bool_num_domain_t init;
+      run_and_check(cfg, init, stats_enabled);
+    }
+  
     return 0;
-  }
-
-  variable_factory_t vfac;
-  {
-    z_cfg_t *cfg = prog1(vfac);
-    //crab::outs() << *cfg << "\n";
-    z_bool_num_domain_t init;
-    run_and_check(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-    delete cfg;
-  }
   
-  return 0;
-  
+  });
 }

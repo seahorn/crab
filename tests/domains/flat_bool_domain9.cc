@@ -10,7 +10,7 @@ using namespace crab::domain_impl;
  * Example that shows how the flat boolean domain deals with sext/zext
  */
 
-z_cfg_t *prog(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog(variable_factory_t &vfac) {
 
   /* 
         x  := 2;
@@ -57,10 +57,10 @@ z_cfg_t *prog(variable_factory_t &vfac) {
   z_var y6(vfac["y6"], crab::INT_TYPE, 32);
 
   // entry and exit block
-  auto cfg = new z_cfg_t("entry", "exit");
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit");
   // adding blocks
-  z_basic_block_t &entry = cfg->insert("entry");
-  z_basic_block_t &exit = cfg->insert("exit");
+  BB(cfg, entry);
+  BB(cfg, exit);
   // adding control flow
   entry >> exit;
   // adding statements
@@ -96,17 +96,14 @@ z_cfg_t *prog(variable_factory_t &vfac) {
 
 /* Example of how to infer invariants from the above CFG */
 int main(int argc, char **argv) {
-  bool stats_enabled = false;
-  if (!crab_tests::parse_user_options(argc, argv, stats_enabled)) {
+  return crab_tests::test_main(argc, argv, [](bool stats_enabled) -> int {
+    variable_factory_t vfac;
+    auto cfg = prog(vfac);
+    crab::outs() << *cfg << "\n";
+
+    z_bool_interval_domain_t init;
+    run_and_check(cfg, init, stats_enabled);
+
     return 0;
-  }
-  variable_factory_t vfac;
-  z_cfg_t *cfg = prog(vfac);
-  crab::outs() << *cfg << "\n";
-
-  z_bool_interval_domain_t init;
-  run_and_check(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
-
-  delete cfg;
-  return 0;
+  });
 }

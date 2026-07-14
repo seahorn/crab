@@ -1,6 +1,7 @@
 #include "../common.hpp"
 #include "../program_options.hpp"
 #include <crab/analysis/bwd_analyzer.hpp>
+#include <memory>
 
 // Simplified Cousots, Logozzo, and Fahndrich's example (VMCAI'13)
 using namespace std;
@@ -9,19 +10,19 @@ using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-z_cfg_t *prog(variable_factory_t &vfac) {
+std::unique_ptr<z_cfg_t> prog(variable_factory_t &vfac) {
 
   // Defining program variables
   z_var i(vfac["i"], crab::INT_TYPE, 32);
   z_var n(vfac["n"], crab::INT_TYPE, 32);
   // entry and exit block
-  auto cfg = new z_cfg_t("bb1", "bb5");
+  auto cfg = std::make_unique<z_cfg_t>("bb1", "bb5");
   // adding blocks
-  z_basic_block_t &bb1 = cfg->insert("bb1");
-  z_basic_block_t &bb2 = cfg->insert("bb2");
-  z_basic_block_t &bb3 = cfg->insert("bb3");
-  z_basic_block_t &bb4 = cfg->insert("bb4");
-  z_basic_block_t &bb5 = cfg->insert("bb5");
+  BB(cfg, bb1);
+  BB(cfg, bb2);
+  BB(cfg, bb3);
+  BB(cfg, bb4);
+  BB(cfg, bb5);
   // adding control flow
   bb1 >> bb2;
   bb2 >> bb3;
@@ -48,7 +49,7 @@ int main(int argc, char **argv) {
     return 0;
   }
   variable_factory_t vfac;
-  z_cfg_t *cfg = prog(vfac);
+  auto cfg = prog(vfac);
   crab::outs() << *cfg << "\n";
   
   {
@@ -110,9 +111,7 @@ int main(int argc, char **argv) {
         }
       }
     }
-  }
-  // free the CFG
-  delete cfg;
+  }  
 #endif
   return 0;
 }
