@@ -2760,6 +2760,39 @@ Running top-down inter-procedural analysis with SplitDBM
  0  Number of total warning checks
  0  Number of total unreachable checks
 === End ./test-bin/td_inter_1 ===
+=== Begin ./test-bin/td_inter_11 ===
+b:int32 declare inc(a:int32)
+entry:
+  b = a+1;
+  goto exit;
+exit:
+
+
+void declare main()
+entry:
+  x = 5;
+  y:int32 = call inc(x:int32);
+  goto exit;
+exit:
+  assert(y = 6);
+
+
+CallGraph=main--> inc
+
+Running top-down inter-procedural analysis with SplitDBM
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+b:int32 declare inc(a:int32)
+entry={a.in -> [5, 5], a -> [5, 5]}
+exit={a.in -> [5, 5], a -> [5, 5], b -> [6, 6]}
+=================================
+void declare main()
+entry={}
+exit={x -> [5, 5], y -> [6, 6]}
+=================================
+=== End ./test-bin/td_inter_11 ===
 === Begin ./test-bin/td_inter_2 ===
 (x_out:int32,y_out:int32) declare loop(x_in:int32,y_in:int32)
 entry:
