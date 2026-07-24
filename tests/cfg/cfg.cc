@@ -3,6 +3,8 @@
 #include <crab/analysis/graphs/cdg.hpp>
 #include <crab/fixpoint/wto.hpp>
 
+#include <boost/core/lightweight_test.hpp>
+
 using namespace std;
 using namespace crab::analyzer;
 using namespace crab::cfg_impl;
@@ -85,6 +87,79 @@ std::unique_ptr<z_cfg_t> prog2(variable_factory_t &vfac) {
   return cfg;
 }
 
+// A cfg without an exit block that has a single sink block ("b2").
+std::unique_ptr<z_cfg_t> prog_one_sink() {
+  // single-argument constructor => no exit block
+  auto cfg = std::make_unique<z_cfg_t>("entry");
+  BB(cfg, entry);
+  BB(cfg, b1);
+  BB(cfg, b2);
+  entry >> b1;
+  entry >> b2;
+  b1 >> b2;
+  // b2 is the only reachable block without successors
+  return cfg;
+}
+
+// A cfg without an exit block that has three sink blocks ("s1", "s2", "s3").
+std::unique_ptr<z_cfg_t> prog_many_sinks() {
+  // single-argument constructor => no exit block
+  auto cfg = std::make_unique<z_cfg_t>("entry");
+  BB(cfg, entry);
+  BB(cfg, s1);
+  BB(cfg, s2);
+  BB(cfg, s3);
+  entry >> s1;
+  entry >> s2;
+  entry >> s3;
+  // s1, s2 and s3 are all reachable blocks without successors
+  return cfg;
+}
+
+// make_exit: a single sink becomes the exit block. Uses Boost.Core
+// lightweight test: checks are silent on success and report failures to
+// stderr (not stdout), so they don't interfere with the diff-based tests.
+void test_make_exit_one_sink() {
+  auto cfg = prog_one_sink();
+  // no exit block before make_exit
+  BOOST_TEST(!cfg->has_exit());
+
+  auto exit = cfg->make_exit("new_exit");
+
+  BOOST_TEST(cfg->has_exit());
+  // the single sink "b2" is chosen as the exit
+  BOOST_TEST_EQ(exit, std::string("b2"));
+  BOOST_TEST_EQ(cfg->exit(), std::string("b2"));
+  // no new block should have been created
+  BOOST_TEST_EQ(cfg->size(), std::size_t(3));
+}
+
+// make_exit: several sinks are redirected into a fresh exit block.
+void test_make_exit_many_sinks() {
+  auto cfg = prog_many_sinks();
+  // no exit block before make_exit
+  BOOST_TEST(!cfg->has_exit());
+
+  auto exit = cfg->make_exit("new_exit");
+
+  BOOST_TEST(cfg->has_exit());
+  // a fresh block "new_exit" is created and becomes the exit
+  BOOST_TEST_EQ(exit, std::string("new_exit"));
+  BOOST_TEST_EQ(cfg->exit(), std::string("new_exit"));
+  // one extra block was added
+  BOOST_TEST_EQ(cfg->size(), std::size_t(5));
+  // the new exit is the only sink now
+  BOOST_TEST_EQ(cfg->get_node("new_exit").out_degree(), std::size_t(0));
+  // each former sink now flows into the new exit block
+  for (auto const &s : {"s1", "s2", "s3"}) {
+    auto &bb = cfg->get_node(s);
+    BOOST_TEST_EQ(bb.out_degree(), std::size_t(1));
+    if (bb.out_degree() == 1) {
+      BOOST_TEST_EQ(*(bb.next_blocks().first), std::string("new_exit"));
+    }
+  }
+}
+
 int main(int argc, char **argv) {
   return crab_tests::test_main(argc, argv, [](bool stats_enabled) -> int {
     variable_factory_t vfac;
@@ -150,6 +225,11 @@ int main(int argc, char **argv) {
   		   << "\n";
       }
     }
-    return 0;
+
+  
+    test_make_exit_one_sink();
+    test_make_exit_many_sinks();
+
+    return boost::report_errors();
   });
 }

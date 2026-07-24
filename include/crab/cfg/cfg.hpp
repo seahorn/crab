@@ -3340,6 +3340,55 @@ public:
   //! created.
   void set_exit(BasicBlockLabel exit) { m_exit = exit; }
 
+  //! Ensure that the cfg has a dedicated exit block, creating one if
+  //! needed, and return its label.
+  //!
+  //! If the cfg already has an exit block then it is returned
+  //! unchanged. Otherwise, we look at the reachable blocks (from the
+  //! entry) that have no successors:
+  //!  - if there is exactly one, it becomes the exit block;
+  //!  - if there is more than one, a new block labeled new_exit is
+  //!    created and all those blocks are redirected to it, and the new
+  //!    block becomes the exit.
+  //!
+  //! The new_exit label is only used when a new block needs to be
+  //! created. It must not clash with an existing block in that case.
+  BasicBlockLabel make_exit(BasicBlockLabel new_exit) {
+    if (has_exit()) {
+      return exit();
+    }
+
+    // Collect reachable blocks that have no successors.
+    visited_t reachable;
+    mark_alive_blocks(*this, reachable);
+
+    std::vector<BasicBlockLabel> sinks;
+    for (auto const &bb_label : reachable) {
+      if (get_node(bb_label).out_degree() == 0) {
+        sinks.push_back(bb_label);
+      }
+    }
+
+    if (sinks.empty()) {
+      CRAB_ERROR("cannot create an exit block: the cfg has no reachable "
+                 "block without successors");
+    }
+
+    if (sinks.size() == 1) {
+      set_exit(sinks[0]);
+      return exit();
+    }
+
+    // More than one candidate: create a fresh exit block and redirect
+    // all the sink blocks to it.
+    basic_block_t &new_bb = insert(new_exit);
+    for (auto const &s : sinks) {
+      get_node(s) >> new_bb;
+    }
+    set_exit(new_exit);
+    return exit();
+  }
+
   //! set method to add the function declaration after the cfg has
   //! been created.
   void set_func_decl(fdecl_t decl) { m_func_decl = decl; }
