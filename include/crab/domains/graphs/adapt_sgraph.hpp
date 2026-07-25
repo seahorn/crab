@@ -6,6 +6,8 @@
 #include <crab/domains/graphs/util/reference_wrapper.hpp>
 #include <crab/support/os.hpp>
 
+#include <limits>
+
 // Adaptive sparse-set based weighted graph implementation
 
 #pragma GCC diagnostic push
@@ -189,6 +191,10 @@ public:
       free_id.pop();
       is_free[v] = false;
     } else {
+      // Vertices are stored as smap_t::key_t (uint16_t) keys in _succs/_preds,
+      // so a new vertex id of 65536 would truncate and alias vertex 0. Guard the
+      // invariant (far beyond any realistic variable count, hence an assert).
+      assert(_succs.size() < std::numeric_limits<smap_t::key_t>::max());
       v = _succs.size();
       is_free.push_back(false);
       _succs.push();
@@ -216,8 +222,14 @@ public:
     edge_count -= _succs[v].size();
     _succs[v].clear();
 
-    for (smap_t::key_t k : _preds[v].keys())
-      _succs[k].remove(v);
+    for (smap_t::elt_t &e : _preds[v].elts()) {
+      // Recycle the weight slot of the in-edge (e.key -> v). It is the same slot
+      // referenced from _succs[e.key], so it becomes unreferenced once removed
+      // below; failing to reclaim it leaks _ws slots monotonically. (Self-loops
+      // are already recycled by the out-edge loop above, so no double-free.)
+      free_widx.push(e.val);
+      _succs[e.key].remove(v);
+    }
     edge_count -= _preds[v].size();
     _preds[v].clear();
 
@@ -227,6 +239,9 @@ public:
 
   void clear_edges(void) {
     _ws.clear();
+    // free_widx indexes into _ws; leaving stale indices after clearing _ws would
+    // make the next add_edge write _ws[idx] out of bounds.
+    free_widx.clear();
     for (vert_id v : verts()) {
       _succs[v].clear();
       _preds[v].clear();
