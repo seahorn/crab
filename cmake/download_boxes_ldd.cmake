@@ -15,6 +15,8 @@ if (GIT_FOUND)
       # XXX: ldd is always compiled statically.
       # We add -fPIC flag so it can be linked with a shared library
       -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON
+      # ldd's CMakeLists asks for a minimum below 3.5, which CMake 4.x rejects
+      -DCMAKE_POLICY_VERSION_MINIMUM=3.5
       TEST_AFTER_INSTALL 1
       TEST_COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_LIST_FILE}
       LOG_DOWNLOAD 1
