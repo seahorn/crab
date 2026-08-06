@@ -1074,7 +1074,7 @@ private:
   }
 
   void detach(void) {
-    if (!m_norm_ref.unique())
+    if (m_norm_ref.use_count() != 1)
       m_norm_ref = std::make_shared<abstract_domain_t>(*m_norm_ref);
     m_base_ref.reset();
   }
