@@ -276,7 +276,19 @@ public:
             return true;
           } else {
             AbsDom old_val = it->second;
-            AbsDom refined_val = old_val && new_val;
+	    // Use meet (not narrowing) to combine the old assumption with
+	    // the new backward precondition. Both over-approximate
+	    // reach(node) /\ coreach_error(node), so their meet is still a
+	    // sound over-approximation, and it is what mc_5 (ASE'99)
+	    // prescribes. Narrowing made this loop non-monotone: for
+	    // intervals, `&&` keeps the old bound whenever it is already
+	    // finite, so a *stronger* program assumption (which makes the
+	    // bound finite) caused the backward information to be discarded
+	    // and the refinement to stall earlier, proving fewer assertions
+	    // than the same program with the assumption removed
+	    // (seahorn/clam#83). Termination is already guaranteed by
+	    // params.get_max_refine_iterations().
+            AbsDom refined_val = old_val & new_val;
 	    auto res = (!(old_val <= refined_val));
 	    CRAB_LOG("backward-refinement",
 		     if (res) {
