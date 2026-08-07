@@ -496,7 +496,7 @@ public:
   const AbsDom& get_pre(const basic_block_label_t &b) const {
     auto it = m_pre_invariants.find(b);
     if (it == m_pre_invariants.end()) {
-      it->second = m_absval_fac.make_top();
+      it = m_pre_invariants.insert({b, m_absval_fac.make_top()}).first;
     }
     return it->second;
   }
@@ -505,7 +505,7 @@ public:
   const AbsDom& get_post(const basic_block_label_t &b) const {
     auto it = m_post_invariants.find(b);
     if (it == m_post_invariants.end()) {
-      it->second = m_absval_fac.make_top();
+      it = m_post_invariants.insert({b, m_absval_fac.make_top()}).first;
     }
     return it->second;
   }
