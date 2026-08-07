@@ -520,9 +520,9 @@ public:
   void clear() {
     m_pre_invariants.clear();
     m_post_invariants.clear();
-    m_proved_assertions().clear();
-    m_unproven_assertions().clear();
-    m_abs_tr.get_abs_value().set_to_top();
+    m_proved_assertions.clear();
+    m_unproven_assertions.clear();
+    m_abs_tr->get_abs_value().set_to_top();
   }
 
   /** Extra API for checkers **/
