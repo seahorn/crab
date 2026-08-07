@@ -1,14 +1,14 @@
-# Workflow to build and test crab master branch 
+# Workflow to build and test crab on the master and dev branches
 
-name: CI
+name: Per-Commit
 
-# Controls when the action will run. 
+# Controls when the action will run.
 on:
-  # Triggers the workflow on push or pull request events but only for the master branch
+  # Triggers the workflow on push or pull request events for master and dev
   push:
-    branches: master
+    branches: [master, dev]
   pull_request:
-    branches: master
+    branches: [master, dev]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -16,17 +16,21 @@ jobs:
   test:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    name: ${{ matrix.config }}
+
+    # Each configuration runs on its own fresh runner so the builds do not share
+    # (and exhaust) a single runner's disk. The configurations themselves are
+    # defined in docker/configs.sh.
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [default, apron, elina, pplite, pplite-native]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - name: Check out Repo 
+      # Checks-out the branch that triggered the workflow (or the merge commit
+      # of the pull request) under $GITHUB_WORKSPACE
+      - name: Check out Repo
         uses: actions/checkout@v2
-        with:
-          ref: master 
-      - name: Build crab without external libraries + run tests 
-        run: docker build --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab -f docker/crab.Dockerfile .
-      - name: Build crab+apron+ldd-boxes and run tests 
-        run: docker build --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab_apron_boxes -f docker/crab.apron.Dockerfile .
-      - name: Build crab+elina and run tests 
-        run: docker build --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab_elina -f docker/crab.elina.Dockerfile .
+      - name: Build crab (${{ matrix.config }}) and run tests
+        run: docker/build.sh ${{ matrix.config }}

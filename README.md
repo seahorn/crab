@@ -70,7 +70,7 @@ available documentation can be found in our
   </tr>
   <tr>
     <td>TBD</td>
-    <td> <a href="https://github.com/seahorn/crab/actions"><img src="https://github.com/seahorn/crab/workflows/CI/badge.svg?branch=master" title="CI: builds Crab via docker/crab.*.Dockerfile"/></a> </td>
+    <td> <a href="https://github.com/seahorn/crab/actions"><img src="https://github.com/seahorn/crab/workflows/Per-Commit/badge.svg?branch=master" title="CI: builds Crab via docker/build.sh"/></a> </td>
     <td>TBD</td>
   </tr>
 </table>
@@ -82,8 +82,8 @@ obtained using Docker:
 
 
 ``` shell
-docker pull seahorn/crab:bionic
-docker run -v `pwd`:/host -it seahorn/crab:bionic
+docker pull seahorn/crab:nightly
+docker run -v `pwd`:/host -it seahorn/crab:nightly
 ```
 
 # Requirements #

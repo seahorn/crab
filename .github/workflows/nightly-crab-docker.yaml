@@ -1,14 +1,12 @@
-# Workflow to build and test crab and push images to dockerhub
+# Workflow to build and test crab on master and dev, and push images to dockerhub
 
 name: Nightly
 
 # Controls when the action will run.
 on:
-  # Triggers the workflow on push or pull request events but only for the master branch
   schedule:
     - cron: 0 0 * * *  # run every day at UTC 00:00
   workflow_dispatch:
-    branches: master
     inputs:
       Triggerer:
         description: 'Triggered by:'
@@ -22,30 +20,38 @@ jobs:
   test:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    name: ${{ matrix.branch }} / ${{ matrix.config }}
+
+    # Every configuration of docker/configs.sh is built and tested on both
+    # branches. Each one runs on its own fresh runner so the builds do not share
+    # (and exhaust) a single runner's disk.
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [master, dev]
+        config: [default, apron, elina, pplite, pplite-native]
+
+    env:
+      # Publish only the images that already exist on DockerHub, only from
+      # master, and only on the scheduled run (not on workflow_dispatch).
+      PUSH: ${{ github.event_name == 'schedule'
+                && matrix.branch == 'master'
+                && contains(fromJSON('["default", "apron", "elina"]'), matrix.config) }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - name: Check out Repo 
+      - name: Check out Repo
         uses: actions/checkout@v2
         with:
-          ref: master
-      #- name: Build crab without external libraries for coverage
-      #  run: docker build  --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Coverage -t seahorn/crab:nightly -f docker/crab.Dockerfile .
-      #- name: Generate coverage report and upload to codecov
-      #	run: docker run -v $(pwd):/host -it seahorn/crab:nightly /bin/sh -c "bash /crab/tests/run_coverage.sh /crab/build /crab && mv /crab/build/all.info /host" && bash <(curl -s https://codecov.io/bash) -Z -f all.info -t ${{ secrets.CODECOV_TOKEN }}
-      - name: Build crab without external libraries + run tests 
-        run: docker build  --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab:nightly -f docker/crab.Dockerfile .
-      - name: Build crab+apron+ldd-boxes and run tests 
-        run: docker build  --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab_apron_boxes:nightly -f docker/crab.apron.Dockerfile .
-      - name: Build crab+elina and run tests 
-        run: docker build  --build-arg UBUNTU=bionic --build-arg BUILD_TYPE=Release -t seahorn/crab_elina:nightly -f docker/crab.elina.Dockerfile .
+          ref: ${{ matrix.branch }}
       - name: Login to DockerHub Registry
-        if: ${{ github.event_name == 'schedule' }}  # only push if nightly run
+        if: ${{ env.PUSH == 'true' }}
         run: echo ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
-      - name: Tag and push crab (nightly) to DockerHub
-        if: ${{ github.event_name == 'schedule' }}  # only push if nightly run
-        run: |
-          docker push seahorn/crab:nightly	
-          docker push seahorn/crab_apron_boxes:nightly
-          docker push seahorn/crab_elina:nightly
+      - name: Build crab (${{ matrix.config }}), run tests and push to DockerHub
+        run: docker/build.sh ${{ matrix.config }} --image-tag nightly ${{ env.PUSH == 'true' && '--push' || '' }}
+      #- name: Generate coverage report and upload to codecov
+      #  run: |
+      #    docker/build.sh default --build-type Coverage --image-tag nightly
+      #    docker run -v $(pwd):/host -it seahorn/crab:nightly /bin/sh -c "bash /crab/tests/run_coverage.sh /crab/build /crab && mv /crab/build/all.info /host"
+      #    bash <(curl -s https://codecov.io/bash) -Z -f all.info -t ${{ secrets.CODECOV_TOKEN }}

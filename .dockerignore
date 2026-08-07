@@ -1,0 +1,16 @@
+# Keep the docker build context small and reproducible: the image is built from
+# a clean source tree.
+.git
+.github
+.vscode
+
+# Build and install trees.
+build
+build-*
+debug
+release
+install-*
+
+# Cloned by the pplite-native target. The target is only defined while this
+# directory does not exist, so it must never be copied into the image.
+include/crab/domains/pplite
