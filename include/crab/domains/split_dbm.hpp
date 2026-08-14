@@ -2889,18 +2889,12 @@ public:
       return boost::optional<number_t>();
     }
     SubGraph<graph_t> g_excl(g, 0);
-    if (g_excl.elem(*ai, *bi) && g_excl.elem(*bi, *ai) &&
-        g_excl.edge_val(*ai, *bi) == Wt(0) &&
-        g_excl.edge_val(*bi, *ai) == Wt(0)) {
-      return number_t(0);
-    } else if (g_excl.elem(*ai, *bi)) {
+    if (g_excl.elem(*ai, *bi)) {
       return number_t(g_excl.edge_val(*ai, *bi));
-    } else if (g_excl.elem(*bi, *ai)) {
-      // this is for b - a case not a - b case.
-      return boost::optional<number_t>();
-    } else {
-      return boost::optional<number_t>();
     }
+    // No a -> b edge.  A b -> a edge, if present, bounds a - b rather than
+    // b - a, so there is nothing to report either way.
+    return boost::optional<number_t>();
   }
 
   std::string domain_name() const override { return "SplitDBM"; }
