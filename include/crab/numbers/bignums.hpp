@@ -121,7 +121,19 @@ public:
 
   void write(crab::crab_os &o) const;
 
+  // greatest common divisor; the result is always non-negative, whatever
+  // the signs of the operands
+  friend z_number gcd(z_number x, z_number y);
+
+  // division rounding the quotient towards -infinity, unlike operator/
+  // which truncates towards zero
+  friend z_number floor_div(z_number x, z_number y);
+
 }; // class z_number
+
+z_number gcd(z_number x, z_number y);
+
+z_number floor_div(z_number x, z_number y);
 
 class q_number {
 
