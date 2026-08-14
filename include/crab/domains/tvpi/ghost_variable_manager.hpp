@@ -27,6 +27,17 @@ public:
   using varname_t = typename variable_t::varname_t;
   using number_t = ikos::z_number;
 
+  /// Return (creating if necessary) ghost(v,k).  Identity is cached by the
+  /// variable factory.  @p k must be > 1 (k == 1 is the identity: callers
+  /// return @p v themselves).
+  static variable_t get_or_insert(const variable_t &v, const number_t &k) {
+    assert(k > 1);
+    auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
+    return variable_t(vfac.get_or_insert_varname(v.name(), encode(k)),
+                      v.get_type());
+  }
+
+private:
   /// Marker separating the original name from the coefficient.
   static constexpr char marker = '*';
 
@@ -38,16 +49,6 @@ public:
     res.push_back(marker);
     res.append(ks);
     return res;
-  }
-
-  /// Return (creating if necessary) ghost(v,k).  Identity is cached by the
-  /// variable factory.  @p k must be > 1 (k == 1 is the identity: callers
-  /// return @p v themselves).
-  static variable_t get_or_insert(const variable_t &v, const number_t &k) {
-    assert(k > 1);
-    auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
-    return variable_t(vfac.get_or_insert_varname(v.name(), encode(k)),
-                      v.get_type());
   }
 };
 
