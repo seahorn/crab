@@ -4,9 +4,10 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
-#include <crab/domains/intervals.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
+#include <crab/domains/intervals.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/support/print.hpp>
 #include <crab/support/stats.hpp>
 
 namespace crab {
@@ -1271,16 +1272,10 @@ public:
 
     remove_dimensions(m_apstate, vector_dims);
     std::swap(m_var_map, res);
-    CRAB_LOG("elina", crab::outs() << "--- "
-                                   << "Forget {";
-             for (variable_t v
-                  : vars) { crab::outs() << v << ";"; }
-             // crab::outs()<< "} Elina dimensions ={";
-             // for(unsigned i=0,e=vector_dims.size();i<e;++i) {
-             // 	 crab::outs() << vector_dims[i] << ";";
-             // }
-             crab::outs()
-             << "}\n";
+    CRAB_LOG("elina", crab::outs()
+                          << "--- "
+                          << "Forget "
+                          << crab::seq(vars, crab::print::fmt_debug()) << "\n";
              crab::outs() << *this << "\n";);
   }
 
@@ -1839,13 +1834,12 @@ public:
     if (is_top() || is_bottom())
       return;
 
-    CRAB_LOG("elina", crab::outs() << "Renaming {"; for (auto v
-                                                         : from) crab::outs()
-                                                    << v << ";";
-             crab::outs() << "} with "; for (auto v
-                                             : to) crab::outs()
-                                        << v << ";";
-             crab::outs() << "}:\n"; crab::outs() << *this << "\n";);
+    CRAB_LOG("elina", crab::outs()
+                          << "Renaming "
+                          << crab::seq(from, crab::print::fmt_debug())
+                          << " with " << crab::seq(to, crab::print::fmt_debug())
+                          << ":\n"
+                          << *this << "\n";);
 
     for (unsigned i = 0, sz = from.size(); i < sz; ++i) {
       variable_t v = from[i];

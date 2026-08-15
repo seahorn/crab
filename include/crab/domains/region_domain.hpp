@@ -3,13 +3,14 @@
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/boolean.hpp>
-#include <crab/domains/interval.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
+#include <crab/domains/interval.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/small_range.hpp>
 #include <crab/domains/types.hpp>
 #include <crab/domains/union_find_domain.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/support/print.hpp>
 #include <crab/support/stats.hpp>
 #include <crab/types/reference_constraints.hpp>
 #include <crab/types/tag.hpp>
@@ -2842,30 +2843,24 @@ public:
 	  }
 	  o << "," << "BaseDom=" << m_base_dom  << ")\n";
 	  return;
-	       );	       
-	  
-      CRAB_LOG(
-	  "region-print-debug",	       
-	  /// This format is understood by Clam debugging scripts such
-	  /// as read_assertions.py.
-	  o << "(" 
-	  << "RgnCounter="
-	  << "{";
-	  for(auto it = m_rgn_env.begin(), et = m_rgn_env.end(); it!=et;) {
-	    o << it->first  << " -> " << it->second.refcount_val();
-	    ++it;
-	    if (it != et) {
-	      o << ";";
-	    }	  
-	  }
-	  o << "}," << "BaseDom=";
-	  
-	  // We ask the ghost manager to print the base domain so that it
-	  // can rename ghost variables to user-friendly names.
-	  m_ghost_var_man.write(o, m_base_dom);
-	  o << ")";
-	  return;
-	       );      
+	       );
+
+      CRAB_LOG("region-print-debug",
+               /// This format is understood by Clam debugging scripts such
+               /// as read_assertions.py.
+               o << "("
+                 << "RgnCounter=";
+               crab::print::print_range_with(
+                   o, m_rgn_env,
+                   [](crab_os &o, const auto &p) {
+                     o << p.first << " -> " << p.second.refcount_val();
+                   },
+                   crab::print::fmt_set().sep(";"));
+               o << ","
+                 << "BaseDom=";
+               // We ask the ghost manager to print the base domain so that it
+               // can rename ghost variables to user-friendly names.
+               m_ghost_var_man.write(o, m_base_dom); o << ")"; return;);
 
       // We ask the ghost manager to print the base domain so that it
       // can rename ghost variables to user-friendly names.

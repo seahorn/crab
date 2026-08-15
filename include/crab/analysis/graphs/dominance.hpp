@@ -1,5 +1,6 @@
 #pragma once
 
+#include <crab/support/print.hpp>
 #include <crab/support/stats.hpp>
 //#include <crab/cfg/basic_block_traits.hpp>
 
@@ -158,16 +159,20 @@ void dominance(G g, typename G::node_t entry, VectorMap &df) {
   } // end outer for
   //crab::CrabStats::stop("Dominance Frontier");
 
-  CRAB_LOG("dominance", for (auto &kv
-                             : df) {
-    crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(kv.first)
-                 << "={";
-    for (auto v : kv.second) {
-      crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(v)
-                   << ";";
-    }
-    crab::outs() << "}\n";
-  });
+  CRAB_LOG(
+      "dominance", for (auto &kv
+                        : df) {
+        crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(
+                            kv.first)
+                     << "=";
+        crab::print::print_range_with(
+            crab::outs(), kv.second,
+            [](crab::crab_os &o, const auto &v) {
+              o << crab::basic_block_traits<basic_block_t>::to_string(v);
+            },
+            crab::print::fmt_debug());
+        crab::outs() << "\n";
+      });
 }
 
 } // namespace graph_algo_impl

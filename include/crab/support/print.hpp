@@ -24,10 +24,11 @@
  *     sep.next() << e;
  *   }
  *
- * Elements are printed by trying, in order: std::pair (first -> second),
- * container (recurse), optional-like (dereference or print the empty marker),
- * operator<<, then write(crab_os&). See print_element below for the
- * rationale of that order.
+ * Elements are printed by trying, in order: operator<< (so anything already
+ * streamable prints exactly as before), std::pair (first -> second),
+ * container (recurse), optional-like (dereference or print the empty
+ * marker), then write(crab_os&). See print_element below for the rationale
+ * of that order.
  *
  * Design notes:
  *
@@ -133,7 +134,11 @@ inline format fmt_set_tight() { return fmt_set().sep(","); }
 // {k1 -> v1; k2 -> v2} -- the patricia-tree map printers
 inline format fmt_map() { return format().brackets("{", "}").sep("; "); }
 // same bytes as fmt_map(); named separately so patricia call sites document
-// which convention they came from
+// which convention they came from. NOTE: patricia-tree iterators yield a
+// binding type that is NOT std::pair (it only has first/second members), so
+// the automatic pair rank does not fire for them -- print a patricia map
+// with print_range_with and an explicit "k -> v" callback, passing this
+// format (see region_domain.hpp for an example).
 inline format fmt_patricia() { return fmt_map(); }
 // [|v1, v2|] -- the graph printers
 inline format fmt_graph() { return format().brackets("[|", "|]"); }
@@ -269,17 +274,25 @@ template <typename Range> inline format default_format() {
  * The element dispatch ladder. print_element(o, x, fmt) prints one element
  * by trying, highest rank first:
  *
- *   pair > range > optional-like > operator<< > write() > static_assert
+ *   operator<< > pair > range > optional-like > write() > static_assert
  *
- * operator<< is preferred over write(): the two agree for crab's own types,
- * but templates like separate_domains are instantiated by downstream clients
- * with their types, where they can differ, and a type's own operator<< is
- * the author's stated intent.
+ * operator<< is the TOP rank on purpose: an element that can already be
+ * streamed keeps streaming exactly as it always has, so routing it through
+ * the facility can never change its printed bytes. This matters because
+ * several crab types have BOTH iterators and an operator<< (e.g.
+ * linear_constraint_t iterates its terms); ranking ranges higher would
+ * silently print those as bracketed element lists.
  *
- * Ranges are preferred over operator<<: has_os_insert matches through
- * implicit conversions (an enum or a bool-convertible type "streams" as an
- * integer), which is almost never the intended way to print a
- * container-like type.
+ * operator<< is also preferred over write(): the two agree for crab's own
+ * types, but templates like separate_domains are instantiated by downstream
+ * clients with their types, where they can differ, and a type's own
+ * operator<< is the author's stated intent.
+ *
+ * Caveat of the top rank: has_os_insert matches through implicit
+ * conversions, so an optional-like type with an IMPLICIT operator bool
+ * would stream as 0/1 instead of dereferencing. boost::optional,
+ * shared_ptr and unique_ptr all declare theirs explicit, so they take the
+ * optional-like rank as intended.
  *
  * The fmt argument supplies this level's pair arrow and optional-empty
  * marker only; a nested range starts over with its own type default.
@@ -287,9 +300,16 @@ template <typename Range> inline format default_format() {
 template <typename T>
 void print_element(crab_os &o, const T &x, const format &fmt);
 
+template <typename T,
+          typename std::enable_if<has_os_insert<T>::value, int>::type = 0>
+void print_element_impl(crab_os &o, const T &x, const format &,
+                        priority_tag<4>) {
+  o << x;
+}
+
 template <typename A, typename B>
 void print_element_impl(crab_os &o, const std::pair<A, B> &p, const format &fmt,
-                        priority_tag<4>) {
+                        priority_tag<3>) {
   print_element(o, p.first, fmt);
   o << fmt.m_arrow;
   print_element(o, p.second, fmt);
@@ -298,14 +318,14 @@ void print_element_impl(crab_os &o, const std::pair<A, B> &p, const format &fmt,
 template <typename T,
           typename std::enable_if<is_range<T>::value, int>::type = 0>
 void print_element_impl(crab_os &o, const T &r, const format &,
-                        priority_tag<3>) {
+                        priority_tag<2>) {
   print_range(o, r, default_format<T>());
 }
 
 template <typename T,
           typename std::enable_if<is_optional_like<T>::value, int>::type = 0>
 void print_element_impl(crab_os &o, const T &x, const format &fmt,
-                        priority_tag<2>) {
+                        priority_tag<1>) {
   if (x) {
     print_element(o, *x, fmt);
   } else {
@@ -314,18 +334,15 @@ void print_element_impl(crab_os &o, const T &x, const format &fmt,
 }
 
 template <typename T,
-          typename std::enable_if<has_os_insert<T>::value, int>::type = 0>
-void print_element_impl(crab_os &o, const T &x, const format &,
-                        priority_tag<1>) {
-  o << x;
-}
-
-template <typename T,
           typename std::enable_if<has_write<T>::value, int>::type = 0>
 void print_element_impl(crab_os &o, const T &x, const format &,
                         priority_tag<0>) {
   // const_cast because a few write(crab_os&) methods are missing a const
-  // qualifier (see has_write above); printing does not mutate.
+  // qualifier (see has_write above). This rank REQUIRES that write() does
+  // not actually mutate: calling a genuinely mutating write() on an object
+  // that was defined const would be undefined behavior. A write() that
+  // mutates its object is broken for printing anyway; fix its signature
+  // rather than relying on this rank.
   const_cast<T &>(x).write(o);
 }
 

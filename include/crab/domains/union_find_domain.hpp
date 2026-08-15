@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crab/support/debug.hpp>
+#include <crab/support/print.hpp>
 #include <crab/support/stats.hpp>
 
 #include <boost/range/iterator_range.hpp>
@@ -199,26 +200,14 @@ private:
   }
 
   void print(crab_os &o) const {
-    o << "({";
-    for (auto it = m_parents.begin(), et = m_parents.end(); it != et;) {
-      element_t key = it->first, value = it->second;
-      o << key << " -> " << value;
-      ++it;
-      if (it != et) {
-        o << ", ";
-      }
-    }
-    o << "}, {";
-    for (auto it = m_classes.begin(), et = m_classes.end(); it != et;) {
-      element_t rep = it->first;
-      const equivalence_class_t &ec = it->second;
-      o << rep << " -> " << *(ec.get_absval());
-      ++it;
-      if (it != et) {
-        o << ", ";
-      }
-    }
-    o << "})";
+    o << "(" << crab::kv(m_parents, crab::print::fmt_set()) << ", ";
+    crab::print::print_range_with(
+        o, m_classes,
+        [](crab_os &o, const auto &p) {
+          o << p.first << " -> " << *(p.second.get_absval());
+        },
+        crab::print::fmt_set());
+    o << ")";
   }
 
   void get_all_members(std::vector<element_t> &out) const {

@@ -48,10 +48,11 @@
 #include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/array_smashing.hpp>
-#include <crab/domains/interval.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
+#include <crab/domains/interval.hpp>
 #include <crab/domains/patricia_trees.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/support/print.hpp>
 #include <crab/support/stats.hpp>
 #include <crab/types/indexable.hpp>
 
@@ -2614,16 +2615,11 @@ public:
           std::vector<cell_t> cells;
           offset_map.get_overlap_cells_symbolic_offset(m_base_dom, symb_lb,
                                                        symb_ub, cells);
-          CRAB_LOG(
-              "array-adaptive", crab::outs() << "Killed cells: {";
-              for (unsigned j = 0; j < cells.size();) {
-                crab::outs() << cells[j];
-                ++j;
-                if (j < cells.size()) {
-                  crab::outs() << ",";
-                }
-              } crab::outs()
-              << "}\n";);
+          CRAB_LOG("array-adaptive",
+                   crab::outs()
+                       << "Killed cells: "
+                       << crab::seq(cells, crab::print::fmt_set_tight())
+                       << "\n";);
 
           kill_cells(a, cells, offset_map);
         }
@@ -2720,12 +2716,12 @@ public:
       m_array_map.set(
           lhs, array_state(false, std::move(elem_sz), std::move(lhs_om)));
 
-      CRAB_LOG(
-          "array-adaptive-array-assign", crab::outs() << "array variables={";
-          std::vector<variable_t> array_variables = get_array_variables();
-          for (unsigned i = 0, e = array_variables.size(); i < e;
-               ++i) { crab::outs() << array_variables[i] << ";"; } crab::outs()
-          << "}\n";);
+      CRAB_LOG("array-adaptive-array-assign",
+               std::vector<variable_t> array_variables = get_array_variables();
+               crab::outs()
+               << "array variables="
+               << crab::seq(array_variables, crab::print::fmt_debug())
+               << "\n";);
 
       for (auto &kv : renmap) {
         CRAB_LOG("array-adaptive-array-assign",

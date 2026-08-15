@@ -1,11 +1,12 @@
 #pragma once
 
 #include <crab/analysis/abs_transformer.hpp>
+#include <crab/analysis/bwd_np_analyzer.hpp>
 #include <crab/analysis/dataflow/liveness.hpp>
 #include <crab/analysis/fwd_analyzer.hpp>
-#include <crab/analysis/bwd_np_analyzer.hpp>
 #include <crab/analysis/fwd_bwd_params.hpp>
 #include <crab/analysis/graphs/dominance.hpp>
+#include <crab/support/print.hpp>
 
 #include <boost/range/iterator_range.hpp>
 #include <algorithm>
@@ -342,18 +343,17 @@ public:
         }
       }
 
-      CRAB_LOG("backward-dom-tree", crab::outs() << "Computed dominance tree:\n";
-               for (auto &kv
-                    : idom_tree) {
-                 crab::outs()
-                     << "\t"
-                     << basic_block_traits<basic_block_t>::to_string(kv.first)
-                     << " dominates={";
-                 for (auto d : kv.second) {
-                   crab::outs() << d << ";";
-                 }
-                 crab::outs() << "}\n";
-               });
+      CRAB_LOG(
+          "backward-dom-tree", crab::outs() << "Computed dominance tree:\n";
+          for (auto &kv
+               : idom_tree) {
+            crab::outs() << "\t"
+                         << basic_block_traits<basic_block_t>::to_string(
+                                kv.first)
+                         << " dominates="
+                         << crab::seq(kv.second, crab::print::fmt_debug())
+                         << "\n";
+          });
     }
     assumption_map_t refined_assumptions(assumptions.begin(), assumptions.end());
 

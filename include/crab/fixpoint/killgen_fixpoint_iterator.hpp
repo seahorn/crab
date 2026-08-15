@@ -9,6 +9,7 @@
 #include <crab/analysis/graphs/topo_order.hpp>
 #include <crab/cfg/cfg_bgl.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/support/print.hpp>
 #include <crab/support/stats.hpp>
 
 namespace crab {
@@ -161,20 +162,19 @@ public:
       run_bwd_fixpo(order, iterations);
     }
 
-    CRAB_LOG(m_analysis.name(),
-	     crab::outs() << m_analysis.name();
-	     if (m_cfg.has_func_decl()) {
-	       crab::outs() << " for " << m_cfg.get_func_decl();
-	     }
-	     crab::outs() << "\n";
-	     crab::outs() << "fixpoint ordering={";
-             bool first = true; for (auto &v
-                                     : order) {
-               if (!first)
-                 crab::outs() << ",";
-               first = false;
-               crab::outs() << basic_block_traits<basic_block_t>::to_string(v);
-             } crab::outs() << "}\n";);
+    CRAB_LOG(
+        m_analysis.name(), crab::outs() << m_analysis.name();
+        if (m_cfg.has_func_decl()) {
+          crab::outs() << " for " << m_cfg.get_func_decl();
+        } crab::outs()
+        << "\n";
+        crab::outs() << "fixpoint ordering="; crab::print::print_range_with(
+            crab::outs(), order,
+            [](crab_os &o, const auto &v) {
+              o << basic_block_traits<basic_block_t>::to_string(v);
+            },
+            crab::print::fmt_set_tight());
+        crab::outs() << "\n";);
 
     CRAB_LOG(m_analysis.name(), crab::outs() << m_analysis.name() << ": "
                                              << "fixpoint reached in "

@@ -15,9 +15,10 @@
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/graphs/graph_config.hpp>
 #include <crab/domains/graphs/graph_ops.hpp>
-#include <crab/domains/interval.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
+#include <crab/domains/interval.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/support/print.hpp>
 #include <crab/support/stats.hpp>
 
 #include <boost/container/flat_map.hpp>
@@ -2073,14 +2074,12 @@ public:
     // renaming vert_map by creating a new vert_map since we are
     // modifying the keys.
     // rev_map is modified in-place since we only modify values.
-    CRAB_LOG("zones-sparse", crab::outs() << "Renaming {";
-             for (auto v
-                  : from) crab::outs()
-             << v << ";";
-             crab::outs() << "} with "; for (auto v
-                                             : to) crab::outs()
-                                        << v << ";";
-             crab::outs() << "}:\n"; crab::outs() << *this << "\n";);
+    CRAB_LOG("zones-sparse",
+             crab::outs() << "Renaming "
+                          << crab::seq(from, crab::print::fmt_debug())
+                          << " with " << crab::seq(to, crab::print::fmt_debug())
+                          << ":\n"
+                          << *this << "\n";);
 
     for (unsigned i = 0, sz = from.size(); i < sz; ++i) {
       variable_t v = from[i];
