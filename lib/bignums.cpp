@@ -216,25 +216,25 @@ z_number z_number::operator%(z_number x) const {
   }
 }
 
-z_number gcd(z_number x, z_number y) {
+z_number z_number::gcd(z_number x) const {
   mpz_t mp_r;
   mpz_init(mp_r);
   // mpz_gcd takes the absolute values of its operands, so the result is
   // non-negative and independent of the argument order.
-  mpz_gcd(mp_r, x._n, y._n);
-  z_number res = z_number::from_mpz_t(mp_r);
+  mpz_gcd(mp_r, _n, x._n);
+  z_number res = from_mpz_t(mp_r);
   mpz_clear(mp_r);
   return res;
 }
 
-z_number floor_div(z_number x, z_number y) {
-  if (y == 0) {
-    CRAB_ERROR("z_number: division by zero [3]");
+z_number z_number::floor_div(z_number x) const {
+  if (x == 0) {
+    CRAB_ERROR("z_number: division by zero in floor_div");
   } else {
     mpz_t mp_r;
     mpz_init(mp_r);
-    mpz_fdiv_q(mp_r, x._n, y._n);
-    z_number res = z_number::from_mpz_t(mp_r);
+    mpz_fdiv_q(mp_r, _n, x._n);
+    z_number res = from_mpz_t(mp_r);
     mpz_clear(mp_r);
     return res;
   }

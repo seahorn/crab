@@ -270,7 +270,7 @@ private:
     for (auto it = e.begin(), et = e.end(); it != et; ++it) {
       e2 = e2 + ((*it).first / g) * (*it).second;
     }
-    const number_t c2 = cst.is_equality() ? c / g : ikos::floor_div(c, g);
+    const number_t c2 = cst.is_equality() ? c / g : c.floor_div(g);
     return linear_constraint_t(e2 - c2, cst.kind());
   }
 
@@ -280,7 +280,7 @@ private:
     for (auto it = e.begin(), et = e.end(); it != et; ++it) {
       const number_t &coeff = (*it).first;
       number_t a = coeff < 0 ? -coeff : coeff;
-      g = g == 0 ? a : ikos::gcd(g, a);
+      g = g == 0 ? a : g.gcd(a);
       if (g == 1)
         break;
     }
@@ -294,7 +294,7 @@ private:
     number_t d = coeff_gcd(e);
     const number_t k = e.constant();
     number_t abs_k = k < 0 ? -k : k;
-    d = d == number_t(0) ? abs_k : ikos::gcd(d, abs_k);
+    d = d == number_t(0) ? abs_k : d.gcd(abs_k);
     return d;
   }
 
@@ -764,7 +764,7 @@ private:
     // opposite signs).  Scale each side by λ so the y coefficients match.
     number_t abs_cyl = cyl < 0 ? -cyl : cyl;
     number_t abs_cyr = cyr < 0 ? -cyr : cyr;
-    number_t g = ikos::gcd(abs_cyl, abs_cyr);
+    number_t g = abs_cyl.gcd(abs_cyr);
     number_t lambda1 = abs_cyr / g;
     number_t lambda2 = abs_cyl / g;
     // Signed coefficients of the derived constraint  A*x + B*z <= c_p.
@@ -786,15 +786,15 @@ private:
       // Scaling rule:  a_p*x <= c_p  ⇒  x <= ⌊c_p/|a_p|⌋.
       // neg => the surviving variable is on the negative side (-x <= new_c).
       return {neg ? number_t(0) : number_t(1), neg ? number_t(1) : number_t(0),
-              ikos::floor_div(c_p, abs_a)};
+              c_p.floor_div(abs_a)};
     } else {
       // Genuine difference constraint: A and B have opposite signs.  Scaling
       // rule: divide by gcd(|A|,|B|); new_c = ⌊c_p/gcd⌋ is independent of the
       // orientation.
       number_t absA = A < 0 ? -A : A;
       number_t absB = B < 0 ? -B : B;
-      number_t gcd2 = ikos::gcd(absA, absB);
-      return {absA / gcd2, absB / gcd2, ikos::floor_div(c_p, gcd2)};
+      number_t gcd2 = absA.gcd(absB);
+      return {absA / gcd2, absB / gcd2, c_p.floor_div(gcd2)};
     }
   }
 
