@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
     crab::outs() << "Invariants using TVPI(DBM)\n";
     {
       z_tvpi_dbm_domain_t init;
-      run_and_check(cfg, cfg->entry(), init, false, 2, 1, 20, stats_enabled);
+      run_and_check(*cfg, cfg->entry(), init, false, 2, 1, 20, stats_enabled);
     }
     crab::outs() << "Invariants using TVPI(SplitDBM)\n";
     delete cfg;
@@ -186,7 +186,7 @@ int main(int argc, char **argv) {
     crab::outs() << "Invariants using TVPI(DBM)\n";
     {
       z_tvpi_dbm_domain_t init;
-      run_and_check(cfg, cfg->entry(), init, false, 2, 1, 20, stats_enabled);
+      run_and_check(*cfg, cfg->entry(), init, false, 2, 1, 20, stats_enabled);
     }
     crab::outs() << "Invariants using TVPI(SplitDBM)\n";
     delete cfg;
@@ -199,7 +199,7 @@ int main(int argc, char **argv) {
     crab::outs() << "Invariants using TVPI(DBM)\n";
     {
       z_tvpi_dbm_domain_t init;
-      run_and_check(cfg, cfg->entry(), init, false, 2, 1, 20, stats_enabled);
+      run_and_check(*cfg, cfg->entry(), init, false, 2, 1, 20, stats_enabled);
     }
     crab::outs() << "Invariants using TVPI(SplitDBM)\n";
     delete cfg;

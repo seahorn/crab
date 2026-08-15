@@ -802,8 +802,12 @@ private:
   /// @ref normalize() itself stays unconditional: the lazy variant relies on
   /// the client calling it explicitly, so it must never become a no-op.
   void maybe_normalize() {
-    if constexpr (Params::normalize)
+    // Params::normalize is a compile-time constant; a plain if keeps the
+    // header C++11-clean (if constexpr warns under -std=c++11) and the
+    // compiler folds the branch away just the same.
+    if (Params::normalize) {
       normalize();
+    }
   }
 
   tvpi_dbm_domain(base_domain_t &&absval, variable_set_t &&vars)
@@ -1415,7 +1419,7 @@ public:
 
         // Lazy variant: restore closure incrementally for the newly added
         // TVPI constraint (the eager variant runs the full reduce below).
-        if constexpr (!Params::normalize) {
+        if (!Params::normalize) {
           incremental_reduce_constraint(cst);
           if (is_bottom()) {
             break;
