@@ -2276,19 +2276,16 @@ public:
 	    }
 	  }
 
-          CRAB_LOG("octagon-join",
-                   crab::outs()
-                       << "lb_right="
-                       << crab::seq(lb_right, crab::print::fmt_debug()) << "\n";
-                   crab::outs()
-                   << "lb_left=" << crab::seq(lb_left, crab::print::fmt_debug())
-                   << "\n";
-                   crab::outs()
-                   << "ub_right="
-                   << crab::seq(ub_right, crab::print::fmt_debug()) << "\n";
-                   crab::outs()
-                   << "ub_left=" << crab::seq(ub_left, crab::print::fmt_debug())
-                   << "\n";);
+          CRAB_LOG(
+              "octagon-join",
+              crab::outs() << "lb_right="
+                           << print::seq(lb_right, print::fmt_debug()) << "\n";
+              crab::outs() << "lb_left="
+                           << print::seq(lb_left, print::fmt_debug()) << "\n";
+              crab::outs() << "ub_right="
+                           << print::seq(ub_right, print::fmt_debug()) << "\n";
+              crab::outs() << "ub_left="
+                           << print::seq(ub_left, print::fmt_debug()) << "\n";);
 
           Wt_min min_op;
 	  for (vert_id s : lb_left) {
@@ -2500,12 +2497,12 @@ public:
 
           CRAB_LOG("octagon-widening",
                    crab::outs() << "Unstable list after point-wise widening";
-                   crab::print::print_range_with(
+                   print::print_range_with(
                        crab::outs(), widen_unstable,
                        [&out_revmap](crab_os &o, const auto &v) {
                          o << *out_revmap[v] << ((v % 2 == 0) ? "+" : "-");
                        },
-                       crab::print::fmt_debug());
+                       print::fmt_debug());
                    crab::outs() << "\n";);
 
           split_oct_domain_t res(std::move(out_vmap), std::move(out_revmap),
@@ -2961,12 +2958,12 @@ public:
 
     CRAB_LOG("octagon-normalize", crab::outs()
                                       << "Normalization...\nUnstable list ";
-             crab::print::print_range_with(
+             print::print_range_with(
                  crab::outs(), m_unstable,
                  [this](crab_os &o, const auto &v) {
                    o << *m_rev_vert_map[v] << ((v % 2 == 0) ? "+" : "-");
                  },
-                 crab::print::fmt_debug());
+                 print::fmt_debug());
              crab::outs() << "\n";);
 
     edge_vector delta;
@@ -2984,7 +2981,7 @@ public:
 
     CRAB_LOG("octagon-normalize", crab::outs()
                                       << "Edges after close_after_widen ";
-             crab::print::print_range_with(
+             print::print_range_with(
                  crab::outs(), delta,
                  [this](crab_os &o, const auto &edge) {
                    vert_id src = edge.first.first;
@@ -2993,7 +2990,7 @@ public:
                      << "-->" << *m_rev_vert_map[dst]
                      << ((dst % 2 == 0) ? "+" : "-") << " w=" << edge.second;
                  },
-                 crab::print::fmt_debug());
+                 print::fmt_debug());
              crab::outs() << "\n";);
 
     // JN: we should be fine calling GrOps::apply_delta
@@ -3559,9 +3556,8 @@ public:
 
     CRAB_LOG("octagon", crab::outs()
                             << "Replacing "
-                            << crab::seq(from, crab::print::fmt_debug())
-                            << " with "
-                            << crab::seq(to, crab::print::fmt_debug()) << ":\n"
+                            << print::seq(from, print::fmt_debug()) << " with "
+                            << print::seq(to, print::fmt_debug()) << ":\n"
                             << *this << "\n";);
 
     vert_map_t new_vert_map;

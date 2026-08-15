@@ -534,9 +534,8 @@ void offset_map_t::get_overlap_cells(const offset_t &o, uint64_t size,
   CRAB_LOG("array-adaptive-overlap",
            crab::outs() << "**Overlap set between \n"
                         << *this << "\nand "
-                        << "(" << o << "," << size
-                        << ")=" << crab::seq(out, crab::print::fmt_set_tight())
-                        << "\n";);
+                        << "(" << o << "," << size << ")="
+                        << print::seq(out, print::fmt_set_tight()) << "\n";);
 }
 
 void offset_map_t::clear(void) { m_map.clear(); }
@@ -548,7 +547,7 @@ void offset_map_t::write(crab::crab_os &o) const {
     for (auto it = m_map.begin(), et = m_map.end(); it != et; ++it) {
       const cell_set_t &cells = it->second;
       o << "{";
-      crab::print::separator sep(o, ",");
+      print::separator sep(o, ",");
       for (auto const &c : cells) {
         if (c.is_removed()) {
           continue;

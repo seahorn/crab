@@ -200,13 +200,13 @@ private:
   }
 
   void print(crab_os &o) const {
-    o << "(" << crab::kv(m_parents, crab::print::fmt_set()) << ", ";
-    crab::print::print_range_with(
+    o << "(" << print::kv(m_parents, print::fmt_set()) << ", ";
+    print::print_range_with(
         o, m_classes,
         [](crab_os &o, const auto &p) {
           o << p.first << " -> " << *(p.second.get_absval());
         },
-        crab::print::fmt_set());
+        print::fmt_set());
     o << ")";
   }
 

@@ -1274,8 +1274,8 @@ public:
     std::swap(m_var_map, res);
     CRAB_LOG("elina", crab::outs()
                           << "--- "
-                          << "Forget "
-                          << crab::seq(vars, crab::print::fmt_debug()) << "\n";
+                          << "Forget " << print::seq(vars, print::fmt_debug())
+                          << "\n";
              crab::outs() << *this << "\n";);
   }
 
@@ -1835,9 +1835,8 @@ public:
       return;
 
     CRAB_LOG("elina", crab::outs()
-                          << "Renaming "
-                          << crab::seq(from, crab::print::fmt_debug())
-                          << " with " << crab::seq(to, crab::print::fmt_debug())
+                          << "Renaming " << print::seq(from, print::fmt_debug())
+                          << " with " << print::seq(to, print::fmt_debug())
                           << ":\n"
                           << *this << "\n";);
 

@@ -5,14 +5,18 @@
  * crab_os, so that write()/operator<< implementations do not need to
  * hand-roll separator loops.
  *
+ * Everything lives in namespace crab::print. Code inside namespace crab
+ * writes print::seq(v); downstream code writes crab::print::seq(v), or
+ * abbreviates with `namespace cp = crab::print;`.
+ *
  * Quick reference (o is a crab_os):
  *
- *   o << crab::seq(v);                       // [a, b, c]
- *   o << crab::seq(v, print::fmt_set());     // {a, b, c}
- *   o << crab::seq(v).sep("; ").bare();      // a; b; c
- *   o << crab::kv(m);                        // {k1 -> v1; k2 -> v2}
- *   o << crab::opt(x);                       // value of *x, or "none"
- *   o << crab::opt(x, "<absent>");           // custom empty marker
+ *   o << print::seq(v);                      // [a, b, c]
+ *   o << print::seq(v, print::fmt_set());    // {a, b, c}
+ *   o << print::seq(v).sep("; ").bare();     // a; b; c
+ *   o << print::kv(m);                       // {k1 -> v1; k2 -> v2}
+ *   o << print::opt(x);                      // value of *x, or "none"
+ *   o << print::opt(x, "<absent>");          // custom empty marker
  *
  *   print::print_range(o, v, print::fmt_seq_tight());   // [a,b,c]
  *   print::print_range_with(o, v, fn);       // fn(crab_os&, const elem&)
@@ -23,6 +27,19 @@
  *     if (skip(e)) continue;
  *     sep.next() << e;
  *   }
+ *
+ * Before/after -- the typical hand-rolled separator loop
+ *
+ *   o << "{";
+ *   for (auto it = m.begin(); it != m.end();) {
+ *     o << it->first << " -> " << it->second;
+ *     if (++it != m.end()) { o << "; "; }
+ *   }
+ *   o << "}";
+ *
+ * becomes the one-liner
+ *
+ *   o << print::kv(m);
  *
  * Elements are printed by trying, in order: operator<< (so anything already
  * streamable prints exactly as before), std::pair (first -> second),
@@ -42,7 +59,7 @@
  * - Raw pointers are NEVER dereferenced automatically. A raw T* keeps
  *   binding to crab_os::operator<<(const void*) and prints as an address,
  *   as it always has. If a caller wants the pointee they must say so
- *   explicitly with crab::opt(p).
+ *   explicitly with print::opt(p).
  *
  * - This header is C++14: no if constexpr, no std::void_t, no fold
  *   expressions, hence the make_void / priority_tag machinery below.
@@ -485,11 +502,18 @@ template <typename T> std::string to_string(const T &x) {
   return os.str();
 }
 
-} // namespace print
-
 /*
- * The ergonomic wrappers: o << crab::seq(v), o << crab::kv(m),
- * o << crab::opt(x).
+ * The ergonomic wrappers: o << print::seq(v), o << print::kv(m),
+ * o << print::opt(x).
+ *
+ * seq_ref/kv_ref/opt_ref versus the print_range/print_range_with functions
+ * above: one implementation, two entry styles. seq_ref::write() simply
+ * delegates to print_range(), so both print the same bytes. Use the wrapper
+ * form in operator<< chains and as CRAB_ERROR/CRAB_WARN arguments -- a
+ * wrapper is a streamable value. Use the function forms inside larger
+ * write() bodies: they print immediately, and print_range_with takes an
+ * explicit per-element callback for when element printing must be pinned
+ * down (see its comment above).
  *
  * Each holds a POINTER to the wrapped object, not a reference: CRAB_ERROR /
  * CRAB_WARN funnel their arguments through ___print___ by value, and a
@@ -503,13 +527,13 @@ template <typename T> std::string to_string(const T &x) {
  * with crab_os's own non-template operator<< overloads.
  */
 
-// A range printed as a sequence: o << crab::seq(v) -> [a, b, c]
+// A range printed as a sequence: o << print::seq(v) -> [a, b, c]
 template <typename Range> class seq_ref {
   const Range *m_r;
-  print::format m_fmt;
+  format m_fmt;
 
 public:
-  seq_ref(const Range &r, const print::format &fmt) : m_r(&r), m_fmt(fmt) {}
+  seq_ref(const Range &r, const format &fmt) : m_r(&r), m_fmt(fmt) {}
   seq_ref sep(const char *s) const { return seq_ref(*m_r, m_fmt.sep(s)); }
   seq_ref brackets(const char *open, const char *close) const {
     return seq_ref(*m_r, m_fmt.brackets(open, close));
@@ -519,7 +543,7 @@ public:
   seq_ref trailing(bool b = true) const {
     return seq_ref(*m_r, m_fmt.trailing(b));
   }
-  void write(crab_os &o) const { print::print_range(o, *m_r, m_fmt); }
+  void write(crab_os &o) const { print_range(o, *m_r, m_fmt); }
   friend crab_os &operator<<(crab_os &o, const seq_ref &s) {
     s.write(o);
     return o;
@@ -527,20 +551,20 @@ public:
 };
 
 template <typename Range> seq_ref<Range> seq(const Range &r) {
-  return seq_ref<Range>(r, print::fmt_seq());
+  return seq_ref<Range>(r, fmt_seq());
 }
 template <typename Range>
-seq_ref<Range> seq(const Range &r, const print::format &fmt) {
+seq_ref<Range> seq(const Range &r, const format &fmt) {
   return seq_ref<Range>(r, fmt);
 }
 
-// A range of pairs printed as a map: o << crab::kv(m) -> {k1 -> v1; k2 -> v2}
+// A range of pairs printed as a map: o << print::kv(m) -> {k1 -> v1; k2 -> v2}
 template <typename Map> class kv_ref {
   const Map *m_m;
-  print::format m_fmt;
+  format m_fmt;
 
 public:
-  kv_ref(const Map &m, const print::format &fmt) : m_m(&m), m_fmt(fmt) {}
+  kv_ref(const Map &m, const format &fmt) : m_m(&m), m_fmt(fmt) {}
   kv_ref sep(const char *s) const { return kv_ref(*m_m, m_fmt.sep(s)); }
   kv_ref brackets(const char *open, const char *close) const {
     return kv_ref(*m_m, m_fmt.brackets(open, close));
@@ -548,7 +572,7 @@ public:
   kv_ref bare() const { return kv_ref(*m_m, m_fmt.bare()); }
   kv_ref arrow(const char *a) const { return kv_ref(*m_m, m_fmt.arrow(a)); }
   kv_ref empty(const char *e) const { return kv_ref(*m_m, m_fmt.empty(e)); }
-  void write(crab_os &o) const { print::print_range(o, *m_m, m_fmt); }
+  void write(crab_os &o) const { print_range(o, *m_m, m_fmt); }
   friend crab_os &operator<<(crab_os &o, const kv_ref &m) {
     m.write(o);
     return o;
@@ -556,14 +580,14 @@ public:
 };
 
 template <typename Map> kv_ref<Map> kv(const Map &m) {
-  return kv_ref<Map>(m, print::fmt_map());
+  return kv_ref<Map>(m, fmt_map());
 }
-template <typename Map> kv_ref<Map> kv(const Map &m, const print::format &fmt) {
+template <typename Map> kv_ref<Map> kv(const Map &m, const format &fmt) {
   return kv_ref<Map>(m, fmt);
 }
 
 // An optional-like (or raw pointer, made explicit here) printed as its
-// value, or a marker when empty: o << crab::opt(x) -> *x or "none"
+// value, or a marker when empty: o << print::opt(x) -> *x or "none"
 template <typename T> class opt_ref {
   const T *m_x;
   const char *m_none;
@@ -571,12 +595,13 @@ template <typename T> class opt_ref {
 public:
   opt_ref(const T &x, const char *none) : m_x(&x), m_none(none) {}
   void write(crab_os &o) const {
-    static_assert(print::detail::has_deref<T>::value &&
-                      print::detail::is_bool_testable<T>::value,
-                  "crab::opt requires an optional-like type (dereferenceable "
-                  "and contextually convertible to bool) or a raw pointer");
+    static_assert(detail::has_deref<T>::value &&
+                      detail::is_bool_testable<T>::value,
+                  "crab::print::opt requires an optional-like type "
+                  "(dereferenceable and contextually convertible to bool) or "
+                  "a raw pointer");
     if (static_cast<bool>(*m_x)) {
-      print::detail::print_element(o, **m_x, print::format().none(m_none));
+      detail::print_element(o, **m_x, format().none(m_none));
     } else {
       o << m_none;
     }
@@ -591,4 +616,5 @@ template <typename T> opt_ref<T> opt(const T &x, const char *none = "none") {
   return opt_ref<T>(x, none);
 }
 
+} // namespace print
 } // namespace crab

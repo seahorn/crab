@@ -2618,8 +2618,7 @@ public:
           CRAB_LOG("array-adaptive",
                    crab::outs()
                        << "Killed cells: "
-                       << crab::seq(cells, crab::print::fmt_set_tight())
-                       << "\n";);
+                       << print::seq(cells, print::fmt_set_tight()) << "\n";);
 
           kill_cells(a, cells, offset_map);
         }
@@ -2720,8 +2719,7 @@ public:
                std::vector<variable_t> array_variables = get_array_variables();
                crab::outs()
                << "array variables="
-               << crab::seq(array_variables, crab::print::fmt_debug())
-               << "\n";);
+               << print::seq(array_variables, print::fmt_debug()) << "\n";);
 
       for (auto &kv : renmap) {
         CRAB_LOG("array-adaptive-array-assign",

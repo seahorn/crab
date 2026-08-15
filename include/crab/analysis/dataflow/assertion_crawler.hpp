@@ -579,9 +579,8 @@ public:
 	  if (it != m_cdg.end()) {
 	    auto const &children = it->second;
             CRAB_LOG("assertion-crawler-step-control",
-                     crab::outs()
-                         << crab::seq(children, crab::print::fmt_debug())
-                         << " control-dependent on " << pred << "\n";);
+                     crab::outs() << print::seq(children, print::fmt_debug())
+                                  << " control-dependent on " << pred << "\n";);
             add_control_deps op(m_cdg, children, s.get_live());
 	    transform_sol_t cf;
 	    m_sol.get_first() = std::move(cf.apply_on_key_and_value(m_sol.get_first(), op));
@@ -731,10 +730,9 @@ public:
                               << callee_summary.get_second() << "\n";
                  crab::outs()
                  << "\tCallee input variables: "
-                 << crab::seq(callee_inputs, crab::print::fmt_debug())
+                 << print::seq(callee_inputs, print::fmt_debug())
                  << "\n\tCallee output variables: "
-                 << crab::seq(callee_outputs, crab::print::fmt_debug())
-                 << "\n";);
+                 << print::seq(callee_outputs, print::fmt_debug()) << "\n";);
 
         // -- Update assertion map domain at the caller
 	assert_map_domain_t amd(m_sol.get_first());

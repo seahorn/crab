@@ -2075,9 +2075,8 @@ public:
     // modifying the keys.
     // rev_map is modified in-place since we only modify values.
     CRAB_LOG("zones-sparse",
-             crab::outs() << "Renaming "
-                          << crab::seq(from, crab::print::fmt_debug())
-                          << " with " << crab::seq(to, crab::print::fmt_debug())
+             crab::outs() << "Renaming " << print::seq(from, print::fmt_debug())
+                          << " with " << print::seq(to, print::fmt_debug())
                           << ":\n"
                           << *this << "\n";);
 

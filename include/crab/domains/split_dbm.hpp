@@ -2737,9 +2737,8 @@ public:
       return;
 
     CRAB_LOG("zones-split",
-             crab::outs() << "Renaming "
-                          << crab::seq(from, crab::print::fmt_debug())
-                          << " with " << crab::seq(to, crab::print::fmt_debug())
+             crab::outs() << "Renaming " << print::seq(from, print::fmt_debug())
+                          << " with " << print::seq(to, print::fmt_debug())
                           << ":\n"
                           << *this << "\n";);
 

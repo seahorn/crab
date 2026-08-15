@@ -351,8 +351,7 @@ public:
                          << basic_block_traits<basic_block_t>::to_string(
                                 kv.first)
                          << " dominates="
-                         << crab::seq(kv.second, crab::print::fmt_debug())
-                         << "\n";
+                         << print::seq(kv.second, print::fmt_debug()) << "\n";
           });
     }
     assumption_map_t refined_assumptions(assumptions.begin(), assumptions.end());

@@ -2850,12 +2850,12 @@ public:
                /// as read_assertions.py.
                o << "("
                  << "RgnCounter=";
-               crab::print::print_range_with(
+               print::print_range_with(
                    o, m_rgn_env,
                    [](crab_os &o, const auto &p) {
                      o << p.first << " -> " << p.second.refcount_val();
                    },
-                   crab::print::fmt_set().sep(";"));
+                   print::fmt_set().sep(";"));
                o << ","
                  << "BaseDom=";
                // We ask the ghost manager to print the base domain so that it

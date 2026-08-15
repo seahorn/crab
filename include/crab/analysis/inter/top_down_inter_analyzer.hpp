@@ -506,7 +506,7 @@ private:
       boost::optional<wto_cg_nesting_t> res = it->second->nesting(node);
       CRAB_LOG("inter-callgraph-wto",
                crab::outs() << "NESTING(" << node
-                            << ")=" << crab::opt(res, "[]") << "\n";);
+                            << ")=" << print::opt(res, "[]") << "\n";);
       return res;
     } else {
       CRAB_ERROR("Not callgraph wto found for entry ",
@@ -1586,10 +1586,10 @@ public:
     }
 
     CRAB_LOG("inter", crab::outs() << "Widening points=";
-             crab::print::print_range_with(
+             print::print_range_with(
                  crab::outs(), widening_set,
                  [](crab_os &o, const auto &cg_node) { o << cg_node.name(); },
-                 crab::print::fmt_debug());
+                 print::fmt_debug());
              crab::outs() << "\n";);
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Done.\n";);
 

@@ -1911,7 +1911,7 @@ public:
     linear_constraint_system_t non_overflow_csts;
     CRAB_LOG("wrapped-num",
             crab::outs() << "BEGIN add constraints "
-                         << crab::seq(csts, crab::print::fmt_debug()) << "\n";);
+                         << print::seq(csts, print::fmt_debug()) << "\n";);
 
     for (auto c : csts) {
       // rectify of the "unsound" numerical domain

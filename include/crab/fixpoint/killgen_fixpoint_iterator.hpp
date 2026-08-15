@@ -168,12 +168,12 @@ public:
           crab::outs() << " for " << m_cfg.get_func_decl();
         } crab::outs()
         << "\n";
-        crab::outs() << "fixpoint ordering="; crab::print::print_range_with(
+        crab::outs() << "fixpoint ordering="; print::print_range_with(
             crab::outs(), order,
             [](crab_os &o, const auto &v) {
               o << basic_block_traits<basic_block_t>::to_string(v);
             },
-            crab::print::fmt_set_tight());
+            print::fmt_set_tight());
         crab::outs() << "\n";);
 
     CRAB_LOG(m_analysis.name(), crab::outs() << m_analysis.name() << ": "

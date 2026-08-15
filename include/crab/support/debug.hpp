@@ -11,6 +11,8 @@
 
 namespace crab {
 
+// To print containers or boost::optional values inside log messages, see
+// <crab/support/print.hpp> (print::seq / print::kv / print::opt).
 #ifndef NCRABLOG
 #define CRAB_LOG(TAG, CODE)                                                    \
   do {                                                                         \

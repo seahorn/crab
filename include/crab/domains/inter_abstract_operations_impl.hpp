@@ -189,8 +189,8 @@ void inter_abstract_operations<Domain, true>::callee_entry(
   callee_at_entry.project(callsite.get_callee_in_params());
   CRAB_LOG("inter-restrict",
            errs() << "Inv at the callee after projecting onto formals: "
-                  << crab::seq(callsite.get_callee_in_params(),
-                               crab::print::fmt_debug().bare())
+                  << print::seq(callsite.get_callee_in_params(),
+                                print::fmt_debug().bare())
                   << "\n"
                   << callee_at_entry << "\n";);
 }
@@ -292,10 +292,10 @@ void inter_abstract_operations<Domain, true>::caller_continuation(
   // 4. Forget callee's parameters
   callee_at_exit.forget(callee_params);
 
-  CRAB_LOG("inter-extend",
-           crab::outs() << "Forgotten all callee parameters "
-                        << crab::seq(callee_params, crab::print::fmt_debug())
-                        << "\n";);
+  CRAB_LOG("inter-extend", crab::outs()
+                               << "Forgotten all callee parameters "
+                               << print::seq(callee_params, print::fmt_debug())
+                               << "\n";);
 
   CRAB_LOG("inter-extend2", crab::outs()
                                 << "Meet caller with callee:\n"

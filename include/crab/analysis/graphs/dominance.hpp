@@ -165,12 +165,12 @@ void dominance(G g, typename G::node_t entry, VectorMap &df) {
         crab::outs() << crab::basic_block_traits<basic_block_t>::to_string(
                             kv.first)
                      << "=";
-        crab::print::print_range_with(
+        print::print_range_with(
             crab::outs(), kv.second,
             [](crab::crab_os &o, const auto &v) {
               o << crab::basic_block_traits<basic_block_t>::to_string(v);
             },
-            crab::print::fmt_debug());
+            print::fmt_debug());
         crab::outs() << "\n";
       });
 }
