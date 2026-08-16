@@ -528,6 +528,12 @@ operator-(crab::variable<Number, VariableName> x, int64_t n) {
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
+operator-(crab::variable<Number, VariableName> x) {
+  return linear_expression<Number, VariableName>(Number(-1), x);
+}
+
+template <typename Number, typename VariableName>
+inline linear_expression<Number, VariableName>
 operator-(Number n, crab::variable<Number, VariableName> x) {
   return linear_expression<Number, VariableName>(Number(-1), x).operator+(n);
 }

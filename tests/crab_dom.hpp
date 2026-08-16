@@ -6,8 +6,8 @@
 #include <crab/domains/array_adaptive.hpp>
 #include <crab/domains/array_smashing.hpp>
 #include <crab/domains/boxes.hpp>
-#include <crab/domains/combined_domains.hpp>
 #include <crab/domains/combined_congruences.hpp>
+#include <crab/domains/combined_domains.hpp>
 #include <crab/domains/constant_domain.hpp>
 #include <crab/domains/decoupled_domains.hpp>
 #include <crab/domains/dis_intervals.hpp>
@@ -19,12 +19,13 @@
 #include <crab/domains/lookahead_widening_domain.hpp>
 #include <crab/domains/powerset_domain.hpp>
 #include <crab/domains/region_domain.hpp>
-#include <crab/domains/sign_domain.hpp>
 #include <crab/domains/sign_constant_domain.hpp>
+#include <crab/domains/sign_domain.hpp>
 #include <crab/domains/sparse_dbm.hpp>
 #include <crab/domains/split_dbm.hpp>
 #include <crab/domains/split_oct.hpp>
 #include <crab/domains/term_equiv.hpp>
+#include <crab/domains/tvpi_dbm.hpp>
 #include <crab/domains/wrapped_interval_domain.hpp>
 #include <crab/domains/pplite_domains.hpp>
 
@@ -104,7 +105,8 @@ using z_term_dis_int_t =
 using z_num_domain_t =
     reduced_numerical_domain_product2<z_term_dis_int_t, z_sdbm_domain_t>;
 //using z_fixed_tvpi_domain_t = fixed_tvpi_domain<z_soct_domain_t>;
-using z_fixed_tvpi_domain_t = fixed_tvpi_domain<z_sdbm_domain_t>;  
+using z_fixed_tvpi_domain_t = fixed_tvpi_domain<z_sdbm_domain_t>;
+using z_tvpi_dbm_domain_t = tvpi_dbm_domain<z_sdbm_domain_t>;
 // Boolean-numerical domain over integers
 using z_bool_num_domain_t = flat_boolean_numerical_domain<z_dbm_domain_t>;
 using z_bool_interval_domain_t =

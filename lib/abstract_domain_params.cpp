@@ -121,6 +121,8 @@ void fixed_tvpi_domain_params::update_params(const fixed_tvpi_domain_params& p) 
   m_coefficients.clear();
   m_coefficients.insert(m_coefficients.end(),
 			p.m_coefficients.begin(), p.m_coefficients.end());
+  // Re-establish the sortedness invariant regardless of the source's state.
+  std::sort(m_coefficients.begin(), m_coefficients.end());
 }
   
 void fixed_tvpi_domain_params::write(crab::crab_os &o) const {

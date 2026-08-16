@@ -3,6 +3,7 @@
 #include <crab/support/os.hpp>
 #include <crab/support/debug.hpp>
 
+#include <algorithm>
 #include <vector>
 
 namespace crab {
@@ -274,17 +275,25 @@ public:
 };
 
 class fixed_tvpi_domain_params {
+  // Invariant: sorted in ascending order.  TVPI domains rely on this when
+  // re-establishing ghost variables for self-referential assignments:
+  // ghost(x,c) := c-scaled(e) may read ghost(x, k*c) with k >= 2, which must
+  // still hold its pre-state, so smaller coefficients are processed first.
   std::vector<unsigned> m_coefficients;
 
-  friend class crab_domain_params;  
+  friend class crab_domain_params;
 public:
   fixed_tvpi_domain_params() {}
-  
+
   fixed_tvpi_domain_params(const std::vector<unsigned> &coefficients)
-    : m_coefficients(coefficients) {}
+    : m_coefficients(coefficients) {
+    std::sort(m_coefficients.begin(), m_coefficients.end());
+  }
 
   const std::vector<unsigned>& coefficients() const;
-  std::vector<unsigned>& coefficients();  
+  // NOTE: callers mutating through this reference must keep the vector
+  // sorted in ascending order (see the invariant above).
+  std::vector<unsigned>& coefficients();
   void update_params(const fixed_tvpi_domain_params& p);
   void write(crab::crab_os &o) const;
 };

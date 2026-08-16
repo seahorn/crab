@@ -117,6 +117,14 @@ public:
   // arithmetic right shift
   z_number operator>>(z_number x) const;
 
+  // greatest common divisor of this and x; the result is always
+  // non-negative, whatever the signs of the operands
+  z_number gcd(z_number x) const;
+
+  // division rounding the quotient towards -infinity, unlike operator/
+  // which truncates towards zero
+  z_number floor_div(z_number x) const;
+
   z_number fill_ones() const;
 
   void write(crab::crab_os &o) const;
