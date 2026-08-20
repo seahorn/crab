@@ -301,8 +301,18 @@ public:
     m_product.second().set_phase(is_ascending);
   }
 
-  DEFAULT_MAKE_PROJECTION(reduced_domain_product2_t)
-  DEFAULT_MAKE_FORGET(reduced_domain_product2_t)
+  /* Component-wise forwarding: lets each component's own specialization
+     kick in instead of deep-copying the whole product. */
+  reduced_domain_product2_t
+  make_projection(const variable_vector_t &vs) const override {
+    return reduced_domain_product2_t(first().make_projection(vs),
+                                     second().make_projection(vs));
+  }
+  reduced_domain_product2_t
+  make_forget(const variable_vector_t &vs) const override {
+    return reduced_domain_product2_t(first().make_forget(vs),
+                                     second().make_forget(vs));
+  }
 
   reduced_domain_product2_t make_top() const override {
     basic_domain_product2_t dom_prod;
@@ -1098,8 +1108,19 @@ public:
     m_product.second().set_phase(is_ascending);
   }
 
-  DEFAULT_MAKE_PROJECTION(reduced_numerical_domain_product2_t)
-  DEFAULT_MAKE_FORGET(reduced_numerical_domain_product2_t)
+  /* Forward through the inner product (component-wise). */
+  reduced_numerical_domain_product2_t
+  make_projection(const variable_vector_t &vs) const override {
+    reduced_numerical_domain_product2_t res;
+    res.m_product = m_product.make_projection(vs);
+    return res;
+  }
+  reduced_numerical_domain_product2_t
+  make_forget(const variable_vector_t &vs) const override {
+    reduced_numerical_domain_product2_t res;
+    res.m_product = m_product.make_forget(vs);
+    return res;
+  }
 
   reduced_numerical_domain_product2_t make_top() const override {
     reduced_domain_product2_t dom_prod;

@@ -1632,8 +1632,61 @@ public:
   }
 
   DEFAULT_SELECT(elina_domain_t)
-  DEFAULT_MAKE_PROJECTION(elina_domain_t)
-  DEFAULT_MAKE_FORGET(elina_domain_t)
+
+  // elina_abstract0_forget_array(destructive=false) returns a NEW state, so
+  // no copy of *this is needed; bookkeeping mirrors the in-place forget.
+  elina_domain_t make_forget(const variable_vector_t &vars) const override {
+    ELINA_DOMAIN_SCOPED_STATS(".make_forget");
+    if (is_bottom() || is_top()) {
+      return *this;
+    }
+    std::vector<elina_dim_t> vector_dims;
+    std::set<elina_dim_t> set_dims;
+    for (variable_t v : vars) {
+      if (auto dim = get_var_dim(v)) {
+        vector_dims.push_back(*dim);
+        set_dims.insert(*dim);
+      }
+    }
+    if (vector_dims.empty()) {
+      return *this;
+    }
+    elina_state_ptr s =
+        elinaPtr(get_man(), elina_abstract0_forget_array(
+                                get_man(), false, &*m_apstate, &vector_dims[0],
+                                vector_dims.size(), false));
+    // compact the variable map, iterating dimension ids to preserve order
+    var_map_t res;
+    for (auto const &p : m_var_map.right) {
+      if (set_dims.count(p.first) <= 0) {
+        elina_dim_t i = res.size();
+        res.insert(binding_t(p.second, i));
+      }
+    }
+    remove_dimensions(s, vector_dims);
+    // compact=false: res is already compacted above
+    return elina_domain_t(std::move(s), std::move(res), false);
+  }
+
+  // projection via the tracked complement, like the in-place project
+  elina_domain_t make_projection(const variable_vector_t &vars) const override {
+    ELINA_DOMAIN_SCOPED_STATS(".make_projection");
+    if (is_bottom() || is_top()) {
+      return *this;
+    }
+    if (vars.empty()) {
+      return make_top();
+    }
+    std::set<variable_t> s1, s2;
+    variable_vector_t s3;
+    for (auto p : m_var_map.left) {
+      s1.insert(p.first);
+    }
+    s2.insert(vars.begin(), vars.end());
+    std::set_difference(s1.begin(), s1.end(), s2.begin(), s2.end(),
+                        std::back_inserter(s3));
+    return make_forget(s3);
+  }
   DEFAULT_WEAK_ASSIGN(elina_domain_t)      
 
   void callee_entry(const callsite_info<variable_t> &callsite,
