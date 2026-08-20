@@ -11,6 +11,8 @@
 
 namespace crab {
 
+// To print containers or boost::optional values inside log messages, see
+// <crab/support/print.hpp> (print::seq / print::kv / print::opt).
 #ifndef NCRABLOG
 #define CRAB_LOG(TAG, CODE)                                                    \
   do {                                                                         \
@@ -39,7 +41,8 @@ void CrabEnableVerbosity(unsigned v);
 
 crab_os &get_msg_stream(bool timestamp = true);
 
-template <typename... ArgTypes> inline void ___print___(ArgTypes... args) {
+template <typename... ArgTypes>
+inline void ___print___(const ArgTypes &...args) {
   // trick to expand variadic argument pack without recursion
   using expand_variadic_pack = int[];
   // first zero is to prevent empty braced-init-list

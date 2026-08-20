@@ -44,10 +44,11 @@
 #include <crab/domains/graphs/graph_config.hpp>
 #include <crab/domains/graphs/graph_ops.hpp>
 #include <crab/domains/graphs/graph_views.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/numbers/bignums.hpp>
-#include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/support/print.hpp>
 #include <crab/support/stats.hpp>
 
 #include <boost/optional.hpp>
@@ -2275,25 +2276,18 @@ public:
 	    }
 	  }
 
-	  CRAB_LOG("octagon-join",
-		   crab::outs() << "lb_right={";
-		   for (vert_id s : lb_right) {
-		     crab::outs() << s << ";";
-		   } crab::outs() << "}\n";
-		   crab::outs() << "lb_left={";
-		   for (vert_id s : lb_left) {
-		     crab::outs() << s << ";";
-		   } crab::outs() << "}\n";
-		   crab::outs() << "ub_right={";
-		   for (vert_id s : ub_right) {
-		     crab::outs() << s << ";";
-		   } crab::outs() << "}\n";
-		   crab::outs() << "ub_left={";
-		   for (vert_id s : ub_left) {
-		     crab::outs() << s << ";";
-		   } crab::outs() << "}\n";);
-	  
-	  Wt_min min_op;
+          CRAB_LOG(
+              "octagon-join",
+              crab::outs() << "lb_right="
+                           << print::seq(lb_right, print::fmt_debug()) << "\n";
+              crab::outs() << "lb_left="
+                           << print::seq(lb_left, print::fmt_debug()) << "\n";
+              crab::outs() << "ub_right="
+                           << print::seq(ub_right, print::fmt_debug()) << "\n";
+              crab::outs() << "ub_left="
+                           << print::seq(ub_left, print::fmt_debug()) << "\n";);
+
+          Wt_min min_op;
 	  for (vert_id s : lb_left) {
 	    Wt dx_s = gx.edge_val(s, s + 1) / (Wt)2;
 	    Wt dy_s = gy.edge_val(s, s + 1) / (Wt)2;
@@ -2500,16 +2494,18 @@ public:
 
 	  // Now perform the widening
 	  graph_t widen_g(split_widen(gx, gy, widen_unstable));
-	  
-	  CRAB_LOG("octagon-widening", crab::outs()
-		   << "Unstable list after point-wise widening{";
-          for (vert_id v : widen_unstable) {
-		 
-            crab::outs() << *out_revmap[v] << ((v % 2 == 0) ? "+" : "-") << ";";
-          } crab::outs()
-          << "}\n");
 
-	  split_oct_domain_t res(std::move(out_vmap), std::move(out_revmap),
+          CRAB_LOG("octagon-widening",
+                   crab::outs() << "Unstable list after point-wise widening";
+                   print::print_range_with(
+                       crab::outs(), widen_unstable,
+                       [&out_revmap](crab_os &o, const auto &v) {
+                         o << *out_revmap[v] << ((v % 2 == 0) ? "+" : "-");
+                       },
+                       print::fmt_debug());
+                   crab::outs() << "\n";);
+
+          split_oct_domain_t res(std::move(out_vmap), std::move(out_revmap),
 				 std::move(widen_g), std::move(widen_pot),
 				 std::move(widen_unstable));
 	  
@@ -2960,15 +2956,15 @@ public:
       return;
     }
 
-    CRAB_LOG(
-        "octagon-normalize", crab::outs()
-                                 << "Normalization...\nUnstable list {";
-        for (vert_id v
-             : m_unstable) {
-          crab::outs() << *m_rev_vert_map[v] << ((v % 2 == 0) ? "+" : "-")
-                       << ";";
-        } crab::outs()
-        << "}\n";);
+    CRAB_LOG("octagon-normalize", crab::outs()
+                                      << "Normalization...\nUnstable list ";
+             print::print_range_with(
+                 crab::outs(), m_unstable,
+                 [this](crab_os &o, const auto &v) {
+                   o << *m_rev_vert_map[v] << ((v % 2 == 0) ? "+" : "-");
+                 },
+                 print::fmt_debug());
+             crab::outs() << "\n";);
 
     edge_vector delta;
     split_octagons_impl::SplitOctGraph<graph_t> g_oct(m_graph);
@@ -2983,18 +2979,19 @@ public:
       GrOps::close_johnson(g_oct, m_potential, delta);
     }
 
-    CRAB_LOG(
-        "octagon-normalize", crab::outs() << "Edges after close_after_widen {";
-        for (auto edge
-             : delta) {
-          vert_id src = edge.first.first;
-          vert_id dst = edge.first.second;
-          Wt w = edge.second;
-          crab::outs() << *m_rev_vert_map[src] << ((src % 2 == 0) ? "+" : "-")
-                       << "-->" << *m_rev_vert_map[dst]
-                       << ((dst % 2 == 0) ? "+" : "-") << " w=" << w << ";";
-        } crab::outs()
-        << "}\n";);
+    CRAB_LOG("octagon-normalize", crab::outs()
+                                      << "Edges after close_after_widen ";
+             print::print_range_with(
+                 crab::outs(), delta,
+                 [this](crab_os &o, const auto &edge) {
+                   vert_id src = edge.first.first;
+                   vert_id dst = edge.first.second;
+                   o << *m_rev_vert_map[src] << ((src % 2 == 0) ? "+" : "-")
+                     << "-->" << *m_rev_vert_map[dst]
+                     << ((dst % 2 == 0) ? "+" : "-") << " w=" << edge.second;
+                 },
+                 print::fmt_debug());
+             crab::outs() << "\n";);
 
     // JN: we should be fine calling GrOps::apply_delta
     update_delta(m_graph, delta);
@@ -3557,13 +3554,11 @@ public:
 
     normalize();
 
-    CRAB_LOG("octagon", crab::outs() << "Replacing {"; for (auto v
-                                                            : from) crab::outs()
-                                                       << v << ";";
-             crab::outs() << "} with "; for (auto v
-                                             : to) crab::outs()
-                                        << v << ";";
-             crab::outs() << "}:\n"; crab::outs() << *this << "\n";);
+    CRAB_LOG("octagon", crab::outs()
+                            << "Replacing "
+                            << print::seq(from, print::fmt_debug()) << " with "
+                            << print::seq(to, print::fmt_debug()) << ":\n"
+                            << *this << "\n";);
 
     vert_map_t new_vert_map;
     for (auto kv : m_vert_map) {

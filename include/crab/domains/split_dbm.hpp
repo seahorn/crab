@@ -24,9 +24,10 @@
 #include <crab/domains/graphs/graph_config.hpp>
 #include <crab/domains/graphs/graph_ops.hpp>
 #include <crab/domains/graphs/graph_views.hpp>
-#include <crab/domains/interval.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
+#include <crab/domains/interval.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/support/print.hpp>
 #include <crab/support/stats.hpp>
 
 #include <boost/optional.hpp>
@@ -2735,14 +2736,11 @@ public:
     if (is_top() || is_bottom())
       return;
 
-    CRAB_LOG("zones-split", crab::outs() << "Renaming {";
-             for (auto v
-                  : from) crab::outs()
-             << v << ";";
-             crab::outs() << "} with "; for (auto v
-                                             : to) crab::outs()
-                                        << v << ";";
-             crab::outs() << "}:\n"; crab::outs() << *this << "\n";);
+    CRAB_LOG("zones-split",
+             crab::outs() << "Renaming " << print::seq(from, print::fmt_debug())
+                          << " with " << print::seq(to, print::fmt_debug())
+                          << ":\n"
+                          << *this << "\n";);
 
     for (unsigned i = 0, sz = from.size(); i < sz; ++i) {
       variable_t v = from[i];

@@ -11,12 +11,13 @@
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/combined_domains.hpp>
 #include <crab/domains/discrete_domains.hpp>
-#include <crab/domains/interval.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
+#include <crab/domains/interval.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/wrapped_interval.hpp>
 #include <crab/numbers/wrapint.hpp>
+#include <crab/support/print.hpp>
 #include <crab/support/stats.hpp>
 
 #include <boost/optional.hpp>
@@ -1908,11 +1909,9 @@ public:
     _product.first() += csts;
 
     linear_constraint_system_t non_overflow_csts;
-    CRAB_LOG(
-        "wrapped-num", crab::outs() << "BEGIN add constraints {"; for (auto c
-                                                                       : csts) {
-          crab::outs() << c << ";";
-        } crab::outs() << "}\n";);
+    CRAB_LOG("wrapped-num",
+            crab::outs() << "BEGIN add constraints "
+                         << print::seq(csts, print::fmt_debug()) << "\n";);
 
     for (auto c : csts) {
       // rectify of the "unsound" numerical domain

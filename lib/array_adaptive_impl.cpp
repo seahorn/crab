@@ -2,6 +2,7 @@
 #include <crab/domains/interval.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/os.hpp>
+#include <crab/support/print.hpp>
 
 namespace crab {
 namespace domains {
@@ -530,19 +531,11 @@ void offset_map_t::get_overlap_cells(const offset_t &o, uint64_t size,
     erase_cell(c);
   }
 
-  CRAB_LOG(
-      "array-adaptive-overlap", crab::outs()
-                                    << "**Overlap set between \n"
-                                    << *this << "\nand "
-                                    << "(" << o << "," << size << ")={";
-      for (unsigned i = 0, e = out.size(); i < e;) {
-        crab::outs() << out[i];
-        ++i;
-        if (i < e) {
-          crab::outs() << ",";
-        }
-      } crab::outs()
-      << "}\n";);
+  CRAB_LOG("array-adaptive-overlap",
+           crab::outs() << "**Overlap set between \n"
+                        << *this << "\nand "
+                        << "(" << o << "," << size << ")="
+                        << print::seq(out, print::fmt_set_tight()) << "\n";);
 }
 
 void offset_map_t::clear(void) { m_map.clear(); }
@@ -554,16 +547,12 @@ void offset_map_t::write(crab::crab_os &o) const {
     for (auto it = m_map.begin(), et = m_map.end(); it != et; ++it) {
       const cell_set_t &cells = it->second;
       o << "{";
-      for (auto cit = cells.begin(), cet = cells.end(); cit != cet;) {
-        if ((*cit).is_removed()) {
-          ++cit;
+      print::separator sep(o, ",");
+      for (auto const &c : cells) {
+        if (c.is_removed()) {
           continue;
         }
-        o << *cit;
-        ++cit;
-        if (cit != cet) {
-          o << ",";
-        }
+        sep.next() << c;
       }
       o << "}";
     }

@@ -26,11 +26,12 @@
 #include <crab/analysis/inter/inter_analyzer_api.hpp>
 #include <crab/analysis/inter/inter_params.hpp>
 #include <crab/cg/cg_bgl.hpp> // for wto of callgraphs
-#include <crab/fixpoint/wto.hpp>
-#include <crab/fixpoint/fixpoint_params.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/inter_abstract_operations_callsite_info.hpp>
+#include <crab/fixpoint/fixpoint_params.hpp>
+#include <crab/fixpoint/wto.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/support/print.hpp>
 #include <crab/support/stats.hpp>
 
 #include <crab/checkers/assertion.hpp>
@@ -504,13 +505,8 @@ private:
     if (it != m_wto_cg_map.end()) {
       boost::optional<wto_cg_nesting_t> res = it->second->nesting(node);
       CRAB_LOG("inter-callgraph-wto",
-	       crab::outs() << "NESTING(" << node  << ")=";
-	       if (res) {
-		 crab::outs() << *res;
-	       } else {
-		 crab::outs() << "[]";
-	       }
-	       crab::outs() << "\n";);
+               crab::outs() << "NESTING(" << node
+                            << ")=" << print::opt(res, "[]") << "\n";);
       return res;
     } else {
       CRAB_ERROR("Not callgraph wto found for entry ",
@@ -1589,11 +1585,12 @@ public:
       wto_cg_map[entry] = std::move(wto_cg);
     }
 
-    CRAB_LOG(
-        "inter", crab::outs() << "Widening points={"; for (auto &cg_node
-                                                           : widening_set) {
-          crab::outs() << cg_node.name() << ";";
-        } crab::outs() << "}\n";);
+    CRAB_LOG("inter", crab::outs() << "Widening points=";
+             print::print_range_with(
+                 crab::outs(), widening_set,
+                 [](crab_os &o, const auto &cg_node) { o << cg_node.name(); },
+                 print::fmt_debug());
+             crab::outs() << "\n";);
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Done.\n";);
 
     if (entries.empty()) {

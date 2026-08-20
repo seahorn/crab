@@ -6,6 +6,7 @@
 #include <crab/domains/discrete_domains.hpp>
 #include <crab/fixpoint/killgen_fixpoint_iterator.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/support/print.hpp>
 #include <crab/support/stats.hpp>
 #include <crab/types/indexable.hpp>
 
@@ -577,12 +578,10 @@ public:
 	  auto it = m_cdg.find(pred);
 	  if (it != m_cdg.end()) {
 	    auto const &children = it->second;
-	    CRAB_LOG("assertion-crawler-step-control", crab::outs() << "{";
-		     for (auto &c : children) {
-		       crab::outs() << c << ";";
-		     }
-		     crab::outs() << "} control-dependent on " << pred << "\n";);
-	    add_control_deps op(m_cdg, children, s.get_live());
+            CRAB_LOG("assertion-crawler-step-control",
+                     crab::outs() << print::seq(children, print::fmt_debug())
+                                  << " control-dependent on " << pred << "\n";);
+            add_control_deps op(m_cdg, children, s.get_live());
 	    transform_sol_t cf;
 	    m_sol.get_first() = std::move(cf.apply_on_key_and_value(m_sol.get_first(), op));
 	    CRAB_LOG("assertion-crawler-step-control",
@@ -726,20 +725,16 @@ public:
 	const std::vector<variable_t> &callee_outputs = callee_summary_info.get_outputs();	
 	auto &callee_summary = callee_summary_info.get_summary();
 
-	CRAB_LOG("assertion-crawler-step-cs",
-		 crab::outs() << "\tSummary at the callee: "
-		 << callee_summary.get_second() << "\n";
-		 crab::outs() << "\tCallee input variables: {";
-		 for (auto const& v: callee_inputs) {
-		   crab::outs() << v << ";";
-		 }
-		 crab::outs() << "}\n\tCallee output variables: {";
-		 for (auto const& v: callee_outputs) {
-		   crab::outs() << v << ";";
-		 }
-		 crab::outs() << "}\n";);
+        CRAB_LOG("assertion-crawler-step-cs",
+                 crab::outs() << "\tSummary at the callee: "
+                              << callee_summary.get_second() << "\n";
+                 crab::outs()
+                 << "\tCallee input variables: "
+                 << print::seq(callee_inputs, print::fmt_debug())
+                 << "\n\tCallee output variables: "
+                 << print::seq(callee_outputs, print::fmt_debug()) << "\n";);
 
-	// -- Update assertion map domain at the caller
+        // -- Update assertion map domain at the caller
 	assert_map_domain_t amd(m_sol.get_first());
 	rename(amd, callsite_outputs, callee_outputs);
 	apply_summary(amd, callee_summary.get_second());

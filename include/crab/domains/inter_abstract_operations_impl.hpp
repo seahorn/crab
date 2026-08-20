@@ -4,6 +4,7 @@
 /**==============================================================**/
 #include <crab/support/debug.hpp>
 #include <crab/support/os.hpp>
+#include <crab/support/print.hpp>
 #include <crab/support/stats.hpp>
 #include <crab/types/reference_constraints.hpp>
 #include <crab/types/variable.hpp>
@@ -186,13 +187,12 @@ void inter_abstract_operations<Domain, true>::callee_entry(
 
   // 3. Project onto **input** formal parameters
   callee_at_entry.project(callsite.get_callee_in_params());
-  CRAB_LOG(
-      "inter-restrict",
-      errs() << "Inv at the callee after projecting onto formals: ";
-      for (auto &v
-           : callsite.get_callee_in_params()) { errs() << v << ";"; } errs()
-      << "\n"
-      << callee_at_entry << "\n";);
+  CRAB_LOG("inter-restrict",
+           errs() << "Inv at the callee after projecting onto formals: "
+                  << print::seq(callsite.get_callee_in_params(),
+                                print::fmt_debug().bare())
+                  << "\n"
+                  << callee_at_entry << "\n";);
 }
 
 template <class Domain>
@@ -292,11 +292,10 @@ void inter_abstract_operations<Domain, true>::caller_continuation(
   // 4. Forget callee's parameters
   callee_at_exit.forget(callee_params);
 
-  CRAB_LOG(
-      "inter-extend", crab::outs() << "Forgotten all callee parameters {";
-      for (auto const &v
-           : callee_params) { crab::outs() << v << ";"; } crab::outs()
-      << "}\n";);
+  CRAB_LOG("inter-extend", crab::outs()
+                               << "Forgotten all callee parameters "
+                               << print::seq(callee_params, print::fmt_debug())
+                               << "\n";);
 
   CRAB_LOG("inter-extend2", crab::outs()
                                 << "Meet caller with callee:\n"

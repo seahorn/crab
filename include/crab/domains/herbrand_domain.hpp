@@ -24,6 +24,7 @@
 #include <crab/domains/term/term_expr.hpp>
 #include <crab/domains/term/term_operators.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/support/print.hpp>
 #include <crab/support/stats.hpp>
 
 #include <algorithm>
@@ -1252,15 +1253,11 @@ public:
       return;
     }
 
-    CRAB_LOG(
-        "uf", crab::outs() << "Renaming {"; for (auto v
-                                                 : from) {
-          crab::outs() << v << ";";
-        } crab::outs() << "} with ";
-        for (auto v
-             : to) { crab::outs() << v << ";"; } crab::outs()
-        << "}:\n";
-        crab::outs() << *this << "\n";);
+    CRAB_LOG("uf", crab::outs()
+                       << "Renaming " << print::seq(from, print::fmt_debug())
+                       << " with " << print::seq(to, print::fmt_debug())
+                       << ":\n"
+                       << *this << "\n";);
 
     auto error_if_found = [this](const variable_t &v) {
       auto it = m_var_map.find(v);
