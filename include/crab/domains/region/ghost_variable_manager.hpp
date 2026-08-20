@@ -142,10 +142,10 @@ public:
 	     const GhostDomain &right_val) {
 
     if (!variables.empty()) {
-      GhostDomain copy_right(right_val);
-      copy_right.project(variables);
       left_val.forget(variables);
-      left_val = left_val & copy_right;
+      // make_projection builds only the restricted view (no full copy of
+      // right_val)
+      left_val = left_val & right_val.make_projection(variables);
     }
   }
 
@@ -674,8 +674,9 @@ public:
     assert(new_left_vars.size() == new_right_vars.size());
 
     /// Propagate invariants from the right to the left */
-    GhostDomain copy(right_val);
-    copy.project(old_right_vars);
+    // make_projection builds only the restricted view (no full copy of
+    // right_val); the renames below then mutate the small result
+    GhostDomain copy(right_val.make_projection(old_right_vars));
 
     // Renaming in two steps to avoid variable clashing with the left
     // operand. The assumption is that old_right_vars and
