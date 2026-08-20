@@ -230,6 +230,9 @@ public:
     return false;
   }
 
+  DEFAULT_MAKE_PROJECTION(powerset_domain_t)
+  DEFAULT_MAKE_FORGET(powerset_domain_t)
+
   virtual powerset_domain_t make_top() const override {
     base_dom_vector disjuncts;
     Domain disjunct; // top by default

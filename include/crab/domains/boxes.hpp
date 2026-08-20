@@ -1655,6 +1655,8 @@ public:
   }
   
   DEFAULT_SELECT(boxes_domain_t)
+  DEFAULT_MAKE_PROJECTION(boxes_domain_t)
+  DEFAULT_MAKE_FORGET(boxes_domain_t)
   DEFAULT_SELECT_BOOL(boxes_domain_t)
   DEFAULT_WEAK_ASSIGN(boxes_domain_t)
   DEFAULT_WEAK_BOOL_ASSIGN(boxes_domain_t)

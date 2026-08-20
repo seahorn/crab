@@ -301,6 +301,9 @@ public:
     m_product.second().set_phase(is_ascending);
   }
 
+  DEFAULT_MAKE_PROJECTION(reduced_domain_product2_t)
+  DEFAULT_MAKE_FORGET(reduced_domain_product2_t)
+
   reduced_domain_product2_t make_top() const override {
     basic_domain_product2_t dom_prod;
     return reduced_domain_product2_t(std::move(dom_prod));
@@ -1094,6 +1097,9 @@ public:
     m_product.first().set_phase(is_ascending);
     m_product.second().set_phase(is_ascending);
   }
+
+  DEFAULT_MAKE_PROJECTION(reduced_numerical_domain_product2_t)
+  DEFAULT_MAKE_FORGET(reduced_numerical_domain_product2_t)
 
   reduced_numerical_domain_product2_t make_top() const override {
     reduced_domain_product2_t dom_prod;

@@ -33,6 +33,12 @@ public:
   void set_to_bottom() override { CRAB_ERROR(not_implemented_msg()); }
   Derived make_bottom() const override { CRAB_ERROR(not_implemented_msg()); }
   Derived make_top() const override { CRAB_ERROR(not_implemented_msg()); }
+  Derived make_forget(const variable_vector_t &) const override {
+    CRAB_ERROR(not_implemented_msg());
+  }
+  Derived make_projection(const variable_vector_t &) const override {
+    CRAB_ERROR(not_implemented_msg());
+  }
   bool is_bottom() const override { CRAB_ERROR(not_implemented_msg()); }
   bool is_top() const override { CRAB_ERROR(not_implemented_msg()); }
   bool operator<=(const Derived &other) const override {

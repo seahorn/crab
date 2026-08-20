@@ -2650,6 +2650,8 @@ public:
   }
 
   DEFAULT_SELECT(DBM_t)
+  DEFAULT_MAKE_PROJECTION(DBM_t)
+  DEFAULT_MAKE_FORGET(DBM_t)
   DEFAULT_WEAK_ASSIGN(DBM_t)
     
   void project(const variable_vector_t &variables) override {

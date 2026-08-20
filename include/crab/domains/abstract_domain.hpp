@@ -395,6 +395,26 @@ public:
   // Project the abstract domain onto variables (dual to forget)
   virtual void project(const variable_vector_t &variables) = 0;
 
+  // Return a new abstract state: *this with variables forgotten.
+  // Functional counterpart of forget (set_to_top vs make_top precedent).
+  // A default (copy + in-place forget) is provided so that domains
+  // maintained OUTSIDE this repository (e.g. the PPLite native wrapper)
+  // keep compiling; in-tree domains opt in explicitly via the
+  // DEFAULT_MAKE_FORGET macro or provide a native implementation.
+  virtual Dom make_forget(const variable_vector_t &variables) const {
+    Dom res(static_cast<const Dom &>(*this));
+    res.forget(variables);
+    return res;
+  }
+
+  // Return a new abstract state: *this restricted to variables.
+  // Functional counterpart of project. Default as for make_forget.
+  virtual Dom make_projection(const variable_vector_t &variables) const {
+    Dom res(static_cast<const Dom &>(*this));
+    res.project(variables);
+    return res;
+  }
+
   // Make a new copy of var without relating var with new_var
   virtual void expand(const variable_t &var, const variable_t &new_var) = 0;
 

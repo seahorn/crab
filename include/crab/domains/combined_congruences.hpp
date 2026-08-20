@@ -103,6 +103,9 @@ public:
     m_product.second().set_phase(is_ascending);
   }
 
+  DEFAULT_MAKE_PROJECTION(rnc_domain_t)
+  DEFAULT_MAKE_FORGET(rnc_domain_t)
+
   rnc_domain_t make_top() const override {
     reduced_domain_product2_t dom_prod;
     return rnc_domain_t(dom_prod.make_top());

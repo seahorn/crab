@@ -27,6 +27,10 @@ namespace domains {
 
 template <typename Variable>
 class abstract_domain final : abstract_domain_api<abstract_domain<Variable>> {
+  // the base is private: let its defaulted make_forget/make_projection
+  // downcast to this class
+  friend class abstract_domain_api<abstract_domain<Variable>>;
+
 public:
   using number_t = typename Variable::number_t;
   using varname_t = typename Variable::varname_t;
@@ -226,6 +230,10 @@ private:
     virtual void minimize() = 0;
     virtual void forget(const variable_vector_t &variables) = 0;
     virtual void project(const variable_vector_t &variables) = 0;
+    virtual std::unique_ptr<abstract_domain_concept>
+    make_forget(const variable_vector_t &variables) const = 0;
+    virtual std::unique_ptr<abstract_domain_concept>
+    make_projection(const variable_vector_t &variables) const = 0;
     virtual void expand(const variable_t &var, const variable_t &new_var) = 0;
     virtual void intrinsic(std::string name,
 			   const variable_or_constant_vector_t &inputs,
@@ -645,6 +653,18 @@ private:
     void project(const variable_vector_t &variables) override {
       m_inv.project(variables);
     }
+    std::unique_ptr<abstract_domain_concept>
+    make_forget(const variable_vector_t &variables) const override {
+      std::unique_ptr<abstract_domain_concept> res(
+          new abstract_domain_model(m_inv.make_forget(variables)));
+      return res;
+    }
+    std::unique_ptr<abstract_domain_concept>
+    make_projection(const variable_vector_t &variables) const override {
+      std::unique_ptr<abstract_domain_concept> res(
+          new abstract_domain_model(m_inv.make_projection(variables)));
+      return res;
+    }
     void expand(const variable_t &var, const variable_t &new_var) override {
       m_inv.expand(var, new_var);
     }
@@ -1004,6 +1024,14 @@ public:
   void project(const variable_vector_t &variables) override {
     m_concept->project(variables);
   }
+  abstract_domain
+  make_forget(const variable_vector_t &variables) const override {
+    return abstract_domain(std::move(m_concept->make_forget(variables)));
+  }
+  abstract_domain
+  make_projection(const variable_vector_t &variables) const override {
+    return abstract_domain(std::move(m_concept->make_projection(variables)));
+  }
   void expand(const variable_t &var, const variable_t &new_var) override {
     m_concept->expand(var, new_var);
   }
@@ -1032,6 +1060,10 @@ public:
 template <typename Variable>
 class abstract_domain_ref final
     : abstract_domain_api<abstract_domain_ref<Variable>> {
+  // see abstract_domain: allow the private base's defaulted methods to
+  // downcast
+  friend class abstract_domain_api<abstract_domain_ref<Variable>>;
+
 public:
   using number_t = typename Variable::number_t;
   using varname_t = typename Variable::varname_t;
@@ -1550,6 +1582,16 @@ public:
   void project(const variable_vector_t &variables) override {
     detach();
     norm().project(variables);
+  }
+
+  abstract_domain_ref
+  make_forget(const variable_vector_t &variables) const override {
+    return create(norm().make_forget(variables));
+  }
+
+  abstract_domain_ref
+  make_projection(const variable_vector_t &variables) const override {
+    return create(norm().make_projection(variables));
   }
 
   void expand(const variable_t &var, const variable_t &new_var) override {

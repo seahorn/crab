@@ -649,6 +649,9 @@ public:
     return res;
   }
 
+  DEFAULT_MAKE_PROJECTION(this_domain_t)
+  DEFAULT_MAKE_FORGET(this_domain_t)
+
   this_domain_t make_top() const override {
     this_domain_t res(lattice_val::top);
     return res;

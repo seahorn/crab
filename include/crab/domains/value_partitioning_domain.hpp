@@ -791,6 +791,8 @@ public:
   }
   
   DEFAULT_SELECT(value_partitioning_domain_t)
+  DEFAULT_MAKE_PROJECTION(value_partitioning_domain_t)
+  DEFAULT_MAKE_FORGET(value_partitioning_domain_t)
 
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
@@ -1943,6 +1945,8 @@ public:
 
   
   DEFAULT_SELECT(this_type)
+  DEFAULT_MAKE_PROJECTION(this_type)
+  DEFAULT_MAKE_FORGET(this_type)
 
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {

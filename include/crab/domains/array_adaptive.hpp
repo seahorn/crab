@@ -1682,6 +1682,9 @@ public:
     m_base_dom.set_phase(is_ascending);
   }
 
+  DEFAULT_MAKE_PROJECTION(array_adaptive_domain)
+  DEFAULT_MAKE_FORGET(array_adaptive_domain)
+
   array_adaptive_domain make_top() const override {
     array_adaptive_domain out(false);
     return out;

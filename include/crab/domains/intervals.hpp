@@ -144,7 +144,10 @@ public:
   BOOL_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)
-  
+
+  DEFAULT_MAKE_PROJECTION(interval_domain_t)
+  DEFAULT_MAKE_FORGET(interval_domain_t)
+
   interval_domain_t make_top() const override {
     return interval_domain_t(separate_domain_t::top());
   }

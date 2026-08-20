@@ -1524,6 +1524,8 @@ public:
   
   
   DEFAULT_SELECT(term_domain_t)
+  DEFAULT_MAKE_PROJECTION(term_domain_t)
+  DEFAULT_MAKE_FORGET(term_domain_t)
   DEFAULT_WEAK_ASSIGN(term_domain_t)
 
   void rename(const variable_vector_t &from,

@@ -3583,6 +3583,8 @@ public:
   }
   
   DEFAULT_SELECT(split_oct_domain_t)
+  DEFAULT_MAKE_PROJECTION(split_oct_domain_t)
+  DEFAULT_MAKE_FORGET(split_oct_domain_t)
   DEFAULT_WEAK_ASSIGN(split_oct_domain_t)  
 
   /* begin intrinsics operations */

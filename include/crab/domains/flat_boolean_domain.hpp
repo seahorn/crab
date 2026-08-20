@@ -65,6 +65,9 @@ public:
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
 
+  DEFAULT_MAKE_PROJECTION(flat_boolean_domain_t)
+  DEFAULT_MAKE_FORGET(flat_boolean_domain_t)
+
   flat_boolean_domain_t make_top() const override {
     return flat_boolean_domain_t(separate_domain_t::top());
   }
@@ -948,6 +951,9 @@ public:
   void set_phase(bool is_ascending) override {
     m_product.second().set_phase(is_ascending);
   }
+
+  DEFAULT_MAKE_PROJECTION(bool_num_domain_t)
+  DEFAULT_MAKE_FORGET(bool_num_domain_t)
 
   bool_num_domain_t make_top() const override {
     reduced_domain_product2_t prod;

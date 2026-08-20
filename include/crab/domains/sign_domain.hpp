@@ -395,7 +395,9 @@ public:
   }
 
   DEFAULT_ENTAILS(sign_domain_t)
-  
+  DEFAULT_MAKE_PROJECTION(sign_domain_t)
+  DEFAULT_MAKE_FORGET(sign_domain_t)
+
   void assign(const variable_t &x, const linear_expression_t &e) override {
     SIGN_DOMAIN_SCOPED_STATS(".assign");
     CRAB_LOG("sign-domain", crab::outs() << x << " := " << e << "\n";);

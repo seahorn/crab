@@ -815,6 +815,8 @@ private:
 
 public:
   DEFAULT_SELECT(tvpi_dbm_domain_t)
+  DEFAULT_MAKE_PROJECTION(tvpi_dbm_domain_t)
+  DEFAULT_MAKE_FORGET(tvpi_dbm_domain_t)
   BOOL_OPERATIONS_NOT_IMPLEMENTED(tvpi_dbm_domain_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(tvpi_dbm_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(tvpi_dbm_domain_t)

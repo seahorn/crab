@@ -278,6 +278,8 @@ private:
 
 public:
   DEFAULT_SELECT(fixed_tvpi_domain_t)
+  DEFAULT_MAKE_PROJECTION(fixed_tvpi_domain_t)
+  DEFAULT_MAKE_FORGET(fixed_tvpi_domain_t)
   BOOL_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)

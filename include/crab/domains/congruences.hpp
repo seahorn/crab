@@ -455,6 +455,8 @@ public:
   }
 
   DEFAULT_SELECT(congruence_domain_t)
+  DEFAULT_MAKE_PROJECTION(congruence_domain_t)
+  DEFAULT_MAKE_FORGET(congruence_domain_t)
 
   void callee_entry(const crab::domains::callsite_info<variable_t> &callsite,
 		    const congruence_domain_t &caller) override {

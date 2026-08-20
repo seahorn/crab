@@ -1041,6 +1041,8 @@ public:
   }
 
   DEFAULT_SELECT(herbrand_domain_t)
+  DEFAULT_MAKE_PROJECTION(herbrand_domain_t)
+  DEFAULT_MAKE_FORGET(herbrand_domain_t)
 
   // boolean operators
   virtual void assign_bool_cst(const variable_t &lhs,

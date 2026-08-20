@@ -282,6 +282,9 @@ public:
   }
 
   // Return a top abstract value
+  DEFAULT_MAKE_PROJECTION(decoupled_domain_t)
+  DEFAULT_MAKE_FORGET(decoupled_domain_t)
+
   decoupled_domain_t make_top() const override {
     decoupled_domain_t res(is_asc_phase());
     assert(res.is_top());

@@ -1632,6 +1632,8 @@ public:
   }
 
   DEFAULT_SELECT(elina_domain_t)
+  DEFAULT_MAKE_PROJECTION(elina_domain_t)
+  DEFAULT_MAKE_FORGET(elina_domain_t)
   DEFAULT_WEAK_ASSIGN(elina_domain_t)      
 
   void callee_entry(const callsite_info<variable_t> &callsite,
