@@ -400,7 +400,11 @@ public:
       return linear_constraint_t::get_false();
 
     if (is_top())
-      return linear_constraint_t::get_true();
+      // Top is the empty system: linear_constraint_system::is_true() is
+      // "no constraints". Returning a system holding a tautology instead would
+      // not be recognized as top by consumers, and would add a redundant `true`
+      // to any conjunction this is combined with.
+      return linear_constraint_system_t();
 
     linear_constraint_system_t res;
     for (auto kv : m_env) {
@@ -1751,9 +1755,42 @@ public:
 
   disjunctive_linear_constraint_system_t
   to_disjunctive_linear_constraint_system() const override {
-    disjunctive_linear_constraint_system_t res;
-    res += m_product.first().to_disjunctive_linear_constraint_system();
-    res += m_product.second().to_disjunctive_linear_constraint_system();
+    // A product denotes the *conjunction* of its components, but operator+= on
+    // a disjunctive constraint system is disjunction (see its documentation:
+    // "c1 or ... or cn += d ==> c1 or ... or cn or d"). Adding each component
+    // in turn would therefore compute `bool_part OR num_part`, which is much
+    // weaker than the product, and is an outright error ("cannot add true")
+    // whenever a component is top.
+    //
+    // The boolean component is always a conjunction of constraints over 0/1
+    // variables, so the product is obtained by distributing those constraints
+    // into every disjunct of the numerical component.
+    linear_constraint_system_t bool_csts =
+        m_product.first().to_linear_constraint_system();
+    disjunctive_linear_constraint_system_t num_csts =
+        m_product.second().to_disjunctive_linear_constraint_system();
+
+    if (bool_csts.is_false() || num_csts.is_false()) {
+      return disjunctive_linear_constraint_system_t(true /*is_false*/);
+    }
+    if (num_csts.is_true()) {
+      // No numerical information: the product is just the boolean part.
+      if (bool_csts.is_true()) {
+        return disjunctive_linear_constraint_system_t(false /*is_false*/);
+      }
+      return disjunctive_linear_constraint_system_t(bool_csts);
+    }
+
+    disjunctive_linear_constraint_system_t res(true /*is_false*/);
+    for (const linear_constraint_system_t &disjunct : num_csts) {
+      linear_constraint_system_t conj(disjunct);
+      conj += bool_csts;
+      if (conj.is_true()) {
+        // A top disjunct makes the whole disjunction top.
+        return disjunctive_linear_constraint_system_t(false /*is_false*/);
+      }
+      res += conj;
+    }
     return res;
   }
 

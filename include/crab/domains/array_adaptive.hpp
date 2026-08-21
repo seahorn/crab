@@ -2980,6 +2980,11 @@ public:
   to_disjunctive_linear_constraint_system() const override {
     disjunctive_linear_constraint_system_t res;
     auto disj_csts = m_base_dom.to_disjunctive_linear_constraint_system();
+    if (disj_csts.is_false()) {
+      // begin() raises an error on a bottom system, so bottom must be
+      // propagated rather than iterated.
+      return disjunctive_linear_constraint_system_t(true /*is_false*/);
+    }
     for (auto &csts : disj_csts) {
       auto filtered_csts = filter_nonscalar_vars(std::move(csts));
       if (!filtered_csts.is_true()) {
