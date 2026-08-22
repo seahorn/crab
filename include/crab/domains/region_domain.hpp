@@ -2488,9 +2488,20 @@ public:
     // add_tag(rgn, ref, TAG)
     //       Add TAG to the set of tags already associated with the
     //       data pointed by ref within rgn.
+    // remove_tag(rgn, ref, TAG)
+    //       Remove TAG from the set of tags associated with the data
+    //       pointed by ref within rgn (sanitizer support). The removal
+    //       only happens if rgn represents at most one concrete
+    //       object; otherwise, the tag is conservatively kept.
     // b := does_not_have_tag(rgn, ref, TAG)
     //       b is true if the data pointed by ref within rgn does
     //       *definitely* not have tag TAG.
+    // move_tag(rgn1, ref1, rgn2, ref2)
+    //       Overwrite the tags of rgn2 with the set of tags
+    //       associated with rgn1 (ref1 and ref2 are ignored).
+    // print_tags(rgn, ref)
+    //       Print the set of tags associated with rgn (for
+    //       debugging).
     //=================================================================//
     auto error_if_not_arity = [&name, &inputs, &outputs](unsigned num_inputs,
                                                          unsigned num_outputs) {
@@ -2631,6 +2642,67 @@ public:
               << ";\n";);
           operator-=(bv);
         }
+      }
+    } else if (name == "remove_tag") {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
+        error_if_not_arity(3, 0);
+        error_if_not_variable(inputs[0]);
+        error_if_not_variable(inputs[1]);
+        error_if_not_constant(inputs[2]);
+        variable_t rgn = inputs[0].get_variable();
+        error_if_not_rgn(rgn);
+        variable_t ref = inputs[1].get_variable();
+        error_if_not_ref(ref);
+        // This is hack tag since no debug info is provided. Tag
+        // membership is index-based so the id suffices for removal.
+        tag_t tag(inputs[2].get_constant());
+        // Removing a tag is a strong update on the region, which is
+        // only sound if the region represents at most one concrete
+        // object. We reuse the same refcount condition as ref_store's
+        // strong updates; otherwise, the tag is conservatively kept.
+        auto rgn_info = m_rgn_env.at(rgn);
+        const small_range &num_refs = rgn_info.refcount_val();
+        if (num_refs.is_zero() || num_refs.is_one()) {
+          tag_set tags = find_tag_or_not(rgn);
+          // Skip top: m_tag_env.set would drop the key, which
+          // find_tag_or_not reads back as untainted.
+          if (!tags.is_top() && !tags.is_bottom()) {
+            m_tag_env.set(rgn, tags - tag);
+          }
+        }
+      }
+    } else if (name == "print_tags") {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
+        error_if_not_arity(2, 0);
+        error_if_not_variable(inputs[0]);
+        error_if_not_variable(inputs[1]);
+        variable_t rgn = inputs[0].get_variable();
+        error_if_not_rgn(rgn);
+        tag_set tags = find_tag_or_not(rgn);
+        crab::outs() << "[Debug] Tags: \n{\n";
+        for (auto const &t : tags) {
+          crab::outs() << "  " << t << " |-> [";
+          // find srcs
+          crab::outs() << "];\n";
+        }
+        crab::outs() << "}\n";
+      }
+    } else if (name == "move_tag") {
+      if (crab_domain_params_man::get().region_tag_analysis()) {
+        error_if_not_arity(4, 0);
+        error_if_not_variable(inputs[0]);
+        error_if_not_variable(inputs[1]);
+        error_if_not_variable(inputs[2]);
+        error_if_not_variable(inputs[3]);
+        variable_t rgn1 = inputs[0].get_variable();
+        error_if_not_rgn(rgn1);
+        variable_t ref1 = inputs[1].get_variable();
+        error_if_not_ref(ref1);
+        variable_t rgn2 = inputs[2].get_variable();
+        error_if_not_rgn(rgn2);
+        variable_t ref2 = inputs[3].get_variable();
+        error_if_not_ref(ref2);
+        m_tag_env.set(rgn2, find_tag_or_not(rgn1));
       }
     } else if (name == "is_dereferenceable") {
       if (crab_domain_params_man::get().region_is_dereferenceable()) {
