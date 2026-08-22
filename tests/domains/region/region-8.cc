@@ -13,10 +13,6 @@ std::unique_ptr<z_cfg_t> cfg1(variable_factory_t &vfac) {
   /*
    int v1,v2,v3;
 
-   add_tag(&v1, TAG_1)
-   add_tag(&v2, TAG_2)
-   add_tag(&v3, TAG_3)
-
    int *i = &v1;
    int *x = &v2;
    int *y = &v3;
@@ -24,6 +20,12 @@ std::unique_ptr<z_cfg_t> cfg1(variable_factory_t &vfac) {
    *i := 0;
    *x := 1;
    *y := 0;
+
+   // A strong store of a constant clears the tags of the stored
+   // region, so the tags are added after the initialization.
+   add_tag(&v1, TAG_1)
+   add_tag(&v2, TAG_2)
+   add_tag(&v3, TAG_3)
 
     while(*i <= 99) {
      *x = *x + *y;
@@ -88,15 +90,17 @@ std::unique_ptr<z_cfg_t> cfg1(variable_factory_t &vfac) {
   entry.make_ref(i, mem1, size4, as_man.mk_tag());
   entry.make_ref(x, mem2, size4, as_man.mk_tag());
   entry.make_ref(y, mem3, size4, as_man.mk_tag());
-  entry.intrinsic("add_tag",{},{mem1, i, one32});
-  entry.intrinsic("add_tag",{},{mem2, x, two32});
-  entry.intrinsic("add_tag",{},{mem3, y, three32});    
   //// *i := 0;
   entry.store_to_ref(i, mem1, zero32);
   //// *x := 1;
   entry.store_to_ref(x, mem2, one32);
   //// *y := 0;
   entry.store_to_ref(y, mem3, zero32);
+  //// A strong store of a constant clears the tags of the stored
+  //// region, so the tags are added after the initialization.
+  entry.intrinsic("add_tag",{},{mem1, i, one32});
+  entry.intrinsic("add_tag",{},{mem2, x, two32});
+  entry.intrinsic("add_tag",{},{mem3, y, three32});
   //// assume(*i <= 99);
   bb1_t.load_from_ref(deref_i, i, mem1);
   bb1_t.assume(deref_i <= 99);
@@ -137,6 +141,84 @@ std::unique_ptr<z_cfg_t> cfg1(variable_factory_t &vfac) {
   return cfg;
 }
 
+/* Test for remove_tag (sanitizer support) */
+std::unique_ptr<z_cfg_t> cfg2(variable_factory_t &vfac) {
+
+  /*
+   int v1,v2;
+
+   int *p = &v1;         // only reference to &v1: strong updates allowed
+   add_tag(&v1, TAG_1)
+   add_tag(&v1, TAG_2)
+   remove_tag(&v1, TAG_1)
+
+   // TAG_1 was removed by a strong update; TAG_2 remains
+   assert(does_not_have_tag(&v1, TAG_1));  // OK
+   assert(does_not_have_tag(&v1, TAG_2));  // FAIL
+
+   int *q1 = &v2;
+   int *q2 = &v2;        // two references: no strong update on &v2
+   add_tag(&v2, TAG_3)
+   remove_tag(&v2, TAG_3)
+
+   // refcount > 1 so the tag is conservatively kept
+   assert(does_not_have_tag(&v2, TAG_3));  // FAIL
+   */
+
+  // === Define program variables
+  z_var p(vfac["p"], crab::REF_TYPE);
+  z_var q1(vfac["q1"], crab::REF_TYPE);
+  z_var q2(vfac["q2"], crab::REF_TYPE);
+  z_var b1(vfac["b1"], crab::BOOL_TYPE);
+  // === Define memory regions
+  z_var mem1(vfac["region_0"], crab::REG_INT_TYPE, 32);
+  z_var mem2(vfac["region_1"], crab::REG_INT_TYPE, 32);
+  // === Create allocation sites
+  crab::tag_manager as_man;
+  // === Create empty CFG
+  auto cfg = std::make_unique<z_cfg_t>("entry", "ret");
+  // === Adding CFG blocks
+  BB(cfg, entry);
+  BB(cfg, ret);
+  // === Adding CFG edges
+  entry.add_succ(ret);
+
+  // === Adding statements
+
+  z_var_or_cst_t one32(z_number(1), crab::variable_type(crab::INT_TYPE, 32));
+  z_var_or_cst_t two32(z_number(2), crab::variable_type(crab::INT_TYPE, 32));
+  z_var_or_cst_t three32(z_number(3), crab::variable_type(crab::INT_TYPE, 32));
+  z_var_or_cst_t size4(z_number(4), crab::variable_type(crab::INT_TYPE, 32));
+
+  // Intialization of memory regions
+  entry.region_init(mem1);
+  entry.region_init(mem2);
+
+  //// Create references
+  entry.make_ref(p, mem1, size4, as_man.mk_tag());
+  //// mem1 has a single reference: remove_tag performs a strong update
+  entry.intrinsic("add_tag",{},{mem1, p, one32});
+  entry.intrinsic("add_tag",{},{mem1, p, two32});
+  entry.intrinsic("remove_tag",{},{mem1, p, one32});
+
+  //// mem2 has more than one reference: remove_tag keeps the tag
+  entry.make_ref(q1, mem2, size4, as_man.mk_tag());
+  entry.make_ref(q2, mem2, size4, as_man.mk_tag());
+  entry.intrinsic("add_tag",{},{mem2, q1, three32});
+  entry.intrinsic("remove_tag",{},{mem2, q1, three32});
+
+  ret.intrinsic("does_not_have_tag",{b1},{mem1, p, one32});
+  // EXPECTED: OK (TAG_1 was removed)
+  ret.bool_assert(b1);
+  ret.intrinsic("does_not_have_tag",{b1},{mem1, p, two32});
+  // EXPECTED: FAIL (TAG_2 remains)
+  ret.bool_assert(b1);
+  ret.intrinsic("does_not_have_tag",{b1},{mem2, q1, three32});
+  // EXPECTED: FAIL (refcount > 1 so TAG_3 is conservatively kept)
+  ret.bool_assert(b1);
+  return cfg;
+}
+
 int main(int argc, char **argv) {
   region_domain_params p(true/*allocation_sites*/,
 			 true/*deallocation*/,
@@ -150,12 +232,21 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  variable_factory_t vfac;
+  {
+    variable_factory_t vfac;
+    auto p1 = cfg1(vfac);
+    crab::outs() << *p1 << "\n";
+    z_rgn_bool_int_t init;
+    run_and_check(p1, init, stats_enabled, run_config().with_widening(2));
+  }
 
-  auto p1 = cfg1(vfac);
-  crab::outs() << *p1 << "\n";
-  z_rgn_bool_int_t init;
-  run_and_check(p1, init, stats_enabled, run_config().with_widening(2));
+  {
+    variable_factory_t vfac;
+    auto p2 = cfg2(vfac);
+    crab::outs() << *p2 << "\n";
+    z_rgn_bool_int_t init;
+    run_and_check(p2, init, stats_enabled, run_config().with_widening(2));
+  }
 
   return 0;
 }
