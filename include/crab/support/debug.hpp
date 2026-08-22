@@ -76,4 +76,31 @@ void CrabEnableWarningMsg(bool b);
 extern bool CrabSanityCheckFlag;
 void CrabEnableSanityChecks(bool b);
 
+class source_location {
+private:
+  std::string m_filename;
+  unsigned m_line;
+  unsigned m_column;
+  unsigned m_id;
+  bool m_valid;
+
+public:
+  // Constructors
+  source_location();
+  source_location(const std::string &filename, unsigned line, unsigned column, unsigned id);
+
+  // Default copy constructor and assignment operator
+  source_location(const source_location &) = default;
+  source_location &operator=(const source_location &) = default;
+  bool is_valid() const { return m_valid; }
+  unsigned get_id() const { return m_id; }
+
+  // Output
+  void write(crab_os &o) const;
+  friend crab_os &operator<<(crab_os &o, const source_location &loc) {
+    loc.write(o);
+    return o;
+  }
+};
+
 } // end namespace crab
