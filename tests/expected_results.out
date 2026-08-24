@@ -2461,12 +2461,12 @@ entry:
   i := make_ref(region_0:region(int),4,as_0);
   x := make_ref(region_1:region(int),4,as_1);
   y := make_ref(region_2:region(int),4,as_2);
-  crab_intrinsic(add_tag,region_0:region(int),i:ref,1:int32);
-  crab_intrinsic(add_tag,region_1:region(int),x:ref,2:int32);
-  crab_intrinsic(add_tag,region_2:region(int),y:ref,3:int32);
   store_to_ref(region_0:region(int),i:ref,0:int32);
   store_to_ref(region_1:region(int),x:ref,1:int32);
   store_to_ref(region_2:region(int),y:ref,0:int32);
+  crab_intrinsic(add_tag,region_0:region(int),i:ref,1:int32);
+  crab_intrinsic(add_tag,region_1:region(int),x:ref,2:int32);
+  crab_intrinsic(add_tag,region_2:region(int),y:ref,3:int32);
   goto bb1;
 bb1:
   goto bb1_t,bb1_f;
@@ -2513,6 +2513,35 @@ user-defined assertion checker
 4  Number of total safe checks
 0  Number of total error checks
 1  Number of total warning checks
+0  Number of total unreachable checks
+
+entry:
+  region_init(region_0:region(int));
+  region_init(region_1:region(int));
+  p := make_ref(region_0:region(int),4,as_0);
+  crab_intrinsic(add_tag,region_0:region(int),p:ref,1:int32);
+  crab_intrinsic(add_tag,region_0:region(int),p:ref,2:int32);
+  crab_intrinsic(remove_tag,region_0:region(int),p:ref,1:int32);
+  q1 := make_ref(region_1:region(int),4,as_1);
+  q2 := make_ref(region_1:region(int),4,as_2);
+  crab_intrinsic(add_tag,region_1:region(int),q1:ref,3:int32);
+  crab_intrinsic(remove_tag,region_1:region(int),q1:ref,3:int32);
+  goto ret;
+ret:
+  b1 = crab_intrinsic(does_not_have_tag,region_0:region(int),p:ref,1:int32);
+  assert(b1);
+  b1 = crab_intrinsic(does_not_have_tag,region_0:region(int),p:ref,2:int32);
+  assert(b1);
+  b1 = crab_intrinsic(does_not_have_tag,region_1:region(int),q1:ref,3:int32);
+  assert(b1);
+
+
+Invariants using Region
+Abstract trace: entry ret
+user-defined assertion checker
+1  Number of total safe checks
+0  Number of total error checks
+2  Number of total warning checks
 0  Number of total unreachable checks
 
 === End ./test-bin/region-8 ===
