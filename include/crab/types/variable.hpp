@@ -268,6 +268,7 @@ public:
 private:
   VariableName _n;
   variable_type m_ty;
+  boost::optional<source_location> m_loc;
 
 public:
   /* ========== Begin internal API  ============= */
@@ -320,6 +321,25 @@ public:
   }
 
   void dump(crab::crab_os &o) const { o << _n << ":" << get_type(); }
+
+  void set_debug_info(const source_location &loc) {
+    m_loc = loc;
+  }
+
+  source_location get_debug_info() const {
+    if (m_loc) {
+      return *m_loc;
+    } else {
+      return source_location();
+    }
+  }
+
+  void dump_with_debug_info(crab::crab_os &o) const {
+    o << _n << ":" << get_type();
+    if (m_loc) {
+      o << " [" << *m_loc << "]";
+    }
+  }
 
   friend crab::crab_os &operator<<(crab::crab_os &o,
                                    const variable<Number, VariableName> &v) {

@@ -41,4 +41,27 @@ crab_os &get_msg_stream(bool timestamp) {
   }
   return *result;
 }
+
+source_location::source_location()
+    : m_filename(""), m_line(0), m_column(0), m_id(0), m_valid(false) {}
+
+source_location::source_location(const std::string &filename, unsigned line,
+                                 unsigned column, unsigned id)
+    : m_filename(filename), m_line(line), m_column(column), m_id(id),
+      m_valid(true) {}
+
+void source_location::write(crab_os &o) const {
+  if (!m_valid) {
+    o << "<unknown>";
+    return;
+  }
+
+  o << m_filename;
+  if (m_line > 0) {
+    o << ":" << m_line;
+    if (m_column > 0) {
+      o << ":" << m_column;
+    }
+  }
+}
 } // namespace crab

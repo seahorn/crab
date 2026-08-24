@@ -688,6 +688,12 @@ public:
     return *this;
   }
 
+  // return null if k is not found
+  const mapped_type* find(const Key &k) const {
+    assert(!is_bottom());
+    return m_tree.find(k);
+  }
+
   mapped_type at(const Key &k) const {
     if (is_bottom()) {
       CRAB_ERROR("separate_discrete_domain::at is undefined on bottom");
