@@ -119,6 +119,9 @@ public:
     return res;
   }
 
+  variable_type_kind get_type_kind() const { return m_kind; }
+  unsigned get_bitwidth() const { return m_bitwidth; }
+
   bool is_typed() const { return m_kind != UNK_TYPE; }
 
   //// scalars
