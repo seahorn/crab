@@ -124,35 +124,8 @@ void type_value::write(crab::crab_os &o) const {
   } else if (is_top()) {
     o << "top";
   } else {
-    variable_type ty = get();
-    if (ty.is_bool()) {
-      o << "bool";
-    } else if (ty.is_integer()) {
-	o << "int" << ty.get_integer_bitwidth();
-    } else if (ty.is_real()) {
-      o << "real";
-    } else if (ty.is_reference()) {
-      o << "ref";
-    } else if (ty.is_bool_array()) {
-      o << "arr(bool)";
-    } else if (ty.is_integer_array()) {
-      o << "arr(int)";
-    } else if (ty.is_real_array()) {
-      o << "arr(real)";
-    } else if (ty.is_unknown_region()) {
-      o << "region(unknown)";
-    } else if (ty.is_bool_region()) {
-      o << "region(bool)";
-    } else if (ty.is_integer_region()) {
-      o << "region(int" << ty.get_integer_region_bitwidth() << ")";
-    } else if (ty.is_real_region()) {
-      o << "region(real)";
-    } else if (ty.is_reference_region()) {
-      o << "region(ref)";
-    } else {
-      // this shouldn't happen
-      o << "top";
-    }
+    // variable_type::write is the single definition of how a type is printed.
+    get().write(o);
   }  
 }
   

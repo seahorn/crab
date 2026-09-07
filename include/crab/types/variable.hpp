@@ -209,7 +209,7 @@ public:
       o << "region(bool)";
       break;
     case REG_INT_TYPE:
-      o << "region(int)";
+      o << "region(int" << m_bitwidth << ")";
       break;
     case REG_REAL_TYPE:
       o << "region(real)";
@@ -217,8 +217,8 @@ public:
     case REG_REF_TYPE:
       o << "region(ref)";
       break;
-    default:
-      o << "unknown";
+    case UNK_TYPE:
+      o << "untyped";
       break;
     }
   }
