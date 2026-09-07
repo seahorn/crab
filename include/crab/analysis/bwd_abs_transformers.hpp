@@ -111,7 +111,7 @@ public:
 
   abs_dom_t preconditions() { return m_pre; }
 
-  virtual void exec(bin_op_t &stmt) override {
+  virtual void exec(const bin_op_t &stmt) override {
     auto op = conv_op<domains::arith_operation_t>(stmt.op());
     if (!op || op >= domains::OP_UDIV) {
       // ignore UDIV, SREM, UREM
@@ -153,7 +153,7 @@ public:
   //     x := e2;
   //     goto post;
   //   post: ....
-  virtual void exec(select_t &stmt) override {
+  virtual void exec(const select_t &stmt) override {
     abs_dom_t old_pre = get_forward_invariant(&stmt);
 
     // -- one of the two branches is false
@@ -186,7 +186,7 @@ public:
   }
 
   // x := e
-  virtual void exec(assign_t &stmt) override {
+  virtual void exec(const assign_t &stmt) override {
     abs_dom_t invariant = get_forward_invariant(&stmt);
 
     CRAB_LOG("backward-tr", auto rhs = stmt.rhs();
@@ -200,7 +200,7 @@ public:
 
   // assume(c)
   // the precondition must contain c so forward and backward are the same.
-  virtual void exec(assume_t &stmt) override {
+  virtual void exec(const assume_t &stmt) override {
     CRAB_LOG("backward-tr", crab::outs() << "** " << stmt << "\n"
                                          << "\tPOST=" << m_pre << "\n");
     m_pre += stmt.constraint();
@@ -208,7 +208,7 @@ public:
   }
 
   // assert(c)
-  virtual void exec(assert_t &stmt) override {
+  virtual void exec(const assert_t &stmt) override {
     if (!m_ignore_assert) {
       CRAB_LOG("backward-tr", crab::outs() << "** " << stmt << "\n"
                                            << "\tPOST=" << m_pre << "\n");
@@ -233,17 +233,17 @@ public:
   }
 
   // similar to assume(false)
-  virtual void exec(unreach_t &stmt) override {
+  virtual void exec(const unreach_t &stmt) override {
     m_pre.set_to_bottom();
   }
 
   // x := *
   // x can be anything before the assignment
-  virtual void exec(havoc_t &stmt) override {
+  virtual void exec(const havoc_t &stmt) override {
     m_pre -= stmt.get_variable();
   }
 
-  virtual void exec(int_cast_t &stmt) override {
+  virtual void exec(const int_cast_t &stmt) override {
     abs_dom_t invariant = get_forward_invariant(&stmt);
     CRAB_LOG("backward-tr", crab::outs() << "** " << stmt << "\n"
                                          << "\tPOST=" << m_pre << "\n");
@@ -251,23 +251,23 @@ public:
     CRAB_LOG("backward-tr", crab::outs() << "\tPRE=" << m_pre << "\n");
   }
 
-  virtual void exec(bool_assign_cst_t &stmt) override {
+  virtual void exec(const bool_assign_cst_t &stmt) override {
     m_pre -= stmt.lhs();
   }
   
-  virtual void exec(bool_assign_var_t &stmt) override {
+  virtual void exec(const bool_assign_var_t &stmt) override {
     m_pre -= stmt.lhs();
   }
   
-  virtual void exec(bool_bin_op_t &stmt) override {
+  virtual void exec(const bool_bin_op_t &stmt) override {
     m_pre -= stmt.lhs();
   }
   
-  virtual void exec(bool_select_t &stmt) override {
+  virtual void exec(const bool_select_t &stmt) override {
     m_pre -= stmt.lhs();
   }
 
-  virtual void exec(bool_assume_t &stmt) override {
+  virtual void exec(const bool_assume_t &stmt) override {
     // same as forward
     CRAB_LOG("backward-tr", crab::outs() << "** " << stmt << "\n"
                                          << "\tPOST=" << m_pre << "\n");
@@ -275,7 +275,7 @@ public:
     CRAB_LOG("backward-tr", crab::outs() << "\tPRE=" << m_pre << "\n");
   }
 
-  virtual void exec(bool_assert_t &stmt) override {
+  virtual void exec(const bool_assert_t &stmt) override {
     if (!m_ignore_assert) {
       CRAB_LOG("backward-tr", crab::outs() << "** " << stmt << "\n"
                                            << "\tPOST=" << m_pre << "\n");
@@ -291,7 +291,7 @@ public:
     }
   }
 
-  virtual void exec(arr_init_t &stmt) override {
+  virtual void exec(const arr_init_t &stmt) override {
     abs_dom_t invariant = get_forward_invariant(&stmt);
 
     CRAB_LOG("backward-tr", crab::outs()
@@ -304,7 +304,7 @@ public:
     CRAB_LOG("backward-tr", crab::outs() << "\tPRE=" << m_pre << "\n");
   }
 
-  virtual void exec(arr_load_t &stmt) override {
+  virtual void exec(const arr_load_t &stmt) override {
     abs_dom_t invariant = get_forward_invariant(&stmt);
 
     CRAB_LOG("backward-tr", crab::outs()
@@ -316,7 +316,7 @@ public:
     CRAB_LOG("backward-tr", crab::outs() << "\tPRE=" << m_pre << "\n");
   }
 
-  virtual void exec(arr_store_t &stmt) override {
+  virtual void exec(const arr_store_t &stmt) override {
     abs_dom_t invariant = get_forward_invariant(&stmt);
     CRAB_LOG("backward-tr", crab::outs()
                                 << "** " << stmt << "\n"
@@ -335,7 +335,7 @@ public:
     CRAB_LOG("backward-tr", crab::outs() << "\tPRE=" << m_pre << "\n");
   }
 
-  virtual void exec(arr_assign_t &stmt) override {
+  virtual void exec(const arr_assign_t &stmt) override {
     abs_dom_t invariant = get_forward_invariant(&stmt);
     CRAB_LOG("backward-tr", crab::outs()
                                 << "** " << stmt << "\n"
@@ -346,29 +346,29 @@ public:
   }
 
   // NOT IMPLEMENTED
-  virtual void exec(region_init_t &stmt) override {}
-  virtual void exec(region_copy_t &stmt) override {}
-  virtual void exec(region_cast_t &stmt) override {}  
-  virtual void exec(make_ref_t &stmt) override {}
-  virtual void exec(remove_ref_t &stmt) override {}  
-  virtual void exec(load_from_ref_t &stmt) override {}
-  virtual void exec(store_to_ref_t &stmt) override {}
-  virtual void exec(gep_ref_t &stmt) override {}
-  virtual void exec(assume_ref_t &stmt) override {}
-  virtual void exec(assert_ref_t &stmt) override {}
-  virtual void exec(select_ref_t &stmt) override {}
-  virtual void exec(int_to_ref_t &stmt) override {}
-  virtual void exec(ref_to_int_t &stmt) override {}
+  virtual void exec(const region_init_t &stmt) override {}
+  virtual void exec(const region_copy_t &stmt) override {}
+  virtual void exec(const region_cast_t &stmt) override {}  
+  virtual void exec(const make_ref_t &stmt) override {}
+  virtual void exec(const remove_ref_t &stmt) override {}  
+  virtual void exec(const load_from_ref_t &stmt) override {}
+  virtual void exec(const store_to_ref_t &stmt) override {}
+  virtual void exec(const gep_ref_t &stmt) override {}
+  virtual void exec(const assume_ref_t &stmt) override {}
+  virtual void exec(const assert_ref_t &stmt) override {}
+  virtual void exec(const select_ref_t &stmt) override {}
+  virtual void exec(const int_to_ref_t &stmt) override {}
+  virtual void exec(const ref_to_int_t &stmt) override {}
 
   /// -- Call and return can be redefined by derived classes
 
-  virtual void exec(callsite_t &cs) override {
+  virtual void exec(const callsite_t &cs) override {
     for (const variable_t &vt : cs.get_lhs()) {
       m_pre -= vt;
     }
   }
 
-  virtual void exec(intrinsic_t &cs) override {
+  virtual void exec(const intrinsic_t &cs) override {
     abs_dom_t invariant = get_forward_invariant(&cs);
     m_pre.backward_intrinsic(cs.get_intrinsic_name(), cs.get_args(),
                              cs.get_lhs(), std::move(invariant));

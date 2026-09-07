@@ -38,7 +38,7 @@ public:
 
     // check all statement are well typed
     type_checker_visitor<CFG> vis;
-    for (auto &b : boost::make_iterator_range(m_cfg.begin(), m_cfg.end())) {
+    for (auto const&b : boost::make_iterator_range(m_cfg.begin(), m_cfg.end())) {
       b.accept(&vis);
     }
 
@@ -48,50 +48,50 @@ public:
 
 template <class CFG>
 class type_checker_visitor
-    : public statement_visitor<typename CFG::basic_block_label_t,
-                               typename CFG::number_t,
-                               typename CFG::varname_t> {
+    : public const_statement_visitor<typename CFG::basic_block_label_t,
+                                     typename CFG::number_t,
+                                     typename CFG::varname_t> {
 
   using B = typename CFG::basic_block_label_t;
   using V = typename CFG::varname_t;
   using N = typename CFG::number_t;
   using statement_t = typename CFG::statement_t;
 
-  using bin_op_t = typename statement_visitor<B, N, V>::bin_op_t;
-  using assign_t = typename statement_visitor<B, N, V>::assign_t;
-  using assume_t = typename statement_visitor<B, N, V>::assume_t;
-  using assert_t = typename statement_visitor<B, N, V>::assert_t;
-  using int_cast_t = typename statement_visitor<B, N, V>::int_cast_t;
-  using select_t = typename statement_visitor<B, N, V>::select_t;
-  using havoc_t = typename statement_visitor<B, N, V>::havoc_t;
-  using unreach_t = typename statement_visitor<B, N, V>::unreach_t;
-  using callsite_t = typename statement_visitor<B, N, V>::callsite_t;
-  using intrinsic_t = typename statement_visitor<B, N, V>::intrinsic_t;
-  using arr_init_t = typename statement_visitor<B, N, V>::arr_init_t;
-  using arr_store_t = typename statement_visitor<B, N, V>::arr_store_t;
-  using arr_load_t = typename statement_visitor<B, N, V>::arr_load_t;
-  using arr_assign_t = typename statement_visitor<B, N, V>::arr_assign_t;
-  using make_ref_t = typename statement_visitor<B, N, V>::make_ref_t;
-  using remove_ref_t = typename statement_visitor<B, N, V>::remove_ref_t;
-  using region_init_t = typename statement_visitor<B, N, V>::region_init_t;
-  using region_copy_t = typename statement_visitor<B, N, V>::region_copy_t;
-  using region_cast_t = typename statement_visitor<B, N, V>::region_cast_t;
-  using load_from_ref_t = typename statement_visitor<B, N, V>::load_from_ref_t;
-  using store_to_ref_t = typename statement_visitor<B, N, V>::store_to_ref_t;
-  using gep_ref_t = typename statement_visitor<B, N, V>::gep_ref_t;
-  using assume_ref_t = typename statement_visitor<B, N, V>::assume_ref_t;
-  using assert_ref_t = typename statement_visitor<B, N, V>::assert_ref_t;
-  using select_ref_t = typename statement_visitor<B, N, V>::select_ref_t;
-  using int_to_ref_t = typename statement_visitor<B, N, V>::int_to_ref_t;
-  using ref_to_int_t = typename statement_visitor<B, N, V>::ref_to_int_t;
-  using bool_bin_op_t = typename statement_visitor<B, N, V>::bool_bin_op_t;
+  using bin_op_t = typename const_statement_visitor<B, N, V>::bin_op_t;
+  using assign_t = typename const_statement_visitor<B, N, V>::assign_t;
+  using assume_t = typename const_statement_visitor<B, N, V>::assume_t;
+  using assert_t = typename const_statement_visitor<B, N, V>::assert_t;
+  using int_cast_t = typename const_statement_visitor<B, N, V>::int_cast_t;
+  using select_t = typename const_statement_visitor<B, N, V>::select_t;
+  using havoc_t = typename const_statement_visitor<B, N, V>::havoc_t;
+  using unreach_t = typename const_statement_visitor<B, N, V>::unreach_t;
+  using callsite_t = typename const_statement_visitor<B, N, V>::callsite_t;
+  using intrinsic_t = typename const_statement_visitor<B, N, V>::intrinsic_t;
+  using arr_init_t = typename const_statement_visitor<B, N, V>::arr_init_t;
+  using arr_store_t = typename const_statement_visitor<B, N, V>::arr_store_t;
+  using arr_load_t = typename const_statement_visitor<B, N, V>::arr_load_t;
+  using arr_assign_t = typename const_statement_visitor<B, N, V>::arr_assign_t;
+  using make_ref_t = typename const_statement_visitor<B, N, V>::make_ref_t;
+  using remove_ref_t = typename const_statement_visitor<B, N, V>::remove_ref_t;
+  using region_init_t = typename const_statement_visitor<B, N, V>::region_init_t;
+  using region_copy_t = typename const_statement_visitor<B, N, V>::region_copy_t;
+  using region_cast_t = typename const_statement_visitor<B, N, V>::region_cast_t;
+  using load_from_ref_t = typename const_statement_visitor<B, N, V>::load_from_ref_t;
+  using store_to_ref_t = typename const_statement_visitor<B, N, V>::store_to_ref_t;
+  using gep_ref_t = typename const_statement_visitor<B, N, V>::gep_ref_t;
+  using assume_ref_t = typename const_statement_visitor<B, N, V>::assume_ref_t;
+  using assert_ref_t = typename const_statement_visitor<B, N, V>::assert_ref_t;
+  using select_ref_t = typename const_statement_visitor<B, N, V>::select_ref_t;
+  using int_to_ref_t = typename const_statement_visitor<B, N, V>::int_to_ref_t;
+  using ref_to_int_t = typename const_statement_visitor<B, N, V>::ref_to_int_t;
+  using bool_bin_op_t = typename const_statement_visitor<B, N, V>::bool_bin_op_t;
   using bool_assign_cst_t =
-      typename statement_visitor<B, N, V>::bool_assign_cst_t;
+      typename const_statement_visitor<B, N, V>::bool_assign_cst_t;
   using bool_assign_var_t =
-      typename statement_visitor<B, N, V>::bool_assign_var_t;
-  using bool_assume_t = typename statement_visitor<B, N, V>::bool_assume_t;
-  using bool_assert_t = typename statement_visitor<B, N, V>::bool_assert_t;
-  using bool_select_t = typename statement_visitor<B, N, V>::bool_select_t;
+      typename const_statement_visitor<B, N, V>::bool_assign_var_t;
+  using bool_assume_t = typename const_statement_visitor<B, N, V>::bool_assume_t;
+  using bool_assert_t = typename const_statement_visitor<B, N, V>::bool_assert_t;
+  using bool_select_t = typename const_statement_visitor<B, N, V>::bool_select_t;
 
   using lin_exp_t = ikos::linear_expression<N, V>;
   using lin_cst_t = ikos::linear_constraint<N, V>;
@@ -133,7 +133,7 @@ class type_checker_visitor
   }
 
   // check variable is a number
-  void check_num(const variable_t &v, std::string msg, statement_t &s) {
+  void check_num(const variable_t &v, std::string msg, const statement_t &s) {
     if (!v.get_type().is_integer() && !v.get_type().is_real()) {
       crab::crab_string_os os;
       os << "(type checking) " << msg << " in " << s;
@@ -142,7 +142,7 @@ class type_checker_visitor
   }
 
   // check variable is an integer or boolean
-  void check_int_or_bool(const variable_t &v, std::string msg, statement_t &s) {
+  void check_int_or_bool(const variable_t &v, std::string msg, const statement_t &s) {
     if (!v.get_type().is_integer() && !v.get_type().is_bool()) {
       crab::crab_string_os os;
       os << "(type checking) " << msg << " in " << s;
@@ -151,7 +151,7 @@ class type_checker_visitor
   }
 
   // check variable is an integer
-  void check_int(const variable_t &v, std::string msg, statement_t &s) {
+  void check_int(const variable_t &v, std::string msg, const statement_t &s) {
     if (!v.get_type().is_integer()) {
       crab::crab_string_os os;
       os << "(type checking) " << msg << " in " << s;
@@ -160,7 +160,7 @@ class type_checker_visitor
   }
 
   // check variable is a boolean
-  void check_bool(const variable_t &v, std::string msg, statement_t &s) {
+  void check_bool(const variable_t &v, std::string msg, const statement_t &s) {
     if (!v.get_type().is_bool()) {
       crab::crab_string_os os;
       os << "(type checking) " << msg << " in " << s;
@@ -169,7 +169,7 @@ class type_checker_visitor
   }
 
   // check variable is region
-  void check_region(const variable_t &v, statement_t &s) {
+  void check_region(const variable_t &v, const statement_t &s) {
     if (!v.get_type().is_region()) {
       crab::crab_string_os os;
       os << "(type checking) " << v << " is not a region variable in " << s;
@@ -178,7 +178,7 @@ class type_checker_visitor
   }
 
   // check variable is a reference
-  void check_ref(const variable_t &v, std::string msg, statement_t &s) {
+  void check_ref(const variable_t &v, std::string msg, const statement_t &s) {
     if (!v.get_type().is_reference()) {
       crab::crab_string_os os;
       os << "(type checking) " << msg << " in " << s;
@@ -187,7 +187,7 @@ class type_checker_visitor
   }
 
   void check_ref(const variable_or_constant_t &v, std::string msg,
-                 statement_t &s) {
+                 const statement_t &s) {
     if (!v.get_type().is_reference()) {
       crab::crab_string_os os;
       os << "(type checking) " << v << " is not a reference";
@@ -201,7 +201,7 @@ class type_checker_visitor
 
   void check_region_consistent_with_data(const variable_t &rgn,
                                          const variable_type &data_type,
-                                         statement_t &s) {
+                                         const statement_t &s) {
     if (!rgn.get_type().is_region()) {
       return;
     }
@@ -233,7 +233,7 @@ class type_checker_visitor
 
   // check two variables have same types
   void check_same_type(const variable_t &v1, const variable_t &v2,
-                       std::string msg, statement_t &s) {
+                       std::string msg, const statement_t &s) {
     if (v1.get_type() != v2.get_type()) {
       crab::crab_string_os os;
       os << "(type checking) " << msg << " in " << s;
@@ -243,7 +243,7 @@ class type_checker_visitor
 
   // check two variables have different names
   void check_different_name(const variable_t &v1, const variable_t &v2,
-                            std::string msg, statement_t &s) {
+                            std::string msg, const statement_t &s) {
     if (v1 == v2) {
       crab::crab_string_os os;
       os << "(type checking) " << msg << " in " << s;
@@ -252,7 +252,7 @@ class type_checker_visitor
   }
 
   // check linear expressinon is just a number or variable
-  void check_num_or_var(const lin_exp_t &e, std::string msg, statement_t &s) {
+  void check_num_or_var(const lin_exp_t &e, std::string msg, const statement_t &s) {
     if (!(e.is_constant() || e.get_variable())) {
       crab::crab_string_os os;
       os << "(type checking) " << msg << " in " << s;
@@ -261,7 +261,7 @@ class type_checker_visitor
   }
 
   // check variable is an array
-  void check_is_array(const variable_t &v, statement_t &s) {
+  void check_is_array(const variable_t &v, const statement_t &s) {
     if (!v.get_type().is_array()) {
       crab::crab_string_os os;
       os << "(type checking) " << v << " must be an array variable in " << s;
@@ -271,7 +271,7 @@ class type_checker_visitor
 
   // v1 is array type and v2 is a scalar type consistent with v1
   void check_array_and_scalar_type(const variable_t &v1, const variable_t &v2,
-                                   statement_t &s) {
+                                   const statement_t &s) {
     if (v1.get_type().is_bool_array()) {
       if (v2.get_type().is_bool())
         return;
@@ -296,7 +296,7 @@ class type_checker_visitor
 public:
   type_checker_visitor() {}
 
-  virtual void visit(bin_op_t &s) override {
+  virtual void visit(const bin_op_t &s) override {
     const variable_t &lhs = s.lhs();
     const lin_exp_t &op1 = s.left();
     const lin_exp_t &op2 = s.right();
@@ -322,7 +322,7 @@ public:
     }
   }
 
-  virtual void visit(assign_t &s) override {
+  virtual void visit(const assign_t &s) override {
     const variable_t &lhs = s.lhs();
     const lin_exp_t &rhs = s.rhs();
 
@@ -336,7 +336,7 @@ public:
     }
   }
 
-  virtual void visit(assume_t &s) override {
+  virtual void visit(const assume_t &s) override {
     bool first = true;
     const variable_t *first_var = nullptr;
     for (auto const &v : s.constraint().variables()) {
@@ -352,7 +352,7 @@ public:
     }
   }
 
-  virtual void visit(assert_t &s) override {
+  virtual void visit(const assert_t &s) override {
     bool first = true;
     const variable_t *first_var;
     for (auto const &v : s.constraint().variables()) {
@@ -368,7 +368,7 @@ public:
     }
   }
 
-  virtual void visit(select_t &s) override {
+  virtual void visit(const select_t &s) override {
     check_num(s.lhs(), "lhs must be integer or real", s);
     check_varname(s.lhs());
     for (auto const &v : s.left().variables()) {
@@ -397,7 +397,7 @@ public:
     }
   }
 
-  virtual void visit(int_cast_t &s) override {
+  virtual void visit(const int_cast_t &s) override {
     const variable_t &src = s.src();
     const variable_t &dst = s.dst();
 
@@ -431,11 +431,11 @@ public:
     }
   }
 
-  virtual void visit(havoc_t &) override {}
+  virtual void visit(const havoc_t &) override {}
 
-  virtual void visit(unreach_t &) override {}
+  virtual void visit(const unreach_t &) override {}
 
-  virtual void visit(bool_bin_op_t &s) override {
+  virtual void visit(const bool_bin_op_t &s) override {
     check_varname(s.lhs());
     check_varname(s.left());
     check_varname(s.right());
@@ -444,7 +444,7 @@ public:
     check_bool(s.right(), "second operand must be boolean", s);
   };
 
-  virtual void visit(bool_assign_cst_t &s) override {
+  virtual void visit(const bool_assign_cst_t &s) override {
     check_bool(s.lhs(), "lhs must be boolean", s);
     check_varname(s.lhs());
     bool first = true;
@@ -477,24 +477,24 @@ public:
     }
   };
 
-  virtual void visit(bool_assign_var_t &s) override {
+  virtual void visit(const bool_assign_var_t &s) override {
     check_bool(s.lhs(), "lhs must be boolean", s);
     check_bool(s.rhs(), "rhs must be boolean", s);
     check_varname(s.lhs());
     check_varname(s.rhs());
   };
 
-  virtual void visit(bool_assume_t &s) override {
+  virtual void visit(const bool_assume_t &s) override {
     check_bool(s.cond(), "condition must be boolean", s);
     check_varname(s.cond());
   };
 
-  virtual void visit(bool_assert_t &s) override {
+  virtual void visit(const bool_assert_t &s) override {
     check_bool(s.cond(), "condition must be boolean", s);
     check_varname(s.cond());
   };
 
-  virtual void visit(bool_select_t &s) override {
+  virtual void visit(const bool_select_t &s) override {
     check_bool(s.lhs(), "lhs must be boolean", s);
     check_bool(s.lhs(), "condition must be boolean", s);
     check_bool(s.left(), "first operand must be boolean", s);
@@ -504,7 +504,7 @@ public:
     check_varname(s.right());
   };
 
-  virtual void visit(arr_init_t &s) override {
+  virtual void visit(const arr_init_t &s) override {
     // TODO: check that e_sz is the same number that v's bitwidth
     const variable_t &a = s.array();
     const lin_exp_t &e_sz = s.elem_size();
@@ -527,7 +527,7 @@ public:
     }
   }
 
-  virtual void visit(arr_store_t &s) override {
+  virtual void visit(const arr_store_t &s) override {
     // TODO: check that e_sz is the same number that v's bitwidth
     const variable_t &a = s.array();
     check_is_array(a, s);
@@ -563,7 +563,7 @@ public:
     }
   }
 
-  virtual void visit(arr_load_t &s) override {
+  virtual void visit(const arr_load_t &s) override {
     // TODO: check that e_sz is the same number that lhs's bitwidth
     const variable_t &a = s.array();
     const lin_exp_t &e_sz = s.elem_size();
@@ -580,7 +580,7 @@ public:
     check_array_and_scalar_type(a, lhs, s);
   }
 
-  virtual void visit(arr_assign_t &s) override {
+  virtual void visit(const arr_assign_t &s) override {
     const variable_t &lhs = s.lhs();
     const variable_t &rhs = s.rhs();
     check_is_array(lhs, s);
@@ -590,7 +590,7 @@ public:
     check_same_type(lhs, rhs, "array assign variables must have same type", s);
   }
 
-  virtual void visit(callsite_t &s) override {
+  virtual void visit(const callsite_t &s) override {
     // The type consistency with the callee parameters is done
     // elsewhere.
     for (const variable_t &v : s.get_lhs()) {
@@ -601,7 +601,7 @@ public:
     }
   }
 
-  virtual void visit(intrinsic_t &s) override {
+  virtual void visit(const intrinsic_t &s) override {
     for (const variable_t &v : s.get_lhs()) {
       check_varname(v);
     }
@@ -612,16 +612,16 @@ public:
     }
   }
 
-  virtual void visit(region_init_t &s) override { check_region(s.region(), s); }
+  virtual void visit(const region_init_t &s) override { check_region(s.region(), s); }
 
-  virtual void visit(region_copy_t &s) override {
+  virtual void visit(const region_copy_t &s) override {
     check_region(s.lhs_region(), s);
     check_region(s.rhs_region(), s);
     check_same_type(s.lhs_region(), s.rhs_region(),
                     "region_copy must have same types", s);
   }
 
-  virtual void visit(region_cast_t &s) override {
+  virtual void visit(const region_cast_t &s) override {
     check_region(s.src(), s);
     check_region(s.dst(), s);
     if (!(s.src().get_type().is_unknown_region() ^
@@ -634,38 +634,38 @@ public:
     }
   }
 
-  virtual void visit(make_ref_t &s) override {
+  virtual void visit(const make_ref_t &s) override {
     check_region(s.region(), s);
     check_ref(s.lhs(), "", s);
   }
 
-  virtual void visit(remove_ref_t &s) override {
+  virtual void visit(const remove_ref_t &s) override {
     check_region(s.region(), s);
     check_ref(s.ref(), "", s);
   }
 
-  virtual void visit(load_from_ref_t &s) override {
+  virtual void visit(const load_from_ref_t &s) override {
     check_region(s.region(), s);
     check_ref(s.ref(), "", s);
     check_region_consistent_with_data(s.region(), s.lhs().get_type(), s);
   }
 
-  virtual void visit(store_to_ref_t &s) override {
+  virtual void visit(const store_to_ref_t &s) override {
     check_region(s.region(), s);
     check_ref(s.ref(), "", s);
     check_region_consistent_with_data(s.region(), s.val().get_type(), s);
   }
 
-  virtual void visit(gep_ref_t &s) override {
+  virtual void visit(const gep_ref_t &s) override {
     check_region(s.lhs_region(), s);
     check_region(s.rhs_region(), s);
     check_ref(s.lhs(), "", s);
     check_ref(s.rhs(), "", s);
   }
 
-  virtual void visit(assume_ref_t &s) override {}
-  virtual void visit(assert_ref_t &s) override {}
-  virtual void visit(select_ref_t &s) override {
+  virtual void visit(const assume_ref_t &s) override {}
+  virtual void visit(const assert_ref_t &s) override {}
+  virtual void visit(const select_ref_t &s) override {
     // TODO: check region operands
     check_ref(s.lhs_ref(), "lhs must be reference", s);
     check_bool(s.cond(), "condition must be boolean", s);
@@ -677,12 +677,12 @@ public:
     if (s.right_ref().is_variable())
       check_varname(s.right_ref().get_variable());
   }
-  virtual void visit(int_to_ref_t &s) override {
+  virtual void visit(const int_to_ref_t &s) override {
     check_region(s.region(), s);
     check_ref(s.ref_var(), "", s);
     check_num(s.int_var(), "first input must be a number", s);
   }
-  virtual void visit(ref_to_int_t &s) override {
+  virtual void visit(const ref_to_int_t &s) override {
     check_region(s.region(), s);
     check_ref(s.ref_var(), "", s);
     check_num(s.int_var(), "first input must be a number", s);

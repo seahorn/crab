@@ -76,9 +76,9 @@ private:
   //! Given a basic block and the invariant at the entry it produces
   //! the invariant at the exit of the block.
   abs_dom_t analyze(const basic_block_label_t &node, abs_dom_t &&inv) override {
-    auto &b = get_cfg().get_node(node);
+    auto const &b = get_cfg().get_node(node);
     m_abs_tr->set_abs_value(std::move(inv));
-    for (auto &s : b) {
+    for (auto const &s : b) {
       s.accept(&*m_abs_tr);
     }
     // We cannot avoid the copy of res because we cannot move

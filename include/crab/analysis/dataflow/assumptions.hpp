@@ -152,7 +152,7 @@ protected:
   /** generate id's for assumptions **/
   unsigned m_id;
 
-  static bool can_overflow(statement_t &s) {
+  static bool can_overflow(const statement_t &s) {
     // TODO: cover select/assume with conditions that can overflow
 
     if (s.is_int_cast()) {
@@ -309,7 +309,7 @@ class assumption_naive_analysis : public assumption_analysis<CFG> {
       return; // already in visited
 
     bb_t &bb = this->m_cfg.get_node(r);
-    for (auto &s : boost::make_iterator_range(bb.begin(), bb.end())) {
+    for (auto const &s : boost::make_iterator_range(bb.begin(), bb.end())) {
       if (&s == a) {
         break;
       }
@@ -357,7 +357,7 @@ class assumption_dataflow_analysis : public assumption_analysis<CFG> {
   using assertion_crawler_t = crab::analyzer::assertion_crawler<CFG>;
   using assert_map_domain_t = typename assertion_crawler_t::assert_map_domain_t;
   using typename assumption_analysis_t::vector_assumption_ptr;
-  using pp_inv_map_t = std::map<statement_t *, assert_map_domain_t>;
+  using pp_inv_map_t = std::map<const statement_t *, assert_map_domain_t>;
   using basic_block_t = typename CFG::basic_block_t;
 
 public:
@@ -376,7 +376,7 @@ public:
 
       // find out if the block is of interest
       bool op_can_overflow = false;
-      for (auto &s : bb) {
+      for (auto const &s : bb) {
         if (assumption_analysis_t::can_overflow(s)) {
           op_can_overflow = true;
           break;
@@ -402,7 +402,7 @@ public:
       pp_inv_map_t pp_in_map;
       assert_crawler.get_results(bb.label(), pp_in_map);
 
-      for (auto &s : boost::make_iterator_range(bb.begin(), bb.end())) {
+      for (auto const &s : boost::make_iterator_range(bb.begin(), bb.end())) {
         if (!assumption_analysis_t::can_overflow(s))
           continue;
 
