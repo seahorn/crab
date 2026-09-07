@@ -66,6 +66,13 @@ public:
 
     if (m_kind == BOOL_TYPE) {
       m_bitwidth = 1;
+    } else if (m_kind != INT_TYPE && m_kind != REG_INT_TYPE) {
+      // Only integers and integer regions have a bitwidth. A width passed for
+      // any other kind is meaningless -- in particular, array element widths
+      // come from the elem_size operand of each array access, not from the
+      // array type -- so normalize it away and keep the representation
+      // canonical.
+      m_bitwidth = 0;
     }
   }
 
@@ -128,7 +135,9 @@ public:
     return m_kind == INT_TYPE && m_bitwidth == bitwidth;
   }
   unsigned get_integer_bitwidth() const {
-    assert(m_kind == INT_TYPE);
+    if (m_kind != INT_TYPE) {
+      CRAB_ERROR("get_integer_bitwidth called on a non-integer type");
+    }
     return m_bitwidth;
   }
   bool is_real() const { return m_kind == REAL_TYPE; }
@@ -148,7 +157,10 @@ public:
   bool is_bool_region() const { return m_kind == REG_BOOL_TYPE; }
   bool is_integer_region() const { return m_kind == REG_INT_TYPE; }
   unsigned get_integer_region_bitwidth() const {
-    assert(m_kind == REG_INT_TYPE);
+    if (m_kind != REG_INT_TYPE) {
+      CRAB_ERROR(
+          "get_integer_region_bitwidth called on a non-integer-region type");
+    }
     return m_bitwidth;
   }
   bool is_real_region() const { return m_kind == REG_REAL_TYPE; }
@@ -272,7 +284,7 @@ private:
 public:
   /* ========== Begin internal API  ============= */
   /* Call this constructor only from abstract domains */
-  explicit variable(const VariableName &n) : _n(n), m_ty(crab::UNK_TYPE, 0) {}
+  explicit variable(const VariableName &n) : _n(n), m_ty(crab::UNK_TYPE) {}
 
   /* Call this constructor only from abstract domains */
   variable(const VariableName &n, variable_type_kind ty_kind)

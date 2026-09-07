@@ -30,11 +30,11 @@ std::unique_ptr<z_cfg_t> prog2(variable_factory_t &vfac) {
    */
   
   // Defining program variables
-  z_var b1(vfac["b1"], crab::BOOL_TYPE, 1);
-  z_var b2(vfac["b2"], crab::BOOL_TYPE, 1);
-  z_var b3(vfac["b3"], crab::BOOL_TYPE, 1);
-  z_var b4(vfac["b4"], crab::BOOL_TYPE, 1);
-  z_var b5(vfac["b5"], crab::BOOL_TYPE, 1);  
+  z_var b1(vfac["b1"], crab::BOOL_TYPE);
+  z_var b2(vfac["b2"], crab::BOOL_TYPE);
+  z_var b3(vfac["b3"], crab::BOOL_TYPE);
+  z_var b4(vfac["b4"], crab::BOOL_TYPE);
+  z_var b5(vfac["b5"], crab::BOOL_TYPE);  
   z_var x(vfac["x"], crab::INT_TYPE, 64);
 
   // entry and exit block
@@ -76,11 +76,11 @@ std::unique_ptr<z_cfg_t> prog3(variable_factory_t &vfac) {
    */
   
   // Defining program variables
-  z_var b1(vfac["b1"], crab::BOOL_TYPE, 1);
-  z_var b2(vfac["b2"], crab::BOOL_TYPE, 1);
-  z_var b3(vfac["b3"], crab::BOOL_TYPE, 1);
-  z_var b4(vfac["b4"], crab::BOOL_TYPE, 1);
-  z_var b5(vfac["b5"], crab::BOOL_TYPE, 1);  
+  z_var b1(vfac["b1"], crab::BOOL_TYPE);
+  z_var b2(vfac["b2"], crab::BOOL_TYPE);
+  z_var b3(vfac["b3"], crab::BOOL_TYPE);
+  z_var b4(vfac["b4"], crab::BOOL_TYPE);
+  z_var b5(vfac["b5"], crab::BOOL_TYPE);  
   z_var x(vfac["x"], crab::INT_TYPE, 64);
 
   // entry and exit block

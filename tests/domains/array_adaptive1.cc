@@ -184,11 +184,11 @@ std::unique_ptr<z_cfg_t> prog4b(variable_factory_t &vfac) {
   z_var i(vfac["i"], crab::INT_TYPE, 8);
   z_var a(vfac["A"], crab::ARR_BOOL_TYPE);
   z_var b(vfac["B"], crab::ARR_BOOL_TYPE);
-  z_var tt(vfac["TRUE"], crab::BOOL_TYPE, 1);
-  z_var ff(vfac["FALSE"], crab::BOOL_TYPE, 1);
+  z_var tt(vfac["TRUE"], crab::BOOL_TYPE);
+  z_var ff(vfac["FALSE"], crab::BOOL_TYPE);
   z_var tmp3(vfac["tmp3"], crab::INT_TYPE, 8);
-  z_var tmp5(vfac["tmp5"], crab::BOOL_TYPE, 1);
-  z_var tmp6(vfac["tmp6"], crab::BOOL_TYPE, 1);
+  z_var tmp5(vfac["tmp5"], crab::BOOL_TYPE);
+  z_var tmp6(vfac["tmp6"], crab::BOOL_TYPE);
 
   entry >> bb1;
   bb1 >> bb1_t;

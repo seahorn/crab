@@ -40,7 +40,7 @@ std::unique_ptr<z_cfg_t> foo(z_var x, z_var z, variable_factory_t &vfac, crab::t
   BB(cfg, entry);
   BB(cfg, exit);
   entry >> exit;
-  z_var ref(vfac["ref"], crab::REF_TYPE, 32);
+  z_var ref(vfac["ref"], crab::REF_TYPE);
   z_var tmp(vfac["tmp"], crab::INT_TYPE, 32);    
   entry.region_init(z);
   z_var_or_cst_t size4(z_number(4), crab::variable_type(crab::INT_TYPE, 32));    
@@ -60,7 +60,7 @@ std::unique_ptr<z_cfg_t> m(z_var x, z_var z, variable_factory_t &vfac, crab::tag
   entry.havoc(x);
   entry.assume(x > 0);
   exit.callsite("foo", {z}, {x});
-  z_var ref(vfac["ref"], crab::REF_TYPE, 32);
+  z_var ref(vfac["ref"], crab::REF_TYPE);
   z_var lhs(vfac["lhs"], crab::INT_TYPE, 32);    
   exit.load_from_ref(lhs, ref, z);
   exit.assertion(z_lin_exp_t(x) >= z_lin_exp_t(lhs));

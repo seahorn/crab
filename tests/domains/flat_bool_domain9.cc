@@ -40,9 +40,9 @@ std::unique_ptr<z_cfg_t> prog(variable_factory_t &vfac) {
   */ 
   // Defining program variables
   z_var x(vfac["x"], crab::INT_TYPE, 32);
-  z_var b1(vfac["b1"], crab::BOOL_TYPE, 1);
-  z_var b2(vfac["b2"], crab::BOOL_TYPE, 1);
-  z_var b3(vfac["b3"], crab::BOOL_TYPE, 1);
+  z_var b1(vfac["b1"], crab::BOOL_TYPE);
+  z_var b2(vfac["b2"], crab::BOOL_TYPE);
+  z_var b3(vfac["b3"], crab::BOOL_TYPE);
   z_var x1(vfac["x1"], crab::INT_TYPE, 32);
   z_var x2(vfac["x2"], crab::INT_TYPE, 32);
   z_var x3(vfac["x3"], crab::INT_TYPE, 32);

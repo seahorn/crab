@@ -48,8 +48,8 @@ static std::unique_ptr<z_cfg_t> callee(variable_factory_t &vfac) {
 // are equal under variable_type::operator== but hashed differently before
 // the fix.
 static std::unique_ptr<z_cfg_t> mk_main(variable_factory_t &vfac) {
-  z_var a(vfac["a"], crab::REF_TYPE, 32);
-  z_var b(vfac["b"], crab::REF_TYPE, 32);
+  z_var a(vfac["a"], crab::REF_TYPE);
+  z_var b(vfac["b"], crab::REF_TYPE);
   std::vector<z_var> inputs, outputs;
   function_decl<z_number, varname_t> decl("main", inputs, outputs);
   auto cfg = std::make_unique<z_cfg_t>("entry", "exit", decl);
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
     // (1) Directly exercise the invariant that regressed: two reference
     //     types that compare equal must hash equally.
     z_var ref0(vfac["ref0"], crab::REF_TYPE);       // bitwidth 0
-    z_var ref32(vfac["ref32"], crab::REF_TYPE, 32); // bitwidth 32
+    z_var ref32(vfac["ref32"], crab::REF_TYPE); // bitwidth 32
     const auto t0 = ref0.get_type();
     const auto t32 = ref32.get_type();
     if (!(t0 == t32)) {

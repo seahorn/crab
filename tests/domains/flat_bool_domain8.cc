@@ -40,11 +40,11 @@ exit:
   bb1 >> exit;
   bb2 >> exit;
   
-  z_var b1(vfac["b1"], crab::BOOL_TYPE, 1);
-  z_var b2(vfac["b2"], crab::BOOL_TYPE, 1);
-  z_var b3(vfac["b3"], crab::BOOL_TYPE, 1);
-  z_var bTrue(vfac["bTrue"], crab::BOOL_TYPE, 1);
-  z_var bFalse(vfac["bFalse"], crab::BOOL_TYPE, 1);
+  z_var b1(vfac["b1"], crab::BOOL_TYPE);
+  z_var b2(vfac["b2"], crab::BOOL_TYPE);
+  z_var b3(vfac["b3"], crab::BOOL_TYPE);
+  z_var bTrue(vfac["bTrue"], crab::BOOL_TYPE);
+  z_var bFalse(vfac["bFalse"], crab::BOOL_TYPE);
   z_var x(vfac["x"], crab::INT_TYPE, 32);
   z_var y(vfac["y"], crab::INT_TYPE, 32);
 
