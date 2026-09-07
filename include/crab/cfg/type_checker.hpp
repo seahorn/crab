@@ -293,6 +293,32 @@ class type_checker_visitor
     CRAB_ERROR(os.str());
   }
 
+  // Check that the element size of an array access (in bytes) agrees with the
+  // bitwidth of the scalar being loaded or stored.
+  //
+  // Only integer arrays are constrained here: booleans are accessed using
+  // whatever element size the client chooses (their bitwidth is always 1) and
+  // reals have no bitwidth. The check is skipped when the element size is not
+  // a constant, since then it is only known at runtime.
+  void check_array_elem_size(const variable_t &a, const lin_exp_t &e_sz,
+                             const variable_t &v, const statement_t &s) {
+    if (!a.get_type().is_integer_array() || !v.get_type().is_integer()) {
+      return;
+    }
+    if (!e_sz.is_constant()) {
+      return;
+    }
+    unsigned bitwidth = v.get_type().get_integer_bitwidth();
+    if (e_sz.constant() * N(static_cast<int64_t>(8)) !=
+        N(static_cast<int64_t>(bitwidth))) {
+      crab::crab_string_os os;
+      os << "(type checking) the element size of " << a << " ("
+         << e_sz.constant() << " bytes) is not consistent with the bitwidth of "
+         << v << " (" << bitwidth << " bits) in " << s;
+      CRAB_ERROR(os.str());
+    }
+  }
+
 public:
   type_checker_visitor() {}
 
@@ -505,7 +531,6 @@ public:
   };
 
   virtual void visit(const arr_init_t &s) override {
-    // TODO: check that e_sz is the same number that v's bitwidth
     const variable_t &a = s.array();
     const lin_exp_t &e_sz = s.elem_size();
     const lin_exp_t &lb = s.lb_index();
@@ -524,11 +549,11 @@ public:
     if (boost::optional<variable_t> vv = v.get_variable()) {
       check_varname(*vv);
       check_array_and_scalar_type(a, *vv, s);
+      check_array_elem_size(a, e_sz, *vv, s);
     }
   }
 
   virtual void visit(const arr_store_t &s) override {
-    // TODO: check that e_sz is the same number that v's bitwidth
     const variable_t &a = s.array();
     check_is_array(a, s);
     check_varname(a);
@@ -560,11 +585,11 @@ public:
     if (boost::optional<variable_t> vv = v.get_variable()) {
       check_varname(*vv);
       check_array_and_scalar_type(a, *vv, s);
+      check_array_elem_size(a, e_sz, *vv, s);
     }
   }
 
   virtual void visit(const arr_load_t &s) override {
-    // TODO: check that e_sz is the same number that lhs's bitwidth
     const variable_t &a = s.array();
     const lin_exp_t &e_sz = s.elem_size();
     const variable_t &lhs = s.lhs();
@@ -578,6 +603,7 @@ public:
     }
     check_num_or_var(e_sz, "array element size must be number or variable", s);
     check_array_and_scalar_type(a, lhs, s);
+    check_array_elem_size(a, e_sz, lhs, s);
   }
 
   virtual void visit(const arr_assign_t &s) override {

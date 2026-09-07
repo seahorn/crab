@@ -29,7 +29,7 @@ std::unique_ptr<z_cfg_t> prog(variable_factory_t &vfac) {
 
   // Defining program variables
   z_var i(vfac["i"], crab::INT_TYPE, 32);
-  z_var b(vfac["b"], crab::BOOL_TYPE, 1);
+  z_var b(vfac["b"], crab::BOOL_TYPE);
   z_var n(vfac["n"], crab::INT_TYPE, 32);
 
   // entry and exit block

@@ -36,10 +36,10 @@ std::unique_ptr<z_cfg_t> cfg1(variable_factory_t &vfac) {
   z_var res(vfac["res"], crab::REF_TYPE);
   z_var orphan_ptr(vfac["orphan_ptr"], crab::REF_TYPE);  
   z_var x(vfac["x"], crab::INT_TYPE, 32);    
-  z_var m1(vfac["rgn_0"], crab::REG_REF_TYPE, 32);
-  z_var m2(vfac["rgn_1"], crab::REG_REF_TYPE, 32);
-  z_var m3(vfac["rgn_2"], crab::REG_REF_TYPE, 32);
-  z_var m4(vfac["rgn_3"], crab::REG_REF_TYPE, 32);  
+  z_var m1(vfac["rgn_0"], crab::REG_REF_TYPE);
+  z_var m2(vfac["rgn_1"], crab::REG_REF_TYPE);
+  z_var m3(vfac["rgn_2"], crab::REG_REF_TYPE);
+  z_var m4(vfac["rgn_3"], crab::REG_REF_TYPE);  
   // === Create allocation sites
   crab::tag_manager as_man;  
   // Create empty CFG
@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
    */
   
   z_var f_ptr(vfac["fun_ptr"], crab::REF_TYPE);
-  z_var m(vfac["rgn_3"], crab::REG_REF_TYPE, 32);  // region of f_ptr
+  z_var m(vfac["rgn_3"], crab::REG_REF_TYPE);  // region of f_ptr
   z_var deref_f_ptr(vfac["*fun_ptr"], crab::REF_TYPE);
   z_var orphan_ptr(vfac["orphan_ptr"], crab::REF_TYPE);    
   z_rgn_sdbm_t exit_inv = a["ret"];

@@ -202,7 +202,7 @@ void test_writer_scalars() {
 void test_variable_json() {
   variable_factory_t vfac;
   z_var x(vfac["x"], crab::INT_TYPE, 32);
-  z_var b(vfac["b"], crab::BOOL_TYPE, 1);
+  z_var b(vfac["b"], crab::BOOL_TYPE);
   z_var a(vfac["a"], crab::ARR_INT_TYPE);
 
   BOOST_TEST_EQ(to_json(x),
@@ -392,8 +392,8 @@ void test_cfg_json_statements() {
   z_var x(vfac["x"], crab::INT_TYPE, 32);
   z_var y(vfac["y"], crab::INT_TYPE, 32);
   z_var w(vfac["w"], crab::INT_TYPE, 8);
-  z_var b1(vfac["b1"], crab::BOOL_TYPE, 1);
-  z_var b2(vfac["b2"], crab::BOOL_TYPE, 1);
+  z_var b1(vfac["b1"], crab::BOOL_TYPE);
+  z_var b2(vfac["b2"], crab::BOOL_TYPE);
   z_var a(vfac["a"], crab::ARR_INT_TYPE);
   z_var a2(vfac["a2"], crab::ARR_INT_TYPE);
 
@@ -529,7 +529,7 @@ void test_cfg_json_reference_statements() {
   z_var r(vfac["r"], crab::REF_TYPE);
   z_var v(vfac["v"], crab::INT_TYPE, 32);
   z_var n(vfac["n"], crab::INT_TYPE, 32);
-  z_var c(vfac["c"], crab::BOOL_TYPE, 1);
+  z_var c(vfac["c"], crab::BOOL_TYPE);
   z_var_or_cst_t size4(ikos::z_number(4), crab::variable_type(crab::INT_TYPE, 32));
 
   z_cfg_t cfg("entry");

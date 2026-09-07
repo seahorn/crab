@@ -37,7 +37,7 @@ using namespace crab::cg_impl;
 std::unique_ptr<z_cfg_t> foo(variable_factory_t &vfac, crab::tag_manager &as_man) {
   z_var a(vfac["a"], crab::INT_TYPE, 32);
   z_var b(vfac["b"], crab::REG_INT_TYPE, 32);  
-  z_var ref(vfac["ref"], crab::REF_TYPE, 32);
+  z_var ref(vfac["ref"], crab::REF_TYPE);
   z_var tmp(vfac["tmp"], crab::INT_TYPE, 32);    
   
   function_decl<z_number, varname_t> decl("foo", {a}, {b});
@@ -66,7 +66,7 @@ std::unique_ptr<z_cfg_t> __main(variable_factory_t &vfac, crab::tag_manager &as_
   entry.havoc(x);
   entry.assume(x > 0);
   exit.callsite("foo", {z}, {x});
-  z_var ref(vfac["ref"], crab::REF_TYPE, 32);
+  z_var ref(vfac["ref"], crab::REF_TYPE);
   z_var lhs(vfac["lhs"], crab::INT_TYPE, 32);    
   exit.load_from_ref(lhs, ref, z);
   exit.assertion(z_lin_exp_t(x) >= z_lin_exp_t(lhs));

@@ -331,7 +331,7 @@ public:
   }
 
   bool is_well_typed() const {
-    crab::variable_type vt(crab::UNK_TYPE, 0);
+    crab::variable_type vt(crab::UNK_TYPE);
     for (const_iterator it = begin(), et = end(); it != et; ++it) {
       variable_t v = it->second;
       if (it == begin()) {

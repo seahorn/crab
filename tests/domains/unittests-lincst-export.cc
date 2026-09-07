@@ -92,8 +92,8 @@ BOOST_AUTO_TEST_CASE(bottom_exports_a_contradiction) {
 
 BOOST_AUTO_TEST_CASE(known_booleans_export_as_zero_one_equalities) {
   variable_factory_t vfac;
-  z_var b(vfac["b"], crab::BOOL_TYPE, 1);
-  z_var c(vfac["c"], crab::BOOL_TYPE, 1);
+  z_var b(vfac["b"], crab::BOOL_TYPE);
+  z_var c(vfac["c"], crab::BOOL_TYPE);
 
   flat_bool_domain_t dom;
   dom.assume_bool(b, false /*not negated*/); // b is true
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(numerical_only_survives_a_top_boolean_component) {
 
 BOOST_AUTO_TEST_CASE(boolean_only_is_exported) {
   variable_factory_t vfac;
-  z_var b(vfac["b"], crab::BOOL_TYPE, 1);
+  z_var b(vfac["b"], crab::BOOL_TYPE);
 
   product_domain_t dom;
   dom.assume_bool(b, false /*not negated*/);
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE(boolean_only_is_exported) {
 // disjunct holding both facts.
 BOOST_AUTO_TEST_CASE(components_are_conjoined_not_disjoined) {
   variable_factory_t vfac;
-  z_var b(vfac["b"], crab::BOOL_TYPE, 1);
+  z_var b(vfac["b"], crab::BOOL_TYPE);
   z_var y(vfac["y"], crab::INT_TYPE, 32);
 
   product_domain_t dom;

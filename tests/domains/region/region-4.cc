@@ -46,23 +46,23 @@ int main() {
   z_var i0(vfac["i0"], crab::INT_TYPE, 32);
   z_var x1(vfac["x1"], crab::INT_TYPE, 32);
   z_var x2(vfac["x2"], crab::INT_TYPE, 32);    
-  z_var ref0(vfac["ref0"], crab::REF_TYPE, 32);
-  z_var ref1(vfac["ref1"], crab::REF_TYPE, 32);
-  z_var ref2(vfac["ref2"], crab::REF_TYPE, 32);
-  z_var ref3(vfac["ref3"], crab::REF_TYPE, 32);
-  z_var ref4(vfac["ref4"], crab::REF_TYPE, 32);
-  z_var ref5(vfac["ref5"], crab::REF_TYPE, 32);
-  z_var ref6(vfac["ref6"], crab::REF_TYPE, 32);
-  z_var ref7(vfac["ref7"], crab::REF_TYPE, 32);
-  z_var ref8(vfac["ref8"], crab::REF_TYPE, 32);
-  z_var ref9(vfac["ref9"], crab::REF_TYPE, 32);
-  z_var ref10(vfac["ref10"], crab::REF_TYPE, 32);  
+  z_var ref0(vfac["ref0"], crab::REF_TYPE);
+  z_var ref1(vfac["ref1"], crab::REF_TYPE);
+  z_var ref2(vfac["ref2"], crab::REF_TYPE);
+  z_var ref3(vfac["ref3"], crab::REF_TYPE);
+  z_var ref4(vfac["ref4"], crab::REF_TYPE);
+  z_var ref5(vfac["ref5"], crab::REF_TYPE);
+  z_var ref6(vfac["ref6"], crab::REF_TYPE);
+  z_var ref7(vfac["ref7"], crab::REF_TYPE);
+  z_var ref8(vfac["ref8"], crab::REF_TYPE);
+  z_var ref9(vfac["ref9"], crab::REF_TYPE);
+  z_var ref10(vfac["ref10"], crab::REF_TYPE);  
   
   // Define memory regions
   z_var mem_field_f(vfac["region_field_f"], crab::REG_INT_TYPE, 32);
-  z_var mem_field_s(vfac["region_field_s"], crab::REG_REF_TYPE, 32);
+  z_var mem_field_s(vfac["region_field_s"], crab::REG_REF_TYPE);
   z_var mem_field_deref_s(vfac["region_field_deref_s"], crab::REG_INT_TYPE, 32);    
-  z_var mem_field_next(vfac["region_field_next"], crab::REG_REF_TYPE, 32);
+  z_var mem_field_next(vfac["region_field_next"], crab::REG_REF_TYPE);
 
   // Create allocation sites
   crab::tag_manager as_man;

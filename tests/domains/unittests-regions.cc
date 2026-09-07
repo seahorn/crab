@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
   { // join
     z_var x(vfac["x"], crab::INT_TYPE, 32);
     z_var y(vfac["y"], crab::INT_TYPE, 32);
-    z_var ref(vfac["ref"], crab::REF_TYPE, 32);    
+    z_var ref(vfac["ref"], crab::REF_TYPE);    
     z_var rgn1(vfac["region_0"], crab::REG_INT_TYPE, 32);
     z_var_or_cst_t n34_32(z_number(34), crab::variable_type(crab::INT_TYPE, 32));
     
@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
   { // join
     z_var x(vfac["x"], crab::INT_TYPE, 32);
     z_var y(vfac["y"], crab::INT_TYPE, 32);
-    z_var ref(vfac["ref"], crab::REF_TYPE, 32);    
+    z_var ref(vfac["ref"], crab::REF_TYPE);    
     z_var rgn1(vfac["region_0"], crab::REG_INT_TYPE, 32);
 
     z_var_or_cst_t n34_32(z_number(34), crab::variable_type(crab::INT_TYPE, 32));
@@ -78,13 +78,13 @@ int main(int argc, char **argv) {
       z_basic_block_t &entry = cfg.insert("entry");
       z_basic_block_t &exit = cfg.insert("exit");
       entry >> exit;
-      z_var ref1(vfac["ref1"], crab::REF_TYPE, 32);
-      z_var ref2(vfac["ref2"], crab::REF_TYPE, 32);
-      z_var ref3(vfac["ref3"], crab::REF_TYPE, 32);
+      z_var ref1(vfac["ref1"], crab::REF_TYPE);
+      z_var ref2(vfac["ref2"], crab::REF_TYPE);
+      z_var ref3(vfac["ref3"], crab::REF_TYPE);
       z_var rgn1(vfac["rgn1"], crab::REG_INT_TYPE, 32);
       z_var rgn2(vfac["rgn2"], crab::REG_INT_TYPE, 32);
       z_var rgn3(vfac["rgn3"], crab::REG_INT_TYPE, 32);
-      z_var cond(vfac["cond"], crab::BOOL_TYPE, 1);    
+      z_var cond(vfac["cond"], crab::BOOL_TYPE);    
       z_rgn_int_t init;      
       entry.region_init(rgn1);
       entry.region_init(rgn2);
@@ -103,13 +103,13 @@ int main(int argc, char **argv) {
       z_basic_block_t &entry = cfg.insert("entry");
       z_basic_block_t &exit = cfg.insert("exit");
       entry >> exit;
-      z_var ref1(vfac["ref1"], crab::REF_TYPE, 32);
-      z_var ref2(vfac["ref2"], crab::REF_TYPE, 32);
-      z_var ref3(vfac["ref3"], crab::REF_TYPE, 32);
+      z_var ref1(vfac["ref1"], crab::REF_TYPE);
+      z_var ref2(vfac["ref2"], crab::REF_TYPE);
+      z_var ref3(vfac["ref3"], crab::REF_TYPE);
       z_var rgn1(vfac["rgn1"], crab::REG_INT_TYPE, 32);
       z_var rgn2(vfac["rgn2"], crab::REG_INT_TYPE, 32);
       z_var rgn3(vfac["rgn3"], crab::REG_INT_TYPE, 32);
-      z_var cond(vfac["cond"], crab::BOOL_TYPE, 1);    
+      z_var cond(vfac["cond"], crab::BOOL_TYPE);    
       z_rgn_bool_int_t init;
       entry.region_init(rgn1);
       entry.region_init(rgn2);
@@ -128,13 +128,13 @@ int main(int argc, char **argv) {
       z_basic_block_t &entry = cfg.insert("entry");
       z_basic_block_t &exit = cfg.insert("exit");
       entry >> exit;
-      z_var ref1(vfac["ref1"], crab::REF_TYPE, 32);
-      z_var ref2(vfac["ref2"], crab::REF_TYPE, 32);
-      z_var ref3(vfac["ref3"], crab::REF_TYPE, 32);
+      z_var ref1(vfac["ref1"], crab::REF_TYPE);
+      z_var ref2(vfac["ref2"], crab::REF_TYPE);
+      z_var ref3(vfac["ref3"], crab::REF_TYPE);
       z_var rgn1(vfac["rgn1"], crab::REG_INT_TYPE, 32);
       z_var rgn2(vfac["rgn2"], crab::REG_INT_TYPE, 32);
       z_var rgn3(vfac["rgn3"], crab::REG_INT_TYPE, 32);
-      z_var cond(vfac["cond"], crab::BOOL_TYPE, 1);    
+      z_var cond(vfac["cond"], crab::BOOL_TYPE);    
       z_rgn_int_t init;      
       entry.region_init(rgn1);
       entry.region_init(rgn2);
@@ -152,13 +152,13 @@ int main(int argc, char **argv) {
       z_basic_block_t &entry = cfg.insert("entry");
       z_basic_block_t &exit = cfg.insert("exit");
       entry >> exit;
-      z_var ref1(vfac["ref1"], crab::REF_TYPE, 32);
-      z_var ref2(vfac["ref2"], crab::REF_TYPE, 32);
-      z_var ref3(vfac["ref3"], crab::REF_TYPE, 32);
+      z_var ref1(vfac["ref1"], crab::REF_TYPE);
+      z_var ref2(vfac["ref2"], crab::REF_TYPE);
+      z_var ref3(vfac["ref3"], crab::REF_TYPE);
       z_var rgn1(vfac["rgn1"], crab::REG_INT_TYPE, 32);
       z_var rgn2(vfac["rgn2"], crab::REG_INT_TYPE, 32);
       z_var rgn3(vfac["rgn3"], crab::REG_INT_TYPE, 32);
-      z_var cond(vfac["cond"], crab::BOOL_TYPE, 1);    
+      z_var cond(vfac["cond"], crab::BOOL_TYPE);    
       z_rgn_bool_int_t init;
       entry.region_init(rgn1);
       entry.region_init(rgn2);
@@ -176,13 +176,13 @@ int main(int argc, char **argv) {
       z_basic_block_t &entry = cfg.insert("entry");
       z_basic_block_t &exit = cfg.insert("exit");
       entry >> exit;
-      z_var ref1(vfac["ref1"], crab::REF_TYPE, 32);
-      z_var ref2(vfac["ref2"], crab::REF_TYPE, 32);
-      z_var ref3(vfac["ref3"], crab::REF_TYPE, 32);
+      z_var ref1(vfac["ref1"], crab::REF_TYPE);
+      z_var ref2(vfac["ref2"], crab::REF_TYPE);
+      z_var ref3(vfac["ref3"], crab::REF_TYPE);
       z_var rgn1(vfac["rgn1"], crab::REG_INT_TYPE, 32);
       z_var rgn2(vfac["rgn2"], crab::REG_INT_TYPE, 32);
       z_var rgn3(vfac["rgn3"], crab::REG_INT_TYPE, 32);
-      z_var cond(vfac["cond"], crab::BOOL_TYPE, 1);    
+      z_var cond(vfac["cond"], crab::BOOL_TYPE);    
       z_rgn_bool_int_t init;
       entry.assume_ref(z_ref_cst_t::mk_gt_null(ref3));
       entry.bool_assign(cond, z_lin_cst_t::get_false());
@@ -217,8 +217,8 @@ int main(int argc, char **argv) {
 	z_var rgn2(vfac["rgn2"], crab::REG_INT_TYPE, 32);
 	z_var rgn3(vfac["rgn3"], crab::REG_INT_TYPE, 32);
 	z_var rgn4(vfac["rgn4"], crab::REG_INT_TYPE, 32);	
-	z_var ref1(vfac["ref1"], crab::REF_TYPE, 32);
-	z_var ref2(vfac["ref2"], crab::REF_TYPE, 32);
+	z_var ref1(vfac["ref1"], crab::REF_TYPE);
+	z_var ref2(vfac["ref2"], crab::REF_TYPE);
 	
 	z_rgn_bool_int_t dom;
 	dom.region_init(rgn1);

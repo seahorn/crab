@@ -42,10 +42,10 @@ int main(int argc, char **argv) {
     bb1 >> bb4;
     bb2 >> bb3;
     bb4 >> bb3;
-    z_var b1(vfac["b1"], crab::BOOL_TYPE, 1);
-    z_var b2(vfac["b2"], crab::BOOL_TYPE, 1);
-    z_var b3(vfac["b3"], crab::BOOL_TYPE, 1);
-    z_var b4(vfac["b4"], crab::BOOL_TYPE, 1);
+    z_var b1(vfac["b1"], crab::BOOL_TYPE);
+    z_var b2(vfac["b2"], crab::BOOL_TYPE);
+    z_var b3(vfac["b3"], crab::BOOL_TYPE);
+    z_var b4(vfac["b4"], crab::BOOL_TYPE);
     // adding statements
     bb1.havoc(b1);
     bb1.havoc(b2);

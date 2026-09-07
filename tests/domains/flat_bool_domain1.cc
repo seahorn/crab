@@ -35,12 +35,12 @@ std::unique_ptr<z_cfg_t> prog(variable_factory_t &vfac) {
   z_var i(vfac["i"], crab::INT_TYPE, 32);
   z_var nd(vfac["nd"], crab::INT_TYPE, 32);
   z_var inc(vfac["inc"], crab::INT_TYPE, 32);
-  z_var b1(vfac["b1"], crab::BOOL_TYPE, 1);
-  z_var b2(vfac["b2"], crab::BOOL_TYPE, 1);
-  z_var b3(vfac["b3"], crab::BOOL_TYPE, 1);
-  z_var b4(vfac["b4"], crab::BOOL_TYPE, 1);
-  z_var bfalse(vfac["bf"], crab::BOOL_TYPE, 1);
-  z_var btrue(vfac["bt"], crab::BOOL_TYPE, 1);
+  z_var b1(vfac["b1"], crab::BOOL_TYPE);
+  z_var b2(vfac["b2"], crab::BOOL_TYPE);
+  z_var b3(vfac["b3"], crab::BOOL_TYPE);
+  z_var b4(vfac["b4"], crab::BOOL_TYPE);
+  z_var bfalse(vfac["bf"], crab::BOOL_TYPE);
+  z_var btrue(vfac["bt"], crab::BOOL_TYPE);
 
   // entry and exit block
   auto cfg = std::make_unique<z_cfg_t>("entry", "ret");

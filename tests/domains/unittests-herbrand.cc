@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
     crab::outs() << "=== Arrays ==== \n";
     {
       z_herbrand_domain_t dom;
-      z_var a(vfac["A"], crab::ARR_INT_TYPE, 32);    
+      z_var a(vfac["A"], crab::ARR_INT_TYPE);    
       z_var x(vfac["x"], crab::INT_TYPE, 32);
       z_var y(vfac["y"], crab::INT_TYPE, 32);
       z_var w(vfac["w"], crab::INT_TYPE, 32);
@@ -150,13 +150,13 @@ int main(int argc, char **argv) {
   
     crab::outs() << "==== Boolean operations ====\n";
     {
-      z_var b1(vfac["b1"], crab::BOOL_TYPE, 1);
-      z_var b2(vfac["b2"], crab::BOOL_TYPE, 1);
-      z_var b3(vfac["b3"], crab::BOOL_TYPE, 1);
-      z_var b4(vfac["b4"], crab::BOOL_TYPE, 1);
-      z_var b5(vfac["b5"], crab::BOOL_TYPE, 1);
-      z_var b6(vfac["b6"], crab::BOOL_TYPE, 1);
-      z_var b7(vfac["b7"], crab::BOOL_TYPE, 1);            
+      z_var b1(vfac["b1"], crab::BOOL_TYPE);
+      z_var b2(vfac["b2"], crab::BOOL_TYPE);
+      z_var b3(vfac["b3"], crab::BOOL_TYPE);
+      z_var b4(vfac["b4"], crab::BOOL_TYPE);
+      z_var b5(vfac["b5"], crab::BOOL_TYPE);
+      z_var b6(vfac["b6"], crab::BOOL_TYPE);
+      z_var b7(vfac["b7"], crab::BOOL_TYPE);            
 
       z_herbrand_domain_t dom;
       dom.assign_bool_var(b4, b5, false);
