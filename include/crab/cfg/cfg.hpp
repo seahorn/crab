@@ -274,6 +274,9 @@ template <class BasicBlockLabel, class Number, class VariableName>
 struct statement_visitor;
 
 template <class BasicBlockLabel, class Number, class VariableName>
+struct const_statement_visitor;
+
+template <class BasicBlockLabel, class Number, class VariableName>
 class statement {
 public:
   using live_t = live<Number, VariableName>;
@@ -337,6 +340,10 @@ public:
   virtual void
   accept(statement_visitor<BasicBlockLabel, Number, VariableName> *) = 0;
 
+  virtual void
+  accept(const_statement_visitor<BasicBlockLabel, Number, VariableName> *)
+      const = 0;
+
   virtual void write(crab_os &o) const = 0;
 
   virtual statement<BasicBlockLabel, Number, VariableName> *
@@ -368,6 +375,12 @@ public:
   virtual void
   accept(statement_visitor<BasicBlockLabel, Number, VariableName> *v) override {
     v->visit(static_cast<Derived &>(*this));
+  }
+
+  virtual void
+  accept(const_statement_visitor<BasicBlockLabel, Number, VariableName> *v)
+      const override {
+    v->visit(static_cast<const Derived &>(*this));
   }
 };
 
@@ -2418,6 +2431,11 @@ public:
     v->visit(*this);
   }
 
+  void accept(const_statement_visitor<BasicBlockLabel, Number, VariableName> *v)
+      const {
+    v->visit(*this);
+  }
+
   std::pair<succ_iterator, succ_iterator> next_blocks() {
     return std::make_pair(m_next.begin(), m_next.end());
   }
@@ -2911,6 +2929,12 @@ public:
     v->visit(*this);
   }
 
+  void accept(
+      const_statement_visitor<basic_block_label_t, number_t, varname_t> *v)
+      const {
+    v->visit(*this);
+  }
+
   live_domain_t &live() { return _bb.live(); }
 
   const live_domain_t &live() const { return _bb.live(); }
@@ -2952,7 +2976,14 @@ public:
   }
 };
 
-/** Visitor class for statements **/
+/**
+ * Visitor class for statements that may modify the visited statement.
+ *
+ * Prefer const_statement_visitor (below) for read-only visitors: it can
+ * also be applied to a const basic block or a const CFG.
+ *
+ * NOTE: any new statement kind must be added to both visitors.
+ **/
 template <class BasicBlockLabel, class Number, class VariableName>
 struct statement_visitor {
   using bin_op_t = binary_op<BasicBlockLabel, Number, VariableName>;
@@ -2974,10 +3005,8 @@ struct statement_visitor {
   using region_init_t = region_init_stmt<BasicBlockLabel, Number, VariableName>;
   using region_copy_t = region_copy_stmt<BasicBlockLabel, Number, VariableName>;
   using region_cast_t = region_cast_stmt<BasicBlockLabel, Number, VariableName>;  
-  using load_from_ref_t =
-      load_from_ref_stmt<BasicBlockLabel, Number, VariableName>;
-  using store_to_ref_t =
-      store_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using load_from_ref_t = load_from_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using store_to_ref_t = store_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using gep_ref_t = gep_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assume_ref_t = assume_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using assert_ref_t = assert_ref_stmt<BasicBlockLabel, Number, VariableName>;
@@ -2985,10 +3014,8 @@ struct statement_visitor {
   using int_to_ref_t = int_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
   using ref_to_int_t = ref_to_int_stmt<BasicBlockLabel, Number, VariableName>;
   using bool_bin_op_t = bool_binary_op<BasicBlockLabel, Number, VariableName>;
-  using bool_assign_cst_t =
-      bool_assign_cst<BasicBlockLabel, Number, VariableName>;
-  using bool_assign_var_t =
-      bool_assign_var<BasicBlockLabel, Number, VariableName>;
+  using bool_assign_cst_t = bool_assign_cst<BasicBlockLabel, Number, VariableName>;
+  using bool_assign_var_t = bool_assign_var<BasicBlockLabel, Number, VariableName>;
   using bool_assume_t = bool_assume_stmt<BasicBlockLabel, Number, VariableName>;
   using bool_select_t = bool_select_stmt<BasicBlockLabel, Number, VariableName>;
   using bool_assert_t = bool_assert_stmt<BasicBlockLabel, Number, VariableName>;
@@ -3040,6 +3067,100 @@ struct statement_visitor {
   }
 
   virtual ~statement_visitor() {}
+};
+
+/**
+ * Visitor class for statements that does not modify the visited statement.
+ *
+ * Unlike statement_visitor, this one can be applied to a const basic
+ * block or a const CFG.
+ *
+ * NOTE: any new statement kind must be added to both visitors.
+ **/
+template <class BasicBlockLabel, class Number, class VariableName>
+struct const_statement_visitor {
+  using bin_op_t = binary_op<BasicBlockLabel, Number, VariableName>;
+  using assign_t = assignment<BasicBlockLabel, Number, VariableName>;
+  using assume_t = assume_stmt<BasicBlockLabel, Number, VariableName>;
+  using select_t = select_stmt<BasicBlockLabel, Number, VariableName>;
+  using assert_t = assert_stmt<BasicBlockLabel, Number, VariableName>;
+  using int_cast_t = int_cast_stmt<BasicBlockLabel, Number, VariableName>;
+  using havoc_t = havoc_stmt<BasicBlockLabel, Number, VariableName>;
+  using unreach_t = unreachable_stmt<BasicBlockLabel, Number, VariableName>;
+  using callsite_t = callsite_stmt<BasicBlockLabel, Number, VariableName>;
+  using intrinsic_t = intrinsic_stmt<BasicBlockLabel, Number, VariableName>;
+  using arr_init_t = array_init_stmt<BasicBlockLabel, Number, VariableName>;
+  using arr_store_t = array_store_stmt<BasicBlockLabel, Number, VariableName>;
+  using arr_load_t = array_load_stmt<BasicBlockLabel, Number, VariableName>;
+  using arr_assign_t = array_assign_stmt<BasicBlockLabel, Number, VariableName>;
+  using make_ref_t = make_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using remove_ref_t = remove_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using region_init_t = region_init_stmt<BasicBlockLabel, Number, VariableName>;
+  using region_copy_t = region_copy_stmt<BasicBlockLabel, Number, VariableName>;
+  using region_cast_t = region_cast_stmt<BasicBlockLabel, Number, VariableName>;  
+  using load_from_ref_t = load_from_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using store_to_ref_t = store_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using gep_ref_t = gep_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using assume_ref_t = assume_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using assert_ref_t = assert_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using select_ref_t = ref_select_stmt<BasicBlockLabel, Number, VariableName>;
+  using int_to_ref_t = int_to_ref_stmt<BasicBlockLabel, Number, VariableName>;
+  using ref_to_int_t = ref_to_int_stmt<BasicBlockLabel, Number, VariableName>;
+  using bool_bin_op_t = bool_binary_op<BasicBlockLabel, Number, VariableName>;
+  using bool_assign_cst_t = bool_assign_cst<BasicBlockLabel, Number, VariableName>;
+  using bool_assign_var_t = bool_assign_var<BasicBlockLabel, Number, VariableName>;
+  using bool_assume_t = bool_assume_stmt<BasicBlockLabel, Number, VariableName>;
+  using bool_select_t = bool_select_stmt<BasicBlockLabel, Number, VariableName>;
+  using bool_assert_t = bool_assert_stmt<BasicBlockLabel, Number, VariableName>;
+
+  virtual void visit(const bin_op_t &){};
+  virtual void visit(const assign_t &){};
+  virtual void visit(const assume_t &){};
+  virtual void visit(const select_t &){};
+  virtual void visit(const assert_t &){};
+  virtual void visit(const int_cast_t &){};
+  virtual void visit(const unreach_t &){};
+  virtual void visit(const havoc_t &){};
+  virtual void visit(const callsite_t &){};
+  virtual void visit(const intrinsic_t &){};
+  virtual void visit(const arr_init_t &){};
+  virtual void visit(const arr_store_t &){};
+  virtual void visit(const arr_load_t &){};
+  virtual void visit(const arr_assign_t &){};
+  virtual void visit(const region_init_t &) {}
+  virtual void visit(const region_copy_t &) {}
+  virtual void visit(const region_cast_t &) {}  
+  virtual void visit(const make_ref_t &) {}
+  virtual void visit(const remove_ref_t &) {}  
+  virtual void visit(const load_from_ref_t &) {}
+  virtual void visit(const store_to_ref_t &) {}
+  virtual void visit(const gep_ref_t &) {}
+  virtual void visit(const assume_ref_t &){};
+  virtual void visit(const assert_ref_t &){};
+  virtual void visit(const select_ref_t &){};
+  virtual void visit(const int_to_ref_t &){};
+  virtual void visit(const ref_to_int_t &){};
+  virtual void visit(const bool_bin_op_t &){};
+  virtual void visit(const bool_assign_cst_t &){};
+  virtual void visit(const bool_assign_var_t &){};
+  virtual void visit(const bool_assume_t &){};
+  virtual void visit(const bool_select_t &){};
+  virtual void visit(const bool_assert_t &){};
+
+  void visit(const basic_block<BasicBlockLabel, VariableName, Number> &b) {
+    for (auto const &s : b) {
+      s.accept(this);
+    }
+  }
+
+  template <typename BasicBlock>
+  void visit(const basic_block_rev<BasicBlock> &b) {
+    for (auto const &s : b) {
+      s.accept(this);
+    }
+  }
+
+  virtual ~const_statement_visitor() {}
 };
 
 template <class Number, class VariableName>

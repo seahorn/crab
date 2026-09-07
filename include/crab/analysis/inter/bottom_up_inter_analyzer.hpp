@@ -400,7 +400,7 @@ public:
 
   ~bu_summ_abs_transformer() = default;
 
-  virtual void exec(callsite_t &cs) override {
+  virtual void exec(const callsite_t &cs) override {
     if (m_sum_tbl.has_summary(cs)) {
       auto const& summ = m_sum_tbl.get(cs);
       reuse_summary(this->m_inv, cs, summ);
@@ -533,7 +533,7 @@ public:
 
   ~td_summ_abs_transformer() = default;
 
-  virtual void exec(callsite_t &cs) override {
+  virtual void exec(const callsite_t &cs) override {
     /**
      * This code is similar to inter_abstract_operations::callee_entry but
      * switching the abstract domain.

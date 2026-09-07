@@ -88,7 +88,7 @@ public:
     m_analyzer.get_safe_assertions(safe_assertions);
     abs_tr_t &abs_tr = m_analyzer.get_abs_transformer();
 
-    for (auto &bb : cfg) {
+    for (auto const &bb : cfg) {
       for (auto checker : this->m_checkers) {
         if (checker->is_interesting(bb)) {
           abs_dom_t inv = m_analyzer[bb.label()];
@@ -96,7 +96,7 @@ public:
           // propagate forward the invariants from the block entry
           // while checking the property
           checker->set(&abs_tr, safe_assertions);
-          for (auto &stmt : bb) {
+          for (auto const &stmt : bb) {
             stmt.accept(&*checker);
           }
         }
@@ -134,7 +134,7 @@ public:
     for (auto &v : boost::make_iterator_range(vertices(cg))) {
       cfg_t cfg = v.get_cfg();
 
-      for (auto &bb : cfg) {
+      for (auto const &bb : cfg) {
         // the forward+backward analyzer only works for
         // intra-procedural analysis.
         std::set<const statement_t *> safe_assertions;
@@ -144,7 +144,7 @@ public:
           // propagate forward the invariants from the block entry
           // while checking the property
           checker->set(&abs_tr, safe_assertions);
-          for (auto &stmt : bb) {
+          for (auto const &stmt : bb) {
             stmt.accept(&*checker);
           }
         }

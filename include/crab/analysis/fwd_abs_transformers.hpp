@@ -110,7 +110,7 @@ public:
     return m_inv;
   }
 
-  virtual void exec(bin_op_t &stmt) override {
+  virtual void exec(const bin_op_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag &&
         (!(stmt.op() >= crab::cfg::BINOP_SDIV &&
@@ -140,7 +140,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);
   }
 
-  virtual void exec(select_t &stmt) override {
+  virtual void exec(const select_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -157,7 +157,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(assign_t &stmt) override {
+  virtual void exec(const assign_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -174,12 +174,12 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(assume_t &stmt) override {
+  virtual void exec(const assume_t &stmt) override {
     m_inv.operator+=(stmt.constraint());
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(assert_t &stmt) override {
+  virtual void exec(const assert_t &stmt) override {
     if (m_ignore_assert) {
       return;
     }
@@ -203,7 +203,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(int_cast_t &stmt) override {
+  virtual void exec(const int_cast_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -223,7 +223,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(bool_assign_cst_t &stmt) override {
+  virtual void exec(const bool_assign_cst_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -244,7 +244,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(bool_assign_var_t &stmt) override {
+  virtual void exec(const bool_assign_var_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -260,7 +260,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(bool_bin_op_t &stmt) override {
+  virtual void exec(const bool_bin_op_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -281,12 +281,12 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(bool_assume_t &stmt) override {
+  virtual void exec(const bool_assume_t &stmt) override {
     m_inv.assume_bool(stmt.cond(), stmt.is_negated());
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(bool_select_t &stmt) override {
+  virtual void exec(const bool_select_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -303,7 +303,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(bool_assert_t &stmt) override {
+  virtual void exec(const bool_assert_t &stmt) override {
     if (m_ignore_assert) {
       return;
     }
@@ -312,7 +312,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(havoc_t &stmt) override {
+  virtual void exec(const havoc_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -329,12 +329,12 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(unreach_t &stmt) override {
+  virtual void exec(const unreach_t &stmt) override {
     m_inv.set_to_bottom();
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(arr_init_t &stmt) override {
+  virtual void exec(const arr_init_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -352,7 +352,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
   
-  virtual void exec(arr_store_t &stmt) override {
+  virtual void exec(const arr_store_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -375,7 +375,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(arr_load_t &stmt) override {
+  virtual void exec(const arr_load_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -392,7 +392,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(arr_assign_t &stmt) override {
+  virtual void exec(const arr_assign_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -409,7 +409,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(make_ref_t &stmt) override {
+  virtual void exec(const make_ref_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -426,7 +426,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(remove_ref_t &stmt) override {
+  virtual void exec(const remove_ref_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -443,7 +443,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
   
-  virtual void exec(region_init_t &stmt) override {
+  virtual void exec(const region_init_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -460,7 +460,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(region_copy_t &stmt) override {
+  virtual void exec(const region_copy_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -477,7 +477,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(region_cast_t &stmt) override {
+  virtual void exec(const region_cast_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -494,7 +494,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
   
-  virtual void exec(load_from_ref_t &stmt) override {
+  virtual void exec(const load_from_ref_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -511,7 +511,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(store_to_ref_t &stmt) override {
+  virtual void exec(const store_to_ref_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -528,7 +528,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(gep_ref_t &stmt) override {
+  virtual void exec(const gep_ref_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -546,12 +546,12 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(assume_ref_t &stmt) override {
+  virtual void exec(const assume_ref_t &stmt) override {
     m_inv.ref_assume(stmt.constraint());
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(assert_ref_t &stmt) override {
+  virtual void exec(const assert_ref_t &stmt) override {
     if (m_ignore_assert) {
       return;
     }
@@ -559,7 +559,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(select_ref_t &stmt) override {
+  virtual void exec(const select_ref_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -579,7 +579,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(int_to_ref_t &stmt) override {
+  virtual void exec(const int_to_ref_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -596,7 +596,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(ref_to_int_t &stmt) override {
+  virtual void exec(const ref_to_int_t &stmt) override {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
@@ -613,7 +613,7 @@ public:
     CRAB_VERBOSE_IF(5, crab::outs() << "EXECUTED " << stmt << " :" << m_inv <<"\n";);    
   }
 
-  virtual void exec(intrinsic_t &cs) override {
+  virtual void exec(const intrinsic_t &cs) override {
     if (cs.get_intrinsic_name() == "print_invariants") {
       // Note that we don't call the abstract transformer "intrinsic".
       // Instead, we directly print the projected invariants here.
@@ -633,7 +633,7 @@ public:
     }
   }
 
-  virtual void exec(callsite_t &cs) override {
+  virtual void exec(const callsite_t &cs) override {
     for (const variable_t &vt : cs.get_lhs()) {
       m_inv.operator-=(vt); // havoc
     }

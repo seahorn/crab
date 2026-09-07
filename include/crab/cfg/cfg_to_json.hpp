@@ -73,49 +73,49 @@ namespace json_impl {
 
 template <typename CFG>
 class statement_to_json_visitor
-    : public statement_visitor<typename CFG::basic_block_label_t,
-                               typename CFG::number_t,
-                               typename CFG::varname_t> {
+    : public const_statement_visitor<typename CFG::basic_block_label_t,
+                                     typename CFG::number_t,
+                                     typename CFG::varname_t> {
 
   using basic_block_label_t = typename CFG::basic_block_label_t;
   using number_t = typename CFG::number_t;
   using varname_t = typename CFG::varname_t;
-  using statement_visitor_t =
-      statement_visitor<basic_block_label_t, number_t, varname_t>;
+  using const_statement_visitor_t =
+      const_statement_visitor<basic_block_label_t, number_t, varname_t>;
 
-  using bin_op_t = typename statement_visitor_t::bin_op_t;
-  using assign_t = typename statement_visitor_t::assign_t;
-  using assume_t = typename statement_visitor_t::assume_t;
-  using select_t = typename statement_visitor_t::select_t;
-  using assert_t = typename statement_visitor_t::assert_t;
-  using int_cast_t = typename statement_visitor_t::int_cast_t;
-  using unreach_t = typename statement_visitor_t::unreach_t;
-  using havoc_t = typename statement_visitor_t::havoc_t;
-  using callsite_t = typename statement_visitor_t::callsite_t;
-  using intrinsic_t = typename statement_visitor_t::intrinsic_t;
-  using arr_init_t = typename statement_visitor_t::arr_init_t;
-  using arr_store_t = typename statement_visitor_t::arr_store_t;
-  using arr_load_t = typename statement_visitor_t::arr_load_t;
-  using arr_assign_t = typename statement_visitor_t::arr_assign_t;
-  using bool_bin_op_t = typename statement_visitor_t::bool_bin_op_t;
-  using bool_assign_cst_t = typename statement_visitor_t::bool_assign_cst_t;
-  using bool_assign_var_t = typename statement_visitor_t::bool_assign_var_t;
-  using bool_assume_t = typename statement_visitor_t::bool_assume_t;
-  using bool_select_t = typename statement_visitor_t::bool_select_t;
-  using bool_assert_t = typename statement_visitor_t::bool_assert_t;
-  using region_init_t = typename statement_visitor_t::region_init_t;
-  using region_copy_t = typename statement_visitor_t::region_copy_t;
-  using region_cast_t = typename statement_visitor_t::region_cast_t;
-  using make_ref_t = typename statement_visitor_t::make_ref_t;
-  using remove_ref_t = typename statement_visitor_t::remove_ref_t;
-  using load_from_ref_t = typename statement_visitor_t::load_from_ref_t;
-  using store_to_ref_t = typename statement_visitor_t::store_to_ref_t;
-  using gep_ref_t = typename statement_visitor_t::gep_ref_t;
-  using assume_ref_t = typename statement_visitor_t::assume_ref_t;
-  using assert_ref_t = typename statement_visitor_t::assert_ref_t;
-  using select_ref_t = typename statement_visitor_t::select_ref_t;
-  using int_to_ref_t = typename statement_visitor_t::int_to_ref_t;
-  using ref_to_int_t = typename statement_visitor_t::ref_to_int_t;
+  using bin_op_t = typename const_statement_visitor_t::bin_op_t;
+  using assign_t = typename const_statement_visitor_t::assign_t;
+  using assume_t = typename const_statement_visitor_t::assume_t;
+  using select_t = typename const_statement_visitor_t::select_t;
+  using assert_t = typename const_statement_visitor_t::assert_t;
+  using int_cast_t = typename const_statement_visitor_t::int_cast_t;
+  using unreach_t = typename const_statement_visitor_t::unreach_t;
+  using havoc_t = typename const_statement_visitor_t::havoc_t;
+  using callsite_t = typename const_statement_visitor_t::callsite_t;
+  using intrinsic_t = typename const_statement_visitor_t::intrinsic_t;
+  using arr_init_t = typename const_statement_visitor_t::arr_init_t;
+  using arr_store_t = typename const_statement_visitor_t::arr_store_t;
+  using arr_load_t = typename const_statement_visitor_t::arr_load_t;
+  using arr_assign_t = typename const_statement_visitor_t::arr_assign_t;
+  using bool_bin_op_t = typename const_statement_visitor_t::bool_bin_op_t;
+  using bool_assign_cst_t = typename const_statement_visitor_t::bool_assign_cst_t;
+  using bool_assign_var_t = typename const_statement_visitor_t::bool_assign_var_t;
+  using bool_assume_t = typename const_statement_visitor_t::bool_assume_t;
+  using bool_select_t = typename const_statement_visitor_t::bool_select_t;
+  using bool_assert_t = typename const_statement_visitor_t::bool_assert_t;
+  using region_init_t = typename const_statement_visitor_t::region_init_t;
+  using region_copy_t = typename const_statement_visitor_t::region_copy_t;
+  using region_cast_t = typename const_statement_visitor_t::region_cast_t;
+  using make_ref_t = typename const_statement_visitor_t::make_ref_t;
+  using remove_ref_t = typename const_statement_visitor_t::remove_ref_t;
+  using load_from_ref_t = typename const_statement_visitor_t::load_from_ref_t;
+  using store_to_ref_t = typename const_statement_visitor_t::store_to_ref_t;
+  using gep_ref_t = typename const_statement_visitor_t::gep_ref_t;
+  using assume_ref_t = typename const_statement_visitor_t::assume_ref_t;
+  using assert_ref_t = typename const_statement_visitor_t::assert_ref_t;
+  using select_ref_t = typename const_statement_visitor_t::select_ref_t;
+  using int_to_ref_t = typename const_statement_visitor_t::int_to_ref_t;
+  using ref_to_int_t = typename const_statement_visitor_t::ref_to_int_t;
 
   crab::json::writer &m_w;
 
@@ -194,7 +194,7 @@ public:
 
   // -- integer statements ----------------------------------------------------
 
-  virtual void visit(bin_op_t &s) override {
+  virtual void visit(const bin_op_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "binop");
     m_w.kv_string("op", op_name(s.op()));
@@ -204,7 +204,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(assign_t &s) override {
+  virtual void visit(const assign_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "assign");
     expr("rhs", s.rhs());
@@ -212,14 +212,14 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(assume_t &s) override {
+  virtual void visit(const assume_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "assume");
     cst("cond", s.constraint());
     m_w.end_object();
   }
 
-  virtual void visit(assert_t &s) override {
+  virtual void visit(const assert_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "assert");
     cst("cond", s.constraint());
@@ -227,7 +227,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(select_t &s) override {
+  virtual void visit(const select_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "select");
     cst("cond", s.cond());
@@ -237,7 +237,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(int_cast_t &s) override {
+  virtual void visit(const int_cast_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "cast");
     m_w.kv_string("op", op_name(s.op()));
@@ -248,14 +248,14 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(havoc_t &s) override {
+  virtual void visit(const havoc_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "havoc");
     var("lhs", s.get_variable());
     m_w.end_object();
   }
 
-  virtual void visit(unreach_t &) override {
+  virtual void visit(const unreach_t &) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "unreachable");
     m_w.end_object();
@@ -263,7 +263,7 @@ public:
 
   // -- boolean statements ----------------------------------------------------
 
-  virtual void visit(bool_assign_cst_t &s) override {
+  virtual void visit(const bool_assign_cst_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "bool_assign_cst");
     // The right-hand side is either a linear or a reference constraint. They
@@ -280,7 +280,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(bool_assign_var_t &s) override {
+  virtual void visit(const bool_assign_var_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "bool_assign_var");
     var("rhs", s.rhs());
@@ -289,7 +289,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(bool_bin_op_t &s) override {
+  virtual void visit(const bool_bin_op_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "bool_binop");
     m_w.kv_string("op", op_name(s.op()));
@@ -299,7 +299,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(bool_assume_t &s) override {
+  virtual void visit(const bool_assume_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "bool_assume");
     var("cond", s.cond());
@@ -307,7 +307,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(bool_assert_t &s) override {
+  virtual void visit(const bool_assert_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "bool_assert");
     var("cond", s.cond());
@@ -315,7 +315,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(bool_select_t &s) override {
+  virtual void visit(const bool_select_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "bool_select");
     var("cond", s.cond());
@@ -327,7 +327,7 @@ public:
 
   // -- arrays ----------------------------------------------------------------
 
-  virtual void visit(arr_init_t &s) override {
+  virtual void visit(const arr_init_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "array_init");
     expr("lb", s.lb_index());
@@ -338,7 +338,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(arr_store_t &s) override {
+  virtual void visit(const arr_store_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "array_store");
     expr("lb", s.lb_index());
@@ -349,7 +349,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(arr_load_t &s) override {
+  virtual void visit(const arr_load_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "array_load");
     var("array", s.array());
@@ -359,7 +359,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(arr_assign_t &s) override {
+  virtual void visit(const arr_assign_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "array_assign");
     var("rhs", s.rhs());
@@ -369,7 +369,7 @@ public:
 
   // -- calls -----------------------------------------------------------------
 
-  virtual void visit(callsite_t &s) override {
+  virtual void visit(const callsite_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "callsite");
     m_w.kv_string("callee", s.get_func_name());
@@ -378,7 +378,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(intrinsic_t &s) override {
+  virtual void visit(const intrinsic_t &s) override {
     const std::string &name = s.get_intrinsic_name();
     // Directives for the value partitioning domain. They constrain how the
     // analysis explores the program, not what the program does, so they have no
@@ -392,14 +392,14 @@ public:
 
   // -- regions and references ------------------------------------------------
 
-  virtual void visit(region_init_t &s) override {
+  virtual void visit(const region_init_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "region_init");
     var("lhs", s.region());
     m_w.end_object();
   }
 
-  virtual void visit(region_copy_t &s) override {
+  virtual void visit(const region_copy_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "region_copy");
     var("rhs", s.rhs_region());
@@ -407,7 +407,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(region_cast_t &s) override {
+  virtual void visit(const region_cast_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "region_cast");
     var("rhs", s.src());
@@ -417,7 +417,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(make_ref_t &s) override {
+  virtual void visit(const make_ref_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "make_ref");
     var_or_cst("size", s.size());
@@ -430,7 +430,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(remove_ref_t &s) override {
+  virtual void visit(const remove_ref_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "remove_ref");
     var("region", s.region());
@@ -438,7 +438,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(load_from_ref_t &s) override {
+  virtual void visit(const load_from_ref_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "load_from_ref");
     var("region", s.region());
@@ -448,7 +448,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(store_to_ref_t &s) override {
+  virtual void visit(const store_to_ref_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "store_to_ref");
     var("region", s.region());
@@ -458,7 +458,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(gep_ref_t &s) override {
+  virtual void visit(const gep_ref_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "gep_ref");
     var("rhs_region", s.rhs_region());
@@ -470,14 +470,14 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(assume_ref_t &s) override {
+  virtual void visit(const assume_ref_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "assume_ref");
     ref_cst("cond", s.constraint());
     m_w.end_object();
   }
 
-  virtual void visit(assert_ref_t &s) override {
+  virtual void visit(const assert_ref_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "assert_ref");
     ref_cst("cond", s.constraint());
@@ -485,7 +485,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(select_ref_t &s) override {
+  virtual void visit(const select_ref_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "select_ref");
     var("cond", s.cond());
@@ -501,7 +501,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(int_to_ref_t &s) override {
+  virtual void visit(const int_to_ref_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "int_to_ref");
     var("rhs", s.int_var());
@@ -511,7 +511,7 @@ public:
     m_w.end_object();
   }
 
-  virtual void visit(ref_to_int_t &s) override {
+  virtual void visit(const ref_to_int_t &s) override {
     m_w.begin_object();
     m_w.kv_string("stmt", "ref_to_int");
     var("rhs_region", s.region());
@@ -552,11 +552,8 @@ void basic_block_to_json(const CFG &cfg,
 
   w.key("stmts");
   w.begin_array();
-  // statement_visitor::visit takes non-const references, so the block is
-  // const_cast here; nothing below mutates it.
-  const basic_block_t &cbb = cfg.get_node(label);
-  basic_block_t &bb = const_cast<basic_block_t &>(cbb);
-  for (auto &s : bb) {
+  const basic_block_t &bb = cfg.get_node(label);
+  for (auto const&s : bb) {
     json_impl::statement_to_json_visitor<CFG> vis(w);
     s.accept(&vis);
   }

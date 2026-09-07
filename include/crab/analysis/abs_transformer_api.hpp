@@ -43,8 +43,8 @@ namespace analyzer {
  **/
 template <typename BasicBlockLabel, typename Number, typename VariableName>
 class abs_transformer_api
-    : public crab::cfg::statement_visitor<BasicBlockLabel, Number,
-                                          VariableName> {
+    : public crab::cfg::const_statement_visitor<BasicBlockLabel, Number,
+                                                VariableName> {
 public:
   using number_t = Number;
   using varname_t = VariableName;
@@ -118,74 +118,74 @@ public:
       crab::cfg::bool_assert_stmt<bb_label_t, number_t, varname_t>;
 
 protected:
-  virtual void exec(havoc_t &) {}
-  virtual void exec(unreach_t &) {}
-  virtual void exec(bin_op_t &) {}
-  virtual void exec(assign_t &) {}
-  virtual void exec(assume_t &) {}
-  virtual void exec(select_t &) {}
-  virtual void exec(assert_t &) {}
-  virtual void exec(int_cast_t &) {}
-  virtual void exec(callsite_t &) {}
-  virtual void exec(intrinsic_t &) {}
-  virtual void exec(arr_init_t &) {}
-  virtual void exec(arr_store_t &) {}
-  virtual void exec(arr_load_t &) {}
-  virtual void exec(arr_assign_t &) {}
-  virtual void exec(region_init_t &) {}
-  virtual void exec(region_copy_t &) {}
-  virtual void exec(region_cast_t &) {}  
-  virtual void exec(make_ref_t &) {}
-  virtual void exec(remove_ref_t &) {}  
-  virtual void exec(load_from_ref_t &) {}
-  virtual void exec(store_to_ref_t &) {}
-  virtual void exec(gep_ref_t &) {}
-  virtual void exec(assume_ref_t &) {}
-  virtual void exec(assert_ref_t &) {}
-  virtual void exec(select_ref_t &) {}
-  virtual void exec(int_to_ref_t &) {}
-  virtual void exec(ref_to_int_t &) {}
-  virtual void exec(bool_bin_op_t &) {}
-  virtual void exec(bool_assign_cst_t &) {}
-  virtual void exec(bool_assign_var_t &) {}
-  virtual void exec(bool_assume_t &) {}
-  virtual void exec(bool_select_t &) {}
-  virtual void exec(bool_assert_t &) {}
+  virtual void exec(const havoc_t &) {}
+  virtual void exec(const unreach_t &) {}
+  virtual void exec(const bin_op_t &) {}
+  virtual void exec(const assign_t &) {}
+  virtual void exec(const assume_t &) {}
+  virtual void exec(const select_t &) {}
+  virtual void exec(const assert_t &) {}
+  virtual void exec(const int_cast_t &) {}
+  virtual void exec(const callsite_t &) {}
+  virtual void exec(const intrinsic_t &) {}
+  virtual void exec(const arr_init_t &) {}
+  virtual void exec(const arr_store_t &) {}
+  virtual void exec(const arr_load_t &) {}
+  virtual void exec(const arr_assign_t &) {}
+  virtual void exec(const region_init_t &) {}
+  virtual void exec(const region_copy_t &) {}
+  virtual void exec(const region_cast_t &) {}  
+  virtual void exec(const make_ref_t &) {}
+  virtual void exec(const remove_ref_t &) {}  
+  virtual void exec(const load_from_ref_t &) {}
+  virtual void exec(const store_to_ref_t &) {}
+  virtual void exec(const gep_ref_t &) {}
+  virtual void exec(const assume_ref_t &) {}
+  virtual void exec(const assert_ref_t &) {}
+  virtual void exec(const select_ref_t &) {}
+  virtual void exec(const int_to_ref_t &) {}
+  virtual void exec(const ref_to_int_t &) {}
+  virtual void exec(const bool_bin_op_t &) {}
+  virtual void exec(const bool_assign_cst_t &) {}
+  virtual void exec(const bool_assign_var_t &) {}
+  virtual void exec(const bool_assume_t &) {}
+  virtual void exec(const bool_select_t &) {}
+  virtual void exec(const bool_assert_t &) {}
 
 public: /* visitor api */
-  virtual void visit(havoc_t &s) override { exec(s); }
-  virtual void visit(unreach_t &s) override { exec(s); }
-  virtual void visit(bin_op_t &s) override { exec(s); }
-  virtual void visit(assign_t &s) override { exec(s); }
-  virtual void visit(assume_t &s) override { exec(s); }
-  virtual void visit(select_t &s) override { exec(s); }
-  virtual void visit(assert_t &s) override { exec(s); }
-  virtual void visit(int_cast_t &s) override { exec(s); }
-  virtual void visit(callsite_t &s) override { exec(s); }
-  virtual void visit(intrinsic_t &s) override { exec(s); }
-  virtual void visit(arr_init_t &s) override { exec(s); }
-  virtual void visit(arr_store_t &s) override { exec(s); }
-  virtual void visit(arr_load_t &s) override { exec(s); }
-  virtual void visit(arr_assign_t &s) override { exec(s); }
-  virtual void visit(region_init_t &s) override { exec(s); }
-  virtual void visit(region_copy_t &s) override { exec(s); }
-  virtual void visit(region_cast_t &s) override { exec(s); }  
-  virtual void visit(make_ref_t &s) override { exec(s); }
-  virtual void visit(remove_ref_t &s) override { exec(s); }  
-  virtual void visit(load_from_ref_t &s) override { exec(s); }
-  virtual void visit(store_to_ref_t &s) override { exec(s); }
-  virtual void visit(gep_ref_t &s) override { exec(s); }
-  virtual void visit(assume_ref_t &s) override { exec(s); }
-  virtual void visit(assert_ref_t &s) override { exec(s); }
-  virtual void visit(select_ref_t &s) override { exec(s); }
-  virtual void visit(ref_to_int_t &s) override { exec(s); }
-  virtual void visit(int_to_ref_t &s) override { exec(s); }
-  virtual void visit(bool_bin_op_t &s) override { exec(s); }
-  virtual void visit(bool_assign_cst_t &s) override { exec(s); }
-  virtual void visit(bool_assign_var_t &s) override { exec(s); }
-  virtual void visit(bool_assume_t &s) override { exec(s); }
-  virtual void visit(bool_select_t &s) override { exec(s); }
-  virtual void visit(bool_assert_t &s) override { exec(s); }
+  virtual void visit(const havoc_t &s) override { exec(s); }
+  virtual void visit(const unreach_t &s) override { exec(s); }
+  virtual void visit(const bin_op_t &s) override { exec(s); }
+  virtual void visit(const assign_t &s) override { exec(s); }
+  virtual void visit(const assume_t &s) override { exec(s); }
+  virtual void visit(const select_t &s) override { exec(s); }
+  virtual void visit(const assert_t &s) override { exec(s); }
+  virtual void visit(const int_cast_t &s) override { exec(s); }
+  virtual void visit(const callsite_t &s) override { exec(s); }
+  virtual void visit(const intrinsic_t &s) override { exec(s); }
+  virtual void visit(const arr_init_t &s) override { exec(s); }
+  virtual void visit(const arr_store_t &s) override { exec(s); }
+  virtual void visit(const arr_load_t &s) override { exec(s); }
+  virtual void visit(const arr_assign_t &s) override { exec(s); }
+  virtual void visit(const region_init_t &s) override { exec(s); }
+  virtual void visit(const region_copy_t &s) override { exec(s); }
+  virtual void visit(const region_cast_t &s) override { exec(s); }  
+  virtual void visit(const make_ref_t &s) override { exec(s); }
+  virtual void visit(const remove_ref_t &s) override { exec(s); }  
+  virtual void visit(const load_from_ref_t &s) override { exec(s); }
+  virtual void visit(const store_to_ref_t &s) override { exec(s); }
+  virtual void visit(const gep_ref_t &s) override { exec(s); }
+  virtual void visit(const assume_ref_t &s) override { exec(s); }
+  virtual void visit(const assert_ref_t &s) override { exec(s); }
+  virtual void visit(const select_ref_t &s) override { exec(s); }
+  virtual void visit(const ref_to_int_t &s) override { exec(s); }
+  virtual void visit(const int_to_ref_t &s) override { exec(s); }
+  virtual void visit(const bool_bin_op_t &s) override { exec(s); }
+  virtual void visit(const bool_assign_cst_t &s) override { exec(s); }
+  virtual void visit(const bool_assign_var_t &s) override { exec(s); }
+  virtual void visit(const bool_assume_t &s) override { exec(s); }
+  virtual void visit(const bool_select_t &s) override { exec(s); }
+  virtual void visit(const bool_assert_t &s) override { exec(s); }
 };
 
 /**

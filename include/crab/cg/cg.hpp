@@ -96,7 +96,8 @@ template <typename CFG> class call_graph {
   using number_t = typename CFG::number_t;
   using basic_block_label_t = typename CFG::basic_block_label_t;
   using stmt_visitor_t =
-      crab::cfg::statement_visitor<basic_block_label_t, number_t, varname_t>;
+      crab::cfg::const_statement_visitor<basic_block_label_t, number_t,
+                                         varname_t>;
   using callsite_or_fdecl_t = crab::cfg::callsite_or_fdecl<CFG>;
   // map a callsite or function declaration to a dense vertex id
   using vertex_map_t = crab::cfg::callsite_or_fdecl_map<CFG, std::size_t>;
@@ -135,7 +136,7 @@ private:
     mk_edge_vis(call_graph &parent, const fdecl_t &from)
         : m_parent(parent), m_from(from) {}
 
-    virtual void visit(callsite_t &cs) override {
+    virtual void visit(const callsite_t &cs) override {
       auto &vertex_map = m_parent.m_vertex_map;
       auto it_from = vertex_map.find(&m_from);
       auto it_to = vertex_map.find(&cs);

@@ -63,7 +63,7 @@ public:
     return false;
   }
 
-  virtual void check(assert_t &s) override {
+  virtual void check(const assert_t &s) override {
     if (!this->m_abs_tr) {
       return;
     }
@@ -159,7 +159,7 @@ public:
     s.accept(&*this->m_abs_tr); // propagate invariants to the next stmt
   }
 
-  virtual void check(bool_assert_t &s) override {
+  virtual void check(const bool_assert_t &s) override {
     if (!this->m_abs_tr) {
       return;
     }
@@ -200,7 +200,7 @@ public:
     s.accept(&*this->m_abs_tr); // propagate invariants to the next stmt
   }
 
-  virtual void check(assert_ref_t &s) override {
+  virtual void check(const assert_ref_t &s) override {
     if (!this->m_abs_tr) {
       return;
     }

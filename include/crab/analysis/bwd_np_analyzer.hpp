@@ -65,7 +65,7 @@ class necessary_preconditions_fixpoint_iterator
     // rebuild local invariants that hold at each program point.
     abs_fwd_tr_t F(invariant);
     pp_abstract_map_t pp_invariants;
-    for (auto &s : boost::make_iterator_range(bb.begin(), bb.end())) {
+    for (auto const &s : boost::make_iterator_range(bb.begin(), bb.end())) {
       auto inv = F.get_abs_value();
       pp_invariants.insert(std::make_pair(&s, inv));
       CRAB_LOG("backward-fixpoint", crab::outs()
@@ -80,7 +80,7 @@ class necessary_preconditions_fixpoint_iterator
 
     // compute precondition at the entry of the block
     abs_bwd_tr_t B(std::move(precond), &pp_invariants, m_good_states);
-    for (auto &s : boost::make_iterator_range(bb.rbegin(), bb.rend())) {
+    for (auto const &s : boost::make_iterator_range(bb.rbegin(), bb.rend())) {
       s.accept(&B);
     }
     precond = std::move(B.preconditions());

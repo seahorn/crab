@@ -41,9 +41,9 @@ private:
   // unique identifier for the assert needed for being used as key
   ikos::index_t m_id;
   // the assert statement
-  statement_t *m_assert;
+  const statement_t *m_assert;
 public:
-  assert_wrapper(ikos::index_t id, statement_t *assert)
+  assert_wrapper(ikos::index_t id, const statement_t *assert)
     : m_id(id), m_assert(assert) {
     if (!m_assert) {
       CRAB_ERROR("assert_wrapper with null assert statement");
@@ -53,9 +53,6 @@ public:
     }
   }
   
-  statement_t &get() {
-    return *m_assert;
-  }
   const statement_t &get() const {
     return *m_assert;
   }
@@ -286,7 +283,8 @@ public:
   using assertion_crawler_domain_t = assertion_crawler_impl::assertion_crawler_domain<CFG>;
   using var_dom_t = typename assertion_crawler_domain_t::var_dom_t;  
   using assert_wrapper_t = assertion_crawler_impl::assert_wrapper<CFG>;  
-  using assert_map_t = typename std::unordered_map<statement_t *, assert_wrapper_t>;
+  using assert_map_t =
+      typename std::unordered_map<const statement_t *, assert_wrapper_t>;
   // control-dependency graph: map a CFG block to the set of blocks
   // which control-dependent on it.
   using cdg_t = std::unordered_map<basic_block_label_t, std::vector<basic_block_label_t>>;
@@ -300,8 +298,11 @@ public:
   ////============================================================////
   //            Propagate data/control dependencies
   ////============================================================////  
-  class transfer_function : public statement_visitor<basic_block_label_t, number_t, varname_t> {
-    using visitor_t = statement_visitor<basic_block_label_t, number_t, varname_t>; 
+  class transfer_function
+      : public const_statement_visitor<basic_block_label_t, number_t,
+                                      varname_t> {
+    using visitor_t =
+        const_statement_visitor<basic_block_label_t, number_t, varname_t>;
     using bin_op_t = typename visitor_t::bin_op_t;
     using assign_t = typename visitor_t::assign_t;
     using assume_t = typename visitor_t::assume_t;
@@ -469,7 +470,7 @@ public:
     summary_map_t &m_summaries;
     bool m_opt_ignore_region_offset;
     
-    inline void process_assertion(statement_t &s) {
+    inline void process_assertion(const statement_t &s) {
       assert(s.is_assert() || s.is_ref_assert() || s.is_bool_assert());
       
       auto it = m_assert_map.find(&s);
@@ -491,7 +492,7 @@ public:
                                              << "\tAdded " << vdom << "\n";);
     }
     
-    inline void propagate_data(statement_t &s) {
+    inline void propagate_data(const statement_t &s) {
       CRAB_LOG("assertion-crawler-step",
 	       crab::outs() << "*** " << s << "\n" << "\tBEFORE: " << m_sol << "\n");
       
@@ -499,27 +500,27 @@ public:
 	std::unique_ptr<add_data_deps> op = nullptr;
 
 	if (s.is_ref_make()) {
-	  auto make_ref = static_cast<make_ref_t*>(&s);
+	  auto make_ref = static_cast<const make_ref_t *>(&s);
 	  var_dom_t defs = var_dom_t::bottom();
 	  var_dom_t uses = var_dom_t::bottom();
 	  defs += make_ref->lhs();
 	  uses += make_ref->region();
 	  op = std::make_unique<add_data_deps>(uses, defs);
 	} else if (s.is_ref_remove()) {
-	  auto remove_ref = static_cast<remove_ref_t*>(&s);
+	  auto remove_ref = static_cast<const remove_ref_t *>(&s);
 	  var_dom_t defs = var_dom_t::bottom();
 	  var_dom_t uses = var_dom_t::bottom();
 	  uses += remove_ref->region();
 	  op = std::make_unique<add_data_deps>(uses, defs);
 	} else if (s.is_ref_load()) { 
-	  auto load_ref = static_cast<load_from_ref_t*>(&s);
+	  auto load_ref = static_cast<const load_from_ref_t *>(&s);
 	  var_dom_t defs = var_dom_t::bottom();
 	  var_dom_t uses = var_dom_t::bottom();
 	  defs += load_ref->lhs();
 	  uses += load_ref->region();
 	  op = std::make_unique<add_data_deps>(uses, defs);
 	} else if (s.is_ref_store()) {
-	  auto store_ref = static_cast<store_to_ref_t*>(&s);
+	  auto store_ref = static_cast<const store_to_ref_t *>(&s);
 	  var_dom_t defs = var_dom_t::bottom();
 	  var_dom_t uses = var_dom_t::bottom();
 	  defs += store_ref->region();
@@ -529,7 +530,7 @@ public:
 	  }
 	  op = std::make_unique<add_data_deps>(uses, defs);
 	} else if (s.is_ref_gep()) {
-	  auto gep_ref = static_cast<gep_ref_t*>(&s);
+	  auto gep_ref = static_cast<const gep_ref_t *>(&s);
 	  if (gep_ref->lhs() != gep_ref->rhs()) {
 	    var_dom_t defs = var_dom_t::bottom();
 	    var_dom_t uses = var_dom_t::bottom();
@@ -557,7 +558,7 @@ public:
       CRAB_LOG("assertion-crawler-step", crab::outs() << "\tAFTER " << m_sol << "\n";);
     }
 
-    inline void propagate_data_and_control(statement_t &s) {
+    inline void propagate_data_and_control(const statement_t &s) {
       CRAB_LOG("assertion-crawler-step", crab::outs()
 	       << "*** " << s << "\n"
 	       << "\tBEFORE: " << m_sol << "\n");
@@ -604,35 +605,35 @@ public:
       return m_sol;
     }
 
-    virtual void visit(bin_op_t &s) override {
+    virtual void visit(const bin_op_t &s) override {
       propagate_data(s);
     }
 
-    virtual void visit(assign_t &s) override {
+    virtual void visit(const assign_t &s) override {
       propagate_data(s);
     }
 
-    virtual void visit(assume_t &s) override {
+    virtual void visit(const assume_t &s) override {
       propagate_data_and_control(s);
     }
 
-    virtual void visit(select_t &s) override {
+    virtual void visit(const select_t &s) override {
       propagate_data(s);
     }
 
-    virtual void visit(assert_t &s) override {
+    virtual void visit(const assert_t &s) override {
       process_assertion(s);
     }
 
-    virtual void visit(int_cast_t &s) override {
+    virtual void visit(const int_cast_t &s) override {
       propagate_data(s);
     }
     
-    virtual void visit(unreach_t &) override {
+    virtual void visit(const unreach_t &) override {
       m_sol.set_to_bottom();
     }
 
-    virtual void visit(havoc_t &s) override {
+    virtual void visit(const havoc_t &s) override {
       CRAB_LOG("assertion-crawler-step", crab::outs()
                                              << "*** " << s << "\n"
                                              << "\tBEFORE: " << m_sol << "\n");
@@ -710,7 +711,7 @@ public:
     }
 				      
     
-    virtual void visit(callsite_t &s) override {
+    virtual void visit(const callsite_t &s) override {
 
       CRAB_LOG("assertion-crawler-step-cs", crab::outs()
 	       << "*** " << s << "\n"
@@ -771,75 +772,75 @@ public:
 	       << "\tAFTER " << m_sol << "\n";);
     }
 
-    virtual void visit(intrinsic_t &s) override {
+    virtual void visit(const intrinsic_t &s) override {
       propagate_data(s);      
     }
 
-    virtual void visit(make_ref_t &s) override {
+    virtual void visit(const make_ref_t &s) override {
       propagate_data(s);
     }
 
-    virtual void visit(remove_ref_t &s) override {
+    virtual void visit(const remove_ref_t &s) override {
       propagate_data(s);
     }
 
-    virtual void visit(region_init_t &s) override {
+    virtual void visit(const region_init_t &s) override {
       propagate_data(s);
     }
 
-    virtual void visit(region_copy_t &s) override {
+    virtual void visit(const region_copy_t &s) override {
       propagate_data(s);
     }
 
-    virtual void visit(region_cast_t &s) override {
+    virtual void visit(const region_cast_t &s) override {
       propagate_data(s);
     }
 
-    virtual void visit(load_from_ref_t &s) override {
+    virtual void visit(const load_from_ref_t &s) override {
       propagate_data(s);             
     }
 
-    virtual void visit(store_to_ref_t &s) override {
+    virtual void visit(const store_to_ref_t &s) override {
       propagate_data(s);       
     }
 
-    virtual void visit(gep_ref_t &s) override {
+    virtual void visit(const gep_ref_t &s) override {
       propagate_data(s); 
     }
 
-    virtual void visit(assume_ref_t &s) override {
+    virtual void visit(const assume_ref_t &s) override {
       propagate_data_and_control(s);
     }
 
-    virtual void visit(assert_ref_t &s) override {
+    virtual void visit(const assert_ref_t &s) override {
       process_assertion(s);
     }
     
-    virtual void visit(select_ref_t &s) override {
+    virtual void visit(const select_ref_t &s) override {
       propagate_data(s);
     }    
 
-    virtual void visit(bool_bin_op_t &s) override {
+    virtual void visit(const bool_bin_op_t &s) override {
       propagate_data(s);
     }
 
-    virtual void visit(bool_assign_var_t &s) override {
+    virtual void visit(const bool_assign_var_t &s) override {
       propagate_data(s);
     }
 
-    virtual void visit(bool_assign_cst_t &s) override {
+    virtual void visit(const bool_assign_cst_t &s) override {
       propagate_data(s);
     }
 
-    virtual void visit(bool_select_t &s) override {
+    virtual void visit(const bool_select_t &s) override {
       propagate_data(s);
     }
     
-    virtual void visit(bool_assume_t &s) override {
+    virtual void visit(const bool_assume_t &s) override {
       propagate_data_and_control(s);
     }
     
-    virtual void visit(bool_assert_t &s) override {
+    virtual void visit(const bool_assert_t &s) override {
       process_assertion(s);
     }
   };
@@ -896,10 +897,10 @@ public:
 
   virtual assertion_crawler_domain_t analyze(const basic_block_label_t &bb_id,
 					     assertion_crawler_domain_t out) override {
-    auto &bb = this->m_cfg.get_node(bb_id);
+    auto const &bb = this->m_cfg.get_node(bb_id);
     transfer_function vis(out, m_cdg, m_assert_map, m_summaries,
 			  m_opt_ignore_region_offset);
-    for (auto &s : boost::make_iterator_range(bb.rbegin(), bb.rend())) {
+    for (auto const&s : boost::make_iterator_range(bb.rbegin(), bb.rend())) {
       s.accept(&vis);
     }
     return vis.get_solution();
@@ -1001,18 +1002,19 @@ public:
   // return the dataflow facts of the pre-state at each program point in bb
   void get_results(
       const basic_block_label_t &b,
-      std::map<typename CFG::statement_t *, assert_map_domain_t> &res) const {
+      std::map<const typename CFG::statement_t *, assert_map_domain_t> &res)
+      const {
     auto it = m_results.find(b);
     if (it != m_results.end()) {
       if (!it->second.get_first().is_bottom()) {
-        auto &bb = this->m_cfg.get_node(b);
+        auto const &bb = this->m_cfg.get_node(b);
         typename assertion_crawler_op_t::transfer_function vis
 	  (it->second /* OUT dataflow facts */,
 	   m_assert_crawler_op.m_cdg,
 	   m_assert_crawler_op.m_assert_map,
 	   m_assert_crawler_op.m_summaries,
 	   m_assert_crawler_op.m_opt_ignore_region_offset);
-        for (auto &s : boost::make_iterator_range(bb.rbegin(), bb.rend())) {
+        for (auto const &s : boost::make_iterator_range(bb.rbegin(), bb.rend())) {
           s.accept(&vis);
           auto in = vis.get_solution().get_first();
           res.insert(std::make_pair(&s, in));

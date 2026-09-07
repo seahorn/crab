@@ -176,7 +176,7 @@ public:
 
 template <typename Analyzer>
 class property_checker
-    : public crab::cfg::statement_visitor<
+    : public crab::cfg::const_statement_visitor<
           typename Analyzer::basic_block_label_t, typename Analyzer::number_t,
           typename Analyzer::varname_t> {
 public:
@@ -320,199 +320,199 @@ protected:
     }
   }
 
-  virtual void check(assert_t &s) {
+  virtual void check(const assert_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(bin_op_t &s) {
+  virtual void check(const bin_op_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(assign_t &s) {
+  virtual void check(const assign_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(assume_t &s) {
+  virtual void check(const assume_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(select_t &s) {
+  virtual void check(const select_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(int_cast_t &s) {
+  virtual void check(const int_cast_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(havoc_t &s) {
+  virtual void check(const havoc_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(unreach_t &s) {
+  virtual void check(const unreach_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(callsite_t &s) {
+  virtual void check(const callsite_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(intrinsic_t &s) {
+  virtual void check(const intrinsic_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(arr_init_t &s) {
+  virtual void check(const arr_init_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(arr_assign_t &s) {
+  virtual void check(const arr_assign_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(arr_store_t &s) {
+  virtual void check(const arr_store_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(arr_load_t &s) {
+  virtual void check(const arr_load_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(region_init_t &s) {
+  virtual void check(const region_init_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(region_copy_t &s) {
+  virtual void check(const region_copy_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(region_cast_t &s) {
+  virtual void check(const region_cast_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
   
-  virtual void check(make_ref_t &s) {
+  virtual void check(const make_ref_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(remove_ref_t &s) {
+  virtual void check(const remove_ref_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
   
-  virtual void check(load_from_ref_t &s) {
+  virtual void check(const load_from_ref_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(store_to_ref_t &s) {
+  virtual void check(const store_to_ref_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(gep_ref_t &s) {
+  virtual void check(const gep_ref_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(assume_ref_t &s) {
+  virtual void check(const assume_ref_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(assert_ref_t &s) {
+  virtual void check(const assert_ref_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(select_ref_t &s) {
+  virtual void check(const select_ref_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(int_to_ref_t &s) {
+  virtual void check(const int_to_ref_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(ref_to_int_t &s) {
+  virtual void check(const ref_to_int_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(bool_assert_t &s) {
+  virtual void check(const bool_assert_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(bool_bin_op_t &s) {
+  virtual void check(const bool_bin_op_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(bool_assign_cst_t &s) {
+  virtual void check(const bool_assign_cst_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(bool_assign_var_t &s) {
+  virtual void check(const bool_assign_var_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(bool_assume_t &s) {
+  virtual void check(const bool_assume_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(bool_select_t &s) {
+  virtual void check(const bool_select_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
@@ -520,39 +520,39 @@ protected:
 
 public:
   /* Visitor API */
-  virtual void visit(bin_op_t &s) override { check(s); }
-  virtual void visit(assign_t &s) override { check(s); }
-  virtual void visit(assume_t &s) override { check(s); }
-  virtual void visit(select_t &s) override { check(s); }
-  virtual void visit(assert_t &s) override { check(s); }
-  virtual void visit(int_cast_t &s) override { check(s); }
-  virtual void visit(havoc_t &s) override { check(s); }
-  virtual void visit(unreach_t &s) override { check(s); }
-  virtual void visit(callsite_t &s) override { check(s); }
-  virtual void visit(intrinsic_t &s) override { check(s); }
-  virtual void visit(arr_init_t &s) override { check(s); }
-  virtual void visit(arr_assign_t &s) override { check(s); }
-  virtual void visit(arr_store_t &s) override { check(s); }
-  virtual void visit(arr_load_t &s) override { check(s); }
-  virtual void visit(region_init_t &s) override { check(s); }
-  virtual void visit(region_copy_t &s) override { check(s); }
-  virtual void visit(region_cast_t &s) override { check(s); }  
-  virtual void visit(make_ref_t &s) override { check(s); }
-  virtual void visit(remove_ref_t &s) override { check(s); }  
-  virtual void visit(load_from_ref_t &s) override { check(s); }
-  virtual void visit(store_to_ref_t &s) override { check(s); }
-  virtual void visit(gep_ref_t &s) override { check(s); }
-  virtual void visit(assume_ref_t &s) override { check(s); }
-  virtual void visit(assert_ref_t &s) override { check(s); }
-  virtual void visit(select_ref_t &s) override { check(s); }
-  virtual void visit(int_to_ref_t &s) override { check(s); }
-  virtual void visit(ref_to_int_t &s) override { check(s); }
-  virtual void visit(bool_bin_op_t &s) override { check(s); }
-  virtual void visit(bool_assign_cst_t &s) override { check(s); }
-  virtual void visit(bool_assign_var_t &s) override { check(s); }
-  virtual void visit(bool_assume_t &s) override { check(s); }
-  virtual void visit(bool_select_t &s) override { check(s); }
-  virtual void visit(bool_assert_t &s) override { check(s); }
+  virtual void visit(const bin_op_t &s) override { check(s); }
+  virtual void visit(const assign_t &s) override { check(s); }
+  virtual void visit(const assume_t &s) override { check(s); }
+  virtual void visit(const select_t &s) override { check(s); }
+  virtual void visit(const assert_t &s) override { check(s); }
+  virtual void visit(const int_cast_t &s) override { check(s); }
+  virtual void visit(const havoc_t &s) override { check(s); }
+  virtual void visit(const unreach_t &s) override { check(s); }
+  virtual void visit(const callsite_t &s) override { check(s); }
+  virtual void visit(const intrinsic_t &s) override { check(s); }
+  virtual void visit(const arr_init_t &s) override { check(s); }
+  virtual void visit(const arr_assign_t &s) override { check(s); }
+  virtual void visit(const arr_store_t &s) override { check(s); }
+  virtual void visit(const arr_load_t &s) override { check(s); }
+  virtual void visit(const region_init_t &s) override { check(s); }
+  virtual void visit(const region_copy_t &s) override { check(s); }
+  virtual void visit(const region_cast_t &s) override { check(s); }  
+  virtual void visit(const make_ref_t &s) override { check(s); }
+  virtual void visit(const remove_ref_t &s) override { check(s); }  
+  virtual void visit(const load_from_ref_t &s) override { check(s); }
+  virtual void visit(const store_to_ref_t &s) override { check(s); }
+  virtual void visit(const gep_ref_t &s) override { check(s); }
+  virtual void visit(const assume_ref_t &s) override { check(s); }
+  virtual void visit(const assert_ref_t &s) override { check(s); }
+  virtual void visit(const select_ref_t &s) override { check(s); }
+  virtual void visit(const int_to_ref_t &s) override { check(s); }
+  virtual void visit(const ref_to_int_t &s) override { check(s); }
+  virtual void visit(const bool_bin_op_t &s) override { check(s); }
+  virtual void visit(const bool_assign_cst_t &s) override { check(s); }
+  virtual void visit(const bool_assign_var_t &s) override { check(s); }
+  virtual void visit(const bool_assume_t &s) override { check(s); }
+  virtual void visit(const bool_select_t &s) override { check(s); }
+  virtual void visit(const bool_assert_t &s) override { check(s); }
 
   property_checker(int verbose) : m_abs_tr(nullptr), m_verbose(verbose) {}
 

@@ -1372,7 +1372,7 @@ public:
 
   global_context_t &get_context() { return m_ctx; }
 
-  virtual void exec(callsite_t &cs) override {
+  virtual void exec(const callsite_t &cs) override {
     if (!m_cg.has_callee(cs)) {
       CRAB_ERROR("Cannot find callee CFG for ", cs);
     }

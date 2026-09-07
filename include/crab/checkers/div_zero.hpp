@@ -34,7 +34,7 @@ public:
     return "integer division by zero checker";
   }
 
-  void check(bin_op_t &s) override {
+  void check(const bin_op_t &s) override {
     if (!this->m_abs_tr)
       return;
 
