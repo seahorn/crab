@@ -48,12 +48,6 @@ inline void write(writer &w, const crab::variable_type &ty) {
     w.kv_string("kind", "real_region");
   } else if (ty.is_reference_region()) {
     w.kv_string("kind", "ref_region");
-  } else if (ty.is_bool_array_region()) {
-    w.kv_string("kind", "bool_array_region");
-  } else if (ty.is_int_array_region()) {
-    w.kv_string("kind", "int_array_region");
-  } else if (ty.is_real_array_region()) {
-    w.kv_string("kind", "real_array_region");
   } else {
     w.kv_string("kind", "unknown");
   }

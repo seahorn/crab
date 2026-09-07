@@ -149,12 +149,6 @@ void type_value::write(crab::crab_os &o) const {
       o << "region(real)";
     } else if (ty.is_reference_region()) {
       o << "region(ref)";
-    } else if (ty.is_bool_array_region()) {
-      o << "region(arr(bool))";
-    } else if (ty.is_int_array_region()) {
-      o << "region(arr(int))";
-    } else if (ty.is_real_array_region()) {
-      o << "region(arr(real))";
     } else {
       // this shouldn't happen
       o << "top";
