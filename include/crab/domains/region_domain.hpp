@@ -628,13 +628,6 @@ private:
     }
   }
 
-  static void ERROR_IF_ARRAY_REGION(const variable_t &v, unsigned line) {
-    if (v.get_type().is_array_region()) {
-      CRAB_ERROR(v, ":", v.get_type(), " cannot contain an array at line ",
-                 line);
-    }
-  }
-
   static void ERROR_IF_NOT_REF(const variable_t &v, unsigned line) {
     if (!v.get_type().is_reference()) {
       CRAB_ERROR(v, ":", v.get_type(), " is not a reference at line ", line);
@@ -1078,8 +1071,6 @@ public:
         m_base_dom.assign_bool_var(x_gvars.get_var(), y_gvars.get_var(), false);
       } else if (dyn_ty.is_integer_region() || dyn_ty.is_real_region()) {
         m_base_dom.assign(x_gvars.get_var(), y_gvars.get_var());
-      } else if (dyn_ty.is_array_region()) {
-        m_base_dom.array_assign(x_gvars.get_var(), y_gvars.get_var());
       }
     };
 
@@ -1223,7 +1214,6 @@ public:
     REGION_DOMAIN_SCOPED_STATS(".ref_load");
 
     ERROR_IF_NOT_REGION(rgn, __LINE__);
-    ERROR_IF_ARRAY_REGION(rgn, __LINE__);
     ERROR_IF_NOT_REF(ref, __LINE__);
     if ((rgn.get_type().is_bool_region() && !res.get_type().is_bool()) ||
         (rgn.get_type().is_integer_region() && !res.get_type().is_integer()) ||
@@ -1341,7 +1331,6 @@ public:
     REGION_DOMAIN_SCOPED_STATS(".ref_store");
 
     ERROR_IF_NOT_REGION(rgn, __LINE__);
-    ERROR_IF_ARRAY_REGION(rgn, __LINE__);
     ERROR_IF_NOT_REF(ref, __LINE__);
     if ((rgn.get_type().is_bool_region() && !val.get_type().is_bool()) ||
         (rgn.get_type().is_integer_region() && !val.get_type().is_integer()) ||

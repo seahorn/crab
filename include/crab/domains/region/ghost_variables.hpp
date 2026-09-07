@@ -257,12 +257,6 @@ public:
         bitwidth = 32;
       } else if (vty.is_real_region()) {
         ty = REAL_TYPE;
-      } else if (vty.is_bool_array_region()) {
-        ty = ARR_BOOL_TYPE;
-      } else if (vty.is_int_array_region()) {
-        ty = ARR_INT_TYPE;
-      } else if (vty.is_real_array_region()) {
-        ty = ARR_REAL_TYPE;
       } else {
         assert(false);
         CRAB_ERROR("make_ghost_variable: unreachable");

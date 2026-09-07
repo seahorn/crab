@@ -18,17 +18,12 @@ enum variable_type_kind {
   ARR_BOOL_TYPE,
   ARR_INT_TYPE,
   ARR_REAL_TYPE,
-  // region types: a region can contain either a scalar or an array of
-  // a non-reference type
-  REG_UNKNOWN_TYPE, // any REG_X unifies with this
+  // region types: a region can only contain a scalar
+  REG_UNKNOWN_TYPE, // any REG_X_TYPE unifies with REG_UNKNOWN_TYPE
   REG_BOOL_TYPE,
   REG_INT_TYPE,
   REG_REAL_TYPE,
   REG_REF_TYPE,
-  //
-  REG_ARR_BOOL_TYPE,
-  REG_ARR_INT_TYPE,
-  REG_ARR_REAL_TYPE,
 
   // unknown type
   UNK_TYPE
@@ -84,13 +79,7 @@ public:
     } else if (ty.is_real()) {
       return variable_type(variable_type_kind::REG_REAL_TYPE);
     } else if (ty.is_reference()) {
-      return variable_type(variable_type_kind::REG_REF_TYPE);      
-    } else if (ty.is_bool_array()) {
-      return variable_type(variable_type_kind::REG_ARR_BOOL_TYPE);      
-    } else if (ty.is_real_array()) {
-      return variable_type(variable_type_kind::REG_ARR_REAL_TYPE);            
-    } else if (ty.is_integer_array()) {
-      return variable_type(variable_type_kind::REG_ARR_INT_TYPE);                  
+      return variable_type(variable_type_kind::REG_REF_TYPE);
     } else if (!ty.is_typed()) {
       return variable_type(variable_type_kind::REG_UNKNOWN_TYPE);
     } else {
@@ -165,19 +154,12 @@ public:
   }
   bool is_real_region() const { return m_kind == REG_REAL_TYPE; }
   bool is_reference_region() const { return m_kind == REG_REF_TYPE; }
-  bool is_bool_array_region() const { return m_kind == REG_ARR_BOOL_TYPE; }
-  bool is_int_array_region() const { return m_kind == REG_ARR_INT_TYPE; }
-  bool is_real_array_region() const { return m_kind == REG_ARR_REAL_TYPE; }
   bool is_region() const {
-    return is_unknown_region() || is_scalar_region() || is_array_region();
+    return is_unknown_region() || is_scalar_region();
   }
   bool is_scalar_region() const {
     return is_bool_region() || is_integer_region() || is_real_region() ||
            is_reference_region();
-  }
-  bool is_array_region() const {
-    return is_bool_array_region() || is_int_array_region() ||
-           is_real_array_region();
   }
 
   variable_type get_region_content_type() const {
@@ -190,12 +172,6 @@ public:
       return variable_type(variable_type_kind::REAL_TYPE);
     } else if (is_reference_region()) {
       return variable_type(variable_type_kind::REF_TYPE);
-    } else if (is_int_array_region()) {
-      return variable_type(variable_type_kind::ARR_INT_TYPE);
-    } else if (is_real_array_region()) {
-      return variable_type(variable_type_kind::ARR_REAL_TYPE);      
-    } else if (is_bool_array_region()) {
-      return variable_type(variable_type_kind::ARR_BOOL_TYPE);            
     } else if (is_unknown_region()) {
       return variable_type(variable_type_kind::UNK_TYPE);            
     } else {
@@ -240,15 +216,6 @@ public:
       break;
     case REG_REF_TYPE:
       o << "region(ref)";
-      break;
-    case REG_ARR_BOOL_TYPE:
-      o << "region(arr(bool))";
-      break;
-    case REG_ARR_INT_TYPE:
-      o << "region(arr(int))";
-      break;
-    case REG_ARR_REAL_TYPE:
-      o << "region(arr(real))";
       break;
     default:
       o << "unknown";
