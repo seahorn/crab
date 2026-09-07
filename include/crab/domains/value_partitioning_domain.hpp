@@ -938,7 +938,18 @@ public:
     } else {
       disjunctive_linear_constraint_system_t res(true);
       for (auto &partition : m_partitions) {
-        res += partition.get_dom().to_linear_constraint_system();
+        linear_constraint_system_t csts =
+            partition.get_dom().to_linear_constraint_system();
+        // A partition that constrains nothing makes the whole disjunction
+        // unconstrained. Adding it would raise "cannot add true" instead, so
+        // the top case has to be recognized here.
+        if (csts.is_true()) {
+          return disjunctive_linear_constraint_system_t(false);
+        }
+        // An unsatisfiable partition contributes no disjunct.
+        if (!csts.is_false()) {
+          res += csts;
+        }
       }
       return res;
     }
@@ -2127,9 +2138,55 @@ public:
       if (!has_partitions()) {
         return m_absval.to_disjunctive_linear_constraint_system();
       } else {
-        CRAB_WARN("TODO ", domain_name(),
-                  "::to_disjunctive_linear_constraint_system");
+        // The concretization of the product is the *intersection* of its
+        // components' concretizations, so any single component is already a
+        // sound over-approximation of the whole. That is what makes this
+        // tractable: a faithful translation would be the cross product of the
+        // components' disjunctions, which is exponential in their number.
+        //
+        // So take the first component's disjunction -- keeping the partitioning
+        // that is the point of this domain -- and strengthen every disjunct
+        // with what the other components know once their own partitions are
+        // merged away. Each disjunct is then implied by the product, which is
+        // what soundness requires, and no disjunct is lost.
+        disjunctive_linear_constraint_system_t base =
+            m_product[0].to_disjunctive_linear_constraint_system();
+        if (base.is_false()) {
+          // The first component is bottom, hence so is the intersection.
+          return base;
+        }
+
+        linear_constraint_system_t others;
+        for (unsigned i = 1, sz = m_product.size(); i < sz; ++i) {
+          if (m_product[i].is_bottom()) {
+            return disjunctive_linear_constraint_system_t(true);
+          }
+          others +=
+              m_product[i].merge_partitions().get_dom().to_linear_constraint_system();
+        }
+
+        if (base.is_true()) {
+          // Nothing to distribute over; the other components are all there is.
+          disjunctive_linear_constraint_system_t res(false);
+          if (!others.is_true() && !others.is_false()) {
+            res += others;
+          }
+          return res;
+        }
+
         disjunctive_linear_constraint_system_t res(false);
+        for (const linear_constraint_system_t &d : base) {
+          linear_constraint_system_t conj(d);
+          conj += others;
+          if (conj.is_true()) {
+            // One unconstrained disjunct makes the whole disjunction
+            // unconstrained.
+            return disjunctive_linear_constraint_system_t(false);
+          }
+          if (!conj.is_false()) {
+            res += conj;
+          }
+        }
         return res;
       }
     }
