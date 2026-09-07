@@ -899,9 +899,9 @@ user-defined assertion checker
 0  Number of total unreachable checks
 
 entry:
-  region_init(region_0:region(int));
-  i := make_ref(region_0:region(int),4,as_0);
-  store_to_ref(region_0:region(int),i:ref,0:int32);
+  region_init(region_0:region(int32));
+  i := make_ref(region_0:region(int32),4,as_0);
+  store_to_ref(region_0:region(int32),i:ref,0:int32);
   goto bb1;
 bb1:
   goto bb1_t,bb1_f;
@@ -910,23 +910,23 @@ bb1_t:
 bb2:
   havoc(nd);
   inc = ite(-nd <= -1,1,1);
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   *i = *i+inc;
-  store_to_ref(region_0:region(int),i:ref,*i:int32);
+  store_to_ref(region_0:region(int32),i:ref,*i:int32);
   goto bb3,bb4;
 bb3:
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   assume(-*i <= -1);
-  store_to_ref(region_0:region(int),i:ref,0:int32);
+  store_to_ref(region_0:region(int32),i:ref,0:int32);
   goto bb1;
 bb4:
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   assume(*i <= 0);
   goto bb1;
 bb1_f:
   goto ret;
 ret:
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   assert(*i = 0);
 
 
@@ -1026,7 +1026,7 @@ CFG
 x0:
   k = 2147483648;
   o = 4;
-  p := make_ref(region_0:region(int),400,as_0);
+  p := make_ref(region_0:region(int32),400,as_0);
   goto x1;
 x1:
   goto x2;
@@ -1044,7 +1044,7 @@ bb1_t:
   goto bb2;
 bb2:
   havoc(nd);
-  (region_0:region(int),q:ref) := gep_ref(region_0:region(int),p:ref + o);
+  (region_0:region(int32),q:ref) := gep_ref(region_0:region(int32),p:ref + o);
   k = 5;
   inc = ite(-nd <= -1,1,2);
   i = i+inc;
@@ -1087,7 +1087,7 @@ Cloned CFG
 x0:
   k = 2147483648;
   o = 4;
-  p := make_ref(region_0:region(int),400,as_0);
+  p := make_ref(region_0:region(int32),400,as_0);
   goto x1;
 x1:
   goto x2;
@@ -1105,7 +1105,7 @@ bb1_t:
   goto bb2;
 bb2:
   havoc(nd);
-  (region_0:region(int),q:ref) := gep_ref(region_0:region(int),p:ref + o);
+  (region_0:region(int32),q:ref) := gep_ref(region_0:region(int32),p:ref + o);
   k = 5;
   inc = ite(-nd <= -1,1,2);
   i = i+inc;
@@ -1121,7 +1121,7 @@ k:int32 declare main()
 x0:
   k = 2147483648;
   o = 4;
-  p := make_ref(region_0:region(int),400,as_1);
+  p := make_ref(region_0:region(int32),400,as_1);
   goto x1;
 x1:
   goto x2;
@@ -1139,7 +1139,7 @@ bb1_t:
   goto bb2;
 bb2:
   havoc(nd);
-  (region_0:region(int),q:ref) := gep_ref(region_0:region(int),p:ref + o);
+  (region_0:region(int32),q:ref) := gep_ref(region_0:region(int32),p:ref + o);
   k = 5;
   inc = ite(-nd <= -1,1,2);
   i = i+inc;
@@ -1148,14 +1148,14 @@ bb1_f:
   assume(-i <= -100);
   goto ret;
 ret:
-  k:int32 := load_from_ref(region_0:region(int),q:ref);
+  k:int32 := load_from_ref(region_0:region(int32),q:ref);
 
 
 After Dead Code Elimination
 k:int32 declare main()
 x0:
   o = 4;
-  p := make_ref(region_0:region(int),400,as_1);
+  p := make_ref(region_0:region(int32),400,as_1);
   goto x1;
 x1:
   goto x2;
@@ -1173,7 +1173,7 @@ bb1_t:
   goto bb2;
 bb2:
   havoc(nd);
-  (region_0:region(int),q:ref) := gep_ref(region_0:region(int),p:ref + o);
+  (region_0:region(int32),q:ref) := gep_ref(region_0:region(int32),p:ref + o);
   inc = ite(-nd <= -1,1,2);
   i = i+inc;
   goto bb1;
@@ -1181,7 +1181,7 @@ bb1_f:
   assume(-i <= -100);
   goto ret;
 ret:
-  k:int32 := load_from_ref(region_0:region(int),q:ref);
+  k:int32 := load_from_ref(region_0:region(int32),q:ref);
 
 
 Cloned CFG
@@ -1189,7 +1189,7 @@ k:int32 declare main()
 x0:
   k = 2147483648;
   o = 4;
-  p := make_ref(region_0:region(int),400,as_1);
+  p := make_ref(region_0:region(int32),400,as_1);
   goto x1;
 x1:
   goto x2;
@@ -1207,7 +1207,7 @@ bb1_t:
   goto bb2;
 bb2:
   havoc(nd);
-  (region_0:region(int),q:ref) := gep_ref(region_0:region(int),p:ref + o);
+  (region_0:region(int32),q:ref) := gep_ref(region_0:region(int32),p:ref + o);
   k = 5;
   inc = ite(-nd <= -1,1,2);
   i = i+inc;
@@ -1216,7 +1216,7 @@ bb1_f:
   assume(-i <= -100);
   goto ret;
 ret:
-  k:int32 := load_from_ref(region_0:region(int),q:ref);
+  k:int32 := load_from_ref(region_0:region(int32),q:ref);
 
 
 === End ./test-bin/dce ===
@@ -1778,8 +1778,8 @@ entry:
   i = 0;
   x = 1;
   y = 0;
-  p := make_ref(region_0:region(int),8,as_0);
-  (region_0:region(int),l:ref) := gep_ref(region_0:region(int),p:ref);
+  p := make_ref(region_0:region(int32),8,as_0);
+  (region_0:region(int32),l:ref) := gep_ref(region_0:region(int32),p:ref);
   goto bb1;
 bb1:
   goto bb1_t,bb1_f;
@@ -1789,11 +1789,11 @@ bb1_t:
 bb2:
   x = x+y;
   y = y+1;
-  store_to_ref(region_0:region(int),p:ref,i:int32);
-  q := make_ref(region_0:region(int),8,as_1);
-  (region_0:region(int),p_next:ref) := gep_ref(region_0:region(int),p:ref + 4);
-  store_to_ref(region_0:region(int),p_next:ref,q:ref);
-  (region_0:region(int),p:ref) := gep_ref(region_0:region(int),p_next:ref);
+  store_to_ref(region_0:region(int32),p:ref,i:int32);
+  q := make_ref(region_0:region(int32),8,as_1);
+  (region_0:region(int32),p_next:ref) := gep_ref(region_0:region(int32),p:ref + 4);
+  store_to_ref(region_0:region(int32),p_next:ref,q:ref);
+  (region_0:region(int32),p:ref) := gep_ref(region_0:region(int32),p_next:ref);
   i = i+1;
   goto bb1;
 bb1_f:
@@ -1812,8 +1812,8 @@ entry:
   i = 0;
   x = 1;
   y = 0;
-  p := make_ref(region_0:region(int),8,as_0);
-  (region_0:region(int),l:ref) := gep_ref(region_0:region(int),p:ref);
+  p := make_ref(region_0:region(int32),8,as_0);
+  (region_0:region(int32),l:ref) := gep_ref(region_0:region(int32),p:ref);
   goto bb1;
 bb1:
   goto bb1_t,bb1_f;
@@ -1823,11 +1823,11 @@ bb1_t:
 bb2:
   x = x+y;
   y = y+1;
-  store_to_ref(region_0:region(int),p:ref,i:int32);
-  q := make_ref(region_0:region(int),8,as_1);
-  (region_0:region(int),p_next:ref) := gep_ref(region_0:region(int),p:ref + 4);
-  store_to_ref(region_0:region(int),p_next:ref,q:ref);
-  (region_0:region(int),p:ref) := gep_ref(region_0:region(int),p_next:ref);
+  store_to_ref(region_0:region(int32),p:ref,i:int32);
+  q := make_ref(region_0:region(int32),8,as_1);
+  (region_0:region(int32),p_next:ref) := gep_ref(region_0:region(int32),p:ref + 4);
+  store_to_ref(region_0:region(int32),p_next:ref,q:ref);
+  (region_0:region(int32),p:ref) := gep_ref(region_0:region(int32),p_next:ref);
   i = i+1;
   goto bb1;
 bb1_f:
@@ -2001,41 +2001,41 @@ user-defined assertion checker
 === End ./test-bin/powerset ===
 === Begin ./test-bin/region-1 ===
 entry:
-  region_init(region_0:region(int));
-  region_init(region_1:region(int));
-  region_init(region_2:region(int));
-  i := make_ref(region_0:region(int),4,as_0);
-  x := make_ref(region_1:region(int),4,as_1);
-  y := make_ref(region_2:region(int),4,as_2);
-  store_to_ref(region_0:region(int),i:ref,0:int32);
-  store_to_ref(region_1:region(int),x:ref,1:int32);
-  store_to_ref(region_2:region(int),y:ref,0:int32);
+  region_init(region_0:region(int32));
+  region_init(region_1:region(int32));
+  region_init(region_2:region(int32));
+  i := make_ref(region_0:region(int32),4,as_0);
+  x := make_ref(region_1:region(int32),4,as_1);
+  y := make_ref(region_2:region(int32),4,as_2);
+  store_to_ref(region_0:region(int32),i:ref,0:int32);
+  store_to_ref(region_1:region(int32),x:ref,1:int32);
+  store_to_ref(region_2:region(int32),y:ref,0:int32);
   goto bb1;
 bb1:
   goto bb1_t,bb1_f;
 bb1_t:
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   assume(*i <= 99);
   goto bb2;
 bb2:
-  *x:int32 := load_from_ref(region_1:region(int),x:ref);
-  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  *x:int32 := load_from_ref(region_1:region(int32),x:ref);
+  *y:int32 := load_from_ref(region_2:region(int32),y:ref);
   *x = *x+*y;
-  store_to_ref(region_1:region(int),x:ref,*x:int32);
-  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  store_to_ref(region_1:region(int32),x:ref,*x:int32);
+  *y:int32 := load_from_ref(region_2:region(int32),y:ref);
   *y = *y+1;
-  store_to_ref(region_2:region(int),y:ref,*y:int32);
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  store_to_ref(region_2:region(int32),y:ref,*y:int32);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   *i = *i+1;
-  store_to_ref(region_0:region(int),i:ref,*i:int32);
+  store_to_ref(region_0:region(int32),i:ref,*i:int32);
   goto bb1;
 bb1_f:
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   assume(-*i <= -100);
   goto bb3;
 bb3:
-  *x:int32 := load_from_ref(region_1:region(int),x:ref);
-  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  *x:int32 := load_from_ref(region_1:region(int32),x:ref);
+  *y:int32 := load_from_ref(region_2:region(int32),y:ref);
   goto ret;
 ret:
   assert(-*x+*y <= 0);
@@ -2052,46 +2052,46 @@ user-defined assertion checker
 === End ./test-bin/region-1 ===
 === Begin ./test-bin/region-2 ===
 entry:
-  region_init(region_0:region(int));
-  region_init(region_1:region(int));
-  region_init(region_2:region(int));
-  i := make_ref(region_0:region(int),4,as_0);
-  x := make_ref(region_1:region(int),4,as_1);
-  y := make_ref(region_2:region(int),4,as_2);
+  region_init(region_0:region(int32));
+  region_init(region_1:region(int32));
+  region_init(region_2:region(int32));
+  i := make_ref(region_0:region(int32),4,as_0);
+  x := make_ref(region_1:region(int32),4,as_1);
+  y := make_ref(region_2:region(int32),4,as_2);
   assume(i > NULL_REF);
   assume(x > NULL_REF);
   assume(y > NULL_REF);
-  store_to_ref(region_0:region(int),i:ref,0:int32);
-  store_to_ref(region_1:region(int),x:ref,1:int32);
-  store_to_ref(region_2:region(int),y:ref,0:int32);
+  store_to_ref(region_0:region(int32),i:ref,0:int32);
+  store_to_ref(region_1:region(int32),x:ref,1:int32);
+  store_to_ref(region_2:region(int32),y:ref,0:int32);
   goto bb1;
 bb1:
   goto bb1_t,bb1_f;
 bb1_t:
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   assume(*i <= 99);
   goto bb2;
 bb2:
-  *x:int32 := load_from_ref(region_1:region(int),x:ref);
-  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  *x:int32 := load_from_ref(region_1:region(int32),x:ref);
+  *y:int32 := load_from_ref(region_2:region(int32),y:ref);
   *x = *x+*y;
-  store_to_ref(region_1:region(int),x:ref,*x:int32);
-  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  store_to_ref(region_1:region(int32),x:ref,*x:int32);
+  *y:int32 := load_from_ref(region_2:region(int32),y:ref);
   *y = *y+1;
-  store_to_ref(region_2:region(int),y:ref,*y:int32);
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  store_to_ref(region_2:region(int32),y:ref,*y:int32);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   *i = *i+1;
-  store_to_ref(region_0:region(int),i:ref,*i:int32);
+  store_to_ref(region_0:region(int32),i:ref,*i:int32);
   goto bb1;
 bb1_f:
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   assume(-*i <= -100);
   goto ret;
 ret:
   assert(x != NULL_REF);
   assert(y != NULL_REF);
-  *x:int32 := load_from_ref(region_1:region(int),x:ref);
-  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  *x:int32 := load_from_ref(region_1:region(int32),x:ref);
+  *y:int32 := load_from_ref(region_2:region(int32),y:ref);
   assert(-*x+*y <= 0);
 
 
@@ -2107,8 +2107,8 @@ user-defined assertion checker
 === Begin ./test-bin/region-3 ===
 entry:
   region_init(region_field_next:region(ref));
-  region_init(region_field_s:region(int));
-  region_init(region_field_f:region(int));
+  region_init(region_field_s:region(int32));
+  region_init(region_field_f:region(int32));
   i0 = 0;
   assume(ref0 == NULL_REF);
   goto bb2_loop;
@@ -2118,20 +2118,20 @@ bb3:
   assume(i0 <= 9999);
   goto bb5;
 bb5:
-  ref2 := make_ref(region_field_f:region(int),16,as_0);
+  ref2 := make_ref(region_field_f:region(int32),16,as_0);
   assume(ref2 > NULL_REF);
-  (region_field_f:region(int),ref3:ref) := gep_ref(region_field_f:region(int),ref2:ref);
-  store_to_ref(region_field_f:region(int),ref3:ref,i0:int32);
-  (region_field_s:region(int),ref5:ref) := gep_ref(region_field_f:region(int),ref2:ref + 4);
-  store_to_ref(region_field_s:region(int),ref5:ref,30000:int32);
-  (region_field_next:region(ref),ref4:ref) := gep_ref(region_field_f:region(int),ref2:ref + 8);
+  (region_field_f:region(int32),ref3:ref) := gep_ref(region_field_f:region(int32),ref2:ref);
+  store_to_ref(region_field_f:region(int32),ref3:ref,i0:int32);
+  (region_field_s:region(int32),ref5:ref) := gep_ref(region_field_f:region(int32),ref2:ref + 4);
+  store_to_ref(region_field_s:region(int32),ref5:ref,30000:int32);
+  (region_field_next:region(ref),ref4:ref) := gep_ref(region_field_f:region(int32),ref2:ref + 8);
   store_to_ref(region_field_next:region(ref),ref4:ref,ref0:ref);
   i0 = i0+1;
-  (region_field_f:region(int),ref0:ref) := gep_ref(region_field_f:region(int),ref2:ref);
+  (region_field_f:region(int32),ref0:ref) := gep_ref(region_field_f:region(int32),ref2:ref);
   goto bb2_loop;
 bb4:
   assume(-i0 <= -10000);
-  (region_field_f:region(int),ref1:ref) := gep_ref(region_field_f:region(int),ref0:ref);
+  (region_field_f:region(int32),ref1:ref) := gep_ref(region_field_f:region(int32),ref0:ref);
   goto bb6_loop;
 bb6_loop:
   goto bb7,bb8;
@@ -2144,15 +2144,15 @@ bb8:
   assume(ref1 != NULL_REF);
   goto bb9;
 bb9:
-  (region_field_f:region(int),ref6:ref) := gep_ref(region_field_f:region(int),ref1:ref);
-  x1:int32 := load_from_ref(region_field_f:region(int),ref6:ref);
+  (region_field_f:region(int32),ref6:ref) := gep_ref(region_field_f:region(int32),ref1:ref);
+  x1:int32 := load_from_ref(region_field_f:region(int32),ref6:ref);
   assert(x1 <= 9999);
-  (region_field_s:region(int),ref7:ref) := gep_ref(region_field_f:region(int),ref1:ref + 4);
-  x2:int32 := load_from_ref(region_field_s:region(int),ref7:ref);
+  (region_field_s:region(int32),ref7:ref) := gep_ref(region_field_f:region(int32),ref1:ref + 4);
+  x2:int32 := load_from_ref(region_field_s:region(int32),ref7:ref);
   assert(x2 <= 30000);
-  (region_field_next:region(ref),ref8:ref) := gep_ref(region_field_f:region(int),ref1:ref + 8);
+  (region_field_next:region(ref),ref8:ref) := gep_ref(region_field_f:region(int32),ref1:ref + 8);
   ref9:ref := load_from_ref(region_field_next:region(ref),ref8:ref);
-  (region_field_f:region(int),ref1:ref) := gep_ref(region_field_f:region(int),ref9:ref);
+  (region_field_f:region(int32),ref1:ref) := gep_ref(region_field_f:region(int32),ref9:ref);
   goto bb6_loop;
 
 Invariants using Region
@@ -2168,8 +2168,8 @@ user-defined assertion checker
 entry:
   region_init(region_field_next:region(ref));
   region_init(region_field_s:region(ref));
-  region_init(region_field_deref_s:region(int));
-  region_init(region_field_f:region(int));
+  region_init(region_field_deref_s:region(int32));
+  region_init(region_field_f:region(int32));
   i0 = 0;
   assume(ref0 == NULL_REF);
   goto bb2_loop;
@@ -2179,22 +2179,22 @@ bb3:
   assume(i0 <= 9999);
   goto bb5;
 bb5:
-  ref2 := make_ref(region_field_f:region(int),16,as_0);
+  ref2 := make_ref(region_field_f:region(int32),16,as_0);
   assume(ref2 > NULL_REF);
-  (region_field_f:region(int),ref3:ref) := gep_ref(region_field_f:region(int),ref2:ref);
-  store_to_ref(region_field_f:region(int),ref3:ref,i0:int32);
-  (region_field_s:region(ref),ref5:ref) := gep_ref(region_field_f:region(int),ref2:ref + 4);
-  ref10 := make_ref(region_field_deref_s:region(int),4,as_1);
+  (region_field_f:region(int32),ref3:ref) := gep_ref(region_field_f:region(int32),ref2:ref);
+  store_to_ref(region_field_f:region(int32),ref3:ref,i0:int32);
+  (region_field_s:region(ref),ref5:ref) := gep_ref(region_field_f:region(int32),ref2:ref + 4);
+  ref10 := make_ref(region_field_deref_s:region(int32),4,as_1);
   assume(ref10 > NULL_REF);
   store_to_ref(region_field_s:region(ref),ref5:ref,ref10:ref);
-  (region_field_next:region(ref),ref4:ref) := gep_ref(region_field_f:region(int),ref2:ref + 8);
+  (region_field_next:region(ref),ref4:ref) := gep_ref(region_field_f:region(int32),ref2:ref + 8);
   store_to_ref(region_field_next:region(ref),ref4:ref,ref0:ref);
   i0 = i0+1;
-  (region_field_f:region(int),ref0:ref) := gep_ref(region_field_f:region(int),ref2:ref);
+  (region_field_f:region(int32),ref0:ref) := gep_ref(region_field_f:region(int32),ref2:ref);
   goto bb2_loop;
 bb4:
   assume(-i0 <= -10000);
-  (region_field_f:region(int),ref1:ref) := gep_ref(region_field_f:region(int),ref0:ref);
+  (region_field_f:region(int32),ref1:ref) := gep_ref(region_field_f:region(int32),ref0:ref);
   goto bb6_loop;
 bb6_loop:
   goto bb7,bb8;
@@ -2207,15 +2207,15 @@ bb8:
   assume(ref1 != NULL_REF);
   goto bb9;
 bb9:
-  (region_field_s:region(ref),ref7:ref) := gep_ref(region_field_f:region(int),ref1:ref + 4);
+  (region_field_s:region(ref),ref7:ref) := gep_ref(region_field_f:region(int32),ref1:ref + 4);
   ref6:ref := load_from_ref(region_field_s:region(ref),ref7:ref);
-  b2 = crab_intrinsic(is_unfreed_or_null,region_field_deref_s:region(int),ref6:ref);
+  b2 = crab_intrinsic(is_unfreed_or_null,region_field_deref_s:region(int32),ref6:ref);
   goto bb9_assert;
 bb9_assert:
   assert(b2);
-  (region_field_next:region(ref),ref8:ref) := gep_ref(region_field_f:region(int),ref1:ref + 8);
+  (region_field_next:region(ref),ref8:ref) := gep_ref(region_field_f:region(int32),ref1:ref + 8);
   ref9:ref := load_from_ref(region_field_next:region(ref),ref8:ref);
-  (region_field_f:region(int),ref1:ref) := gep_ref(region_field_f:region(int),ref9:ref);
+  (region_field_f:region(int32),ref1:ref) := gep_ref(region_field_f:region(int32),ref9:ref);
   goto bb6_loop;
 
 Invariants using Region
@@ -2229,8 +2229,8 @@ user-defined assertion checker
 entry:
   region_init(region_field_next:region(ref));
   region_init(region_field_s:region(ref));
-  region_init(region_field_deref_s:region(int));
-  region_init(region_field_f:region(int));
+  region_init(region_field_deref_s:region(int32));
+  region_init(region_field_f:region(int32));
   i0 = 0;
   assume(ref0 == NULL_REF);
   goto bb2_loop;
@@ -2240,22 +2240,22 @@ bb3:
   assume(i0 <= 9999);
   goto bb5;
 bb5:
-  ref2 := make_ref(region_field_f:region(int),16,as_0);
+  ref2 := make_ref(region_field_f:region(int32),16,as_0);
   assume(ref2 > NULL_REF);
-  (region_field_f:region(int),ref3:ref) := gep_ref(region_field_f:region(int),ref2:ref);
-  store_to_ref(region_field_f:region(int),ref3:ref,i0:int32);
-  (region_field_s:region(ref),ref5:ref) := gep_ref(region_field_f:region(int),ref2:ref + 4);
-  ref10 := make_ref(region_field_deref_s:region(int),4,as_1);
+  (region_field_f:region(int32),ref3:ref) := gep_ref(region_field_f:region(int32),ref2:ref);
+  store_to_ref(region_field_f:region(int32),ref3:ref,i0:int32);
+  (region_field_s:region(ref),ref5:ref) := gep_ref(region_field_f:region(int32),ref2:ref + 4);
+  ref10 := make_ref(region_field_deref_s:region(int32),4,as_1);
   assume(ref10 > NULL_REF);
   store_to_ref(region_field_s:region(ref),ref5:ref,ref10:ref);
-  (region_field_next:region(ref),ref4:ref) := gep_ref(region_field_f:region(int),ref2:ref + 8);
+  (region_field_next:region(ref),ref4:ref) := gep_ref(region_field_f:region(int32),ref2:ref + 8);
   store_to_ref(region_field_next:region(ref),ref4:ref,ref0:ref);
   i0 = i0+1;
-  (region_field_f:region(int),ref0:ref) := gep_ref(region_field_f:region(int),ref2:ref);
+  (region_field_f:region(int32),ref0:ref) := gep_ref(region_field_f:region(int32),ref2:ref);
   goto bb2_loop;
 bb4:
   assume(-i0 <= -10000);
-  (region_field_f:region(int),ref1:ref) := gep_ref(region_field_f:region(int),ref0:ref);
+  (region_field_f:region(int32),ref1:ref) := gep_ref(region_field_f:region(int32),ref0:ref);
   goto bb6_loop;
 bb6_loop:
   goto bb7,bb8;
@@ -2268,16 +2268,16 @@ bb8:
   assume(ref1 != NULL_REF);
   goto bb9;
 bb9:
-  (region_field_s:region(ref),ref7:ref) := gep_ref(region_field_f:region(int),ref1:ref + 4);
+  (region_field_s:region(ref),ref7:ref) := gep_ref(region_field_f:region(int32),ref1:ref + 4);
   ref6:ref := load_from_ref(region_field_s:region(ref),ref7:ref);
-  b2 = crab_intrinsic(is_unfreed_or_null,region_field_deref_s:region(int),ref6:ref);
-  remove_ref(region_field_deref_s:region(int),ref6:ref);
+  b2 = crab_intrinsic(is_unfreed_or_null,region_field_deref_s:region(int32),ref6:ref);
+  remove_ref(region_field_deref_s:region(int32),ref6:ref);
   goto bb9_assert;
 bb9_assert:
   assert(b2);
-  (region_field_next:region(ref),ref8:ref) := gep_ref(region_field_f:region(int),ref1:ref + 8);
+  (region_field_next:region(ref),ref8:ref) := gep_ref(region_field_f:region(int32),ref1:ref + 8);
   ref9:ref := load_from_ref(region_field_next:region(ref),ref8:ref);
-  (region_field_f:region(int),ref1:ref) := gep_ref(region_field_f:region(int),ref9:ref);
+  (region_field_f:region(int32),ref1:ref) := gep_ref(region_field_f:region(int32),ref9:ref);
   goto bb6_loop;
 
 Invariants using Region
@@ -2291,45 +2291,45 @@ user-defined assertion checker
 === End ./test-bin/region-4 ===
 === Begin ./test-bin/region-5 ===
 entry:
-  region_init(region_0:region(int));
-  region_init(region_1:region(int));
-  region_init(region_2:region(int));
-  i := make_ref(region_0:region(int),4,as_0);
-  x := make_ref(region_1:region(int),4,as_1);
-  y := make_ref(region_2:region(int),4,as_2);
+  region_init(region_0:region(int32));
+  region_init(region_1:region(int32));
+  region_init(region_2:region(int32));
+  i := make_ref(region_0:region(int32),4,as_0);
+  x := make_ref(region_1:region(int32),4,as_1);
+  y := make_ref(region_2:region(int32),4,as_2);
   assume(i != NULL_REF);
   assume(x != NULL_REF);
   assume(y != NULL_REF);
-  store_to_ref(region_0:region(int),i:ref,0:int32);
-  store_to_ref(region_1:region(int),x:ref,1:int32);
-  store_to_ref(region_2:region(int),y:ref,0:int32);
+  store_to_ref(region_0:region(int32),i:ref,0:int32);
+  store_to_ref(region_1:region(int32),x:ref,1:int32);
+  store_to_ref(region_2:region(int32),y:ref,0:int32);
   goto bb1;
 bb1:
   goto bb1_t,bb1_f;
 bb1_t:
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   assume(*i <= 99);
   goto bb2;
 bb2:
-  *x:int32 := load_from_ref(region_1:region(int),x:ref);
-  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  *x:int32 := load_from_ref(region_1:region(int32),x:ref);
+  *y:int32 := load_from_ref(region_2:region(int32),y:ref);
   *x = *x+*y;
-  store_to_ref(region_1:region(int),x:ref,*x:int32);
-  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  store_to_ref(region_1:region(int32),x:ref,*x:int32);
+  *y:int32 := load_from_ref(region_2:region(int32),y:ref);
   *y = *y+1;
-  store_to_ref(region_2:region(int),y:ref,*y:int32);
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  store_to_ref(region_2:region(int32),y:ref,*y:int32);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   *i = *i+1;
-  store_to_ref(region_0:region(int),i:ref,*i:int32);
+  store_to_ref(region_0:region(int32),i:ref,*i:int32);
   goto bb1;
 bb1_f:
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   assume(-*i <= -100);
   goto bb3;
 bb3:
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
-  *x:int32 := load_from_ref(region_1:region(int),x:ref);
-  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
+  *x:int32 := load_from_ref(region_1:region(int32),x:ref);
+  *y:int32 := load_from_ref(region_2:region(int32),y:ref);
   goto ret;
 ret:
   assert(x != NULL_REF);
@@ -2351,48 +2351,48 @@ user-defined assertion checker
 === End ./test-bin/region-5 ===
 === Begin ./test-bin/region-6 ===
 entry:
-  region_init(region_0:region(int));
-  region_init(region_1:region(int));
-  region_init(region_2:region(int));
+  region_init(region_0:region(int32));
+  region_init(region_1:region(int32));
+  region_init(region_2:region(int32));
   z = 100;
-  i := make_ref(region_0:region(int),4,as_0);
-  x := make_ref(region_1:region(int),4,as_1);
-  y := make_ref(region_2:region(int),4,as_2);
+  i := make_ref(region_0:region(int32),4,as_0);
+  x := make_ref(region_1:region(int32),4,as_1);
+  y := make_ref(region_2:region(int32),4,as_2);
   assume(i != NULL_REF);
   assume(x != NULL_REF);
   assume(y != NULL_REF);
-  store_to_ref(region_0:region(int),i:ref,0:int32);
-  store_to_ref(region_1:region(int),x:ref,1:int32);
-  store_to_ref(region_2:region(int),y:ref,0:int32);
+  store_to_ref(region_0:region(int32),i:ref,0:int32);
+  store_to_ref(region_1:region(int32),x:ref,1:int32);
+  store_to_ref(region_2:region(int32),y:ref,0:int32);
   goto bb1;
 bb1:
   goto bb1_t,bb1_f;
 bb1_t:
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   assume(*i <= 99);
   goto bb2;
 bb2:
   z = z+3;
-  *x:int32 := load_from_ref(region_1:region(int),x:ref);
-  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  *x:int32 := load_from_ref(region_1:region(int32),x:ref);
+  *y:int32 := load_from_ref(region_2:region(int32),y:ref);
   *x = *x+*y;
-  store_to_ref(region_1:region(int),x:ref,*x:int32);
-  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  store_to_ref(region_1:region(int32),x:ref,*x:int32);
+  *y:int32 := load_from_ref(region_2:region(int32),y:ref);
   *y = *y+1;
-  store_to_ref(region_2:region(int),y:ref,*y:int32);
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  store_to_ref(region_2:region(int32),y:ref,*y:int32);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   *i = *i+1;
-  store_to_ref(region_0:region(int),i:ref,*i:int32);
+  store_to_ref(region_0:region(int32),i:ref,*i:int32);
   z = z-3;
   goto bb1;
 bb1_f:
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   assume(-*i <= -100);
   goto bb3;
 bb3:
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
-  *x:int32 := load_from_ref(region_1:region(int),x:ref);
-  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
+  *x:int32 := load_from_ref(region_1:region(int32),x:ref);
+  *y:int32 := load_from_ref(region_2:region(int32),y:ref);
   goto ret;
 ret:
   assert(x != NULL_REF);
@@ -2455,55 +2455,55 @@ Allocation sites for orphan_ptr at the exit: unknown
 === End ./test-bin/region-7 ===
 === Begin ./test-bin/region-8 ===
 entry:
-  region_init(region_0:region(int));
-  region_init(region_1:region(int));
-  region_init(region_2:region(int));
-  i := make_ref(region_0:region(int),4,as_0);
-  x := make_ref(region_1:region(int),4,as_1);
-  y := make_ref(region_2:region(int),4,as_2);
-  crab_intrinsic(add_tag,region_0:region(int),i:ref,1:int32);
-  crab_intrinsic(add_tag,region_1:region(int),x:ref,2:int32);
-  crab_intrinsic(add_tag,region_2:region(int),y:ref,3:int32);
-  store_to_ref(region_0:region(int),i:ref,0:int32);
-  store_to_ref(region_1:region(int),x:ref,1:int32);
-  store_to_ref(region_2:region(int),y:ref,0:int32);
+  region_init(region_0:region(int32));
+  region_init(region_1:region(int32));
+  region_init(region_2:region(int32));
+  i := make_ref(region_0:region(int32),4,as_0);
+  x := make_ref(region_1:region(int32),4,as_1);
+  y := make_ref(region_2:region(int32),4,as_2);
+  crab_intrinsic(add_tag,region_0:region(int32),i:ref,1:int32);
+  crab_intrinsic(add_tag,region_1:region(int32),x:ref,2:int32);
+  crab_intrinsic(add_tag,region_2:region(int32),y:ref,3:int32);
+  store_to_ref(region_0:region(int32),i:ref,0:int32);
+  store_to_ref(region_1:region(int32),x:ref,1:int32);
+  store_to_ref(region_2:region(int32),y:ref,0:int32);
   goto bb1;
 bb1:
   goto bb1_t,bb1_f;
 bb1_t:
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   assume(*i <= 99);
   goto bb2;
 bb2:
-  *x:int32 := load_from_ref(region_1:region(int),x:ref);
-  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  *x:int32 := load_from_ref(region_1:region(int32),x:ref);
+  *y:int32 := load_from_ref(region_2:region(int32),y:ref);
   *x = *x+*y;
-  store_to_ref(region_1:region(int),x:ref,*x:int32);
-  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  store_to_ref(region_1:region(int32),x:ref,*x:int32);
+  *y:int32 := load_from_ref(region_2:region(int32),y:ref);
   *y = *y+1;
-  store_to_ref(region_2:region(int),y:ref,*y:int32);
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  store_to_ref(region_2:region(int32),y:ref,*y:int32);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   *i = *i+1;
-  store_to_ref(region_0:region(int),i:ref,*i:int32);
+  store_to_ref(region_0:region(int32),i:ref,*i:int32);
   goto bb1;
 bb1_f:
-  *i:int32 := load_from_ref(region_0:region(int),i:ref);
+  *i:int32 := load_from_ref(region_0:region(int32),i:ref);
   assume(-*i <= -100);
   goto bb3;
 bb3:
-  *x:int32 := load_from_ref(region_1:region(int),x:ref);
-  *y:int32 := load_from_ref(region_2:region(int),y:ref);
+  *x:int32 := load_from_ref(region_1:region(int32),x:ref);
+  *y:int32 := load_from_ref(region_2:region(int32),y:ref);
   goto ret;
 ret:
-  b1 = crab_intrinsic(does_not_have_tag,region_0:region(int),i:ref,2:int32);
+  b1 = crab_intrinsic(does_not_have_tag,region_0:region(int32),i:ref,2:int32);
   assert(b1);
-  b1 = crab_intrinsic(does_not_have_tag,region_0:region(int),i:ref,3:int32);
+  b1 = crab_intrinsic(does_not_have_tag,region_0:region(int32),i:ref,3:int32);
   assert(b1);
-  b1 = crab_intrinsic(does_not_have_tag,region_1:region(int),x:ref,1:int32);
+  b1 = crab_intrinsic(does_not_have_tag,region_1:region(int32),x:ref,1:int32);
   assert(b1);
-  b1 = crab_intrinsic(does_not_have_tag,region_2:region(int),y:ref,1:int32);
+  b1 = crab_intrinsic(does_not_have_tag,region_2:region(int32),y:ref,1:int32);
   assert(b1);
-  b1 = crab_intrinsic(does_not_have_tag,region_1:region(int),x:ref,3:int32);
+  b1 = crab_intrinsic(does_not_have_tag,region_1:region(int32),x:ref,3:int32);
   assert(b1);
 
 
@@ -2859,15 +2859,15 @@ Running top-down inter-procedural analysis with SplitDBM
 0  Number of total unreachable checks
 === End ./test-bin/td_inter_3 ===
 === Begin ./test-bin/td_inter_4 ===
-z:region(int) declare foo(x:int32)
+z:region(int32) declare foo(x:int32)
 entry:
-  region_init(z:region(int));
-  ref := make_ref(z:region(int),4,as_0);
+  region_init(z:region(int32));
+  ref := make_ref(z:region(int32),4,as_0);
   assume(-x+tmp <= 0);
   assume(-tmp < 0);
   goto exit;
 exit:
-  store_to_ref(z:region(int),ref:ref,tmp:int32);
+  store_to_ref(z:region(int32),ref:ref,tmp:int32);
 
 
 void declare main()
@@ -2876,8 +2876,8 @@ entry:
   assume(-x < 0);
   goto exit;
 exit:
-  z:region(int) = call foo(x:int32);
-  lhs:int32 := load_from_ref(z:region(int),ref:ref);
+  z:region(int32) = call foo(x:int32);
+  lhs:int32 := load_from_ref(z:region(int32),ref:ref);
   assert(-x+lhs <= 0);
   assert(-lhs < 0);
 
@@ -2889,15 +2889,15 @@ Running top-down inter-procedural analysis with Region
 0  Number of total unreachable checks
 === End ./test-bin/td_inter_4 ===
 === Begin ./test-bin/td_inter_5 ===
-b:region(int) declare foo(a:int32)
+b:region(int32) declare foo(a:int32)
 entry:
-  region_init(b:region(int));
-  ref := make_ref(b:region(int),4,as_0);
+  region_init(b:region(int32));
+  ref := make_ref(b:region(int32),4,as_0);
   assume(-a+tmp <= 0);
   assume(-tmp < 0);
   goto exit;
 exit:
-  store_to_ref(b:region(int),ref:ref,tmp:int32);
+  store_to_ref(b:region(int32),ref:ref,tmp:int32);
 
 
 void declare main()
@@ -2906,8 +2906,8 @@ entry:
   assume(-x < 0);
   goto exit;
 exit:
-  z:region(int) = call foo(x:int32);
-  lhs:int32 := load_from_ref(z:region(int),ref:ref);
+  z:region(int32) = call foo(x:int32);
+  lhs:int32 := load_from_ref(z:region(int32),ref:ref);
   assert(-x+lhs <= 0);
   assert(-lhs < 0);
 
@@ -4021,9 +4021,9 @@ and
 	{x -> [5, +oo]}
 Unit test 1 for select_ref
 entry:
-  region_init(rgn1:region(int));
-  region_init(rgn2:region(int));
-  region_init(rgn3:region(int));
+  region_init(rgn1:region(int32));
+  region_init(rgn2:region(int32));
+  region_init(rgn3:region(int32));
   assume(ref2 > NULL_REF);
   assume(ref3 > NULL_REF);
   havoc(cond);
@@ -4042,9 +4042,9 @@ user-defined assertion checker
 
 Unit test 2 for select_ref
 entry:
-  region_init(rgn1:region(int));
-  region_init(rgn2:region(int));
-  region_init(rgn3:region(int));
+  region_init(rgn1:region(int32));
+  region_init(rgn2:region(int32));
+  region_init(rgn3:region(int32));
   assume(ref2 > NULL_REF);
   (ref1,rgn1) = ite(cond,(ref2,rgn2),(ref3,rgn3));
   goto exit;
@@ -4061,9 +4061,9 @@ user-defined assertion checker
 
 Unit test 3 for select_ref
 entry:
-  region_init(rgn1:region(int));
-  region_init(rgn2:region(int));
-  region_init(rgn3:region(int));
+  region_init(rgn1:region(int32));
+  region_init(rgn2:region(int32));
+  region_init(rgn3:region(int32));
   assume(ref2 == NULL_REF);
   havoc(cond);
   (ref1,rgn1) = ite(cond,NULL_REF,(ref2,rgn2));
@@ -4081,9 +4081,9 @@ user-defined assertion checker
 
 Unit test 4 for select_ref
 entry:
-  region_init(rgn1:region(int));
-  region_init(rgn2:region(int));
-  region_init(rgn3:region(int));
+  region_init(rgn1:region(int32));
+  region_init(rgn2:region(int32));
+  region_init(rgn3:region(int32));
   assume(ref2 > NULL_REF);
   cond = true;
   (ref1,rgn1) = ite(cond,(ref2,rgn2),(ref3,rgn3));
