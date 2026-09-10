@@ -6,6 +6,7 @@
  **/
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/boolean.hpp>
 #include <crab/domains/combined_domains.hpp>
@@ -31,7 +32,10 @@ public:
 // A simple flat 3-valued boolean abstract domain
 template <typename Number, typename VariableName, typename Params = FlatBoolDefaultParams>
 class flat_boolean_domain final
-  : public abstract_domain_api<flat_boolean_domain<Number, VariableName, Params>> {
+  : public abstract_domain_base<flat_boolean_domain<Number, VariableName, Params>,
+                                numerical_operations_not_implemented,
+                                array_operations_not_implemented,
+                                region_and_reference_operations_not_implemented> {
   using flat_boolean_domain_t = flat_boolean_domain<Number, VariableName, Params>;
 
 public:
@@ -61,9 +65,6 @@ public:
   /// flat_boolean_domain implements only boolean operations.  It is
   /// intended to be used as part of a reduced product with a
   /// another domain.
-  NUMERICAL_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
 
   flat_boolean_domain_t make_top() const override {
     return flat_boolean_domain_t(separate_domain_t::top());
@@ -556,7 +557,8 @@ struct abstract_domain_traits<flat_boolean_domain<Number, VariableName, Params>>
 //
 template <typename Dom, typename Params = FlatBoolDefaultParams>
 class flat_boolean_numerical_domain final
-  : public abstract_domain_api<flat_boolean_numerical_domain<Dom, Params>> {
+  : public abstract_domain_base<flat_boolean_numerical_domain<Dom, Params>,
+                                default_weak_bool_assign> {
   using bool_num_domain_t = flat_boolean_numerical_domain<Dom, Params>;
   using abstract_domain_t = abstract_domain_api<bool_num_domain_t>;
 
@@ -1359,8 +1361,6 @@ public:
                           << "\n";);
   }
 
-  DEFAULT_WEAK_BOOL_ASSIGN(bool_num_domain_t)
-  
   void apply_binary_bool(bool_operation_t op, const variable_t &x,
                          const variable_t &y, const variable_t &z) override {
     BOOL_AND_NUM_DOMAIN_SCOPED_STATS(".bin_bool");

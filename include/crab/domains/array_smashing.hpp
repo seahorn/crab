@@ -26,6 +26,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/constant.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
@@ -50,7 +51,8 @@ public:
 // All arrays are `smashed` into a single summarized variable.
 template <typename BaseNumDomain, typename Params = ArraySmashingDefaultParams>
 class array_smashing final
-  : public abstract_domain_api<array_smashing<BaseNumDomain, Params>> {
+  : public abstract_domain_base<array_smashing<BaseNumDomain, Params>,
+                                region_and_reference_operations_not_implemented> {
 
 public:
   using number_t = typename BaseNumDomain::number_t;
@@ -212,7 +214,6 @@ private:
 public:
   /// array_smashing is a functor domain that implements all
   /// standard operations except region/reference operations.
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(array_smashing_t)
 
   array_smashing() {}
 

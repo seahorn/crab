@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/combined_domains.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
@@ -21,7 +22,8 @@ public:
  */
 template <class Dom, class Params = LookaheadWideningDefaultParams>
 class lookahead_widening_domain
-  : public abstract_domain_api<lookahead_widening_domain<Dom, Params>> {
+  : public abstract_domain_base<lookahead_widening_domain<Dom, Params>,
+                                leaf_numerical_domain> {
 public:
   using this_type = lookahead_widening_domain<Dom, Params>;
   using abstract_domain_api_t = abstract_domain_api<this_type>;
@@ -69,13 +71,10 @@ private:
   }
 
 public:
-  // TODO: we should implement these operations
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(this_type)
-  // TODO: we should implement these operations
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(this_type)
-  // TODO: we should implement these operations
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(this_type)
-  
+  // TODO: we should implement the boolean, array, region and
+  // reference operations, currently taken from the
+  // leaf_numerical_domain mixin in the base clause.
+
   lookahead_widening_domain(bool is_bottom = false)
       : m_product(product_domain_t()), m_is_bottom(is_bottom) {}
 

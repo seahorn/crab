@@ -24,6 +24,7 @@
 #include <vector>
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
@@ -107,7 +108,9 @@ public:
  */
 template <typename BaseDom, typename Params = TVPIDBMDefaultParams>
 class tvpi_dbm_domain
-    : public abstract_domain_api<tvpi_dbm_domain<BaseDom, Params>> {
+    : public abstract_domain_base<tvpi_dbm_domain<BaseDom, Params>,
+                                  default_select,
+                                  leaf_numerical_domain> {
 public:
   using tvpi_dbm_domain_t = tvpi_dbm_domain<BaseDom, Params>;
   using abstract_domain_api_t = abstract_domain_api<tvpi_dbm_domain_t>;
@@ -814,10 +817,6 @@ private:
       : m_absval(std::move(absval)), m_vars(std::move(vars)) {}
 
 public:
-  DEFAULT_SELECT(tvpi_dbm_domain_t)
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(tvpi_dbm_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(tvpi_dbm_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(tvpi_dbm_domain_t)
 
   tvpi_dbm_domain() {}
 

@@ -17,6 +17,7 @@
  **************************************************************************/
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/lattice_domain.hpp>
@@ -928,8 +929,9 @@ public:
 template <typename Domain1, typename Domain2,
           class Params = reduced_product_impl::default_params>
 class reduced_numerical_domain_product2 final
-    : public abstract_domain_api<
-          reduced_numerical_domain_product2<Domain1, Domain2, Params>> {
+    : public abstract_domain_base<
+          reduced_numerical_domain_product2<Domain1, Domain2, Params>,
+          leaf_numerical_domain> {
 
 public:
   using reduced_numerical_domain_product2_t =
@@ -1093,10 +1095,6 @@ public:
   /// reduced_numerical_domain_product2 implements only standard
   /// abstract operations of a numerical domain so it is intended to be
   /// used as a leaf domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(reduced_numerical_domain_product2_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(reduced_numerical_domain_product2_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(
-      reduced_numerical_domain_product2_t)
   
   bool is_asc_phase() const override {
     return m_product.first().is_asc_phase()

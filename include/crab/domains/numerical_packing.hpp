@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/union_find_domain.hpp>
 #include <crab/support/debug.hpp>
@@ -31,7 +32,8 @@ public:
  */
 template <class NumDom, class Params = NumPackingDefaultParams>
 class numerical_packing_domain
-    : public abstract_domain_api<numerical_packing_domain<NumDom, Params>> {
+    : public abstract_domain_base<numerical_packing_domain<NumDom, Params>,
+                                  leaf_numerical_domain> {
 public:
   using this_type = numerical_packing_domain<NumDom, Params>;
   using abstract_domain_api_t = abstract_domain_api<this_type>;
@@ -498,10 +500,6 @@ public:
     inter_abstract_operations<this_type, Params::implement_inter_transformers>::    
       caller_continuation(callsite, callee, *this);
   }
-  
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(this_type)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(this_type)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(this_type)
   
   linear_constraint_system_t to_linear_constraint_system() const override {
 

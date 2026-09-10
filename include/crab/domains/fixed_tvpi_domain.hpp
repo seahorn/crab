@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
@@ -56,7 +57,9 @@ public:
   
 template<typename OctLikeDomain, typename Params = FixedTPVIDefaultParams>
 class fixed_tvpi_domain
-  : public abstract_domain_api<fixed_tvpi_domain<OctLikeDomain, Params>> {
+  : public abstract_domain_base<fixed_tvpi_domain<OctLikeDomain, Params>,
+                                default_select,
+                                leaf_numerical_domain> {
 public:
   using fixed_tvpi_domain_t = fixed_tvpi_domain<OctLikeDomain, Params>;
   using abstract_domain_api_t = abstract_domain_api<fixed_tvpi_domain_t>;
@@ -277,10 +280,6 @@ private:
   fixed_tvpi_domain(base_domain_t &&num) : m_base_absval(std::move(num)) {}
 
 public:
-  DEFAULT_SELECT(fixed_tvpi_domain_t)
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(fixed_tvpi_domain_t)
   
   fixed_tvpi_domain() {}
 

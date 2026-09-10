@@ -19,6 +19,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/term/term_expr.hpp>
@@ -54,7 +55,9 @@ public:
   
 template <typename Number, typename VariableName, typename Params = UFDefaultParams>
 class herbrand_domain final
-  : public abstract_domain_api<herbrand_domain<Number, VariableName, Params>> {
+  : public abstract_domain_base<herbrand_domain<Number, VariableName, Params>,
+                                default_select, default_entails,
+                                default_weak_assign, default_weak_bool_assign> {
 
   using herbrand_domain_t = herbrand_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<herbrand_domain_t>;
@@ -706,8 +709,6 @@ public:
     }
   }
 
-  DEFAULT_WEAK_ASSIGN(herbrand_domain_t)
-  
   /* Begin uf-domain API */
 
   // Precondition:
@@ -904,8 +905,6 @@ public:
     }
   }
 
-  DEFAULT_ENTAILS(herbrand_domain_t)
-  
   interval_t operator[](const variable_t &x) override {
     return at(x);
   }
@@ -1041,8 +1040,6 @@ public:
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
-  DEFAULT_SELECT(herbrand_domain_t)
-
   // boolean operators
   virtual void assign_bool_cst(const variable_t &lhs,
                                const linear_constraint_t &rhs) override {
@@ -1080,8 +1077,6 @@ public:
   }
 
 
-  DEFAULT_WEAK_BOOL_ASSIGN(herbrand_domain_t)
-  
   virtual void apply_binary_bool(bool_operation_t op, const variable_t &x,
                                  const variable_t &y,
                                  const variable_t &z) override {

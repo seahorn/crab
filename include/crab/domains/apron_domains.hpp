@@ -3,6 +3,7 @@
 #include <crab/config.h>
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/intervals.hpp>
@@ -84,8 +85,10 @@ using namespace apron;
 template <typename Number, typename VariableName, apron_domain_id_t ApronDom,
           class Params = ApronDefaultParams<Number>>
 class apron_domain final
-    : public abstract_domain_api<
-          apron_domain<Number, VariableName, ApronDom, Params>> {
+    : public abstract_domain_base<
+          apron_domain<Number, VariableName, ApronDom, Params>,
+          default_select, default_entails, default_weak_assign,
+          leaf_numerical_domain> {
   using apron_domain_t = apron_domain<Number, VariableName, ApronDom, Params>;
   using abstract_domain_t = abstract_domain_api<apron_domain_t>;
 
@@ -698,9 +701,6 @@ public:
   /// Apron domains implement only standard abstract operations of a
   /// numerical domain so it is intended to be used as a leaf domain
   /// in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(apron_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(apron_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(apron_domain_t)
   
   apron_domain(bool isBot = false)
       : m_apstate(
@@ -1211,8 +1211,6 @@ public:
                           << "Assume " << csts << " --> " << *this << "\n";);
   }
 
-  DEFAULT_ENTAILS(apron_domain_t)
-  
   void assign(const variable_t &x, const linear_expression_t &e) override {
     APRON_DOMAIN_SCOPED_STATS(".assign");
 
@@ -1419,8 +1417,6 @@ public:
     set(x, xi);
   }
 
-  DEFAULT_SELECT(apron_domain_t)
-
   // ap_abstract0_forget_array(destructive=false) returns a NEW state, so
   // no copy of *this is needed; bookkeeping mirrors the in-place forget.
   apron_domain_t make_forget(const variable_vector_t &vars) const override {
@@ -1475,7 +1471,6 @@ public:
                         std::back_inserter(s3));
     return make_forget(s3);
   }
-  DEFAULT_WEAK_ASSIGN(apron_domain_t)    
   
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const apron_domain_t &invariant) override {

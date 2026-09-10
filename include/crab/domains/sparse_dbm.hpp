@@ -10,6 +10,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
@@ -48,8 +49,10 @@ template <class Number, class VariableName,
           class DBMParams = DBM_impl::DefaultParams<Number>,
 	  class DomainParams = SparseDBMDefaultParams>
 class sparse_dbm_domain final
-    : public abstract_domain_api<
-      sparse_dbm_domain<Number, VariableName, DBMParams, DomainParams>> {
+    : public abstract_domain_base<
+      sparse_dbm_domain<Number, VariableName, DBMParams, DomainParams>,
+      default_select, default_entails, default_weak_assign,
+      leaf_numerical_domain> {
   using DBM_t = sparse_dbm_domain<Number, VariableName, DBMParams, DomainParams>;
   using abstract_domain_t = abstract_domain_api<DBM_t>;
 
@@ -818,9 +821,6 @@ public:
   /// sparse_dbm_domain implements only standard abstract operations
   /// of a numerical domain so it is intended to be used as a leaf
   /// domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
   
   sparse_dbm_domain(bool is_bottom = false) : _is_bottom(is_bottom) {
     g.growTo(1); // Allocate the zero vector
@@ -1864,8 +1864,6 @@ public:
     }
   }
 
-  DEFAULT_ENTAILS(DBM_t)
-
   interval_t operator[](const variable_t &x) override {
     SPARSE_DBM_DOMAIN_SCOPED_STATS(".to_intervals");
 
@@ -2045,9 +2043,6 @@ public:
     }
     set(x, xi);
   }
-
-  DEFAULT_SELECT(DBM_t)
-  DEFAULT_WEAK_ASSIGN(DBM_t)  
 
   void callee_entry(const callsite_info<variable_t> &callsite,
 		    const DBM_t &caller) override {
