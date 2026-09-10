@@ -655,15 +655,13 @@ private:
     }
     std::unique_ptr<abstract_domain_concept>
     make_forget(const variable_vector_t &variables) const override {
-      std::unique_ptr<abstract_domain_concept> res(
-          new abstract_domain_model(m_inv.make_forget(variables)));
-      return res;
+      return std::make_unique<abstract_domain_model>(
+          m_inv.make_forget(variables));
     }
     std::unique_ptr<abstract_domain_concept>
     make_projection(const variable_vector_t &variables) const override {
-      std::unique_ptr<abstract_domain_concept> res(
-          new abstract_domain_model(m_inv.make_projection(variables)));
-      return res;
+      return std::make_unique<abstract_domain_model>(
+          m_inv.make_projection(variables));
     }
     void expand(const variable_t &var, const variable_t &new_var) override {
       m_inv.expand(var, new_var);
