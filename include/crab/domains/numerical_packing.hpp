@@ -33,7 +33,8 @@ public:
 template <class NumDom, class Params = NumPackingDefaultParams>
 class numerical_packing_domain
     : public abstract_domain_base<numerical_packing_domain<NumDom, Params>,
-                                  leaf_numerical_domain> {
+                                  leaf_numerical_domain,
+                                  default_inter_operations> {
 public:
   using this_type = numerical_packing_domain<NumDom, Params>;
   using abstract_domain_api_t = abstract_domain_api<this_type>;
@@ -488,18 +489,9 @@ public:
     CRAB_WARN(domain_name(), "::backward_apply not implemented");
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const this_type &caller) override {
-    inter_abstract_operations<this_type, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const this_type &callee) override {
-    inter_abstract_operations<this_type, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
   
   linear_constraint_system_t to_linear_constraint_system() const override {
 

@@ -81,9 +81,12 @@ class congruence_domain final : public crab::domains::abstract_domain_base<
   congruence_domain<Number, VariableName, Params>,
   crab::domains::default_select,
   crab::domains::default_entails,
+  crab::domains::default_inter_operations,
   crab::domains::leaf_numerical_domain> {
 public:
   using congruence_t = congruence<Number>;
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
 private:
   // note that this is assuming that all variables have the same bit
@@ -455,23 +458,6 @@ public:
     this->_env.set(x, xi);
   }
 
-  void callee_entry(const crab::domains::callsite_info<variable_t> &callsite,
-		    const congruence_domain_t &caller) override {
-    CONGRUENCES_DOMAIN_SCOPED_STATS( ".callee_entry");    
-    crab::domains::inter_abstract_operations<congruence_domain_t,
-					     Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
-
-  void caller_continuation(const crab::domains::callsite_info<variable_t> &callsite,
-			   const congruence_domain_t &callee) override {
-    CONGRUENCES_DOMAIN_SCOPED_STATS( ".caller_cont");    
-    crab::domains::inter_abstract_operations<congruence_domain_t,
-					     Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
-  
   void forget(const variable_vector_t &variables) override {
     if (is_bottom() || is_top()) {
       return;

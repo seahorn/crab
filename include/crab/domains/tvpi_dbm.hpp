@@ -110,7 +110,8 @@ template <typename BaseDom, typename Params = TVPIDBMDefaultParams>
 class tvpi_dbm_domain
     : public abstract_domain_base<tvpi_dbm_domain<BaseDom, Params>,
                                   default_select,
-                                  leaf_numerical_domain> {
+                                  leaf_numerical_domain,
+                                  default_inter_operations> {
 public:
   using tvpi_dbm_domain_t = tvpi_dbm_domain<BaseDom, Params>;
   using abstract_domain_api_t = abstract_domain_api<tvpi_dbm_domain_t>;
@@ -1828,22 +1829,9 @@ public:
     CRAB_WARN(domain_name(), "::backward_apply not implemented");
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-                    const tvpi_dbm_domain_t &caller) override {
-    inter_abstract_operations<
-        tvpi_dbm_domain_t,
-        Params::implement_inter_transformers>::callee_entry(callsite, caller,
-                                                            *this);
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-                           const tvpi_dbm_domain_t &callee) override {
-    inter_abstract_operations<
-        tvpi_dbm_domain_t,
-        Params::implement_inter_transformers>::caller_continuation(callsite,
-                                                                   callee,
-                                                                   *this);
-  }
 
   // ============================================================
   // Conversions, projection, renaming

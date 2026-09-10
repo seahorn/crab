@@ -41,7 +41,8 @@ template <typename Number, typename VariableName,
 class wrapped_interval_domain final
     : public abstract_domain_base<
           wrapped_interval_domain<Number, VariableName, Params>,
-          default_select, leaf_numerical_domain> {
+          default_select, leaf_numerical_domain,
+          default_inter_operations> {
   using wrapped_interval_domain_t =
       wrapped_interval_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<wrapped_interval_domain_t>;
@@ -534,22 +535,9 @@ public:
     CRAB_WARN("Backward apply for wrapped intervals not implemented");
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const wrapped_interval_domain_t &caller) override {
-    WRAPPED_INTERVALS_DOMAIN_SCOPED_STATS(".callee_entry");    
-    inter_abstract_operations<wrapped_interval_domain_t,
-			      Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const wrapped_interval_domain_t &callee) override {
-    WRAPPED_INTERVALS_DOMAIN_SCOPED_STATS(".caller_cont");        
-    inter_abstract_operations<wrapped_interval_domain_t,
-			      Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
   
   void forget(const variable_vector_t &variables) override {
     if (is_bottom() || is_top()) {
@@ -885,7 +873,8 @@ class wrapped_interval_with_history_domain final
     : public abstract_domain_base<wrapped_interval_with_history_domain<
                                       Number, VariableName, Params>,
                                   default_select, default_weak_assign,
-                                  leaf_numerical_domain> {
+                                  leaf_numerical_domain,
+                                  default_inter_operations> {
   using this_type = wrapped_interval_with_history_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<this_type>;
 
@@ -1387,26 +1376,9 @@ public:
            cst_inv.get_wrapped_interval_domain();
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const this_type &caller) override {
-    // The transformer for a call is not delegated to the subdomains.
-    // Instead, if Params::implement_inter_transformers is enabled
-    // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.            
-    inter_abstract_operations<this_type, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const this_type &callee) override {
-    // The transformer for a call is not delegated to the subdomains.
-    // Instead, if Params::implement_inter_transformers is enabled
-    // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.        
-    inter_abstract_operations<this_type, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
   
   void expand(const variable_t &x, const variable_t &new_x) override {
     WRAPPED_INTERVALS_DOMAIN_SCOPED_STATS(".expand");
@@ -1485,7 +1457,8 @@ struct abstract_domain_traits<wrapped_interval_with_history_domain<N, V, P>> {
 */
 template <typename NumDom, typename Params = WrappedIntervalsDefaultParams>
 class wrapped_numerical_domain final
-  : public abstract_domain_api<wrapped_numerical_domain<NumDom, Params>> {
+  : public abstract_domain_base<wrapped_numerical_domain<NumDom, Params>,
+                                default_inter_operations> {
   using wrapped_numerical_domain_t = wrapped_numerical_domain<NumDom, Params>;
   using abstract_domain_t = abstract_domain_api<wrapped_numerical_domain_t>;
 
@@ -2142,28 +2115,9 @@ public:
   backward_array_assign(const variable_t &lhs, const variable_t &rhs,
                         const wrapped_numerical_domain_t &invariant) override {}
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const wrapped_numerical_domain_t &caller) override {
-    // The transformer for a call is not delegated to the subdomain.
-    // Instead, if Params::implement_inter_transformers is enabled
-    // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.    
-    inter_abstract_operations<wrapped_numerical_domain_t,
-			      Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const wrapped_numerical_domain_t &callee) override {
-    // The transformer for a call is not delegated to the subdomain.
-    // Instead, if Params::implement_inter_transformers is enabled
-    // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.        
-    inter_abstract_operations<wrapped_numerical_domain_t,
-			      Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
   
   // region/reference api
   void region_init(const variable_t &reg) override {

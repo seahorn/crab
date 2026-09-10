@@ -103,7 +103,8 @@ class term_domain final
                                   default_select, default_entails,
                                   default_weak_assign,
                                   bool_operations_not_implemented,
-                                  region_and_reference_operations_not_implemented> {
+                                  region_and_reference_operations_not_implemented,
+                                  default_inter_operations> {
   friend class TermNormalizer<Info, typename Info::domain_t, DomainParams>;
 
   // Number and VariableName can be different from
@@ -1502,28 +1503,9 @@ public:
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
                              const term_domain_t &invariant) override {}
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const term_domain_t &caller) override {
-    // The transformer for a call is not delegated to the subdomain.
-    // Instead, if DomainParams::implement_inter_transformers is
-    // enabled then the transformer is implemented by reducing to
-    // calls to project, meet, forget, etc.
-    TERMS_DOMAIN_SCOPED_STATS(".callee_entry");    
-    inter_abstract_operations<term_domain_t, DomainParams::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = DomainParams;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const term_domain_t &callee) override {
-    // The transformer for a call is not delegated to the subdomain.
-    // Instead, if DomainParams::implement_inter_transformers is
-    // enabled then the transformer is implemented by reducing to
-    // calls to project, meet, forget, etc.
-    TERMS_DOMAIN_SCOPED_STATS(".caller_cont");
-    inter_abstract_operations<term_domain_t, DomainParams::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
   
   
   void rename(const variable_vector_t &from,

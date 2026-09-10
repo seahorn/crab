@@ -59,7 +59,8 @@ template<typename OctLikeDomain, typename Params = FixedTPVIDefaultParams>
 class fixed_tvpi_domain
   : public abstract_domain_base<fixed_tvpi_domain<OctLikeDomain, Params>,
                                 default_select,
-                                leaf_numerical_domain> {
+                                leaf_numerical_domain,
+                                default_inter_operations> {
 public:
   using fixed_tvpi_domain_t = fixed_tvpi_domain<OctLikeDomain, Params>;
   using abstract_domain_api_t = abstract_domain_api<fixed_tvpi_domain_t>;
@@ -600,18 +601,9 @@ public:
     CRAB_WARN(domain_name(), "::backward_apply not implemented");
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const fixed_tvpi_domain_t &caller) override {
-    inter_abstract_operations<fixed_tvpi_domain_t, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const fixed_tvpi_domain_t &callee) override {
-    inter_abstract_operations<fixed_tvpi_domain_t, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
   
   linear_constraint_system_t to_linear_constraint_system() const override {
 

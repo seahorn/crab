@@ -1083,7 +1083,8 @@ class dis_interval_domain final
   : public abstract_domain_base<dis_interval_domain<Number, VariableName, Params>,
                                 default_select,
                                 default_entails,
-                                leaf_numerical_domain> {
+                                leaf_numerical_domain,
+                                default_inter_operations> {
   using dis_interval_domain_t = dis_interval_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<dis_interval_domain_t>;
 
@@ -1453,20 +1454,9 @@ public:
     this->_env.set(x, xi);
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const dis_interval_domain_t &caller) override {
-    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".callee_entry");    
-    inter_abstract_operations<dis_interval_domain_t, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const dis_interval_domain_t &callee) override {
-    DIS_INTERVALS_DOMAIN_SCOPED_STATS(".caller_cont");
-    inter_abstract_operations<dis_interval_domain_t, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
   
   void expand(const variable_t &x, const variable_t &new_x) override {
     DIS_INTERVALS_DOMAIN_SCOPED_STATS(".expand");

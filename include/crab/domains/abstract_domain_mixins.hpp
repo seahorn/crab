@@ -47,6 +47,7 @@
  */
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/inter_abstract_operations.hpp>
 
 #include <boost/optional.hpp>
 #include <algorithm>
@@ -71,7 +72,8 @@ enum class domain_op {
   select_ref,
   entails,
   weak_assign,
-  weak_assign_bool
+  weak_assign_bool,
+  inter_ops
 };
 
 template <domain_op... Ops> struct op_list {};
@@ -609,6 +611,46 @@ public:
       other.assign_bool_var(lhs, rhs, is_not_rhs);
       this->self() |= other;
     }
+  }
+};
+
+/*===================================================================*/
+/* Default inter-procedural operations: forward to                    */
+/* inter_abstract_operations, which is where the real implementation  */
+/* lives. Whether that implementation does anything is decided by     */
+/* Dom's own parameters, so the domain must expose them:              */
+/*                                                                    */
+/*   using params_t = Params;                                         */
+/*                                                                    */
+/* A domain whose call transfer functions are not a plain forward     */
+/* (region_domain, the type-erasure wrappers, dummy_abstract_domain)  */
+/* simply does not list this mixin and writes them by hand.           */
+/*===================================================================*/
+template <class Dom, class Base>
+class default_inter_operations : public domain_mixin<Dom, Base> {
+  using base_t = domain_mixin<Dom, Base>;
+
+  // NOTE: Dom is incomplete while its own base clause is being formed,
+  // so params_t can only be named from a member function body, which is
+  // instantiated later.
+  template <class D>
+  using inter_ops_t =
+      inter_abstract_operations<D, D::params_t::implement_inter_transformers>;
+
+public:
+  using provided_ops = op_list<domain_op::inter_ops>;
+  using typename base_t::variable_t;
+
+  void callee_entry(const callsite_info<variable_t> &callsite,
+                    const Dom &caller) override {
+    CRAB_DOMAIN_SCOPED_STATS(this, ".callee_entry", 0);
+    inter_ops_t<Dom>::callee_entry(callsite, caller, this->self());
+  }
+
+  void caller_continuation(const callsite_info<variable_t> &callsite,
+                           const Dom &callee) override {
+    CRAB_DOMAIN_SCOPED_STATS(this, ".caller_cont", 0);
+    inter_ops_t<Dom>::caller_continuation(callsite, callee, this->self());
   }
 };
 

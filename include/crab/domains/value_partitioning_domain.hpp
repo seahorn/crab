@@ -50,7 +50,8 @@ public:
 template <typename NumDomain, typename Params = ValPartitioningDefaultParams>
 class value_partitioning_domain final
   : public abstract_domain_base<value_partitioning_domain<NumDomain, Params>,
-                                default_select, leaf_numerical_domain> {
+                                default_select, leaf_numerical_domain,
+                                default_inter_operations> {
   friend class product_value_partitioning_domain<NumDomain, Params>;
 
 public:
@@ -776,18 +777,9 @@ public:
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const value_partitioning_domain_t &caller) override {
-    inter_abstract_operations<value_partitioning_domain_t, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const value_partitioning_domain_t &callee) override {
-    inter_abstract_operations<value_partitioning_domain_t, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
   
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
@@ -1069,7 +1061,8 @@ struct abstract_domain_traits<value_partitioning_domain<Domain, Params>> {
 template <typename NumDomain, typename Params = ValPartitioningDefaultParams>
 class product_value_partitioning_domain final
   : public abstract_domain_base<product_value_partitioning_domain<NumDomain, Params>,
-                                default_select, leaf_numerical_domain> {
+                                default_select, leaf_numerical_domain,
+                                default_inter_operations> {
 
 public:
   using this_type = product_value_partitioning_domain<NumDomain, Params>;
@@ -1924,28 +1917,9 @@ public:
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const this_type &caller) override {
-    // The transformer for a call is not delegated to the subdomain.
-    // Instead, if Params::implement_inter_transformers is enabled
-    // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.
-    VALUE_PARTITION_DOMAIN_SCOPED_STATS(".callee_entry");    
-    inter_abstract_operations<this_type, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const this_type &callee) override {
-    // The transformer for a call is not delegated to the subdomain.
-    // Instead, if Params::implement_inter_transformers is enabled
-    // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.
-    VALUE_PARTITION_DOMAIN_SCOPED_STATS(".caller_cont");        
-    inter_abstract_operations<this_type, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
 
   
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,

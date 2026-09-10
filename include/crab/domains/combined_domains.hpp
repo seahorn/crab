@@ -262,8 +262,9 @@ public:
 template <typename Number, typename VariableName, typename Domain1,
           typename Domain2, typename Params = reduced_product_impl::default_params>
 class reduced_domain_product2 final
-    : public abstract_domain_api<
-  reduced_domain_product2<Number, VariableName, Domain1, Domain2, Params>> {
+    : public abstract_domain_base<
+  reduced_domain_product2<Number, VariableName, Domain1, Domain2, Params>,
+  default_inter_operations> {
 public:
   using reduced_domain_product2_t =
     reduced_domain_product2<Number, VariableName, Domain1, Domain2, Params>;
@@ -814,26 +815,9 @@ public:
     m_product.reduce();
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const reduced_domain_product2_t &caller) override {
-    // The transformer for a call is not delegated to the subdomains.
-    // Instead, if Params::implement_inter_transformers is enabled
-    // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.
-    inter_abstract_operations<reduced_domain_product2_t, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const reduced_domain_product2_t &callee) override {
-    // The transformer for a call is not delegated to the subdomains.
-    // Instead, if Params::implement_inter_transformers is enabled
-    // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.    
-    inter_abstract_operations<reduced_domain_product2_t, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
   
   virtual void forget(const variable_vector_t &variables) override {
     m_product.first().forget(variables);
@@ -931,7 +915,8 @@ template <typename Domain1, typename Domain2,
 class reduced_numerical_domain_product2 final
     : public abstract_domain_base<
           reduced_numerical_domain_product2<Domain1, Domain2, Params>,
-          leaf_numerical_domain> {
+          leaf_numerical_domain,
+          default_inter_operations> {
 
 public:
   using reduced_numerical_domain_product2_t =
@@ -1409,26 +1394,9 @@ public:
   }
   /* end intrinsics operations */
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const reduced_numerical_domain_product2_t &caller) override {
-    // The transformer for a call is not delegated to the subdomains.
-    // Instead, if Params::implement_inter_transformers is enabled
-    // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.
-    inter_abstract_operations<reduced_numerical_domain_product2_t, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const reduced_numerical_domain_product2_t &callee) override {
-    // The transformer for a call is not delegated to the subdomains.
-    // Instead, if Params::implement_inter_transformers is enabled
-    // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.    
-    inter_abstract_operations<reduced_numerical_domain_product2_t, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
     
   void forget(const variable_vector_t &variables) override {
     m_product.forget(variables);
