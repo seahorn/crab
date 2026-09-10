@@ -45,6 +45,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/array_smashing.hpp>
@@ -857,7 +858,8 @@ public:
   
 template <typename NumDomain, typename Params = ArrayAdaptDefaultParams>
 class array_adaptive_domain final
-  : public abstract_domain_api<array_adaptive_domain<NumDomain, Params>> {
+  : public abstract_domain_base<array_adaptive_domain<NumDomain, Params>,
+                                region_and_reference_operations_not_implemented> {
 
 public:
   using number_t = typename NumDomain::number_t;
@@ -1666,7 +1668,6 @@ private:
 public:
   /// array_adaptive is a functor domain that implements all
   /// standard operations except region/reference operations.
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(array_adaptive_domain_t)
   
   array_adaptive_domain(bool is_bottom = false) {
     if (is_bottom) {

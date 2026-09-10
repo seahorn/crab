@@ -5,6 +5,7 @@
  **/
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/combined_domains.hpp>
 #include <crab/domains/congruences.hpp>
@@ -26,7 +27,8 @@ public:
 // Reduced product of a numerical domain with interval x congruences.
 template <typename NumAbsDom, typename Params = NumCongruenceDefaultParams>
 class numerical_congruence_domain final
-  : public abstract_domain_api<numerical_congruence_domain<NumAbsDom, Params>> {
+  : public abstract_domain_base<numerical_congruence_domain<NumAbsDom, Params>,
+                                leaf_numerical_domain> {
 
   using rnc_domain_t = numerical_congruence_domain<NumAbsDom, Params>;
   using abstract_domain_t = abstract_domain_api<rnc_domain_t>;
@@ -89,9 +91,6 @@ public:
   /// numerical_congruence_domain implements only standard abstract
   /// operations of a numerical domain so it is intended to be used as
   /// a leaf domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(rnc_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(rnc_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(rnc_domain_t)
   
   bool is_asc_phase() const override {
     return m_product.first().is_asc_phase()

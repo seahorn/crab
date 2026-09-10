@@ -10,6 +10,7 @@
 #include <crab/config.h>
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/interval.hpp>
@@ -1079,7 +1080,10 @@ public:
 template <typename Number, typename VariableName,
 	  typename Params = DisIntervalsDefaultParams>
 class dis_interval_domain final
-  : public abstract_domain_api<dis_interval_domain<Number, VariableName, Params>> {
+  : public abstract_domain_base<dis_interval_domain<Number, VariableName, Params>,
+                                default_select,
+                                default_entails,
+                                leaf_numerical_domain> {
   using dis_interval_domain_t = dis_interval_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<dis_interval_domain_t>;
 
@@ -1115,11 +1119,10 @@ private:
 public:
   /// dis_interval_domain implements only standard abstract operations
   /// of a numerical domain so it is intended to be used as a leaf
-  /// domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(dis_interval_domain_t)
-  
+  /// domain in the hierarchy of domains. The boolean, array, region and
+  /// reference operations come from the leaf_numerical_domain mixin
+  /// in the base clause.
+
   dis_interval_domain_t make_top() const override {
     return dis_interval_domain_t(separate_domain_t::top());
   }
@@ -1266,8 +1269,6 @@ public:
       solver.run(this->_env);
     }
   }
-
-  DEFAULT_ENTAILS(dis_interval_domain_t)
 
   void assign(const variable_t &x, const linear_expression_t &e) override {
     DIS_INTERVALS_DOMAIN_SCOPED_STATS(".assign");
@@ -1451,8 +1452,6 @@ public:
     }
     this->_env.set(x, xi);
   }
-
-  DEFAULT_SELECT(dis_interval_domain_t)
 
   void callee_entry(const callsite_info<variable_t> &callsite,
 		    const dis_interval_domain_t &caller) override {

@@ -3,6 +3,7 @@
 #include <crab/config.h>
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/domains/intervals.hpp>
@@ -81,8 +82,10 @@ using namespace elina;
 template <typename Number, typename VariableName, elina_domain_id_t ElinaDom,
           class Params = ElinaDefaultParams<Number>>
 class elina_domain final
-    : public abstract_domain_api<
-          elina_domain<Number, VariableName, ElinaDom, Params>> {
+    : public abstract_domain_base<
+          elina_domain<Number, VariableName, ElinaDom, Params>,
+          default_select, default_entails, default_weak_assign,
+          leaf_numerical_domain> {
   using elina_domain_t = elina_domain<Number, VariableName, ElinaDom, Params>;
   using abstract_domain_t = abstract_domain_api<elina_domain_t>;
 
@@ -923,9 +926,6 @@ public:
   /// Elina domains implement only standard abstract operations of a
   /// numerical domain so it is intended to be used as a leaf domain
   /// in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(elina_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(elina_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(elina_domain_t)
   
   elina_domain(bool isBot = false)
       : m_apstate(elinaPtr(get_man(),
@@ -1437,8 +1437,6 @@ public:
     CRAB_LOG("elina", crab::outs() << *this << "\n";);
   }
 
-  DEFAULT_ENTAILS(elina_domain_t)
-  
   void assign(const variable_t &x, const linear_expression_t &e) override {
     ELINA_DOMAIN_SCOPED_STATS(".assign");
 
@@ -1626,8 +1624,6 @@ public:
     set(x, xi);
   }
 
-  DEFAULT_SELECT(elina_domain_t)
-
   // elina_abstract0_forget_array(destructive=false) returns a NEW state, so
   // no copy of *this is needed; bookkeeping mirrors the in-place forget.
   elina_domain_t make_forget(const variable_vector_t &vars) const override {
@@ -1682,7 +1678,6 @@ public:
                         std::back_inserter(s3));
     return make_forget(s3);
   }
-  DEFAULT_WEAK_ASSIGN(elina_domain_t)      
 
   void callee_entry(const callsite_info<variable_t> &callsite,
 		    const elina_domain_t &caller) override {

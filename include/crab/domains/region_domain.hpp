@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/boolean.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
@@ -105,7 +106,10 @@ namespace domains {
 #define REGION_COUNT_STATS(NAME) CRAB_DOMAIN_COUNT_STATS(NAME, 0)
   
 template <typename Params>
-class region_domain final : public abstract_domain_api<region_domain<Params>> {
+class region_domain final
+    : public abstract_domain_base<region_domain<Params>,
+                                  default_select_ref, default_weak_assign,
+                                  default_weak_bool_assign> {
   using region_domain_t = region_domain<Params>;
   using abstract_domain_t = abstract_domain_api<region_domain_t>;
 
@@ -1748,7 +1752,6 @@ public:
 
   // This default implementation is expensive because it will call the
   // join.
-  DEFAULT_SELECT_REF(region_domain_t)
   
   // arithmetic operations
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
@@ -1793,7 +1796,6 @@ public:
   // Weak assignments are performed by other domains and since the
   // region domain is often at the top of the hierarchy of domains,
   // weak assignments shouldn't happen in this domain.
-  DEFAULT_WEAK_ASSIGN(region_domain_t)
 
   void select(const variable_t &lhs, const linear_constraint_t &cond,
               const linear_expression_t &e1,
@@ -2044,7 +2046,6 @@ public:
   // Weak assignments are performed by other domains and since the
   // region domain is often at the top of the hierarchy of domains,
   // weak assignments shouldn't happen in this domain.
-  DEFAULT_WEAK_BOOL_ASSIGN(region_domain_t)  
   
   void apply_binary_bool(bool_operation_t op, const variable_t &x,
                          const variable_t &y, const variable_t &z) override {

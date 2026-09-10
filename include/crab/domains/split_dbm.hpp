@@ -18,6 +18,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
@@ -65,8 +66,9 @@ template <class Number, class VariableName,
           class DBMParams = DBM_impl::DefaultParams<Number>,
 	  class DomainParams = SplitDBMDefaultParams>
 class split_dbm_domain final
-    : public abstract_domain_api<
-          split_dbm_domain<Number, VariableName, DBMParams, DomainParams>> {
+    : public abstract_domain_base<
+          split_dbm_domain<Number, VariableName, DBMParams, DomainParams>,
+          default_select, default_weak_assign, leaf_numerical_domain> {
   using DBM_t = split_dbm_domain<Number, VariableName, DBMParams, DomainParams>;
   using abstract_domain_t = abstract_domain_api<DBM_t>;
 
@@ -1297,9 +1299,6 @@ public:
   /// split_dbm_domain implements only standard abstract operations
   /// of a numerical domain so it is intended to be used as a leaf
   /// domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(DBM_t)
   
   split_dbm_domain(bool is_bottom = false) : _is_bottom(is_bottom) {
     g.growTo(1); // Allocate the zero vector
@@ -2650,8 +2649,6 @@ public:
     set(x, xi);
   }
 
-  DEFAULT_SELECT(DBM_t)
-
   // Build only the restricted result: after normalization, the
   // projection is the induced subgraph over the kept vertices.
   DBM_t make_projection(const variable_vector_t &vs) const override {
@@ -2707,7 +2704,6 @@ public:
     }
     return make_projection(keep);
   }
-  DEFAULT_WEAK_ASSIGN(DBM_t)
     
   void project(const variable_vector_t &variables) override {
     SPLIT_DBM_DOMAIN_SCOPED_STATS(".project");

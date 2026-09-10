@@ -9,6 +9,7 @@
  */
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/interval.hpp>
@@ -32,8 +33,10 @@ public:
   CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
 template <typename Number, typename VariableName, typename Params = SignDefaultParams>
-class sign_domain final : public crab::domains::abstract_domain_api<
-                          sign_domain<Number, VariableName, Params>> {
+class sign_domain final : public crab::domains::abstract_domain_base<
+                          sign_domain<Number, VariableName, Params>,
+                          crab::domains::default_entails,
+                          crab::domains::leaf_numerical_domain> {
 public:
   using sign_domain_t = sign_domain<Number, VariableName, Params>;
   using abstract_domain_t = crab::domains::abstract_domain_api<sign_domain_t>;
@@ -275,11 +278,10 @@ private:
 public:
   /// sign_domain implements only standard abstract operations of
   /// a numerical domain so it is intended to be used as a leaf domain
-  /// in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(sign_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(sign_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(sign_domain_t)
-  
+  /// in the hierarchy of domains. The boolean, array, region and
+  /// reference operations come from the leaf_numerical_domain mixin
+  /// in the base clause.
+
   sign_domain_t make_top() const override {
     return sign_domain_t(separate_domain_t::top());
   }
@@ -393,8 +395,6 @@ public:
     SIGN_DOMAIN_SCOPED_STATS(".add_cst");
     solve_constraints(csts);
   }
-
-  DEFAULT_ENTAILS(sign_domain_t)
 
   void assign(const variable_t &x, const linear_expression_t &e) override {
     SIGN_DOMAIN_SCOPED_STATS(".assign");

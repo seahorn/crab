@@ -8,6 +8,7 @@
  **/
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/combined_domains.hpp>
 #include <crab/domains/discrete_domains.hpp>
@@ -38,8 +39,9 @@ public:
 template <typename Number, typename VariableName,
 	  typename Params = WrappedIntervalsDefaultParams>
 class wrapped_interval_domain final
-    : public abstract_domain_api<
-          wrapped_interval_domain<Number, VariableName, Params>> {
+    : public abstract_domain_base<
+          wrapped_interval_domain<Number, VariableName, Params>,
+          default_select, leaf_numerical_domain> {
   using wrapped_interval_domain_t =
       wrapped_interval_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<wrapped_interval_domain_t>;
@@ -103,9 +105,6 @@ public:
   /// wrapped_interval_domain implements only standard abstract
   /// operations of a numerical domain so it is intended to be used as
   /// a leaf domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(wrapped_interval_domain_t)
   
   wrapped_interval_domain_t make_top() const override {
     return wrapped_interval_domain_t(separate_domain_t::top());
@@ -552,8 +551,6 @@ public:
       caller_continuation(callsite, callee, *this);
   }
   
-  DEFAULT_SELECT(wrapped_interval_domain_t)
-
   void forget(const variable_vector_t &variables) override {
     if (is_bottom() || is_top()) {
       return;
@@ -885,8 +882,10 @@ inline crab_os &operator<<(crab_os &o, const wrapped_interval_limit_value &v) {
 template <typename Number, typename VariableName,
 	  typename Params = WrappedIntervalsDefaultParams>
 class wrapped_interval_with_history_domain final
-    : public abstract_domain_api<wrapped_interval_with_history_domain<
-          Number, VariableName, Params>> {
+    : public abstract_domain_base<wrapped_interval_with_history_domain<
+                                      Number, VariableName, Params>,
+                                  default_select, default_weak_assign,
+                                  leaf_numerical_domain> {
   using this_type = wrapped_interval_with_history_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<this_type>;
 
@@ -996,9 +995,6 @@ public:
   /// wrapped_interval_domain implements only standard abstract
   /// operations of a numerical domain so it is intended to be used as
   /// a leaf domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(this_type)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(this_type)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(this_type)
   
   this_type make_top() const override {
     wrapped_interval_domain_t wid;
@@ -1254,8 +1250,6 @@ public:
                                  << x << ":=" << e << " => " << *this << "\n";);
   }
 
-  DEFAULT_WEAK_ASSIGN(this_type)
-  
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const this_type &invariant) override {
     _w_int_dom.backward_assign(x, e, invariant._w_int_dom);
@@ -1342,8 +1336,6 @@ public:
                                           << k << " => " << *this << "\n";);
   }
 
-  DEFAULT_SELECT(this_type)
-  
   void write(crab_os &o) const override {
     // o << "(" << _w_int_dom << "," << _limit_env << "," << _init_set << ")";
     o << "(" << _w_int_dom << "," << _limit_env << ")";

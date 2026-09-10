@@ -44,6 +44,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/interval.hpp>
@@ -72,8 +73,9 @@ namespace ikos {
 template <typename Number, typename VariableName,
 	  typename Params = crab::domains::IntervalsDefaultParams>
 class interval_domain final
-    : public crab::domains::abstract_domain_api<
-          interval_domain<Number, VariableName, Params>> {
+    : public crab::domains::abstract_domain_base<
+          interval_domain<Number, VariableName, Params>,
+          crab::domains::leaf_numerical_domain> {
 public:
   using interval_domain_t =
       interval_domain<Number, VariableName, Params>;
@@ -140,10 +142,9 @@ private:
 public:
   /// interval_domain implements only standard abstract operations of
   /// a numerical domain so it is intended to be used as a leaf domain
-  /// in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(interval_domain_t)
+  /// in the hierarchy of domains. The boolean, array, region and
+  /// reference operations come from the leaf_numerical_domain mixin in
+  /// the base clause.
 
   interval_domain_t make_top() const override {
     return interval_domain_t(separate_domain_t::top());

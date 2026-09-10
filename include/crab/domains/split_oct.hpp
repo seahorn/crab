@@ -38,6 +38,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
@@ -262,8 +263,10 @@ template <class Number, class VariableName,
           class DBMParams = DBM_impl::DefaultParams<Number>,
 	  class DomainParams = SplitOctDefaultParams>
 class split_oct_domain final
-    : public abstract_domain_api<
-      split_oct_domain<Number, VariableName, DBMParams, DomainParams>> {
+    : public abstract_domain_base<
+      split_oct_domain<Number, VariableName, DBMParams, DomainParams>,
+      default_select, default_entails, default_weak_assign,
+      leaf_numerical_domain> {
   using split_oct_domain_t = split_oct_domain<Number, VariableName, DBMParams, DomainParams>;
   using abstract_domain_t = abstract_domain_api<split_oct_domain_t>;
   friend class integer_tightening<DBMParams, typename DBMParams::Wt>;
@@ -1922,9 +1925,6 @@ public:
   /// split_oct_domain_t implements only standard abstract operations
   /// of a numerical domain so it is intended to be used as a leaf
   /// domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(split_oct_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(split_oct_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(split_oct_domain_t)
   
   split_oct_domain(bool is_bottom = false) : m_is_bottom(is_bottom) {}
 
@@ -2926,8 +2926,6 @@ public:
     }
   }
 
-  DEFAULT_ENTAILS(split_oct_domain_t)
-  
   interval_t operator[](const variable_t &x) override {
     SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".to_intervals");
     // Needed for accuracy
@@ -3577,8 +3575,6 @@ public:
     CRAB_LOG("octagon", crab::outs() << "RESULT=" << *this << "\n");
   }
   
-  DEFAULT_SELECT(split_oct_domain_t)
-
   // Build only the restricted result (as split_dbm::make_projection);
   // here each variable owns a (v+, v-) vertex pair and there is no
   // distinguished zero vertex.
@@ -3634,7 +3630,6 @@ public:
     }
     return make_projection(keep);
   }
-  DEFAULT_WEAK_ASSIGN(split_oct_domain_t)  
 
   /* begin intrinsics operations */
   void intrinsic(std::string name,

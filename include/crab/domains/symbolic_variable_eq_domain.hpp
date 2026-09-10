@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/constant.hpp>
@@ -94,8 +95,12 @@ public:
 template <typename Number, typename VariableName,
           typename DomainParams = SVEQDefaultParams>
 class symbolic_variable_equality_domain final
-    : public abstract_domain_api<symbolic_variable_equality_domain<
-          Number, VariableName, DomainParams>> {
+    : public abstract_domain_base<symbolic_variable_equality_domain<
+                                      Number, VariableName, DomainParams>,
+                                  numerical_operations_not_implemented,
+                                  bool_operations_not_implemented,
+                                  array_operations_not_implemented,
+                                  region_and_reference_operations_not_implemented> {
 public:
   using symb_eq_domain_t =
       symbolic_variable_equality_domain<Number, VariableName, DomainParams>;
@@ -801,11 +806,6 @@ public:
     }
     add(x, y);
   }
-
-  NUMERICAL_OPERATIONS_NOT_IMPLEMENTED(this_domain_t)
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(this_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(this_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(this_domain_t)
 
   /// @brief remove an element from a class
   /// @param v an element

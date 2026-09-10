@@ -8,6 +8,7 @@
 #include <crab/config.h>
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
@@ -76,7 +77,12 @@ public:
  */
 template <typename Number, typename VariableName, typename Params = BoxesDefaultParams>
 class boxes_domain final
-  : public abstract_domain_api<boxes_domain<Number, VariableName, Params>> {
+  : public abstract_domain_base<boxes_domain<Number, VariableName, Params>,
+                                default_select, default_select_bool,
+                                default_entails, default_weak_assign,
+                                default_weak_bool_assign,
+                                array_operations_not_implemented,
+                                region_and_reference_operations_not_implemented> {
 
   using interval_domain_t = ikos::interval_domain<Number, VariableName>;
   using boxes_domain_t = boxes_domain<Number, VariableName, Params>;
@@ -769,8 +775,6 @@ public:
   /// Boxes domain implements only standard abstract operations of a
   /// numerical domain plus boolean operations. It is intended to be
   /// used as a leaf domain in the hierarchy of domains.
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(boxes_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(boxes_domain_t)
   
   static void clear_global_state() { s_var_map.clear(); }
 
@@ -1033,8 +1037,6 @@ public:
     CRAB_LOG("boxes", crab::outs() << *this << "\n";);
   }
 
-  DEFAULT_ENTAILS(boxes_domain_t)
-  
   void normalize() override {}
 
   void minimize() override {}
@@ -1653,11 +1655,6 @@ public:
     inter_abstract_operations<boxes_domain_t, Params::implement_inter_transformers>::    
       caller_continuation(callsite, callee, *this);
   }
-  
-  DEFAULT_SELECT(boxes_domain_t)
-  DEFAULT_SELECT_BOOL(boxes_domain_t)
-  DEFAULT_WEAK_ASSIGN(boxes_domain_t)
-  DEFAULT_WEAK_BOOL_ASSIGN(boxes_domain_t)
   
   linear_constraint_system_t to_linear_constraint_system() const override {
     BOXES_DOMAIN_SCOPED_STATS(".to_linear_constraint_system");

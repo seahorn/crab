@@ -44,6 +44,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/congruence.hpp>
@@ -76,8 +77,11 @@ class equality_congruence_solver;
   
 template <typename Number, typename VariableName,
 	  typename Params = crab::domains::CongruencesDefaultParams>
-class congruence_domain final : public crab::domains::abstract_domain_api<
-  congruence_domain<Number, VariableName, Params>> {
+class congruence_domain final : public crab::domains::abstract_domain_base<
+  congruence_domain<Number, VariableName, Params>,
+  crab::domains::default_select,
+  crab::domains::default_entails,
+  crab::domains::leaf_numerical_domain> {
 public:
   using congruence_t = congruence<Number>;
 
@@ -119,11 +123,10 @@ private:
 public:
   /// congruence_domain implements only standard abstract operations
   /// of a numerical domain so it is intended to be used as a leaf
-  /// domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(congruence_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(congruence_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(congruence_domain_t)
-  
+  /// domain in the hierarchy of domains. The boolean, array, region
+  /// and reference operations come from the leaf_numerical_domain
+  /// mixin in the base clause.
+
   congruence_domain_t make_top() const override {
     return congruence_domain_t(separate_domain_t::top());
   }
@@ -253,8 +256,6 @@ public:
       solver.run(this->_env);
     }
   }
-
-  DEFAULT_ENTAILS(congruence_domain_t)
 
   void assign(const variable_t &x, const linear_expression_t &e) override {
     CONGRUENCES_DOMAIN_SCOPED_STATS( ".assign");
@@ -453,8 +454,6 @@ public:
     }
     this->_env.set(x, xi);
   }
-
-  DEFAULT_SELECT(congruence_domain_t)
 
   void callee_entry(const crab::domains::callsite_info<variable_t> &callsite,
 		    const congruence_domain_t &caller) override {

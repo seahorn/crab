@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
 #include <crab/support/debug.hpp>
@@ -48,7 +49,8 @@ public:
   
 template <typename NumDomain, typename Params = ValPartitioningDefaultParams>
 class value_partitioning_domain final
-  : public abstract_domain_api<value_partitioning_domain<NumDomain, Params>> {
+  : public abstract_domain_base<value_partitioning_domain<NumDomain, Params>,
+                                default_select, leaf_numerical_domain> {
   friend class product_value_partitioning_domain<NumDomain, Params>;
 
 public:
@@ -271,9 +273,6 @@ private:
   }
   
 public:
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(value_partitioning_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(value_partitioning_domain_t)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(value_partitioning_domain_t)
     
   value_partitioning_domain() : m_variable(boost::none) {
     m_partitions.reserve(1);
@@ -790,8 +789,6 @@ public:
       caller_continuation(callsite, callee, *this);
   }
   
-  DEFAULT_SELECT(value_partitioning_domain_t)
-
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     if (is_bottom()) {
@@ -1071,7 +1068,8 @@ struct abstract_domain_traits<value_partitioning_domain<Domain, Params>> {
  */
 template <typename NumDomain, typename Params = ValPartitioningDefaultParams>
 class product_value_partitioning_domain final
-  : public abstract_domain_api<product_value_partitioning_domain<NumDomain, Params>> {
+  : public abstract_domain_base<product_value_partitioning_domain<NumDomain, Params>,
+                                default_select, leaf_numerical_domain> {
 
 public:
   using this_type = product_value_partitioning_domain<NumDomain, Params>;
@@ -1565,9 +1563,6 @@ private:
   }
   
 public:
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(this_type)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(this_type)
-  ARRAY_OPERATIONS_NOT_IMPLEMENTED(this_type)
   
   product_value_partitioning_domain() {
     NumDomain top;
@@ -1953,8 +1948,6 @@ public:
   }
 
   
-  DEFAULT_SELECT(this_type)
-
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,
                  const variable_vector_t &outputs) override {
     if (is_bottom()) {

@@ -36,6 +36,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
@@ -97,7 +98,12 @@ public:
   CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
 template <typename Info, typename DomainParams = TermDomainDefaultParams>
-class term_domain final : public abstract_domain_api<term_domain<Info, DomainParams>> {
+class term_domain final
+    : public abstract_domain_base<term_domain<Info, DomainParams>,
+                                  default_select, default_entails,
+                                  default_weak_assign,
+                                  bool_operations_not_implemented,
+                                  region_and_reference_operations_not_implemented> {
   friend class TermNormalizer<Info, typename Info::domain_t, DomainParams>;
 
   // Number and VariableName can be different from
@@ -706,8 +712,6 @@ public:
   /// term_domain implements standard abstract operations of a
   /// numerical domain and some array operations. It is intended to be
   /// used as a leaf domain in the hierarchy of domains.
-  BOOL_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
-  REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(term_domain_t)
   
   term_domain_t make_top() const override { return term_domain_t(true); }
 
@@ -1285,8 +1289,6 @@ public:
     }
   }
 
-  DEFAULT_ENTAILS(term_domain_t)
-  
   /*
   // If the children of t have changed, see if re-applying
   // the definition of t tightens the domain.
@@ -1524,9 +1526,6 @@ public:
   }
   
   
-  DEFAULT_SELECT(term_domain_t)
-  DEFAULT_WEAK_ASSIGN(term_domain_t)
-
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
     TERMS_DOMAIN_SCOPED_STATS(".rename");
