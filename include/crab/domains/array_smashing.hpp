@@ -52,7 +52,8 @@ public:
 template <typename BaseNumDomain, typename Params = ArraySmashingDefaultParams>
 class array_smashing final
   : public abstract_domain_base<array_smashing<BaseNumDomain, Params>,
-                                region_and_reference_operations_not_implemented> {
+                                region_and_reference_operations_not_implemented,
+                                default_inter_operations> {
 
 public:
   using number_t = typename BaseNumDomain::number_t;
@@ -702,18 +703,9 @@ public:
     CRAB_WARN("backward_array_assign in array smashing domain not implemented");
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const array_smashing_t &caller) override {
-    inter_abstract_operations<array_smashing_t, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const array_smashing_t &callee) override {
-    inter_abstract_operations<array_smashing_t, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
     return filter_ghost_vars(

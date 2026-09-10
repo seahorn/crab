@@ -88,7 +88,8 @@ class apron_domain final
     : public abstract_domain_base<
           apron_domain<Number, VariableName, ApronDom, Params>,
           default_select, default_entails, default_weak_assign,
-          leaf_numerical_domain> {
+          leaf_numerical_domain,
+          default_inter_operations> {
   using apron_domain_t = apron_domain<Number, VariableName, ApronDom, Params>;
   using abstract_domain_t = abstract_domain_api<apron_domain_t>;
 
@@ -111,7 +112,6 @@ private:
   using bound_t = ikos::bound<number_t>;
   using var_map_t = boost::bimap<variable_t, ap_dim_t>;
   using binding_t = typename var_map_t::value_type;
-  using params_t = Params;
 
   static constexpr apron_domain_id_t apron_id = ApronDom;
   static ap_manager_t *s_apman;
@@ -1612,20 +1612,9 @@ public:
     }
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const apron_domain_t &caller) override {
-    APRON_DOMAIN_SCOPED_STATS(".callee_entry");    
-    inter_abstract_operations<apron_domain_t, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const apron_domain_t &callee) override {
-    APRON_DOMAIN_SCOPED_STATS(".caller_cont");        
-    inter_abstract_operations<apron_domain_t, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
 
   
   interval_domain_t to_interval_domain() {

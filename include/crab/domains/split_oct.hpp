@@ -266,7 +266,8 @@ class split_oct_domain final
     : public abstract_domain_base<
       split_oct_domain<Number, VariableName, DBMParams, DomainParams>,
       default_select, default_entails, default_weak_assign,
-      leaf_numerical_domain> {
+      leaf_numerical_domain,
+      default_inter_operations> {
   using split_oct_domain_t = split_oct_domain<Number, VariableName, DBMParams, DomainParams>;
   using abstract_domain_t = abstract_domain_api<split_oct_domain_t>;
   friend class integer_tightening<DBMParams, typename DBMParams::Wt>;
@@ -3464,20 +3465,9 @@ public:
                                                                 z, inv);
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const split_oct_domain_t &caller) override {
-    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".callee_entry");    
-    inter_abstract_operations<split_oct_domain_t, DomainParams::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = DomainParams;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const split_oct_domain_t &callee) override {
-    SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".caller_cont");        
-    inter_abstract_operations<split_oct_domain_t, DomainParams::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
   
   void expand(const variable_t &x, const variable_t &y) override {
     SPLIT_OCTAGONS_DOMAIN_SCOPED_STATS(".expand");

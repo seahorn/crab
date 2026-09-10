@@ -100,7 +100,8 @@ class symbolic_variable_equality_domain final
                                   numerical_operations_not_implemented,
                                   bool_operations_not_implemented,
                                   array_operations_not_implemented,
-                                  region_and_reference_operations_not_implemented> {
+                                  region_and_reference_operations_not_implemented,
+                                  default_inter_operations> {
 public:
   using symb_eq_domain_t =
       symbolic_variable_equality_domain<Number, VariableName, DomainParams>;
@@ -1114,23 +1115,9 @@ public:
     CRAB_ERROR(domain_name(), "::", __func__, " not implemented");
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-                    const this_domain_t &caller) override {
-    SVEQ_DOMAIN_SCOPED_STATS(".callee_entry");
-    inter_abstract_operations<
-        this_domain_t,
-        DomainParams::implement_inter_transformers>::callee_entry(callsite,
-                                                                  caller,
-                                                                  *this);
-  }
+  // read by the default_inter_operations mixin
+  using params_t = DomainParams;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-                           const this_domain_t &callee) override {
-    SVEQ_DOMAIN_SCOPED_STATS(".caller_cont");
-    inter_abstract_operations<this_domain_t,
-                              DomainParams::implement_inter_transformers>::
-        caller_continuation(callsite, callee, *this);
-  }
   /**------------------ End domain APIs ------------------**/
   // WARN: a special function to check equivalence classes over two domain
   // values

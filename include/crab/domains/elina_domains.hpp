@@ -85,7 +85,8 @@ class elina_domain final
     : public abstract_domain_base<
           elina_domain<Number, VariableName, ElinaDom, Params>,
           default_select, default_entails, default_weak_assign,
-          leaf_numerical_domain> {
+          leaf_numerical_domain,
+          default_inter_operations> {
   using elina_domain_t = elina_domain<Number, VariableName, ElinaDom, Params>;
   using abstract_domain_t = abstract_domain_api<elina_domain_t>;
 
@@ -1679,20 +1680,9 @@ public:
     return make_forget(s3);
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const elina_domain_t &caller) override {
-    ELINA_DOMAIN_SCOPED_STATS(".callee_entry");        
-    inter_abstract_operations<elina_domain_t, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const elina_domain_t &callee) override {
-    ELINA_DOMAIN_SCOPED_STATS(".caller_cont");    
-    inter_abstract_operations<elina_domain_t, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        const elina_domain_t &invariant) override {

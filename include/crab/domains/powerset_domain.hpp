@@ -26,7 +26,8 @@ public:
  */
 template <typename Domain, typename Params = PowersetDefaultParams>
 class powerset_domain final
-  : public abstract_domain_api<powerset_domain<Domain, Params>> {
+  : public abstract_domain_base<powerset_domain<Domain, Params>,
+                                default_inter_operations> {
 
 public:
   using number_t = typename Domain::number_t;
@@ -855,26 +856,9 @@ public:
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const powerset_domain_t &caller) override {
-    // The transformer for a call is not delegated to the subdomain.
-    // Instead, if Params::implement_inter_transformers is enabled
-    // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.    
-    inter_abstract_operations<powerset_domain_t, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const powerset_domain_t &callee) override {
-    // The transformer for a call is not delegated to the subdomain.
-    // Instead, if Params::implement_inter_transformers is enabled
-    // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.        
-    inter_abstract_operations<powerset_domain_t, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
   
   // Intrinsics
 

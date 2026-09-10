@@ -68,7 +68,8 @@ template <class Number, class VariableName,
 class split_dbm_domain final
     : public abstract_domain_base<
           split_dbm_domain<Number, VariableName, DBMParams, DomainParams>,
-          default_select, default_weak_assign, leaf_numerical_domain> {
+          default_select, default_weak_assign, leaf_numerical_domain,
+          default_inter_operations> {
   using DBM_t = split_dbm_domain<Number, VariableName, DBMParams, DomainParams>;
   using abstract_domain_t = abstract_domain_api<DBM_t>;
 
@@ -2447,20 +2448,9 @@ public:
 	     << *this << "\n");
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const DBM_t &caller) override {
-    SPLIT_DBM_DOMAIN_SCOPED_STATS(".callee_entry");    
-    inter_abstract_operations<DBM_t, DomainParams::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = DomainParams;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const DBM_t &callee) override {
-    SPLIT_DBM_DOMAIN_SCOPED_STATS(".caller_cont");        
-    inter_abstract_operations<DBM_t, DomainParams::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
   
   void operator+=(const linear_constraint_system_t &csts) override {
     if (is_bottom())

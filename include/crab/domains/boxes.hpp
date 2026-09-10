@@ -82,7 +82,8 @@ class boxes_domain final
                                 default_entails, default_weak_assign,
                                 default_weak_bool_assign,
                                 array_operations_not_implemented,
-                                region_and_reference_operations_not_implemented> {
+                                region_and_reference_operations_not_implemented,
+                                default_inter_operations> {
 
   using interval_domain_t = ikos::interval_domain<Number, VariableName>;
   using boxes_domain_t = boxes_domain<Number, VariableName, Params>;
@@ -1641,20 +1642,9 @@ public:
     CRAB_WARN("boxes backward boolean apply not implemented");
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const boxes_domain_t &caller) override {
-    BOXES_DOMAIN_SCOPED_STATS(".callee_entry");    
-    inter_abstract_operations<boxes_domain_t, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const boxes_domain_t &callee) override {
-    BOXES_DOMAIN_SCOPED_STATS(".caller_cont");
-    inter_abstract_operations<boxes_domain_t, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
   
   linear_constraint_system_t to_linear_constraint_system() const override {
     BOXES_DOMAIN_SCOPED_STATS(".to_linear_constraint_system");

@@ -859,7 +859,8 @@ public:
 template <typename NumDomain, typename Params = ArrayAdaptDefaultParams>
 class array_adaptive_domain final
   : public abstract_domain_base<array_adaptive_domain<NumDomain, Params>,
-                                region_and_reference_operations_not_implemented> {
+                                region_and_reference_operations_not_implemented,
+                                default_inter_operations> {
 
 public:
   using number_t = typename NumDomain::number_t;
@@ -2954,20 +2955,9 @@ public:
     CRAB_WARN("backward_array_assign in array_adaptive domain not implemented");
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const array_adaptive_domain_t &caller) override {
-    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".callee_entry");
-    inter_abstract_operations<array_adaptive_domain_t, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const array_adaptive_domain_t &callee) override {
-    ARRAY_ADAPTIVE_DOMAIN_SCOPED_STATS(".caller_cont");
-    inter_abstract_operations<array_adaptive_domain_t, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
 
   
   linear_constraint_system_t to_linear_constraint_system() const override {

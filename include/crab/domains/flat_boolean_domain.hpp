@@ -35,7 +35,8 @@ class flat_boolean_domain final
   : public abstract_domain_base<flat_boolean_domain<Number, VariableName, Params>,
                                 numerical_operations_not_implemented,
                                 array_operations_not_implemented,
-                                region_and_reference_operations_not_implemented> {
+                                region_and_reference_operations_not_implemented,
+                                default_inter_operations> {
   using flat_boolean_domain_t = flat_boolean_domain<Number, VariableName, Params>;
 
 public:
@@ -369,20 +370,9 @@ public:
     *this = *this & inv;
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const flat_boolean_domain_t &caller) override {
-    BOOL_DOMAIN_SCOPED_STATS(".callee_entry");
-    inter_abstract_operations<flat_boolean_domain_t, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const flat_boolean_domain_t &callee) override {
-    BOOL_DOMAIN_SCOPED_STATS(".caller_cont");    
-    inter_abstract_operations<flat_boolean_domain_t, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
   
   // not part of the numerical_domains api but it should be
   void set(const variable_t &x, interval_t intv) {}
@@ -558,7 +548,8 @@ struct abstract_domain_traits<flat_boolean_domain<Number, VariableName, Params>>
 template <typename Dom, typename Params = FlatBoolDefaultParams>
 class flat_boolean_numerical_domain final
   : public abstract_domain_base<flat_boolean_numerical_domain<Dom, Params>,
-                                default_weak_bool_assign> {
+                                default_weak_bool_assign,
+                                default_inter_operations> {
   using bool_num_domain_t = flat_boolean_numerical_domain<Dom, Params>;
   using abstract_domain_t = abstract_domain_api<bool_num_domain_t>;
 
@@ -1667,28 +1658,9 @@ public:
     m_product.backward_array_assign(lhs, rhs, invariant.m_product);
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const bool_num_domain_t &caller) override {
-    // The transformer for a call is not delegated to the subdomains.
-    // Instead, if Params::implement_inter_transformers is enabled
-    // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.
-    BOOL_AND_NUM_DOMAIN_SCOPED_STATS(".callee_entry");
-    inter_abstract_operations<bool_num_domain_t, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const bool_num_domain_t &callee) override {
-    // The transformer for a call is not delegated to the subdomains.
-    // Instead, if Params::implement_inter_transformers is enabled
-    // then the transformer is implemented by reducing to calls to
-    // project, meet, forget, etc.
-    BOOL_AND_NUM_DOMAIN_SCOPED_STATS(".caller_cont");
-    inter_abstract_operations<bool_num_domain_t, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
   
   // region/reference api
   void region_init(const variable_t &reg) override {

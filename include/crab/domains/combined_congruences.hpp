@@ -28,7 +28,8 @@ public:
 template <typename NumAbsDom, typename Params = NumCongruenceDefaultParams>
 class numerical_congruence_domain final
   : public abstract_domain_base<numerical_congruence_domain<NumAbsDom, Params>,
-                                leaf_numerical_domain> {
+                                leaf_numerical_domain,
+                                default_inter_operations> {
 
   using rnc_domain_t = numerical_congruence_domain<NumAbsDom, Params>;
   using abstract_domain_t = abstract_domain_api<rnc_domain_t>;
@@ -304,18 +305,9 @@ public:
     reduce_variable(lhs);
   }
 
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const rnc_domain_t &caller) override {
-    inter_abstract_operations<rnc_domain_t, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const rnc_domain_t &callee) override {
-    inter_abstract_operations<rnc_domain_t, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
   
   void forget(const variable_vector_t &variables) override {
     m_product.forget(variables);

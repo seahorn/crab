@@ -57,7 +57,8 @@ template <typename Number, typename VariableName, typename Params = UFDefaultPar
 class herbrand_domain final
   : public abstract_domain_base<herbrand_domain<Number, VariableName, Params>,
                                 default_select, default_entails,
-                                default_weak_assign, default_weak_bool_assign> {
+                                default_weak_assign, default_weak_bool_assign,
+                                default_inter_operations> {
 
   using herbrand_domain_t = herbrand_domain<Number, VariableName, Params>;
   using abstract_domain_t = abstract_domain_api<herbrand_domain_t>;
@@ -1130,20 +1131,9 @@ public:
   }
 
   // call operations
-  void callee_entry(const callsite_info<variable_t> &callsite,
-		    const herbrand_domain_t &caller) override {
-    HERBRAND_DOMAIN_SCOPED_STATS(".callee_entry");    
-    inter_abstract_operations<herbrand_domain_t, Params::implement_inter_transformers>::
-      callee_entry(callsite, caller, *this);
-      
-  }
+  // read by the default_inter_operations mixin
+  using params_t = Params;
 
-  void caller_continuation(const callsite_info<variable_t> &callsite,
-			   const herbrand_domain_t &callee) override {
-    HERBRAND_DOMAIN_SCOPED_STATS(".caller_cont");        
-    inter_abstract_operations<herbrand_domain_t, Params::implement_inter_transformers>::    
-      caller_continuation(callsite, callee, *this);
-  }
 
   
   // Region operations
