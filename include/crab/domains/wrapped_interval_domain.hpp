@@ -553,7 +553,7 @@ public:
   }
   
   DEFAULT_SELECT(wrapped_interval_domain_t)
-  
+
   void forget(const variable_vector_t &variables) override {
     if (is_bottom() || is_top()) {
       return;
@@ -1732,6 +1732,7 @@ private:
   void strengthen(const variable_t &x) { strengthen({x}); }
 
 public:
+
   wrapped_numerical_domain_t make_top() const override {
     reduced_domain_product2_t dom_prod;
     dom_prod.set_to_top();

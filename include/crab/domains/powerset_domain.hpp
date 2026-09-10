@@ -230,6 +230,31 @@ public:
     return false;
   }
 
+  /* Element-wise forwarding over the disjuncts. */
+  powerset_domain_t
+  make_projection(const variable_vector_t &vs) const override {
+    if (is_bottom() || is_top()) {
+      return *this;
+    }
+    base_dom_vector out;
+    out.reserve(m_disjuncts.size());
+    for (auto const &d : m_disjuncts) {
+      out.push_back(d.make_projection(vs));
+    }
+    return powerset_domain_t(std::move(out));
+  }
+  powerset_domain_t make_forget(const variable_vector_t &vs) const override {
+    if (is_bottom() || is_top()) {
+      return *this;
+    }
+    base_dom_vector out;
+    out.reserve(m_disjuncts.size());
+    for (auto const &d : m_disjuncts) {
+      out.push_back(d.make_forget(vs));
+    }
+    return powerset_domain_t(std::move(out));
+  }
+
   virtual powerset_domain_t make_top() const override {
     base_dom_vector disjuncts;
     Domain disjunct; // top by default

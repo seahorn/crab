@@ -103,6 +103,18 @@ public:
     m_product.second().set_phase(is_ascending);
   }
 
+  /* Forward through the inner product (component-wise). */
+  rnc_domain_t make_projection(const variable_vector_t &vs) const override {
+    rnc_domain_t res;
+    res.m_product = m_product.make_projection(vs);
+    return res;
+  }
+  rnc_domain_t make_forget(const variable_vector_t &vs) const override {
+    rnc_domain_t res;
+    res.m_product = m_product.make_forget(vs);
+    return res;
+  }
+
   rnc_domain_t make_top() const override {
     reduced_domain_product2_t dom_prod;
     return rnc_domain_t(dom_prod.make_top());

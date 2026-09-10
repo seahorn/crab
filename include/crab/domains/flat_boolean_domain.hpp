@@ -953,6 +953,25 @@ public:
     m_product.second().set_phase(is_ascending);
   }
 
+  /* Forward through the product; the four side environments start top
+     in a fresh state, which is exactly what the in-place project does to
+     them ("we conservatively throw away all the information in the
+     subdomains"). make_forget stays on the default: forget's per-variable
+     env surgery (incl. the transform_if sweep) is not worth duplicating.
+   */
+  bool_num_domain_t
+  make_projection(const variable_vector_t &vs) const override {
+    if (is_bottom()) {
+      return make_bottom();
+    }
+    if (is_top() || vs.empty()) {
+      return make_top();
+    }
+    bool_num_domain_t res; // side envs top, matching project's behavior
+    res.m_product = m_product.make_projection(vs);
+    return res;
+  }
+
   bool_num_domain_t make_top() const override {
     reduced_domain_product2_t prod;
     prod.set_to_top();

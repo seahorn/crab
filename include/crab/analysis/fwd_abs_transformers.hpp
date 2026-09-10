@@ -624,8 +624,7 @@ public:
 	  vars.push_back(in.get_variable());
 	}
       }
-      abs_dom_t copy(m_inv);
-      copy.project(vars);
+      abs_dom_t copy(m_inv.make_projection(vars));
       crab::outs() << cs << "\n" << "\t" << copy << "\n";
     } else {
       m_inv.intrinsic(cs.get_intrinsic_name(), cs.get_args(), cs.get_lhs());

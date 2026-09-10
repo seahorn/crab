@@ -2651,6 +2651,62 @@ public:
   }
 
   DEFAULT_SELECT(DBM_t)
+
+  // Build only the restricted result: after normalization, the
+  // projection is the induced subgraph over the kept vertices.
+  DBM_t make_projection(const variable_vector_t &vs) const override {
+    SPLIT_DBM_DOMAIN_SCOPED_STATS(".make_projection");
+    if (is_bottom()) {
+      return make_bottom();
+    }
+    if (is_top() || vs.empty()) {
+      return make_top();
+    }
+    if (need_normalization()) {
+      DBM_t tmp(*this);
+      tmp.normalize();
+      return tmp.make_projection(vs);
+    }
+    // permutation new-id -> old-id; index 0 is the zero vertex
+    std::vector<vert_id> perm;
+    vert_map_t out_vmap;
+    rev_map_t out_revmap;
+    std::vector<Wt> out_pot;
+    perm.push_back(0);
+    out_pot.push_back(Wt(0));
+    out_revmap.push_back(boost::none);
+    for (auto const &x : vs) {
+      auto it = vert_map.find(x);
+      if (it == vert_map.end()) {
+        continue; // untracked: nothing to keep
+      }
+      out_vmap.insert(vmap_elt_t(x, perm.size()));
+      out_revmap.push_back(x);
+      out_pot.push_back(potential[it->second] - potential[0]);
+      perm.push_back(it->second);
+    }
+    GrPerm view(perm, g);
+    graph_t out_g(graph_t::copy(view));
+    return DBM_t(std::move(out_vmap), std::move(out_revmap), std::move(out_g),
+                 std::move(out_pot), vert_set_t());
+  }
+
+  // forget = projection onto the tracked complement of vs
+  DBM_t make_forget(const variable_vector_t &vs) const override {
+    SPLIT_DBM_DOMAIN_SCOPED_STATS(".make_forget");
+    if (is_bottom() || is_top()) {
+      return *this;
+    }
+    std::set<variable_t> drop(vs.begin(), vs.end());
+    variable_vector_t keep;
+    keep.reserve(vert_map.size());
+    for (auto const &p : vert_map) {
+      if (drop.count(p.first) == 0) {
+        keep.push_back(p.first);
+      }
+    }
+    return make_projection(keep);
+  }
   DEFAULT_WEAK_ASSIGN(DBM_t)
     
   void project(const variable_vector_t &variables) override {

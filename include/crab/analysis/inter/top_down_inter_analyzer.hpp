@@ -1210,16 +1210,17 @@ private:
 	  }
 	  
 	  if (callee_analysis && inside_recursive_call) {
-	    // After the analysis of the recursive function converges,
-	    // We cannot store the summary with the initial abstract
-	    // state before the fixpoint started. Instead, we need to
-	    // update "callee_at_entry" by taking the invariant at the
-	    // entry of the function after the fixpoint converged.
-	    callee_at_entry = callee_analysis->get_pre(callee_cfg.entry());
-	    // Strip the input snapshots so the summary precondition is
-	    // expressed only over the input parameters.
-	    callee_at_entry.project(fdecl.get_inputs());
-	  }
+            // After the analysis of the recursive function converges,
+            // We cannot store the summary with the initial abstract
+            // state before the fixpoint started. Instead, we need to
+            // update "callee_at_entry" by taking the invariant at the
+            // entry of the function after the fixpoint converged.
+            // Strip the input snapshots so the summary precondition is
+            // expressed only over the input parameters. make_projection
+            // avoids copying the full entry invariant first.
+            callee_at_entry = callee_analysis->get_pre(callee_cfg.entry())
+                                  .make_projection(fdecl.get_inputs());
+          }
 	  
 	  CRAB_LOG("inter2", if (callee_analysis) {
 	      callee_analysis->write(crab::outs());

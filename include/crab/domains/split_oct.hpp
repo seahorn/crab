@@ -3578,6 +3578,62 @@ public:
   }
   
   DEFAULT_SELECT(split_oct_domain_t)
+
+  // Build only the restricted result (as split_dbm::make_projection);
+  // here each variable owns a (v+, v-) vertex pair and there is no
+  // distinguished zero vertex.
+  split_oct_domain_t
+  make_projection(const variable_vector_t &vs) const override {
+    if (is_bottom()) {
+      return make_bottom();
+    }
+    if (is_top() || vs.empty()) {
+      return make_top();
+    }
+    if (need_normalization()) {
+      split_oct_domain_t tmp(*this);
+      tmp.normalize();
+      return tmp.make_projection(vs);
+    }
+    std::vector<vert_id> perm;
+    vert_map_t out_vmap;
+    rev_map_t out_revmap;
+    std::vector<Wt> out_pot;
+    for (auto const &x : vs) {
+      auto it = m_vert_map.find(x);
+      if (it == m_vert_map.end()) {
+        continue; // untracked: nothing to keep
+      }
+      out_vmap.insert(vmap_elt_t(x, {perm.size(), perm.size() + 1}));
+      out_revmap.push_back(x);
+      out_revmap.push_back(x);
+      out_pot.push_back(m_potential[it->second.first]);
+      out_pot.push_back(m_potential[it->second.second]);
+      perm.push_back(it->second.first);
+      perm.push_back(it->second.second);
+    }
+    GrPerm view(perm, m_graph);
+    graph_t out_g(graph_t::copy(view));
+    return split_oct_domain_t(std::move(out_vmap), std::move(out_revmap),
+                              std::move(out_g), std::move(out_pot),
+                              vert_set_t());
+  }
+
+  // forget = projection onto the tracked complement of vs
+  split_oct_domain_t make_forget(const variable_vector_t &vs) const override {
+    if (is_bottom() || is_top()) {
+      return *this;
+    }
+    std::set<variable_t> drop(vs.begin(), vs.end());
+    variable_vector_t keep;
+    keep.reserve(m_vert_map.size());
+    for (auto const &p : m_vert_map) {
+      if (drop.count(p.first) == 0) {
+        keep.push_back(p.first);
+      }
+    }
+    return make_projection(keep);
+  }
   DEFAULT_WEAK_ASSIGN(split_oct_domain_t)  
 
   /* begin intrinsics operations */
