@@ -1453,8 +1453,6 @@ public:
   }
 
   DEFAULT_SELECT(dis_interval_domain_t)
-  DEFAULT_MAKE_PROJECTION(dis_interval_domain_t)
-  DEFAULT_MAKE_FORGET(dis_interval_domain_t)
 
   void callee_entry(const callsite_info<variable_t> &callsite,
 		    const dis_interval_domain_t &caller) override {

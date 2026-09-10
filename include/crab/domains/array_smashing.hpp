@@ -224,9 +224,6 @@ public:
     m_base_dom.set_phase(is_ascending);
   }
 
-  DEFAULT_MAKE_PROJECTION(array_smashing)
-  DEFAULT_MAKE_FORGET(array_smashing)
-
   array_smashing make_top() const override { return array_smashing(); }
 
   array_smashing make_bottom() const override {

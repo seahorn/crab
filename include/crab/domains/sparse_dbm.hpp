@@ -2046,8 +2046,6 @@ public:
   }
 
   DEFAULT_SELECT(DBM_t)
-  DEFAULT_MAKE_PROJECTION(DBM_t)
-  DEFAULT_MAKE_FORGET(DBM_t)
   DEFAULT_WEAK_ASSIGN(DBM_t)  
 
   void callee_entry(const callsite_info<variable_t> &callsite,

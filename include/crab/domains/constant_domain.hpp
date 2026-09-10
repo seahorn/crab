@@ -278,8 +278,6 @@ public:
   }
 
   DEFAULT_ENTAILS(constant_domain_t)
-  DEFAULT_MAKE_PROJECTION(constant_domain_t)
-  DEFAULT_MAKE_FORGET(constant_domain_t)
 
   void assign(const variable_t &x, const linear_expression_t &e) override {
     CONSTANT_DOMAIN_SCOPED_STATS(".assign");

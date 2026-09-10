@@ -173,9 +173,6 @@ public:
     return res;
   }
 
-  DEFAULT_MAKE_PROJECTION(this_type)
-  DEFAULT_MAKE_FORGET(this_type)
-
   this_type make_top() const override {
     this_type res(false);
     return res;

@@ -1804,8 +1804,6 @@ public:
   // region domain is often at the top of the hierarchy of domains,
   // weak assignments shouldn't happen in this domain.
   DEFAULT_WEAK_ASSIGN(region_domain_t)
-  DEFAULT_MAKE_PROJECTION(region_domain_t)
-  DEFAULT_MAKE_FORGET(region_domain_t)
 
   void select(const variable_t &lhs, const linear_constraint_t &cond,
               const linear_expression_t &e1,

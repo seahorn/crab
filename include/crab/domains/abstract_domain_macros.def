@@ -297,25 +297,6 @@ virtual void weak_assign_bool_var(const variable_t &lhs, const variable_t &rhs, 
    }                                                                         \
 }
 
-/* Default implementations of make_projection/make_forget: copy the
-   whole state, then project/forget in place. Domains whose
-   representation allows building the restricted state directly (e.g.
-   environments, DBMs, apron/elina) should implement these natively. */
-#define DEFAULT_MAKE_PROJECTION(DOM)                                          \
-  virtual DOM make_projection(const variable_vector_t &vars)                  \
-      const override {                                                        \
-    DOM res(*this);                                                           \
-    res.project(vars);                                                        \
-    return res;                                                               \
-  }
-
-#define DEFAULT_MAKE_FORGET(DOM)                                              \
-  virtual DOM make_forget(const variable_vector_t &vars) const override {     \
-    DOM res(*this);                                                           \
-    res.forget(vars);                                                         \
-    return res;                                                               \
-  }
-
 #define DEFAULT_ENTAILS(DOM)						\
 virtual bool entails(const linear_constraint_t &cst) const override {   \
  if (is_bottom()) {							\

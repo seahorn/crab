@@ -552,8 +552,6 @@ public:
   }
   
   DEFAULT_SELECT(wrapped_interval_domain_t)
-  DEFAULT_MAKE_PROJECTION(wrapped_interval_domain_t)
-  DEFAULT_MAKE_FORGET(wrapped_interval_domain_t)
 
   void forget(const variable_vector_t &variables) override {
     if (is_bottom() || is_top()) {
@@ -1344,8 +1342,6 @@ public:
   }
 
   DEFAULT_SELECT(this_type)
-  DEFAULT_MAKE_PROJECTION(this_type)
-  DEFAULT_MAKE_FORGET(this_type)
   
   void write(crab_os &o) const override {
     // o << "(" << _w_int_dom << "," << _limit_env << "," << _init_set << ")";
@@ -1735,8 +1731,6 @@ private:
   void strengthen(const variable_t &x) { strengthen({x}); }
 
 public:
-  DEFAULT_MAKE_PROJECTION(wrapped_numerical_domain_t)
-  DEFAULT_MAKE_FORGET(wrapped_numerical_domain_t)
 
   wrapped_numerical_domain_t make_top() const override {
     reduced_domain_product2_t dom_prod;

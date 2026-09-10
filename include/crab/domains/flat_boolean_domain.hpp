@@ -65,9 +65,6 @@ public:
   ARRAY_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
   REGION_AND_REFERENCE_OPERATIONS_NOT_IMPLEMENTED(flat_boolean_domain_t)
 
-  DEFAULT_MAKE_PROJECTION(flat_boolean_domain_t)
-  DEFAULT_MAKE_FORGET(flat_boolean_domain_t)
-
   flat_boolean_domain_t make_top() const override {
     return flat_boolean_domain_t(separate_domain_t::top());
   }
@@ -970,7 +967,6 @@ public:
     res.m_product = m_product.make_projection(vs);
     return res;
   }
-  DEFAULT_MAKE_FORGET(bool_num_domain_t)
 
   bool_num_domain_t make_top() const override {
     reduced_domain_product2_t prod;
