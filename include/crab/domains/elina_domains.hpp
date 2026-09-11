@@ -3,6 +3,7 @@
 #include <crab/config.h>
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/constraint_domain_ops.hpp>
 #include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
@@ -1407,7 +1408,7 @@ public:
             ikos::linear_constraint_impl::strict_to_non_strict_inequality(c);
       } else if (c.is_disequation()) {
 	// We try to convert a disequation into a strict inequality
-	constraint_simp_domain_traits<elina_domain_t>::lower_disequality(*this, c, csts);
+	constraint_simplification<elina_domain_t>::lower_disequality(*this, c, csts);
         // We try to convert a disequation into conjunctive inequalities
         inequalities_from_disequation(c.expression(), csts);
       } else {

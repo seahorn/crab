@@ -44,6 +44,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/constraint_domain_ops.hpp>
 #include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
@@ -124,7 +125,7 @@ private:
       for (auto const &c : csts) {
 	if (c.is_disequation()) {
 	  // We try to convert a disequation into a strict inequality
-	  crab::domains::constraint_simp_domain_traits<interval_domain_t>::
+	  crab::domains::constraint_simplification<interval_domain_t>::
 	    lower_disequality(*this, c, pp_csts);
 	}
         pp_csts += c;

@@ -8,6 +8,7 @@
  **/
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/constraint_domain_ops.hpp>
 #include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/combined_domains.hpp>
@@ -1653,7 +1654,7 @@ private:
     // -- extract all constraints involving any variable in rel_vars
     linear_constraint_system_t csts;
     for (auto const &v : rel_vars) {
-      reduced_domain_traits<NumDom>::extract(_product.second(), v, csts,
+      constraint_extraction<NumDom>::extract(_product.second(), v, csts,
                                              /* only equalities=*/false);
     }
 
