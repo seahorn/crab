@@ -3,14 +3,26 @@
  **/
 
 #pragma once
-#include <crab/domains/generic_abstract_domain.hpp>
 #include <crab/domains/abstract_domain_operators.hpp>
+
+#include <boost/optional.hpp>
+#include <algorithm>
+#include <cassert>
+#include <iterator>
+#include <type_traits>
+#include <utility>
 
 namespace crab {
 namespace domains {
 
-template <typename Domain> class checker_domain_traits;
-  
+// Only named by the static_asserts below, which reject the generic
+// (type-erased) domains. Declaring them is enough for std::is_same, so
+// this header does not need to include generic_abstract_domain.hpp --
+// which every domain would then pull in just for those asserts.
+template <typename Variable> class abstract_domain;
+template <typename Variable> class abstract_domain_ref;
+
+
 // Perform constraint simplifications depending on the abstract domain
 template <typename Domain> class constraint_simp_domain_traits {
 public:
@@ -155,121 +167,5 @@ public:
   static void clear_global_state(void) {}
 };
 
-// // Special operations needed by the checker
-// template <typename Domain> class checker_domain_traits {
-// public:
-//   using varname_t = typename Domain::varname_t;
-//   using number_t = typename Domain::number_t;
-//   using linear_constraint_t = typename Domain::linear_constraint_t;
-//   typedef
-//       typename Domain::linear_constraint_system_t linear_constraint_system_t;
-//   using disjunctive_linear_constraint_system_t =
-//       typename Domain::disjunctive_linear_constraint_system_t;
-
-// private:
-//   // Return true if (c1 or c2 or ... cn) entails (d1 and d2 and .. dn)
-//   static bool __entail(const disjunctive_linear_constraint_system_t &lhs,
-//                        const linear_constraint_system_t &rhs) {
-//     // -- trivial cases first
-//     if (rhs.is_false()) {
-//       return false;
-//     } else if (rhs.is_true()) {
-//       return true;
-//     } else if (lhs.is_false()) {
-//       return true;
-//     } else if (lhs.is_true()) {
-//       return false;
-//     }
-
-//     // -- return true if for all ci :: ci entails (d1 and d2 and .. dn)
-//     return std::all_of(
-//         lhs.begin(), lhs.end(), [&rhs](const linear_constraint_system_t &csts) {
-//           Domain lhs;
-//           lhs += csts;
-//           return std::all_of(
-//               rhs.begin(), rhs.end(),
-//               [&lhs](const linear_constraint_t &c) { return entail(lhs, c); });
-//         });
-//   }
-
-// public:
-//   /*
-//      Public API
-
-//      static bool entail(Domain&, const disjunctive_linear_constraint_system_t&);
-//      static bool entail(const disjunctive_linear_constraint_system_t&, Domain&);
-//      static bool entail(Domain&, const linear_constraint_t&);
-
-//      static bool intersect(Domain&, const linear_constraint_t&);
-//    */
-
-//   // Return true if lhs entails (c1 or c2 or ... cn)
-//   static bool entail(const Domain &lhs,
-//                      const disjunctive_linear_constraint_system_t &rhs) {
-//     // -- trivial cases first
-//     if (rhs.is_false()) {
-//       return false;
-//     } else if (rhs.is_true()) {
-//       return true;
-//     } else if (lhs.is_bottom()) {
-//       return true;
-//     } else if (lhs.is_top()) {
-//       return false;
-//     }
-//     // -- return true if exists ci such that lhs entails ci
-//     for (linear_constraint_system_t csts : rhs) {
-//       if (std::all_of(csts.begin(), csts.end(),
-//                       [&lhs](const linear_constraint_t &c) {
-//                         return entail(lhs, c);
-//                       })) {
-//         return true;
-//       }
-//     }
-//     return false;
-//   }
-
-//   // Return true if (c1 or c2 or ... cn) entails rhs
-//   static bool entail(const disjunctive_linear_constraint_system_t &lhs,
-//                      const Domain &rhs) {
-//     auto csts = rhs.to_linear_constraint_system();
-//     return __entail(lhs, csts);
-//   }
-
-//   // Return true if lhs entails rhs.
-//   static bool entail(const Domain &lhs, const linear_constraint_t &rhs) {
-//     if (lhs.is_bottom())
-//       return true;
-//     if (rhs.is_tautology())
-//       return true;
-//     if (rhs.is_contradiction())
-//       return false;
-
-//     CRAB_LOG("checker-entailment", linear_constraint_t tmp(rhs);
-//              crab::outs() << "Checking whether\n"
-//                           << lhs << "\nentails " << tmp << "\n";);
-
-//     bool res = lhs.entails(rhs);
-
-//     CRAB_LOG("checker-entailment",
-//              if (res) { crab::outs() << "\t**entailment holds.\n"; } else {
-//                crab::outs() << "\t**entailment does not hold.\n";
-//              });
-
-//     return res;
-//   }
-
-//   // Return true if inv intersects with cst.
-//   static bool intersect(const Domain &inv, const linear_constraint_t &cst) {
-//     if (inv.is_bottom() || cst.is_contradiction())
-//       return false;
-//     if (inv.is_top() || cst.is_tautology())
-//       return true;
-
-//     Domain dom(inv);
-//     dom += cst;
-//     return !dom.is_bottom();
-//   }
-// };
-  
 } // end namespace domains
 } // end namespace crab
