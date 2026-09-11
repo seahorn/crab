@@ -24,6 +24,7 @@
 #include <vector>
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/support/stats.hpp>
 #include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>

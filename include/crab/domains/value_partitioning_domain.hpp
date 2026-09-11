@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/support/stats.hpp>
 #include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>

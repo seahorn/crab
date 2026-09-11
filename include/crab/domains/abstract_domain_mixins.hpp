@@ -47,6 +47,7 @@
  */
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/support/stats.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
 
 #include <boost/optional.hpp>

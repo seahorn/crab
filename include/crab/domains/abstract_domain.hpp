@@ -472,7 +472,6 @@ public:
   
 };
 
-#include "abstract_domain_macros.def"
   
 } // end namespace domains
 } // end namespace crab
