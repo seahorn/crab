@@ -5,12 +5,7 @@
 #pragma once
 #include <crab/domains/abstract_domain_operators.hpp>
 
-#include <boost/optional.hpp>
-#include <algorithm>
-#include <cassert>
-#include <iterator>
 #include <type_traits>
-#include <utility>
 
 namespace crab {
 namespace domains {
@@ -22,68 +17,6 @@ namespace domains {
 template <typename Variable> class abstract_domain;
 template <typename Variable> class abstract_domain_ref;
 
-
-// Perform constraint simplifications depending on the abstract domain
-template <typename Domain> class constraint_simp_domain_traits {
-public:
-  static_assert(
-      !std::is_same<Domain, abstract_domain<typename Domain::variable_t>>::value,
-      "constraint_simp_domain_traits not supported for generic domain");
-  static_assert(
-      !std::is_same<Domain,
-                   abstract_domain_ref<typename Domain::variable_t>>::value,
-      "constraint_simp_domain_traits not supported for generic domain");
-  
-  using number_t = typename Domain::number_t;
-  using variable_t = typename Domain::variable_t;  
-  using linear_expression_t = typename Domain::linear_expression_t;  
-  using linear_constraint_t = typename Domain::linear_constraint_t;
-  using linear_constraint_system_t = typename Domain::linear_constraint_system_t; 
-
-  // Convert a disequality into a strict inequality:
-  // - if cst is x!=y and abs_val |= x <= y then add x < y
-  // - if cst is x!=y and abs_val |= x >= y then add x > y
-  static void lower_disequality(const Domain &abs_val,
-				const linear_constraint_t &cst,
-				linear_constraint_system_t &out_csts) {
-
-    // TODO: we could use abs_val to infer more disequalities from cst.
-    auto get_binary_operands = [](const linear_constraint_t &c) -> 
-      boost::optional<std::pair<variable_t, variable_t>> {
-	if (c.is_disequation()) {
-	  if (c.size() == 2 && c.constant() == 0) {
-	    auto it = c.begin();
-	    auto nx = it->first;
-	    auto vx = it->second;
-	    ++it;
-	    assert(it != c.end());
-	    auto ny = it->first;
-	    auto vy = it->second;
-	    if (nx == (ny * -1)) {
-	      return std::make_pair(vx, vy);
-	    }
-	  }
-	}
-      return boost::none;
-    };
-    
-    if (auto pair = get_binary_operands(cst)) {
-      variable_t x = (*pair).first;
-      variable_t y = (*pair).second;
-      linear_constraint_t x_le_y(x <= y);
-      linear_constraint_t x_lt_y(linear_expression_t(x) < linear_expression_t(y));
-      if (abs_val.entails(x_le_y)) {
-	out_csts += x_lt_y;
-      } else {
-	linear_constraint_t x_ge_y(x >= y);
-	linear_constraint_t x_gt_y(linear_expression_t(x) > linear_expression_t(y));	    
-	if (abs_val.entails(x_ge_y)) {
-	  out_csts += x_gt_y;	      
-	} 
-      }
-    }
-  }  
-};
 
 // Default implementation of integer cast instructions:
 // signed-extension, zero-extension and truncation.

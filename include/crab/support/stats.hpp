@@ -78,6 +78,18 @@ public:
  *     increment only counter for name if active=1
  *   CRAB_SCOPED_TIMER_STATS(name, active)
  *     increment only timer for name if active=1
+ *
+ * The CRAB_DOMAIN_* variants below prefix the name with an abstract
+ * domain's domain_name():
+ *
+ *   CRAB_DOMAIN_SCOPED_STATS(who, suffix, active)
+ *     increase **both** timer and counter for who->domain_name() + suffix
+ *     if active=1. This macro avoids string creation if active=0.
+ *     Moreover, it concats efficiently two strings.
+ *   CRAB_DOMAIN_COUNT_STATS(suffix, active)
+ *     increase only counter for this->domain_name() + suffix if active=1.
+ *     This macro avoids string creation if active=0, but it concatenates
+ *     strings in an expensive way.
 **/
 #include <crab/config.h>
 #ifdef CRAB_STATS
@@ -104,8 +116,26 @@ public:
 #define CRAB_SCOPED_TIMER_STATS_0(name) 
 #define CRAB_SCOPED_TIMER_STATS_1(name) \
   crab::ScopedCrabStats __st__(name, false);
+
+#define CRAB_DOMAIN_SCOPED_STATS(who, suffix, active) \
+  CRAB_DOMAIN_SCOPED_STATS_(who, suffix, active)
+#define CRAB_DOMAIN_SCOPED_STATS_(who, suffix, active) \
+  CRAB_DOMAIN_SCOPED_STATS_ ## active(who, suffix)
+#define CRAB_DOMAIN_SCOPED_STATS_0(who, suffix) 
+#define CRAB_DOMAIN_SCOPED_STATS_1(who, suffix) \
+  crab::ScopedCrabStats __st__((who)->domain_name(), suffix, true);
+
+#define CRAB_DOMAIN_COUNT_STATS(suffix, active) \
+  CRAB_DOMAIN_COUNT_STATS_(suffix, active)
+#define CRAB_DOMAIN_COUNT_STATS_(suffix, active) \
+  CRAB_DOMAIN_COUNT_STATS_ ## active(suffix)
+#define CRAB_DOMAIN_COUNT_STATS_0(suffix) 
+#define CRAB_DOMAIN_COUNT_STATS_1(suffix) \
+  crab::CrabStats::count(this->domain_name() + suffix);
 #else
 #define CRAB_SCOPED_STATS(name, active) 
 #define CRAB_COUNT_STATS(name, active)
 #define CRAB_SCOPED_TIMER_STATS(name, active)
+#define CRAB_DOMAIN_SCOPED_STATS(who, suffix, active)
+#define CRAB_DOMAIN_COUNT_STATS(suffix, active)
 #endif

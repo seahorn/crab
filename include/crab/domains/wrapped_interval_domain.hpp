@@ -641,23 +641,6 @@ struct abstract_domain_traits<wrapped_interval_domain<Number, VariableName, Para
   using varname_t = VariableName;
 };
 
-template <typename Number, typename VariableName, typename Params>
-class constraint_simp_domain_traits<
-     wrapped_interval_domain<Number, VariableName, Params>> {
-public:
-  using linear_constraint_t = ikos::linear_constraint<Number, VariableName>;
-  using linear_constraint_system_t =
-      ikos::linear_constraint_system<Number, VariableName>;
-
-  static void lower_equality(linear_constraint_t cst,
-                             linear_constraint_system_t &csts) {
-    // We cannot convert an equality into inequalities because we
-    // don't know the interpretation (signed/unsigned) for those
-    // inequalities.
-    csts += cst;
-  }
-};
-
 } // namespace domains
 } // namespace crab
 
