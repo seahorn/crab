@@ -38,6 +38,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/constraint_domain_ops.hpp>
 #include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_params.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
@@ -2898,7 +2899,7 @@ public:
       // We handle here the case x !=y by converting the disequation
       // into a strict inequality if possible.
       linear_constraint_system_t csts;
-      constraint_simp_domain_traits<split_oct_domain_t>::lower_disequality(*this, cst, csts);
+      constraint_simplification<split_oct_domain_t>::lower_disequality(*this, cst, csts);
       for (auto const& c: csts) {
 	// We try to convert a strict inequality into non-strict one
 	auto nc = ikos::linear_constraint_impl::strict_to_non_strict_inequality(c);

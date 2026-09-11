@@ -85,38 +85,6 @@ public:
   }  
 };
 
-// Special operations for applying reduction between domains.
-template <typename Domain> class reduced_domain_traits {
-public:
-  static_assert(
-      !std::is_same<Domain, abstract_domain<typename Domain::variable_t>>::value,
-      "reduced_domain_traits not supported for generic domain");
-  static_assert(
-      !std::is_same<Domain,
-                   abstract_domain_ref<typename Domain::variable_t>>::value,
-      "reduced_domain_traits not supported for generic domain");
-  
-  using variable_t = typename Domain::variable_t;
-  using linear_constraint_t = typename Domain::linear_constraint_t;
-  typedef
-      typename Domain::linear_constraint_system_t linear_constraint_system_t;
-
-  // extract linear constraints from dom involving x and store in ctsts
-  static void extract(Domain &dom, const variable_t &x,
-                      linear_constraint_system_t &csts, bool only_equalities) {
-    auto all_csts = dom.to_linear_constraint_system();
-    for (auto const &cst : all_csts) {
-      if (only_equalities && (!cst.is_equality())) {
-        continue;
-      }
-      if (std::find(std::begin(cst.variables()), std::end(cst.variables()), x) !=
-          std::end(cst.variables())) {
-        csts += cst;
-      }
-    }
-  }
-};
-
 // Default implementation of integer cast instructions:
 // signed-extension, zero-extension and truncation.
 // 

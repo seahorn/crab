@@ -17,6 +17,7 @@
  **************************************************************************/
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/constraint_domain_ops.hpp>
 #include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
@@ -1009,11 +1010,11 @@ private:
         bool propagate_only_equalities;
 
         propagate_only_equalities = !Params::left_propagate_inequalities;
-        crab::domains::reduced_domain_traits<Domain1>::extract(
+        crab::domains::constraint_extraction<Domain1>::extract(
             inv1, v, csts1, propagate_only_equalities);
 
         propagate_only_equalities = !Params::right_propagate_inequalities;
-        crab::domains::reduced_domain_traits<Domain2>::extract(
+        crab::domains::constraint_extraction<Domain2>::extract(
             inv2, v, csts2, propagate_only_equalities);
 
         // filter out those redundant constraints (i.e.,
@@ -1054,7 +1055,7 @@ private:
         linear_constraint_system_t csts1;
         const bool propagate_only_equalities =
             !Params::left_propagate_inequalities;
-        crab::domains::reduced_domain_traits<Domain1>::extract(
+        crab::domains::constraint_extraction<Domain1>::extract(
             inv1, v, csts1, propagate_only_equalities);
 	
         // std::string k(domain_name() + ".count.reduce.equalities_from_" +
@@ -1066,7 +1067,7 @@ private:
         linear_constraint_system_t csts2;
         const bool propagate_only_equalities =
             !Params::right_propagate_inequalities;
-        crab::domains::reduced_domain_traits<Domain2>::extract(
+        crab::domains::constraint_extraction<Domain2>::extract(
             inv2, v, csts2, propagate_only_equalities);
         // std::string k(domain_name() + ".count.reduce.equalities_from_" +
         //               m_product.second().domain_name());

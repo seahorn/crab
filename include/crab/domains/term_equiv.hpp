@@ -36,6 +36,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/constraint_domain_ops.hpp>
 #include <crab/domains/abstract_domain_mixins.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
@@ -2067,7 +2068,7 @@ struct abstract_domain_traits<term_domain<Info, DomainParams>> {
 }; // end term_domain
 
 template <typename Info, typename DomainParams>
-class reduced_domain_traits<term_domain<Info, DomainParams>> {
+class constraint_extraction<term_domain<Info, DomainParams>> {
 public:
   using term_domain_t = term_domain<Info, DomainParams>;
   using variable_t = typename term_domain_t::variable_t;
