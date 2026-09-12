@@ -12,6 +12,17 @@ namespace crab {
 namespace domains {
   
 /**
+ ** DEPRECATED / OBSOLETE: do not use this domain in new code.
+ **
+ ** fixed_tvpi_domain has been superseded by tvpi_dbm.hpp, which is
+ ** strictly more expressive and should be preferred everywhere.
+ **
+ ** The only reason this file is still kept around is that clam
+ ** dev14, dev15, dev16, and dev17 still instantiate it. Once those
+ ** branches move to tvpi_dbm, this domain can be removed.
+ **/
+
+/**
  ** This domain when instantiated with the Octagon domain simulates
  ** the Two Variables Per Inequalities (tvpi)
  ** (http://www2.in.tum.de/bib/files/simon02two.pdf) domain by Simon,
