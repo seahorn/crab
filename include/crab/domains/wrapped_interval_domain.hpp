@@ -410,7 +410,6 @@ public:
           CRAB_ERROR("destination must be smaller than source in truncate");
         }
         unsigned bits_to_keep = get_bitwidth(dst);
-        wrapped_interval_t dst_i;
         dst_i = src_i.Trunc(bits_to_keep);
       } break;
       }
