@@ -1,15 +1,21 @@
-// Regression tests for the cast dispatch in flat_boolean_numerical_domain.
+// Tests for the cast dispatch in flat_boolean_numerical_domain.
 //
 // The dispatch used to compare bitwidths. A BOOL_TYPE variable reports width
-// 1, and so does an INT_TYPE variable of bitwidth 1, so `trunc i32 -> i1` took
+// 1, and so did an INT_TYPE variable of bitwidth 1, so `trunc i32 -> i1` took
 // the int-to-bool branch. That branch records a boolean value for the
 // destination and never writes the numerical factor, so an i1 *integer*
 // destination kept its previous value instead of being assigned -- an unsound
 // stale read. The guards now test types, which tells the two apart.
 //
-//   trunc_to_i1_integer_writes_the_destination  fails before the fix
-//   everything else                             pins the behaviour the fix
-//                                               must not disturb
+// The regression test for that case lived here and constructed an
+// INT_TYPE of bitwidth 1 directly. variable_type now rejects that width, so
+// the case is prevented at construction and can no longer be exercised
+// in-process: CRAB_ERROR calls std::exit rather than throwing. The executable
+// evidence for the fix is the parent commit, where the test failed before the
+// dispatch change and passed after it.
+//
+// What remains pins the behaviour the type-based guards must not disturb, and
+// keeps covering them for the destination types that are still constructible.
 //
 // Nothing is printed to standard output: the whole Boost.Test log is routed
 // to stderr (tests/run_tests.sh diffs stdout against a golden file) and
@@ -27,35 +33,17 @@ using namespace ikos;
 namespace {
 struct fixture {
   variable_factory_t vfac;
-  z_var x;   // i32, the wide side of a cast
-  z_var n1;  // INT_TYPE of bitwidth 1 -- an integer, NOT a boolean
-  z_var b;   // an actual boolean
+  z_var x; // i32, the wide side of a cast
+  z_var b; // a boolean
   fixture()
-      : x(vfac["x"], crab::INT_TYPE, 32), n1(vfac["n1"], crab::INT_TYPE, 1),
-        b(vfac["b"], crab::BOOL_TYPE) {}
+      : x(vfac["x"], crab::INT_TYPE, 32), b(vfac["b"], crab::BOOL_TYPE) {}
 };
 } // namespace
 
 BOOST_FIXTURE_TEST_SUITE(flat_bool_cast, fixture)
 
-// The regression. `trunc x:32 to n1:1` with n1 an integer must assign the
-// destination. Before the fix the width-based guard sent this to the
-// int-to-bool branch, which set a boolean value for n1 and left its numerical
-// value at whatever it held before -- here [0,0].
-//
-// The source is havoc'd rather than given a value so that the check does not
-// depend on how Crab interprets truncation in an unbounded domain: all this
-// asserts is that the destination was written at all.
-BOOST_AUTO_TEST_CASE(trunc_to_i1_integer_writes_the_destination) {
-  z_bool_num_domain_t d;
-  d.assign(n1, z_number(0));
-  d -= x; // havoc
-  d.apply(crab::domains::OP_TRUNC, n1, x);
-  BOOST_TEST((d.at(n1).is_top()));
-}
-
-// The same shape with a genuine boolean destination keeps its precise
-// handling: a source known to be zero makes the boolean false.
+// A boolean destination keeps its precise handling: a source known to be zero
+// makes the boolean false.
 BOOST_AUTO_TEST_CASE(trunc_to_bool_zero_source_is_false) {
   z_bool_num_domain_t d;
   d.assign(x, z_number(0));

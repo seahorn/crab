@@ -52,11 +52,17 @@ class variable_type {
 public:
   variable_type(variable_type_kind kind, unsigned width = 0)
       : m_kind(kind), m_bitwidth(width) {
-    if (m_kind == INT_TYPE && m_bitwidth <= 0) {
-      CRAB_ERROR("Cannot create integer variable without bitwidth");
+    // Bitwidth 1 is reserved for BOOL_TYPE. An integer of width 1 is
+    // indistinguishable from a boolean anywhere a type is reduced to a width,
+    // so it is not a representable type here. Clients map LLVM's i1 to
+    // BOOL_TYPE already.
+    if (m_kind == INT_TYPE && m_bitwidth <= 1) {
+      CRAB_ERROR("Cannot create integer variable with bitwidth ", m_bitwidth,
+                 ": must be greater than 1 (width 1 is BOOL_TYPE)");
     }
-    if (m_kind == REG_INT_TYPE && m_bitwidth <= 0) {
-      CRAB_ERROR("Cannot create integer region variable without bitwidth");
+    if (m_kind == REG_INT_TYPE && m_bitwidth <= 1) {
+      CRAB_ERROR("Cannot create integer region variable with bitwidth ",
+                 m_bitwidth, ": must be greater than 1 (width 1 is BOOL_TYPE)");
     }
 
     if (m_kind == BOOL_TYPE) {
