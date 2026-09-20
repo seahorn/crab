@@ -1498,19 +1498,27 @@ public:
              const variable_t &src) override {
     BOOL_AND_NUM_DOMAIN_SCOPED_STATS(".apply");
 
-    auto get_bitwidth = [](const variable_t v) {
+    auto check_operand = [](const variable_t &v) {
       auto ty = v.get_type();
       if (!(ty.is_integer() || ty.is_bool())) {
         CRAB_ERROR("unexpected types in cast operation");
       }
-      return (ty.is_integer() ? ty.get_integer_bitwidth() : 1);
     };
+    check_operand(src);
+    check_operand(dst);
+
     CRAB_LOG("flat-boolean", crab::outs()
-                                 << src << ":" << get_bitwidth(src) << " " << op
-                                 << " " << dst << ":" << get_bitwidth(dst)
+                                 << src << ":" << src.get_type() << " " << op
+                                 << " " << dst << ":" << dst.get_type()
                                  << " with " << *this << "\n");
 
-    if (op == OP_TRUNC && (get_bitwidth(src) > 1 && get_bitwidth(dst) == 1)) {
+    // The dispatch tests types rather than bitwidths on purpose: an INT_TYPE
+    // variable of bitwidth 1 is not a boolean, but the two are
+    // indistinguishable by width. Taking the int-to-bool branch for such a
+    // variable records a boolean value for it and never updates its numerical
+    // value, leaving the destination stale instead of assigned.
+    if (op == OP_TRUNC && src.get_type().is_integer() &&
+        dst.get_type().is_bool()) {
       // -- int to bool:
       // assume that zero is false and non-zero is true
       interval_t i_src = m_product.second()[src];
@@ -1523,7 +1531,7 @@ public:
         m_product.first().set_bool(dst, boolean_value::top());
       }
     } else if ((op == OP_ZEXT || op == OP_SEXT) &&
-               (get_bitwidth(src) == 1 && get_bitwidth(dst) > 1)) {
+               src.get_type().is_bool() && dst.get_type().is_integer()) {
       // -- bool to int:
       // if OP_SEXT then true is -1 and false is zero
       // if OP_ZEXT then true is 1 and false is zero
@@ -1533,7 +1541,7 @@ public:
       } else if (b_src.is_false()) {
         m_product.second().assign(dst, number_t(0));
       } else {
-	m_product.second().apply(op, dst, src);
+	      m_product.second().apply(op, dst, src);
 	
         // The flat boolean domain shouldn't know whether we try to
         // model integers faithfully or not (i.e., obeying
