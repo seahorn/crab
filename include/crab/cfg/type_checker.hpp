@@ -305,12 +305,20 @@ class type_checker_visitor
   // bitwidth of the scalar being loaded or stored.
   //
   // Only integer arrays are constrained here: booleans are accessed using
-  // whatever element size the client chooses (their bitwidth is always 1) and
-  // reals have no bitwidth. The check is skipped when the element size is not
-  // a constant, since then it is only known at runtime.
+  // whatever element size the client chooses (their bitwidth is always 1),
+  // reals have no bitwidth, and neither do mathematical integers. The check is
+  // skipped when the element size is not a constant, since then it is only
+  // known at runtime.
+  //
+  // Both tests are exclusive on purpose, so that this function is correct on
+  // its own rather than because check_array_and_scalar_type happens to run
+  // first: with the inclusive is_integer(), a math value paired with a
+  // fixed-width array would fall through to get_integer_bitwidth() and report
+  // a missing bitwidth instead of the type mismatch it really is.
   void check_array_elem_size(const variable_t &a, const lin_exp_t &e_sz,
                              const variable_t &v, const statement_t &s) {
-    if (!a.get_type().is_integer_array() || !v.get_type().is_integer()) {
+    if (!a.get_type().is_integer_array() ||
+        !v.get_type().is_fixed_width_integer()) {
       return;
     }
     if (!e_sz.is_constant()) {
