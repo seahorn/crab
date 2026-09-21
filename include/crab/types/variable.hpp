@@ -5,6 +5,13 @@
 #include <crab/support/debug.hpp>
 #include <crab/support/os.hpp>
 #include <crab/types/indexable.hpp>
+#include <type_traits>
+
+namespace ikos {
+// Only named in a std::is_same, so a declaration is enough: variable.hpp does
+// not need to pull in bignums.hpp.
+class z_number;
+} // namespace ikos
 
 namespace crab {
 
@@ -231,9 +238,10 @@ public:
       o << "int" << m_bitwidth;
       break;
     case MATH_INT_TYPE:
-      // Fixed-width integers always print their width, so a bare "int" is
-      // unambiguous.
-      o << "int";
+      // "mathint" rather than a bare "int": arrays spell the two kinds
+      // arr(int) and arr(mathint), so int must not mean fixed-width in one
+      // place and mathematical in the other.
+      o << "mathint";
       break;
     case REAL_TYPE:
       o << "real";
@@ -299,21 +307,52 @@ private:
   VariableName _n;
   variable_type m_ty;
 
+  // Whether a variable's type is consistent with the Number this CFG and its
+  // domains are instantiated over. Number is a compile-time parameter while
+  // the type is a runtime property, and Crab does not generally relate the
+  // two: an INT_TYPE variable analysed over q_number is a rational relaxation,
+  // which is sound and a legitimate thing to want.
+  //
+  // A mathematical integer is different, because integrality is the whole of
+  // what the type says. Analysed over q_number it would silently become a
+  // rational, and nothing downstream could tell. Require z_number rather than
+  // excluding q_number, so this stays correct if other number types appear.
+  // std::is_same folds at compile time, so the branch disappears entirely in
+  // a z_number instantiation.
+  //
+  // Called from every constructor, including the internal ones: those take a
+  // variable_type_kind directly and would otherwise slip past the check.
+  void check_number_consistent_with_type() const {
+    if ((m_ty.is_math_integer() || m_ty.is_math_integer_array()) &&
+        !std::is_same<Number, ikos::z_number>::value) {
+      CRAB_ERROR("mathematical integer variables require z_number: ", _n,
+                 " has type ", m_ty, " in a non-z_number instantiation");
+    }
+  }
+
 public:
   /* ========== Begin internal API  ============= */
   /* Call this constructor only from abstract domains */
-  explicit variable(const VariableName &n) : _n(n), m_ty(crab::UNK_TYPE) {}
+  explicit variable(const VariableName &n) : _n(n), m_ty(crab::UNK_TYPE) {
+    check_number_consistent_with_type();
+  }
 
   /* Call this constructor only from abstract domains */
   variable(const VariableName &n, variable_type_kind ty_kind)
-      : _n(n), m_ty(ty_kind, 0) {}
+      : _n(n), m_ty(ty_kind, 0) {
+    check_number_consistent_with_type();
+  }
 
   /* Call this constructor only from abstract domains */
   variable(const VariableName &n, variable_type_kind ty_kind, bitwidth_t width)
-      : _n(n), m_ty(ty_kind, width) {}
+      : _n(n), m_ty(ty_kind, width) {
+    check_number_consistent_with_type();
+  }
   /* ========== End internal API  =============== */
 public:
-  variable(const VariableName &n, variable_type ty) : _n(n), m_ty(ty) {}
+  variable(const VariableName &n, variable_type ty) : _n(n), m_ty(ty) {
+    check_number_consistent_with_type();
+  }
 
   variable(const variable_t &o) = default;
 

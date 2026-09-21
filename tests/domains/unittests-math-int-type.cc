@@ -93,9 +93,10 @@ BOOST_AUTO_TEST_CASE(equality_and_hashing) {
               crab::variable_type(crab::ARR_INT_TYPE)));
 }
 
-// A fixed-width integer prints its width, so a bare "int" is unambiguous.
+// Scalar and array spellings agree: mathint / arr(mathint) for the new kinds,
+// intN / arr(int) for the fixed-width ones.
 BOOST_AUTO_TEST_CASE(printing) {
-  BOOST_TEST((to_str(math_int()) == "int"));
+  BOOST_TEST((to_str(math_int()) == "mathint"));
   BOOST_TEST((to_str(int_ty(32)) == "int32"));
   BOOST_TEST((to_str(crab::variable_type(crab::ARR_MATH_INT_TYPE)) ==
               "arr(mathint)"));
