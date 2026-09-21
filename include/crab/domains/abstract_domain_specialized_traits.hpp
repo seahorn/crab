@@ -51,7 +51,7 @@ public:
       if (src.get_type().is_bool()) {
 	      dom += (dst >= 0);
 	      dom += (dst <= 1);
-      } else if (src.get_type().is_integer()) {
+      } else if (src.get_type().is_fixed_width_integer()) {
 	      // This is the "mostly" in the class comment above: the only place where
 	      // a bitwidth is not ignored. The bound is sound only if src holds a value
 	      // representable in its declared bitwidth, which Crab does not enforce --

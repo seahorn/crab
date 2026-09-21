@@ -129,8 +129,11 @@ private:
     return false;
   }
 
+  // The result feeds mk_interval, whose default implementation ignores it;
+  // only wrapped intervals specialize on it. A mathematical integer has no
+  // width, and 0 is what every other width-less type already reports here.
   static unsigned get_bitwidth(const variable_t &v) {
-    if (v.get_type().is_integer()) {
+    if (v.get_type().is_fixed_width_integer()) {
       return v.get_type().get_integer_bitwidth();
     } else {
       return 0;

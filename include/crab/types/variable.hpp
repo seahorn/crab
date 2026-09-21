@@ -26,7 +26,15 @@ enum variable_type_kind {
   REG_REF_TYPE,
 
   // unknown type
-  UNK_TYPE
+  UNK_TYPE,
+
+  // Mathematical integers: integers without a representation width. Appended
+  // here rather than next to INT_TYPE/ARR_INT_TYPE, where they would read
+  // better, so that the existing members keep their values: crab is mostly
+  // header-only but does build lib/, and renumbering would break linking
+  // against a differently-versioned library.
+  MATH_INT_TYPE,
+  ARR_MATH_INT_TYPE
 };
 
 /*
@@ -80,6 +88,14 @@ public:
   static variable_type mk_region(const variable_type &ty) {
     if (ty.is_bool()) {
       return variable_type(variable_type_kind::REG_BOOL_TYPE);
+    } else if (ty.is_math_integer()) {
+      // Checked before is_integer(), which is inclusive: falling through
+      // would reach get_integer_bitwidth() and report "non-integer type"
+      // right after is_integer() answered true. Regions of mathematical
+      // integers would need their own kind (REG_INT_TYPE carries a width);
+      // no client needs them yet.
+      CRAB_ERROR("variable_type::mk_region does not support regions of "
+                 "mathematical integers");
     } else if (ty.is_integer()) {
       return variable_type(variable_type_kind::REG_INT_TYPE, ty.get_integer_bitwidth());
     } else if (ty.is_real()) {
@@ -125,11 +141,25 @@ public:
 
   //// scalars
   bool is_bool() const { return m_kind == BOOL_TYPE; }
-  bool is_integer() const { return m_kind == INT_TYPE; }
+  // Inclusive: any integer the numerical domains can handle. Almost every
+  // caller means "is this a numeric scalar?", for which a mathematical
+  // integer qualifies. Use is_fixed_width_integer() where a representation
+  // width is genuinely required.
+  bool is_integer() const {
+    return m_kind == INT_TYPE || m_kind == MATH_INT_TYPE;
+  }
+  // An integer with a representation width.
+  bool is_fixed_width_integer() const { return m_kind == INT_TYPE; }
+  // An integer without a representation width.
+  bool is_math_integer() const { return m_kind == MATH_INT_TYPE; }
   bool is_integer(unsigned bitwidth) const {
     return m_kind == INT_TYPE && m_bitwidth == bitwidth;
   }
   unsigned get_integer_bitwidth() const {
+    if (m_kind == MATH_INT_TYPE) {
+      CRAB_ERROR("get_integer_bitwidth called on a mathematical integer, "
+                 "which has no bitwidth");
+    }
     if (m_kind != INT_TYPE) {
       CRAB_ERROR("get_integer_bitwidth called on a non-integer type");
     }
@@ -142,10 +172,17 @@ public:
   }
   //// arrays
   bool is_bool_array() const { return m_kind == ARR_BOOL_TYPE; }
+  // Exclusive, unlike the scalar is_integer(). Callers of this one mean "an
+  // array whose elements have a representation width": it gates
+  // check_array_elem_size and drives the fixed-width ghost cells built by the
+  // array domains, neither of which applies to arrays of mathematical
+  // integers.
   bool is_integer_array() const { return m_kind == ARR_INT_TYPE; }
+  bool is_math_integer_array() const { return m_kind == ARR_MATH_INT_TYPE; }
   bool is_real_array() const { return m_kind == ARR_REAL_TYPE; }
   bool is_array() const {
-    return is_integer_array() || is_bool_array() || is_real_array();
+    return is_integer_array() || is_math_integer_array() || is_bool_array() ||
+           is_real_array();
   }
   //// regions
   bool is_unknown_region() const { return m_kind == REG_UNKNOWN_TYPE; }
@@ -193,6 +230,11 @@ public:
     case INT_TYPE:
       o << "int" << m_bitwidth;
       break;
+    case MATH_INT_TYPE:
+      // Fixed-width integers always print their width, so a bare "int" is
+      // unambiguous.
+      o << "int";
+      break;
     case REAL_TYPE:
       o << "real";
       break;
@@ -204,6 +246,9 @@ public:
       break;
     case ARR_INT_TYPE:
       o << "arr(int)";
+      break;
+    case ARR_MATH_INT_TYPE:
+      o << "arr(mathint)";
       break;
     case ARR_REAL_TYPE:
       o << "arr(real)";

@@ -1638,7 +1638,8 @@ public:
                       const linear_expression_t &i,
                       const bool_num_domain_t &invariant) override {
     m_product.backward_array_load(lhs, a, elem_size, i, invariant.m_product);
-    if (a.get_type().is_integer_array() || a.get_type().is_real_array()) {
+    if (a.get_type().is_integer_array() || a.get_type().is_math_integer_array() ||
+        a.get_type().is_real_array()) {
       m_unchanged_vars -= lhs;
     }
   }

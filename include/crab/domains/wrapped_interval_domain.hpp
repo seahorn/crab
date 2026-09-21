@@ -37,6 +37,13 @@ public:
 #define WRAPPED_INTERVALS_DOMAIN_SCOPED_STATS_ASSIGN_CTOR(NAME) \
   CRAB_DOMAIN_SCOPED_STATS(&o, NAME, 0)
   
+// This is the one domain that models machine arithmetic rather than
+// mathematical integers, so every value it tracks must have a width to wrap
+// at. Variables of type MATH_INT_TYPE are therefore not supported: they reach
+// get_integer_bitwidth(), which reports that a mathematical integer has no
+// bitwidth. The failure is loud by construction -- there is no fallback width
+// that would let this domain quietly analyse an unbounded integer as if it
+// were bounded.
 template <typename Number, typename VariableName,
 	  typename Params = WrappedIntervalsDefaultParams>
 class wrapped_interval_domain final
@@ -227,6 +234,36 @@ public:
     this->_env -= v;
   }
 
+  // Width of v, rejecting mathematical integers. This domain models machine
+  // arithmetic, so a value with no width is not something it can represent;
+  // there is no fallback that would let it quietly analyse an unbounded
+  // integer as a bounded one. The check is here rather than left to
+  // get_integer_bitwidth() so that the message names this domain and the
+  // offending variable no matter which operation reached it first.
+  static unsigned get_bitwidth(const variable_t &v,
+                               unsigned width_if_not_integer) {
+    if (v.get_type().is_math_integer()) {
+      CRAB_ERROR("wrapped_interval_domain does not support mathematical "
+                 "integers: ", v, " has no bitwidth to wrap at");
+    }
+    return (v.get_type().is_fixed_width_integer()
+                ? v.get_type().get_integer_bitwidth()
+                : width_if_not_integer);
+  }
+
+  // Same, for every variable appearing in a constraint. Without this the
+  // rejection would surface inside linear_interval_solver, which reports a
+  // missing wrapint bitwidth and mentions neither this domain nor the
+  // variable.
+  static void reject_math_integers(const linear_constraint_t &cst) {
+    for (auto const &v : cst.variables()) {
+      if (v.get_type().is_math_integer()) {
+        CRAB_ERROR("wrapped_interval_domain does not support mathematical "
+                   "integers: ", v, " has no bitwidth to wrap at");
+      }
+    }
+  }
+
   void set(const variable_t &v, wrapped_interval_t i) {
     WRAPPED_INTERVALS_DOMAIN_SCOPED_STATS(".assign");
     this->_env.set(v, i);
@@ -239,8 +276,7 @@ public:
     if (i.lb().is_finite() && i.ub().is_finite()) {
       wrapped_interval_t rhs =
 	wrapped_interval_t::mk_winterval(*(i.lb().number()), *(i.ub().number()),
-					 v.get_type().is_integer() ?
-					 v.get_type().get_integer_bitwidth() : 0);
+					 get_bitwidth(v, 0));
       this->_env.set(v, rhs);
       CRAB_LOG("wrapped-int",
                crab::outs() << v << ":=" << i << "=" << _env.at(v) << "\n");
@@ -254,8 +290,7 @@ public:
   void set(const variable_t &v, number_t n) {
     WRAPPED_INTERVALS_DOMAIN_SCOPED_STATS(".assign");
     this->_env.set(v, wrapped_interval_t::mk_winterval(n,
-						       v.get_type().is_integer() ?
-						       v.get_type().get_integer_bitwidth() : 0));
+						       get_bitwidth(v, 0)));
     CRAB_LOG("wrapped-int", crab::outs()
                                 << v << ":=" << n << "=" << _env.at(v) << "\n");
   }
@@ -280,7 +315,7 @@ public:
     } else {
       wrapped_interval_t r = eval_expr(
           e,
-          x.get_type().is_integer() ? x.get_type().get_integer_bitwidth() : 0);
+          get_bitwidth(x, 0));
       this->_env.set(x, r);
     }
     CRAB_LOG("wrapped-int", crab::outs()
@@ -294,7 +329,7 @@ public:
     } else {
       wrapped_interval_t r = eval_expr(
           e,
-          x.get_type().is_integer() ? x.get_type().get_integer_bitwidth() : 0);
+          get_bitwidth(x, 0));
       this->_env.join(x, r);
     }
     CRAB_LOG("wrapped-int", crab::outs()
@@ -344,7 +379,7 @@ public:
     wrapped_interval_t yi = _env.at(y);
     wrapped_interval_t zi = wrapped_interval_t::mk_winterval(
         k,
-        (x.get_type().is_integer() ? x.get_type().get_integer_bitwidth() : 0));
+        (get_bitwidth(x, 0)));
     wrapped_interval_t xi = wrapped_interval_t::bottom();
 
     switch (op) {
@@ -384,12 +419,13 @@ public:
     wrapped_interval_t src_i = this->_env.at(src);
     wrapped_interval_t dst_i;
 
-    auto get_bitwidth = [](const variable_t v) {
+    auto cast_operand_bitwidth = [](const variable_t &v) {
       auto ty = v.get_type();
       if (!(ty.is_integer() || ty.is_bool())) {
         CRAB_ERROR("unexpected types in cast operation");
       }
-      return (ty.is_integer() ? ty.get_integer_bitwidth() : 1);
+      // A boolean is a one-bit value here, which is what this domain models.
+      return get_bitwidth(v, 1);
     };
 
     if (src_i.is_bottom() || src_i.is_top()) {
@@ -398,18 +434,18 @@ public:
       switch (op) {
       case OP_ZEXT:
       case OP_SEXT: {
-        if (get_bitwidth(dst) < get_bitwidth(src)) {
+        if (cast_operand_bitwidth(dst) < cast_operand_bitwidth(src)) {
           CRAB_ERROR("destination must be larger than source in sext/zext");
         }
-        unsigned bits_to_add = get_bitwidth(dst) - get_bitwidth(src);
+        unsigned bits_to_add = cast_operand_bitwidth(dst) - cast_operand_bitwidth(src);
         dst_i =
             (op == OP_SEXT ? src_i.SExt(bits_to_add) : src_i.ZExt(bits_to_add));
       } break;
       case OP_TRUNC: {
-        if (get_bitwidth(src) < get_bitwidth(dst)) {
+        if (cast_operand_bitwidth(src) < cast_operand_bitwidth(dst)) {
           CRAB_ERROR("destination must be smaller than source in truncate");
         }
-        unsigned bits_to_keep = get_bitwidth(dst);
+        unsigned bits_to_keep = cast_operand_bitwidth(dst);
         dst_i = src_i.Trunc(bits_to_keep);
       } break;
       }
@@ -457,7 +493,7 @@ public:
     wrapped_interval_t yi = _env.at(y);
     wrapped_interval_t zi = wrapped_interval_t::mk_winterval(
         k,
-        (x.get_type().is_integer() ? x.get_type().get_integer_bitwidth() : 0));
+        (get_bitwidth(x, 0)));
     wrapped_interval_t xi = wrapped_interval_t::bottom();
     switch (op) {
     case OP_AND: 
@@ -486,6 +522,7 @@ public:
     WRAPPED_INTERVALS_DOMAIN_SCOPED_STATS(".add_cst");
     linear_constraint_system_t wt_csts;
     for (auto const &cst : csts) {
+      reject_math_integers(cst);
       if (cst.is_well_typed()) {
         wt_csts += cst;
       } else {
@@ -1524,9 +1561,15 @@ private:
   bool may_overflow_residuals(const linear_constraint_t &cst,
                               number_t coef_pivot, const variable_t &pivot,
                               signedness_t signedness) {
-    bitwidth_t b =
-        (pivot.get_type().is_integer() ? pivot.get_type().get_integer_bitwidth()
-                                       : 0);
+    if (pivot.get_type().is_math_integer()) {
+      // Overflow of a mathematical integer is not a question this class can
+      // answer: there is no width for the residual to exceed.
+      CRAB_ERROR("wrapped_numerical_domain does not support mathematical "
+                 "integers: ", pivot, " has no bitwidth to wrap at");
+    }
+    bitwidth_t b = (pivot.get_type().is_fixed_width_integer()
+                        ? pivot.get_type().get_integer_bitwidth()
+                        : 0);
     interval_t residual = cst.constant();
     if (!fit(residual, b, signedness)) {
       // If the constant is to large we bail out

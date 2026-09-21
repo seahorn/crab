@@ -599,6 +599,8 @@ template <typename Domain> class cell_ghost_man {
       return BOOL_TYPE;
     } else if (array_type.is_integer_array()) {
       return INT_TYPE;
+    } else if (array_type.is_math_integer_array()) {
+      return MATH_INT_TYPE;
     } else {
       assert(array_type.is_real_array());
       return REAL_TYPE;
