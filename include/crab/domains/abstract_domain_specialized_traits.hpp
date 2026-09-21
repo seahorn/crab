@@ -49,12 +49,29 @@ public:
     /// Refine dst based on src's type
     if (op == crab::domains::OP_ZEXT) {
       if (src.get_type().is_bool()) {
-	dom += (dst >= 0);
-	dom += (dst <= 1);
+	      dom += (dst >= 0);
+	      dom += (dst <= 1);
       } else if (src.get_type().is_integer()) {
-	unsigned bitwidth = src.get_type().get_integer_bitwidth();
-	number_t upper_bound = (number_t(1) << number_t(bitwidth)) - number_t(1);
-	dom += (dst <= number_t(upper_bound));
+	      // This is the "mostly" in the class comment above: the only place where
+	      // a bitwidth is not ignored. The bound is sound only if src holds a value
+	      // representable in its declared bitwidth, which Crab does not enforce --
+	      // no domain reaching this code constrains an iN variable to N bits. When
+	      // that does not hold, the bound contradicts the assign above and the
+	      // state silently becomes bottom, i.e. the analysis concludes that the
+	      // code is unreachable:
+	      //
+	      //   x:i32 == 5000000000; y:i64 := zext x
+	      //   assign gives y == 5000000000, then y <= 2^32-1 makes it bottom.
+	      //
+	      // Clients that derive iN from a real machine type never build such a
+	      // state, and for them the bound is useful precision.
+	      //
+	      // No lower bound is added here, unlike the Boolean case above: that case
+	      // havocs dst first, whereas here dst has just been assigned src, so
+	      // dst >= 0 would contradict a negative src.
+	      unsigned bitwidth = src.get_type().get_integer_bitwidth();
+	      number_t upper_bound = (number_t(1) << number_t(bitwidth)) - number_t(1);
+	      dom += (dst <= number_t(upper_bound));
       }
     }
   }
