@@ -276,7 +276,15 @@ class type_checker_visitor
       if (v2.get_type().is_bool())
         return;
     } else if (v1.get_type().is_integer_array()) {
-      if (v2.get_type().is_integer())
+      // is_fixed_width_integer() rather than the inclusive is_integer(): this
+      // is the one place that must keep the two integer kinds apart. Allowing
+      // either here would make an array's elements heterogeneous, and the
+      // array domains derive each cell's ghost type from the array's type, so
+      // nothing downstream could tell which kind a cell holds.
+      if (v2.get_type().is_fixed_width_integer())
+        return;
+    } else if (v1.get_type().is_math_integer_array()) {
+      if (v2.get_type().is_math_integer())
         return;
     } else if (v1.get_type().is_real_array()) {
       if (v2.get_type().is_real())
@@ -428,12 +436,41 @@ public:
     const variable_t &dst = s.dst();
 
     auto get_bitwidth = [](const variable_t &v) {
-      return (v.get_type().is_integer() ? v.get_type().get_integer_bitwidth()
-                                        : 1);
+      return (v.get_type().is_fixed_width_integer()
+                  ? v.get_type().get_integer_bitwidth()
+                  : 1);
     };
 
     check_varname(src);
     check_varname(dst);
+
+    // Mathematical integers have no width, so the ordering rules below cannot
+    // apply to them. Exactly two casts are legal, and they are stated
+    // explicitly rather than expressed as width comparisons:
+    //
+    //   trunc  math -> bool    zero is false, non-zero is true
+    //   zext   bool -> math    false is 0, true is 1
+    //
+    // Everything else is rejected. In particular sext bool -> math is
+    // rejected rather than left to mean -1, which is a two's-complement
+    // convention with no meaning for an integer that has no representation;
+    // and casts between the two integer kinds are rejected because a
+    // mathematical integer is not representable in N bits and an iN value
+    // needs no widening to become one.
+    if (src.get_type().is_math_integer() || dst.get_type().is_math_integer()) {
+      bool ok = (s.op() == CAST_TRUNC && src.get_type().is_math_integer() &&
+                 dst.get_type().is_bool()) ||
+                (s.op() == CAST_ZEXT && src.get_type().is_bool() &&
+                 dst.get_type().is_math_integer());
+      if (!ok) {
+        CRAB_ERROR("(type checking) the only casts allowed on mathematical "
+                   "integers are trunc (math int to bool) and zext (bool to "
+                   "math int) in ",
+                   s);
+      }
+      return;
+    }
+
     switch (s.op()) {
     case CAST_TRUNC:
       check_int(src, "source operand must be integer", s);

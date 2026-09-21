@@ -24,6 +24,11 @@ inline void write(writer &w, const crab::variable_type &ty) {
   w.begin_object(true /*compact*/);
   if (ty.is_bool()) {
     w.kv_string("kind", "bool");
+  } else if (ty.is_math_integer()) {
+    // Checked before is_integer(), which is inclusive. A distinct tag rather
+    // than "int" with the bitwidth field omitted: a reader should not have to
+    // infer the kind from the absence of a field.
+    w.kv_string("kind", "math_int");
   } else if (ty.is_integer()) {
     w.kv_string("kind", "int");
     w.kv_unsigned("bitwidth", ty.get_integer_bitwidth());
@@ -35,6 +40,8 @@ inline void write(writer &w, const crab::variable_type &ty) {
     w.kv_string("kind", "bool_array");
   } else if (ty.is_integer_array()) {
     w.kv_string("kind", "int_array");
+  } else if (ty.is_math_integer_array()) {
+    w.kv_string("kind", "math_int_array");
   } else if (ty.is_real_array()) {
     w.kv_string("kind", "real_array");
   } else if (ty.is_unknown_region()) {

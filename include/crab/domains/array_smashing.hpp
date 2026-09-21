@@ -108,11 +108,15 @@ private:
                            uint64_t size /*bytes*/) {
     auto array_ty = array_var.get_type();
     assert(array_ty.is_bool_array() || array_ty.is_integer_array() ||
-           array_ty.is_real_array());
+           array_ty.is_math_integer_array() || array_ty.is_real_array());
 
     variable_type ghost_ty(INT_TYPE, size * 8);
     if (array_ty.is_bool_array()) {
       ghost_ty = variable_type(BOOL_TYPE);
+    } else if (array_ty.is_math_integer_array()) {
+      // The element size still says how many bytes an access covers, but the
+      // value stored has no width, so the ghost must not claim one.
+      ghost_ty = variable_type(MATH_INT_TYPE);
     } else if (array_ty.is_real_array()) {
       ghost_ty = variable_type(REAL_TYPE);
     }

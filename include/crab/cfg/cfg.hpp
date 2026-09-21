@@ -700,6 +700,15 @@ public:
   }
 
   virtual void write(crab_os &o) const override {
+    // A mathematical integer has no width to print, so casts involving one
+    // are spelled out by name. Casts between fixed-width integers keep their
+    // existing output byte for byte.
+    if (m_src.get_type().is_math_integer() ||
+        m_dst.get_type().is_math_integer()) {
+      o << (m_op == CAST_TRUNC ? "int_to_bool" : "bool_to_int") << " " << m_src
+        << " to " << m_dst;
+      return;
+    }
     // bitwidths are casted to int, otherwise operator<< may try
     // to print them as characters if bitwidth_t = uint8_t
     o << m_op << " " << m_src << ":" << (int)src_width() << " to " << m_dst
@@ -707,10 +716,13 @@ public:
   }
 
 private:
+  // Only meaningful for operands that have a width: src_width()/dst_width()
+  // must not be called when either side is a mathematical integer, which is
+  // why write() above handles that case first.
   static bitwidth_t get_bitwidth(const variable_t &v) {
     auto ty = v.get_type();
-    assert(ty.is_integer() || ty.is_bool());
-    return (ty.is_integer() ? ty.get_integer_bitwidth() : 1);
+    assert(ty.is_fixed_width_integer() || ty.is_bool());
+    return (ty.is_fixed_width_integer() ? ty.get_integer_bitwidth() : 1);
   }
 
   cast_operation_t m_op;
@@ -2692,6 +2704,18 @@ public:
   }
 
   const statement_t *zext(variable_t src, variable_t dst) {
+    return insert(new int_cast_t(CAST_ZEXT, src, dst, this));
+  }
+
+  // The two casts that are legal for mathematical integers, under names that
+  // describe what they do. "truncate" and "zext" name bit-level mechanisms
+  // that do not exist for an integer without a representation; these build
+  // exactly the same statements.
+  const statement_t *int_to_bool(variable_t src, variable_t dst) {
+    return insert(new int_cast_t(CAST_TRUNC, src, dst, this));
+  }
+
+  const statement_t *bool_to_int(variable_t src, variable_t dst) {
     return insert(new int_cast_t(CAST_ZEXT, src, dst, this));
   }
 
