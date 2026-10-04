@@ -325,11 +325,11 @@ public:
     CRAB_LOG("inter", crab::outs() << "    Reuse summary at " << cs << "\n";
              crab::outs() << "    Summary:" << summ << "\n";);
 
-#if 1    
-    domains::callsite_info<variable_t> cs_info
-      (cs.get_func_name(), cs.get_args(), cs.get_lhs(),
-       summ.get_ghost_inputs(),
-       summ.get_ghost_outputs());
+#if 1
+    domains::callsite_info<variable_t> cs_info(
+        cs.get_func_name(), cs.get_args(), cs.get_lhs(),
+        summ.get_ghost_inputs(), summ.get_ghost_outputs(),
+        /*FIXME:*/ {}, {}, {}, {});
     domains::inter_abstract_operations<abs_dom_t, true>::caller_continuation
       (cs_info, summ.get_ghost_sum(), caller);
     CRAB_LOG("inter", crab::outs() << "    Continuation at the caller: " << caller << "\n";);
