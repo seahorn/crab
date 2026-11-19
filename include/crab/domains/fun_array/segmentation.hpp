@@ -3,6 +3,7 @@
 #include <crab/support/debug.hpp>
 #include <crab/support/os.hpp>
 
+#include <boost/optional.hpp>
 #include <cassert>
 #include <cstddef>
 #include <set>
@@ -528,6 +529,356 @@ public:
     return combine(u, false, [](const ValueDom &x, const ValueDom &y) {
       return x & y;
     });
+  }
+
+  /** Scalar changes **/
+
+  // x is no longer what it was: drop the expressions mentioning x from the
+  // bounds, removing the bounds left empty, and forget x in the values.
+  //
+  // E.g., forgetting n in {0} 0 {i}? 1 {n} T {+oo} gives
+  // {0} 0 {i}? 0<=A<=1 {+oo}: the values on both sides of {n} are joined
+  // ({0} keeps 0, which is a constant).
+  void forget(const variable_t &x) {
+    if (m_is_bottom) {
+      return;
+    }
+    for (std::size_t k = 0; k < m_bounds.size();) {
+      m_bounds[k].forget(x);
+      if (m_bounds[k].is_empty()) {
+        drop_bound(k);
+      } else {
+        ++k;
+      }
+    }
+    for (auto &v : m_values) {
+      v.forget({x});
+    }
+  }
+
+  // The invertible assignment x := x + k (POPL'11, Sect. 11.6): the old x
+  // is the new x - k, so every bound expression mentioning x is rewritten
+  // with x - k. The values forget x.
+  //
+  // E.g., after i := i + 1 (k = 1), {0 i} 0 {1 i+1} T {+oo} becomes
+  // {0 i-1} 0 {1 i} T {+oo}.
+  void shift(const variable_t &x, const number_t &k) {
+    if (m_is_bottom) {
+      return;
+    }
+    linear_expression_t old_x = linear_expression_t(x) - k;
+    for (auto &b : m_bounds) {
+      b.substitute(x, old_x);
+    }
+    for (auto &v : m_values) {
+      v.forget({x});
+    }
+  }
+
+  // After the assignment x := e, with e in normal form and not mentioning x
+  // (POPL'11, Sect. 11.6): x is added to every bound containing e. Call
+  // forget(x) first.
+  //
+  // E.g., after i := 0, {0} T {+oo} becomes {0 i} T {+oo}; after j := n,
+  // {0} 0 {n}? T {+oo} becomes {0} 0 {n j}? T {+oo}.
+  void add_equal(const variable_t &x, const expression_t &e) {
+    if (m_is_bottom) {
+      return;
+    }
+    expression_t ex = *expression_t::make(linear_expression_t(x));
+    for (auto &b : m_bounds) {
+      if (b.contains(e)) {
+        b.add(ex);
+      }
+    }
+  }
+
+  // Keep only the scalars in vars, in bounds and values
+  //
+  // E.g., with vars = {i}, {0 t} 0 {i n}? T {+oo} becomes {0} 0 {i}? T {+oo}.
+  void project(const std::vector<variable_t> &vars) {
+    if (m_is_bottom) {
+      return;
+    }
+    std::set<variable_t> keep(vars.begin(), vars.end());
+    for (auto const &x : variables()) {
+      if (keep.count(x) == 0) {
+        for (std::size_t k = 0; k < m_bounds.size();) {
+          m_bounds[k].forget(x);
+          if (m_bounds[k].is_empty()) {
+            drop_bound(k);
+          } else {
+            ++k;
+          }
+        }
+      }
+    }
+    for (auto &v : m_values) {
+      v.project(vars);
+    }
+  }
+
+  // Rename scalars in bounds and values, and arrays in values
+  void rename(const std::vector<variable_t> &from,
+              const std::vector<variable_t> &to) {
+    for (auto &b : m_bounds) {
+      b.rename(from, to);
+    }
+    for (auto &v : m_values) {
+      v.rename(from, to);
+    }
+  }
+
+  // Add to each bound of this segmentation the expressions of o's bounds
+  // that s proves equal to it. Used before a join, where o is the other
+  // input and s this input's scalar state. Sound: every expression of a
+  // bound is equal to the others in the concrete.
+  //
+  // E.g., at the head of `i := 0; while (..) { A[i] := 0; i := i + 1; }`,
+  // the loop entry has no access to A yet, so A is {0} T {+oo}, while the
+  // back edge has {0 i-1} 0 {1 i} T {+oo}. Since s proves i == 0 at the
+  // entry, the entry becomes {0 i} T {+oo}, as if i := 0 had happened after
+  // A was first accessed, and the join gives {0} 0 {i}? T {+oo}.
+  template <class ScalarDom>
+  void saturate(const segmentation_t &o, const ScalarDom &s) {
+    if (m_is_bottom || o.m_is_bottom || s.is_bottom()) {
+      return;
+    }
+    for (auto &b : m_bounds) {
+      for (auto const &ob : o.m_bounds) {
+        for (auto const &e : ob.expressions()) {
+          if (!b.contains(e) && BoundDom(e).is_eq(b, s).is_true()) {
+            b.add(e);
+          }
+        }
+      }
+    }
+  }
+
+  /** Array accesses **/
+
+private:
+  // Where index i falls among the bounds, following Clousot's
+  // ArraySegmentation.TrySearchBoundsForAddingASegment:
+  //  - low: the last bound such that s proves bound <= i, stopping at the
+  //    first one that s proves equal to i (low_equal); low_strict if s
+  //    proves bound < i.
+  //  - upp: the first bound after low such that s proves i < bound, or
+  //    size() for +oo; upp_equal if s proves i+1 == bound, upp_strict if
+  //    s proves i+1 < bound (always for +oo).
+  struct location {
+    std::size_t low;
+    bool low_equal;
+    bool low_strict;
+    std::size_t upp;
+    bool upp_equal;
+    bool upp_strict;
+  };
+
+  template <class ScalarDom>
+  boost::optional<location> locate(const expression_t &i,
+                                   const ScalarDom &s) const {
+    const BoundDom bi(i);
+    const BoundDom bi1(i.shifted(number_t(1)));
+    const std::size_t n = m_bounds.size();
+    location loc;
+    std::size_t k = 0;
+    for (; k < n; ++k) {
+      bool le = m_bounds[k].is_le(bi, s).is_true();
+      bool eq = m_bounds[k].is_eq(bi, s).is_true();
+      if (!le || eq) {
+        if (!eq && k == 0) {
+          // s does not prove 0 <= i
+          return boost::none;
+        }
+        loc.low = eq ? k : k - 1;
+        loc.low_equal = eq;
+        break;
+      }
+    }
+    if (k == n) {
+      loc.low = n - 1;
+      loc.low_equal = false;
+    }
+    loc.low_strict =
+        !loc.low_equal && m_bounds[loc.low].is_lt(bi, s).is_true();
+
+    loc.upp = loc.low + 1;
+    while (loc.upp < n && !bi.is_lt(m_bounds[loc.upp], s).is_true()) {
+      ++loc.upp;
+    }
+    if (loc.upp < n) {
+      loc.upp_equal = bi1.is_eq(m_bounds[loc.upp], s).is_true();
+      loc.upp_strict = bi1.is_lt(m_bounds[loc.upp], s).is_true();
+    } else {
+      loc.upp_equal = false;
+      loc.upp_strict = true;
+    }
+    return loc;
+  }
+
+  /**
+   * Split off the one-element segment [i, i+1), following Clousot's
+   * ArraySegmentation.TrySetAbstractValueInternal, and return the index of
+   * its value. The segments between low and upp (see locate) are merged
+   * into J, the join of their values; the new segment starts as J fixed at
+   * index i (ValueDom::singleton).
+   *
+   * Left of [i, i+1):
+   *  - i == Blow:  {Blow i} [i, i+1)            (i joins Blow)
+   *  - Blow < i:   {Blow} J {i} [i, i+1)
+   *  - Blow <= i:  {Blow} J {i}? [i, i+1)
+   * Right of [i, i+1), where Bi is the bound holding i:
+   *  - i+1 == Bupp:  {Bupp Bi+1} Pupp ...     (and Bupp-1 joins Bi)
+   *  - i+1 < Bupp:   {Bi+1} J {Bupp} Pupp ...  (or {Bi+1} J {+oo})
+   *  - i+1 <= Bupp:  {Bi+1} J {Bupp}? Pupp ...
+   *
+   * E.g., with s proving i == 0, splitting {0} T {+oo} at i gives
+   * {0 i} T' {1 i+1} T {+oo}; with 0 <= i, splitting {0} 0 {i}? T {+oo} at
+   * i gives {0} 0 {i}? T' {i+1} T {+oo}; with 0 <= k < i, splitting it at k
+   * gives {0} 0 {k}? 0' {k+1}? 0 {i}? T {+oo}, where T' and 0' are the new
+   * segment's values.
+   **/
+  template <class ScalarDom>
+  boost::optional<std::size_t> split_at(const expression_t &i,
+                                        const linear_expression_t &li,
+                                        const ScalarDom &s) {
+    auto loc = locate(i, s);
+    if (!loc) {
+      return boost::none;
+    }
+    const std::size_t low = loc->low, upp = loc->upp;
+    ValueDom j = m_values[low];
+    for (std::size_t k = low + 1; k < upp; ++k) {
+      j = j | m_values[k];
+    }
+
+    std::vector<BoundDom> bounds(m_bounds.begin(), m_bounds.begin() + low);
+    std::vector<bool> maybe_empty(m_maybe_empty.begin(),
+                                  m_maybe_empty.begin() + low);
+    std::vector<ValueDom> values(m_values.begin(), m_values.begin() + low);
+
+    // Left of [i, i+1)
+    BoundDom bi(i);
+    if (loc->low_equal) {
+      bi = m_bounds[low] | bi;
+      bounds.push_back(bi);
+      maybe_empty.push_back(m_maybe_empty[low]);
+    } else {
+      bounds.push_back(m_bounds[low]);
+      maybe_empty.push_back(m_maybe_empty[low]);
+      values.push_back(j);
+      bounds.push_back(bi);
+      maybe_empty.push_back(!loc->low_strict);
+    }
+    const std::size_t pos = values.size();
+    values.push_back(j.singleton(li));
+
+    // Right of [i, i+1)
+    BoundDom next = bi.shifted(number_t(1));
+    if (upp < m_bounds.size() && loc->upp_equal) {
+      bounds.back() = bounds.back() | m_bounds[upp].shifted(number_t(-1));
+      bounds.push_back(m_bounds[upp] | next);
+      maybe_empty.push_back(false);
+      values.push_back(m_values[upp]);
+    } else {
+      bounds.push_back(next);
+      maybe_empty.push_back(false);
+      values.push_back(j);
+      if (upp < m_bounds.size()) {
+        bounds.push_back(m_bounds[upp]);
+        maybe_empty.push_back(!loc->upp_strict);
+        values.push_back(m_values[upp]);
+      }
+    }
+    for (std::size_t k = upp + 1; k < m_bounds.size(); ++k) {
+      bounds.push_back(m_bounds[k]);
+      maybe_empty.push_back(m_maybe_empty[k]);
+      values.push_back(m_values[k]);
+    }
+
+    m_bounds = std::move(bounds);
+    m_maybe_empty = std::move(maybe_empty);
+    m_values = std::move(values);
+    return pos;
+  }
+
+public:
+  // A[i] := val, for the array a described by this segmentation. A strong
+  // update when i is in normal form and s proves 0 <= i: [i, i+1) is split
+  // off and its value receives the store. Otherwise a weak update: every
+  // segment is joined with a copy of itself that received the store.
+  //
+  // E.g., with 0 <= i, A[i] := 0 on {0} 0 {i}? T {+oo} gives
+  // {0} 0 {i}? A==0 {i+1} T {+oo}.
+  template <class ScalarDom>
+  void store(const variable_t &a, const linear_expression_t &i,
+             const linear_expression_t &val, const ScalarDom &s) {
+    if (m_is_bottom) {
+      return;
+    }
+    if (auto ei = expression_t::make(i)) {
+      if (auto pos = split_at(*ei, i, s)) {
+        m_values[*pos].store(a, val, s);
+        normalize();
+        return;
+      }
+    }
+    weak_store(a, val, s);
+  }
+
+  // A weak A[i] := val, for an unknown index or a store that may not happen
+  template <class ScalarDom>
+  void weak_store(const variable_t &a, const linear_expression_t &val,
+                  const ScalarDom &s) {
+    if (m_is_bottom) {
+      return;
+    }
+    for (auto &v : m_values) {
+      ValueDom stored(v);
+      stored.store(a, val, s);
+      v = v | stored;
+    }
+  }
+
+  // lhs := A[i], for the array a described by this segmentation. The caller
+  // forgets lhs first, in s and in every segmentation. When i is in normal
+  // form and s proves 0 <= i, [i, i+1) is split off (loads split segments
+  // too, so that the segment records A == lhs) and s receives the element's
+  // constraints. Otherwise s receives the constraints of the join of all
+  // segments.
+  //
+  // E.g., with 0 <= k < i, lhs := A[k] on {0} 0 {i}? T {+oo} gives lhs == 0
+  // in s and {0} 0 {k}? A==lhs,A==0 {k+1}? 0 {i}? T {+oo}.
+  template <class ScalarDom>
+  void load(const variable_t &a, const variable_t &lhs,
+            const linear_expression_t &i, ScalarDom &s) {
+    if (m_is_bottom) {
+      return;
+    }
+    if (auto ei = expression_t::make(i)) {
+      if (auto pos = split_at(*ei, i, s)) {
+        m_values[*pos].load(a, lhs, s);
+        normalize();
+        return;
+      }
+    }
+    weak_load(a, lhs, s);
+  }
+
+  // A weak lhs := A[i]: s receives the constraints of the join of all
+  // segments; the segmentation does not change
+  template <class ScalarDom>
+  void weak_load(const variable_t &a, const variable_t &lhs, ScalarDom &s) const {
+    if (m_is_bottom) {
+      s.set_to_bottom();
+      return;
+    }
+    ValueDom all = m_values[0];
+    for (std::size_t k = 1; k < m_values.size(); ++k) {
+      all = all | m_values[k];
+    }
+    all.load(a, lhs, s);
   }
 
   // {B0} P0 {B1} P1 {B2}? P2 ... {+oo}

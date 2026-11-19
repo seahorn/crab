@@ -4,6 +4,7 @@
 #include <crab/domains/split_dbm.hpp>
 #include <crab/types/variable.hpp>
 
+#include <algorithm>
 #include <cassert>
 #include <utility>
 
@@ -101,6 +102,11 @@ public:
   // Top
   explicit zone_segment_values(const variable_t &index) : m_index(index) {}
 
+  // Top, for a group whose representative array is a
+  static zone_segment_values_t make_top_for(const variable_t &a) {
+    return zone_segment_values_t(make_index_placeholder(a));
+  }
+
   zone_segment_values_t make_bottom() const override {
     return zone_segment_values_t(m_index, zones_t(true));
   }
@@ -177,6 +183,16 @@ public:
 
   void forget(const variable_vector_t &scalars) override {
     m_state.forget(scalars);
+  }
+  void project(const variable_vector_t &keep) override {
+    variable_vector_t vars;
+    for (auto const &v : m_state.tracked_variables()) {
+      if (v.get_type().is_array() || v == m_index ||
+          std::find(keep.begin(), keep.end(), v) != keep.end()) {
+        vars.push_back(v);
+      }
+    }
+    m_state.project(vars);
   }
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {

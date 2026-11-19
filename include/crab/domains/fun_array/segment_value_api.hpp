@@ -14,6 +14,13 @@ namespace fun_array_impl {
  * Use of Curiously Recurring Template Pattern (CRTP): Value is the
  * implementation, ScalarDom the scalar domain used by the conversions
  * (§10) and the reduction.
+ *
+ * Required static member of Value (static members cannot be virtual):
+ *
+ *   static Value make_top_for(const variable_t &a);
+ *
+ * It returns the top value for the segments of array a, used when a is
+ * first accessed.
  **/
 template <class Value, class ScalarDom> class segment_value_api {
 public:
@@ -67,6 +74,8 @@ public:
 
   // Scalar changes reaching the value
   virtual void forget(const variable_vector_t &scalars) = 0;
+  // Forget every scalar not in scalars; arrays and the index are kept
+  virtual void project(const variable_vector_t &scalars) = 0;
   virtual void rename(const variable_vector_t &from,
                       const variable_vector_t &to) = 0;
   // Meet with what s knows about the scalars this value mentions

@@ -1,0 +1,192 @@
+// Tests for single operations of the fun_array domain with one array per
+// group: loads, stores, scalar assignments and joins. Whole loops run
+// through the fixpoint are in fun-array.cc.
+//
+// Nothing is printed to standard output unless --print-invariants is given:
+// the Boost.Test log goes to stderr (tests/run_tests.sh diffs stdout against
+// a golden file) and ctest checks the exit code.
+#define BOOST_TEST_MODULE unittests_fun_array
+#define BOOST_TEST_ALTERNATIVE_INIT_API
+#define BOOST_TEST_NO_MAIN
+#include <boost/test/included/unit_test.hpp>
+
+#include "../crab_lang.hpp"
+#include <crab/domains/fun_array.hpp>
+#include <crab/domains/split_dbm.hpp>
+#include <crab/support/os.hpp>
+
+#include <initializer_list>
+#include <string>
+#include <vector>
+
+using namespace crab::cfg_impl;
+using namespace crab::domains;
+using namespace ikos;
+
+namespace {
+using scalar_t = split_dbm_domain<z_number, varname_t>;
+using dom_t = fun_array<scalar_t>;
+using seg_t = dom_t::segmentation_t;
+using bound_t = seg_t::bound_t;
+using expr_t = dom_t::expression_t;
+using var_t = dom_t::variable_t;
+using lin_t = dom_t::linear_expression_t;
+using cst_t = dom_t::linear_constraint_t;
+
+// Set by --print-invariants
+bool print_invariants = false;
+
+void print(const std::string &name, const dom_t &d) {
+  if (print_invariants) {
+    crab::outs() << name << " = " << d << "\n";
+  }
+}
+
+lin_t k(int x) { return lin_t(z_number(x)); }
+
+bound_t B(std::initializer_list<lin_t> es) {
+  bound_t res;
+  for (auto const &e : es) {
+    res.add(*expr_t::make(e));
+  }
+  return res;
+}
+
+bool same_bound(const bound_t &x, const bound_t &y) {
+  return x <= y && y <= x;
+}
+
+// The bounds and ? marks of s are bounds and maybe_empty
+void check_bounds(const seg_t &s, const std::vector<bound_t> &bounds,
+                  const std::vector<bool> &maybe_empty) {
+  BOOST_TEST_REQUIRE(!s.is_bottom());
+  BOOST_TEST_REQUIRE(s.size() == bounds.size());
+  for (std::size_t n = 0; n < bounds.size(); ++n) {
+    BOOST_TEST(same_bound(s.bound(n), bounds[n]), "bound " << n);
+    BOOST_TEST(s.maybe_empty(n) == maybe_empty[n], "? after bound " << n);
+  }
+}
+
+struct fixture {
+  variable_factory_t vfac;
+  var_t A, i, j, n, x;
+  fixture()
+      : A(vfac["A"], crab::ARR_INT_TYPE, 32), i(vfac["i"], crab::INT_TYPE, 32),
+        j(vfac["j"], crab::INT_TYPE, 32), n(vfac["n"], crab::INT_TYPE, 32),
+        x(vfac["x"], crab::INT_TYPE, 32) {}
+};
+} // namespace
+
+BOOST_FIXTURE_TEST_SUITE(transfer_functions, fixture)
+
+BOOST_AUTO_TEST_CASE(store_then_load) {
+  dom_t d;
+  d.array_store(A, k(4), i, k(5), true);
+  d.array_load(x, A, k(4), i);
+  print("A[i] := 5; x := A[i]", d);
+  BOOST_TEST(d.entails(cst_t(lin_t(x) - 5, cst_t::EQUALITY)));
+  // the access assumed i >= 0
+  BOOST_TEST(d.entails(cst_t(-lin_t(i), cst_t::INEQUALITY)));
+  check_bounds(d.segmentation_of(A), {B({k(0)}), B({i}), B({lin_t(i) + 1})},
+               {false, true, false});
+}
+
+// A store at an index equal to an existing bound reuses it
+BOOST_AUTO_TEST_CASE(store_at_existing_bound) {
+  dom_t d;
+  d.assign(i, k(0));
+  d.array_store(A, k(4), i, k(0), true);
+  print("i := 0; A[i] := 0", d);
+  check_bounds(d.segmentation_of(A), {B({k(0), i}), B({k(1), lin_t(i) + 1})},
+               {false, false});
+}
+
+// i := i + 1 rewrites the bounds; i := n replaces them
+BOOST_AUTO_TEST_CASE(scalar_assignments) {
+  dom_t d;
+  d.array_store(A, k(4), i, k(0), true);
+  d.apply(OP_ADDITION, i, i, z_number(1));
+  print("A[i] := 0; i := i + 1", d);
+  check_bounds(d.segmentation_of(A), {B({k(0)}), B({lin_t(i) - 1}), B({i})},
+               {false, true, false});
+
+  d.assign(i, n);
+  print("i := n", d);
+  check_bounds(d.segmentation_of(A), {B({k(0)})}, {false});
+
+  dom_t e;
+  e.array_store(A, k(4), n, k(0), true);
+  e.assign(j, n);
+  print("A[n] := 0; j := n", e);
+  // j joins the bound holding n, not the one holding n+1
+  check_bounds(e.segmentation_of(A),
+               {B({k(0)}), B({n, j}), B({lin_t(n) + 1})},
+               {false, true, false});
+}
+
+BOOST_AUTO_TEST_CASE(negative_index_is_unreachable) {
+  dom_t d;
+  d += cst_t(lin_t(i) + 1, cst_t::INEQUALITY); // i <= -1
+  d.array_store(A, k(4), i, k(0), true);
+  BOOST_TEST(d.is_bottom());
+}
+
+// An access with another element size forgets the array
+BOOST_AUTO_TEST_CASE(element_size_change_forgets) {
+  dom_t d;
+  d.array_store(A, k(4), i, k(5), true);
+  d.array_load(x, A, k(8), i);
+  BOOST_TEST(!d.entails(cst_t(lin_t(x) - 5, cst_t::EQUALITY)));
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_FIXTURE_TEST_SUITE(lattice, fixture)
+
+// The first iteration of `i := 0; while (..) { A[i] := 0; i := i + 1; }`:
+// the loop entry has not accessed A yet, so its segmentation gains {i}
+// from the back edge (its scalar state proves i == 0) before the join.
+BOOST_AUTO_TEST_CASE(join_saturates_untouched_array) {
+  dom_t entry;
+  entry.assign(i, k(0));
+  dom_t back(entry);
+  back.array_store(A, k(4), i, k(0), true);
+  back.apply(OP_ADDITION, i, i, z_number(1));
+  dom_t joined = entry | back;
+  print("entry", entry);
+  print("back edge", back);
+  print("entry | back edge", joined);
+
+  check_bounds(joined.segmentation_of(A), {B({k(0)}), B({i})}, {false, true});
+  BOOST_TEST((entry <= joined));
+  BOOST_TEST((back <= joined));
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+// Keep stdout empty unless --print-invariants is given: the golden-output
+// harness (tests/run_tests.sh) diffs the standard output of every test
+// binary, so the whole Boost.Test log is routed to stderr. ctest passes
+// --disable-warnings, which Boost.Test would reject, so it is translated
+// into the crab flag it stands for.
+int main(int argc, char **argv) {
+  std::vector<char *> args;
+  for (int a = 0; a < argc; ++a) {
+    std::string arg(argv[a]);
+    if (arg == "--disable-warnings") {
+      crab::CrabEnableWarningMsg(false);
+      continue;
+    }
+    if (arg == "--print-invariants") {
+      print_invariants = true;
+      continue;
+    }
+    args.push_back(argv[a]);
+  }
+  char log_sink[] = "--log_sink=stderr";
+  char report_sink[] = "--report_sink=stderr";
+  args.push_back(log_sink);
+  args.push_back(report_sink);
+  return boost::unit_test::unit_test_main(
+      &init_unit_test, static_cast<int>(args.size()), args.data());
+}
