@@ -331,6 +331,135 @@ BOOST_AUTO_TEST_CASE(clamp_negative_elements) {
 
 BOOST_AUTO_TEST_SUITE_END()
 
+BOOST_FIXTURE_TEST_SUITE(array_groups, fixture)
+
+// i := 0; while (i < n) { t := B[i]; A[i] := t; i := i + 1; }
+// The store relates A and B, so they share a segmentation, and at the exit
+// it is {0} A==B {i}? T: A[k] == B[k] for every 0 <= k < n.
+BOOST_AUTO_TEST_CASE(copy_loop) {
+  var_t Bs(vfac["B"], crab::ARR_INT_TYPE, 32);
+  var_t y(vfac["y"], crab::INT_TYPE, 32);
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit");
+  BB(cfg, entry);
+  BB(cfg, head);
+  BB(cfg, body);
+  BB(cfg, exit);
+  entry >> head;
+  head >> body;
+  body >> head;
+  head >> exit;
+  entry.assign(i, 0);
+  body.assume(lin_t(i) <= lin_t(n) - 1);
+  body.array_load(t, Bs, i, 4);
+  body.array_store(A, i, t, 4);
+  body.add(i, i, 1);
+  exit.assume(lin_t(i) >= lin_t(n));
+
+  auto inv = analyze(*cfg);
+  print("copy head", inv.at("head"));
+  print("copy exit", inv.at("exit.post"));
+
+  const dom_t &out = inv.at("exit.post");
+  BOOST_TEST(out.same_group(A, Bs));
+  check_bounds(out.segmentation_of(A), {B({k(0)}), B({i})}, {false, true});
+
+  // x := A[idx]; y := B[idx] with 0 <= idx < n gives x == y
+  dom_t r(out);
+  r += cst_t(-lin_t(idx), cst_t::INEQUALITY);
+  r += cst_t(lin_t(idx) - n + 1, cst_t::INEQUALITY);
+  r.array_load(x, A, k(4), idx);
+  r.array_load(y, Bs, k(4), idx);
+  print("copy: x := A[idx]; y := B[idx], 0 <= idx < n", r);
+  BOOST_TEST(r.entails(cst_t(lin_t(x) - y, cst_t::EQUALITY)));
+
+  // nothing is known at or after i
+  dom_t u(out);
+  u += cst_t(lin_t(i) - idx, cst_t::INEQUALITY);
+  u.array_load(x, A, k(4), idx);
+  u.array_load(y, Bs, k(4), idx);
+  BOOST_TEST(!u.entails(cst_t(lin_t(x) - y, cst_t::EQUALITY)));
+}
+
+// lo := m - 1; hi := m + 1; i := 0;
+// while (i < n) {
+//   t := C[i];
+//   if (t < m) A[i] := t; else A[i] := lo;   // A[i] = min(C[i], m - 1)
+//   if (t > m) B[i] := t; else B[i] := hi;   // B[i] = max(C[i], m + 1)
+//   i := i + 1;
+// }
+// Every element of A is less than every element of B. A segment value has
+// one quantified index, so this is not stored as such; it follows from
+// A[j] < m and B[j] > m on [0, i): x := A[k1] and y := B[k2] give x < y for
+// any 0 <= k1, k2 < n.
+//
+// Expected to fail for now. In the first iteration, the else branch stores
+// A[i] := lo while A is still alone in its group, so the segment value
+// imports what the scalar state knows about {lo, i} only and misses
+// lo == m - 1; the join with the then branch (A <= m - 1) loses A's bound on
+// [0, 1), and every later element is joined into it.
+BOOST_AUTO_TEST_CASE(all_of_a_below_all_of_b,
+                     *boost::unit_test::expected_failures(1)) {
+  var_t Bs(vfac["B"], crab::ARR_INT_TYPE, 32);
+  var_t Cs(vfac["C"], crab::ARR_INT_TYPE, 32);
+  var_t m(vfac["m"], crab::INT_TYPE, 32), lo(vfac["lo"], crab::INT_TYPE, 32),
+      hi(vfac["hi"], crab::INT_TYPE, 32), y(vfac["y"], crab::INT_TYPE, 32),
+      k1(vfac["k1"], crab::INT_TYPE, 32), k2(vfac["k2"], crab::INT_TYPE, 32);
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit");
+  BB(cfg, entry);
+  BB(cfg, head);
+  BB(cfg, body);
+  BB(cfg, a_then);
+  BB(cfg, a_else);
+  BB(cfg, b_test);
+  BB(cfg, b_then);
+  BB(cfg, b_else);
+  BB(cfg, inc);
+  BB(cfg, exit);
+  entry >> head;
+  head >> body;
+  body >> a_then;
+  body >> a_else;
+  a_then >> b_test;
+  a_else >> b_test;
+  b_test >> b_then;
+  b_test >> b_else;
+  b_then >> inc;
+  b_else >> inc;
+  inc >> head;
+  head >> exit;
+  entry.sub(lo, m, 1);
+  entry.add(hi, m, 1);
+  entry.assign(i, 0);
+  body.assume(lin_t(i) <= lin_t(n) - 1);
+  body.array_load(t, Cs, i, 4);
+  a_then.assume(lin_t(t) <= lin_t(m) - 1);
+  a_then.array_store(A, i, t, 4);
+  a_else.assume(lin_t(t) >= lin_t(m));
+  a_else.array_store(A, i, lo, 4);
+  b_then.assume(lin_t(t) >= lin_t(m) + 1);
+  b_then.array_store(Bs, i, t, 4);
+  b_else.assume(lin_t(t) <= lin_t(m));
+  b_else.array_store(Bs, i, hi, 4);
+  inc.add(i, i, 1);
+  exit.assume(lin_t(i) >= lin_t(n));
+
+  auto inv = analyze(*cfg);
+  print("A < B head", inv.at("head"));
+  print("A < B exit", inv.at("exit.post"));
+
+  dom_t r(inv.at("exit.post"));
+  r += cst_t(-lin_t(k1), cst_t::INEQUALITY);
+  r += cst_t(lin_t(k1) - n + 1, cst_t::INEQUALITY);
+  r += cst_t(-lin_t(k2), cst_t::INEQUALITY);
+  r += cst_t(lin_t(k2) - n + 1, cst_t::INEQUALITY);
+  r.array_load(x, A, k(4), k1);
+  r.array_load(y, Bs, k(4), k2);
+  print("A < B: x := A[k1]; y := B[k2], 0 <= k1, k2 < n", r);
+  BOOST_TEST(r.entails(cst_t(lin_t(x) - y + 1, cst_t::INEQUALITY)));
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
 // Keep stdout empty unless --print-invariants is given: the golden-output
 // harness (tests/run_tests.sh) diffs the standard output of every test
 // binary, so the whole Boost.Test log is routed to stderr. ctest passes

@@ -737,6 +737,64 @@ public:
     }
   }
 
+  /** Array groups **/
+
+  // Array a leaves the group: its placeholder is forgotten in every value;
+  // the bounds and the other arrays' facts are kept.
+  //
+  // E.g., forgetting B in {0} A==B,A==0 {i}? T {+oo} gives
+  // {0} A==0 {i}? T {+oo}.
+  void forget_array(const variable_t &a) {
+    if (m_is_bottom) {
+      return;
+    }
+    for (auto &v : m_values) {
+      v.forget_array(a);
+    }
+  }
+
+  // Does a bound or a value mention x?
+  bool mentions(const variable_t &x) const {
+    if (m_is_bottom) {
+      return false;
+    }
+    for (auto const &b : m_bounds) {
+      for (auto const &y : b.variables()) {
+        if (y == x) {
+          return true;
+        }
+      }
+    }
+    for (auto const &v : m_values) {
+      if (v.mentions(x)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // The whole array lhs becomes rhs, both in this group: every value gets
+  // lhs == rhs. Call forget_array(lhs) first.
+  //
+  // E.g., A := B on {0} B==0 {i}? T {+oo} gives
+  // {0} A==B,B==0 {i}? A==B {+oo}.
+  void assign_array(const variable_t &lhs, const variable_t &rhs) {
+    if (m_is_bottom) {
+      return;
+    }
+    for (auto &v : m_values) {
+      v.assign(lhs, linear_expression_t(rhs));
+    }
+  }
+
+  // In-place join and meet, as used by union_find_domain
+  void operator|=(const segmentation_t &o) { *this = *this | o; }
+  void operator&=(const segmentation_t &o) { *this = *this & o; }
+
+  // Narrowing is meet: the fixpoint runs a bounded number of descending
+  // iterations. union_find_domain needs the operator.
+  segmentation_t operator&&(const segmentation_t &o) const { return *this & o; }
+
   // Add to each bound of this segmentation the expressions of o's bounds
   // that s proves equal to it. Used before a join, where o is the other
   // input and s this input's scalar state. Sound: every expression of a

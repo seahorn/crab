@@ -57,24 +57,36 @@ public:
 private:
   // The quantified index j. Only needed to relate an element to its own
   // index (e.g., A[j] == j); invariants such as A[j] == 0 or A[j] == B[j]
-  // do not mention it. It is a ghost variable named after the group's
-  // representative array, so every segment of the group shares it.
+  // do not mention it. It is a ghost variable named after an array of the
+  // group. The name is not canonical: two values may call j differently
+  // (A$j and B$j, e.g. after two groups merge), so every binary operation
+  // first renames the other value's j to this one's (aligned_state).
   variable_t m_index;
   zones_t m_state;
 
   zone_segment_values(variable_t index, zones_t state)
       : m_index(index), m_state(std::move(state)) {}
 
-  zone_segment_values_t with_state(const zone_segment_values_t &o,
-                                   zones_t state) const {
-    assert(m_index == o.m_index);
+  // o's state, with o's index renamed to this value's
+  zones_t aligned_state(const zone_segment_values_t &o) const {
+    if (o.m_index == m_index) {
+      return o.m_state;
+    }
+    zones_t res(o.m_state);
+    res.rename({o.m_index}, {m_index});
+    return res;
+  }
+
+  zone_segment_values_t with_state(zones_t state) const {
     return zone_segment_values_t(m_index, std::move(state));
   }
 
   // The scalars tracked by m_state: neither arrays nor the index
   variable_vector_t scalars(const zones_t &state) const {
+    const variable_vector_t tracked = state.tracked_variables();
     variable_vector_t res;
-    for (auto const &v : state.tracked_variables()) {
+    res.reserve(tracked.size());
+    for (auto const &v : tracked) {
       if (!v.get_type().is_array() && !(v == m_index)) {
         res.push_back(v);
       }
@@ -119,23 +131,23 @@ public:
   bool is_top() const override { return m_state.is_top(); }
 
   bool operator<=(const zone_segment_values_t &o) const override {
-    return m_state <= o.m_state;
+    return m_state <= aligned_state(o);
   }
   zone_segment_values_t
   operator|(const zone_segment_values_t &o) const override {
-    return with_state(o, m_state | o.m_state);
+    return with_state(m_state | aligned_state(o));
   }
   zone_segment_values_t
   operator&(const zone_segment_values_t &o) const override {
-    return with_state(o, m_state & o.m_state);
+    return with_state(m_state & aligned_state(o));
   }
   zone_segment_values_t
   operator||(const zone_segment_values_t &o) const override {
-    return with_state(o, m_state || o.m_state);
+    return with_state(m_state || aligned_state(o));
   }
   zone_segment_values_t
   operator&&(const zone_segment_values_t &o) const override {
-    return with_state(o, m_state && o.m_state);
+    return with_state(m_state && aligned_state(o));
   }
 
   // What holds for every index of [l,h) holds for every index of its parts
@@ -209,9 +221,15 @@ public:
     }
     m_state.project(vars);
   }
+  // Renaming the index renames m_index too
   void rename(const variable_vector_t &from,
               const variable_vector_t &to) override {
     m_state.rename(from, to);
+    for (unsigned k = 0, n = from.size(); k < n; ++k) {
+      if (from[k] == m_index) {
+        m_index = to[k];
+      }
+    }
   }
   void reduce(const ScalarDom &s) override {
     variable_vector_t vars = scalars(m_state);

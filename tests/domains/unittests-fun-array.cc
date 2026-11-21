@@ -207,6 +207,96 @@ BOOST_AUTO_TEST_CASE(guard_detects_unreachable) {
 
 BOOST_AUTO_TEST_SUITE_END()
 
+BOOST_FIXTURE_TEST_SUITE(array_groups, fixture)
+
+// x := A[idx] and y := Bs[idx] in a copy of d entail x == y
+bool equal_elements(const dom_t &d, const var_t &x, const var_t &y,
+                    const var_t &A, const var_t &Bs, const var_t &idx) {
+  dom_t t(d);
+  t.array_load(x, A, k(4), idx);
+  t.array_load(y, Bs, k(4), idx);
+  return t.entails(cst_t(lin_t(x) - y, cst_t::EQUALITY));
+}
+
+// t := B[i]; A[i] := t puts A and B in one group, with A == B on [i, i+1)
+BOOST_AUTO_TEST_CASE(store_merges_groups) {
+  var_t Bs(vfac["B"], crab::ARR_INT_TYPE, 32);
+  var_t t(vfac["t"], crab::INT_TYPE, 32), y(vfac["y"], crab::INT_TYPE, 32);
+  dom_t d;
+  d.array_load(t, Bs, k(4), i);
+  BOOST_TEST(!d.same_group(A, Bs));
+  d.array_store(A, k(4), i, t, true);
+  print("t := B[i]; A[i] := t", d);
+  BOOST_TEST(d.same_group(A, Bs));
+  d.assign(t, k(0)); // t is no longer the element
+  BOOST_TEST(equal_elements(d, x, y, A, Bs, i));
+}
+
+// A store of a value no other group mentions does not merge groups
+BOOST_AUTO_TEST_CASE(unrelated_store_does_not_merge) {
+  var_t Bs(vfac["B"], crab::ARR_INT_TYPE, 32);
+  dom_t d;
+  d.array_store(Bs, k(4), i, k(1), true);
+  d.array_store(A, k(4), i, k(1), true);
+  BOOST_TEST(!d.same_group(A, Bs));
+}
+
+// Forgetting A keeps B's facts in their shared group
+BOOST_AUTO_TEST_CASE(forget_keeps_other_arrays) {
+  var_t Bs(vfac["B"], crab::ARR_INT_TYPE, 32);
+  var_t t(vfac["t"], crab::INT_TYPE, 32);
+  dom_t d;
+  d.array_store(Bs, k(4), i, k(5), true);
+  d.array_load(t, Bs, k(4), i);
+  d.array_store(A, k(4), i, t, true);
+  BOOST_TEST(d.same_group(A, Bs));
+  d -= A;
+  print("B[i] := 5; t := B[i]; A[i] := t; forget A", d);
+  dom_t e(d);
+  e.array_load(x, Bs, k(4), i);
+  BOOST_TEST(e.entails(cst_t(lin_t(x) - 5, cst_t::EQUALITY)));
+}
+
+// A := B relates A and B everywhere
+BOOST_AUTO_TEST_CASE(array_assign_relates) {
+  var_t Bs(vfac["B"], crab::ARR_INT_TYPE, 32);
+  var_t y(vfac["y"], crab::INT_TYPE, 32);
+  dom_t d;
+  d.array_store(Bs, k(4), i, k(3), true);
+  d.array_assign(A, Bs);
+  print("B[i] := 3; A := B", d);
+  BOOST_TEST(d.same_group(A, Bs));
+  dom_t e(d);
+  e.array_load(x, A, k(4), i);
+  BOOST_TEST(e.entails(cst_t(lin_t(x) - 3, cst_t::EQUALITY)));
+  // and at any index, not only where B is known
+  BOOST_TEST(equal_elements(d, x, y, A, Bs, n));
+}
+
+// A join first gives both sides the same groups: on the right A and B are
+// in separate groups, but both elements at i are 1, so the merged group has
+// A == B there, as on the left
+BOOST_AUTO_TEST_CASE(join_aligns_groups) {
+  var_t Bs(vfac["B"], crab::ARR_INT_TYPE, 32);
+  var_t t(vfac["t"], crab::INT_TYPE, 32), y(vfac["y"], crab::INT_TYPE, 32);
+  dom_t l;
+  l.array_load(t, Bs, k(4), i);
+  l.array_store(A, k(4), i, t, true);
+  l -= t;
+  dom_t r;
+  r.array_store(Bs, k(4), i, k(1), true);
+  r.array_store(A, k(4), i, k(1), true);
+  dom_t j = l | r;
+  print("join: left", l);
+  print("join: right", r);
+  print("join", j);
+  BOOST_TEST(j.same_group(A, Bs));
+  BOOST_TEST(equal_elements(j, x, y, A, Bs, i));
+  BOOST_TEST((l <= j));
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
 BOOST_FIXTURE_TEST_SUITE(lattice, fixture)
 
 // The first iteration of `i := 0; while (..) { A[i] := 0; i := i + 1; }`:

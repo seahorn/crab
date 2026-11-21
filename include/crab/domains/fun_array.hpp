@@ -5,13 +5,34 @@
  * F. Logozzo. A Parametric Segmentation Functor for Fully Automatic and
  * Scalable Array Content Analysis. POPL 2011).
  *
- * Each array is described by a segmentation
+ * Arrays are partitioned into groups, and each group is described by one
+ * segmentation
  *
  *   {B0} P0 {B1}[?] P1 ... {Bn}[?] Pn {+oo}
  *
- * whose bounds are sets of equal symbolic expressions (x + k) and whose
- * values describe every element of their segment. Scalars are kept in
- * ScalarDom. Every array currently has its own segmentation.
+ * whose bounds are sets of equal symbolic expressions (x + k). The value Pk
+ * of a segment [Bk, Bk+1) of a group with arrays A, B, ... is a relational
+ * state (zones by default) that stands for
+ *
+ *   forall j in [Bk, Bk+1).  phi(A[j], B[j], ..., j, scalars)
+ *
+ * with one quantified index j shared by all the arrays of the group. This
+ * is the shape of every invariant the domain can express; for instance:
+ *
+ *   A[j] == 0          every element of the segment is 0
+ *   A[j] == j + 2      every element is its index plus 2
+ *   A[j] <= m          every element is at most the scalar m
+ *   A[j] == B[j]       A and B are equal on the segment
+ *
+ * Relations between elements at different indices, such as sortedness
+ * (A[j1] <= A[j2] for j1 < j2) or A[j1] < B[j2] for all j1, j2, are not
+ * expressible; the latter can still be derived when a scalar separates both
+ * arrays (A[j] < m and B[j] > m).
+ *
+ * Every array starts in its own group; two groups merge
+ * when a store relates them (A[i] := t where a value of B's group mentions
+ * t, e.g. after t := B[i]) or on array_assign. Scalars are kept in
+ * ScalarDom.
  *
  * Assumptions:
  *  - Indices count elements, not bytes: A[i+1] is the element after A[i].
@@ -30,6 +51,7 @@
 #include <crab/domains/fun_array/segmentation.hpp>
 #include <crab/domains/fun_array/zone_segment_values.hpp>
 #include <crab/domains/inter_abstract_operations.hpp>
+#include <crab/domains/union_find_domain.hpp>
 #include <crab/support/debug.hpp>
 
 #include <cstdint>
@@ -39,6 +61,7 @@
 #include <string>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace crab {
 namespace domains {
@@ -47,6 +70,22 @@ class FunArrayDefaultParams {
 public:
   enum { implement_inter_transformers = 0 };
 };
+
+namespace fun_array_impl {
+// union_find_domain hooks: an array leaving or renamed in a group is
+// forgotten or renamed in the group's segmentation
+template <class Seg> struct forget_array_in_group {
+  void operator()(Seg &seg, const typename Seg::variable_t &a) const {
+    seg.forget_array(a);
+  }
+};
+template <class Seg> struct rename_array_in_group {
+  void operator()(Seg &seg, const typename Seg::variable_t &a,
+                  const typename Seg::variable_t &b) const {
+    seg.rename({a}, {b});
+  }
+};
+} // end namespace fun_array_impl
 
 template <class ScalarDom,
           class BoundDom = fun_array_impl::expression_set_bound<
@@ -90,19 +129,24 @@ public:
   using params_t = Params;
 
 private:
-  struct array_state {
-    segmentation_t seg;
-    // bytes per element, from the first access
-    uint64_t elem_size;
-  };
-  // Arrays that are not in m_arrays are {0} T {+oo}
-  using array_map_t = std::map<variable_t, array_state>;
+  // The groups: arrays are the elements, a group's segmentation is its
+  // class state. Merging two groups meets their segmentations: they
+  // describe different arrays, so the group's state is their conjunction.
+  // Arrays that are not in m_groups are {0} T {+oo}.
+  using groups_t = union_find_domain<
+      variable_t, segmentation_t, uf_intersection_semantics<segmentation_t>,
+      fun_array_impl::forget_array_in_group<segmentation_t>,
+      fun_array_impl::rename_array_in_group<segmentation_t>>;
+  using elem_size_map_t = std::map<variable_t, uint64_t>;
 
   ScalarDom m_scalar;
-  array_map_t m_arrays;
+  groups_t m_groups;
+  // bytes per element of each array in m_groups, from its first access
+  elem_size_map_t m_elem_size;
 
-  fun_array(ScalarDom scalar, array_map_t arrays)
-      : m_scalar(std::move(scalar)), m_arrays(std::move(arrays)) {
+  fun_array(ScalarDom scalar, groups_t groups, elem_size_map_t elem_size)
+      : m_scalar(std::move(scalar)), m_groups(std::move(groups)),
+        m_elem_size(std::move(elem_size)) {
     normalize_arrays();
   }
 
@@ -115,23 +159,38 @@ private:
     return ty.is_integer_array() || ty.is_math_integer_array();
   }
 
-  // A bottom segmentation makes the whole state bottom; a top one is
-  // removed from the map
+  // The arrays in m_groups
+  std::vector<variable_t> arrays() const {
+    std::vector<variable_t> res;
+    for (auto const &kv : m_groups.equiv_classes_elems()) {
+      res.insert(res.end(), kv.second.begin(), kv.second.end());
+    }
+    return res;
+  }
+
+  // A bottom segmentation makes the whole state bottom. A group of one
+  // array whose segmentation is top is removed: it is the same as the array
+  // not being there. Groups of two or more arrays are kept even when top,
+  // so that groups only grow (termination).
   void normalize_arrays() {
-    if (m_scalar.is_bottom()) {
-      m_arrays.clear();
+    if (m_scalar.is_bottom() || m_groups.is_bottom()) {
+      set_to_bottom();
       return;
     }
-    for (auto it = m_arrays.begin(); it != m_arrays.end();) {
-      if (it->second.seg.is_bottom()) {
+    std::vector<variable_t> drop;
+    for (auto const &kv : m_groups.equiv_classes_elems()) {
+      const segmentation_t &seg = shared_group_of(kv.first);
+      if (seg.is_bottom()) {
         set_to_bottom();
         return;
       }
-      if (it->second.seg.is_top()) {
-        it = m_arrays.erase(it);
-      } else {
-        ++it;
+      if (kv.second.size() == 1 && seg.is_top()) {
+        drop.push_back(kv.second[0]);
       }
+    }
+    for (auto const &a : drop) {
+      m_groups.forget(a);
+      m_elem_size.erase(a);
     }
   }
 
@@ -151,25 +210,63 @@ private:
                ". Found ", elem_size);
   }
 
-  // The state of array a for an access of size bytes: a's segmentation, or
-  // {0} T {+oo} if a was not accessed before or with another size
-  array_state &array_for_access(const variable_t &a, uint64_t size) {
-    auto it = m_arrays.find(a);
-    if (it != m_arrays.end() && it->second.elem_size == size) {
-      return it->second;
+  // Make sure a is in m_groups for an access of size bytes: an array not
+  // accessed before gets its own group {0} T {+oo}; an array accessed with
+  // another size is forgotten and gets a new group. An array in a group but
+  // with no size yet (from array_assign) takes this size.
+  void prepare_access(const variable_t &a, uint64_t size) {
+    auto known = elem_size_of(m_elem_size, a);
+    if (m_groups.contains(a) && (!known || *known == size)) {
+      m_elem_size[a] = size;
+      return;
     }
-    if (it != m_arrays.end()) {
-      m_arrays.erase(it);
+    if (m_groups.contains(a)) {
+      m_groups.forget(a);
     }
-    return m_arrays.emplace(a, array_state{top_segmentation(a), size})
-        .first->second;
+    m_groups.set(a, top_segmentation(a));
+    m_elem_size[a] = size;
+  }
+
+  // The segmentation of a's group, to modify (copied first if shared).
+  // Pre-condition: m_groups.contains(a)
+  segmentation_t &group_of(const variable_t &a) { return *m_groups.get(a); }
+
+  // The segmentation of a's group, to read (never copied).
+  // Pre-condition: m_groups.contains(a)
+  const segmentation_t &shared_group_of(const variable_t &a) const {
+    return *m_groups.get(a);
+  }
+
+  // The element size of array a, if known
+  static boost::optional<uint64_t> elem_size_of(const elem_size_map_t &sizes,
+                                                const variable_t &a) {
+    auto it = sizes.find(a);
+    if (it == sizes.end()) {
+      return boost::none;
+    }
+    return it->second;
+  }
+
+  // Apply f to every group's segmentation that mentions x, leaving the
+  // others shared
+  template <class F> void for_each_mentioning(const variable_t &x, F f) {
+    for (auto const &kv : m_groups.equiv_classes_elems()) {
+      if (shared_group_of(kv.first).mentions(x)) {
+        f(group_of(kv.first));
+      }
+    }
+  }
+
+  // Apply f to every group's segmentation
+  template <class F> void for_each_group(F f) {
+    for (auto const &kv : m_groups.equiv_classes_elems()) {
+      f(group_of(kv.first));
+    }
   }
 
   // x is assigned: drop it from every segmentation
   void forget_in_arrays(const variable_t &x) {
-    for (auto &kv : m_arrays) {
-      kv.second.seg.forget(x);
-    }
+    for_each_mentioning(x, [&x](segmentation_t &seg) { seg.forget(x); });
   }
 
   // Indices are non-negative
@@ -181,8 +278,12 @@ private:
   // rewritten and the assignment is replayed in the values that mention x
   // (segmentation::assign)
   void assign_in_arrays(const variable_t &x, const linear_expression_t &e) {
-    for (auto &kv : m_arrays) {
-      kv.second.seg.assign(x, e);
+    if (auto ee = expression_t::make(e)) {
+      // x may be added to bounds containing e: every group is concerned
+      for_each_group([&](segmentation_t &seg) { seg.assign(x, e); });
+    } else {
+      for_each_mentioning(x,
+                          [&](segmentation_t &seg) { seg.assign(x, e); });
     }
   }
 
@@ -191,48 +292,81 @@ private:
   // converse of segmentation::reduce_bounds_from_scalar. Not after widening,
   // so that a widened scalar state is not refined back.
   void reduce_scalar_from_bounds() {
-    if (m_scalar.is_bottom()) {
+    if (m_scalar.is_bottom() || m_groups.is_bottom()) {
       return;
     }
-    for (auto const &kv : m_arrays) {
-      m_scalar += kv.second.seg.template bound_equalities<
-          linear_constraint_system_t>();
+    for (auto const &kv : m_groups.equiv_classes_elems()) {
+      m_scalar += shared_group_of(kv.first)
+                      .template bound_equalities<linear_constraint_system_t>();
     }
   }
 
-  // Combine the arrays of two states. Arrays missing on one side are
-  // {0} T {+oo} there; op gets both segmentations, each saturated with the
-  // other when saturate is true.
-  template <class Op>
-  static array_map_t combine_arrays(const fun_array_t &l, const fun_array_t &r,
-                                    bool saturate, Op op) {
-    std::set<variable_t> names;
-    for (auto const &kv : l.m_arrays) {
-      names.insert(kv.first);
+  // Merge the groups of a and b (both in m_groups)
+  void merge_groups(const variable_t &a, const variable_t &b) {
+    m_groups.join(a, b);
+    if (m_groups.is_bottom()) {
+      set_to_bottom();
     }
-    for (auto const &kv : r.m_arrays) {
-      names.insert(kv.first);
+  }
+
+  // Prepare two states for a binary lattice operation:
+  //  - arrays with different element sizes on each side are forgotten on
+  //    both;
+  //  - when saturate is true (join, <=), every array's group segmentation on
+  //    each side gains the other side's bound expressions that its own
+  //    scalar state proves equal to its bounds (segmentation::saturate); an
+  //    array on one side only is given {0} T {+oo} on the other first, so
+  //    that it can gain them too.
+  // The union-find never sees the scalar states, hence this pre-pass.
+  static void prepare(fun_array_t &l, fun_array_t &r, bool saturate) {
+    for (auto const &a : l.arrays()) {
+      auto ls = elem_size_of(l.m_elem_size, a);
+      auto rs = elem_size_of(r.m_elem_size, a);
+      if (ls && rs && *ls != *rs) {
+        l.m_groups.forget(a);
+        l.m_elem_size.erase(a);
+        r.m_groups.forget(a);
+        r.m_elem_size.erase(a);
+      }
     }
-    array_map_t res;
-    for (auto const &a : names) {
-      auto li = l.m_arrays.find(a);
-      auto ri = r.m_arrays.find(a);
-      if (li != l.m_arrays.end() && ri != r.m_arrays.end() &&
-          li->second.elem_size != ri->second.elem_size) {
-        continue;
+    if (!saturate) {
+      return;
+    }
+    auto materialize = [](fun_array_t &to, const fun_array_t &from) {
+      for (auto const &a : from.arrays()) {
+        if (!to.m_groups.contains(a)) {
+          to.m_groups.set(a, top_segmentation(a));
+          if (auto s = elem_size_of(from.m_elem_size, a)) {
+            to.m_elem_size[a] = *s;
+          }
+        }
       }
-      uint64_t size =
-          li != l.m_arrays.end() ? li->second.elem_size : ri->second.elem_size;
-      segmentation_t ls =
-          li != l.m_arrays.end() ? li->second.seg : top_segmentation(a);
-      segmentation_t rs =
-          ri != r.m_arrays.end() ? ri->second.seg : top_segmentation(a);
-      if (saturate) {
-        segmentation_t ls0 = ls;
-        ls.saturate(rs, l.m_scalar);
-        rs.saturate(ls0, r.m_scalar);
+    };
+    materialize(r, l);
+    materialize(l, r);
+    for (auto const &a : l.arrays()) {
+      segmentation_t ls = l.group_of(a);
+      l.group_of(a).saturate(r.group_of(a), l.m_scalar);
+      r.group_of(a).saturate(ls, r.m_scalar);
+    }
+  }
+
+  // The element sizes of the arrays in groups, taken from l or r
+  static elem_size_map_t elem_sizes(const groups_t &groups,
+                                    const fun_array_t &l,
+                                    const fun_array_t &r) {
+    elem_size_map_t res;
+    if (groups.is_bottom()) {
+      return res;
+    }
+    for (auto const &kv : groups.equiv_classes_elems()) {
+      for (auto const &a : kv.second) {
+        if (auto s = elem_size_of(l.m_elem_size, a)) {
+          res[a] = *s;
+        } else if (auto s = elem_size_of(r.m_elem_size, a)) {
+          res[a] = *s;
+        }
       }
-      res.emplace(a, array_state{op(ls, rs), size});
     }
     return res;
   }
@@ -260,18 +394,26 @@ public:
 
   void set_to_top() override {
     m_scalar.set_to_top();
-    m_arrays.clear();
+    m_groups = groups_t();
+    m_elem_size.clear();
   }
 
   void set_to_bottom() override {
     m_scalar.set_to_bottom();
-    m_arrays.clear();
+    m_groups = groups_t();
+    m_elem_size.clear();
   }
 
   bool is_bottom() const override { return m_scalar.is_bottom(); }
 
-  bool is_top() const override { return m_scalar.is_top() && m_arrays.empty(); }
+  bool is_top() const override {
+    return m_scalar.is_top() && m_groups.is_empty();
+  }
 
+  // As for join, the segmentations are first saturated (prepare): e.g., with
+  // i == 0, an untouched {0} T {+oo} is {0 i} T {+oo}, which is included in
+  // {0} 0 {i}? T {+oo}. Then union_find_domain::operator<=, which is false
+  // unless this side's groups refine o's.
   bool operator<=(const fun_array_t &o) const override {
     if (is_bottom()) {
       return true;
@@ -282,30 +424,23 @@ public:
     if (!(m_scalar <= o.m_scalar)) {
       return false;
     }
-    // As for join, this side's segmentation first gains o's bound
-    // expressions that this side's scalar state proves equal to its bounds:
-    // e.g., with i == 0, an untouched {0} T {+oo} is {0 i} T {+oo}, which is
-    // included in {0} 0 {i}? T {+oo}.
-    for (auto const &kv : o.m_arrays) {
-      auto it = m_arrays.find(kv.first);
-      if (it != m_arrays.end() && it->second.elem_size != kv.second.elem_size) {
-        return false;
-      }
-      segmentation_t seg =
-          it != m_arrays.end() ? it->second.seg : top_segmentation(kv.first);
-      seg.saturate(kv.second.seg, m_scalar);
-      if (!(seg <= kv.second.seg)) {
+    for (auto const &a : o.arrays()) {
+      auto ls = elem_size_of(m_elem_size, a);
+      auto os = elem_size_of(o.m_elem_size, a);
+      if (ls && os && *ls != *os) {
         return false;
       }
     }
-    return true;
+    fun_array_t l(*this), r(o);
+    prepare(l, r, true);
+    return l.m_groups <= o.m_groups;
   }
 
   void operator|=(const fun_array_t &o) override { *this = *this | o; }
 
-  // Join; before joining two segmentations, each gets the other's bound
-  // expressions that its own scalar state proves equal to its bounds
-  // (segmentation::saturate)
+  // Join: the segmentations are saturated (prepare), then the union-find
+  // aligns the groups of both sides (merging them by meet) and joins the
+  // segmentations group by group. Arrays on one side only are forgotten.
   fun_array_t operator|(const fun_array_t &o) const override {
     if (is_bottom()) {
       return o;
@@ -313,12 +448,12 @@ public:
     if (o.is_bottom()) {
       return *this;
     }
-    fun_array_t res(
-        m_scalar | o.m_scalar,
-        combine_arrays(*this, o, true,
-                       [](const segmentation_t &x, const segmentation_t &y) {
-                         return x | y;
-                       }));
+    fun_array_t l(*this), r(o);
+    prepare(l, r, true);
+    groups_t groups = l.m_groups | r.m_groups;
+    elem_size_map_t sizes = elem_sizes(groups, l, r);
+    fun_array_t res(m_scalar | o.m_scalar, std::move(groups),
+                    std::move(sizes));
     res.reduce_scalar_from_bounds();
     return res;
   }
@@ -329,12 +464,12 @@ public:
     if (is_bottom() || o.is_bottom()) {
       return make_bottom();
     }
-    fun_array_t res(
-        m_scalar & o.m_scalar,
-        combine_arrays(*this, o, false,
-                       [](const segmentation_t &x, const segmentation_t &y) {
-                         return x & y;
-                       }));
+    fun_array_t l(*this), r(o);
+    prepare(l, r, false);
+    groups_t groups = l.m_groups & r.m_groups;
+    elem_size_map_t sizes = elem_sizes(groups, l, r);
+    fun_array_t res(m_scalar & o.m_scalar, std::move(groups),
+                    std::move(sizes));
     res.reduce_scalar_from_bounds();
     return res;
   }
@@ -347,12 +482,12 @@ public:
     if (o.is_bottom()) {
       return *this;
     }
-    return fun_array_t(
-        m_scalar || o.m_scalar,
-        combine_arrays(*this, o, false,
-                       [](const segmentation_t &x, const segmentation_t &y) {
-                         return x || y;
-                       }));
+    fun_array_t l(*this), r(o);
+    prepare(l, r, false);
+    groups_t groups = l.m_groups || r.m_groups;
+    elem_size_map_t sizes = elem_sizes(groups, l, r);
+    return fun_array_t(m_scalar || o.m_scalar, std::move(groups),
+                       std::move(sizes));
   }
 
   fun_array_t
@@ -364,12 +499,12 @@ public:
     if (o.is_bottom()) {
       return *this;
     }
-    return fun_array_t(
-        m_scalar.widening_thresholds(o.m_scalar, ts),
-        combine_arrays(*this, o, false,
-                       [](const segmentation_t &x, const segmentation_t &y) {
-                         return x || y;
-                       }));
+    fun_array_t l(*this), r(o);
+    prepare(l, r, false);
+    groups_t groups = l.m_groups || r.m_groups;
+    elem_size_map_t sizes = elem_sizes(groups, l, r);
+    return fun_array_t(m_scalar.widening_thresholds(o.m_scalar, ts),
+                       std::move(groups), std::move(sizes));
   }
 
   // Narrowing: the segmentations are met; the fixpoint runs a bounded
@@ -378,27 +513,25 @@ public:
     if (is_bottom() || o.is_bottom()) {
       return make_bottom();
     }
-    return fun_array_t(
-        m_scalar && o.m_scalar,
-        combine_arrays(*this, o, false,
-                       [](const segmentation_t &x, const segmentation_t &y) {
-                         return x & y;
-                       }));
+    fun_array_t l(*this), r(o);
+    prepare(l, r, false);
+    groups_t groups = l.m_groups & r.m_groups;
+    elem_size_map_t sizes = elem_sizes(groups, l, r);
+    return fun_array_t(m_scalar && o.m_scalar, std::move(groups),
+                       std::move(sizes));
   }
 
   interval_t operator[](const variable_t &v) override { return m_scalar[v]; }
 
   interval_t at(const variable_t &v) const override { return m_scalar.at(v); }
 
+  // Forgetting an array removes it from its group: it is forgotten in the
+  // group's values (segmentation::forget_array) and the other arrays keep
+  // their facts.
   void operator-=(const variable_t &v) override {
     if (v.get_type().is_array()) {
-      // Correct only while every array has its own segmentation: an array
-      // variable then appears only in the values of its own segmentation,
-      // so erasing it removes every mention. Once arrays share a
-      // segmentation, this must instead forget the array in its group's
-      // values (segment_value_api::forget_array) and keep the group for
-      // the other arrays.
-      m_arrays.erase(v);
+      m_groups.forget(v);
+      m_elem_size.erase(v);
     } else {
       forget_in_arrays(v);
       m_scalar -= v;
@@ -411,42 +544,50 @@ public:
     }
   }
 
-  // As operator-=, dropping the arrays not in vars by erasing their
-  // segmentations is correct only while every array has its own
-  // segmentation.
   void project(const variable_vector_t &vars) override {
-    variable_vector_t scalars;
-    std::set<variable_t> arrays;
+    variable_vector_t scalars, arrays;
     for (auto const &v : vars) {
       if (v.get_type().is_array()) {
-        arrays.insert(v);
+        arrays.push_back(v);
       } else {
         scalars.push_back(v);
       }
     }
-    for (auto it = m_arrays.begin(); it != m_arrays.end();) {
-      if (arrays.count(it->first) == 0) {
-        it = m_arrays.erase(it);
+    m_groups.project(arrays);
+    for (auto it = m_elem_size.begin(); it != m_elem_size.end();) {
+      if (!m_groups.contains(it->first)) {
+        it = m_elem_size.erase(it);
       } else {
-        it->second.seg.project(scalars);
         ++it;
       }
     }
+    for_each_group([&](segmentation_t &seg) { seg.project(scalars); });
     m_scalar.project(scalars);
     normalize_arrays();
   }
 
+  // An expanded array gets its own group: a copy of x's group without the
+  // other arrays
   void expand(const variable_t &x, const variable_t &new_x) override {
     if (x.get_type() != new_x.get_type()) {
       CRAB_ERROR(domain_name(), "::expand must preserve the same type");
     }
     if (x.get_type().is_array()) {
-      auto it = m_arrays.find(x);
-      if (it != m_arrays.end()) {
-        array_state st = it->second;
-        st.seg.rename({x}, {new_x});
-        m_arrays.erase(new_x);
-        m_arrays.emplace(new_x, std::move(st));
+      if (m_groups.contains(x)) {
+        segmentation_t seg = group_of(x);
+        for (auto const &kv : m_groups.equiv_classes_elems()) {
+          for (auto const &b : kv.second) {
+            if (!(b == x) && m_groups.find(b) == m_groups.find(x)) {
+              seg.forget_array(b);
+            }
+          }
+        }
+        seg.rename({x}, {new_x});
+        *this -= new_x;
+        m_groups.set(new_x, seg);
+        if (auto s = elem_size_of(m_elem_size, x)) {
+          m_elem_size[new_x] = *s;
+        }
       }
     } else {
       m_scalar.expand(x, new_x);
@@ -458,28 +599,38 @@ public:
     if (from.size() != to.size()) {
       CRAB_ERROR(domain_name(), "::rename expects vectors same sizes");
     }
-    variable_vector_t scalars_from, scalars_to;
+    variable_vector_t scalars_from, scalars_to, arrays_from, arrays_to;
     for (unsigned k = 0, n = from.size(); k < n; ++k) {
       if (from[k].get_type() != to[k].get_type()) {
         CRAB_ERROR(domain_name(), "::rename must preserve the same type");
       }
-      if (!from[k].get_type().is_array()) {
+      if (from[k].get_type().is_array()) {
+        arrays_from.push_back(from[k]);
+        arrays_to.push_back(to[k]);
+      } else {
         scalars_from.push_back(from[k]);
         scalars_to.push_back(to[k]);
       }
     }
-    array_map_t arrays;
-    for (auto &kv : m_arrays) {
-      kv.second.seg.rename(from, to);
+    // arrays: membership, element sizes and their placeholders in values
+    m_groups.rename(arrays_from, arrays_to);
+    elem_size_map_t sizes;
+    for (auto const &kv : m_elem_size) {
       variable_t name = kv.first;
-      for (unsigned k = 0, n = from.size(); k < n; ++k) {
-        if (from[k] == kv.first) {
-          name = to[k];
+      for (unsigned k = 0, n = arrays_from.size(); k < n; ++k) {
+        if (arrays_from[k] == kv.first) {
+          name = arrays_to[k];
         }
       }
-      arrays.emplace(name, std::move(kv.second));
+      sizes[name] = kv.second;
     }
-    m_arrays = std::move(arrays);
+    m_elem_size = std::move(sizes);
+    // scalars: bounds and values
+    if (!scalars_from.empty()) {
+      for_each_group([&](segmentation_t &seg) {
+        seg.rename(scalars_from, scalars_to);
+      });
+    }
     m_scalar.rename(scalars_from, scalars_to);
   }
 
@@ -496,10 +647,10 @@ public:
       set_to_bottom();
       return;
     }
-    for (auto &kv : m_arrays) {
-      kv.second.seg.assume(csts);
-      kv.second.seg.reduce_bounds_from_scalar(m_scalar);
-    }
+    for_each_group([&](segmentation_t &seg) {
+      seg.assume(csts);
+      seg.reduce_bounds_from_scalar(m_scalar);
+    });
     normalize_arrays();
     reduce_scalar_from_bounds();
   }
@@ -675,7 +826,7 @@ public:
                   const linear_expression_t &lb_idx,
                   const linear_expression_t &ub_idx,
                   const linear_expression_t &val) override {
-    m_arrays.erase(a);
+    *this -= a;
   }
 
   void array_load(const variable_t &lhs, const variable_t &a,
@@ -694,20 +845,23 @@ public:
       set_to_bottom();
       return;
     }
-    array_state &st = array_for_access(a, size);
+    prepare_access(a, size);
     if (i[lhs] != number_t(0)) {
       // lhs := A[lhs + ..]: the index needs the old lhs, the segment would
       // need the new one, so the load is weak
       *this -= lhs;
-      st.seg.weak_load(a, lhs, m_scalar);
+      group_of(a).weak_load(a, lhs, m_scalar);
     } else {
       *this -= lhs;
-      st.seg.load(a, lhs, i, m_scalar);
+      group_of(a).load(a, lhs, i, m_scalar);
     }
     normalize_arrays();
     reduce_scalar_from_bounds();
   }
 
+  // A[i] := val. If a value of another group mentions a variable of val
+  // (e.g. after t := B[i], B's group has B == t), the two groups merge first,
+  // so that the store relates A and B (A == B on [i, i+1)).
   void array_store(const variable_t &a, const linear_expression_t &elem_size,
                    const linear_expression_t &i,
                    const linear_expression_t &val,
@@ -724,11 +878,22 @@ public:
       set_to_bottom();
       return;
     }
+    prepare_access(a, size);
+    for (auto const &v : val.variables()) {
+      for (auto const &kv : m_groups.equiv_classes_elems()) {
+        if (m_groups.find(kv.first) != m_groups.find(a) &&
+            shared_group_of(kv.first).mentions(v)) {
+          merge_groups(a, kv.first);
+          if (is_bottom()) {
+            return;
+          }
+        }
+      }
+    }
     // is_strong_update is ignored, as array_adaptive does for arrays it does
     // not smash: whether the update is strong depends on the index (see
     // segmentation::store)
-    array_state &st = array_for_access(a, size);
-    st.seg.store(a, i, val, m_scalar);
+    group_of(a).store(a, i, val, m_scalar);
     normalize_arrays();
     reduce_scalar_from_bounds();
   }
@@ -738,19 +903,26 @@ public:
                          const linear_expression_t &i,
                          const linear_expression_t &j,
                          const linear_expression_t &val) override {
-    m_arrays.erase(a);
+    *this -= a;
   }
 
+  // The whole array lhs becomes rhs: lhs joins rhs's group and every value
+  // of the group gets lhs == rhs
   void array_assign(const variable_t &lhs, const variable_t &rhs) override {
-    auto it = m_arrays.find(rhs);
-    if (it == m_arrays.end()) {
-      m_arrays.erase(lhs);
+    if (is_bottom() || lhs == rhs) {
       return;
     }
-    array_state st = it->second;
-    st.seg.rename({rhs}, {lhs});
-    m_arrays.erase(lhs);
-    m_arrays.emplace(lhs, std::move(st));
+    *this -= lhs;
+    if (!m_groups.contains(rhs)) {
+      m_groups.set(rhs, top_segmentation(rhs));
+    }
+    m_groups.add(rhs, lhs);
+    group_of(rhs).assign_array(lhs, rhs);
+    auto it = m_elem_size.find(rhs);
+    if (it != m_elem_size.end()) {
+      m_elem_size[lhs] = it->second;
+    }
+    normalize_arrays();
   }
 
   void backward_array_init(const variable_t &a,
@@ -815,18 +987,33 @@ public:
     forget(outputs);
   }
 
-  // The segmentation of array a, for tests and clients: {0} T {+oo} if a
+  // The segmentation of a's group, for tests and clients: {0} T {+oo} if a
   // was not accessed
   segmentation_t segmentation_of(const variable_t &a) const {
-    auto it = m_arrays.find(a);
-    return it != m_arrays.end() ? it->second.seg : top_segmentation(a);
+    if (is_bottom() || !m_groups.contains(a)) {
+      return top_segmentation(a);
+    }
+    return *m_groups.get(a);
   }
 
-  // scalar state, then one line per array: A: {0} 0 {i}? T {+oo}
+  // Are a and b in the same group?
+  bool same_group(const variable_t &a, const variable_t &b) const {
+    return !is_bottom() && m_groups.contains(a) && m_groups.contains(b) &&
+           m_groups.find(a) == m_groups.find(b);
+  }
+
+  // scalar state, then one line per group: {A, B}: {0} A==B {i}? T {+oo}
   void write(crab_os &o) const override {
     o << m_scalar;
-    for (auto const &kv : m_arrays) {
-      o << "\n" << kv.first << ": " << kv.second.seg;
+    if (is_bottom()) {
+      return;
+    }
+    for (auto const &kv : m_groups.equiv_classes_elems()) {
+      o << "\n{";
+      for (unsigned k = 0; k < kv.second.size(); ++k) {
+        o << (k > 0 ? ", " : "") << kv.second[k];
+      }
+      o << "}: " << *m_groups.get(kv.first);
     }
   }
 
