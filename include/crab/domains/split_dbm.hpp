@@ -2513,6 +2513,23 @@ public:
 	    get_interval(vert_map, g, x));
   }
 
+  // The variables that have a vertex in the graph. It over-approximates the
+  // variables the state constrains: a variable can keep its vertex after
+  // losing its last constraint.
+  bool is_tracked(const variable_t &x) const {
+    return !is_bottom() && vert_map.find(x) != vert_map.end();
+  }
+
+  std::vector<variable_t> tracked_variables() const {
+    std::vector<variable_t> res;
+    if (!is_bottom()) {
+      for (auto const &kv : vert_map) {
+        res.push_back(kv.first);
+      }
+    }
+    return res;
+  }
+
   void set(const variable_t &x, interval_t intv) {
     SPLIT_DBM_DOMAIN_SCOPED_STATS(".assign");
 
