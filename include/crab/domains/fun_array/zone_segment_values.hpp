@@ -5,6 +5,7 @@
 #include <crab/types/variable.hpp>
 
 #include <algorithm>
+#include <set>
 #include <cassert>
 #include <utility>
 
@@ -167,21 +168,54 @@ public:
     return r;
   }
 
+  // The element becomes val, and the value imports what s knows about the
+  // scalars related to the element:
+  //  1. A := val in the zone;
+  //  2. meet with all of s, so that closure relates the element to every
+  //     scalar s relates to val, directly or through others;
+  //  3. project back onto the arrays, the index, the scalars the value
+  //     already mentioned (val's included) and the scalars now in a
+  //     constraint with the element; the rest of s is dropped.
+  //
+  // E.g., with t == i + 2 in s and j == i in the value (from singleton),
+  // A[i] := t gives A == j + 2. With lo == m - 1 in s, A[i] := lo gives
+  // A == m - 1: m is kept because closure relates it to A, although
+  // neither val nor the value mentioned it.
   void store(const variable_t &a, const linear_expression_t &val,
              const ScalarDom &s) override {
     m_state.assign(a, val);
-    // What s knows about val's variables and the scalars the value already
-    // mentions, together: e.g., with t == i + 2 in s and j == i in the
-    // value (from singleton), A[i] := t gives A == j + 2.
-    variable_vector_t vars = scalars(m_state);
-    for (auto const &v : val.variables()) {
-      if (std::find(vars.begin(), vars.end(), v) == vars.end()) {
+    const variable_vector_t before = scalars(m_state);
+    // This step is relatively expensive because s is the whole scalar state
+    m_state += s.to_linear_constraint_system();
+    if (m_state.is_bottom()) {
+      return;
+    }
+
+    std::set<variable_t> keep(before.begin(), before.end());
+    for (auto const &c : m_state.to_linear_constraint_system()) {
+      bool with_element = false;
+      for (auto const &v : c.variables()) {
+        if (v == a) {
+          with_element = true;
+          break;
+        }
+      }
+      if (with_element) {
+        for (auto const &v : c.variables()) {
+          keep.insert(v);
+        }
+      }
+    }
+    
+    const variable_vector_t tracked = m_state.tracked_variables();
+    variable_vector_t vars;
+    vars.reserve(tracked.size());
+    for (auto const &v : tracked) {
+      if (v.get_type().is_array() || v == m_index || keep.count(v) > 0) {
         vars.push_back(v);
       }
     }
-    if (!vars.empty()) {
-      m_state += project(s, vars);
-    }
+    m_state.project(vars);
   }
 
   void load(const variable_t &a, const variable_t &lhs,

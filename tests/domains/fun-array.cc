@@ -392,13 +392,11 @@ BOOST_AUTO_TEST_CASE(copy_loop) {
 // A[j] < m and B[j] > m on [0, i): x := A[k1] and y := B[k2] give x < y for
 // any 0 <= k1, k2 < n.
 //
-// Expected to fail for now. In the first iteration, the else branch stores
-// A[i] := lo while A is still alone in its group, so the segment value
-// imports what the scalar state knows about {lo, i} only and misses
-// lo == m - 1; the join with the then branch (A <= m - 1) loses A's bound on
-// [0, 1), and every later element is joined into it.
-BOOST_AUTO_TEST_CASE(all_of_a_below_all_of_b,
-                     *boost::unit_test::expected_failures(1)) {
+// In the first iteration the else branch stores A[i] := lo while A is still
+// alone in its group, so neither lo nor the segment value mentions m; the
+// store still imports lo == m - 1 because the scalar state relates m to the
+// stored element (zone_segment_values::store).
+BOOST_AUTO_TEST_CASE(all_of_a_below_all_of_b) {
   var_t Bs(vfac["B"], crab::ARR_INT_TYPE, 32);
   var_t Cs(vfac["C"], crab::ARR_INT_TYPE, 32);
   var_t m(vfac["m"], crab::INT_TYPE, 32), lo(vfac["lo"], crab::INT_TYPE, 32),
