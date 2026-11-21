@@ -197,6 +197,140 @@ BOOST_AUTO_TEST_CASE(fig3_partial_initialization) {
 
 BOOST_AUTO_TEST_SUITE_END()
 
+BOOST_FIXTURE_TEST_SUITE(index_relations, fixture)
+
+// i := 0; while (i < n) { t := i + 2; A[i] := t; i := i + 1; }
+// (CrabIR stores only a number or a variable, hence t.)
+// At the exit A is {0} A==$j+2 {i}? T: every element is its own index plus
+// 2, so A[k] == k + 2 for every 0 <= k < n.
+BOOST_AUTO_TEST_CASE(index_plus_constant_initialization) {
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit");
+  BB(cfg, entry);
+  BB(cfg, head);
+  BB(cfg, body);
+  BB(cfg, exit);
+  entry >> head;
+  head >> body;
+  body >> head;
+  head >> exit;
+  entry.assign(i, 0);
+  body.assume(lin_t(i) <= lin_t(n) - 1);
+  body.add(t, i, 2);
+  body.array_store(A, i, t, 4);
+  body.add(i, i, 1);
+  exit.assume(lin_t(i) >= lin_t(n));
+
+  auto inv = analyze(*cfg);
+  print("index + 2 head", inv.at("head"));
+  print("index + 2 exit", inv.at("exit.post"));
+
+  const dom_t &out = inv.at("exit.post");
+  check_bounds(out.segmentation_of(A), {B({k(0)}), B({i})}, {false, true});
+
+  // x := A[idx] with 0 <= idx < n gives x == idx + 2
+  dom_t t(out);
+  t += cst_t(-lin_t(idx), cst_t::INEQUALITY);
+  t += cst_t(lin_t(idx) - n + 1, cst_t::INEQUALITY);
+  t.array_load(x, A, k(4), idx);
+  print("index + 2: x := A[idx], 0 <= idx < n", t);
+  BOOST_TEST(t.entails(cst_t(lin_t(x) - idx - 2, cst_t::EQUALITY)));
+
+  // nothing is known at or after i
+  dom_t u(out);
+  u += cst_t(lin_t(i) - idx, cst_t::INEQUALITY);
+  u.array_load(x, A, k(4), idx);
+  BOOST_TEST(!u.entails(cst_t(lin_t(x) - idx - 2, cst_t::EQUALITY)));
+}
+
+// m := A[0]; i := 1;
+// while (i < n) { t := A[i]; if (t > m) m := t; i := i + 1; }
+// At the exit every A[k], 0 <= k < n, is at most m: A is {0} A<=m {i}? T.
+BOOST_AUTO_TEST_CASE(array_max) {
+  var_t m(vfac["m"], crab::INT_TYPE, 32);
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit");
+  BB(cfg, entry);
+  BB(cfg, head);
+  BB(cfg, body);
+  BB(cfg, then_);
+  BB(cfg, else_);
+  BB(cfg, inc);
+  BB(cfg, exit);
+  entry >> head;
+  head >> body;
+  body >> then_;
+  body >> else_;
+  then_ >> inc;
+  else_ >> inc;
+  inc >> head;
+  head >> exit;
+  entry.assume(lin_t(n) >= 1);
+  entry.array_load(m, A, 0, 4);
+  entry.assign(i, 1);
+  body.assume(lin_t(i) <= lin_t(n) - 1);
+  body.array_load(t, A, i, 4);
+  then_.assume(lin_t(t) >= lin_t(m) + 1);
+  then_.assign(m, t);
+  else_.assume(lin_t(t) <= lin_t(m));
+  inc.add(i, i, 1);
+  exit.assume(lin_t(i) >= lin_t(n));
+
+  auto inv = analyze(*cfg);
+  print("max head", inv.at("head"));
+  print("max exit", inv.at("exit.post"));
+
+  // x := A[idx] with 0 <= idx < n gives x <= m
+  dom_t r(inv.at("exit.post"));
+  r += cst_t(-lin_t(idx), cst_t::INEQUALITY);
+  r += cst_t(lin_t(idx) - n + 1, cst_t::INEQUALITY);
+  r.array_load(x, A, k(4), idx);
+  print("max: x := A[idx], 0 <= idx < n", r);
+  BOOST_TEST(r.entails(cst_t(lin_t(x) - m, cst_t::INEQUALITY)));
+}
+
+// i := 0;
+// while (i < n) { t := A[i]; if (t < 0) A[i] := 0; i := i + 1; }
+// At the exit every A[k], 0 <= k < n, is non-negative: the guard t >= 0
+// reaches the segment holding A == t in the else branch.
+BOOST_AUTO_TEST_CASE(clamp_negative_elements) {
+  auto cfg = std::make_unique<z_cfg_t>("entry", "exit");
+  BB(cfg, entry);
+  BB(cfg, head);
+  BB(cfg, body);
+  BB(cfg, then_);
+  BB(cfg, else_);
+  BB(cfg, inc);
+  BB(cfg, exit);
+  entry >> head;
+  head >> body;
+  body >> then_;
+  body >> else_;
+  then_ >> inc;
+  else_ >> inc;
+  inc >> head;
+  head >> exit;
+  entry.assign(i, 0);
+  body.assume(lin_t(i) <= lin_t(n) - 1);
+  body.array_load(t, A, i, 4);
+  then_.assume(lin_t(t) <= -1);
+  then_.array_store(A, i, 0, 4);
+  else_.assume(lin_t(t) >= 0);
+  inc.add(i, i, 1);
+  exit.assume(lin_t(i) >= lin_t(n));
+
+  auto inv = analyze(*cfg);
+  print("clamp head", inv.at("head"));
+  print("clamp exit", inv.at("exit.post"));
+
+  // x := A[idx] with 0 <= idx < n gives x >= 0
+  dom_t r(inv.at("exit.post"));
+  r += cst_t(-lin_t(idx), cst_t::INEQUALITY);
+  r += cst_t(lin_t(idx) - n + 1, cst_t::INEQUALITY);
+  r.array_load(x, A, k(4), idx);
+  BOOST_TEST(r.entails(cst_t(-lin_t(x), cst_t::INEQUALITY)));
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
 // Keep stdout empty unless --print-invariants is given: the golden-output
 // harness (tests/run_tests.sh) diffs the standard output of every test
 // binary, so the whole Boost.Test log is routed to stderr. ctest passes

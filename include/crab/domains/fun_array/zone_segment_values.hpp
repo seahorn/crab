@@ -158,7 +158,15 @@ public:
   void store(const variable_t &a, const linear_expression_t &val,
              const ScalarDom &s) override {
     m_state.assign(a, val);
-    variable_vector_t vars(val.variables_begin(), val.variables_end());
+    // What s knows about val's variables and the scalars the value already
+    // mentions, together: e.g., with t == i + 2 in s and j == i in the
+    // value (from singleton), A[i] := t gives A == j + 2.
+    variable_vector_t vars = scalars(m_state);
+    for (auto const &v : val.variables()) {
+      if (std::find(vars.begin(), vars.end(), v) == vars.end()) {
+        vars.push_back(v);
+      }
+    }
     if (!vars.empty()) {
       m_state += project(s, vars);
     }
@@ -180,6 +188,13 @@ public:
     return m_state.is_tracked(x);
   }
   void forget_array(const variable_t &a) override { m_state -= a; }
+
+  void assume(const linear_constraint_system_t &csts) override {
+    m_state += csts;
+  }
+  void assign(const variable_t &x, const linear_expression_t &e) override {
+    m_state.assign(x, e);
+  }
 
   void forget(const variable_vector_t &scalars) override {
     m_state.forget(scalars);

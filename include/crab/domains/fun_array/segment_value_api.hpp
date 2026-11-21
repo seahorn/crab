@@ -27,6 +27,8 @@ public:
   using variable_t = typename ScalarDom::variable_t;
   using variable_vector_t = typename ScalarDom::variable_vector_t;
   using linear_expression_t = typename ScalarDom::linear_expression_t;
+  using linear_constraint_system_t =
+      typename ScalarDom::linear_constraint_system_t;
 
   virtual ~segment_value_api() {}
 
@@ -71,6 +73,13 @@ public:
   virtual bool mentions(const variable_t &x) const = 0;
   // Drop the value placeholder of array a
   virtual void forget_array(const variable_t &a) = 0;
+
+  // Scalar statements replayed in the value. The caller replays them only
+  // in values that mention one of their variables.
+  // A guard over scalars
+  virtual void assume(const linear_constraint_system_t &csts) = 0;
+  // x := e, over scalars
+  virtual void assign(const variable_t &x, const linear_expression_t &e) = 0;
 
   // Scalar changes reaching the value
   virtual void forget(const variable_vector_t &scalars) = 0;

@@ -92,6 +92,19 @@ private:
     m_bounds.erase(m_bounds.begin() + k);
   }
 
+  // Drop the expressions mentioning x from the bounds, removing the bounds
+  // left empty (B0 keeps 0)
+  void forget_in_bounds(const variable_t &x) {
+    for (std::size_t k = 0; k < m_bounds.size();) {
+      m_bounds[k].forget(x);
+      if (m_bounds[k].is_empty()) {
+        drop_bound(k);
+      } else {
+        ++k;
+      }
+    }
+  }
+
   // Bottom if some segment that is not empty has a bottom value.
   //
   // E.g., {0} _|_ {i} T {+oo} is bottom: [0, i) has at least one element
@@ -543,54 +556,149 @@ public:
     if (m_is_bottom) {
       return;
     }
-    for (std::size_t k = 0; k < m_bounds.size();) {
-      m_bounds[k].forget(x);
-      if (m_bounds[k].is_empty()) {
-        drop_bound(k);
-      } else {
-        ++k;
-      }
-    }
+    forget_in_bounds(x);
     for (auto &v : m_values) {
       v.forget({x});
     }
   }
 
-  // The invertible assignment x := x + k (POPL'11, Sect. 11.6): the old x
-  // is the new x - k, so every bound expression mentioning x is rewritten
-  // with x - k. The values forget x.
+  // x := e (POPL'11, Sect. 11.6):
+  //  - Bounds. If e is x + k (invertible), the old x is the new x - k, so
+  //    every bound expression mentioning x is rewritten with x - k.
+  //    Otherwise the expressions mentioning x are dropped (removing the
+  //    bounds left empty), and if e is in normal form and does not mention
+  //    x, x is added to every bound containing e.
+  //  - Values. The assignment is replayed in every value that mentions x;
+  //    the others are not affected.
   //
-  // E.g., after i := i + 1 (k = 1), {0 i} 0 {1 i+1} T {+oo} becomes
-  // {0 i-1} 0 {1 i} T {+oo}.
-  void shift(const variable_t &x, const number_t &k) {
+  // E.g., after i := i + 1, {0 i} A==0 {1 i+1} T {+oo} becomes
+  // {0 i-1} A==0 {1 i} T {+oo}; after i := 0, {0} T {+oo} becomes
+  // {0 i} T {+oo}; after j := n, {0} 0 {n}? T {+oo} becomes
+  // {0} 0 {n j}? T {+oo}. And after m := t, a value A<=m with t>=m+1
+  // becomes A<m: the old relation is kept, not forgotten.
+  void assign(const variable_t &x, const linear_expression_t &e) {
     if (m_is_bottom) {
       return;
     }
-    linear_expression_t old_x = linear_expression_t(x) - k;
-    for (auto &b : m_bounds) {
-      b.substitute(x, old_x);
+    if (e.size() == 1 && e[x] == number_t(1)) {
+      linear_expression_t old_x = linear_expression_t(x) - e.constant();
+      for (auto &b : m_bounds) {
+        b.substitute(x, old_x);
+      }
+    } else {
+      forget_in_bounds(x);
+      if (e[x] == number_t(0)) {
+        if (auto ee = expression_t::make(e)) {
+          expression_t ex = *expression_t::make(linear_expression_t(x));
+          for (auto &b : m_bounds) {
+            if (b.contains(*ee)) {
+              b.add(ex);
+            }
+          }
+        }
+      }
     }
     for (auto &v : m_values) {
-      v.forget({x});
+      if (v.mentions(x)) {
+        v.assign(x, e);
+      }
     }
   }
 
-  // After the assignment x := e, with e in normal form and not mentioning x
-  // (POPL'11, Sect. 11.6): x is added to every bound containing e. Call
-  // forget(x) first.
+  // A guard over scalars, replayed in every value that mentions one of its
+  // variables; each value receives only the constraints that mention one of
+  // its scalars.
   //
-  // E.g., after i := 0, {0} T {+oo} becomes {0 i} T {+oo}; after j := n,
-  // {0} 0 {n}? T {+oo} becomes {0} 0 {n j}? T {+oo}.
-  void add_equal(const variable_t &x, const expression_t &e) {
+  // E.g., with t <= m, the value A==t of [i, i+1) becomes A<=m; a value
+  // that mentions neither t nor m is not affected.
+  template <class ConstraintSystem>
+  void assume(const ConstraintSystem &csts) {
     if (m_is_bottom) {
       return;
     }
-    expression_t ex = *expression_t::make(linear_expression_t(x));
-    for (auto &b : m_bounds) {
-      if (b.contains(e)) {
-        b.add(ex);
+    for (auto &v : m_values) {
+      ConstraintSystem mine;
+      for (auto const &c : csts) {
+        for (auto const &x : c.variables()) {
+          if (v.mentions(x)) {
+            mine += c;
+            break;
+          }
+        }
+      }
+      if (!mine.is_true()) {
+        v.assume(mine);
       }
     }
+    normalize();
+  }
+
+  // Reduce the bounds from the scalar state s (POPL'11, Sect. 11.7), after a
+  // guard. The converse of fun_array::reduce_scalar_from_bounds. For each
+  // segment [Bk-1, Bk):
+  //  - s proves Bk < Bk-1, or proves Bk-1 == Bk while the segment is not
+  //    empty: unreachable, bottom;
+  //  - s proves Bk-1 == Bk (the segment is empty): the two bounds merge;
+  //  - s proves Bk-1 < Bk: the ? is removed.
+  //
+  // E.g., with i == 0, {0} T {i}? 0 {n}? T {+oo} becomes {0 i} 0 {n}? T
+  // {+oo} (POPL'11, Fig. 5); with i >= 1, {0} 0 {i}? T {+oo} becomes
+  // {0} 0 {i} T {+oo}; with i <= 0, {0} 0 {i} T {+oo} is bottom.
+  template <class ScalarDom>
+  void reduce_bounds_from_scalar(const ScalarDom &s) {
+    if (m_is_bottom) {
+      return;
+    }
+    if (s.is_bottom()) {
+      set_to_bottom();
+      return;
+    }
+    for (std::size_t k = 1; k < m_bounds.size();) {
+      const BoundDom &prev = m_bounds[k - 1];
+      const BoundDom &cur = m_bounds[k];
+      if (cur.is_lt(prev, s).is_true()) {
+        set_to_bottom();
+        return;
+      }
+      if (prev.is_eq(cur, s).is_true()) {
+        if (!m_maybe_empty[k]) {
+          set_to_bottom();
+          return;
+        }
+        // [Bk-1, Bk) is empty: Bk joins Bk-1, and the value starting at Bk
+        // starts at the merged bound
+        m_bounds[k - 1] = prev | cur;
+        m_values.erase(m_values.begin() + (k - 1));
+        m_maybe_empty.erase(m_maybe_empty.begin() + k);
+        m_bounds.erase(m_bounds.begin() + k);
+        continue;
+      }
+      if (m_maybe_empty[k] && prev.is_lt(cur, s).is_true()) {
+        m_maybe_empty[k] = false;
+      }
+      ++k;
+    }
+    normalize();
+  }
+
+  // The equalities between the expressions of each bound, e.g. i == n for
+  // {i n}, for the scalar domain
+  template <class ConstraintSystem>
+  ConstraintSystem bound_equalities() const {
+    using constraint_t = typename ConstraintSystem::linear_constraint_t;
+    ConstraintSystem res;
+    if (m_is_bottom) {
+      return res;
+    }
+    for (auto const &b : m_bounds) {
+      auto es = b.expressions();
+      for (std::size_t k = 1; k < es.size(); ++k) {
+        res += constraint_t(es[0].to_linear_expression() -
+                                es[k].to_linear_expression(),
+                            constraint_t::EQUALITY);
+      }
+    }
+    return res;
   }
 
   // Keep only the scalars in vars, in bounds and values

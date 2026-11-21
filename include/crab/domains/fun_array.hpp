@@ -177,22 +177,26 @@ private:
     m_scalar += linear_constraint_t(-i, linear_constraint_t::INEQUALITY);
   }
 
-  // x := e on the segmentations, before m_scalar sees it
+  // x := e on the segmentations, before m_scalar sees it: bounds are
+  // rewritten and the assignment is replayed in the values that mention x
+  // (segmentation::assign)
   void assign_in_arrays(const variable_t &x, const linear_expression_t &e) {
-    // invertible: x := x + k
-    if (e.size() == 1 && e[x] == number_t(1)) {
-      for (auto &kv : m_arrays) {
-        kv.second.seg.shift(x, e.constant());
-      }
+    for (auto &kv : m_arrays) {
+      kv.second.seg.assign(x, e);
+    }
+  }
+
+  // Reduce the scalar state from the bounds of every segmentation: their
+  // equalities go to the scalar state (e.g., i == n for a bound {i n}). The
+  // converse of segmentation::reduce_bounds_from_scalar. Not after widening,
+  // so that a widened scalar state is not refined back.
+  void reduce_scalar_from_bounds() {
+    if (m_scalar.is_bottom()) {
       return;
     }
-    forget_in_arrays(x);
-    if (e[x] == number_t(0)) {
-      if (auto ee = expression_t::make(e)) {
-        for (auto &kv : m_arrays) {
-          kv.second.seg.add_equal(x, *ee);
-        }
-      }
+    for (auto const &kv : m_arrays) {
+      m_scalar += kv.second.seg.template bound_equalities<
+          linear_constraint_system_t>();
     }
   }
 
@@ -309,12 +313,14 @@ public:
     if (o.is_bottom()) {
       return *this;
     }
-    return fun_array_t(
+    fun_array_t res(
         m_scalar | o.m_scalar,
         combine_arrays(*this, o, true,
                        [](const segmentation_t &x, const segmentation_t &y) {
                          return x | y;
                        }));
+    res.reduce_scalar_from_bounds();
+    return res;
   }
 
   void operator&=(const fun_array_t &o) override { *this = *this & o; }
@@ -323,12 +329,14 @@ public:
     if (is_bottom() || o.is_bottom()) {
       return make_bottom();
     }
-    return fun_array_t(
+    fun_array_t res(
         m_scalar & o.m_scalar,
         combine_arrays(*this, o, false,
                        [](const segmentation_t &x, const segmentation_t &y) {
                          return x & y;
                        }));
+    res.reduce_scalar_from_bounds();
+    return res;
   }
 
   // Widening; no saturation, so that bounds can only lose expressions
@@ -478,10 +486,22 @@ public:
   void normalize() override { m_scalar.normalize(); }
   void minimize() override { m_scalar.minimize(); }
 
-  // Guards only refine the scalar state for now
+  // A guard refines the scalar state, is replayed in the segment values that
+  // mention its variables, and reduces the bounds (segmentation::assume,
+  // segmentation::reduce_bounds_from_scalar). E.g., in the else branch of
+  // `t := A[i]; if (t > m) ..`, t <= m turns A==t on [i, i+1) into A<=m.
   void operator+=(const linear_constraint_system_t &csts) override {
     m_scalar += csts;
+    if (m_scalar.is_bottom()) {
+      set_to_bottom();
+      return;
+    }
+    for (auto &kv : m_arrays) {
+      kv.second.seg.assume(csts);
+      kv.second.seg.reduce_bounds_from_scalar(m_scalar);
+    }
     normalize_arrays();
+    reduce_scalar_from_bounds();
   }
 
   bool entails(const linear_constraint_t &cst) const override {
@@ -500,10 +520,13 @@ public:
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              number_t z) override {
+    // operations with a linear result are replayed as assignments
     if (op == OP_ADDITION) {
       assign_in_arrays(x, linear_expression_t(y) + z);
     } else if (op == OP_SUBTRACTION) {
       assign_in_arrays(x, linear_expression_t(y) - z);
+    } else if (op == OP_MULTIPLICATION) {
+      assign_in_arrays(x, linear_expression_t(z, y));
     } else {
       forget_in_arrays(x);
     }
@@ -512,7 +535,13 @@ public:
 
   void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
              const variable_t &z) override {
-    forget_in_arrays(x);
+    if (op == OP_ADDITION) {
+      assign_in_arrays(x, linear_expression_t(y) + z);
+    } else if (op == OP_SUBTRACTION) {
+      assign_in_arrays(x, linear_expression_t(y) - z);
+    } else {
+      forget_in_arrays(x);
+    }
     m_scalar.apply(op, x, y, z);
   }
 
@@ -676,6 +705,7 @@ public:
       st.seg.load(a, lhs, i, m_scalar);
     }
     normalize_arrays();
+    reduce_scalar_from_bounds();
   }
 
   void array_store(const variable_t &a, const linear_expression_t &elem_size,
@@ -700,6 +730,7 @@ public:
     array_state &st = array_for_access(a, size);
     st.seg.store(a, i, val, m_scalar);
     normalize_arrays();
+    reduce_scalar_from_bounds();
   }
 
   void array_store_range(const variable_t &a,

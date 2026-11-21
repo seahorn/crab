@@ -141,6 +141,72 @@ BOOST_AUTO_TEST_CASE(element_size_change_forgets) {
 
 BOOST_AUTO_TEST_SUITE_END()
 
+BOOST_FIXTURE_TEST_SUITE(reduction, fixture)
+
+// A guard reaches the segment values that mention its variables
+BOOST_AUTO_TEST_CASE(guard_reaches_values) {
+  var_t m(vfac["m"], crab::INT_TYPE, 32);
+  dom_t d;
+  d.array_load(x, A, k(4), i); // [i, i+1) gets A == x
+  d += cst_t(lin_t(x) - m, cst_t::INEQUALITY); // x <= m
+  d.assign(x, k(7)); // x no longer the element
+  print("x := A[i]; x <= m; x := 7", d);
+  // A[i] <= m survives x := 7
+  dom_t t(d);
+  t.array_load(n, A, k(4), i);
+  BOOST_TEST(t.entails(cst_t(lin_t(n) - m, cst_t::INEQUALITY)));
+}
+
+// An assignment is replayed in the values that mention its variable,
+// instead of forgetting it
+BOOST_AUTO_TEST_CASE(assignment_reaches_values) {
+  var_t m(vfac["m"], crab::INT_TYPE, 32);
+  dom_t d;
+  d.array_load(m, A, k(4), i);              // [i, i+1): A == m
+  d += cst_t(lin_t(m) - x + 1, cst_t::INEQUALITY); // m <= x - 1
+  d.assign(m, x);                           // [i, i+1): A < m
+  print("m := A[i]; m < x; m := x", d);
+  dom_t t(d);
+  t.array_load(n, A, k(4), i);
+  BOOST_TEST(t.entails(cst_t(lin_t(n) - m + 1, cst_t::INEQUALITY)));
+}
+
+// POPL'11, Fig. 5, point 6: with i == 0, {0} T {i}? 0 {n}? becomes
+// {0 i} 0 {n}?: the segment [0, i) is empty.
+BOOST_AUTO_TEST_CASE(guard_merges_bounds_proven_equal) {
+  dom_t d;
+  d += cst_t(-lin_t(i), cst_t::INEQUALITY);      // 0 <= i
+  d += cst_t(lin_t(i) - n + 1, cst_t::INEQUALITY); // i < n
+  d.array_store(A, k(4), i, k(0), true);          // {0} T {i}? 0 {i+1} T
+  d += cst_t(lin_t(i), cst_t::EQUALITY);          // i == 0
+  print("{0} T {i}? 0 {i+1} T with i == 0", d);
+  // only the bounds of the empty segment merge; {i+1} does not gain 1
+  check_bounds(d.segmentation_of(A), {B({k(0), i}), B({lin_t(i) + 1})},
+               {false, false});
+}
+
+BOOST_AUTO_TEST_CASE(guard_removes_maybe_empty) {
+  dom_t d;
+  d.array_store(A, k(4), i, k(0), true); // {0} T {i}? 0 {i+1} T
+  d += cst_t(-lin_t(i) + 1, cst_t::INEQUALITY); // i >= 1
+  check_bounds(d.segmentation_of(A), {B({k(0)}), B({i}), B({lin_t(i) + 1})},
+               {false, false, false});
+}
+
+// A segment that cannot be empty between bounds proven equal is
+// unreachable
+BOOST_AUTO_TEST_CASE(guard_detects_unreachable) {
+  dom_t d;
+  d.array_store(A, k(4), i, k(0), true);
+  d += cst_t(-lin_t(i) + 1, cst_t::INEQUALITY); // i >= 1: [0, i) not empty
+  BOOST_TEST(!d.is_bottom());
+  d.assign(j, i);                                 // {0} T {i j} 0 ..
+  d += cst_t(lin_t(j), cst_t::INEQUALITY);        // j <= 0, so i == 0
+  BOOST_TEST(d.is_bottom());
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
 BOOST_FIXTURE_TEST_SUITE(lattice, fixture)
 
 // The first iteration of `i := 0; while (..) { A[i] := 0; i := i + 1; }`:
