@@ -701,6 +701,28 @@ public:
     return res;
   }
 
+  // The orderings between consecutive bounds, for the scalar domain: Bk-1 <
+  // Bk when the segment between them is not empty, Bk-1 <= Bk when it may
+  // be (one expression of each bound stands for the whole bound).
+  //
+  // E.g., {0} 0 {i}? T {n} T {+oo} gives 0 <= i and i < n.
+  template <class ConstraintSystem>
+  ConstraintSystem bound_orderings() const {
+    using constraint_t = typename ConstraintSystem::linear_constraint_t;
+    ConstraintSystem res;
+    if (m_is_bottom) {
+      return res;
+    }
+    for (std::size_t k = 1, n = m_bounds.size(); k < n; ++k) {
+      auto prev = m_bounds[k - 1].expressions()[0].to_linear_expression();
+      auto cur = m_bounds[k].expressions()[0].to_linear_expression();
+      // prev - cur <= 0, or prev - cur <= -1 when not empty
+      res += constraint_t(m_maybe_empty[k] ? prev - cur : prev - cur + 1,
+                          constraint_t::INEQUALITY);
+    }
+    return res;
+  }
+
   // Keep only the scalars in vars, in bounds and values
   //
   // E.g., with vars = {i}, {0 t} 0 {i n}? T {+oo} becomes {0} 0 {i}? T {+oo}.

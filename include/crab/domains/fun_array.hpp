@@ -287,10 +287,31 @@ private:
     }
   }
 
+  // The bound equalities and orderings of every segmentation, as constraints
+  // over scalars (to_linear_constraint_system)
+  linear_constraint_system_t bound_constraints() const {
+    linear_constraint_system_t res;
+    if (is_bottom()) {
+      return res;
+    }
+    for (auto const &kv : m_groups.equiv_classes_elems()) {
+      const segmentation_t &seg = shared_group_of(kv.first);
+      res += seg.template bound_equalities<linear_constraint_system_t>();
+      res += seg.template bound_orderings<linear_constraint_system_t>();
+    }
+    return res;
+  }
+
   // Reduce the scalar state from the bounds of every segmentation: their
   // equalities go to the scalar state (e.g., i == n for a bound {i n}). The
-  // converse of segmentation::reduce_bounds_from_scalar. Not after widening,
-  // so that a widened scalar state is not refined back.
+  // converse of segmentation::reduce_bounds_from_scalar.
+  //
+  // Not called on the result of widening. In X(k+1) = X(k) || Y(k),
+  // widening guarantees that the iterates stabilize for any right operands
+  // Y(k), which may be reduced (they come from join), but only if each left
+  // operand is the previous result unchanged. Widening drops information to
+  // stabilize; reducing its result could give some of it back, and the
+  // iterates might never stabilize.
   void reduce_scalar_from_bounds() {
     if (m_scalar.is_bottom() || m_groups.is_bottom()) {
       return;
@@ -847,10 +868,17 @@ public:
     }
     prepare_access(a, size);
     if (i[lhs] != number_t(0)) {
-      // lhs := A[lhs + ..]: the index needs the old lhs, the segment would
-      // need the new one, so the load is weak
-      *this -= lhs;
-      group_of(a).weak_load(a, lhs, m_scalar);
+      // lhs := A[lhs + ..]: the index needs the old lhs, so the element is
+      // loaded into a fresh temporary first, then assigned to lhs
+      auto &vfac = const_cast<varname_t *>(&(lhs.name()))->get_var_factory();
+      variable_t tmp(vfac.make_temporary_varname(), lhs.get_type());
+      group_of(a).load(a, tmp, i, m_scalar);
+      normalize_arrays();
+      if (is_bottom()) {
+        return;
+      }
+      assign(lhs, linear_expression_t(tmp));
+      *this -= tmp;
     } else {
       *this -= lhs;
       group_of(a).load(a, lhs, i, m_scalar);
@@ -890,9 +918,10 @@ public:
         }
       }
     }
-    // is_strong_update is ignored, as array_adaptive does for arrays it does
-    // not smash: whether the update is strong depends on the index (see
-    // segmentation::store)
+    // is_strong_update is the client's guarantee that the store may be
+    // modelled as strong even when the domain cannot tell (array_smashing
+    // needs it). It is safe to ignore here: whether the update is strong
+    // depends on the index (see segmentation::store).
     group_of(a).store(a, i, val, m_scalar);
     normalize_arrays();
     reduce_scalar_from_bounds();
@@ -961,14 +990,30 @@ public:
     CRAB_WARN("backward_array_assign in fun_array domain not implemented");
   }
 
-  // Only the scalar state is exported for now
+  // The scalar state, plus what the bounds of every segmentation say about
+  // scalars: equalities within a bound ({i n} gives i == n) and orderings
+  // between consecutive bounds ({i} .. {n} gives i < n, or i <= n with a ?).
+  // Segment values are not exported: they are universally quantified over
+  // array elements, which linear constraints over scalars cannot express.
   linear_constraint_system_t to_linear_constraint_system() const override {
-    return m_scalar.to_linear_constraint_system();
+    linear_constraint_system_t res = m_scalar.to_linear_constraint_system();
+    res += bound_constraints();
+    return res;
   }
 
   disjunctive_linear_constraint_system_t
   to_disjunctive_linear_constraint_system() const override {
-    return m_scalar.to_disjunctive_linear_constraint_system();
+    auto disj_csts = m_scalar.to_disjunctive_linear_constraint_system();
+    if (disj_csts.is_false()) {
+      return disj_csts;
+    }
+    linear_constraint_system_t bounds = bound_constraints();
+    disjunctive_linear_constraint_system_t res;
+    for (auto csts : disj_csts) {
+      csts += bounds;
+      res += csts;
+    }
+    return res;
   }
 
   void intrinsic(std::string name, const variable_or_constant_vector_t &inputs,

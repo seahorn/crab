@@ -12,6 +12,7 @@
 
 #include "../crab_lang.hpp"
 #include <crab/domains/fun_array.hpp>
+#include <crab/domains/intervals.hpp>
 #include <crab/domains/split_dbm.hpp>
 #include <crab/support/os.hpp>
 
@@ -36,7 +37,7 @@ using cst_t = dom_t::linear_constraint_t;
 // Set by --print-invariants
 bool print_invariants = false;
 
-void print(const std::string &name, const dom_t &d) {
+template <class Dom> void print(const std::string &name, const Dom &d) {
   if (print_invariants) {
     crab::outs() << name << " = " << d << "\n";
   }
@@ -137,6 +138,36 @@ BOOST_AUTO_TEST_CASE(element_size_change_forgets) {
   d.array_store(A, k(4), i, k(5), true);
   d.array_load(x, A, k(8), i);
   BOOST_TEST(!d.entails(cst_t(lin_t(x) - 5, cst_t::EQUALITY)));
+}
+
+// x := A[x] uses the old x as index and gives x the element's value
+BOOST_AUTO_TEST_CASE(load_into_index_variable) {
+  dom_t d;
+  d.array_store(A, k(4), i, k(5), true);
+  d.assign(x, i);
+  d.array_load(x, A, k(4), x);
+  print("A[i] := 5; x := i; x := A[x]", d);
+  BOOST_TEST(d.entails(cst_t(lin_t(x) - 5, cst_t::EQUALITY)));
+}
+
+// to_linear_constraint_system exports what the bounds know: with intervals
+// as scalar domain, n == i + 1 is lost in the scalar state, but the bound
+// {i+1 n} keeps it
+BOOST_AUTO_TEST_CASE(export_bound_constraints) {
+  using int_dom_t = fun_array<interval_domain<z_number, varname_t>>;
+  int_dom_t d;
+  d.array_store(A, k(4), i, k(0), true); // {0} T {i}? 0 {i+1} T
+  d.apply(OP_ADDITION, n, i, z_number(1)); // {0} T {i}? 0 {i+1 n} T
+  print("A[i] := 0; n := i + 1 (intervals)", d);
+  BOOST_TEST(!d.entails(cst_t(lin_t(n) - i - 1, cst_t::EQUALITY)));
+
+  scalar_t exported;
+  exported += d.to_linear_constraint_system();
+  // equality within {i+1 n}
+  BOOST_TEST(exported.entails(cst_t(lin_t(n) - i - 1, cst_t::EQUALITY)));
+  // ordering 0 <= i <= n - 1: [0, i) may be empty, [i, i+1) is not
+  BOOST_TEST(exported.entails(cst_t(-lin_t(i), cst_t::INEQUALITY)));
+  BOOST_TEST(exported.entails(cst_t(lin_t(i) - n + 1, cst_t::INEQUALITY)));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
